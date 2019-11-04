@@ -15,10 +15,26 @@
  */
 package de.mirkosertic.bytecoder.intrinsics;
 
-import de.mirkosertic.bytecoder.core.*;
-import de.mirkosertic.bytecoder.ssa.*;
-
 import java.util.List;
+
+import de.mirkosertic.bytecoder.core.BytecodeInstructionGETSTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTSTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.ssa.IntegerValue;
+import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
+import de.mirkosertic.bytecoder.ssa.ParsingHelper;
+import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
+import de.mirkosertic.bytecoder.ssa.StringValue;
+import de.mirkosertic.bytecoder.ssa.TypeOfExpression;
+import de.mirkosertic.bytecoder.ssa.TypeRef;
+import de.mirkosertic.bytecoder.ssa.Value;
+import de.mirkosertic.bytecoder.ssa.Variable;
 
 public class JavaLangClassIntrinsic extends Intrinsic {
 
@@ -50,6 +66,55 @@ public class JavaLangClassIntrinsic extends Intrinsic {
         }
 
         return false;
+    }
+
+    @Override
+    public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKESTATIC aInstruction,
+            final String aMethodName, final List<Value> aArguments, final BytecodeObjectTypeRef aTargetClass,
+            final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+        final BytecodeMethodSignature theSignature = aInstruction.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
+        final BytecodeObjectTypeRef theCalledClass = BytecodeObjectTypeRef.fromUtf8Constant(aInstruction.getMethodReference().getClassIndex().getClassConstant().getConstant());
+
+        if (theCalledClass.name().equals(Class.class.getName())) {
+            if ("forName".equals(aMethodName)) {
+                for (int i=0;i<theSignature.getArguments().length;i++) {
+                    if (theSignature.getArguments()[i].equals(BytecodeObjectTypeRef.fromRuntimeClass(String.class))) {
+                        final Value theArgumentValue = aArguments.get(i);
+                        checkblock:
+                        {
+                            if (theArgumentValue instanceof StringValue) {
+                                // We found something directly
+                                final String theClassName = ((StringValue) theArgumentValue).getStringValue();
+                                if (aProgram.getLinkerContext() != null) {
+                                    aProgram.getLinkerContext().getLogger().warn("Class {} is used by reflection!", theClassName);
+                                }
+
+                                break checkblock;
+                            } else {
+                                final List<Value> theIncomingFlows = theArgumentValue.incomingDataFlows();
+                                for (final Value theValue : theIncomingFlows) {
+                                    if (theValue instanceof StringValue) {
+                                        // We found something as a variable
+                                        final String theClassName = ((StringValue) theValue).getStringValue();
+                                        if (aProgram.getLinkerContext() != null) {
+                                            aProgram.getLinkerContext().getLogger().warn("Class {} is used by reflection!", theClassName);
+                                        }
+
+                                        break checkblock;
+                                    }
+                                }
+                            }
+
+                            if (aProgram.getLinkerContext() != null) {
+                                aProgram.getLinkerContext().getLogger().warn("Class.forName usage detected with unknown class name");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return super.intrinsify(aProgram, aInstruction, aMethodName, aArguments, aTargetClass, aTargetBlock, aHelper);
     }
 
     @Override

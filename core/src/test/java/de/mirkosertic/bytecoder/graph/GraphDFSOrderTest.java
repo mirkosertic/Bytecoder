@@ -34,7 +34,7 @@ public class GraphDFSOrderTest {
 
     @Test
     public void testSimpleNode() {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph graph = new ControlFlowGraph(p);
         final RegionNode startNode = graph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         graph.calculateReachabilityAndMarkBackEdges();
@@ -52,7 +52,7 @@ public class GraphDFSOrderTest {
 
     @Test
     public void testSimpleFlow() {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph graph = new ControlFlowGraph(p);
         final RegionNode startNode = graph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         final RegionNode node2 = graph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
@@ -76,7 +76,7 @@ public class GraphDFSOrderTest {
 
     @Test
     public void testJoiningFlow() {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph graph = new ControlFlowGraph(p);
         final RegionNode startNode = graph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         final RegionNode node2 = graph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
@@ -104,7 +104,7 @@ public class GraphDFSOrderTest {
 
     @Test
     public void testJoiningFlowWithLoop() {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph graph = new ControlFlowGraph(p);
         final RegionNode startNode = graph.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         final RegionNode node2 = graph.createAt(new BytecodeOpcodeAddress(20), RegionNode.BlockType.NORMAL);
