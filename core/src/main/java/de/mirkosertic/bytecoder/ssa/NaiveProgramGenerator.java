@@ -175,9 +175,9 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
         BytecodeLocalVariableTableAttributeInfo theDebugInfos = null;
         if (theCode != null) {
             theDebugInfos = theCode.attributeByType(BytecodeLocalVariableTableAttributeInfo.class);
-            theProgram = new Program(debugInformationFor(aOwningClass, theCode));
+            theProgram = new Program(debugInformationFor(aOwningClass, theCode), linkerContext);
         } else {
-            theProgram = new Program(DebugInformation.empty());
+            theProgram = new Program(DebugInformation.empty(), linkerContext);
         }
 
         int theCurrentIndex = 0;
@@ -1143,7 +1143,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 final BytecodeMethodHandleConstant theMethodRef = theBootstrapMethod.getMethodRef();
                 final BytecodeMethodRefConstant theBootstrapMethodToInvoke = (BytecodeMethodRefConstant) theMethodRef.getReferenceIndex().getConstant();
 
-                final Program theProgram = new Program(DebugInformation.empty());
+                final Program theProgram = new Program(DebugInformation.empty(), linkerContext);
                 final RegionNode theInitNode = theProgram.getControlFlowGraph().createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
 
                 // Don't forget to calculate reachability and dominators here

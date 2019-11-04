@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -31,16 +32,27 @@ public class HashMapTest {
 
     @Test
     public void containsGetPutUpdate() throws Exception {
-        HashMap<Integer, Integer> theMap = new HashMap<>();
+        final HashMap<Integer, Integer> theMap = new HashMap<>();
         assertFalse(theMap.containsKey(new Integer(10)));
         assertNull(theMap.get(new Integer(1024)));
-        Integer theOldValue = theMap.put(new Integer(255), new Integer(3000));
+        final Integer theOldValue = theMap.put(new Integer(255), new Integer(3000));
         assertNull(theOldValue);
         assertTrue(theMap.containsKey(new Integer(255)));
         assertEquals(new Integer(3000), theMap.get(new Integer(255)));
 
-        Integer theOldValue2 = theMap.put(new Integer(255), new Integer(4000));
+        final Integer theOldValue2 = theMap.put(new Integer(255), new Integer(4000));
         assertEquals(new Integer(3000), theOldValue2);
         assertEquals(new Integer(4000), theMap.get(new Integer(255)));
+    }
+
+    @Test
+    public void testKeySetIterator() {
+        final Map<Integer, String> map = new HashMap<>();
+        map.put(1, "1");
+        map.put(2, "2");
+        map.put(3, "3");
+        for (final Map.Entry<Integer, String> entry : map.entrySet()) {
+            System.out.println(entry.getKey() + " -> " + entry.getValue());
+        }
     }
 }

@@ -37,7 +37,7 @@ public class StackifierTest {
 
     @Test
     public void testOnlyOneNode() throws HeadToHeadControlFlowException {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph g = new ControlFlowGraph(p);
         final RegionNode startNode = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         g.calculateReachabilityAndMarkBackEdges();
@@ -51,7 +51,7 @@ public class StackifierTest {
 
     @Test
     public void testSimpleSequence() throws HeadToHeadControlFlowException {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph g = new ControlFlowGraph(p);
         final RegionNode startNode = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         startNode.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(0), new BytecodeOpcodeAddress(10)));
@@ -73,7 +73,7 @@ public class StackifierTest {
 
     @Test
     public void testSimpleSequenceWithoutGotos() throws HeadToHeadControlFlowException {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph g = new ControlFlowGraph(p);
         final RegionNode startNode = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         final RegionNode node1 = g.createAt(new BytecodeOpcodeAddress(10), RegionNode.BlockType.NORMAL);
@@ -93,7 +93,7 @@ public class StackifierTest {
 
     @Test
     public void testIfThenElse() throws HeadToHeadControlFlowException {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph g = new ControlFlowGraph(p);
         final RegionNode startNode = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         startNode.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(0), new BytecodeOpcodeAddress(10)));
@@ -133,7 +133,7 @@ public class StackifierTest {
 
     @Test
     public void testSimpleLoop() throws HeadToHeadControlFlowException {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph g = new ControlFlowGraph(p);
         final RegionNode startNode = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         startNode.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(0), new BytecodeOpcodeAddress(10)));
@@ -157,7 +157,7 @@ public class StackifierTest {
 
     @Test
     public void testSimpleLoopWithSuccessor1() throws HeadToHeadControlFlowException {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph g = new ControlFlowGraph(p);
         final RegionNode startNode = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         startNode.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(0), new BytecodeOpcodeAddress(20)));
@@ -189,7 +189,7 @@ public class StackifierTest {
 
     @Test
     public void testSimpleLoopWithSuccessor2() throws HeadToHeadControlFlowException {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph g = new ControlFlowGraph(p);
         final RegionNode startNode = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         startNode.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(0), new BytecodeOpcodeAddress(0)));
@@ -221,7 +221,7 @@ public class StackifierTest {
 
     @Test
     public void testSimpleLoopDoubleExit() throws HeadToHeadControlFlowException {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph g = new ControlFlowGraph(p);
         final RegionNode startNode = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         startNode.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(0), new BytecodeOpcodeAddress(20)));
@@ -255,7 +255,7 @@ public class StackifierTest {
 
     @Test
     public void testSimpleLoopDoubleContinue() throws HeadToHeadControlFlowException {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph g = new ControlFlowGraph(p);
         final RegionNode startNode = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         startNode.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(0), new BytecodeOpcodeAddress(0)));
@@ -289,7 +289,7 @@ public class StackifierTest {
 
     @Test
     public void testMoreComplexExample() throws HeadToHeadControlFlowException {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph g = new ControlFlowGraph(p);
 
         final RegionNode startNode = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
@@ -416,7 +416,7 @@ public class StackifierTest {
 
     @Test
     public void testComplexExampleWithLoopAsLastElement() throws HeadToHeadControlFlowException {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph g = new ControlFlowGraph(p);
 
         final RegionNode startNode = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
@@ -490,7 +490,7 @@ public class StackifierTest {
 
     @Test
     public void testAnotherComplexExample() throws HeadToHeadControlFlowException {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph g = new ControlFlowGraph(p);
 
         final RegionNode node0 = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
@@ -533,7 +533,7 @@ public class StackifierTest {
 
     @Test
     public void testCondition() throws HeadToHeadControlFlowException {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph g = new ControlFlowGraph(p);
         final RegionNode startNode = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         startNode.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(0), new BytecodeOpcodeAddress(10)));
@@ -575,7 +575,7 @@ public class StackifierTest {
     @Test
     public void testCompleteInitLoopBoundaries() throws HeadToHeadControlFlowException {
 
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph g = new ControlFlowGraph(p);
         final RegionNode node0 = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         final RegionNode node1 = g.createAt(new BytecodeOpcodeAddress(13), RegionNode.BlockType.NORMAL);
@@ -646,7 +646,7 @@ public class StackifierTest {
     @Test
     public void testIfShoulNotExitLoop() throws HeadToHeadControlFlowException {
 
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph g = new ControlFlowGraph(p);
         final RegionNode node0 = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         node0.getExpressions().add(new GotoExpression(p, new BytecodeOpcodeAddress(0), new BytecodeOpcodeAddress(79)));
@@ -733,7 +733,7 @@ public class StackifierTest {
     @Test
     public void testInlinedGoto() throws HeadToHeadControlFlowException {
 
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph g = new ControlFlowGraph(p);
         final RegionNode node0 = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         final RegionNode node90 = g.createAt(new BytecodeOpcodeAddress(90), RegionNode.BlockType.NORMAL);
@@ -779,7 +779,7 @@ public class StackifierTest {
 
     @Test
     public void testOverlapping() throws HeadToHeadControlFlowException {
-        final Program p = new Program(DebugInformation.empty());
+        final Program p = new Program(DebugInformation.empty(), null);
         final ControlFlowGraph g = new ControlFlowGraph(p);
         final RegionNode node0 = g.createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
         final RegionNode node1 = g.createAt(new BytecodeOpcodeAddress(87), RegionNode.BlockType.NORMAL);
