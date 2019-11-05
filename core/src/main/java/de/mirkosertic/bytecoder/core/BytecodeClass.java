@@ -54,6 +54,10 @@ public class BytecodeClass {
         return new BytecodeAttributes(classAttributes);
     }
 
+    public BytecodeAttributeInfo[] getAttributesRaw() {
+        return classAttributes;
+    }
+
     public BytecodeConstantPool getConstantPool() {
         return constantPool;
     }
