@@ -18,18 +18,8 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 import de.mirkosertic.bytecoder.classlib.VM;
 
-@SubstitutesInClass(completeReplace = true)
-public class TDouble extends Number {
-
-    public static final Class<Double> TYPE = (Class<Double>) TClass.getPrimitiveClass("double");
-
-    public static final double NaN = 0.0d / 0.0;
-
-    private final double doubleValue;
-
-    public TDouble(final double aDoubleValue) {
-        doubleValue = aDoubleValue;
-    }
+@SubstitutesInClass(completeReplace = false)
+public class TDouble {
 
     @Override
     public boolean equals(final Object o) {
@@ -40,52 +30,18 @@ public class TDouble extends Number {
 
         final Double aDouble = (Double) o;
 
-        if (Double.compare(aDouble.doubleValue(), doubleValue) != 0)
+        if (compare(aDouble.doubleValue(), ((Double) (Object) this).doubleValue()) != 0) {
             return false;
+        }
 
         return true;
     }
 
-    @Override
-    public int hashCode() {
-        return (int) doubleValue;
-    }
-
-    @Override
-    public int intValue() {
-        return (int) doubleValue;
-    }
-
-    @Override
-    public byte byteValue() {
-        return (byte) doubleValue;
-    }
-
-    @Override
-    public short shortValue() {
-        return (short) doubleValue;
-    }
-
-    @Override
-    public float floatValue() {
-        return (float) doubleValue;
-    }
-
-    @Override
-    public long longValue() {
-        return (long) doubleValue;
-    }
-
-    @Override
-    public double doubleValue() {
-        return doubleValue;
-    }
-
     public static int compare(final double d1, final double d2) {
-        if(d1 < d2) {
+        if (d1 < d2) {
             return -1;
         }
-        if(d1 > d2) {
+        if (d1 > d2) {
             return 1;
         }
         return 0;
@@ -114,7 +70,7 @@ public class TDouble extends Number {
 
     @Override
     public String toString() {
-        return toString(doubleValue);
+        return toString(((Double) (Object) this).doubleValue());
     }
 
     public static Double valueOf(final String aValue) {
@@ -134,25 +90,4 @@ public class TDouble extends Number {
         theBuffer.append(aValue);
         return theBuffer.toString();
     }
-
-    public static long doubleToLongBits(final double aValue) {
-        return 0;
-    }
-
-    public static boolean isInfinite(final double aValue) {
-        return false;
-    }
-
-    public static boolean isFinite(final double aValue) {
-        return true;
-    }
-
-    public static double longBitsToDouble(final long aValue) {
-        return 0d;
-    }
-
-    public static long doubleToRawLongBits(final double value) {
-        return doubleToLongBits(value);
-    }
-
 }
