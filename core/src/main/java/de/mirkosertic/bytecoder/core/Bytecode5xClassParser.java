@@ -77,7 +77,8 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
                 theMethods,
                 theFields,
                 theSuperClass,
-                theInterfaces);
+                theInterfaces,
+                theClassAttributes);
 
         return new BytecodeClass(theConstantPool,
                 theAccessFlags,
@@ -86,7 +87,7 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
                 theInterfaces,
                 theResult.getFields(),
                 theResult.getMethods(),
-                theClassAttributes);
+                theResult.getClassAttributes());
     }
 
     private BytecodeConstantPool parseConstantPool(final DataInput aDis) throws IOException {
