@@ -16,7 +16,6 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -69,5 +68,19 @@ public class StringTest {
         data[3] = '\u0000';
         final String theString = new String(data, 0, 3);
         assertEquals("12", theString.trim());
+    }
+
+    @Test
+    public void testToLowerCaseToUppercaseReplaceAll() {
+        final String string = "A;b;c";
+        final String[] strings = string.split(";");
+        for (final String s : strings) {
+            System.out.println(s);
+        };
+        System.out.println(string.toUpperCase());
+        System.out.println(string.toLowerCase());
+
+        //String string2 = "Hello, Earth";
+        //System.out.println(string2.replaceAll("(Hello, )\\w+", "$1Mars"));
     }
 }
