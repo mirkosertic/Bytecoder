@@ -54,7 +54,8 @@ public class BytecodeShadowReplacer extends BytecodeReplacer {
     public MergeResult replace(
             final BytecodeClassinfoConstant aClass, final BytecodeMethod[] aMethods, final BytecodeField[] aFields,
             final BytecodeClassinfoConstant aSuperClass,
-            final BytecodeInterface[] aInterfaces) {
+            final BytecodeInterface[] aInterfaces,
+            final BytecodeAttributeInfo[] aClassAttributes) {
 
         final BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(aClass.getConstant());
         final StringBuilder theShadowName = new StringBuilder("de.mirkosertic.bytecoder.classlib.").append(theObjectType.name());
@@ -79,7 +80,8 @@ public class BytecodeShadowReplacer extends BytecodeReplacer {
                         aMethods,
                         aFields,
                         aSuperClass,
-                        aInterfaces
+                        aInterfaces,
+                        aClassAttributes
                 );
             }
 
@@ -104,7 +106,8 @@ public class BytecodeShadowReplacer extends BytecodeReplacer {
                         theMethods.toArray(new BytecodeMethod[0]),
                         theShadowType.fields(),
                         theSuperClass,
-                        theShadowType.getInterfaces()
+                        theShadowType.getInterfaces(),
+                        theShadowType.getAttributesRaw()
                 );
             }
 
@@ -122,7 +125,8 @@ public class BytecodeShadowReplacer extends BytecodeReplacer {
                     theMethods.toArray(new BytecodeMethod[0]),
                     theFields.toArray(new BytecodeField[0]),
                     theSuperClass,
-                    aInterfaces
+                    aInterfaces,
+                    aClassAttributes
             );
         } catch (final Exception  e) {
             // No shadow type found
@@ -130,7 +134,8 @@ public class BytecodeShadowReplacer extends BytecodeReplacer {
                     aMethods,
                     aFields,
                     aSuperClass,
-                    aInterfaces
+                    aInterfaces,
+                    aClassAttributes
             );
         }
     }
