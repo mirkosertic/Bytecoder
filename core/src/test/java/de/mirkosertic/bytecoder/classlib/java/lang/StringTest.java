@@ -81,7 +81,7 @@ public class StringTest {
         Assert.assertEquals("c", strings[2]);
         Assert.assertEquals("A;B;C", string.toUpperCase());
         Assert.assertEquals("a;b;c", string.toLowerCase());
-        //final String string2 = "Hello, Earth";
-        //System.out.println(string2.replaceAll("(Hello, )\\w+", "$1Mars"));
+        final String string2 = "Hello, Earth";
+        Assert.assertEquals("Hello, Mars", string2.replaceAll("Earth", "Mars"));
     }
 }
