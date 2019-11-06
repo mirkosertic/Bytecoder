@@ -1648,6 +1648,21 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             },");
             theWriter.println("         },");
 
+            theWriter.println("         double : {");
+            theWriter.println("             doubleToRawLongBitsDOUBLE : function(thisref, value) {");
+            theWriter.println("                 var fl = new Float64Array(1);");
+            theWriter.println("                 fl[0] = value;");
+            theWriter.println("                 var br = new BigInt64Array(fl.buffer);");
+            theWriter.println("                 return br[0];");
+            theWriter.println("             },");
+            theWriter.println("             longBitsToDoubleINT : function(thisref, value) {");
+            theWriter.println("                 var fl = new BigInt64Array(1);");
+            theWriter.println("                 fl[0] = value;");
+            theWriter.println("                 var br = new Float64Array(fl.buffer);");
+            theWriter.println("                 return br[0];");
+            theWriter.println("             },");
+            theWriter.println("         },");
+
             theWriter.println("         math: {");
             theWriter.println("             floorDOUBLE: function (thisref, p1) {return Math.floor(p1);},");
             theWriter.println("             ceilDOUBLE: function (thisref, p1) {return Math.ceil(p1);},");
