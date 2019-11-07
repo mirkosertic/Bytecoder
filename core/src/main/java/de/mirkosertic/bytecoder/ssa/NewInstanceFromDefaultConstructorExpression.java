@@ -26,6 +26,6 @@ public class NewInstanceFromDefaultConstructorExpression extends Expression {
 
     @Override
     public TypeRef resolveType() {
-        return TypeRef.Native.BOOLEAN;
+        return TypeRef.Native.REFERENCE;
     }
 }

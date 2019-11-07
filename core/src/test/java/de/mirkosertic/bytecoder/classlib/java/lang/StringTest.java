@@ -70,4 +70,18 @@ public class StringTest {
         final String theString = new String(data, 0, 3);
         assertEquals("12", theString.trim());
     }
+
+    @Test
+    public void testToLowerCaseToUppercase() {
+        final String string = "A;b;c";
+        final String[] strings = string.split(";");
+        Assert.assertEquals(3, strings.length, 0);
+        Assert.assertEquals("A", strings[0]);
+        Assert.assertEquals("b", strings[1]);
+        Assert.assertEquals("c", strings[2]);
+        Assert.assertEquals("A;B;C", string.toUpperCase());
+        Assert.assertEquals("a;b;c", string.toLowerCase());
+        final String string2 = "Hello, Earth";
+        Assert.assertEquals("Hello, Mars", string2.replaceAll("Earth", "Mars"));
+    }
 }
