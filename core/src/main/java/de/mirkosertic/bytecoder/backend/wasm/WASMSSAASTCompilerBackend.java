@@ -1702,6 +1702,19 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             },");
             theWriter.println("         },");
 
+            theWriter.println("         inflater : {");
+            theWriter.println("             initIDs : function(thisref) {");
+            theWriter.println("             },");
+            theWriter.println("             initBOOLEAN : function(thisref,nowrap) {");
+            theWriter.println("             },");
+            theWriter.println("             inflateBytesBytesLONGL1BYTEINTINTL1BYTEINTINT : function(thisref,addr,inputArray,inputOff,inputLen,outputArray,outputOff,outputLen) {");
+            theWriter.println("             },");
+            theWriter.println("             inflateBufferBytesLONGLONGINTL1BYTEINTINT : function(thisref,addr,inputAddress,inputLen,outputArray,outputOff,outputLen) {");
+            theWriter.println("             },");
+            theWriter.println("             endLONG : function(thisref,addr) {");
+            theWriter.println("             },");
+            theWriter.println("         },");
+
             final Map<String, List<OpaqueReferenceMethod>> theMethods = opaqueReferenceMethods.stream().collect(Collectors.groupingBy(opaqueReferenceMethod -> opaqueReferenceMethod.linkedClass.linkfor(opaqueReferenceMethod.getMethod()).getModuleName()));
             for (final Map.Entry<String, List<OpaqueReferenceMethod>> theEntry : theMethods.entrySet()) {
 
