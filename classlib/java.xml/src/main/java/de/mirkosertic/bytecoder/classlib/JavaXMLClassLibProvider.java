@@ -23,4 +23,9 @@ public class JavaXMLClassLibProvider extends ClassLibProvider {
     public String getResourceBase() {
         return "META-INF/modules/java.xml/classes";
     }
+
+    @Override
+    public String[] additionalResources() {
+        return new String[0];
+    }
 }

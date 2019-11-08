@@ -437,11 +437,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         final String theStringEqualsClass = WASMWriterUtils.toMethodName(BytecodeObjectTypeRef.fromRuntimeClass(String.class), "equals", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BOOLEAN, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Object.class)}));
 
                         // We search for all non abstract non interface classes
-                        aLinkerContext.linkedClasses().map(k -> k.targetNode()).forEach(search -> {
+                        aLinkerContext.linkedClasses().map(Edge::targetNode).forEach(search -> {
                             if (!search.getBytecodeClass().getAccessFlags().isAbstract() && !search.getBytecodeClass().getAccessFlags().isInterface()) {
                                 // Only if the class has a zero arg constructor
                                 final BytecodeResolvedMethods theResolved = search.resolvedMethods();
-                                theResolved.stream().filter(j -> j.getProvidingClass() == search).map(j -> j.getValue()).filter(j -> j.isConstructor() && j.getSignature().getArguments().length == 0).forEach(m -> {
+                                theResolved.stream().filter(j -> j.getProvidingClass() == search).map(BytecodeResolvedMethods.MethodEntry::getValue).filter(j -> j.isConstructor() && j.getSignature().getArguments().length == 0).forEach(m -> {
                                     final Global theGlobal = theResolver.globalForStringFromPool(new StringValue(search.getClassName().name()));
                                     final Global theSearchRuntimeClass = theResolver.runtimeClassFor(search.getClassName());
                                     final WASMExpression stringEqualCall = call(weakFunctionReference(theStringEqualsClass, null), Arrays.asList(getLocal(forNameMethod.localByLabel("name"), null), getGlobal(theGlobal, null)), null);
@@ -865,12 +865,12 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             final ExportableFunction theInstanceOfHelper = module.getFunctions().newFunction(WASMSSAASTWriter.NEWINSTANCEHELPER,
                     Collections.singletonList(param("runtimeClass", PrimitiveType.i32)), PrimitiveType.i32);
 
-            aLinkerContext.linkedClasses().map(k -> k.targetNode()).forEach(search -> {
+            aLinkerContext.linkedClasses().map(Edge::targetNode).forEach(search -> {
                 if (!search.getBytecodeClass().getAccessFlags().isAbstract() && !search.getBytecodeClass().getAccessFlags()
                         .isInterface() && !search.emulatedByRuntime()) {
                     // Only if the class has a zero arg constructor
                     final BytecodeResolvedMethods theResolved = search.resolvedMethods();
-                    theResolved.stream().filter(j -> j.getProvidingClass() == search).map(j -> j.getValue())
+                    theResolved.stream().filter(j -> j.getProvidingClass() == search).map(BytecodeResolvedMethods.MethodEntry::getValue)
                             .filter(j -> j.isConstructor() && j.getSignature().getArguments().length == 0).forEach(m -> {
                         final Global theGlobal = theResolver.runtimeClassFor(search.getClassName());
                         final String theNewInstanceMethodName = WASMWriterUtils.toMethodName(search.getClassName(), "$newInstance", m.getSignature());
@@ -1443,8 +1443,14 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("                        return this.data[this.currentpos++];");
             theWriter.println("                    },");
             theWriter.println("                    readBytesLONGL1BYTEINTINT: function(handle,target,offset,length) {");
+            theWriter.println("                        if (length === 0) {");
+            theWriter.println("                            return 0;");
+            theWriter.println("                        }");
             theWriter.println("                        var remaining = this.size - this.currentpos;");
             theWriter.println("                        var possible = Math.min(remaining, length);");
+            theWriter.println("                        if (possible === 0) {");
+            theWriter.println("                            return -1;");
+            theWriter.println("                        }");
             theWriter.println("                        for (var j=0;j<possible;j++) {");
             theWriter.println("                            bytecoder.runningInstanceMemory[target + 20 + offset * 4]=this.data[this.currentpos++];");
             theWriter.println("                            offset++;");

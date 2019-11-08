@@ -117,7 +117,7 @@ class OpenCLContext implements Context {
         cachedKernels = new HashMap<>();
         backend = new OpenCLCompileBackend();
         compileOptions = new CompileOptions(logger, false, KnownOptimizer.ALL, true, "opencl", 512, 512, false, aOptions.isPreferStackifier(), Allocator.linear,
-                new String[0]);
+                new String[0], new String[0]);
 
         final cl_context_properties contextProperties = new cl_context_properties();
         contextProperties.addProperty(CL_CONTEXT_PLATFORM, aPlatform.selectedPlatform.id);
@@ -154,13 +154,13 @@ class OpenCLContext implements Context {
             final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
             theResult = backend.generateCodeFor(compileOptions, theLinkerContext, aKernel.getClass(), theMethod.getName(), theSignature);
 
-            content = theResult.getContent()[0];
+            content = (OpenCLCompileResult.OpenCLContent) theResult.getContent()[0];
 
             logger.debug("Generated Kernel code : {}", content.asString());
 
             ALREADY_COMPILED.put(theKernelClass, theResult);
         } else {
-            content = theResult.getContent()[0];
+            content = (OpenCLCompileResult.OpenCLContent) theResult.getContent()[0];
         }
 
         // Construct the program

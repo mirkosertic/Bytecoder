@@ -24,9 +24,9 @@ import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 
-public class WASMCompileResult implements CompileResult<String> {
+public class WASMCompileResult extends CompileResult<String> {
 
-    public abstract static class WASMCompileContent implements Content {
+    public abstract static class WASMCompileContent implements CompileResult.Content {
 
         private final WASMMemoryLayouter memoryLayouter;
         private final BytecodeLinkerContext linkerContext;
@@ -154,22 +154,18 @@ public class WASMCompileResult implements CompileResult<String> {
         }
     }
 
-    private final WASMCompileContent[] content;
     private final WASMMinifier minifier;
 
     public WASMCompileResult(
             final WASMMinifier minifier,
             final WASMCompileContent... content) {
         this.minifier = minifier;
-        this.content = content;
+        for (final WASMCompileContent c : content) {
+            add(c);
+        }
     }
 
     public WASMMinifier getMinifier() {
         return minifier;
-    }
-
-    @Override
-    public WASMCompileContent[] getContent() {
-        return content;
     }
 }

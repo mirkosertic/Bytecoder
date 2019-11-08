@@ -20,7 +20,7 @@ import de.mirkosertic.bytecoder.backend.CompileResult;
 import java.io.OutputStream;
 import java.io.PrintStream;
 
-public class JSCompileResult implements CompileResult<String> {
+public class JSCompileResult extends CompileResult<String> {
 
     public static class JSContent implements Content {
 
@@ -45,17 +45,13 @@ public class JSCompileResult implements CompileResult<String> {
         }
     }
 
-    private final JSContent[] content;
     private final JSMinifier minifier;
 
     public JSCompileResult(final JSMinifier aMinifier, final JSContent... content) {
         this.minifier = aMinifier;
-        this.content = content;
-    }
-
-    @Override
-    public JSContent[] getContent() {
-        return content;
+        for (final JSContent c : content) {
+            add(c);
+        }
     }
 
     public JSMinifier getMinifier() {

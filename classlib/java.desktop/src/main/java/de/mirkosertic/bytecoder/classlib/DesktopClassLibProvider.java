@@ -23,4 +23,9 @@ public class DesktopClassLibProvider extends ClassLibProvider {
     public String getResourceBase() {
         return "META-INF/modules/java.desktop/classes";
     }
+
+    @Override
+    public String[] additionalResources() {
+        return new String[0];
+    }
 }
