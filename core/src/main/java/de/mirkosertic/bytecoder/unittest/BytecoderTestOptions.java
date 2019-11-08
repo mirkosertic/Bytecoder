@@ -31,4 +31,6 @@ public @interface BytecoderTestOptions {
     boolean includeTestPermutations() default true;
 
     String[] additionalClassesToLink() default {};
+
+    String[] additionalResources() default {};
 }

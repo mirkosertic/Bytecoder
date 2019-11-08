@@ -16,11 +16,16 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.VM;
 
 @SubstitutesInClass(completeReplace = true)
 public class TModule {
 
     public boolean isExported(final String aName) {
         return false;
+    }
+
+    public ClassLoader getClassLoader() {
+        return VM.SYSTEM_LOADER;
     }
 }

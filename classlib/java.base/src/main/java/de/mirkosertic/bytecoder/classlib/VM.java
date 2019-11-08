@@ -15,13 +15,14 @@
  */
 package de.mirkosertic.bytecoder.classlib;
 
+import de.mirkosertic.bytecoder.api.Export;
+
 import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.text.DecimalFormatSymbols;
 import java.util.Comparator;
-
-import de.mirkosertic.bytecoder.api.Export;
+import java.util.Locale;
 
 public class VM {
 
@@ -152,5 +153,9 @@ public class VM {
     @Export("setByteArrayEntry")
     public static void setByteArrayEntry(final byte[] aArray, final int aIndex, final byte aValue) {
         aArray[aIndex] = aValue;
+    }
+
+    public static Locale defaultLocale() {
+        return new Locale("en");
     }
 }

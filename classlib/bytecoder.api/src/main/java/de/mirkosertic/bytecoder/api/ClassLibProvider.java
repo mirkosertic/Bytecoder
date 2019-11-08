@@ -25,9 +25,11 @@ public abstract class ClassLibProvider {
 
     public abstract String getResourceBase();
 
+    public abstract String[] additionalResources();
+
     public static List<ClassLibProvider> availableProviders() {
         final List<ClassLibProvider> result = new ArrayList<>();
-        for (ClassLibProvider classLibProvider : LOADER) {
+        for (final ClassLibProvider classLibProvider : LOADER) {
             result.add(classLibProvider);
         }
         return result;

@@ -17,7 +17,6 @@ package de.mirkosertic.bytecoder.classlib.java.io;
 
 import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-import de.mirkosertic.bytecoder.unittest.TestResource;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,7 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 @RunWith(BytecoderUnitTestRunner.class)
-@BytecoderTestOptions(includeJVM = false)
+@BytecoderTestOptions(includeJVM = false, additionalResources = {"testfile.txt"})
 public class FileTest {
 
     @Test
@@ -39,13 +38,11 @@ public class FileTest {
     }
 
     @Test
-    @TestResource("/testfile.txt")
     public void testOpen() throws FileNotFoundException {
         final InputStream fos = new FileInputStream(new File("testfile.txt"));
     }
 
     @Test
-    @TestResource("/testfile.txt")
     public void testRead() throws IOException {
         final StringBuilder theBuilder = new StringBuilder();
         final InputStream fos = new FileInputStream(new File("testfile.txt"));

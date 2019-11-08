@@ -15,16 +15,21 @@
  */
 package de.mirkosertic.bytecoder.backend;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.WriterOutputStream;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
+import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 
-public interface CompileResult<T> {
+public abstract class CompileResult<T> {
 
-    interface Content {
+    public interface Content {
         String getFileName();
 
         void writeTo(OutputStream stream) throws IOException;
@@ -38,6 +43,46 @@ public interface CompileResult<T> {
         }
     }
 
-    Content[] getContent();
+    public static class URLContent implements Content {
+
+        private final String fileName;
+        private final URL url;
+
+        public URLContent(final String fileName, final URL url) {
+            this.fileName = fileName;
+            this.url = url;
+        }
+
+        @Override
+        public String getFileName() {
+            return fileName;
+        }
+
+        @Override
+        public void writeTo(OutputStream stream) throws IOException {
+            try (InputStream is = url.openStream()) {
+                IOUtils.copy(is, stream);
+            }
+        }
+
+        @Override
+        public String asString() {
+            throw new IllegalStateException("Not implemented!");
+        }
+    }
+
+    private final List<Content> content;
+
+    public CompileResult() {
+        this.content = new ArrayList<>();
+    }
+
+    public void add(final Content aContent) {
+        content.add(aContent);
+    }
+
+    public Content[] getContent() {
+        return content.toArray(new Content[0]);
+    }
 }
 
