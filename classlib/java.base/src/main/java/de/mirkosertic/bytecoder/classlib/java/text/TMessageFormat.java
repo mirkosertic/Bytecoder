@@ -13,25 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.sun.util.resources;
+package de.mirkosertic.bytecoder.classlib.java.text;
 
-import de.mirkosertic.bytecoder.api.AnyTypeMatches;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-import java.util.Locale;
-import java.util.ResourceBundle;
-
 @SubstitutesInClass(completeReplace = true)
-public class TLocaleData {
+public class TMessageFormat {
 
-    public ResourceBundle getNumberFormatData(final Locale aLocale) {
-        return null;
+    private final String pattern;
+
+    public TMessageFormat(final String pattern) {
+        this.pattern = pattern;
     }
 
-    public ResourceBundle getDateFormatData(final Locale aLocale) {
-        return null;
+    public TMessageFormat(final String pattern, final Object... values) {
+        this.pattern = pattern;
     }
 
-    public void setSupplementary(final AnyTypeMatches a) {
+    public static String format(final String pattern, final Object... values) {
+        return pattern;
+    }
+
+    public String format(final Object... values) {
+        return pattern;
     }
 }

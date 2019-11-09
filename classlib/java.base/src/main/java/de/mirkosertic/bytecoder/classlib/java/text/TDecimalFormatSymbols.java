@@ -16,24 +16,25 @@
 package de.mirkosertic.bytecoder.classlib.java.text;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-import de.mirkosertic.bytecoder.classlib.VM;
-import sun.util.locale.provider.LocaleProviderAdapter;
 
-import java.text.DecimalFormatSymbols;
-import java.text.spi.DecimalFormatSymbolsProvider;
 import java.util.Locale;
 
-@SubstitutesInClass(completeReplace = false)
+@SubstitutesInClass(completeReplace = true)
 public class TDecimalFormatSymbols {
 
-    public static DecimalFormatSymbols getInstance() {
-        return getInstance(VM.defaultLocale());
+    private static final TDecimalFormatSymbols INSTANCE = new TDecimalFormatSymbols();
+
+    public static TDecimalFormatSymbols getInstance() {
+        return INSTANCE;
     }
 
-    public static DecimalFormatSymbols getInstance(final Locale aLocale) {
-        final LocaleProviderAdapter adapter  = LocaleProviderAdapter.getAdapter(DecimalFormatSymbolsProvider.class, VM.defaultLocale());
-        final DecimalFormatSymbolsProvider prov = adapter.getDecimalFormatSymbolsProvider();
-        return prov.getInstance(aLocale);
+    public TDecimalFormatSymbols() {
     }
 
+    public TDecimalFormatSymbols(final Locale locale) {
+    }
+
+    public char getDecimalSeparator() {
+        return '.';
+    }
 }
