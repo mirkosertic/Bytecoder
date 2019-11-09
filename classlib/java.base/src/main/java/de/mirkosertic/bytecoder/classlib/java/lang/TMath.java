@@ -88,10 +88,6 @@ public class TMath {
 
     public static native double min(double aValue1, double aValue2);
 
-    public static int getExponent(final double f) {
-        return 0;
-    }
-
     public static int getExponent(float f) {
         f = abs(f);
         int exp = 0;
@@ -281,41 +277,5 @@ public class TMath {
         return Float.intBitsToFloat(((n + 127) <<
                 (42-1))
                 & 2139095040);
-    }
-
-    public static double scalb(final double a, final int b) {
-        return a;
-    }
-
-    public static int signum(final long value) {
-        return Long.signum(value);
-    }
-
-    public static long multiplyExact(final long a, final int b) {
-        return a * b;
-    }
-
-    public static long multiplyExact(final long a, final long b) {
-        return a * b;
-    }
-
-    public static long subtractExact(final long a, final int b) {
-        return a - b;
-    }
-
-    public static long subtractExact(final long a, final long b) {
-        return a - b;
-    }
-
-    public static double nextUp(final double aValue) {
-        return aValue;
-    }
-
-    public static int toIntExact(final long aValue) {
-        return (int) aValue;
-    }
-
-    public static double copySign(final double a, final double b) {
-        return a;
     }
 }

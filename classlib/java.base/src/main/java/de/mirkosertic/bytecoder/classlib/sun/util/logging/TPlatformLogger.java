@@ -85,9 +85,6 @@ public class TPlatformLogger {
     public void info(final String message, final Object... params) {
     }
 
-    public void info(final String message, final Throwable cause) {
-    }
-
     public void severe(final String message) {
     }
 
