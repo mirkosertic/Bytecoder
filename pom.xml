@@ -275,7 +275,7 @@
                         <configuration>
                             <target>11</target>
                             <compilerArgs>
-                                <arg>--add-exports=java.base/sun.util=ALL-UNNAMED</arg>
+                                <arg>--add-exports=java.base/sun.util.locale.provider=ALL-UNNAMED</arg>
                                 <arg>--add-exports=java.desktop/sun.java2d=ALL-UNNAMED</arg>
                                 <arg>--add-exports=java.desktop/sun.awt=ALL-UNNAMED</arg>
                             </compilerArgs>
@@ -300,7 +300,7 @@
                         <configuration>
                             <target>12</target>
                             <compilerArgs>
-                                <arg>--add-exports=java.base/sun.util=ALL-UNNAMED</arg>
+                                <arg>--add-exports=java.base/sun.util.locale.provider=ALL-UNNAMED</arg>
                                 <arg>--add-exports=java.desktop/sun.java2d=ALL-UNNAMED</arg>
                                 <arg>--add-exports=java.desktop/sun.awt=ALL-UNNAMED</arg>
                             </compilerArgs>
@@ -325,10 +325,9 @@
                         <configuration>
                             <target>13</target>
                             <compilerArgs>
-                                <arg>--add-exports=java.base/sun.util=ALL-UNNAMED</arg>
+                                <arg>--add-exports=java.base/sun.util.locale.provider=ALL-UNNAMED</arg>
                                 <arg>--add-exports=java.desktop/sun.java2d=ALL-UNNAMED</arg>
                                 <arg>--add-exports=java.desktop/sun.awt=ALL-UNNAMED</arg>
-
                             </compilerArgs>
                         </configuration>
                     </plugin>
