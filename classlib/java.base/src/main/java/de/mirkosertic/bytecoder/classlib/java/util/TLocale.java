@@ -16,9 +16,57 @@
 package de.mirkosertic.bytecoder.classlib.java.util;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.VM;
+
+import java.util.Locale;
 
 @SubstitutesInClass(completeReplace = true)
 public class TLocale {
+
+    public static final Locale ROOT = new Locale("", "");
+
+    public static final Locale ENGLISH = new Locale("en");
+
+    public static final Locale US = new Locale("en", "US");
+
+    public static Locale getDefault(final Locale.Category category) {
+        return VM.defaultLocale();
+    }
+
+    public static Locale forLanguageTag(final String aTag) {
+        return null;
+    }
+
+    @SubstitutesInClass(completeReplace = true)
+    public static class Builder {
+
+        private String language;
+        private String country;
+        private String variant;
+
+        public Locale.Builder setLocale(final Locale aLocale) {
+            language = aLocale.getLanguage();
+            country = aLocale.getCountry();
+            variant = aLocale.getVariant();
+            return (Locale.Builder)(Object) this;
+        }
+
+        public Locale.Builder setRegion(final String value) {
+            variant = value;
+            return (Locale.Builder)(Object) this;
+        }
+
+        public Locale build() {
+            return new Locale(language, country, variant);
+        }
+
+        public Locale.Builder clear() {
+            language = "";
+            country = "";
+            variant = "";
+            return (Locale.Builder)(Object) this;
+        }
+    }
 
     private final String language;
     private String country;
@@ -49,5 +97,21 @@ public class TLocale {
 
     public String getVariant() {
         return variant;
+    }
+
+    public String getUnicodeLocaleType(final String key) {
+        return null;
+    }
+
+    public Locale stripExtensions() {
+        return (Locale) (Object) this;
+    }
+
+    public boolean hasExtensions() {
+        return false;
+    }
+
+    public String toLanguageTag() {
+        return null;
     }
 }

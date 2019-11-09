@@ -96,6 +96,12 @@ public class TLong extends Number {
         return theBuffer.toString();
     }
 
+    public static String toOctalString(final long aValue) {
+        final StringBuilder theBuffer = new StringBuilder();
+        theBuffer.append(aValue);
+        return theBuffer.toString();
+    }
+
     public static String toString(final long aValue, final int aBase) {
         final StringBuilder theBuffer = new StringBuilder();
         theBuffer.append(aValue);
@@ -195,5 +201,9 @@ public class TLong extends Number {
             buf[--charPos] = (byte)'-';
         }
         return charPos;
+    }
+
+    public static int signum(final long aValue) {
+        return 0;
     }
 }

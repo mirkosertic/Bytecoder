@@ -13,39 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.util;
+package de.mirkosertic.bytecoder.classlib.sun.util.locale.provider;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-import java.io.PrintStream;
-import java.util.Formatter;
 import java.util.Locale;
+import java.util.Optional;
 
 @SubstitutesInClass(completeReplace = true)
-public class TFormatter {
+public class TTimeZoneNameUtility {
 
-    public TFormatter() {
+    public static Optional<String> convertLDMLShortID(final String shortID) {
+        return Optional.empty();
     }
 
-    public TFormatter(final Locale aLocale) {
+    public static String retrieveDisplayName(final String id, final boolean daylight, final int style, final Locale locale) {
+        return null;
     }
 
-
-    public TFormatter(final PrintStream aOut) {
-    }
-
-    public TFormatter(final Appendable aOut) {
-    }
-
-    public Formatter format(final String aPattern, final Object[] aValues) {
-        return (Formatter) (Object) this;
-    }
-
-    public Formatter format(final Locale aLocale, final String aPattern, final Object[] aValues) {
-        return (Formatter) (Object) this;
-    }
-
-    public Locale locale() {
-        return Locale.getDefault();
+    public static String[][] getZoneStrings(final Locale locale) {
+        return null;
     }
 }

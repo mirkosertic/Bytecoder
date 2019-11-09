@@ -135,6 +135,12 @@ public class TDouble extends Number {
         return theBuffer.toString();
     }
 
+    public static String toHexString(final double aValue) {
+        final StringBuilder theBuffer = new StringBuilder();
+        theBuffer.append(aValue);
+        return theBuffer.toString();
+    }
+
     public static long doubleToLongBits(final double aValue) {
         return 0;
     }
