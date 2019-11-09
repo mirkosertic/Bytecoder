@@ -42,6 +42,20 @@ public class TUnsafe {
 
     public static final int ARRAY_DOUBLE_INDEX_SCALE = 0;
 
+    public static final int ARRAY_SHORT_BASE_OFFSET = 0;
+
+    public static final int ARRAY_INT_BASE_OFFSET = 0;
+
+    public static final int ARRAY_BYTE_BASE_OFFSET = 0;
+
+    public static final int ARRAY_LONG_BASE_OFFSET = 0;
+
+    public static final int ARRAY_CHAR_BASE_OFFSET = 0;
+
+    public static final int ARRAY_DOUBLE_BASE_OFFSET = 0;
+
+    public static final int ARRAY_BOOLEAN_BASE_OFFSET = 0;
+
     public int arrayBaseOffset(final Class clazz) {
         return 0;
     }
