@@ -1293,7 +1293,7 @@ public class JSSSAWriter {
 
             startLine().text("switch(");
             print(theValue);
-            writer.space().text("-").space().text("" + theE.getLowValue()).text(") {").newLine();
+            writer.space().text("-").space().text(" " + theE.getLowValue()).text(") {").newLine();
 
             for (final Map.Entry<Long, ExpressionList> theEntry : theE.getOffsets().entrySet()) {
 
