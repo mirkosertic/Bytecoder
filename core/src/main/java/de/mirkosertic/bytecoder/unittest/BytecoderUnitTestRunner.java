@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.unittest;
 import com.sun.net.httpserver.HttpServer;
 import de.mirkosertic.bytecoder.allocator.Allocator;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.backend.CompileTarget;
 import de.mirkosertic.bytecoder.backend.js.JSCompileResult;
 import de.mirkosertic.bytecoder.backend.wasm.WASMCompileResult;
@@ -27,7 +28,6 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.Description;
@@ -69,6 +69,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
     private static final Slf4JLogger LOGGER = new Slf4JLogger();
     private final List<TestOption> testOptions;
     private final String[] additionalClassesToLink;
+    private final String[] additionalResources;
 
     private static ChromeDriverService DRIVERSERVICE;
     private static HttpServer TESTSERVER;
@@ -95,6 +96,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 }
             }
             additionalClassesToLink = declaredOptions.additionalClassesToLink();
+            additionalResources = declaredOptions.additionalResources();
         } else {
             testOptions.add(new TestOption(null, false, false, false));
             testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, false));
@@ -103,6 +105,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
             testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, true));
             testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, true));
             additionalClassesToLink = new String[0];
+            additionalResources = new String[0];
         }
     }
 
@@ -244,20 +247,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
         return new RemoteWebDriver(DRIVERSERVICE.getUrl(), theOptions);
     }
 
-    private void copyTestResources(final FrameworkMethod m, final File targetDirectory) throws IOException {
-        final TestResource[] t = m.getMethod().getAnnotationsByType(TestResource.class);
-        if (t != null) {
-            for (final TestResource r : t) {
-                final String name = r.value();
-                final int p = name.lastIndexOf('/');
-                final File theTargetFile = new File(targetDirectory, name.substring(p + 1));
-                try (final FileOutputStream fos = new FileOutputStream(theTargetFile)) {
-                    IOUtils.copy(m.getDeclaringClass().getResourceAsStream(name), fos);
-                }
-            }
-        }
-    }
-
     private void testJSBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier, final TestOption aTestOption) {
         if ("".equals(System.getProperty("BYTECODER_DISABLE_JSTESTS", ""))) {
             final TestClass testClass = getTestClass();
@@ -277,9 +266,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 final StringWriter theStrWriter = new StringWriter();
                 final PrintWriter theCodeWriter = new PrintWriter(theStrWriter);
 
-                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, aTestOption.isExceptionsEnabled(), "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear, additionalClassesToLink);
+                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, aTestOption.isExceptionsEnabled(), "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear, additionalClassesToLink, additionalResources);
                 final JSCompileResult result = (JSCompileResult) theCompileTarget.compile(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
-                final JSCompileResult.JSContent content = result.getContent()[0];
+                final JSCompileResult.JSContent content = (JSCompileResult.JSContent) result.getContent()[0];
 
                 theCodeWriter.println(content.asString());
 
@@ -313,7 +302,14 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 final File theGeneratedFilesDir = new File(theMavenTargetDir, "bytecoderjs");
                 theGeneratedFilesDir.mkdirs();
 
-                copyTestResources(aFrameworkMethod, theGeneratedFilesDir);
+                // Copy additional resources
+                for (final CompileResult.Content c : result.getContent()) {
+                    if (c instanceof CompileResult.URLContent) {
+                        try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, c.getFileName()))) {
+                            c.writeTo(fos);
+                        }
+                    }
+                }
 
                 final File theGeneratedFile = new File(theGeneratedFilesDir, theFilename);
                 final PrintWriter theWriter = new PrintWriter(theGeneratedFile);
@@ -376,12 +372,12 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 final BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
                 final BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 
-                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, false, "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear, additionalClassesToLink);
+                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, false, "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear, additionalClassesToLink, additionalResources);
                 final WASMCompileResult theResult = (WASMCompileResult) theCompileTarget.compile(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
-                final WASMCompileResult.WASMCompileContent textualContent = theResult.getContent()[0];
-                final WASMCompileResult.WASMCompileContent binaryContent = theResult.getContent()[1];
-                final WASMCompileResult.WASMCompileContent jsContent = theResult.getContent()[2];
-                final WASMCompileResult.WASMCompileContent sourceMapContent = theResult.getContent()[3];
+                final WASMCompileResult.WASMCompileContent textualContent = (WASMCompileResult.WASMCompileContent) theResult.getContent()[0];
+                final WASMCompileResult.WASMCompileContent binaryContent = (WASMCompileResult.WASMCompileContent)theResult.getContent()[1];
+                final WASMCompileResult.WASMCompileContent jsContent = (WASMCompileResult.WASMCompileContent)theResult.getContent()[2];
+                final WASMCompileResult.WASMCompileContent sourceMapContent = (WASMCompileResult.WASMCompileContent)theResult.getContent()[3];
 
                 final String theFileName = theResult.getMinifier().toClassName(theTypeRef) + "." + theResult.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "_" + aTestOption.toFilePrefix()+  ".html";
 
@@ -393,8 +389,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 final File theMavenTargetDir = new File(theWorkingDirectory, "target");
                 final File theGeneratedFilesDir = new File(theMavenTargetDir, "bytecoderwat");
                 theGeneratedFilesDir.mkdirs();
-
-                copyTestResources(aFrameworkMethod, theGeneratedFilesDir);
 
                 final File theGeneratedFile = new File(theGeneratedFilesDir, theFileName);
 
@@ -545,6 +539,15 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
 
                 try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theResult.getMinifier().toClassName(theTypeRef) + "." + theResult.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "_" + aTestOption.toFilePrefix() + ".wasm.map"))) {
                     sourceMapContent.writeTo(fos);
+                }
+
+                // Copy additional resources
+                for (final CompileResult.Content c : theResult.getContent()) {
+                    if (c instanceof CompileResult.URLContent) {
+                        try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, c.getFileName()))) {
+                            c.writeTo(fos);
+                        }
+                    }
                 }
 
                 initializeWebRoot(theGeneratedFile.getParentFile());

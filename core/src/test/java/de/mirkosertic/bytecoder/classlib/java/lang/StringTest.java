@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -83,5 +84,11 @@ public class StringTest {
         Assert.assertEquals("a;b;c", string.toLowerCase());
         final String string2 = "Hello, Earth";
         Assert.assertEquals("Hello, Mars", string2.replaceAll("Earth", "Mars"));
+    }
+
+    @Ignore
+    @Test
+    public void testFormat() {
+        final String result = String.format("%s %d", "Hallo", 42);
     }
 }

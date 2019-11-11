@@ -15,13 +15,7 @@
  */
 package de.mirkosertic.bytecoder.backend;
 
-import java.io.FileDescriptor;
-import java.lang.reflect.Method;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
+import de.mirkosertic.bytecoder.api.ClassLibProvider;
 import de.mirkosertic.bytecoder.backend.js.JSSSACompilerBackend;
 import de.mirkosertic.bytecoder.backend.wasm.WASMSSAASTCompilerBackend;
 import de.mirkosertic.bytecoder.classlib.VM;
@@ -38,6 +32,16 @@ import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
+
+import java.io.FileDescriptor;
+import java.lang.reflect.Method;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class CompileTarget {
 
@@ -60,10 +64,12 @@ public class CompileTarget {
 
     private final CompileBackend backend;
     private final BytecodeLoader bytecodeLoader;
+    private final ClassLoader classLoader;
 
     public CompileTarget(final ClassLoader aClassLoader, final BackendType aType) {
         backend = aType.createBackend();
         bytecodeLoader = new BytecodeLoader(aClassLoader);
+        classLoader = aClassLoader;
     }
 
     public CompileResult compile(
@@ -149,7 +155,28 @@ public class CompileTarget {
             theLinkerContext.resolveAbstractMethodsInSubclasses();
         }
 
-        return backend.generateCodeFor(aOptions, theLinkerContext, aClass, aMethodName, aSignature);
+        final CompileResult theResult = backend.generateCodeFor(aOptions, theLinkerContext, aClass, aMethodName, aSignature);
+
+        // Include all required resources from included modules
+        final List<String> resourcesToInclude = new ArrayList<>();
+        for (final ClassLibProvider provider : ClassLibProvider.availableProviders()) {
+            Collections.addAll(resourcesToInclude, provider.additionalResources());
+        }
+        // Don't forget user specific ressources
+        Collections.addAll(resourcesToInclude, aOptions.getAdditionalResources());
+
+        // Finally, we add the list of additional resources to the result
+        for (final String theResource : resourcesToInclude) {
+            final URL theUrl = classLoader.getResource(theResource);
+            if (theUrl != null) {
+                aOptions.getLogger().info("Including resource {}", theResource);
+                theResult.add(new CompileResult.URLContent(theResource, theUrl));
+            } else {
+                aOptions.getLogger().warn("Cannot find resource {}", theResource);
+            }
+        }
+
+        return theResult;
     }
 
     public BytecodeMethodSignature toMethodSignature(final Method aMethod) {

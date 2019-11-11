@@ -23,4 +23,9 @@ public class BaseClassLibProvider extends ClassLibProvider {
     public String getResourceBase() {
         return "META-INF/modules/java.base/classes";
     }
+
+    @Override
+    public String[] additionalResources() {
+        return new String[] {"localedata.properties"};
+    }
 }

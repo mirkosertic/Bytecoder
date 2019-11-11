@@ -19,8 +19,6 @@ import de.mirkosertic.bytecoder.allocator.Allocator;
 import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.optimizer.Optimizer;
 
-import java.util.List;
-
 public class CompileOptions {
 
     private final Logger logger;
@@ -34,13 +32,15 @@ public class CompileOptions {
     private final boolean preferStackifier;
     private final Allocator allocator;
     private final String[] additionalClassesToLink;
+    private final String[] additionalResources;
 
     public CompileOptions(final Logger aLogger, final boolean aDebugOutput, final Optimizer aOptimizer, final boolean aEnableExceptions,
                           final String aFilenamePrefix, final int aWasmMinimumPageSize, final int aWasmMaximumPageSize,
                           final boolean aMinify,
                           final boolean aPreferStackifier,
                           final Allocator aAllocator,
-                          final String[] aAdditionalClassesToLink) {
+                          final String[] aAdditionalClassesToLink,
+                          final String[] aAdditionalResources) {
         logger = aLogger;
         debugOutput = aDebugOutput;
         optimizer = aOptimizer;
@@ -52,6 +52,7 @@ public class CompileOptions {
         preferStackifier = aPreferStackifier;
         allocator = aAllocator;
         additionalClassesToLink = aAdditionalClassesToLink;
+        additionalResources = aAdditionalResources;
     }
 
     public Logger getLogger() {
@@ -96,5 +97,9 @@ public class CompileOptions {
 
     public String[] getAdditionalClassesToLink() {
         return additionalClassesToLink;
+    }
+
+    public String[] getAdditionalResources() {
+        return additionalResources;
     }
 }

@@ -79,7 +79,7 @@ public class CompilerTest {
     public void testSimpleKernel() throws IOException {
 
         final OpenCLCompileBackend backend = new OpenCLCompileBackend();
-        final CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true, "opencl", 512, 512, false, false, Allocator.passthru, new String[0]);
+        final CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true, "opencl", 512, 512, false, false, Allocator.passthru, new String[0], new String[0]);
 
         final Kernel theKernel = createKernel();
         final Class theKernelClass = theKernel.getClass();
@@ -97,7 +97,7 @@ public class CompilerTest {
         final BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
         final OpenCLCompileResult compiledKernel = backend.generateCodeFor(compileOptions, theLinkerContext, theKernelClass, theMethod.getName(), theSignature);
-        final OpenCLCompileResult.OpenCLContent content = compiledKernel.getContent()[0];
+        final OpenCLCompileResult.OpenCLContent content = (OpenCLCompileResult.OpenCLContent) compiledKernel.getContent()[0];
 
         System.out.println(content.asString());
     }
@@ -106,7 +106,7 @@ public class CompilerTest {
     public void testKernelWithComplexType() throws IOException {
 
         final OpenCLCompileBackend backend = new OpenCLCompileBackend();
-        final CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true, "opencl", 512, 512, false, false, Allocator.passthru, new String[0]);
+        final CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true, "opencl", 512, 512, false, false, Allocator.passthru, new String[0], new String[0]);
 
         final Float2[] theIn = new Float2[10];
         final Float2[] theOut = new Float2[10];
@@ -134,7 +134,7 @@ public class CompilerTest {
         final BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
         final OpenCLCompileResult compiledKernel = backend.generateCodeFor(compileOptions, theLinkerContext, theKernelClass, theMethod.getName(), theSignature);
-        final OpenCLCompileResult.OpenCLContent content = compiledKernel.getContent()[0];
+        final OpenCLCompileResult.OpenCLContent content = (OpenCLCompileResult.OpenCLContent) compiledKernel.getContent()[0];
 
         System.out.println(content.asString());
     }
