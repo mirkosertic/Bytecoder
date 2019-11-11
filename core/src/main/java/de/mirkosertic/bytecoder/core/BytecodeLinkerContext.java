@@ -15,16 +15,15 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.api.Export;
-import de.mirkosertic.bytecoder.api.Logger;
-import de.mirkosertic.bytecoder.graph.Edge;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import de.mirkosertic.bytecoder.api.Export;
+import de.mirkosertic.bytecoder.api.Logger;
+import de.mirkosertic.bytecoder.graph.Edge;
 
 public class BytecodeLinkerContext {
 
@@ -56,7 +55,7 @@ public class BytecodeLinkerContext {
 
     public BytecodeLinkedClass isLinkedOrNull(final BytecodeUtf8Constant aConstant) {
         final BytecodeObjectTypeRef theTypeRef = BytecodeObjectTypeRef.fromUtf8Constant(aConstant);
-        final List<BytecodeLinkedClass> theLinkedClass = rootNode.outgoingEdges()
+        final List<BytecodeLinkedClass> theLinkedClass = linkedClasses()
                 .filter(t -> t.targetNode().getClassName().equals(theTypeRef))
                 .map(t -> t.targetNode())
                 .collect(Collectors.toList());
@@ -70,9 +69,9 @@ public class BytecodeLinkerContext {
 
     public BytecodeLinkedClass resolveClass(final BytecodeObjectTypeRef aTypeRef) {
 
-        final List<BytecodeLinkedClass> theFoundLinks = rootNode.outgoingEdges()
-                .filter(t -> t.targetNode().getClassName().equals(aTypeRef))
+        final List<BytecodeLinkedClass> theFoundLinks = linkedClasses()
                 .map(t -> t.targetNode())
+                .filter(t -> t.getClassName().equals(aTypeRef))
                 .collect(Collectors.toList());
 
         if (!theFoundLinks.isEmpty()) {

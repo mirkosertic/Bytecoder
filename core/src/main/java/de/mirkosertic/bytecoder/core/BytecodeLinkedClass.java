@@ -297,8 +297,7 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
             addEdgeTo(BytecodeProvidesMethodEdgeType.instance, theMethod);
 
             resolveMethodSignatureAndBody(theMethod);
-
-            return true;
+            somethingFound = true;
         }
 
         final BytecodeLinkedClass theSuperClass = getSuperClass();

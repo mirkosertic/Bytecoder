@@ -52,10 +52,7 @@ public class BytecodeObjectTypeRef implements BytecodeTypeRef {
 
         final BytecodeObjectTypeRef that = (BytecodeObjectTypeRef) o;
 
-        if (!className.equals(that.className))
-            return false;
-
-        return true;
+        return className.equals(that.className);
     }
 
     @Override
