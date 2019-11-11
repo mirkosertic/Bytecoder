@@ -20,7 +20,7 @@ import de.mirkosertic.bytecoder.backend.CompileResult;
 import java.io.OutputStream;
 import java.io.PrintStream;
 
-public class OpenCLCompileResult implements CompileResult<String> {
+public class OpenCLCompileResult extends CompileResult<String> {
 
     public static class OpenCLContent implements Content {
         private final OpenCLInputOutputs inputOutputs;
@@ -48,14 +48,9 @@ public class OpenCLCompileResult implements CompileResult<String> {
         }
     }
 
-    private final OpenCLContent[] content;
-
     public OpenCLCompileResult(final OpenCLContent... content) {
-        this.content = content;
-    }
-
-    @Override
-    public OpenCLContent[] getContent() {
-        return content;
+        for (final OpenCLContent c : content) {
+            add(c);
+        }
     }
 }

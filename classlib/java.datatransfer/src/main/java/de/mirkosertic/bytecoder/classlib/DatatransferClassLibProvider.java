@@ -23,4 +23,9 @@ public class DatatransferClassLibProvider extends ClassLibProvider {
     public String getResourceBase() {
         return "META-INF/modules/java.datatransfer/classes";
     }
+
+    @Override
+    public String[] additionalResources() {
+        return new String[0];
+    }
 }

@@ -134,6 +134,12 @@ public class BytecoderMavenMojo extends AbstractMojo {
     @Parameter(required = false)
     protected String[] additionalClassesToLink = new String[0];
 
+    /**
+     * A list of classpath resources to be included into the build.
+     */
+    @Parameter(required = false)
+    protected String[] additionalResources = new String[0];
+
     @Override
     public void execute() throws MojoExecutionException {
         final File theBaseDirectory = new File(buildDirectory);
@@ -149,7 +155,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
             final BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                     new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1) });
 
-            final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.valueOf(optimizationLevel), enableExceptionHandling, filenamePrefix, wasmInitialPages, wasmMaximumPages, minifyCompileResult, preferStackifier, Allocator.valueOf(registerAllocator), additionalClassesToLink);
+            final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.valueOf(optimizationLevel), enableExceptionHandling, filenamePrefix, wasmInitialPages, wasmMaximumPages, minifyCompileResult, preferStackifier, Allocator.valueOf(registerAllocator), additionalClassesToLink, additionalResources);
             final CompileResult theCode = theCompileTarget.compile(theOptions, theTargetClass, "main", theSignature);
             for (final CompileResult.Content content : theCode.getContent()) {
                 final File theBytecoderFileName = new File(theBytecoderDirectory, content.getFileName());
@@ -186,7 +192,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
             }
             theURLs.add(classFiles.toURI().toURL());
 
-            return new URLClassLoader(theURLs.toArray(new URL[theURLs.size()]),
+            return new URLClassLoader(theURLs.toArray(new URL[0]),
                     getClass().getClassLoader());
         } catch (final MalformedURLException e) {
             throw new MojoExecutionException("Cannot create classloader", e);

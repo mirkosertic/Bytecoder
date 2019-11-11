@@ -712,8 +712,10 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(6).text("return this.data[this.currentpos++];").newLine();
         theWriter.tab(5).text("},").newLine();
         theWriter.tab(5).text("readBytesLONGL1BYTEINTINT: function(handle,target,offset,length) {").newLine();
+        theWriter.tab(6).text("if (length === 0) {return 0;}").newLine();
         theWriter.tab(6).text("var remaining = this.size - this.currentpos;").newLine();
         theWriter.tab(6).text("var possible = Math.min(remaining, length);").newLine();
+        theWriter.tab(6).text("if (possible === 0) {return -1;}").newLine();
         theWriter.tab(6).text("for (var j=0;j<possible;j++) {").newLine();
         theWriter.tab(7).text("target.data[offset++]=this.data[this.currentpos++];").newLine();
         theWriter.tab(6).text("}").newLine();
