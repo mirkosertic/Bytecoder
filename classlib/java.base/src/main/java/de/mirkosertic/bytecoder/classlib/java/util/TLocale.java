@@ -17,8 +17,12 @@ package de.mirkosertic.bytecoder.classlib.java.util;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+import java.util.Locale;
+
 @SubstitutesInClass(completeReplace = true)
 public class TLocale {
+
+    public static final Locale ENGLISH = new Locale("en");
 
     private final String language;
     private String country;
