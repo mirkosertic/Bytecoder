@@ -26,6 +26,6 @@ public class BaseClassLibProvider extends ClassLibProvider {
 
     @Override
     public String[] additionalResources() {
-        return new String[] {"localedata.properties"};
+        return new String[] {"localedata.properties", "localedata_DE_de.properties"};
     }
 }

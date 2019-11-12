@@ -26,7 +26,7 @@ import java.util.Locale;
 
 public class VM {
 
-    public static final DecimalFormatSymbols FORMAT_SYMBOLS = new DecimalFormatSymbols();
+    public static final DecimalFormatSymbols FORMAT_SYMBOLS = DecimalFormatSymbols.getInstance();
 
     public static final ClassLoader SYSTEM_LOADER = new ClassLoader() {
     };
