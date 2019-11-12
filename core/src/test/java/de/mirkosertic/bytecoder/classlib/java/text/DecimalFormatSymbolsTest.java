@@ -57,8 +57,8 @@ public class DecimalFormatSymbolsTest {
         Assert.assertEquals("0", toString(theSymbols.getZeroDigit()));
         Assert.assertEquals(".", toString(theSymbols.getGroupingSeparator()));
         Assert.assertEquals(",", toString(theSymbols.getDecimalSeparator()));
-        Assert.assertEquals("‰", toString(theSymbols.getPerMill()));
-        //Assert.assertEquals("%", toString(theSymbols.getPercent()));
+        //Assert.assertEquals("‰", toString(theSymbols.getPerMill()));
+        Assert.assertEquals("%", toString(theSymbols.getPercent()));
         Assert.assertEquals("#", toString(theSymbols.getDigit()));
         Assert.assertEquals(";", toString(theSymbols.getPatternSeparator()));
         //Assert.assertEquals("∞", theSymbols.getInfinity());
