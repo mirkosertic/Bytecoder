@@ -156,6 +156,6 @@ public class VM {
     }
 
     public static Locale defaultLocale() {
-        return new Locale("en");
+        return new Locale("en", "US");
     }
 }
