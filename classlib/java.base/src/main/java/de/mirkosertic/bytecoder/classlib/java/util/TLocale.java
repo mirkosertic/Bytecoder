@@ -23,7 +23,11 @@ import java.util.Locale;
 @SubstitutesInClass(completeReplace = true)
 public class TLocale {
 
+    public static final Locale ROOT = new Locale("", "");
+
     public static final Locale ENGLISH = new Locale("en");
+
+    public static final Locale US = new Locale("en", "US");
 
     public static Locale getDefault() {
         return VM.defaultLocale();

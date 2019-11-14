@@ -18,7 +18,7 @@ package de.mirkosertic.bytecoder.classlib;
 import java.text.BreakIterator;
 import java.text.CharacterIterator;
 
-public class BreakIteratorImpl extends BreakIterator {
+public class NOOPBreakIteratorImpl extends BreakIterator {
 
     private CharacterIterator text;
 
@@ -33,7 +33,7 @@ public class BreakIteratorImpl extends BreakIterator {
     }
 
     @Override
-    public int next(int n) {
+    public int next(final int n) {
         return BreakIterator.DONE;
     }
 
@@ -48,7 +48,7 @@ public class BreakIteratorImpl extends BreakIterator {
     }
 
     @Override
-    public int following(int offset) {
+    public int following(final int offset) {
         return BreakIterator.DONE;
     }
 
@@ -63,7 +63,7 @@ public class BreakIteratorImpl extends BreakIterator {
     }
 
     @Override
-    public void setText(CharacterIterator newText) {
+    public void setText(final CharacterIterator newText) {
         text = newText;
     }
 }

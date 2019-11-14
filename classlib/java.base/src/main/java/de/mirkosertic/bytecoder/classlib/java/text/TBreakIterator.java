@@ -16,7 +16,7 @@
 package de.mirkosertic.bytecoder.classlib.java.text;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-import de.mirkosertic.bytecoder.classlib.BreakIteratorImpl;
+import de.mirkosertic.bytecoder.classlib.NOOPBreakIteratorImpl;
 
 import java.text.BreakIterator;
 import java.util.Locale;
@@ -25,6 +25,6 @@ import java.util.Locale;
 public class TBreakIterator {
 
     public static BreakIterator getWordInstance(final Locale aLocale) {
-        return new BreakIteratorImpl();
+        return new NOOPBreakIteratorImpl();
     }
 }
