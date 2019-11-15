@@ -13,19 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib;
+package de.mirkosertic.bytecoder.classlib.java.text;
 
-import de.mirkosertic.bytecoder.api.ClassLibProvider;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.NOOPBreakIteratorImpl;
 
-public class BaseClassLibProvider extends ClassLibProvider {
+import java.text.BreakIterator;
+import java.util.Locale;
 
-    @Override
-    public String getResourceBase() {
-        return "META-INF/modules/java.base/classes";
-    }
+@SubstitutesInClass(completeReplace = false)
+public class TBreakIterator {
 
-    @Override
-    public String[] additionalResources() {
-        return new String[] {"localedata.properties", "localedata_DE_de.properties"};
+    public static BreakIterator getWordInstance(final Locale aLocale) {
+        return new NOOPBreakIteratorImpl();
     }
 }

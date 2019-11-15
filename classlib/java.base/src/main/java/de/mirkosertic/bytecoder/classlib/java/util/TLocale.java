@@ -16,17 +16,30 @@
 package de.mirkosertic.bytecoder.classlib.java.util;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.VM;
 
 import java.util.Locale;
 
 @SubstitutesInClass(completeReplace = true)
 public class TLocale {
 
+    public static final Locale ROOT = new Locale("", "");
+
     public static final Locale ENGLISH = new Locale("en");
 
+    public static final Locale US = new Locale("en", "US");
+
+    public static Locale getDefault() {
+        return VM.defaultLocale();
+    }
+
+    public static Locale getDefault(final Locale.Category aCategory) {
+        return getDefault();
+    }
+
     private final String language;
-    private String country;
-    private String variant;
+    private final String country;
+    private final String variant;
 
     public TLocale(final String language, final String country, final String variant) {
         this.language = language;
@@ -37,10 +50,13 @@ public class TLocale {
     public TLocale(final String language, final String country) {
         this.language = language;
         this.country = country;
+        this.variant = null;
     }
 
     public TLocale(final String language) {
         this.language = language;
+        this.country = null;
+        this.variant = null;
     }
 
     public String getLanguage() {
