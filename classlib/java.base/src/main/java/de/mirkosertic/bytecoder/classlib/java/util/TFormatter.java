@@ -139,9 +139,9 @@ public class TFormatter {
                         parsePosition++;
                         break handler;
                     case 'h':
-                        throw new IllegalArgumentException();
+                        throw new IllegalArgumentException(pattern);
                     case 'H':
-                        throw new IllegalArgumentException();
+                        throw new IllegalArgumentException(pattern);
                     case 's':
                         spec.conversion = new StringConversion();
                         spec.uppercase = false;
@@ -173,10 +173,10 @@ public class TFormatter {
                     case 'G':
                     case 'a':
                     case 'A':
-                        throw new IllegalArgumentException();
+                        throw new IllegalArgumentException(pattern);
                     case 't':
                     case 'T':
-                        throw new IllegalArgumentException();
+                        throw new IllegalArgumentException(pattern);
                 }
                 parsePosition++;
                 c = pattern.charAt(parsePosition);

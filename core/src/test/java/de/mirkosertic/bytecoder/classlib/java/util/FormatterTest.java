@@ -32,4 +32,11 @@ public class FormatterTest {
         System.out.println(result);
         Assert.assertEquals("Hello, World!", result);
     }
+
+    @Test
+    public void testStringFormat() {
+        final String result = String.format("%s, %s!", "Hello", "World");
+        System.out.println(result);
+        Assert.assertEquals("Hello, World!", result);
+    }
 }
