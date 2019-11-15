@@ -13,19 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib;
+package de.mirkosertic.bytecoder.classlib.java.util;
 
-import de.mirkosertic.bytecoder.api.ClassLibProvider;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-public class BaseClassLibProvider extends ClassLibProvider {
-
-    @Override
-    public String getResourceBase() {
-        return "META-INF/modules/java.base/classes";
-    }
-
-    @Override
-    public String[] additionalResources() {
-        return new String[] {"localedata.properties", "localedata_DE_de.properties"};
-    }
+@SubstitutesInClass(completeReplace = true)
+public class TCurrency {
 }

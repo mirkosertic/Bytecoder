@@ -13,19 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib;
+package de.mirkosertic.bytecoder.classlib.java.text;
 
-import de.mirkosertic.bytecoder.api.ClassLibProvider;
+import org.junit.Test;
 
-public class BaseClassLibProvider extends ClassLibProvider {
+import java.text.NumberFormat;
+import java.util.Locale;
 
-    @Override
-    public String getResourceBase() {
-        return "META-INF/modules/java.base/classes";
+//@RunWith(BytecoderUnitTestRunner.class)
+public class NumberFormatTest {
+
+    @Test
+    public void formatInteger() {
+        final NumberFormat f = NumberFormat.getIntegerInstance(new Locale("de","DE"));
+        System.out.println(f.format(12345));
     }
 
-    @Override
-    public String[] additionalResources() {
-        return new String[] {"localedata.properties", "localedata_DE_de.properties"};
-    }
 }

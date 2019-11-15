@@ -44,7 +44,7 @@ public class FileResourceBundleImpl extends ResourceBundle {
         p = new Properties();
         try {
             if (aFile.exists()) {
-                p.load(new InputStreamReader(new FileInputStream(aFile), StandardCharsets.ISO_8859_1));
+                p.load(new InputStreamReader(new FileInputStream(aFile), StandardCharsets.ISO_8859_1.newDecoder()));
             }
         } catch (final IOException e) {
             // Ignore

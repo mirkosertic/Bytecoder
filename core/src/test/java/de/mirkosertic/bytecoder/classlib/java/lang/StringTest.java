@@ -73,7 +73,6 @@ public class StringTest {
     }
 
     @Test
-    @Ignore
     public void testToLowerCaseToUppercase() {
         final String string = "A;b;c";
         final String[] strings = string.split(";");
