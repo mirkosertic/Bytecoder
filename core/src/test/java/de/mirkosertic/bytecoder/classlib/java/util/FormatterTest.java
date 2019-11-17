@@ -39,4 +39,11 @@ public class FormatterTest {
         System.out.println(result);
         Assert.assertEquals("Hello, World!", result);
     }
+
+    @Test
+    public void testStringFormatUppercase() {
+        final String result = String.format("%S, %S!", "Hello", "World");
+        System.out.println(result);
+        Assert.assertEquals("HELLO, WORLD!", result);
+    }
 }

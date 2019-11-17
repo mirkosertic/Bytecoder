@@ -20,6 +20,8 @@ import de.mirkosertic.bytecoder.classlib.VM;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Formattable;
+import java.util.FormattableFlags;
 import java.util.Formatter;
 import java.util.Locale;
 
@@ -62,7 +64,7 @@ public class TFormatter {
     private void formatValues(final String aPattern, final Object... aValues) {
         exception = null;
         try {
-            new PatternWriter(aPattern, aValues).write();
+            new PatternWriter(aPattern, aValues).write((Formatter) (Object) this);
         } catch (final IOException e) {
             exception = e;
         }
@@ -104,12 +106,12 @@ public class TFormatter {
             values = aValues;
         }
 
-        void write() throws IOException {
+        void write(final Formatter f) throws IOException {
             while (parsePosition < pattern.length()) {
                 final char c = pattern.charAt(parsePosition);
                 if (c == '%') {
                     parsePosition++;
-                    write(parseFormatSpecifier());
+                    write(f, parseFormatSpecifier());
                     valueIndex ++;
                 } else {
                     out.append(c);
@@ -118,9 +120,9 @@ public class TFormatter {
             }
         }
 
-        private void write(final FormatSpecifier aSpecifier) throws IOException {
+        private void write(final Formatter f, final FormatSpecifier aSpecifier) throws IOException {
             final Object valueToWrite = values[aSpecifier.valueIndex];
-            aSpecifier.conversion.writeTo(valueToWrite, aSpecifier, out);
+            aSpecifier.conversion.writeTo(f, valueToWrite, aSpecifier, out);
         }
 
         FormatSpecifier parseFormatSpecifier() {
@@ -130,12 +132,11 @@ public class TFormatter {
                 switch (c) {
                     case 'b':
                         spec.conversion = new BooleanConversion();
-                        spec.uppercase = false;
                         parsePosition++;
                         break handler;
                     case 'B':
                         spec.conversion = new BooleanConversion();
-                        spec.uppercase = true;
+                        spec.flags |= FormattableFlags.UPPERCASE;
                         parsePosition++;
                         break handler;
                     case 'h':
@@ -144,12 +145,11 @@ public class TFormatter {
                         throw new IllegalArgumentException(pattern);
                     case 's':
                         spec.conversion = new StringConversion();
-                        spec.uppercase = false;
                         parsePosition++;
                         break handler;
                     case 'S':
                         spec.conversion = new StringConversion();
-                        spec.uppercase = true;
+                        spec.flags |= FormattableFlags.UPPERCASE;
                         parsePosition++;
                         break handler;
                     case '%':
@@ -189,34 +189,37 @@ public class TFormatter {
         }
 
         class FormatSpecifier {
+
             int valueIndex = -1;
-            boolean uppercase = false;
+            int width = -1;
+            int precision = -1;
+            int flags = 0;
             Conversion conversion;
         }
     }
 
     interface Conversion {
-        void writeTo(Object aValueToWrite, PatternWriter.FormatSpecifier aSpecifier, Appendable aOut) throws IOException;
+        void writeTo(Formatter f, Object aValueToWrite, PatternWriter.FormatSpecifier aSpecifier, Appendable aOut) throws IOException;
     }
 
     public static class BooleanConversion implements Conversion {
 
         @Override
-        public void writeTo(Object aValueToWrite, PatternWriter.FormatSpecifier aSpecifier, Appendable aOut) throws IOException {
+        public void writeTo(final Formatter f, final Object aValueToWrite, final PatternWriter.FormatSpecifier aSpecifier, final Appendable aOut) throws IOException {
             if (aValueToWrite == null) {
-                if (aSpecifier.uppercase) {
+                if ((aSpecifier.flags & FormattableFlags.UPPERCASE) > 0) {
                     aOut.append("NULL");
                 } else {
                     aOut.append("null");
                 }
             } else if (aValueToWrite instanceof Boolean) {
-                if (aSpecifier.uppercase) {
+                if ((aSpecifier.flags & FormattableFlags.UPPERCASE) > 0) {
                     aOut.append(String.valueOf(((Boolean) aValueToWrite).booleanValue()).toUpperCase());
                 } else {
                     aOut.append(String.valueOf(((Boolean) aValueToWrite).booleanValue()));
                 }
             } else {
-                if (aSpecifier.uppercase) {
+                if ((aSpecifier.flags & FormattableFlags.UPPERCASE) > 0) {
                     aOut.append("true");
                 } else {
                     aOut.append("true");
@@ -227,15 +230,19 @@ public class TFormatter {
 
     public static class StringConversion implements Conversion {
         @Override
-        public void writeTo(Object aValueToWrite, PatternWriter.FormatSpecifier aSpecifier, Appendable aOut) throws IOException {
+        public void writeTo(final Formatter f, final Object aValueToWrite, final PatternWriter.FormatSpecifier aSpecifier, final Appendable aOut) throws IOException {
             if (aValueToWrite == null) {
-                if (aSpecifier.uppercase) {
+                if ((aSpecifier.flags & FormattableFlags.UPPERCASE) > 0) {
                     aOut.append("NULL");
                 } else {
                     aOut.append("null");
                 }
+            } else if (aValueToWrite instanceof Formattable) {
+                final Formattable formattable = (Formattable) aValueToWrite;
+
+                formattable.formatTo(f, aSpecifier.flags, aSpecifier.width, aSpecifier.precision);
             } else {
-                if (aSpecifier.uppercase) {
+                if ((aSpecifier.flags & FormattableFlags.UPPERCASE) > 0) {
                     aOut.append(aValueToWrite.toString().toUpperCase());
                 } else {
                     aOut.append(aValueToWrite.toString());
@@ -246,14 +253,14 @@ public class TFormatter {
 
     public static class PercentConversion implements Conversion {
         @Override
-        public void writeTo(Object aValueToWrite, PatternWriter.FormatSpecifier aSpecifier, Appendable aOut) throws IOException {
+        public void writeTo(final Formatter f, final Object aValueToWrite, final PatternWriter.FormatSpecifier aSpecifier, final Appendable aOut) throws IOException {
             aOut.append("%");
         }
     }
 
     public static class LinefeedConversion implements Conversion {
         @Override
-        public void writeTo(Object aValueToWrite, PatternWriter.FormatSpecifier aSpecifier, Appendable aOut) throws IOException {
+        public void writeTo(final Formatter f, final Object aValueToWrite, final PatternWriter.FormatSpecifier aSpecifier, final Appendable aOut) throws IOException {
             aOut.append(System.lineSeparator());
         }
     }
