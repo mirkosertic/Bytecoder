@@ -122,64 +122,77 @@ public class TFormatter {
 
         private void write(final Formatter f, final FormatSpecifier aSpecifier) throws IOException {
             final Object valueToWrite = values[aSpecifier.valueIndex];
-            aSpecifier.conversion.writeTo(f, valueToWrite, aSpecifier, out);
+            aSpecifier.conversion.writeTo(f, valueToWrite, out);
         }
 
         FormatSpecifier parseFormatSpecifier() {
             final FormatSpecifier spec = new FormatSpecifier();
             char c = pattern.charAt(parsePosition);
+            int pos = 0;
+            int width = -1;
+            int precision = -1;
+            int flags = 0;
             handler: while (true) {
-                switch (c) {
-                    case 'b':
-                        spec.conversion = new BooleanConversion();
+                if (pos == 0 && Character.isDigit(c)) {
+                    final int startPosition = parsePosition;
+                    while (c!='$') {
                         parsePosition++;
-                        break handler;
-                    case 'B':
-                        spec.conversion = new BooleanConversion();
-                        spec.flags |= FormattableFlags.UPPERCASE;
-                        parsePosition++;
-                        break handler;
-                    case 'h':
-                        throw new IllegalArgumentException(pattern);
-                    case 'H':
-                        throw new IllegalArgumentException(pattern);
-                    case 's':
-                        spec.conversion = new StringConversion();
-                        parsePosition++;
-                        break handler;
-                    case 'S':
-                        spec.conversion = new StringConversion();
-                        spec.flags |= FormattableFlags.UPPERCASE;
-                        parsePosition++;
-                        break handler;
-                    case '%':
-                        spec.conversion = new PercentConversion();
-                        parsePosition++;
-                        break handler;
-                    case 'n':
-                        spec.conversion = new LinefeedConversion();
-                        parsePosition++;
-                        break handler;
-                    case 'c':
-                    case 'C':
-                    case 'd':
-                    case 'o':
-                    case 'x':
-                    case 'X':
-                    case 'e':
-                    case 'E':
-                    case 'f':
-                    case 'g':
-                    case 'G':
-                    case 'a':
-                    case 'A':
-                        throw new IllegalArgumentException(pattern);
-                    case 't':
-                    case 'T':
-                        throw new IllegalArgumentException(pattern);
+                        c = pattern.charAt(parsePosition);
+                        pos++;
+                    }
+                    spec.valueIndex = Integer.parseInt(pattern.substring(startPosition, parsePosition)) - 1;
+                } else {
+                    switch (c) {
+                        case 'b':
+                            spec.conversion = new BooleanConversion(width, precision, flags);
+                            parsePosition++;
+                            break handler;
+                        case 'B':
+                            spec.conversion = new BooleanConversion(width, precision, flags | FormattableFlags.UPPERCASE);
+                            parsePosition++;
+                            break handler;
+                        case 'h':
+                            throw new IllegalArgumentException(pattern);
+                        case 'H':
+                            throw new IllegalArgumentException(pattern);
+                        case 's':
+                            spec.conversion = new StringConversion(width, precision, flags);
+                            parsePosition++;
+                            break handler;
+                        case 'S':
+                            spec.conversion = new StringConversion(width, precision, flags | FormattableFlags.UPPERCASE);
+                            parsePosition++;
+                            break handler;
+                        case '%':
+                            spec.conversion = new PercentConversion(width, precision, flags);
+                            parsePosition++;
+                            break handler;
+                        case 'n':
+                            spec.conversion = new LinefeedConversion(width, precision, flags);
+                            parsePosition++;
+                            break handler;
+                        case 'c':
+                        case 'C':
+                        case 'd':
+                        case 'o':
+                        case 'x':
+                        case 'X':
+                        case 'e':
+                        case 'E':
+                        case 'f':
+                        case 'g':
+                        case 'G':
+                        case 'a':
+                        case 'A':
+                            throw new IllegalArgumentException(pattern);
+                        case 't':
+                        case 'T':
+                            throw new IllegalArgumentException(pattern);
+                    }
                 }
                 parsePosition++;
                 c = pattern.charAt(parsePosition);
+                pos++;
             }
 
             if (spec.valueIndex == -1) {
@@ -189,37 +202,47 @@ public class TFormatter {
         }
 
         class FormatSpecifier {
-
             int valueIndex = -1;
-            int width = -1;
-            int precision = -1;
-            int flags = 0;
             Conversion conversion;
         }
     }
 
-    interface Conversion {
-        void writeTo(Formatter f, Object aValueToWrite, PatternWriter.FormatSpecifier aSpecifier, Appendable aOut) throws IOException;
+    abstract static class Conversion {
+        int width;
+        int precision;
+        int flags;
+
+        public Conversion(final int width, final int precision, final int flags) {
+            this.width = width;
+            this.precision = precision;
+            this.flags = flags;
+        }
+
+        abstract void writeTo(Formatter f, Object aValueToWrite, Appendable aOut) throws IOException;
     }
 
-    public static class BooleanConversion implements Conversion {
+    public static class BooleanConversion extends Conversion {
+
+        public BooleanConversion(final int width, final int precision, final int flags) {
+            super(width, precision, flags);
+        }
 
         @Override
-        public void writeTo(final Formatter f, final Object aValueToWrite, final PatternWriter.FormatSpecifier aSpecifier, final Appendable aOut) throws IOException {
+        public void writeTo(final Formatter f, final Object aValueToWrite, final Appendable aOut) throws IOException {
             if (aValueToWrite == null) {
-                if ((aSpecifier.flags & FormattableFlags.UPPERCASE) > 0) {
+                if ((flags & FormattableFlags.UPPERCASE) > 0) {
                     aOut.append("NULL");
                 } else {
                     aOut.append("null");
                 }
             } else if (aValueToWrite instanceof Boolean) {
-                if ((aSpecifier.flags & FormattableFlags.UPPERCASE) > 0) {
+                if ((flags & FormattableFlags.UPPERCASE) > 0) {
                     aOut.append(String.valueOf(((Boolean) aValueToWrite).booleanValue()).toUpperCase());
                 } else {
                     aOut.append(String.valueOf(((Boolean) aValueToWrite).booleanValue()));
                 }
             } else {
-                if ((aSpecifier.flags & FormattableFlags.UPPERCASE) > 0) {
+                if ((flags & FormattableFlags.UPPERCASE) > 0) {
                     aOut.append("true");
                 } else {
                     aOut.append("true");
@@ -228,11 +251,16 @@ public class TFormatter {
         }
     }
 
-    public static class StringConversion implements Conversion {
+    public static class StringConversion extends Conversion {
+
+        public StringConversion(final int width, final int precision, final int flags) {
+            super(width, precision, flags);
+        }
+
         @Override
-        public void writeTo(final Formatter f, final Object aValueToWrite, final PatternWriter.FormatSpecifier aSpecifier, final Appendable aOut) throws IOException {
+        public void writeTo(final Formatter f, final Object aValueToWrite, final Appendable aOut) throws IOException {
             if (aValueToWrite == null) {
-                if ((aSpecifier.flags & FormattableFlags.UPPERCASE) > 0) {
+                if ((flags & FormattableFlags.UPPERCASE) > 0) {
                     aOut.append("NULL");
                 } else {
                     aOut.append("null");
@@ -240,9 +268,9 @@ public class TFormatter {
             } else if (aValueToWrite instanceof Formattable) {
                 final Formattable formattable = (Formattable) aValueToWrite;
 
-                formattable.formatTo(f, aSpecifier.flags, aSpecifier.width, aSpecifier.precision);
+                formattable.formatTo(f, flags, width, precision);
             } else {
-                if ((aSpecifier.flags & FormattableFlags.UPPERCASE) > 0) {
+                if ((flags & FormattableFlags.UPPERCASE) > 0) {
                     aOut.append(aValueToWrite.toString().toUpperCase());
                 } else {
                     aOut.append(aValueToWrite.toString());
@@ -251,16 +279,26 @@ public class TFormatter {
         }
     }
 
-    public static class PercentConversion implements Conversion {
+    public static class PercentConversion extends Conversion {
+
+        public PercentConversion(final int width, final int precision, final int flags) {
+            super(width, precision, flags);
+        }
+
         @Override
-        public void writeTo(final Formatter f, final Object aValueToWrite, final PatternWriter.FormatSpecifier aSpecifier, final Appendable aOut) throws IOException {
+        public void writeTo(final Formatter f, final Object aValueToWrite, final Appendable aOut) throws IOException {
             aOut.append("%");
         }
     }
 
-    public static class LinefeedConversion implements Conversion {
+    public static class LinefeedConversion extends Conversion {
+
+        public LinefeedConversion(final int width, final int precision, final int flags) {
+            super(width, precision, flags);
+        }
+
         @Override
-        public void writeTo(final Formatter f, final Object aValueToWrite, final PatternWriter.FormatSpecifier aSpecifier, final Appendable aOut) throws IOException {
+        public void writeTo(final Formatter f, final Object aValueToWrite, final Appendable aOut) throws IOException {
             aOut.append(System.lineSeparator());
         }
     }

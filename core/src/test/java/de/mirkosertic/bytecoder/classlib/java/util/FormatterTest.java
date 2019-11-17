@@ -46,4 +46,11 @@ public class FormatterTest {
         System.out.println(result);
         Assert.assertEquals("HELLO, WORLD!", result);
     }
+
+    @Test
+    public void testStringFormatArgumentIndex() {
+        final String result = String.format("%2$s, %1$s!", "World", "Hello");
+        System.out.println(result);
+        Assert.assertEquals("Hello, World!", result);
+    }
 }
