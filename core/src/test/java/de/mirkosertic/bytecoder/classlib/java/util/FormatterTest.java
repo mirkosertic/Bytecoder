@@ -20,6 +20,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Formattable;
 import java.util.Formatter;
 
 @RunWith(BytecoderUnitTestRunner.class)
@@ -53,4 +54,43 @@ public class FormatterTest {
         System.out.println(result);
         Assert.assertEquals("Hello, World!", result);
     }
+
+    @Test
+    public void testUselessWidthAndPrecision() {
+        final Formattable f = new Formattable() {
+            @Override
+            public void formatTo(final Formatter formatter, final int flags, final int width, final int precision) {
+                final StringBuilder sb = new StringBuilder();
+                sb.append(flags);
+                sb.append(":");
+                sb.append(width);
+                sb.append(":");
+                sb.append(precision);
+                formatter.format("%s", sb);
+            }
+        };
+        final String result = String.format("%10.3s", f);
+        System.out.println(result);
+        Assert.assertEquals("0:10:3", result);
+    }
+
+    @Test
+    public void testUselessPrecision() {
+        final Formattable f = new Formattable() {
+            @Override
+            public void formatTo(final Formatter formatter, final int flags, final int width, final int precision) {
+                final StringBuilder sb = new StringBuilder();
+                sb.append(flags);
+                sb.append(":");
+                sb.append(width);
+                sb.append(":");
+                sb.append(precision);
+                formatter.format("%s", sb);
+            }
+        };
+        final String result = String.format("%.3s", f);
+        System.out.println(result);
+        Assert.assertEquals("0:-1:3", result);
+    }
+
 }

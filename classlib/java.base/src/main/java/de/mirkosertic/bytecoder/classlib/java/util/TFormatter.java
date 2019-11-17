@@ -128,71 +128,80 @@ public class TFormatter {
         FormatSpecifier parseFormatSpecifier() {
             final FormatSpecifier spec = new FormatSpecifier();
             char c = pattern.charAt(parsePosition);
-            int pos = 0;
             int width = -1;
             int precision = -1;
             int flags = 0;
+            boolean hasWidth = false;
             handler: while (true) {
-                if (pos == 0 && Character.isDigit(c)) {
+                if (Character.isDigit(c)) {
                     final int startPosition = parsePosition;
-                    while (c!='$') {
+                    while (Character.isDigit(c)) {
                         parsePosition++;
                         c = pattern.charAt(parsePosition);
-                        pos++;
                     }
-                    spec.valueIndex = Integer.parseInt(pattern.substring(startPosition, parsePosition)) - 1;
-                } else {
-                    switch (c) {
-                        case 'b':
-                            spec.conversion = new BooleanConversion(width, precision, flags);
-                            parsePosition++;
-                            break handler;
-                        case 'B':
-                            spec.conversion = new BooleanConversion(width, precision, flags | FormattableFlags.UPPERCASE);
-                            parsePosition++;
-                            break handler;
-                        case 'h':
-                            throw new IllegalArgumentException(pattern);
-                        case 'H':
-                            throw new IllegalArgumentException(pattern);
-                        case 's':
-                            spec.conversion = new StringConversion(width, precision, flags);
-                            parsePosition++;
-                            break handler;
-                        case 'S':
-                            spec.conversion = new StringConversion(width, precision, flags | FormattableFlags.UPPERCASE);
-                            parsePosition++;
-                            break handler;
-                        case '%':
-                            spec.conversion = new PercentConversion(width, precision, flags);
-                            parsePosition++;
-                            break handler;
-                        case 'n':
-                            spec.conversion = new LinefeedConversion(width, precision, flags);
-                            parsePosition++;
-                            break handler;
-                        case 'c':
-                        case 'C':
-                        case 'd':
-                        case 'o':
-                        case 'x':
-                        case 'X':
-                        case 'e':
-                        case 'E':
-                        case 'f':
-                        case 'g':
-                        case 'G':
-                        case 'a':
-                        case 'A':
-                            throw new IllegalArgumentException(pattern);
-                        case 't':
-                        case 'T':
-                            throw new IllegalArgumentException(pattern);
+                    if (c == '$') {
+                        spec.valueIndex = Integer.parseInt(pattern.substring(startPosition, parsePosition)) - 1;
+                    } else if (!hasWidth) {
+                        width = Integer.parseInt(pattern.substring(startPosition, parsePosition));
+                        hasWidth = true;
+                    } else if (precision == -1) {
+                        precision = Integer.parseInt(pattern.substring(startPosition, parsePosition));
+                    } else {
+                        throw new IllegalStateException(pattern);
                     }
+                }
+                switch (c) {
+                    case '.':
+                        hasWidth = true;
+                        break;
+                    case 'b':
+                        spec.conversion = new BooleanConversion(width, precision, flags);
+                        parsePosition++;
+                        break handler;
+                    case 'B':
+                        spec.conversion = new BooleanConversion(width, precision, flags | FormattableFlags.UPPERCASE);
+                        parsePosition++;
+                        break handler;
+                    case 'h':
+                        throw new IllegalArgumentException(pattern);
+                    case 'H':
+                        throw new IllegalArgumentException(pattern);
+                    case 's':
+                        spec.conversion = new StringConversion(width, precision, flags);
+                        parsePosition++;
+                        break handler;
+                    case 'S':
+                        spec.conversion = new StringConversion(width, precision, flags | FormattableFlags.UPPERCASE);
+                        parsePosition++;
+                        break handler;
+                    case '%':
+                        spec.conversion = new PercentConversion(width, precision, flags);
+                        parsePosition++;
+                        break handler;
+                    case 'n':
+                        spec.conversion = new LinefeedConversion(width, precision, flags);
+                        parsePosition++;
+                        break handler;
+                    case 'c':
+                    case 'C':
+                    case 'd':
+                    case 'o':
+                    case 'x':
+                    case 'X':
+                    case 'e':
+                    case 'E':
+                    case 'f':
+                    case 'g':
+                    case 'G':
+                    case 'a':
+                    case 'A':
+                        throw new IllegalArgumentException(pattern);
+                    case 't':
+                    case 'T':
+                        throw new IllegalArgumentException(pattern);
                 }
                 parsePosition++;
                 c = pattern.charAt(parsePosition);
-                pos++;
             }
 
             if (spec.valueIndex == -1) {
