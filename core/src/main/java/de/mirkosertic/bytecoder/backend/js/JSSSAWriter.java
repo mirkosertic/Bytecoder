@@ -789,9 +789,8 @@ public class JSSSAWriter {
                 final BytecodeMethod theCallbackMethod = availableCallbacks.get(0);
                 final String theMethodName = minifier.toMethodName(theCallbackMethod.getName().stringValue(), theCallbackMethod.getSignature());
 
-                writer.text("function() {").text("var v = ");
-                print(aValue);
-                writer.text(";var args = Array.prototype.slice.call(arguments);v").text(".").text(theMethodName).text(".call(v");
+                writer.text("function() {");
+                writer.text("var args = Array.prototype.slice.call(arguments);this").text(".").text(theMethodName).text(".call(this");
                 final BytecodeTypeRef[] theArguments = theCallbackMethod.getSignature().getArguments();
                 for (int i=0;i<theArguments.length;i++) {
                     writer.text(",");
@@ -802,8 +801,10 @@ public class JSSSAWriter {
                         writer.text("args[").text("" + i).text("]");
                     }
                 }
-                writer.text(");");
-                writer.text("}");
+                writer.text(")");
+                writer.text("}.bind(");
+                print(aValue);
+                writer.text(")");
             } else {
                 throw new IllegalStateException("Type conversion to " + aTypeRef.name() + " is not supported!");
             }
