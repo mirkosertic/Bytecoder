@@ -182,9 +182,29 @@ public class TConcurrentHashMap<K,V> extends AbstractMap<K,V> implements Concurr
     }
 
     @SubstitutesInClass(completeReplace = true)
+    public static class CollectionView<K> extends HashSet<K> {
+    }
+
+    @SubstitutesInClass(completeReplace = true)
     public static class KeySetView<K> extends HashSet<K> {
 
         KeySetView(final Set<K> aKeys) {
+            super(aKeys);
+        }
+    }
+
+    @SubstitutesInClass(completeReplace = true)
+    public static class ValuesView<V> extends HashSet<V> {
+
+        ValuesView(final Set<V> aKeys) {
+            super(aKeys);
+        }
+    }
+
+    @SubstitutesInClass(completeReplace = true)
+    public static class EntrySetView<K, V> extends HashSet<Map.Entry<K, V>> {
+
+        EntrySetView(final Set<Entry<K, V>> aKeys) {
             super(aKeys);
         }
     }
