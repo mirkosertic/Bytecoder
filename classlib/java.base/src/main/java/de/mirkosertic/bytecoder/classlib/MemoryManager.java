@@ -240,31 +240,40 @@ public class MemoryManager {
         return theAddress;
     }
 
-    private static boolean isUsed(final int aOwningBlock) {
+    public static boolean isUsedByStack(final int aOwningBlock) {
+        final int theOwningData = aOwningBlock + 8;
+        return isUsedByStackUserSpace(theOwningData);
+    }
 
-        final int theOwningStart = aOwningBlock;
-        final int theOwningData = theOwningStart + 8;
-
-        // First of all we check the stack
+    public static boolean isUsedByStackUserSpace(final int aDataPtr) {
         int theStackStart = Address.getStackTop();
-        final int theStackTop = Address.getMemorySize();
-        while(theStackStart < theStackTop) {
+        final int theMemorySize = Address.getMemorySize();
+        while(theStackStart + 4 < theMemorySize) {
             final int theCurrent = theStackStart;
+
             final int theReference = Address.getIntValue(theCurrent, 0);
-            if (theReference == theOwningData) {
+            if (theReference == aDataPtr) {
                 return true;
             }
             theStackStart += 4;
         }
 
-        // Nothing on the stack, we check the allocated memory blovks
+        return false;
+    }
+
+    public static boolean isUsedByHeap(final int aOwningBlock) {
+
+        final int theOwningStart = aOwningBlock;
+        final int theOwningData = theOwningStart + 8;
+
+        // Nothing on the stack, we check the allocated memory blocks
         final int theAllocatedStart= 8;
         final int theAllocatedStartPtr = Address.getIntValue(theAllocatedStart, 0);
 
         int theCurrent = theAllocatedStartPtr;
         while(theCurrent != 0) {
-
             final int theCurrentStart = theCurrent;
+
             if (theOwningStart != theCurrentStart) {
                 final int theSize = Address.getIntValue(theCurrent, 0) - 8;
                 int thePosition = 8;
@@ -294,7 +303,7 @@ public class MemoryManager {
 
             final int theNext = Address.getIntValue(theCurrent, 4);
 
-            if (!isUsed(theCurrent)) {
+            if (!isUsedByHeap(theCurrent) && !isUsedByStack(theCurrent)) {
                 internalFree(theCurrent);
             }
 
