@@ -29,12 +29,52 @@ import org.junit.runner.RunWith;
 }, includeJVM = false)
 public class MemoryManagerTest {
 
+    private static Object staticRef;
+
+    private static void nothing() {
+        final Object o = new Object();
+    }
+
+    private static void createStaticReference() {
+        staticRef = new Object();
+    }
+
     @Test
     public void testUsedByStack() {
         Assert.assertFalse(MemoryManager.isUsedByStackUserSpace(1000));
         final Object o = new Object();
         final int ptr = Address.ptrOf(o);
         Assert.assertTrue(MemoryManager.isUsedByStackUserSpace(ptr));
+    }
+
+    @Test
+    public void testGCStackAllocation() {
+        MemoryManager.GC();
+        final long x = MemoryManager.freeMem();
+
+        nothing();
+
+        Assert.assertTrue(MemoryManager.freeMem() < x);
+
+        MemoryManager.GC();
+
+        Assert.assertEquals(x, MemoryManager.freeMem(), 0);
+    }
+
+    @Test
+    public void testGCStaticRef() {
+        MemoryManager.GC();
+        final long x = MemoryManager.freeMem();
+
+        createStaticReference();
+
+        final long freeMem = MemoryManager.freeMem();
+        Assert.assertTrue(freeMem < x);
+
+        MemoryManager.GC();
+
+        // Nothing is freed, as the reference is still statically referenced
+        //Assert.assertEquals(freeMem, MemoryManager.freeMem(), 0);
     }
 
     @Test

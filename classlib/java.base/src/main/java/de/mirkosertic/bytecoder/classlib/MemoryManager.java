@@ -266,6 +266,8 @@ public class MemoryManager {
         final int theOwningStart = aOwningBlock;
         final int theOwningData = theOwningStart + 8;
 
+        final int theMemorySize = Address.getMemorySize();
+
         // Nothing on the stack, we check the allocated memory blocks
         final int theAllocatedStart= 8;
         final int theAllocatedStartPtr = Address.getIntValue(theAllocatedStart, 0);
@@ -277,7 +279,7 @@ public class MemoryManager {
             if (theOwningStart != theCurrentStart) {
                 final int theSize = Address.getIntValue(theCurrent, 0) - 8;
                 int thePosition = 8;
-                while(thePosition < theSize) {
+                while(thePosition < theSize && theCurrent + thePosition + 4 < theMemorySize) {
                     final int theReference = Address.getIntValue(theCurrent, thePosition);
                     if (theReference == theOwningData) {
                         return true;
