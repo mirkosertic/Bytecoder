@@ -67,8 +67,6 @@ public class SelfInvocationTest {
             };
             System.out.println("Create AF");
 
-            MemoryManager.logMemoryLayout();
-
             System.out.println("Create B");
             stack2 = new Stack(5) {
                 @Override
@@ -77,8 +75,6 @@ public class SelfInvocationTest {
                     return new byte[10];
                 }
             };
-
-            MemoryManager.logMemoryLayout();
 
             System.out.println("Finished");
         }

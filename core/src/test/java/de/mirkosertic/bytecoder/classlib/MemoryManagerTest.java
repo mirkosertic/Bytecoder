@@ -51,6 +51,10 @@ public class MemoryManagerTest {
         Assert.assertFalse(MemoryManager.isUsedByHeapUserSpace(Address.ptrOf(b)));
 
         a.b = b;
+
+        MemoryManager.printObjectDebug(b);
+        MemoryManager.printObjectDebug(a);
+
         Assert.assertFalse(MemoryManager.isUsedByHeapUserSpace(Address.ptrOf(a)));
         //Assert.assertTrue(MemoryManager.isUsedByHeapUserSpace(Address.ptrOf(b)));
     }

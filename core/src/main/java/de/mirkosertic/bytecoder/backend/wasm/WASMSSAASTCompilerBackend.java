@@ -1644,14 +1644,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             sqrtDOUBLE: function(thisref, p1) {return Math.sqrt(p1);},");
             theWriter.println("             atan2DOUBLEDOUBLE: function(thisref, p1) {return Math.sqrt(p1);},");
             theWriter.println("         },");
-            theWriter.println("         profiler: {");
-            theWriter.println("             logMemoryLayoutBlock: function(aCaller, aStart, aUsed, aNext) {");
-            theWriter.println("                 if (aUsed == 1) return;");
-            theWriter.println("                 console.log('   Block at ' + aStart + ' status is ' + aUsed + ' points to ' + aNext);");
-            theWriter.println("                 console.log('      Block size is ' + bytecoder.intInMemory(aStart));");
-            theWriter.println("                 console.log('      Object type ' + bytecoder.intInMemory(aStart + 12));");
-            theWriter.println("             },");
-            theWriter.println("         },");
             theWriter.println("         runtime: {");
             theWriter.println("             nativewindow: function(caller) {return bytecoder.toBytecoderReference(window);},");
             theWriter.println("             nativeconsole: function(caller) {return bytecoder.toBytecoderReference(console);},");

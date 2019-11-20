@@ -31,9 +31,6 @@ public class MemoryManager {
         initInternal(Address.getMemorySize());
     }
 
-    @Import(module = "profiler", name = "logMemoryLayoutBlock")
-    public static native void logMemoryLayoutBlock(int aStart, int aUsed, int aNext);
-
     private static void initInternal(final int aSize) {
         // This is the list of free blocks
         Address.setIntValue(4, 0, 28);
@@ -73,36 +70,6 @@ public class MemoryManager {
         }
         return theResult;
     }
-
-    @Export("logMemoryLayout")
-    public static void logMemoryLayout() {
-
-        final int theFreeStart = 4;
-        final int theFreeStartPtr = Address.getIntValue(theFreeStart, 0);
-
-        int theCurrent = theFreeStartPtr;
-        while (theCurrent != 0) {
-            final int theNext = Address.getIntValue(theCurrent, 4);
-            final int theStart = theCurrent;
-
-            logMemoryLayoutBlock(theStart, 0, theNext);
-
-            theCurrent = theNext;
-        }
-
-        final int theUsedStart = 8;
-        final int theUsedStartPtr = Address.getIntValue(theUsedStart, 0);
-
-        theCurrent = theUsedStartPtr;
-        while (theCurrent != 0) {
-            final int theStart = theCurrent;
-            final int theNext = Address.getIntValue(theCurrent, 4);
-
-            logMemoryLayoutBlock(theStart, 1, theNext);
-
-            theCurrent = theNext;
-        }
-   }
 
     private static void internalFree(final int aPointer) {
 
@@ -333,5 +300,18 @@ public class MemoryManager {
             Address.setIntValue(theResult, theOffset, theSubArray);
         }
         return theResult;
+    }
+
+    public static void printObjectDebug(final Object o) {
+        final int ptr = Address.ptrOf(o);
+        System.out.println(String.format("Memory debug for %s", ptr));
+        final int theAllocatedBlock = ptr - 8;
+        final int theSize = Address.getIntValue(theAllocatedBlock, 0);
+        final int theNext = Address.getIntValue(theAllocatedBlock, 4);
+        System.out.println(String.format(" Allocation starts at %s", theAllocatedBlock));
+        System.out.println(String.format(" Size = %s, Next = %s", theSize, theNext));
+        for (int i=0;i<theSize;i+=4) {
+            System.out.println(String.format(" Memory offset +%s = %s", i, Address.getIntValue(theAllocatedBlock, i)));
+        }
     }
 }
