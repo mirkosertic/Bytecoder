@@ -262,9 +262,12 @@ public class MemoryManager {
     }
 
     public static boolean isUsedByHeap(final int aOwningBlock) {
+        return isUsedByHeapUserSpace(aOwningBlock - 8);
+    }
 
-        final int theOwningStart = aOwningBlock;
-        final int theOwningData = theOwningStart + 8;
+    public static boolean isUsedByHeapUserSpace(final int aOwningBlock) {
+
+        final int theOwningStart = aOwningBlock - 8;
 
         final int theMemorySize = Address.getMemorySize();
 
@@ -281,7 +284,7 @@ public class MemoryManager {
                 int thePosition = 8;
                 while(thePosition < theSize && theCurrent + thePosition + 4 < theMemorySize) {
                     final int theReference = Address.getIntValue(theCurrent, thePosition);
-                    if (theReference == theOwningData) {
+                    if (theReference == aOwningBlock) {
                         return true;
                     }
                     thePosition += 4;

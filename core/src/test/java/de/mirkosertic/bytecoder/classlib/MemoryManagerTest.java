@@ -29,6 +29,10 @@ import org.junit.runner.RunWith;
 }, includeJVM = false)
 public class MemoryManagerTest {
 
+    static class A {
+        Object b;
+    }
+
     private static Object staticRef;
 
     private static void nothing() {
@@ -37,6 +41,18 @@ public class MemoryManagerTest {
 
     private static void createStaticReference() {
         staticRef = new Object();
+    }
+
+    @Test
+    public void testUsedByHeap() {
+        final A a = new A();
+        final Object b = new Object();
+        Assert.assertFalse(MemoryManager.isUsedByHeapUserSpace(Address.ptrOf(a)));
+        Assert.assertFalse(MemoryManager.isUsedByHeapUserSpace(Address.ptrOf(b)));
+
+        a.b = b;
+        Assert.assertFalse(MemoryManager.isUsedByHeapUserSpace(Address.ptrOf(a)));
+        //Assert.assertTrue(MemoryManager.isUsedByHeapUserSpace(Address.ptrOf(b)));
     }
 
     @Test
