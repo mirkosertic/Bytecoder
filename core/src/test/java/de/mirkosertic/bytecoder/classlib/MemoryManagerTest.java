@@ -95,7 +95,7 @@ public class MemoryManagerTest {
         MemoryManager.GC();
 
         // Nothing is freed, as the reference is still statically referenced
-        //Assert.assertEquals(freeMem, MemoryManager.freeMem(), 0);
+        Assert.assertEquals(freeMem, MemoryManager.freeMem(), 0);
     }
 
     @Test
