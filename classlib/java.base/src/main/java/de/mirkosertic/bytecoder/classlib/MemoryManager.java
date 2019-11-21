@@ -16,7 +16,6 @@
 package de.mirkosertic.bytecoder.classlib;
 
 import de.mirkosertic.bytecoder.api.Export;
-import de.mirkosertic.bytecoder.api.Import;
 
 /**
  * A simple Memory Manager.
@@ -228,38 +227,28 @@ public class MemoryManager {
         return false;
     }
 
-    public static boolean isUsedByHeap(final int aOwningBlock) {
-        return isUsedByHeapUserSpace(aOwningBlock - 8);
+    public static boolean isUsedByHeap(final int aAllocationPtr) {
+        return isUsedByHeapUserSpace(aAllocationPtr + 8);
     }
 
-    public static boolean isUsedByHeapUserSpace(final int aOwningBlock) {
+    public static boolean isUsedByHeapUserSpace(final int aPtrToObject) {
 
-        final int theOwningStart = aOwningBlock - 8;
-
-        final int theMemorySize = Address.getMemorySize();
-
-        // Nothing on the stack, we check the allocated memory blocks
-        final int theAllocatedStart= 8;
-        final int theAllocatedStartPtr = Address.getIntValue(theAllocatedStart, 0);
+        final int theAllocationStart = aPtrToObject - 8;
+        final int theAllocatedStartPtr = Address.getIntValue(8, 0);
 
         int theCurrent = theAllocatedStartPtr;
         while(theCurrent != 0) {
-            final int theCurrentStart = theCurrent;
-
-            if (theOwningStart != theCurrentStart) {
-                final int theSize = Address.getIntValue(theCurrent, 0) - 8;
-                int thePosition = 8;
-                while(thePosition < theSize && theCurrent + thePosition + 4 < theMemorySize) {
-                    final int theReference = Address.getIntValue(theCurrent, thePosition);
-                    if (theReference == aOwningBlock) {
+            // Ignore self reference
+            if (theAllocationStart != theCurrent) {
+                final int theSize = Address.getIntValue(theCurrent, 0);
+                for (int i = 0; i < theSize; i += 4) {
+                    final int theReference = Address.getIntValue(theCurrent, i);
+                    if (theReference == aPtrToObject) {
                         return true;
                     }
-                    thePosition += 4;
                 }
             }
-
-            final int theNext = Address.getIntValue(theCurrent, 4);
-            theCurrent = theNext;
+            theCurrent = Address.getIntValue(theCurrent, 4);
         }
 
         return false;
@@ -267,12 +256,8 @@ public class MemoryManager {
 
     @Export("GC")
     public static void GC() {
-        final int theUsedStart = 8;
-
-        final int theUsedStartPtr = Address.getIntValue(theUsedStart, 0);
-        int theCurrent = theUsedStartPtr;
+        int theCurrent = Address.getIntValue(8, 0);
         while(theCurrent != 0) {
-
             final int theNext = Address.getIntValue(theCurrent, 4);
 
             if (!isUsedByHeap(theCurrent) && !isUsedByStack(theCurrent)) {
@@ -302,16 +287,52 @@ public class MemoryManager {
         return theResult;
     }
 
+    public static int indexInAllocationList(final int aObjectPtr) {
+        final int theAllocation = aObjectPtr - 8;
+
+        final int theFreeStartPtr = Address.getIntValue(8, 0);
+
+        int theCurrent = theFreeStartPtr;
+        int index = 0;
+        while (theCurrent != 0) {
+            if (theCurrent == theAllocation) {
+                return index;
+            }
+            index++;
+            theCurrent = Address.getIntValue(theCurrent, 4);
+        }
+        return -1;
+    }
+
+    public static int indexInFreeList(final int aObjectPtr) {
+        final int theAllocation = aObjectPtr - 8;
+
+        final int theFreeStartPtr = Address.getIntValue(4, 0);
+
+        int theCurrent = theFreeStartPtr;
+        int index = 0;
+        while (theCurrent != 0) {
+            if (theCurrent == theAllocation) {
+                return index;
+            }
+            index++;
+            theCurrent = Address.getIntValue(theCurrent, 4);
+        }
+        return -1;
+    }
+
     public static void printObjectDebug(final Object o) {
         final int ptr = Address.ptrOf(o);
-        System.out.println(String.format("Memory debug for %s", ptr));
-        final int theAllocatedBlock = ptr - 8;
-        final int theSize = Address.getIntValue(theAllocatedBlock, 0);
-        final int theNext = Address.getIntValue(theAllocatedBlock, 4);
-        System.out.println(String.format(" Allocation starts at %s", theAllocatedBlock));
-        System.out.println(String.format(" Size = %s, Next = %s", theSize, theNext));
-        for (int i=0;i<theSize;i+=4) {
-            System.out.println(String.format(" Memory offset +%s = %s", i, Address.getIntValue(theAllocatedBlock, i)));
-        }
+        final int indexAllocation = indexInAllocationList(ptr);
+        final int indexFree = indexInFreeList(ptr);
+        final boolean usedByStack = isUsedByStackUserSpace(ptr);
+        final boolean usedByHeap = isUsedByHeapUserSpace(ptr);
+        printObjectDebugInternal(o, indexAllocation,
+                indexFree,
+                usedByStack,
+                usedByHeap);
     }
+
+    public static native void printObjectDebugInternal(final Object o, int indexAlloc, int indexFree,
+                                                       boolean usedByStack, boolean usedByHeap);
 }

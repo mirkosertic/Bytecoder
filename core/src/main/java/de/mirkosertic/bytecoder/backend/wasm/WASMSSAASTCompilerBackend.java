@@ -1589,7 +1589,24 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("         memorymanager: {");
             theWriter.println("             logExceptionTextString : function(thisref, p1) {");
             theWriter.println("                 console.log('Exception with message : ' + bytecoder.toJSString(p1));");
+            theWriter.println("             },");
+
+            theWriter.println("             printObjectDebugInternalObjectINTINTBOOLEANBOOLEAN: function(thisref, ptr, indexAlloc, indexFree, usedByStack, usedByHeap) {");
+            theWriter.println("                 console.log('Memory debug for ' + ptr);");
+            theWriter.println("                 var theAllocatedBlock = ptr - 8;");
+            theWriter.println("                 var theSize = bytecoder.intInMemory(theAllocatedBlock);");
+            theWriter.println("                 var theNext = bytecoder.intInMemory(theAllocatedBlock +  4);");
+            theWriter.println("                 console.log(' Allocation starts at '+ theAllocatedBlock);");
+            theWriter.println("                 console.log(' Size = ' + theSize + ', Next = ' + theNext);");
+            theWriter.println("                 console.log(' Index in allocation list : ' + indexAlloc);");
+            theWriter.println("                 console.log(' Index in free list       : ' + indexFree);");
+            theWriter.println("                 console.log(' Used by STACK            : ' + usedByStack);");
+            theWriter.println("                 console.log(' Used by HEAP             : ' + usedByHeap);");
+            theWriter.println("                 for (var i=0;i<theSize;i+=4) {");
+            theWriter.println("                     console.log(' Memory offset +' + i + ' = ' + bytecoder.intInMemory( theAllocatedBlock + i));");
+            theWriter.println("                 }");
             theWriter.println("             }");
+
             theWriter.println("         },");
             theWriter.println("         opaquearrays : {");
             theWriter.println("             createIntArrayINT: function(thisref, p1) {");
