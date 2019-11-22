@@ -211,14 +211,14 @@ public class MemoryManager {
         return isUsedByStackUserSpace(theOwningData);
     }
 
-    public static boolean isUsedByStackUserSpace(final int aDataPtr) {
+    public static boolean isUsedByStackUserSpace(final int aPtrToObject) {
         int theStackStart = Address.getStackTop();
         final int theMemorySize = Address.getMemorySize();
         while(theStackStart + 4 < theMemorySize) {
             final int theCurrent = theStackStart;
 
             final int theReference = Address.getIntValue(theCurrent, 0);
-            if (theReference == aDataPtr) {
+            if (theReference == aPtrToObject) {
                 return true;
             }
             theStackStart += 4;

@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.classlib;
 
 import de.mirkosertic.bytecoder.backend.CompileTarget;
+import de.mirkosertic.bytecoder.backend.wasm.ast.Memory;
 import de.mirkosertic.bytecoder.unittest.BytecoderTestOption;
 import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
@@ -112,4 +113,18 @@ public class MemoryManagerTest {
         Assert.assertEquals(x, MemoryManager.freeMem(), 0);
     }
 
+    public static int createAndReturnObjectPt() {
+        // Increment the pointer by one to make the reference invisible on
+        // the stack for the GC, and the object is garbage-collectible.
+        return Address.ptrOf(new Object()) + 1;
+    }
+
+    @Test
+    public void testNotUsedByStackOrHeap() {
+        MemoryManager.GC();
+        final int ptr = createAndReturnObjectPt();
+        MemoryManager.GC();
+        Assert.assertFalse(MemoryManager.isUsedByHeapUserSpace(ptr - 1));
+        Assert.assertFalse(MemoryManager.isUsedByStackUserSpace(ptr - 1));
+    }
 }
