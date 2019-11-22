@@ -16,7 +16,6 @@
 package de.mirkosertic.bytecoder.classlib;
 
 import de.mirkosertic.bytecoder.backend.CompileTarget;
-import de.mirkosertic.bytecoder.backend.wasm.ast.Memory;
 import de.mirkosertic.bytecoder.unittest.BytecoderTestOption;
 import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
@@ -122,9 +121,13 @@ public class MemoryManagerTest {
     @Test
     public void testNotUsedByStackOrHeap() {
         MemoryManager.GC();
+        final long theFreeMem = MemoryManager.freeMem();
         final int ptr = createAndReturnObjectPt();
         MemoryManager.GC();
+        Assert.assertEquals(theFreeMem, MemoryManager.freeMem(), 0);
         Assert.assertFalse(MemoryManager.isUsedByHeapUserSpace(ptr - 1));
-        Assert.assertFalse(MemoryManager.isUsedByStackUserSpace(ptr - 1));
+        Assert.assertFalse(MemoryManager.isUsedByStackUserSpace( ptr - 1));
+        Assert.assertEquals(-1, MemoryManager.indexInAllocationList(ptr - 1), 0);
+        Assert.assertTrue(MemoryManager.indexInFreeList(ptr -1) >= 0);
     }
 }
