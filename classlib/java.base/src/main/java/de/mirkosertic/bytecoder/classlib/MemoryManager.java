@@ -215,10 +215,7 @@ public class MemoryManager {
         int theStackStart = Address.getStackTop();
         final int theMemorySize = Address.getMemorySize();
         while(theStackStart + 4 < theMemorySize) {
-            final int theCurrent = theStackStart;
-
-            final int theReference = Address.getIntValue(theCurrent, 0);
-            if (theReference == aPtrToObject) {
+            if (Address.getIntValue(theStackStart, 0) == aPtrToObject) {
                 return true;
             }
             theStackStart += 4;
@@ -232,18 +229,14 @@ public class MemoryManager {
     }
 
     public static boolean isUsedByHeapUserSpace(final int aPtrToObject) {
-
         final int theAllocationStart = aPtrToObject - 8;
-        final int theAllocatedStartPtr = Address.getIntValue(8, 0);
-
-        int theCurrent = theAllocatedStartPtr;
+        int theCurrent = Address.getIntValue(8, 0);
         while(theCurrent != 0) {
             // Ignore self reference
             if (theAllocationStart != theCurrent) {
                 final int theSize = Address.getIntValue(theCurrent, 0);
-                for (int i = 0; i < theSize; i += 4) {
-                    final int theReference = Address.getIntValue(theCurrent, i);
-                    if (theReference == aPtrToObject) {
+                for (int i = 8; i < theSize; i += 4) {
+                    if (Address.getIntValue(theCurrent, i) == aPtrToObject) {
                         return true;
                     }
                 }
