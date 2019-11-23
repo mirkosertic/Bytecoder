@@ -1589,7 +1589,24 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("         memorymanager: {");
             theWriter.println("             logExceptionTextString : function(thisref, p1) {");
             theWriter.println("                 console.log('Exception with message : ' + bytecoder.toJSString(p1));");
+            theWriter.println("             },");
+
+            theWriter.println("             printObjectDebugInternalObjectINTINTBOOLEANBOOLEAN: function(thisref, ptr, indexAlloc, indexFree, usedByStack, usedByHeap) {");
+            theWriter.println("                 console.log('Memory debug for ' + ptr);");
+            theWriter.println("                 var theAllocatedBlock = ptr - 8;");
+            theWriter.println("                 var theSize = bytecoder.intInMemory(theAllocatedBlock);");
+            theWriter.println("                 var theNext = bytecoder.intInMemory(theAllocatedBlock +  4);");
+            theWriter.println("                 console.log(' Allocation starts at '+ theAllocatedBlock);");
+            theWriter.println("                 console.log(' Size = ' + theSize + ', Next = ' + theNext);");
+            theWriter.println("                 console.log(' Index in allocation list : ' + indexAlloc);");
+            theWriter.println("                 console.log(' Index in free list       : ' + indexFree);");
+            theWriter.println("                 console.log(' Used by STACK            : ' + usedByStack);");
+            theWriter.println("                 console.log(' Used by HEAP             : ' + usedByHeap);");
+            theWriter.println("                 for (var i=0;i<theSize;i+=4) {");
+            theWriter.println("                     console.log(' Memory offset +' + i + ' = ' + bytecoder.intInMemory( theAllocatedBlock + i));");
+            theWriter.println("                 }");
             theWriter.println("             }");
+
             theWriter.println("         },");
             theWriter.println("         opaquearrays : {");
             theWriter.println("             createIntArrayINT: function(thisref, p1) {");
@@ -1643,14 +1660,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             roundFLOAT: function  (thisref, p1) {return Math.round(p1);},");
             theWriter.println("             sqrtDOUBLE: function(thisref, p1) {return Math.sqrt(p1);},");
             theWriter.println("             atan2DOUBLEDOUBLE: function(thisref, p1) {return Math.sqrt(p1);},");
-            theWriter.println("         },");
-            theWriter.println("         profiler: {");
-            theWriter.println("             logMemoryLayoutBlock: function(aCaller, aStart, aUsed, aNext) {");
-            theWriter.println("                 if (aUsed == 1) return;");
-            theWriter.println("                 console.log('   Block at ' + aStart + ' status is ' + aUsed + ' points to ' + aNext);");
-            theWriter.println("                 console.log('      Block size is ' + bytecoder.intInMemory(aStart));");
-            theWriter.println("                 console.log('      Object type ' + bytecoder.intInMemory(aStart + 12));");
-            theWriter.println("             },");
             theWriter.println("         },");
             theWriter.println("         runtime: {");
             theWriter.println("             nativewindow: function(caller) {return bytecoder.toBytecoderReference(window);},");

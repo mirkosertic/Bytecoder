@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2019 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib;
+package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
-@EmulatedByRuntime
-public class Address {
+public class PtrOfExpression extends Expression {
 
-    public static native int getIntValue(int aAddress, int aIndex);
+    public PtrOfExpression(final Program aProgram, final BytecodeOpcodeAddress address, final Value aValue) {
+        super(aProgram, address);
+        receivesDataFrom(aValue);
+    }
 
-    public static native void setIntValue(int aAddress, int aIndex, int aValue);
-
-    public static native int getStackTop();
-
-    public static native int getMemorySize();
-
-    public static native void unreachable();
-
-    public static native int ptrOf(final Object o);
+    @Override
+    public TypeRef resolveType() {
+        return incomingDataFlows().get(0).resolveType();
+    }
 }
