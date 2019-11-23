@@ -105,6 +105,7 @@ import de.mirkosertic.bytecoder.ssa.NewObjectExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.PtrOfExpression;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
@@ -803,7 +804,14 @@ public class WASMSSAASTWriter {
         if (aValue instanceof NewInstanceFromDefaultConstructorExpression) {
             return newInstanceFromDefaultConstructor((NewInstanceFromDefaultConstructorExpression) aValue);
         }
+        if (aValue instanceof PtrOfExpression) {
+            return ptrOfExpression((PtrOfExpression) aValue);
+        }
         throw new IllegalStateException("Not supported : " + aValue);
+    }
+
+    private WASMValue ptrOfExpression(final PtrOfExpression aValue) {
+        return toValue(aValue.incomingDataFlows().get(0));
     }
 
     private WASMValue newInstanceFromDefaultConstructor(final NewInstanceFromDefaultConstructorExpression aValue) {
