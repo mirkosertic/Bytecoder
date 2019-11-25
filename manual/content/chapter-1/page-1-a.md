@@ -92,7 +92,7 @@ HTML embedding, which is shown here:
 
             // We have to activate the garbage collector!
             var gcInterval = 10000;
-            var gcRunning = false,
+            var gcRunning = false;
             setInterval(function() {
                 if (!gcRunning) {
                     gcRunning = true;
