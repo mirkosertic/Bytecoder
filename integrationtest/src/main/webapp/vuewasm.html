@@ -107,13 +107,30 @@ public class VueDemo {
         console.log("Bootstrapped");
         bytecoder.exports.main(0);
         console.log("Ready for action!");
+
+        // We have to activate the garbage collector!
+        var gcInterval = 200;
+        var gcRunning = false;
+        var runcounter = 0;
+        setInterval(function() {
+            if (!gcRunning) {
+                gcRunning = true;
+                var freed = bytecoder.exports.IncrementalGC(0, 100);
+                if (runcounter++ % 10 === 0) {
+                    var freemem = bytecoder.exports.freeMem(0);
+                    console.log(freemem + " bytes free memory after GC");
+                }
+                gcRunning = false;
+            }
+        }, gcInterval);
+
     };
 
     // Try to load the WASM file
     WebAssembly.instantiateStreaming(fetch('vuedemo.wasm'), bytecoder.imports)
         .then(instantiated)
         .catch(function(error) {
-            console.log("Using fallback method to load WebAssembly! Check if mime types for WebAssembly are configured correctly!")
+            console.log("Using fallback method to load WebAssembly! Check if mime types for WebAssembly are configured correctly!");
             var request = new XMLHttpRequest();
             request.open('GET', 'vuedemo.wasm');
             request.responseType = 'arraybuffer';

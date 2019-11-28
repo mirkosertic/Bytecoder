@@ -43,13 +43,13 @@ public class MemoryManagerSimpleTest {
         Assert.assertEquals(0, MemoryManager.usedMem(), 0);
 
         final int theMalloc = MemoryManager.malloc(100);
-        Assert.assertEquals(36, theMalloc , 0);
+        Assert.assertEquals(44, theMalloc , 0);
 
         Assert.assertEquals(892, MemoryManager.freeMem(), 0);
         Assert.assertEquals(108, MemoryManager.usedMem(), 0);
 
         final int theMalloc2 = MemoryManager.malloc(150);
-        Assert.assertEquals(144, theMalloc2 , 0);
+        Assert.assertEquals(152, theMalloc2 , 0);
 
         Assert.assertEquals(734, MemoryManager.freeMem(), 0);
         Assert.assertEquals(266, MemoryManager.usedMem(), 0);
@@ -62,7 +62,7 @@ public class MemoryManagerSimpleTest {
         Assert.assertEquals(0, MemoryManager.usedMem(), 0);
 
         int theMalloc = MemoryManager.malloc(100);
-        Assert.assertEquals(36, theMalloc , 0);
+        Assert.assertEquals(44, theMalloc , 0);
         Assert.assertEquals(892, MemoryManager.freeMem(), 0);
         Assert.assertEquals(108, MemoryManager.usedMem(), 0);
 
@@ -71,7 +71,7 @@ public class MemoryManagerSimpleTest {
         Assert.assertEquals(0, MemoryManager.usedMem(), 0);
 
         theMalloc = MemoryManager.malloc(100);
-        Assert.assertEquals(36, theMalloc , 0);
+        Assert.assertEquals(44, theMalloc , 0);
         Assert.assertEquals(892, MemoryManager.freeMem(), 0);
         Assert.assertEquals(108, MemoryManager.usedMem(), 0);
     }

@@ -32,14 +32,20 @@ public class MemoryManager {
 
     private static void initInternal(final int aSize) {
         // This is the list of free blocks
-        Address.setIntValue(4, 0, 28);
+        Address.setIntValue(4, 0, 36);
 
         // Free memory block
-        Address.setIntValue(28, 0, aSize);
-        Address.setIntValue(28, 4, 0);
+        Address.setIntValue(36, 0, aSize);
+        Address.setIntValue(36, 4, 0);
 
         // This is the List of reserved blocks
         Address.setIntValue(8, 0, 0);
+
+        // Current work counter for GC resumes
+        Address.setIntValue(12, 0, 0);
+
+        // Current counter for GC epochs
+        Address.setIntValue(16, 0, 0);
     }
 
     @Export("freeMem")
@@ -141,7 +147,6 @@ public class MemoryManager {
             final int theNext = Address.getIntValue(theCurrent, 4);
             if (theSize >= aSize) {
                 final int theRemaining = theSize - aSize;
-
 
                 if (theRemaining > 8) {
                     Address.setIntValue(theCurrent, 0, aSize);
@@ -248,17 +253,49 @@ public class MemoryManager {
     }
 
     @Export("GC")
-    public static void GC() {
-        int theCurrent = Address.getIntValue(8, 0);
+    public static int GC() {
+        return IncrementalGC(Integer.MAX_VALUE);
+    }
+
+    @Export("IncrementalGC")
+    public static int IncrementalGC(final int blockLimit) {
+        // Try to check if we can continue from a previous run
+        int theCurrent = Address.getIntValue(12, 0);
+        if (theCurrent == 0) {
+            // No, we start at the beginning of the allocation list
+            theCurrent = Address.getIntValue(8, 0);
+        }
+
+        // We have to remember the current GC epoch
+        final int currentEpoch = Address.getIntValue(16, 0);
+
+        int freeCounter = 0;
+        int stepCounter = 0;
         while(theCurrent != 0) {
             final int theNext = Address.getIntValue(theCurrent, 4);
 
             if (!isUsedByHeap(theCurrent) && !isUsedByStack(theCurrent)) {
                 internalFree(theCurrent);
+                freeCounter++;
+            } else {
+                // Increment the survivor count of the allocation block
             }
 
             theCurrent = theNext;
+            if (stepCounter++ >= blockLimit) {
+                // We have reached the limit for the current run
+                // We save the next block to proceed and exit here
+                Address.setIntValue(12, 0, theCurrent);
+                return stepCounter;
+            }
         }
+        // Increment epoch
+        Address.setIntValue(16, 0, currentEpoch + 1);
+
+        // The next run starts at the beginning
+        Address.setIntValue(12, 0, 0);
+
+        return freeCounter;
     }
 
     public static int newArray(final int aSize, final int aType, final int aVTableIndex) {
