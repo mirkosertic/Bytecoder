@@ -78,36 +78,32 @@ public class MemoryManager {
 
     private static void internalFree(final int aPointer) {
 
-        final int theStart = aPointer;
-
         // Remove the block from the list of allocated blocks
         int theCurrent = Address.getIntValue(8, 0);
 
         int thePrevious = 0;
         while(theCurrent != 0) {
 
-            final int theCurrentStart = theCurrent;
             final int theNext = Address.getIntValue(theCurrent, 4);
 
-            if (theCurrentStart == theStart) {
+            if (theCurrent == aPointer) {
                 // This is the block
                 // Remove it from the list of allocated blocks
                 if (thePrevious == 0) {
                     Address.setIntValue(8, 0, theNext);
                 } else {
-                    final int thePrevPtr = thePrevious;
-                    Address.setIntValue(thePrevPtr, 4, theNext);
+                    Address.setIntValue(thePrevious, 4, theNext);
                 }
 
                 // Ok, now we prepend it to the list of free blocks
                 final int theFreeStartPtr = Address.getIntValue(4, 0);
 
                 Address.setIntValue(theCurrent, 4, theFreeStartPtr);
-                Address.setIntValue(4, 0, theCurrentStart);
+                Address.setIntValue(4, 0, theCurrent);
                 return;
             }
 
-            thePrevious = theCurrentStart;
+            thePrevious = theCurrent;
             theCurrent = theNext;
         }
     }
@@ -133,8 +129,7 @@ public class MemoryManager {
         // Overhead for header
         aSize+=8;
 
-        final int theFreeStart = 4;
-        final int theFreeStartPtr = Address.getIntValue(theFreeStart, 0);
+        final int theFreeStartPtr = Address.getIntValue(4, 0);
 
         // We search the free list for a suitable sized block
         int thePrevious = 0;
@@ -156,7 +151,7 @@ public class MemoryManager {
                     Address.setIntValue(theNewFree, 4, theNext);
 
                     if (thePrevious == 0) {
-                        Address.setIntValue(theFreeStart, 0, theNewFreeStart);
+                        Address.setIntValue(4, 0, theNewFreeStart);
                     } else {
                         Address.setIntValue(thePrevious, 4, theNewFreeStart);
                     }
@@ -165,7 +160,7 @@ public class MemoryManager {
                     Address.setIntValue(theCurrent, 0, theSize);
 
                     if (thePrevious == 0) {
-                        Address.setIntValue(theFreeStart, 0, theNext);
+                        Address.setIntValue(4, 0, theNext);
                     } else {
                         Address.setIntValue(thePrevious, 4, theNext);
                     }
@@ -173,20 +168,18 @@ public class MemoryManager {
 
                 // Add the current block to the allocated block ist by prepending it to the list
                 final int theReservedListPtr = Address.getIntValue(8, 0);
-                final int theCurrentStart = theCurrent;
 
                 Address.setIntValue(theCurrent, 4, theReservedListPtr);
-                Address.setIntValue(8, 0, theCurrentStart);
+                Address.setIntValue(8, 0, theCurrent);
 
                 // Wipeout data
-                final int theDataStart = theCurrentStart + 8;
-                final int theNewData = theDataStart;
+                final int theDataStart = theCurrent + 8;
 
                 for (int i=0;i<aSize-16;i+=4) {
-                    Address.setIntValue(theNewData, i, 0);
+                    Address.setIntValue(theDataStart, i, 0);
                 }
 
-                return theNewData;
+                return theDataStart;
             }
 
             thePrevious = theCurrent;
