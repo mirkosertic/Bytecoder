@@ -45,7 +45,7 @@ public class MemoryManager {
         Address.setIntValue(12, 0, 0);
 
         // Current counter for GC epochs
-        Address.setIntValue(16, 0, 0);
+        Address.setIntValue(16, 0, 1);
     }
 
     @Export("freeMem")
@@ -81,10 +81,8 @@ public class MemoryManager {
         final int theStart = aPointer;
 
         // Remove the block from the list of allocated blocks
-        final int theAllocatedStart = 8;
-        final int theAllocatedStartPtr = Address.getIntValue(theAllocatedStart, 0);
+        int theCurrent = Address.getIntValue(8, 0);
 
-        int theCurrent = theAllocatedStartPtr;
         int thePrevious = 0;
         while(theCurrent != 0) {
 
@@ -95,18 +93,17 @@ public class MemoryManager {
                 // This is the block
                 // Remove it from the list of allocated blocks
                 if (thePrevious == 0) {
-                    Address.setIntValue(theAllocatedStart, 0, theNext);
+                    Address.setIntValue(8, 0, theNext);
                 } else {
                     final int thePrevPtr = thePrevious;
                     Address.setIntValue(thePrevPtr, 4, theNext);
                 }
 
                 // Ok, now we prepend it to the list of free blocks
-                final int theFreeStart = 4;
-                final int theFreeStartPtr = Address.getIntValue(theFreeStart, 0);
+                final int theFreeStartPtr = Address.getIntValue(4, 0);
 
                 Address.setIntValue(theCurrent, 4, theFreeStartPtr);
-                Address.setIntValue(theFreeStart, 0, theCurrentStart);
+                Address.setIntValue(4, 0, theCurrentStart);
                 return;
             }
 
@@ -175,13 +172,11 @@ public class MemoryManager {
                 }
 
                 // Add the current block to the allocated block ist by prepending it to the list
-                final int theReservedListStart = 8;
-
-                final int theReservedListPtr = Address.getIntValue(theReservedListStart, 0);
+                final int theReservedListPtr = Address.getIntValue(8, 0);
                 final int theCurrentStart = theCurrent;
 
                 Address.setIntValue(theCurrent, 4, theReservedListPtr);
-                Address.setIntValue(theReservedListStart, 0, theCurrentStart);
+                Address.setIntValue(8, 0, theCurrentStart);
 
                 // Wipeout data
                 final int theDataStart = theCurrentStart + 8;
