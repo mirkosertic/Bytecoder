@@ -20,7 +20,7 @@ import de.mirkosertic.bytecoder.api.Export;
 /**
  * A simple Memory Manager.
  *
- * It basically holds zwo linked lists. One for the free memory blocks,
+ * It basically holds two linked lists. One for the free memory blocks,
  * and one for the reserved blocks.
  */
 public class MemoryManager {
