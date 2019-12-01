@@ -274,7 +274,9 @@ public class MemoryManager {
                     freeCounter++;
                 } else {
                     // Increment the survivor count of the allocation block
-                    Address.setIntValue(theCurrent, 8, theSurvivorCount + 1);
+                    if (theSurvivorCount < 32) {
+                        Address.setIntValue(theCurrent, 8, theSurvivorCount * 2);
+                    }
                 }
                 if (stepCounter++ >= blockLimit) {
                     // We have reached the limit for the current run
