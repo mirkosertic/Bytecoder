@@ -15,6 +15,11 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import org.junit.Assert;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+
 import de.mirkosertic.bytecoder.api.web.Console;
 import de.mirkosertic.bytecoder.api.web.Event;
 import de.mirkosertic.bytecoder.api.web.EventListener;
@@ -30,10 +35,6 @@ import de.mirkosertic.bytecoder.api.web.StringPromise;
 import de.mirkosertic.bytecoder.api.web.Window;
 import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
 @RunWith(BytecoderUnitTestRunner.class)
 @BytecoderTestOptions(includeJVM = false)
@@ -128,5 +129,20 @@ public class OpaqueReferenceTest {
         final Int8Array a = OpaqueArrays.createInt8Array(10);
         a.setByte(1, (byte) 99);
         Assert.assertEquals((byte) 99, a.getByte(1), 0);
+    }
+
+    private static class Logger {
+
+        public void log(final String aValue) {
+            System.out.println(aValue);
+        }
+    }
+
+    @Test
+    public void testNameConflict() {
+        final Logger l = new Logger();
+        l.log("Hello world!");
+        final Console c = Console.console();
+        c.log("Hello console!");
     }
 }

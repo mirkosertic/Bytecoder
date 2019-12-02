@@ -15,6 +15,27 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.f32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.select;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.teeLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Stack;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
 import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
 import de.mirkosertic.bytecoder.allocator.Register;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
@@ -129,26 +150,6 @@ import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Stack;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.f32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.select;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.teeLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
 
 public class WASMSSAASTWriter {
 
@@ -1070,26 +1071,33 @@ public class WASMSSAASTWriter {
         final List<Value> theVariables = theFlows.subList(1, theFlows.size());
 
         // Check if we are invoking something on an opaque type
-        final BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(aValue.getMethodName(), aValue.getSignature());
-        final List<BytecodeLinkedClass> theClasses = linkerContext.getAllClassesAndInterfacesWithMethod(theMethodIdentifier);
-        if (theClasses.size() == 1) {
-            final BytecodeLinkedClass theTargetClass = theClasses.get(0);
-            final BytecodeMethod theMethod = theTargetClass.getBytecodeClass().methodByNameAndSignatureOrNull(aValue.getMethodName(), aValue.getSignature());
-            if (theTargetClass.isOpaqueType() && !theMethod.isConstructor()) {
-                // At this point, we are creating a direct call invocation to the function
-                // Which is imported fom the WASM Host environment
-                final Callable function = weakFunctionReference(WASMWriterUtils.toMethodName(theTargetClass.getClassName(), aValue.getMethodName(), aValue.getSignature()), aValue);
-                final List<WASMValue> arguments = new ArrayList<>();
-                arguments.add(toValue(theTarget));
-                for (final Value theValue : theVariables) {
-                    arguments.add(toValue(theValue));
+        final BytecodeTypeRef theInvokedClassName = aValue.getInvokedClass();
+        if (!theInvokedClassName.isPrimitive() && !theInvokedClassName.isArray()) {
+            final BytecodeLinkedClass theInvokedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) theInvokedClassName);
+            if (theInvokedClass.isOpaqueType()) {
+                final BytecodeResolvedMethods theMethods = theInvokedClass.resolvedMethods();
+                final List<BytecodeResolvedMethods.MethodEntry> theImplMethods = theMethods.stream().filter(
+                        t -> t.getValue().getName().stringValue().equals(aValue.getMethodName()) &&
+                                t.getValue().getSignature().matchesExactlyTo(aValue.getSignature()))
+                        .collect(Collectors.toList());
+                if (theImplMethods.size() != 1) {
+                    throw new IllegalStateException("Cannot find unique method " + aValue.getMethodName() + " with signature " + aValue.getSignature() + " in " + theInvokedClassName.name());
                 }
-                return call(function, arguments, aValue);
+                final BytecodeLinkedClass theImplClass = theImplMethods.get(0).getProvidingClass();
+                final BytecodeMethod theMethod = theImplMethods.get(0).getValue();
+                if (!theMethod.isConstructor()) {
+                    // At this point, we are creating a direct call invocation to the function
+                    // Which is imported fom the WASM Host environment
+                    final Callable function = weakFunctionReference(WASMWriterUtils
+                            .toMethodName(theImplClass.getClassName(), aValue.getMethodName(), aValue.getSignature()), aValue);
+                    final List<WASMValue> arguments = new ArrayList<>();
+                    arguments.add(toValue(theTarget));
+                    for (final Value theValue : theVariables) {
+                        arguments.add(toValue(theValue));
+                    }
+                    return call(function, arguments, aValue);
+                }
             }
-        }
-
-        if (theClasses.stream().anyMatch(BytecodeLinkedClass::isOpaqueType)) {
-            throw new IllegalStateException("There seems to be some confusion here, either multiple OpaqueTypes with method named \"" + aValue.getMethodName() + "\" or mix of Opaque and Non-Opaque virtual invocations in class list " + theClasses);
         }
 
         final List<PrimitiveType> theSignatureParams = new ArrayList<>();
@@ -1111,6 +1119,8 @@ public class WASMSSAASTWriter {
         for (final Value theValue : theVariables) {
             theArguments.add(toValue(theValue));
         }
+
+        final BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(aValue.getMethodName(), aValue.getSignature());
 
         final WASMType theResolveType = module.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
         final List<WASMValue> theResolveArgument = new ArrayList<>();
