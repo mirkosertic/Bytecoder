@@ -45,7 +45,6 @@ import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
-import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.ArrayEntryExpression;
 import de.mirkosertic.bytecoder.ssa.ArrayLengthExpression;
@@ -1040,20 +1039,25 @@ public class JSSSAWriter {
         final Value theTarget = theIncomingData.get(0);
         final List<Value> theArguments = theIncomingData.subList(1, theIncomingData.size());
 
-        // Check if we are invoking something on an opaque type
-        final BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(theMethodName, theSignature);
-        final List<BytecodeLinkedClass> theClasses = linkerContext.getAllClassesAndInterfacesWithMethod(theMethodIdentifier);
-        if (theClasses.size() == 1) {
-            final BytecodeLinkedClass theTargetClass = theClasses.get(0);
-            final BytecodeMethod theMethod = theTargetClass.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
-            if (theTargetClass.isOpaqueType() && !theMethod.isConstructor()) {
-                writeOpaqueMethodInvocation(theSignature, theTarget, theArguments, theMethod);
-                return;
+        final BytecodeTypeRef theInvokedClassName = aValue.getInvokedClass();
+        if (!theInvokedClassName.isPrimitive() && !theInvokedClassName.isArray()) {
+            final BytecodeLinkedClass theInvokedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) theInvokedClassName);
+            if (theInvokedClass.isOpaqueType()) {
+                final BytecodeResolvedMethods theMethods = theInvokedClass.resolvedMethods();
+                final List<BytecodeResolvedMethods.MethodEntry> theImplMethods = theMethods.stream().filter(
+                        t -> t.getValue().getName().stringValue().equals(theMethodName) &&
+                        t.getValue().getSignature().matchesExactlyTo(theSignature))
+                        .collect(Collectors.toList());
+                if (theImplMethods.size() != 1) {
+                    throw new IllegalStateException("Cannot find unique method " + theMethodName + " with signature " + theSignature + " in " + theInvokedClassName.name());
+                }
+                final BytecodeLinkedClass theImplClass = theImplMethods.get(0).getProvidingClass();
+                final BytecodeMethod theMethod = theImplMethods.get(0).getValue();
+                if (!theMethod.isConstructor()) {
+                    writeOpaqueMethodInvocation(theSignature, theTarget, theArguments, theMethod);
+                    return;
+                }
             }
-        }
-
-        if (theClasses.stream().anyMatch(BytecodeLinkedClass::isOpaqueType)) {
-            throw new IllegalStateException("There seems to be some confusion here, either multiple OpaqueTypes with method named \"" + theMethodName + "\" or mix of Opaque and Non-Opaque virtual invocations in class list " + theClasses);
         }
 
         if (Objects.equals(aValue.getMethodName(), "invokeWithMagicBehindTheScenes")) {
