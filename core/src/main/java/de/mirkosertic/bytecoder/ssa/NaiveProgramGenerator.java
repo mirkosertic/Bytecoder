@@ -15,6 +15,17 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import java.lang.invoke.CallSite;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
@@ -125,17 +136,6 @@ import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 import de.mirkosertic.bytecoder.graph.Dominators;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.intrinsics.Intrinsics;
-
-import java.lang.invoke.CallSite;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public final class NaiveProgramGenerator implements ProgramGenerator {
 
@@ -1015,7 +1015,13 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
             } else if (theInstruction instanceof BytecodeInstructionINVOKEVIRTUAL) {
                 final BytecodeInstructionINVOKEVIRTUAL theINS = (BytecodeInstructionINVOKEVIRTUAL) theInstruction;
-                final BytecodeObjectTypeRef theInvokedClass = BytecodeObjectTypeRef.fromUtf8Constant(theINS.getMethodReference().getClassIndex().getClassConstant().getConstant());
+                final BytecodeTypeRef theInvokedClass;
+                final BytecodeUtf8Constant theConstant = theINS.getMethodReference().getClassIndex().getClassConstant().getConstant();
+                if (theConstant.stringValue().startsWith("[")) {
+                    theInvokedClass = linkerContext.getSignatureParser().toFieldType(theConstant);
+                } else {
+                    theInvokedClass = BytecodeObjectTypeRef.fromUtf8Constant(theConstant);
+                }
                 final BytecodeMethodSignature theSignature = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
 
                 final List<Value> theArguments = new ArrayList<>();
