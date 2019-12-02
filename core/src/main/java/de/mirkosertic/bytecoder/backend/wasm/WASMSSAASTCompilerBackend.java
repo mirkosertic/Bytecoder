@@ -1593,11 +1593,13 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
             theWriter.println("             printObjectDebugInternalObjectINTINTBOOLEANBOOLEAN: function(thisref, ptr, indexAlloc, indexFree, usedByStack, usedByHeap) {");
             theWriter.println("                 console.log('Memory debug for ' + ptr);");
-            theWriter.println("                 var theAllocatedBlock = ptr - 8;");
+            theWriter.println("                 var theAllocatedBlock = ptr - 12;");
             theWriter.println("                 var theSize = bytecoder.intInMemory(theAllocatedBlock);");
             theWriter.println("                 var theNext = bytecoder.intInMemory(theAllocatedBlock +  4);");
+            theWriter.println("                 var theSurvivorCount = bytecoder.intInMemory(theAllocatedBlock +  8);");
             theWriter.println("                 console.log(' Allocation starts at '+ theAllocatedBlock);");
             theWriter.println("                 console.log(' Size = ' + theSize + ', Next = ' + theNext);");
+            theWriter.println("                 console.log(' GC survivor count        : ' + theSurvivorCount);");
             theWriter.println("                 console.log(' Index in allocation list : ' + indexAlloc);");
             theWriter.println("                 console.log(' Index in free list       : ' + indexFree);");
             theWriter.println("                 console.log(' Used by STACK            : ' + usedByStack);");

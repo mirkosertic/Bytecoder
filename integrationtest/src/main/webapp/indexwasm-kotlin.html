@@ -99,6 +99,24 @@
         bytecoder.exports.main(0);
         console.log("Ready for action!");
 
+        // We have to activate the garbage collector!
+        var gcInterval = 200;
+        var gcMaxObjectsPerRun = 30;
+        var gcRunning = false;
+        var runcounter = 0;
+        setInterval(function() {
+            if (!gcRunning) {
+                gcRunning = true;
+                var freed = bytecoder.exports.IncrementalGC(0, gcMaxObjectsPerRun);
+                if (runcounter++ % 10 === 0) {
+                    var freemem = bytecoder.exports.freeMem(0);
+                    var epoch = bytecoder.exports.GCEpoch(0);
+                    console.log(freemem + " bytes free memory after GC, epoch = " + epoch);
+                }
+                gcRunning = false;
+            }
+        }, gcInterval);
+
         document.getElementById("button").style.display = "block";
     };
 
