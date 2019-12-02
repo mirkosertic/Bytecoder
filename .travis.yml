@@ -1,6 +1,7 @@
 sudo: false
 
 addons:
+  chrome: stable
   apt:
     packages:
       - google-chrome-stable

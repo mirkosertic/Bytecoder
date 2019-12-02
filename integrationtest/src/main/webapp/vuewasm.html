@@ -38,20 +38,26 @@ public class VueDemo {
         void welcomemessage(String aNewMessage);
     }
 
-    public static void main(String[] args) {
-        VueBuilder<MyVueInstance> theBuilder = Vue.builder();
+    private static VueEventListener&lt;MyVueInstance, ClickEvent&gt; listener;
+
+    public static void main(final String[] args) {
+        // We need the static reference to avoid garbage collection for this object
+        // Opaque References are NOT visible to the GC, hence all references it holds also!!!
+        listener = new VueEventListener&lt;MyVueInstance, ClickEvent&gt;() {
+            @Override
+            public void handle(final MyVueInstance instance, final ClickEvent event) {
+                instance.welcomemessage(String.format("hello world, you have clicked. Timestamp is %s", System.currentTimeMillis()));
+            }
+        };
+
+        final VueBuilder&lt;MyVueInstance&gt; theBuilder = Vue.builder();
         theBuilder.bindToTemplateSelector("#vuetemplate");
         theBuilder.data().setProperty("welcomemessage", "hello world!");
-        theBuilder.addEventListener("clicked", new VueEventListener<MyVueInstance, ClickEvent>() {
-            @Override
-            public void handle(MyVueInstance instance, ClickEvent event) {
-                instance.welcomemessage("hello world, you have clicked. Timestamp is " + System.currentTimeMillis());
-            }
-        });
+        theBuilder.addEventListener("clicked", listener);
         MyVueInstance instance = theBuilder.build();
     }
 }
-    </code></pre>
+</code></pre>
 <script>
     hljs.initHighlightingOnLoad();
 </script>
@@ -107,13 +113,31 @@ public class VueDemo {
         console.log("Bootstrapped");
         bytecoder.exports.main(0);
         console.log("Ready for action!");
+
+        // We have to activate the garbage collector!
+        var gcInterval = 200;
+        var gcMaxObjectsPerRun = 30;
+        var gcRunning = false;
+        var runcounter = 0;
+        setInterval(function() {
+            if (!gcRunning) {
+                gcRunning = true;
+                var freed = bytecoder.exports.IncrementalGC(0, gcMaxObjectsPerRun);
+                if (runcounter++ % 10 === 0) {
+                    var freemem = bytecoder.exports.freeMem(0);
+                    var epoch = bytecoder.exports.GCEpoch(0);
+                    console.log(freemem + " bytes free memory after GC, epoch = " + epoch);
+                }
+                gcRunning = false;
+            }
+        }, gcInterval);
     };
 
     // Try to load the WASM file
     WebAssembly.instantiateStreaming(fetch('vuedemo.wasm'), bytecoder.imports)
         .then(instantiated)
         .catch(function(error) {
-            console.log("Using fallback method to load WebAssembly! Check if mime types for WebAssembly are configured correctly!")
+            console.log("Using fallback method to load WebAssembly! Check if mime types for WebAssembly are configured correctly!");
             var request = new XMLHttpRequest();
             request.open('GET', 'vuedemo.wasm');
             request.responseType = 'arraybuffer';
