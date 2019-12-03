@@ -246,6 +246,9 @@ public class MemoryManager {
         return false;
     }
 
+    @Export("isUsedAsCallback")
+    public static native boolean isUsedAsCallback(final int aPtr);
+
     @Export("GC")
     public static int GC() {
         return IncrementalGC(Integer.MAX_VALUE);
@@ -269,7 +272,7 @@ public class MemoryManager {
             final int theNext = Address.getIntValue(theCurrent, 4);
             final int theSurvivorCount = Address.getIntValue(theCurrent, 8);
             if (currentEpoch % theSurvivorCount == 0) {
-                if (!isUsedByHeap(theCurrent) && !isUsedByStack(theCurrent)) {
+                if (!isUsedByHeap(theCurrent) && !isUsedByStack(theCurrent) && (!isUsedAsCallback(theCurrent + 12))) {
                     internalFree(theCurrent);
                     freeCounter++;
                 } else {
