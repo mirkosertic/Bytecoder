@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.classlib.java.lang.invoke;
 
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -39,5 +40,24 @@ public class StringConcatFactoryTest {
     @Test
     public void testAppend() {
         Assert.assertEquals("Hello42", append("Hello", 42));
+    }
+
+    @Test
+    public void testAppendInLoopInteger() {
+        String a = "";
+        for (int i=0;i<5;i++) {
+            a += i;
+        }
+        Assert.assertEquals("01234", a);
+    }
+
+    @Test
+    @Ignore
+    public void testAppendInLoopLong() {
+        String a = "";
+        for (long i=0;i<5;i++) {
+            a += i;
+        }
+        Assert.assertEquals("01234", a);
     }
 }
