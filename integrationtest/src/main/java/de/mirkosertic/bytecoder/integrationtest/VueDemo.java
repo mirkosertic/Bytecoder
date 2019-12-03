@@ -30,23 +30,17 @@ public class VueDemo {
         void welcomemessage(final String aNewMessage);
     }
 
-    private static VueEventListener<MyVueInstance, ClickEvent> listener;
-
     public static void main(final String[] args) {
-
-        // We need the static reference to avoid garbage collection for this object
-        // Opaque References are NOT visible to the GC, hence all references it holds also!!!
-        listener = new VueEventListener<MyVueInstance, ClickEvent>() {
-            @Override
-            public void handle(final MyVueInstance instance, final ClickEvent event) {
-                instance.welcomemessage(String.format("hello world, you have clicked. Timestamp is %s", System.currentTimeMillis()));
-            }
-        };
 
         final VueBuilder<MyVueInstance> theBuilder = Vue.builder();
         theBuilder.bindToTemplateSelector("#vuetemplate");
         theBuilder.data().setProperty("welcomemessage", "hello world!");
-        theBuilder.addEventListener("clicked", listener);
+        theBuilder.addEventListener("clicked", new VueEventListener<MyVueInstance, ClickEvent>() {
+            @Override
+            public void handle(final MyVueInstance instance, final ClickEvent event) {
+                instance.welcomemessage(String.format("hello world, you have clicked. Timestamp is %s", System.currentTimeMillis()));
+            }
+        });
         MyVueInstance instance = theBuilder.build();
     }
 }
