@@ -158,4 +158,32 @@ public class VM {
     public static Locale defaultLocale() {
         return new Locale("en", "US");
     }
+
+    public static boolean isChar(final MethodType aType, final int aParamIndex) {
+        return false;
+    }
+
+    public static boolean isFloat(final MethodType aType, final int aParamIndex) {
+        return false;
+    }
+
+    public static boolean isDouble(final MethodType aType, final int aParamIndex) {
+        return false;
+    }
+
+    public static boolean isBoolean(final MethodType aType, final int aParamIndex) {
+        return false;
+    }
+
+    public static boolean isInteger(final MethodType aType, final int aParamIndex) {
+        return false;
+    }
+
+    public static boolean isLong(final MethodType aType, final int aParamIndex) {
+        return false;
+    }
+
+    public static <T> T cast(final Object o) {
+        return (T) o;
+    }
 }
