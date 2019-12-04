@@ -183,7 +183,27 @@ public class VM {
         return false;
     }
 
-    public static <T> T cast(final Object o) {
-        return (T) o;
+    public static int intValue(final Object o) {
+        return (int) o;
+    }
+
+    public static long longValue(final Object o) {
+        return (long) o;
+    }
+
+    public static float floatValue(final Object o) {
+        return (float) o;
+    }
+
+    public static double doubleValue(final Object o) {
+        return (double) o;
+    }
+
+    public static char charValue(final Object o) {
+        return (char) o;
+    }
+
+    public static boolean booleanValue(final Object o) {
+        return (boolean) o;
     }
 }
