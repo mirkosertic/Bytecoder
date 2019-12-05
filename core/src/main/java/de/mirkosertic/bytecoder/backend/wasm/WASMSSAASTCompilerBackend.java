@@ -1408,6 +1408,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("     runningInstanceMemory: undefined,");
             theWriter.println("     exports: undefined,");
             theWriter.println("     referenceTable: ['EMPTY'],");
+            theWriter.println("     callbacks: [],");
             theWriter.println("     filehandles: [],");
             theWriter.println();
 
@@ -1572,6 +1573,12 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("     },");
             theWriter.println();
 
+            theWriter.println("     registerCallback: function(ptr,callback) {");
+            theWriter.println("         bytecoder.callbacks.push(ptr);");
+            theWriter.println("         return callback;");
+            theWriter.println("     },");
+            theWriter.println();
+
             theWriter.println("     imports: {");
             theWriter.println("         stringutf16: {");
             theWriter.println("             isBigEndian: function() {return 1;},");
@@ -1583,14 +1590,13 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("         vm: {");
             theWriter.println("             newRuntimeGeneratedTypeStringMethodTypeMethodHandleObject: function() {},");
             theWriter.println("         },");
-            theWriter.println("         printstream: {");
-            theWriter.println("             logDebug: function(caller, value) {bytecoder.logDebug(caller,value);},");
-            theWriter.println("         },");
             theWriter.println("         memorymanager: {");
             theWriter.println("             logExceptionTextString : function(thisref, p1) {");
             theWriter.println("                 console.log('Exception with message : ' + bytecoder.toJSString(p1));");
             theWriter.println("             },");
-
+            theWriter.println("             isUsedAsCallbackINT : function(thisref, ptr) {");
+            theWriter.println("                 return bytecoder.callbacks.includes(ptr);");
+            theWriter.println("             },");
             theWriter.println("             printObjectDebugInternalObjectINTINTBOOLEANBOOLEAN: function(thisref, ptr, indexAlloc, indexFree, usedByStack, usedByHeap) {");
             theWriter.println("                 console.log('Memory debug for ' + ptr);");
             theWriter.println("                 var theAllocatedBlock = ptr - 12;");
@@ -1608,7 +1614,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("                     console.log(' Memory offset +' + i + ' = ' + bytecoder.intInMemory( theAllocatedBlock + i));");
             theWriter.println("                 }");
             theWriter.println("             }");
-
             theWriter.println("         },");
             theWriter.println("         opaquearrays : {");
             theWriter.println("             createIntArrayINT: function(thisref, p1) {");
@@ -1901,7 +1906,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                     }
                                     final BytecodeMethod theImpl = theCallbackMethods.get(0);
 
-                                    theWriter.print("function (");
+                                    theWriter.print("bytecoder.registerCallback(arg");
+                                    theWriter.print(i);
+                                    theWriter.print(",function (");
                                     for (int j=0;j<theImpl.getSignature().getArguments().length;j++) {
                                         if (j>0) {
                                             theWriter.print(",");
@@ -1975,7 +1982,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                         }
                                     }
 
-                                    theWriter.print("}");
+                                    theWriter.print("})");
                                 } else {
                                     throw new IllegalStateException("Type conversion from " + theRef.name() + " is not supported!");
                                 }
