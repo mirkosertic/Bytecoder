@@ -59,6 +59,10 @@ public class StringConcatFactoryTest {
         Assert.assertEquals("01234", a);
     }
 
+    private static String getPrefix() {
+        return "";
+    }
+
     @Test
     public void testAppendPrimitives() {
         final byte b = (byte) 0;
@@ -69,7 +73,8 @@ public class StringConcatFactoryTest {
         final long g = 4;
         final double h = 5;
         final boolean i = true;
-        final String theResult = "" + b + c + d + e + f + g + h + i;
+        final String theResult = getPrefix() + b + c + d + e + f + g + h + i;
         Assert.assertEquals("0a123.045.0true", theResult);
+
     }
 }
