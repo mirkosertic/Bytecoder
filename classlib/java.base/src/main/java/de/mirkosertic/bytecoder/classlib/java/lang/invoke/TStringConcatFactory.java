@@ -43,17 +43,17 @@ public class TStringConcatFactory {
 
     private static void appendTo(final StringBuilder aTarget, final Object aValue, final MethodType aType, final int aIndex) {
         if (VM.isInteger(aType, aIndex)) {
-            aTarget.append(VM.intValue(aValue));
+            aTarget.append(VM.reinterpretAsInt(aValue));
         } else if (VM.isLong(aType, aIndex)) {
-            aTarget.append(VM.longValue(aValue));
+            aTarget.append(VM.reinterpretAsLong(aValue));
         } else if (VM.isFloat(aType, aIndex)) {
-            aTarget.append(VM.floatValue(aValue));
+            aTarget.append(VM.reinterpretAsFloat(aValue));
         } else if (VM.isDouble(aType, aIndex)) {
-            aTarget.append(VM.doubleValue(aValue));
+            aTarget.append(VM.reinterpretAsDouble(aValue));
         } else if (VM.isBoolean(aType, aIndex)) {
-            aTarget.append(VM.booleanValue(aValue));
+            aTarget.append(VM.reinterpretAsBoolean(aValue));
         } else if (VM.isChar(aType, aIndex)) {
-            aTarget.append(VM.charValue(aValue));
+            aTarget.append(VM.reinterpretAsChar(aValue));
         } else {
             aTarget.append(aValue);
         }

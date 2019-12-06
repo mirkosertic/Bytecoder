@@ -87,6 +87,7 @@ import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
 import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupExpression;
 import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
 import de.mirkosertic.bytecoder.ssa.MethodRefExpression;
+import de.mirkosertic.bytecoder.ssa.MethodTypeArgumentCheckExpression;
 import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
 import de.mirkosertic.bytecoder.ssa.MinExpression;
 import de.mirkosertic.bytecoder.ssa.NegatedExpression;
@@ -101,6 +102,7 @@ import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
+import de.mirkosertic.bytecoder.ssa.ReinterpretAsNativeExpression;
 import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
@@ -267,9 +269,32 @@ public class JSSSAWriter {
             print((IsNaNExpression) aValue);
         } else if (aValue instanceof NewInstanceFromDefaultConstructorExpression) {
             print((NewInstanceFromDefaultConstructorExpression) aValue);
+        } else if (aValue instanceof MethodTypeArgumentCheckExpression) {
+            print((MethodTypeArgumentCheckExpression) aValue);
+        } else if (aValue instanceof ReinterpretAsNativeExpression) {
+            print((ReinterpretAsNativeExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
+    }
+
+    private void print(final ReinterpretAsNativeExpression aExpression) {
+        final Value theValue = aExpression.incomingDataFlows().get(0);
+        print(theValue);
+    }
+
+    private void print(final MethodTypeArgumentCheckExpression aExpression) {
+        final Value theValue = aExpression.incomingDataFlows().get(0);
+        final Value theIndex = aExpression.incomingDataFlows().get(1);
+        final TypeRef.Native theExpectedType = aExpression.getExpectedType();
+        writer.text("(");
+        print(theValue);
+        writer.text(".arguments[");
+        print(theIndex);
+        writer.text("]");
+        writer.text("==='");
+        writer.text(theExpectedType.name());
+        writer.text("')");
     }
 
     private void print(final NewInstanceFromDefaultConstructorExpression aExpression) {

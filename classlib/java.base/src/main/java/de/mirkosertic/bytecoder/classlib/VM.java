@@ -159,51 +159,27 @@ public class VM {
         return new Locale("en", "US");
     }
 
-    public static boolean isChar(final MethodType aType, final int aParamIndex) {
-        return false;
-    }
+    public static native boolean isChar(final MethodType aType, final int aParamIndex);
 
-    public static boolean isFloat(final MethodType aType, final int aParamIndex) {
-        return false;
-    }
+    public static native boolean isFloat(final MethodType aType, final int aParamIndex);
 
-    public static boolean isDouble(final MethodType aType, final int aParamIndex) {
-        return false;
-    }
+    public static native boolean isDouble(final MethodType aType, final int aParamIndex);
 
-    public static boolean isBoolean(final MethodType aType, final int aParamIndex) {
-        return false;
-    }
+    public static native boolean isBoolean(final MethodType aType, final int aParamIndex);
 
-    public static boolean isInteger(final MethodType aType, final int aParamIndex) {
-        return false;
-    }
+    public static native boolean isInteger(final MethodType aType, final int aParamIndex);
 
-    public static boolean isLong(final MethodType aType, final int aParamIndex) {
-        return false;
-    }
+    public static native boolean isLong(final MethodType aType, final int aParamIndex);
 
-    public static int intValue(final Object o) {
-        return (int) o;
-    }
+    public static native int reinterpretAsInt(final Object o);
 
-    public static long longValue(final Object o) {
-        return (long) o;
-    }
+    public static native long reinterpretAsLong(final Object o);
 
-    public static float floatValue(final Object o) {
-        return (float) o;
-    }
+    public static native float reinterpretAsFloat(final Object o);
 
-    public static double doubleValue(final Object o) {
-        return (double) o;
-    }
+    public static native double reinterpretAsDouble(final Object o);
 
-    public static char charValue(final Object o) {
-        return (char) o;
-    }
+    public static native char reinterpretAsChar(final Object o);
 
-    public static boolean booleanValue(final Object o) {
-        return (boolean) o;
-    }
+    public static native boolean reinterpretAsBoolean(final Object o);
 }
