@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.core;
 
 import de.mirkosertic.bytecoder.api.DelegatesTo;
+import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.graph.EdgeType;
 import de.mirkosertic.bytecoder.graph.Node;
 
@@ -78,6 +79,10 @@ public class BytecodeMethod extends Node<Node, EdgeType> {
             }
         }
         return null;
+    }
+
+    public boolean emulatedByRuntime() {
+        return getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) != null;
     }
 
     public BytecodeMethodSignature getSignature() {
