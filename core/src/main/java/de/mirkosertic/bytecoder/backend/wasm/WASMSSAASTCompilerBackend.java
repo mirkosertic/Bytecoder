@@ -258,6 +258,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     if (theProvidingClass.emulatedByRuntime()) {
                         return;
                     }
+                    if (t.emulatedByRuntime()) {
+                        return;
+                    }
 
                     // Native methods are imported via annotation
                     if (!t.getAccessFlags().isNative() && theProvidingClass.isOpaqueType()) {

@@ -1265,20 +1265,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
                     for (int i=theInitSignature.getArguments().length-1;i>=0;i--) {
                         final Value theIndex = new IntegerValue(i);
-                        Value theStoredValue = aHelper.pop();
-
-                        if (theStoredValue.resolveType() == TypeRef.Native.INT) {
-                            // Create Integer object to contain int
-                            final BytecodeObjectTypeRef theType = BytecodeObjectTypeRef.fromRuntimeClass(Integer.class);
-                            final BytecodeTypeRef[] args_def = new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT};
-                            final BytecodeMethodSignature sig = new BytecodeMethodSignature(theType, args_def);
-                            final List<Value> args = new ArrayList<>();
-                            args.add(theStoredValue);
-
-                            theStoredValue = new InvokeStaticMethodExpression(aProgram, theInstruction.getOpcodeAddress(), theType, "valueOf", sig, args);
-                            theStoredValue = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theStoredValue);
-                        }
-
+                        final Value theStoredValue = aHelper.pop();
                         aTargetBlock.getExpressions().add(new ArrayStoreExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theArray, theIndex, theStoredValue));
                     }
 
@@ -1290,7 +1277,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                                             new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), 1) }),
                             theCallsiteVariable, theInvokeArguments, false, BytecodeObjectTypeRef.fromRuntimeClass(CallSite.class));
 
-                    final Variable theInvokeExactResult = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theInvokeValue);
+                    final Variable theInvokeExactResult = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theInitSignature.getReturnType()), theInvokeValue);
                     aHelper.push(theINS.getOpcodeAddress(), theInvokeExactResult);
 
                     break;

@@ -15,27 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.f32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.select;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.teeLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Stack;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-
 import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
 import de.mirkosertic.bytecoder.allocator.Register;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
@@ -115,6 +94,7 @@ import de.mirkosertic.bytecoder.ssa.MaxExpression;
 import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
 import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupExpression;
 import de.mirkosertic.bytecoder.ssa.MethodRefExpression;
+import de.mirkosertic.bytecoder.ssa.MethodTypeArgumentCheckExpression;
 import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
 import de.mirkosertic.bytecoder.ssa.MinExpression;
 import de.mirkosertic.bytecoder.ssa.NegatedExpression;
@@ -130,6 +110,7 @@ import de.mirkosertic.bytecoder.ssa.PtrOfExpression;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
+import de.mirkosertic.bytecoder.ssa.ReinterpretAsNativeExpression;
 import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
@@ -150,6 +131,27 @@ import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Stack;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.f32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.select;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.teeLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
 
 public class WASMSSAASTWriter {
 
@@ -808,7 +810,78 @@ public class WASMSSAASTWriter {
         if (aValue instanceof PtrOfExpression) {
             return ptrOfExpression((PtrOfExpression) aValue);
         }
+        if (aValue instanceof MethodTypeArgumentCheckExpression) {
+            return methodTypeArgumentCheckExpression((MethodTypeArgumentCheckExpression) aValue);
+        }
+        if (aValue instanceof ReinterpretAsNativeExpression) {
+            return reinterpretAsNativeExpression((ReinterpretAsNativeExpression) aValue);
+        }
         throw new IllegalStateException("Not supported : " + aValue);
+    }
+
+    private WASMValue methodTypeValue(final MethodTypeExpression aValue) {
+        final BytecodeMethodSignature theSignature = aValue.getSignature();
+        final String theMethodTypeFactoryName = WASMWriterUtils.toMethodName("methodTypeFactory", theSignature);
+        ExportableFunction theFactoryFunction;
+        try {
+            theFactoryFunction = module.functionIndex().firstByLabel(theMethodTypeFactoryName);
+        } catch (final Exception e) {
+            theFactoryFunction = module.getFunctions().newFunction(theMethodTypeFactoryName, PrimitiveType.i32);
+            final Local data = theFactoryFunction.newLocal("data", PrimitiveType.i32);
+            final int length = 1 + theSignature.getArguments().length;
+            theFactoryFunction.flow.setLocal(data, newArray(i32.c(length, null)), null);
+
+            final Expressions f = theFactoryFunction.flow;
+            final java.util.function.BiFunction<BytecodeTypeRef, Integer, Void> theAdder = (aType, aIndex) -> {
+                final int offset = 20 + aIndex * 4;
+                if (aType.isPrimitive()) {
+                    final TypeRef.Native theNativeType = (TypeRef.Native) TypeRef.toType(aType);
+                    // Negative number to indicate it is a primitive type
+                    f.i32.store(offset, getLocal(data, null), i32.c(-theNativeType.ordinal(), null), aValue);
+                } else {
+                    // Positive number with the id of the class
+                    if (aType.isArray()) {
+                        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
+                        f.i32.store(offset, getLocal(data, null), i32.c(theLinkedClass.getUniqueId(), null), aValue);
+                    } else {
+                        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) aType);
+                        f.i32.store(offset, getLocal(data, null), i32.c(theLinkedClass.getUniqueId(), null), aValue);
+                    }
+                }
+                return null;
+            };
+            // Return type and arguments
+            theAdder.apply(theSignature.getReturnType(), 0);
+            for (int i=0;i<theSignature.getArguments().length;i++) {
+                final BytecodeTypeRef theArgument = theSignature.getArguments()[i];
+                theAdder.apply(theArgument, i + 1);
+            }
+
+            theFactoryFunction.flow.ret(getLocal(data, null), null);
+        }
+        return call(theFactoryFunction, Collections.emptyList(), aValue);
+    }
+
+    private WASMValue methodTypeArgumentCheckExpression(final MethodTypeArgumentCheckExpression aExpression) {
+        final TypeRef.Native theExpectedType = aExpression.getExpectedType();
+        final Value theMethodType = aExpression.incomingDataFlows().get(0);
+        final Value theIndex = aExpression.incomingDataFlows().get(1);
+
+        final WASMValue thePtr = i32.add(toValue(theMethodType), i32.mul(toValue(theIndex), i32.c(4, aExpression), aExpression), aExpression);
+        final WASMValue theExpectedValue = i32.c(- theExpectedType.ordinal(), null);
+        final WASMValue theRead = i32.load(20, thePtr, aExpression);
+        return i32.eq(theExpectedValue, theRead, aExpression);
+    }
+
+    private WASMValue reinterpretAsNativeExpression(final ReinterpretAsNativeExpression aExpression) {
+        final Value theValue = aExpression.incomingDataFlows().get(0);
+        switch (aExpression.getExpectedType()) {
+            case FLOAT:
+            case DOUBLE:
+                return f32.convert_sI32(toValue(theValue), aExpression);
+            default:
+                return toValue(theValue);
+        }
     }
 
     private WASMValue ptrOfExpression(final PtrOfExpression aValue) {
@@ -951,13 +1024,6 @@ public class WASMSSAASTWriter {
         return i32.c(0, aValue);
     }
 
-    private WASMValue methodTypeValue(final MethodTypeExpression aValue) {
-//        print("(i32.const ");
-//        print(idResolver.resolveTypeIDForSignature(aValue.getSignature()));
-//        print(")");
-        return i32.c(0, aValue);
-    }
-
     private WASMValue methodHandlesGeneratedLookupValue(final MethodHandlesGeneratedLookupExpression aValue) {
         return i32.c(0, aValue);
     }
@@ -1038,7 +1104,7 @@ public class WASMSSAASTWriter {
         return getGlobal(resolver.globalForStringFromPool(aValue), null);
     }
 
-    private WASMExpression newArray(final Value aValue) {
+    private WASMExpression newArray(final WASMValue aValue) {
         final String theMethodName = WASMWriterUtils.toMethodName(
                 BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
                 "newArray",
@@ -1048,7 +1114,11 @@ public class WASMSSAASTWriter {
         final WeakFunctionReferenceCallable theClassInit = weakFunctionReference(theClassName + CLASSINITSUFFIX, null);
         final Function theFunction = module.functionIndex().firstByLabel(theMethodName);
 
-        return call(theFunction, Arrays.asList(i32.c(0, null), toValue(aValue), call(theClassInit, Collections.emptyList(), null), weakFunctionTableReference(theClassName + VTABLEFUNCTIONSUFFIX, null)), null);
+        return call(theFunction, Arrays.asList(i32.c(0, null), aValue, call(theClassInit, Collections.emptyList(), null), weakFunctionTableReference(theClassName + VTABLEFUNCTIONSUFFIX, null)), null);
+    }
+
+    private WASMExpression newArray(final Value aValue) {
+        return newArray(toValue(aValue));
     }
 
     private WASMValue newArrayValue(final NewArrayExpression aValue) {

@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.classlib;
 
+import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
 
 import java.lang.invoke.ConstantCallSite;
@@ -158,4 +159,40 @@ public class VM {
     public static Locale defaultLocale() {
         return new Locale("en", "US");
     }
+
+    @EmulatedByRuntime
+    public static native boolean isChar(final MethodType aType, final int aParamIndex);
+
+    @EmulatedByRuntime
+    public static native boolean isFloat(final MethodType aType, final int aParamIndex);
+
+    @EmulatedByRuntime
+    public static native boolean isDouble(final MethodType aType, final int aParamIndex);
+
+    @EmulatedByRuntime
+    public static native boolean isBoolean(final MethodType aType, final int aParamIndex);
+
+    @EmulatedByRuntime
+    public static native boolean isInteger(final MethodType aType, final int aParamIndex);
+
+    @EmulatedByRuntime
+    public static native boolean isLong(final MethodType aType, final int aParamIndex);
+
+    @EmulatedByRuntime
+    public static native int reinterpretAsInt(final Object o);
+
+    @EmulatedByRuntime
+    public static native long reinterpretAsLong(final Object o);
+
+    @EmulatedByRuntime
+    public static native float reinterpretAsFloat(final Object o);
+
+    @EmulatedByRuntime
+    public static native double reinterpretAsDouble(final Object o);
+
+    @EmulatedByRuntime
+    public static native char reinterpretAsChar(final Object o);
+
+    @EmulatedByRuntime
+    public static native boolean reinterpretAsBoolean(final Object o);
 }

@@ -15,25 +15,25 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang.invoke;
 
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.VM;
+
 import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-import de.mirkosertic.bytecoder.classlib.VM;
-
 @SubstitutesInClass(completeReplace = true)
 public class TStringConcatFactory {
 
-    public static CallSite makeConcat(MethodHandles.Lookup aLookup, String aName, MethodType aConcatType) {
+    public static CallSite makeConcat(final MethodHandles.Lookup aLookup, final String aName, final MethodType aConcatType) {
 
         return new VM.ImplementingCallsite(null) {
             @Override
-            public Object invokeExact(Object... args) throws Throwable {
-                StringBuilder theResult = new StringBuilder();
+            public Object invokeExact(final Object... args) throws Throwable {
+                final StringBuilder theResult = new StringBuilder();
                 if (args != null) {
                     for (int i=0;i<args.length;i++) {
-                        theResult.append(args[i]);
+                        appendTo(theResult, args[i], aConcatType, i);
                     }
                 }
                 return theResult.toString();
@@ -41,20 +41,39 @@ public class TStringConcatFactory {
         };
     }
 
-    public static CallSite makeConcatWithConstants(MethodHandles.Lookup aLookup, String aName, MethodType aConcatType, String aRecipe, Object... aConstants) {
+    private static void appendTo(final StringBuilder aTarget, final Object aValue, final MethodType aType, final int aIndex) {
+        if (VM.isInteger(aType, aIndex)) {
+            aTarget.append(VM.reinterpretAsInt(aValue));
+        } else if (VM.isLong(aType, aIndex)) {
+            aTarget.append(VM.reinterpretAsLong(aValue));
+        } else if (VM.isFloat(aType, aIndex)) {
+            aTarget.append(VM.reinterpretAsFloat(aValue));
+        } else if (VM.isDouble(aType, aIndex)) {
+            aTarget.append(VM.reinterpretAsDouble(aValue));
+        } else if (VM.isBoolean(aType, aIndex)) {
+            aTarget.append(VM.reinterpretAsBoolean(aValue));
+        } else if (VM.isChar(aType, aIndex)) {
+            aTarget.append(VM.reinterpretAsChar(aValue));
+        } else {
+            aTarget.append(aValue);
+        }
+    }
+
+    public static CallSite makeConcatWithConstants(final MethodHandles.Lookup aLookup, final String aName, final MethodType aConcatType, final String aRecipe, final Object... aConstants) {
 
         return new VM.ImplementingCallsite(null) {
             @Override
-            public Object invokeExact(Object... args) throws Throwable {
+            public Object invokeExact(final Object... args) throws Throwable {
                 int theConstIndex = 0;
                 int theDynIndex = 0;
-                StringBuilder theResult = new StringBuilder();
+                int totalIndex = 0;
+                final StringBuilder theResult = new StringBuilder();
                 for (int i=0;i<aRecipe.length();i++) {
-                    char theChar = aRecipe.charAt(i);
+                    final char theChar = aRecipe.charAt(i);
                     if (theChar == 1) {
-                        theResult.append(args[theDynIndex++]);
+                        appendTo(theResult, args[theDynIndex++], aConcatType, totalIndex++);
                     } else if (theChar == 2) {
-                        theResult.append(aConstants[theConstIndex++]);
+                        appendTo(theResult, aConstants[theConstIndex++], aConcatType, totalIndex++);
                     } else {
                         theResult.append(theChar);
                     }
