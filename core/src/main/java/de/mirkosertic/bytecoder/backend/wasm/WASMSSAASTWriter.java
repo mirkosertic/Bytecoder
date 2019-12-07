@@ -840,8 +840,13 @@ public class WASMSSAASTWriter {
                     f.i32.store(offset, getLocal(data, null), i32.c(-theNativeType.ordinal(), null), aValue);
                 } else {
                     // Positive number with the id of the class
-                    final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) aType);
-                    f.i32.store(offset, getLocal(data, null), i32.c(theLinkedClass.getUniqueId(), null), aValue);
+                    if (aType.isArray()) {
+                        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
+                        f.i32.store(offset, getLocal(data, null), i32.c(theLinkedClass.getUniqueId(), null), aValue);
+                    } else {
+                        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) aType);
+                        f.i32.store(offset, getLocal(data, null), i32.c(theLinkedClass.getUniqueId(), null), aValue);
+                    }
                 }
                 return null;
             };
