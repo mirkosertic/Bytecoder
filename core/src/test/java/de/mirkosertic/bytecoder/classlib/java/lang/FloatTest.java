@@ -37,7 +37,7 @@ public class FloatTest {
     public void testRawBitsToFloat() {
         final float fl = Float.intBitsToFloat(1067030910);
         System.out.println(fl);
-        Assert.assertEquals(1.1999967098236084f, fl,0);
+        Assert.assertEquals(1.1999967098236084f, fl,0.000005);
     }
 
     @Test
