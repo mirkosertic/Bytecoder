@@ -40,7 +40,7 @@ Please make sure to include the following dependency to make the Testrunner work
         <groupId>de.mirkosertic.bytecoder</groupId>
         <artifactId>bytecoder-core</artifactId>
         <version>{{% siteparam "bytecoderversion" %}}</version>
-        <scope>test</scope>B
+        <scope>test</scope>
     </dependency>
 </dependency>
 ```

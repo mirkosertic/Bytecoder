@@ -32,7 +32,7 @@ To use your custom methods or properties simply cast a HTMLCanvasElement to Cust
 
 Explanation of JavaScript data types in this page:
 
-* Objects are non-instantiable (e.g. window.navigator)
+* Objects are non-instantiatable (e.g. window.navigator)
 * Classes are instantiable (e.g. new ArrayBuffer(...))
 
 ### Objects
@@ -142,7 +142,7 @@ bytecoder.imports.dataview.createArrayBuffer = function (thisref, arraybufferref
 
 ## Emulating classes and methods
 
-Bytecoder is based on the OpenJDK JRE classlib. However, it is sometimes neccesary to
+Bytecoder is based on the OpenJDK JRE classlib. However, it is sometimes necessary to
 patch existing classes to make them compatible with Bytecoder.
 
 Bytecoder introduces a concept called shadow types for this purpose.

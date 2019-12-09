@@ -5,7 +5,7 @@ draft: false
 weight: 1
 ---
 
-## Compiling JVM bytecode Kernels to OpenCL
+## Compiling JVM Bytecode Kernels to OpenCL
 
 {{% notice warning %}}
 OpenCL Integration is highly experimental

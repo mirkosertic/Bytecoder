@@ -20,7 +20,7 @@ Here, the class to be resolved is defined as runtime. This is a problem for an A
 Bytecoder tries so solve this problem using a set of heuristics and configuration.
 
 Classes that are very likely to be resolved by reflection are automatically included by the compiler.
-Some promiment examples are implementations of `java.nio.charset.Charset` or `java.lang.CharacterData`.
+Some prominent examples are implementations of `java.nio.charset.Charset` or `java.lang.CharacterData`.
 There is also a compiler option available by the CLI or Maven Plugin to add additional classes.
 
 {{% notice note %}}

@@ -91,12 +91,19 @@ HTML embedding, which is shown here:
             bytecoder.initializeFileIO();
 
             // We have to activate the garbage collector!
-            var gcInterval = 10000;
-            var gcRunning = false;
+            var gcInterval = 200; // How often will the GC be triggered (in ms)
+            var gcMaxObjectsPerRun = 30; // How many objects will be collected during one run
+            var gcRunning = false; 
+            var runcounter = 0; // Used for debugging
             setInterval(function() {
                 if (!gcRunning) {
                     gcRunning = true;
-                    bytecoder.exports.GC(0);
+                    var freed = bytecoder.exports.IncrementalGC(0, gcMaxObjectsPerRun);
+                    if (runcounter++ % 10 === 0) {
+                        var freemem = bytecoder.exports.freeMem(0);
+                        var epoch = bytecoder.exports.GCEpoch(0);
+                        console.log(freemem + " bytes free memory after GC, epoch = " + epoch);
+                    }
                     gcRunning = false;
                 }
             }, gcInterval);
@@ -119,10 +126,10 @@ HTML embedding, which is shown here:
 ```
 
 {{% notice warning %}}
-The WebAssembly backend includes a very simple mark and sweep garbage collector.
+The WebAssembly backend includes a very simple incremental mark and sweep garbage collector.
 When GC runs, the application halts ( stop the world ) and memory is scanned and
 freed. However, this is a **very** expensive process, so you maybe want to configure
-the garbage collector interval by hand depending an your use case.
+the garbage collector intervals and parameters by hand depending an your use case.
 The Bytecoder GC is will be removed as soon as there is a Wasm built-in garbage collector
 available.
 {{% /notice %}}
