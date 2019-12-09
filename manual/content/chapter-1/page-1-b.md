@@ -8,7 +8,7 @@ weight: 2
 ## Maven Plugin usage
 
 Bytecoder comes with a handy Maven plugin. This plugins supports the JavaScript and WebAssembly backends 
-and can compile JVM bytecode as part of the Maven project lifecycle without any third party or command-line
+and can compile JVM Bytecode as part of the Maven project lifecycle without any third party or command-line
 tools.
 
 ### Configuration options

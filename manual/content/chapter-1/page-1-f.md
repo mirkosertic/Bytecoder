@@ -88,9 +88,9 @@ The conversion functions are part of the global `bytecoder` object as
 {{% notice warning %}}
 The JVM long datatype is currently only in a limited form available in Bytecoder. There is currently 
 no native 64-bit integer datatype available in JavaScript. Bytecoder is limited
-to a 53-bit range due to JavaScripts IEEE 754 double precision number type. However, once JavaScript BigInt 
+to a 53-bit range due to JavaScript's IEEE 754 double precision number type. However, once JavaScript BigInt 
 will be supported by all major browsers, Bytecoder will use BigInt as a substitute for the 
-JVM long datatype. For now, there is no full emulation of long datatypes planned.
+JVM long datatype. For now, there is no full emulation of long datatype planned.
 {{% /notice %}}
 
 #### Importing functionality from the host environment
