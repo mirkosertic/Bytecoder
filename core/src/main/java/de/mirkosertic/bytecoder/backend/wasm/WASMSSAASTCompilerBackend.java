@@ -1655,7 +1655,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("                 var br = new BigInt64Array(fl.buffer);");
             theWriter.println("                 return br[0];");
             theWriter.println("             },");
-            theWriter.println("             longBitsToDoubleINT : function(thisref, value) {");
+            theWriter.println("             longBitsToDoubleLONG : function(thisref, value) {");
             theWriter.println("                 var fl = new BigInt64Array(1);");
             theWriter.println("                 fl[0] = value;");
             theWriter.println("                 var br = new Float64Array(fl.buffer);");
