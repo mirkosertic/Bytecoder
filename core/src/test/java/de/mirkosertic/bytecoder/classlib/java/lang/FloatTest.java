@@ -27,6 +27,20 @@ import static org.junit.Assert.assertNotEquals;
 public class FloatTest {
 
     @Test
+    public void testRawBitsFromFloat() {
+        final int raw = Float.floatToIntBits(1.1999967098236084f);
+        System.out.println(raw);
+        Assert.assertEquals(1067030910, raw,0);
+    }
+
+    @Test
+    public void testRawBitsToFloat() {
+        final float fl = Float.intBitsToFloat(1067030910);
+        System.out.println(fl);
+        Assert.assertEquals(1.1999967098236084f, fl,0.000005);
+    }
+
+    @Test
     public void testCompare() {
         Assert.assertEquals(Float.compare(10f, 20f), -1, 0);
         Assert.assertEquals(Float.compare(10f, 10f), 0, 0);
