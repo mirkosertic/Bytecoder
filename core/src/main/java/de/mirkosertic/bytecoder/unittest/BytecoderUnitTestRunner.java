@@ -43,6 +43,7 @@ import org.openqa.selenium.logging.LogEntry;
 import org.openqa.selenium.logging.LogType;
 import org.openqa.selenium.logging.LoggingPreferences;
 import org.openqa.selenium.remote.CapabilityType;
+import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.BrowserWebDriverContainer;
 import org.testcontainers.containers.Network;
 
@@ -184,7 +185,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
             theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
             theOptions.setCapability("goog:loggingPrefs", theLoggingPreferences);
 
-            final Network network = Network.builder().id("host").build();
+            final int port = Integer.parseInt(System.getProperty("BYTECODER_TESTSERVERPORT", "10000"));
+            Testcontainers.exposeHostPorts(port);
+
             BROWSERCONTAINER = (BrowserWebDriverContainer) new BrowserWebDriverContainer()
                     .withCapabilities(theOptions)
                     .withRecordingMode(BrowserWebDriverContainer.VncRecordingMode.SKIP, new File("."));
@@ -233,7 +236,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
     private static URL getTestFileUrl(final File aFile) throws MalformedURLException {
         final String theFileName = aFile.getName();
         final InetSocketAddress theServerAddress = TESTSERVER.getAddress();
-        return new URL(String.format("http://%s:%d/%s", BROWSERCONTAINER.getTestHostIpAddress(), theServerAddress.getPort(), theFileName));
+        return new URL(String.format("http://%s:%d/%s", "host.testcontainers.internal", theServerAddress.getPort(), theFileName));
     }
 
     private WebDriver newDriverForTest() {
