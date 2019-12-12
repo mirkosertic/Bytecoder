@@ -38,13 +38,13 @@ import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.TestClass;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.logging.LogEntry;
 import org.openqa.selenium.logging.LogType;
 import org.openqa.selenium.logging.LoggingPreferences;
 import org.openqa.selenium.remote.CapabilityType;
-import org.openqa.selenium.remote.RemoteWebDriver;
+import org.testcontainers.containers.BrowserWebDriverContainer;
+import org.testcontainers.containers.Network;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -71,7 +71,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
     private final String[] additionalClassesToLink;
     private final String[] additionalResources;
 
-    private static ChromeDriverService DRIVERSERVICE;
+    private static BrowserWebDriverContainer BROWSERCONTAINER;
     private static HttpServer TESTSERVER;
     private static final AtomicReference<File> HTTPFILESDIR = new AtomicReference<>();
 
@@ -170,21 +170,26 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
     }
 
     private static synchronized void initializeSeleniumDriver() throws IOException {
-        if (null == DRIVERSERVICE) {
+        if (null == BROWSERCONTAINER) {
 
-            final String theChromeDriverBinary = System.getenv("CHROMEDRIVER_BINARY");
-            if (null == theChromeDriverBinary || theChromeDriverBinary.isEmpty()) {
-                throw new RuntimeException("No chromedriver binary found! Please set CHROMEDRIVER_BINARY environment variable!");
-            }
+            final ChromeOptions theOptions = new ChromeOptions().setHeadless(true);
+            theOptions.addArguments("--js-flags=experimental-wasm-eh");
+            theOptions.addArguments("--enable-experimental-wasm-eh");
+            theOptions.addArguments("disable-infobars"); // disabling infobars
+            theOptions.addArguments("--disable-dev-shm-usage"); // overcome limited resource problems
+            theOptions.addArguments("--no-sandbox"); // Bypass OS security model
+            theOptions.setExperimentalOption("useAutomationExtension", false);
+            final LoggingPreferences theLoggingPreferences = new LoggingPreferences();
+            theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
+            theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
+            theOptions.setCapability("goog:loggingPrefs", theLoggingPreferences);
 
-            ChromeDriverService.Builder theDriverService = new ChromeDriverService.Builder();
-            theDriverService = theDriverService.withVerbose(false).withLogFile(new File("chromedriver.log"));
-            theDriverService = theDriverService.usingDriverExecutable(new File(theChromeDriverBinary));
-
-            DRIVERSERVICE = theDriverService.build();
-            DRIVERSERVICE.start();
-
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> DRIVERSERVICE.stop()));
+            final Network network = Network.builder().id("host").build();
+            BROWSERCONTAINER = (BrowserWebDriverContainer) new BrowserWebDriverContainer()
+                    .withCapabilities(theOptions)
+                    .withRecordingMode(BrowserWebDriverContainer.VncRecordingMode.SKIP, new File("."));
+            BROWSERCONTAINER.start();
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> BROWSERCONTAINER.stop()));
         }
     }
 
@@ -228,23 +233,11 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
     private static URL getTestFileUrl(final File aFile) throws MalformedURLException {
         final String theFileName = aFile.getName();
         final InetSocketAddress theServerAddress = TESTSERVER.getAddress();
-        return new URL(String.format("http://%s:%d/%s", theServerAddress.getAddress().getHostAddress(), theServerAddress.getPort(), theFileName));
+        return new URL(String.format("http://%s:%d/%s", BROWSERCONTAINER.getTestHostIpAddress(), theServerAddress.getPort(), theFileName));
     }
 
     private WebDriver newDriverForTest() {
-        final ChromeOptions theOptions = new ChromeOptions().setHeadless(true);
-        theOptions.addArguments("--js-flags=experimental-wasm-eh");
-        theOptions.addArguments("--enable-experimental-wasm-eh");
-        theOptions.addArguments("disable-infobars"); // disabling infobars
-        theOptions.addArguments("--disable-dev-shm-usage"); // overcome limited resource problems
-        theOptions.addArguments("--no-sandbox"); // Bypass OS security model
-        theOptions.setExperimentalOption("useAutomationExtension", false);
-        final LoggingPreferences theLoggingPreferences = new LoggingPreferences();
-        theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
-        theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
-        theOptions.setCapability("goog:loggingPrefs", theLoggingPreferences);
-
-        return new RemoteWebDriver(DRIVERSERVICE.getUrl(), theOptions);
+        return BROWSERCONTAINER.getWebDriver();
     }
 
     private void testJSBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier, final TestOption aTestOption) {
