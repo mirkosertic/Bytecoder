@@ -336,10 +336,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
             } catch (final Exception e) {
                 aRunNotifier.fireTestFailure(new Failure(theDescription, e));
             } finally {
-                if (null != theDriver) {
-                    theDriver.close();
-                    theDriver.quit();
-                }
                 aRunNotifier.fireTestFinished(theDescription);
             }
         }
@@ -544,10 +540,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
             } catch (final Exception e) {
                 aRunNotifier.fireTestFailure(new Failure(theDescription, e));
             } finally {
-                if (null != theDriver) {
-                    theDriver.close();
-                    theDriver.quit();
-                }
                 aRunNotifier.fireTestFinished(theDescription);
             }
         }
