@@ -205,7 +205,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
     private static void initializeTestWebServer() throws IOException {
         if (TESTSERVER == null) {
 
-            java.util.logging.Logger.getLogger("sun.net.httpserver").setLevel(Level.OFF);
+            java.util.logging.Logger.getLogger("sun.net.httpserver.ExchangeImpl").setLevel(Level.OFF);
 
             TESTSERVER = HttpServer.create();
             final int port = getTestWebServerPort();
