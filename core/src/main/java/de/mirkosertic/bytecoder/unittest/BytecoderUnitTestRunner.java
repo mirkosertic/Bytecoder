@@ -45,7 +45,6 @@ import org.openqa.selenium.logging.LoggingPreferences;
 import org.openqa.selenium.remote.CapabilityType;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.BrowserWebDriverContainer;
-import org.testcontainers.containers.Network;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -72,7 +71,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
     private final String[] additionalClassesToLink;
     private final String[] additionalResources;
 
-    private static BrowserWebDriverContainer BROWSERCONTAINER;
     private static HttpServer TESTSERVER;
     private static final AtomicReference<File> HTTPFILESDIR = new AtomicReference<>();
 
@@ -170,36 +168,36 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
         }
     }
 
-    private static synchronized void initializeSeleniumDriver() throws IOException {
-        if (null == BROWSERCONTAINER) {
+    private static int getTestWebServerPort() {
+        return Integer.parseInt(System.getProperty("BYTECODER_TESTSERVERPORT", "10000"));
+    }
 
-            final ChromeOptions theOptions = new ChromeOptions().setHeadless(true);
-            theOptions.addArguments("--js-flags=experimental-wasm-eh");
-            theOptions.addArguments("--enable-experimental-wasm-eh");
-            theOptions.addArguments("disable-infobars"); // disabling infobars
-            theOptions.addArguments("--disable-dev-shm-usage"); // overcome limited resource problems
-            theOptions.addArguments("--no-sandbox"); // Bypass OS security model
-            theOptions.setExperimentalOption("useAutomationExtension", false);
-            final LoggingPreferences theLoggingPreferences = new LoggingPreferences();
-            theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
-            theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
-            theOptions.setCapability("goog:loggingPrefs", theLoggingPreferences);
+    private static synchronized BrowserWebDriverContainer initializeSeleniumContainer() {
+        final ChromeOptions theOptions = new ChromeOptions().setHeadless(true);
+        theOptions.addArguments("--js-flags=experimental-wasm-eh");
+        theOptions.addArguments("--enable-experimental-wasm-eh");
+        theOptions.addArguments("disable-infobars"); // disabling infobars
+        theOptions.addArguments("--disable-dev-shm-usage"); // overcome limited resource problems
+        theOptions.addArguments("--no-sandbox"); // Bypass OS security model
+        theOptions.setExperimentalOption("useAutomationExtension", false);
+        final LoggingPreferences theLoggingPreferences = new LoggingPreferences();
+        theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
+        theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
+        theOptions.setCapability("goog:loggingPrefs", theLoggingPreferences);
 
-            final int port = Integer.parseInt(System.getProperty("BYTECODER_TESTSERVERPORT", "10000"));
-            Testcontainers.exposeHostPorts(port);
+        Testcontainers.exposeHostPorts(getTestWebServerPort());
 
-            BROWSERCONTAINER = (BrowserWebDriverContainer) new BrowserWebDriverContainer()
-                    .withCapabilities(theOptions)
-                    .withRecordingMode(BrowserWebDriverContainer.VncRecordingMode.SKIP, new File("."));
-            BROWSERCONTAINER.start();
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> BROWSERCONTAINER.stop()));
-        }
+        final BrowserWebDriverContainer theResult = new BrowserWebDriverContainer()
+                .withCapabilities(theOptions)
+                .withRecordingMode(BrowserWebDriverContainer.VncRecordingMode.SKIP, new File("."));
+        theResult.start();
+        return theResult;
     }
 
     private static void initializeTestWebServer() throws IOException {
         if (TESTSERVER == null) {
             TESTSERVER = HttpServer.create();
-            final int port = Integer.parseInt(System.getProperty("BYTECODER_TESTSERVERPORT", "10000"));
+            final int port = getTestWebServerPort();
             TESTSERVER.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), 20);
             TESTSERVER.createContext("/", httpExchange -> {
                 final File filesDir = HTTPFILESDIR.get();
@@ -239,17 +237,11 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
         return new URL(String.format("http://%s:%d/%s", "host.testcontainers.internal", theServerAddress.getPort(), theFileName));
     }
 
-    private WebDriver newDriverForTest() {
-        return BROWSERCONTAINER.getWebDriver();
-    }
-
     private void testJSBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier, final TestOption aTestOption) {
         if ("".equals(System.getProperty("BYTECODER_DISABLE_JSTESTS", ""))) {
             final TestClass testClass = getTestClass();
             final Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " " + aTestOption.toDescription());
             aRunNotifier.fireTestStarted(theDescription);
-
-            WebDriver theDriver = null;
 
             try {
                 final CompileTarget theCompileTarget = new CompileTarget(testClass.getJavaClass().getClassLoader(), CompileTarget.BackendType.js);
@@ -292,50 +284,49 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 final File theWorkingDirectory = new File(".");
 
                 initializeTestWebServer();
-                initializeSeleniumDriver();
 
-                final File theMavenTargetDir = new File(theWorkingDirectory, "target");
-                final File theGeneratedFilesDir = new File(theMavenTargetDir, "bytecoderjs");
-                theGeneratedFilesDir.mkdirs();
+                try (final BrowserWebDriverContainer theContainer = initializeSeleniumContainer()) {
 
-                // Copy additional resources
-                for (final CompileResult.Content c : result.getContent()) {
-                    if (c instanceof CompileResult.URLContent) {
-                        try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, c.getFileName()))) {
-                            c.writeTo(fos);
+                    final File theMavenTargetDir = new File(theWorkingDirectory, "target");
+                    final File theGeneratedFilesDir = new File(theMavenTargetDir, "bytecoderjs");
+                    theGeneratedFilesDir.mkdirs();
+
+                    // Copy additional resources
+                    for (final CompileResult.Content c : result.getContent()) {
+                        if (c instanceof CompileResult.URLContent) {
+                            try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, c.getFileName()))) {
+                                c.writeTo(fos);
+                            }
                         }
                     }
+
+                    final File theGeneratedFile = new File(theGeneratedFilesDir, theFilename);
+                    final PrintWriter theWriter = new PrintWriter(theGeneratedFile);
+                    theWriter.println("<html><body><script>");
+                    theWriter.println(theStrWriter.toString());
+                    theWriter.println("</script></body></html>");
+                    theWriter.flush();
+                    theWriter.close();
+
+                    initializeWebRoot(theGeneratedFile.getParentFile());
+
+                    final URL theTestURL = getTestFileUrl(theGeneratedFile);
+                    final WebDriver theDriver = theContainer.getWebDriver();
+                    theDriver.get(theTestURL.toString());
+
+                    final List<LogEntry> theAll = theDriver.manage().logs().get(LogType.BROWSER).getAll();
+                    if (1 > theAll.size()) {
+                        aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("No console output from browser")));
+                    }
+                    for (final LogEntry theEntry : theAll) {
+                        LOGGER.info(theEntry.getMessage());
+                    }
+                    final LogEntry theLast = theAll.get(theAll.size() - 1);
+
+                    if (!theLast.getMessage().contains("Test finished OK")) {
+                        aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed! Got : " + theLast.getMessage())));
+                    }
                 }
-
-                final File theGeneratedFile = new File(theGeneratedFilesDir, theFilename);
-                final PrintWriter theWriter = new PrintWriter(theGeneratedFile);
-                theWriter.println("<html><body><script>");
-                theWriter.println(theStrWriter.toString());
-                theWriter.println("</script></body></html>");
-                theWriter.flush();
-                theWriter.close();
-
-                initializeWebRoot(theGeneratedFile.getParentFile());
-
-                theDriver = newDriverForTest();
-
-                final URL theTestURL = getTestFileUrl(theGeneratedFile);
-
-                theDriver.get(theTestURL.toString());
-
-                final List<LogEntry> theAll = theDriver.manage().logs().get(LogType.BROWSER).getAll();
-                if (1 > theAll.size()) {
-                    aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("No console output from browser")));
-                }
-                for (final LogEntry theEntry : theAll) {
-                    LOGGER.info(theEntry.getMessage());
-                }
-                final LogEntry theLast = theAll.get(theAll.size() - 1);
-
-                if (!theLast.getMessage().contains("Test finished OK")) {
-                    aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed! Got : " + theLast.getMessage())));
-                }
-
             } catch (final Exception e) {
                 aRunNotifier.fireTestFailure(new Failure(theDescription, e));
             } finally {
@@ -356,7 +347,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
             final Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " " + aTestOption.toDescription());
             aRunNotifier.fireTestStarted(theDescription);
 
-            WebDriver theDriver = null;
 
             try {
                 final CompileTarget theCompileTarget = new CompileTarget(testClass.getJavaClass().getClassLoader(), CompileTarget.BackendType.wasm);
@@ -376,170 +366,171 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 final File theWorkingDirectory = new File(".");
 
                 initializeTestWebServer();
-                initializeSeleniumDriver();
 
-                final File theMavenTargetDir = new File(theWorkingDirectory, "target");
-                final File theGeneratedFilesDir = new File(theMavenTargetDir, "bytecoderwat");
-                theGeneratedFilesDir.mkdirs();
+                try (final BrowserWebDriverContainer theContainer = initializeSeleniumContainer()) {
 
-                final File theGeneratedFile = new File(theGeneratedFilesDir, theFileName);
+                    final File theMavenTargetDir = new File(theWorkingDirectory, "target");
+                    final File theGeneratedFilesDir = new File(theMavenTargetDir, "bytecoderwat");
+                    theGeneratedFilesDir.mkdirs();
 
-                final PrintWriter theWriter = new PrintWriter(theGeneratedFile);
-                theWriter.println("<html>");
-                theWriter.println("    <body>");
-                theWriter.println("        <h1>Module code</h1>");
-                theWriter.println("        <h1>Compilation result</h1>");
-                theWriter.println("        <pre id=\"compileresult\">");
-                theWriter.println("        </pre>");
-                theWriter.println("        <script>");
+                    final File theGeneratedFile = new File(theGeneratedFilesDir, theFileName);
 
-                theWriter.println(jsContent.asString());
+                    final PrintWriter theWriter = new PrintWriter(theGeneratedFile);
+                    theWriter.println("<html>");
+                    theWriter.println("    <body>");
+                    theWriter.println("        <h1>Module code</h1>");
+                    theWriter.println("        <h1>Compilation result</h1>");
+                    theWriter.println("        <pre id=\"compileresult\">");
+                    theWriter.println("        </pre>");
+                    theWriter.println("        <script>");
 
-                theWriter.println("            function compile() {");
-                theWriter.println("                console.log('Test started');");
-                theWriter.println("                try {");
-                theWriter.println("                var features = {\n" +
-                        "                         'exceptions' : true,\n" +
-                        "                        'mutable_globals' : true,\n" +
-                        "                        'sat_float_to_int' : true,\n" +
-                        "                        'sign_extension' : true,\n" +
-                        "                        'simd' : true,\n" +
-                        "                        'threads' : true,\n" +
-                        "                        'multi_value' : true,\n" +
-                        "                        'tail_call' : true,\n" +
-                        "                    };");
+                    theWriter.println(jsContent.asString());
 
-                theWriter.println();
-                theWriter.print("                    var binaryBuffer = new Uint8Array([");
-                try (final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-                    binaryContent.writeTo(bos);
-                    bos.flush();
-                    final byte[] theData = bos.toByteArray();
-                    for (int i = 0; i < theData.length; i++) {
-                        if (i > 0) {
-                            theWriter.print(",");
-                        }
-                        theWriter.print(theData[i] & 0xFF);
-                    }
-                }
+                    theWriter.println("            function compile() {");
+                    theWriter.println("                console.log('Test started');");
+                    theWriter.println("                try {");
+                    theWriter.println("                var features = {\n" +
+                            "                         'exceptions' : true,\n" +
+                            "                        'mutable_globals' : true,\n" +
+                            "                        'sat_float_to_int' : true,\n" +
+                            "                        'sign_extension' : true,\n" +
+                            "                        'simd' : true,\n" +
+                            "                        'threads' : true,\n" +
+                            "                        'multi_value' : true,\n" +
+                            "                        'tail_call' : true,\n" +
+                            "                    };");
 
-                theWriter.println("]);");
-
-                theWriter.println("                    console.log('Size of compiled WASM binary is ' + binaryBuffer.length);");
-                theWriter.println();
-                theWriter.println("                    var theInstantiatePromise = WebAssembly.instantiate(binaryBuffer, bytecoder.imports);");
-                theWriter.println("                    theInstantiatePromise.then(");
-                theWriter.println("                         function (resolved) {");
-                theWriter.println("                             var wasmModule = resolved.module;");
-                theWriter.println("                             bytecoder.init(resolved.instance);");
-                theWriter.println("                             bytecoder.exports.initMemory(0);");
-                theWriter.println("                             console.log(\"Memory initialized\")");
-                theWriter.println("                             console.log(\"Used memory in bytes \" + bytecoder.exports.usedMem());");
-                theWriter.println("                             console.log(\"Free memory in bytes \" + bytecoder.exports.freeMem());");
-                theWriter.println("                             bytecoder.exports.bootstrap(0);");
-                theWriter.println("                             bytecoder.initializeFileIO();");
-                theWriter.println("                             console.log(\"Used memory after bootstrap in bytes \" + bytecoder.exports.usedMem());");
-                theWriter.println("                             console.log(\"Free memory after bootstrap in bytes \" + bytecoder.exports.freeMem());");
-                theWriter.println("                             console.log(\"Creating test instance\")");
-
-                theWriter.print("                             var theTest = bytecoder.exports.newObject(0,");
-                theWriter.print(textualContent.getSizeOf(theTypeRef));
-                theWriter.print(",");
-                theWriter.print(textualContent.getTypeIDFor(theTypeRef));
-                theWriter.print(",");
-                theWriter.print(textualContent.getVTableIndexOf(theTypeRef));
-                theWriter.println(", 0);");
-                theWriter.println("                             console.log(\"Bootstrapped\")");
-                theWriter.println("                             try {");
-                theWriter.println("                                 console.log(\"Starting main method\")");
-                theWriter.println("                                 bytecoder.exports.main(theTest);");
-                theWriter.println("                                 console.log(\"Main finished\")");
-                theWriter.println("                                 console.log(\"Test finished OK\")");
-                theWriter.println("                             } catch (e) {");
-                theWriter.println("                                 console.log(\"Test threw error\")");
-                theWriter.println("                                 throw e;");
-                theWriter.println("                             }");
-                theWriter.println("                         },");
-                theWriter.println("                         function (rejected) {");
-                theWriter.println("                             console.log(\"Error instantiating webassembly\");");
-                theWriter.println("                             console.log(rejected);");
-                theWriter.println("                         }");
-                theWriter.println("                    );");
-                theWriter.println("                } catch (e) {");
-                theWriter.println("                    document.getElementById(\"compileresult\").innerText = e.toString();");
-                theWriter.println("                    console.log(e.toString());");
-                theWriter.println("                    console.log(e.stack);");
-                theWriter.println("                    if (bytecoder.runningInstance) {");
-                theWriter.println("                    }");
-                theWriter.println("                }");
-                theWriter.println("            }");
-                theWriter.println();
-
-                theWriter.println("            compile();");
-                theWriter.println("        </script>");
-                theWriter.println("    </body>");
-                theWriter.println("</html>");
-
-                theWriter.flush();
-                theWriter.close();
-
-                try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theResult.getMinifier().toClassName(theTypeRef) + "." + theResult.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "_" + aTestOption.toFilePrefix() + ".wat"))) {
-                    textualContent.writeTo(fos);
-                }
-
-                try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theResult.getMinifier().toClassName(theTypeRef) + "." + theResult.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "_" + aTestOption.toFilePrefix() + ".js"))) {
-                    jsContent.writeTo(fos);
-                }
-
-                try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theResult.getMinifier().toClassName(theTypeRef) + "." + theResult.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "_" + aTestOption.toFilePrefix() + ".wasm"))) {
-                    binaryContent.writeTo(fos);
-                }
-
-                try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theResult.getMinifier().toClassName(theTypeRef) + "." + theResult.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "_" + aTestOption.toFilePrefix() + ".wasm.map"))) {
-                    sourceMapContent.writeTo(fos);
-                }
-
-                // Copy additional resources
-                for (final CompileResult.Content c : theResult.getContent()) {
-                    if (c instanceof CompileResult.URLContent) {
-                        try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, c.getFileName()))) {
-                            c.writeTo(fos);
+                    theWriter.println();
+                    theWriter.print("                    var binaryBuffer = new Uint8Array([");
+                    try (final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+                        binaryContent.writeTo(bos);
+                        bos.flush();
+                        final byte[] theData = bos.toByteArray();
+                        for (int i = 0; i < theData.length; i++) {
+                            if (i > 0) {
+                                theWriter.print(",");
+                            }
+                            theWriter.print(theData[i] & 0xFF);
                         }
                     }
-                }
 
-                initializeWebRoot(theGeneratedFile.getParentFile());
+                    theWriter.println("]);");
 
-                // Invoke test in browser
-                theDriver = newDriverForTest();
+                    theWriter.println("                    console.log('Size of compiled WASM binary is ' + binaryBuffer.length);");
+                    theWriter.println();
+                    theWriter.println("                    var theInstantiatePromise = WebAssembly.instantiate(binaryBuffer, bytecoder.imports);");
+                    theWriter.println("                    theInstantiatePromise.then(");
+                    theWriter.println("                         function (resolved) {");
+                    theWriter.println("                             var wasmModule = resolved.module;");
+                    theWriter.println("                             bytecoder.init(resolved.instance);");
+                    theWriter.println("                             bytecoder.exports.initMemory(0);");
+                    theWriter.println("                             console.log(\"Memory initialized\")");
+                    theWriter.println("                             console.log(\"Used memory in bytes \" + bytecoder.exports.usedMem());");
+                    theWriter.println("                             console.log(\"Free memory in bytes \" + bytecoder.exports.freeMem());");
+                    theWriter.println("                             bytecoder.exports.bootstrap(0);");
+                    theWriter.println("                             bytecoder.initializeFileIO();");
+                    theWriter.println("                             console.log(\"Used memory after bootstrap in bytes \" + bytecoder.exports.usedMem());");
+                    theWriter.println("                             console.log(\"Free memory after bootstrap in bytes \" + bytecoder.exports.freeMem());");
+                    theWriter.println("                             console.log(\"Creating test instance\")");
 
-                final URL theTestURL = getTestFileUrl(theGeneratedFile);
+                    theWriter.print("                             var theTest = bytecoder.exports.newObject(0,");
+                    theWriter.print(textualContent.getSizeOf(theTypeRef));
+                    theWriter.print(",");
+                    theWriter.print(textualContent.getTypeIDFor(theTypeRef));
+                    theWriter.print(",");
+                    theWriter.print(textualContent.getVTableIndexOf(theTypeRef));
+                    theWriter.println(", 0);");
+                    theWriter.println("                             console.log(\"Bootstrapped\")");
+                    theWriter.println("                             try {");
+                    theWriter.println("                                 console.log(\"Starting main method\")");
+                    theWriter.println("                                 bytecoder.exports.main(theTest);");
+                    theWriter.println("                                 console.log(\"Main finished\")");
+                    theWriter.println("                                 console.log(\"Test finished OK\")");
+                    theWriter.println("                             } catch (e) {");
+                    theWriter.println("                                 console.log(\"Test threw error\")");
+                    theWriter.println("                                 throw e;");
+                    theWriter.println("                             }");
+                    theWriter.println("                         },");
+                    theWriter.println("                         function (rejected) {");
+                    theWriter.println("                             console.log(\"Error instantiating webassembly\");");
+                    theWriter.println("                             console.log(rejected);");
+                    theWriter.println("                         }");
+                    theWriter.println("                    );");
+                    theWriter.println("                } catch (e) {");
+                    theWriter.println("                    document.getElementById(\"compileresult\").innerText = e.toString();");
+                    theWriter.println("                    console.log(e.toString());");
+                    theWriter.println("                    console.log(e.stack);");
+                    theWriter.println("                    if (bytecoder.runningInstance) {");
+                    theWriter.println("                    }");
+                    theWriter.println("                }");
+                    theWriter.println("            }");
+                    theWriter.println();
 
-                theDriver.get(theTestURL.toString());
+                    theWriter.println("            compile();");
+                    theWriter.println("        </script>");
+                    theWriter.println("    </body>");
+                    theWriter.println("</html>");
 
-                final long theStart = System.currentTimeMillis();
-                boolean theTestSuccedded = false;
+                    theWriter.flush();
+                    theWriter.close();
 
-                while (!theTestSuccedded && 10 * 1000 > System.currentTimeMillis() - theStart) {
-                    final List<LogEntry> theAll = theDriver.manage().logs().get(LogType.BROWSER).getAll();
-                    for (final LogEntry theEntry : theAll) {
-                        final String theMessage = theEntry.getMessage();
-                        System.out.println(theMessage);
+                    try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theResult.getMinifier().toClassName(theTypeRef) + "." + theResult.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "_" + aTestOption.toFilePrefix() + ".wat"))) {
+                        textualContent.writeTo(fos);
+                    }
 
-                        if (theMessage.contains("Test finished OK")) {
-                            theTestSuccedded = true;
+                    try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theResult.getMinifier().toClassName(theTypeRef) + "." + theResult.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "_" + aTestOption.toFilePrefix() + ".js"))) {
+                        jsContent.writeTo(fos);
+                    }
+
+                    try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theResult.getMinifier().toClassName(theTypeRef) + "." + theResult.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "_" + aTestOption.toFilePrefix() + ".wasm"))) {
+                        binaryContent.writeTo(fos);
+                    }
+
+                    try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theResult.getMinifier().toClassName(theTypeRef) + "." + theResult.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "_" + aTestOption.toFilePrefix() + ".wasm.map"))) {
+                        sourceMapContent.writeTo(fos);
+                    }
+
+                    // Copy additional resources
+                    for (final CompileResult.Content c : theResult.getContent()) {
+                        if (c instanceof CompileResult.URLContent) {
+                            try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, c.getFileName()))) {
+                                c.writeTo(fos);
+                            }
+                        }
+                    }
+
+                    initializeWebRoot(theGeneratedFile.getParentFile());
+
+                    // Invoke test in browser
+                    final WebDriver theDriver = theContainer.getWebDriver();
+
+                    final URL theTestURL = getTestFileUrl(theGeneratedFile);
+
+                    theDriver.get(theTestURL.toString());
+
+                    final long theStart = System.currentTimeMillis();
+                    boolean theTestSuccedded = false;
+
+                    while (!theTestSuccedded && 10 * 1000 > System.currentTimeMillis() - theStart) {
+                        final List<LogEntry> theAll = theDriver.manage().logs().get(LogType.BROWSER).getAll();
+                        for (final LogEntry theEntry : theAll) {
+                            final String theMessage = theEntry.getMessage();
+                            System.out.println(theMessage);
+
+                            if (theMessage.contains("Test finished OK")) {
+                                theTestSuccedded = true;
+                            }
+                        }
+
+                        if (!theTestSuccedded) {
+                            Thread.sleep(100);
                         }
                     }
 
                     if (!theTestSuccedded) {
-                        Thread.sleep(100);
+                        aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed!")));
                     }
                 }
-
-                if (!theTestSuccedded) {
-                    aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed!")));
-                }
-
             } catch (final Exception e) {
                 aRunNotifier.fireTestFailure(new Failure(theDescription, e));
             } finally {
