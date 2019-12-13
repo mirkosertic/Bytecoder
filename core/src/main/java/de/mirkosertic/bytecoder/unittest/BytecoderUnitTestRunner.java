@@ -173,6 +173,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
     }
 
     private static synchronized BrowserWebDriverContainer initializeSeleniumContainer() {
+
+        java.util.logging.Logger.getLogger("org.openqa.selenium").setLevel(Level.OFF);
+
         final ChromeOptions theOptions = new ChromeOptions().setHeadless(true);
         theOptions.addArguments("--js-flags=experimental-wasm-eh");
         theOptions.addArguments("--enable-experimental-wasm-eh");
