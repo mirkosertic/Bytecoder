@@ -38,13 +38,13 @@ import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.TestClass;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.logging.LogEntry;
 import org.openqa.selenium.logging.LogType;
 import org.openqa.selenium.logging.LoggingPreferences;
 import org.openqa.selenium.remote.CapabilityType;
-import org.openqa.selenium.remote.RemoteWebDriver;
+import org.testcontainers.Testcontainers;
+import org.testcontainers.containers.BrowserWebDriverContainer;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -71,8 +71,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
     private final String[] additionalClassesToLink;
     private final String[] additionalResources;
 
-    private static ChromeDriverService DRIVERSERVICE;
     private static HttpServer TESTSERVER;
+    private static BrowserWebDriverContainer SELENIUMCONTAINER;
     private static final AtomicReference<File> HTTPFILESDIR = new AtomicReference<>();
 
     public BytecoderUnitTestRunner(final Class aClass) throws InitializationError {
@@ -169,29 +169,46 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
         }
     }
 
-    private static synchronized void initializeSeleniumDriver() throws IOException {
-        if (null == DRIVERSERVICE) {
+    private static int getTestWebServerPort() {
+        return Integer.parseInt(System.getProperty("BYTECODER_TESTSERVERPORT", "10000"));
+    }
 
-            final String theChromeDriverBinary = System.getenv("CHROMEDRIVER_BINARY");
-            if (null == theChromeDriverBinary || theChromeDriverBinary.isEmpty()) {
-                throw new RuntimeException("No chromedriver binary found! Please set CHROMEDRIVER_BINARY environment variable!");
-            }
+    private static synchronized BrowserWebDriverContainer initializeSeleniumContainer() {
 
-            ChromeDriverService.Builder theDriverService = new ChromeDriverService.Builder();
-            theDriverService = theDriverService.withVerbose(false).withLogFile(new File("chromedriver.log"));
-            theDriverService = theDriverService.usingDriverExecutable(new File(theChromeDriverBinary));
+        if (SELENIUMCONTAINER == null) {
+            java.util.logging.Logger.getLogger("org.openqa.selenium").setLevel(Level.OFF);
 
-            DRIVERSERVICE = theDriverService.build();
-            DRIVERSERVICE.start();
+            final ChromeOptions theOptions = new ChromeOptions().setHeadless(true);
+            theOptions.addArguments("--js-flags=experimental-wasm-eh");
+            theOptions.addArguments("--enable-experimental-wasm-eh");
+            theOptions.addArguments("disable-infobars"); // disabling infobars
+            theOptions.addArguments("--disable-dev-shm-usage"); // overcome limited resource problems
+            theOptions.addArguments("--no-sandbox"); // Bypass OS security model
+            theOptions.setExperimentalOption("useAutomationExtension", false);
+            final LoggingPreferences theLoggingPreferences = new LoggingPreferences();
+            theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
+            theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
+            theOptions.setCapability("goog:loggingPrefs", theLoggingPreferences);
 
-            Runtime.getRuntime().addShutdownHook(new Thread(() -> DRIVERSERVICE.stop()));
+            Testcontainers.exposeHostPorts(getTestWebServerPort());
+
+            SELENIUMCONTAINER = new BrowserWebDriverContainer()
+                    .withCapabilities(theOptions)
+                    .withRecordingMode(BrowserWebDriverContainer.VncRecordingMode.SKIP, new File("."));
+            SELENIUMCONTAINER.start();
+
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> SELENIUMCONTAINER.stop()));
         }
+        return SELENIUMCONTAINER;
     }
 
     private static void initializeTestWebServer() throws IOException {
         if (TESTSERVER == null) {
+
+            java.util.logging.Logger.getLogger("sun.net.httpserver.ExchangeImpl").setLevel(Level.OFF);
+
             TESTSERVER = HttpServer.create();
-            final int port = Integer.parseInt(System.getProperty("BYTECODER_TESTSERVERPORT", "10000"));
+            final int port = getTestWebServerPort();
             TESTSERVER.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), port), 20);
             TESTSERVER.createContext("/", httpExchange -> {
                 final File filesDir = HTTPFILESDIR.get();
@@ -228,23 +245,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
     private static URL getTestFileUrl(final File aFile) throws MalformedURLException {
         final String theFileName = aFile.getName();
         final InetSocketAddress theServerAddress = TESTSERVER.getAddress();
-        return new URL(String.format("http://%s:%d/%s", theServerAddress.getAddress().getHostAddress(), theServerAddress.getPort(), theFileName));
-    }
-
-    private WebDriver newDriverForTest() {
-        final ChromeOptions theOptions = new ChromeOptions().setHeadless(true);
-        theOptions.addArguments("--js-flags=experimental-wasm-eh");
-        theOptions.addArguments("--enable-experimental-wasm-eh");
-        theOptions.addArguments("disable-infobars"); // disabling infobars
-        theOptions.addArguments("--disable-dev-shm-usage"); // overcome limited resource problems
-        theOptions.addArguments("--no-sandbox"); // Bypass OS security model
-        theOptions.setExperimentalOption("useAutomationExtension", false);
-        final LoggingPreferences theLoggingPreferences = new LoggingPreferences();
-        theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
-        theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
-        theOptions.setCapability("goog:loggingPrefs", theLoggingPreferences);
-
-        return new RemoteWebDriver(DRIVERSERVICE.getUrl(), theOptions);
+        return new URL(String.format("http://%s:%d/%s", "host.testcontainers.internal", theServerAddress.getPort(), theFileName));
     }
 
     private void testJSBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier, final TestOption aTestOption) {
@@ -252,8 +253,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
             final TestClass testClass = getTestClass();
             final Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " " + aTestOption.toDescription());
             aRunNotifier.fireTestStarted(theDescription);
-
-            WebDriver theDriver = null;
 
             try {
                 final CompileTarget theCompileTarget = new CompileTarget(testClass.getJavaClass().getClassLoader(), CompileTarget.BackendType.js);
@@ -296,7 +295,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 final File theWorkingDirectory = new File(".");
 
                 initializeTestWebServer();
-                initializeSeleniumDriver();
+
+                final BrowserWebDriverContainer theContainer = initializeSeleniumContainer();
 
                 final File theMavenTargetDir = new File(theWorkingDirectory, "target");
                 final File theGeneratedFilesDir = new File(theMavenTargetDir, "bytecoderjs");
@@ -321,10 +321,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
 
                 initializeWebRoot(theGeneratedFile.getParentFile());
 
-                theDriver = newDriverForTest();
-
                 final URL theTestURL = getTestFileUrl(theGeneratedFile);
-
+                final WebDriver theDriver = theContainer.getWebDriver();
                 theDriver.get(theTestURL.toString());
 
                 final List<LogEntry> theAll = theDriver.manage().logs().get(LogType.BROWSER).getAll();
@@ -339,14 +337,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 if (!theLast.getMessage().contains("Test finished OK")) {
                     aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed! Got : " + theLast.getMessage())));
                 }
-
             } catch (final Exception e) {
                 aRunNotifier.fireTestFailure(new Failure(theDescription, e));
             } finally {
-                if (null != theDriver) {
-                    theDriver.close();
-                    theDriver.quit();
-                }
                 aRunNotifier.fireTestFinished(theDescription);
             }
         }
@@ -364,7 +357,6 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
             final Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " " + aTestOption.toDescription());
             aRunNotifier.fireTestStarted(theDescription);
 
-            WebDriver theDriver = null;
 
             try {
                 final CompileTarget theCompileTarget = new CompileTarget(testClass.getJavaClass().getClassLoader(), CompileTarget.BackendType.wasm);
@@ -384,7 +376,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 final File theWorkingDirectory = new File(".");
 
                 initializeTestWebServer();
-                initializeSeleniumDriver();
+
+                final BrowserWebDriverContainer theContainer = initializeSeleniumContainer();
 
                 final File theMavenTargetDir = new File(theWorkingDirectory, "target");
                 final File theGeneratedFilesDir = new File(theMavenTargetDir, "bytecoderwat");
@@ -519,7 +512,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 initializeWebRoot(theGeneratedFile.getParentFile());
 
                 // Invoke test in browser
-                theDriver = newDriverForTest();
+                final WebDriver theDriver = theContainer.getWebDriver();
 
                 final URL theTestURL = getTestFileUrl(theGeneratedFile);
 
@@ -547,14 +540,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 if (!theTestSuccedded) {
                     aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed!")));
                 }
-
             } catch (final Exception e) {
                 aRunNotifier.fireTestFailure(new Failure(theDescription, e));
             } finally {
-                if (null != theDriver) {
-                    theDriver.close();
-                    theDriver.quit();
-                }
                 aRunNotifier.fireTestFinished(theDescription);
             }
         }
