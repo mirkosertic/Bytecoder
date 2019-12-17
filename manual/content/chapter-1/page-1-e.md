@@ -1,6 +1,6 @@
 ---
 title: "Unit Testing"
-date: 2019-10-25T14:49:24+02:00
+date: 2019-12-16T14:49:24+02:00
 draft: false
 weight: 6
 ---
@@ -26,13 +26,15 @@ public class SimpleMathTest {
 }
 ```
 
-is compiled to JavaScript and WebAssembly and executed using a Selenium Chrome driver. This test runner also supports comparison of original Java code and its cross compiled counterpart. This mechanism is the core tool to test the compiler and the Classlib.
+is compiled to JavaScript and WebAssembly and executed using [Selenium](https://selenium.dev/). 
+The test runner also supports comparison of original Java code and its cross compiled counterpart. 
+This mechanism is the core tool to test the compiler and the Classlib.
 
-Bytecoder relies for WebAssembly unit testing on Chrome. To make everything working, you have to add `CHROMEDRIVER_BINARY` 
-environment variable pointing to an installed Selenium Chrome WebDriver binary. You can get the latest release
-of WebDriver here: https://sites.google.com/a/chromium.org/chromedriver.  
+You don't need to install the right Chrome version and Selenium drivers as Bytecoder 
+uses [Testcontainers](https://www.testcontainers.org/) to run everything.
+All you need is a working `Docker` environment as described [here](https://www.testcontainers.org/supported_docker_environment/).  
 
-Please make sure to include the following dependency to make the Testrunner working:
+Please make sure to include the following dependency to make the test runner working:
 
 ```
 <dependencies>
