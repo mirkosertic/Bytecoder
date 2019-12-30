@@ -67,4 +67,32 @@ public class RuntimeClassTest {
         Assert.assertTrue(Object.class.isAssignableFrom(String.class));
         Assert.assertFalse(String.class.isAssignableFrom(Object.class));
     }
+
+    private static final Class superClassOf(final Class aClass) {
+        return aClass.getSuperclass();
+    }
+
+    private static final Class superClassOfObject(final Object aObject) {
+        return aObject.getClass().getSuperclass();
+    }
+
+    @Test
+    public void testGetSuperclassOfRuntimeClass() {
+        Assert.assertSame(Object.class, superClassOf(String.class));
+    }
+
+    @Test
+    public void testGetSuperclassofObject() {
+        Assert.assertSame(Object.class, superClassOfObject(new Runnable() {
+            @Override
+            public void run() {
+            }
+        }));
+    }
+
+    @Test
+    public void testGetSuperclassNull() {
+        Assert.assertNull(superClassOf(Object.class));
+    }
+
 }
