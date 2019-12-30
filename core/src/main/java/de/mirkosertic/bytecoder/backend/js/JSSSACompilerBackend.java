@@ -832,6 +832,13 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             // Framework-Specific methods
             theWriter.tab().text("var ").text(theMinifier.toSymbol("$INITIALIZED")).assign().text("false;").newLine();
 
+            if (!theLinkedClass.getClassName().name().equals(Object.class.getName())) {
+                final BytecodeLinkedClass theSuperClass = theLinkedClass.getSuperClass();
+                theWriter.tab().text("C.").text(theMinifier.toSymbol("__superclass")).assign().text(theMinifier.toClassName(theSuperClass.getClassName())).text(";").newLine();
+            } else {
+                theWriter.tab().text("C.").text(theMinifier.toSymbol("__superclass")).assign().text("null;").newLine();
+            }
+
             theWriter.tab().text("C.").text(theMinifier.toSymbol("__implementedTypes")).assign().text("[");
             boolean first = true;
             for (final BytecodeLinkedClass theType : theLinkedClass.getImplementingTypes()) {

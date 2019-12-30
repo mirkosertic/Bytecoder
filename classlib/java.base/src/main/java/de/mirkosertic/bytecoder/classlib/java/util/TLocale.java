@@ -29,6 +29,8 @@ public class TLocale {
 
     public static final Locale US = new Locale("en", "US");
 
+    public static final Locale JAPAN = new Locale("ja", "JP");
+
     public static Locale getDefault() {
         return VM.defaultLocale();
     }

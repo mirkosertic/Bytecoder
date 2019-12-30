@@ -31,6 +31,7 @@ import de.mirkosertic.bytecoder.ssa.ParsingHelper;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.StringValue;
+import de.mirkosertic.bytecoder.ssa.SuperTypeOfExpression;
 import de.mirkosertic.bytecoder.ssa.TypeOfExpression;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Value;
@@ -48,6 +49,14 @@ public class JavaLangClassIntrinsic extends Intrinsic {
                 .matchesExactlyTo(theSignature)) {
             final Variable theNewVariable = aTargetBlock
                     .newVariable(aInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), new TypeOfExpression(aProgram, aInstruction.getOpcodeAddress(), aTarget));
+            aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
+
+            return true;
+        }
+        if ("getSuperclass".equals(aMethodName) && BytecodeLinkedClass.GET_SUPERCLASS_SIGNATURE
+                .matchesExactlyTo(theSignature)) {
+            final Variable theNewVariable = aTargetBlock
+                    .newVariable(aInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), new SuperTypeOfExpression(aProgram, aInstruction.getOpcodeAddress(), aTarget));
             aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
             return true;
@@ -126,6 +135,14 @@ public class JavaLangClassIntrinsic extends Intrinsic {
             final Value theValue = new TypeOfExpression(aProgram, aInstruction.getOpcodeAddress(), aTarget);
             final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theValue);
             aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
+            return true;
+        }
+        if ("getSuperclass".equals(aMethodName) && BytecodeLinkedClass.GET_SUPERCLASS_SIGNATURE
+                .matchesExactlyTo(theSignature)) {
+            final Variable theNewVariable = aTargetBlock
+                    .newVariable(aInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), new SuperTypeOfExpression(aProgram, aInstruction.getOpcodeAddress(), aTarget));
+            aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
+
             return true;
         }
 

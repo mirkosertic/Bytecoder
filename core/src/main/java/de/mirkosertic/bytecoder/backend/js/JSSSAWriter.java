@@ -114,6 +114,7 @@ import de.mirkosertic.bytecoder.ssa.ShortValue;
 import de.mirkosertic.bytecoder.ssa.SqrtExpression;
 import de.mirkosertic.bytecoder.ssa.StackTopExpression;
 import de.mirkosertic.bytecoder.ssa.StringValue;
+import de.mirkosertic.bytecoder.ssa.SuperTypeOfExpression;
 import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.ThrowExpression;
 import de.mirkosertic.bytecoder.ssa.TypeConversionExpression;
@@ -273,9 +274,17 @@ public class JSSSAWriter {
             print((MethodTypeArgumentCheckExpression) aValue);
         } else if (aValue instanceof ReinterpretAsNativeExpression) {
             print((ReinterpretAsNativeExpression) aValue);
+        } else if (aValue instanceof SuperTypeOfExpression) {
+            print((SuperTypeOfExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
+    }
+
+    private void print(final SuperTypeOfExpression aExpression) {
+        final Value theValue = aExpression.incomingDataFlows().get(0);
+        print(theValue);
+        writer.text(".").text(minifier.toSymbol("__superclass"));
     }
 
     private void print(final ReinterpretAsNativeExpression aExpression) {
