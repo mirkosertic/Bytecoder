@@ -41,6 +41,7 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
             BytecodePrimitiveTypeRef.BOOLEAN,
             BytecodeObjectTypeRef.fromRuntimeClass(ClassLoader.class),
     });
+    public static final BytecodeMethodSignature GET_SUPERCLASS_SIGNATURE = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Class.class), new BytecodeTypeRef[0]);
 
     private final int uniqueId;
     private final BytecodeObjectTypeRef className;

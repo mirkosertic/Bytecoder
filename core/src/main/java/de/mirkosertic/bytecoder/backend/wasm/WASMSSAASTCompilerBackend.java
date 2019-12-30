@@ -307,6 +307,14 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             classGetName.flow.ret(call(weakFunctionReference("STRINGPOOL_GLOBAL_BY_INDEX", null), theGetArguments, null), null);
         }
 
+        final ExportableFunction classGetSuperClass = module.getFunctions().newFunction("jlClass_jlClassgetSuperclass", Collections.singletonList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
+        {
+            final List<WASMValue> theGetArguments = new ArrayList<>();
+            theGetArguments.add(getLocal(classGetSuperClass.localByLabel("thisRef"), null));
+            classGetSuperClass.flow.ret(call(weakFunctionReference("superTypeOf", null), theGetArguments, null), null);
+        }
+
+
         final ConstantPool theConstantPool = new ConstantPool();
 
         final Map<String, WASMSSAASTCompilerBackend.CallSite> theCallsites = new HashMap<>();
@@ -345,6 +353,28 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 return module.functionIndex().firstByLabel(theID);
             }
         };
+
+        // Superclass resolver
+        {
+            final ExportableFunction superTypeOf = module.getFunctions().newFunction("superTypeOf", Arrays.asList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32);
+            aLinkerContext.linkedClasses().forEach(aEntry -> {
+                final BytecodeLinkedClass theLinkedClass = aEntry.targetNode();
+                if (theLinkedClass.emulatedByRuntime()) {
+                    return;
+                }
+
+                final Iff theCheck = superTypeOf.flow.iff(theLinkedClass.getClassName().name(), i32.eq(getLocal(superTypeOf.localByLabel("thisRef"), null),
+                        getGlobal(theResolver.runtimeClassFor(theLinkedClass.getClassName()), null), null), null);
+
+                if (!theLinkedClass.getClassName().name().equals(Object.class.getName())) {
+                    theCheck.flow.ret(getGlobal(theResolver.runtimeClassFor(theLinkedClass.getSuperClass().getClassName()), null), null);
+                } else {
+                    theCheck.flow.ret(i32.c(0, null), null);
+                }
+
+            });
+            superTypeOf.flow.ret(i32.c(0, null), null);
+        }
 
         final ExportableFunction classIsAssignableFrom = module.getFunctions().newFunction("jlClass_BOOLEANisAssignableFromjlClass", Arrays.asList(param("thisRef", PrimitiveType.i32), param("otherType", PrimitiveType.i32)), PrimitiveType.i32).toTable();
         {
