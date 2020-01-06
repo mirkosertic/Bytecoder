@@ -854,7 +854,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab().text("};").newLine();
 
         theWriter.tab().text("C.prototype.").text(theGetConstructorMethodName).assign().text("function(args)").space().text("{").newLine();
-        theWriter.tab(2).text("return jlClass.constructor.").text(theMinifier.toSymbol("__runtimeclass")).text(".").text(theGetConstructorMethodName).text(".call(this, args);").newLine();
+        theWriter.tab(2).text("return ").text(theMinifier.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))).text(".prototype.").text(theGetConstructorMethodName).text(".call(this, args);").newLine();
         theWriter.tab().text("};").newLine();
 
         theWriter.tab(1).text("return C;").newLine();
