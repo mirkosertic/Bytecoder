@@ -15,33 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import static de.mirkosertic.bytecoder.backend.wasm.WASMSSAASTWriter.toType;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.invoke.LambdaMetafactory;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.Stack;
-import java.util.stream.Collectors;
-
 import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
 import de.mirkosertic.bytecoder.allocator.Register;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
@@ -108,6 +81,33 @@ import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.stackifier.HeadToHeadControlFlowException;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.invoke.LambdaMetafactory;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Stack;
+import java.util.stream.Collectors;
+
+import static de.mirkosertic.bytecoder.backend.wasm.WASMSSAASTWriter.toType;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
 
 public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResult> {
 
@@ -453,8 +453,21 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 if (null != t.getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName())) {
 
                     if (aMapEntry.getProvidingClass().getClassName().equals(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))
-                            && t.getName().stringValue().equals("forName")
-                            && t.getSignature().matchesExactlyTo(BytecodeLinkedClass.CLASS_FOR_NAME_SIGNATURE)) {
+                            && t.getName().stringValue().equals("getClassLoader")
+                            && t.getSignature().matchesExactlyTo(BytecodeLinkedClass.GET_CLASSLOADER_SIGNATURE)) {
+
+                        final String theWASMMethodName = WASMWriterUtils.toMethodName(aMapEntry.getProvidingClass().getClassName(), t.getName().stringValue(), t.getSignature());
+
+                        final ExportableFunction theMethod = module.getFunctions()
+                                .newFunction(theWASMMethodName,
+                                        Arrays.asList(param("UNUSED", PrimitiveType.i32)), PrimitiveType.i32).toTable();
+
+                        theMethod.flow.ret(i32.c(0, null), null);
+                    }
+
+                    if (aMapEntry.getProvidingClass().getClassName().equals(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))
+                        && t.getName().stringValue().equals("forName")
+                        && t.getSignature().matchesExactlyTo(BytecodeLinkedClass.CLASS_FOR_NAME_SIGNATURE)) {
 
                         // Special method: we resolve a runtime class by name here
 
