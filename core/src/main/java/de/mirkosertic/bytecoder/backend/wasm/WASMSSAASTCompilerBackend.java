@@ -404,6 +404,22 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             classIsAssignableFrom.flow.ret(i32.c(0, null), null);
         }
 
+        {
+            final ExportableFunction theMethod = module.getFunctions()
+                    .newFunction("jlClass_BOOLEANdesiredAssertionStatus",
+                            Arrays.asList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
+            theMethod.flow.ret(i32.c(0, null), null);
+        }
+
+        {
+            final String theWASMMethodName = WASMWriterUtils.toMethodName(BytecodeObjectTypeRef.fromRuntimeClass(Class.class), "getClassLoader", BytecodeLinkedClass.GET_CLASSLOADER_SIGNATURE);
+            final ExportableFunction theMethod = module.getFunctions()
+                    .newFunction(theWASMMethodName,
+                            Arrays.asList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
+
+            theMethod.flow.ret(i32.c(0, null), null);
+        }
+
         final ExportableFunction runtimeResolvevtableindex = module.getFunctions().newFunction("RUNTIMECLASS" + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX, Arrays.asList(param("thisRef", PrimitiveType.i32), param("methodId", PrimitiveType.i32)), PrimitiveType.i32).toTable();
         {
             final BytecodeLinkedClass theClassLinkedCass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Class.class));
@@ -411,23 +427,19 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theRuntimeMethodMap.stream().forEach(aMethodMapEntry -> {
                 final BytecodeMethod theMethod = aMethodMapEntry.getValue();
 
-                if (!theMethod.getAccessFlags().isStatic()) {
-                    final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(theMethod);
+                if (!theMethod.getAccessFlags().isStatic() && !theMethod.isConstructor() && !theMethod.isClassInitializer() &&
+                    aMethodMapEntry.getProvidingClass().getClassName().equals(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))) {
 
+                    final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(theMethod);
                     final Block block = runtimeResolvevtableindex.flow.block("m" + theMethodIdentifier.getIdentifier(), null);
                     block.flow.branchIff(block, i32.ne(getLocal(runtimeResolvevtableindex.localByLabel("methodId"), null), i32.c(theMethodIdentifier.getIdentifier(), null), null), null);
                     if (Objects.equals("getClass", theMethod.getName().stringValue())) {
                         block.flow.unreachable(null);
-                    } else if (Objects.equals("toString", theMethod.getName().stringValue())) {
-                        block.flow.unreachable(null);
-                    } else if (Objects.equals("getName", theMethod.getName().stringValue())) {
-                        block.flow.ret(i32.c(module.getTables().funcTable().indexOf(classGetName), null), null);
-                    } else if (Objects.equals("equals", theMethod.getName().stringValue())) {
-                        block.flow.unreachable(null);
-                    } else if (Objects.equals("hashCode", theMethod.getName().stringValue())) {
-                        block.flow.unreachable(null);
                     } else {
-                        block.flow.unreachable(null);
+                        // delegate to the corresponding method of java.lang.Class
+                        final String theMethodName = WASMWriterUtils.toMethodName(aMethodMapEntry.getProvidingClass().getClassName(),
+                                theMethod.getName(), theMethod.getSignature());
+                        block.flow.ret(weakFunctionTableReference(theMethodName, null), null);
                     }
                 }
             });
@@ -451,19 +463,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
                 // If the method is provided by the runtime, we do not need to generate the implementation
                 if (null != t.getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName())) {
-
-                    if (aMapEntry.getProvidingClass().getClassName().equals(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))
-                            && t.getName().stringValue().equals("getClassLoader")
-                            && t.getSignature().matchesExactlyTo(BytecodeLinkedClass.GET_CLASSLOADER_SIGNATURE)) {
-
-                        final String theWASMMethodName = WASMWriterUtils.toMethodName(aMapEntry.getProvidingClass().getClassName(), t.getName().stringValue(), t.getSignature());
-
-                        final ExportableFunction theMethod = module.getFunctions()
-                                .newFunction(theWASMMethodName,
-                                        Arrays.asList(param("UNUSED", PrimitiveType.i32)), PrimitiveType.i32).toTable();
-
-                        theMethod.flow.ret(i32.c(0, null), null);
-                    }
 
                     if (aMapEntry.getProvidingClass().getClassName().equals(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))
                         && t.getName().stringValue().equals("forName")
