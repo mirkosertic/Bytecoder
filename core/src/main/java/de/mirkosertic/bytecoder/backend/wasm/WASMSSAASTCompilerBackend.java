@@ -412,6 +412,13 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         }
 
         {
+            final ExportableFunction theMethod = module.getFunctions()
+                    .newFunction("jlClass_A1jlObjectgetEnumConstants",
+                            Arrays.asList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
+            theMethod.flow.ret(i32.c(0, null), null);
+        }
+
+        {
             final String theWASMMethodName = WASMWriterUtils.toMethodName(BytecodeObjectTypeRef.fromRuntimeClass(Class.class), "getClassLoader", BytecodeLinkedClass.GET_CLASSLOADER_SIGNATURE);
             final ExportableFunction theMethod = module.getFunctions()
                     .newFunction(theWASMMethodName,
