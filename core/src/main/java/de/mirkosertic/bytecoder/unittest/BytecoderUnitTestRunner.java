@@ -277,7 +277,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
 
                 theCodeWriter.println("console.log(\"Starting test\");");
                 theCodeWriter.println("bytecoder.bootstrap();");
-                theCodeWriter.println("var theTestInstance = " + result.getMinifier().toClassName(theTestClass) + "." + result.getMinifier().toMethodName("$newInstance", theTestClassConstructorSignature) + "();");
+                theCodeWriter.println("var theTestInstance = " + result.getMinifier().toClassName(theTestClass) + "." +  result.getMinifier().toSymbol("__runtimeclass") + "." + result.getMinifier().toMethodName("$newInstance", theTestClassConstructorSignature) + "();");
                 theCodeWriter.println("try {");
                 theCodeWriter.println("     theTestInstance." + result.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "();");
                 theCodeWriter.println("     console.log(\"Test finished OK\");");

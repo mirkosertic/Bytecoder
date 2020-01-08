@@ -124,6 +124,7 @@ public class TClass {
         return null;
     }
 
+    @EmulatedByRuntime
     public ClassLoader getClassLoader() {
         return null;
     }

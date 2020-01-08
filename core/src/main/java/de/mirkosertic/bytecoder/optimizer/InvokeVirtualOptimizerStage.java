@@ -84,7 +84,7 @@ public class InvokeVirtualOptimizerStage implements OptimizerStage {
         if (theLinkedClasses.size() == 1) {
             // There is only one class implementing this method, so we can make a direct call
             final BytecodeLinkedClass theLinked = theLinkedClasses.get(0);
-            if (!theLinked.emulatedByRuntime()) {
+            if (!theLinked.emulatedByRuntime() && !theLinked.getClassName().equals(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))) {
 
                 final BytecodeMethod theMethod = theLinked.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
                 if (!theMethod.getAccessFlags().isAbstract()) {
