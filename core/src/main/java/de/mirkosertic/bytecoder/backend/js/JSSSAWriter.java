@@ -284,7 +284,7 @@ public class JSSSAWriter {
     private void print(final SuperTypeOfExpression aExpression) {
         final Value theValue = aExpression.incomingDataFlows().get(0);
         print(theValue);
-        writer.text(".").text(minifier.toSymbol("__superclass"));
+        writer.text(".").text("superClass");
     }
 
     private void print(final ReinterpretAsNativeExpression aExpression) {
@@ -336,7 +336,7 @@ public class JSSSAWriter {
     }
 
     private void print(final NewObjectAndConstructExpression aValue) {
-        writer.text(minifier.toClassName(aValue.getClazz())).text(".").text(minifier.toMethodName("$newInstance", aValue.getSignature())).text("(");
+        writer.text(minifier.toClassName(aValue.getClazz())).text(".").text(minifier.toSymbol("__runtimeclass")).text(".").text(minifier.toMethodName("$newInstance", aValue.getSignature())).text("(");
         final List<Value> theArguments = aValue.incomingDataFlows();
         for (int i=0;i<theArguments.size();i++) {
             if (i>0) {
@@ -378,6 +378,7 @@ public class JSSSAWriter {
     private void print(final TypeOfExpression aValue) {
         print(aValue.incomingDataFlows().get(0));
         writer.text(".").text("constructor");
+        writer.text(".").text(minifier.toSymbol("__runtimeclass"));
     }
 
     private void print(final StackTopExpression aValue) {
@@ -534,7 +535,8 @@ public class JSSSAWriter {
     }
 
     private void print(final ClassReferenceValue aValue) {
-        writer.text(minifier.toClassName(aValue.getType())).text(".").text(minifier.toSymbol("init")).text("()");
+        writer.text(minifier.toClassName(aValue.getType())).text(".").text(minifier.toSymbol("init")).text("()")
+        .text(".").text(minifier.toSymbol("__runtimeclass"));
     }
 
     private void print(final InstanceOfExpression aValue) {
@@ -543,7 +545,7 @@ public class JSSSAWriter {
         print(theValue);
         writer.space().text("==").space().text("null").space().text("?").space().text("false").space().text(":");
         print(theValue);
-        writer.text(".iof(");
+        writer.text(".constructor.").text(minifier.toSymbol("__runtimeclass")).text(".iof(");
 
         final BytecodeUtf8Constant theConstant = aValue.getType().getConstant();
         if (!theConstant.stringValue().startsWith("[")) {
@@ -1138,7 +1140,10 @@ public class JSSSAWriter {
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aField.getClassIndex().getClassConstant().getConstant()));
         final BytecodeResolvedFields theFields = theLinkedClass.resolvedFields();
         final BytecodeResolvedFields.FieldEntry theField = theFields.fieldByName(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
-        writer.text(minifier.toClassName(theField.getProvidingClass().getClassName())).text(".").text(minifier.toSymbol("init")).text("().").symbol(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(), aPosition);
+        writer.text(minifier.toClassName(theField.getProvidingClass().getClassName()))
+                .text(".").text(minifier.toSymbol("init")).text("().")
+                .text(minifier.toSymbol("__runtimeclass")).text(".")
+                .symbol(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(), aPosition);
     }
 
     private void printInstanceFieldReference(final BytecodeFieldRefConstant aField) {
@@ -1593,7 +1598,7 @@ public class JSSSAWriter {
                     theGuard.writer.space().text("||").space();
                 }
                 final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theInstanceCheck));
-                theGuard.writer.text("CURRENTEXCEPTION.exception.iof(").text(minifier.toClassName(theLinkedClass.getClassName())).text(")");
+                theGuard.writer.text("CURRENTEXCEPTION.exception.constructor.").text(minifier.toSymbol("__runtimeclass")).text(".iof(").text(minifier.toClassName(theLinkedClass.getClassName())).text(")");
                 first = false;
             }
 
