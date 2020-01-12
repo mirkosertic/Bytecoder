@@ -6,6 +6,12 @@ define void @internal() "export_name(abc)" {
     ret void
 }
 
+define void()* @funcptr() {
+    ret void()* @internal ; returns index in table of @internal
+}
+
 define i32 @_start() {
-	  ret i32 42
+    %x = call void()* @funcptr();
+    call void() %x()  ; this generates a call_indirect in webassembly
+	ret i32 42
 }
