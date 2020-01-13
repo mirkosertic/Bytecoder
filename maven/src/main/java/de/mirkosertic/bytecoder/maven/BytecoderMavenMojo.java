@@ -63,7 +63,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
     protected String mainClass;
 
     /**
-     * Backend to be used.
+     * Backend to be used, can be either js,wasm or wasm_llvm.
      */
     @Parameter(required = true, defaultValue = "js")
     protected String backend;

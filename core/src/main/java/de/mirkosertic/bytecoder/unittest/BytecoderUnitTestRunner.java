@@ -267,7 +267,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
 
                 final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, aTestOption.isExceptionsEnabled(), "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear, additionalClassesToLink, additionalResources);
                 final JSCompileResult result = (JSCompileResult) theCompileTarget.compile(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
-                final JSCompileResult.JSContent content = (JSCompileResult.JSContent) result.getContent()[0];
+                final CompileResult.StringContent content = (CompileResult.StringContent) result.getContent()[0];
 
                 theCodeWriter.println(content.asString());
 

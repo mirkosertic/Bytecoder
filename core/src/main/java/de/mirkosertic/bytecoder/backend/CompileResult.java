@@ -21,6 +21,7 @@ import org.apache.commons.io.output.WriterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.io.StringWriter;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -59,8 +60,8 @@ public abstract class CompileResult<T> {
         }
 
         @Override
-        public void writeTo(OutputStream stream) throws IOException {
-            try (InputStream is = url.openStream()) {
+        public void writeTo(final OutputStream stream) throws IOException {
+            try (final InputStream is = url.openStream()) {
                 IOUtils.copy(is, stream);
             }
         }
@@ -68,6 +69,29 @@ public abstract class CompileResult<T> {
         @Override
         public String asString() {
             throw new IllegalStateException("Not implemented!");
+        }
+    }
+
+    public static class StringContent implements CompileResult.Content {
+
+        private final String fileName;
+        private final String data;
+
+        public StringContent(final String fileName, final String data) {
+            this.fileName = fileName;
+            this.data = data;
+        }
+
+        @Override
+        public String getFileName() {
+            return fileName;
+        }
+
+        @Override
+        public void writeTo(final OutputStream stream) {
+            try (final PrintStream ps = new PrintStream(stream)) {
+                ps.print(data);
+            }
         }
     }
 

@@ -1,0 +1,307 @@
+/*
+ * Copyright 2020 Mirko Sertic
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package de.mirkosertic.bytecoder.backend.llvm;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.commons.io.IOUtils;
+
+import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
+import de.mirkosertic.bytecoder.api.Export;
+import de.mirkosertic.bytecoder.backend.CompileBackend;
+import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.backend.CompileResult;
+import de.mirkosertic.bytecoder.classlib.Address;
+import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
+import de.mirkosertic.bytecoder.core.BytecodeImportedLink;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethod;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.intrinsics.Intrinsics;
+import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
+import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
+import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
+import de.mirkosertic.bytecoder.ssa.TypeRef;
+import de.mirkosertic.bytecoder.ssa.Variable;
+
+public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
+
+    private final ProgramGeneratorFactory programGeneratorFactory;
+
+    public LLVMCompilerBackend(final ProgramGeneratorFactory aProgramGeneratorFactory) {
+        this.programGeneratorFactory = aProgramGeneratorFactory;
+    }
+
+    @Override
+    public LLVMCompileResult generateCodeFor(final CompileOptions aOptions, final BytecodeLinkerContext aLinkerContext,
+            final Class aEntryPointClass, final String aEntryPointMethodName, final BytecodeMethodSignature aEntryPointSignatue) {
+
+        try {
+            final File theLLFile = File.createTempFile("llvm", ".ll");
+            try (final PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(theLLFile), StandardCharsets.UTF_8))) {
+                // We write the header first
+                pw.println("target triple = \"wasm32-unknown-unknown\"");
+                pw.println();
+
+                final AtomicInteger attributeCounter = new AtomicInteger();
+
+                // We write the imported functions first
+                aLinkerContext.linkedClasses().forEach(aEntry -> {
+
+                    if (aEntry.targetNode().getBytecodeClass().getAccessFlags().isInterface() && !aEntry.targetNode().isOpaqueType()) {
+                        return;
+                    }
+                    if (Objects.equals(aEntry.targetNode().getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+                        return;
+                    }
+                    if (Objects.equals(aEntry.targetNode().getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(java.lang.reflect.Array.class))) {
+                        return;
+                    }
+
+                    final BytecodeResolvedMethods theMethodMap = aEntry.targetNode().resolvedMethods();
+                    theMethodMap.stream().forEach(aMethodMapEntry -> {
+
+                        final BytecodeLinkedClass theProvidingClass = aMethodMapEntry.getProvidingClass();
+
+                        // Only add implementation methods
+                        if (!(theProvidingClass == aEntry.targetNode())) {
+                            return;
+                        }
+
+                        final BytecodeMethod t = aMethodMapEntry.getValue();
+                        final BytecodeMethodSignature theSignature = t.getSignature();
+
+                        if (t.getAccessFlags().isNative() || (t.getAccessFlags().isAbstract() && theProvidingClass.isOpaqueType())) {
+                            if (theProvidingClass.emulatedByRuntime()) {
+                                return;
+                            }
+                            if (t.emulatedByRuntime()) {
+                                return;
+                            }
+
+                            // Native methods are imported via annotation
+                            if (!t.getAccessFlags().isNative() && theProvidingClass.isOpaqueType()) {
+                                // For all the other methods we programatically generate
+                                // the JS wrapper implementation later by this compiler
+                                //opaqueReferenceMethods.add(new WASMSSAASTCompilerBackend.OpaqueReferenceMethod(theProvidingClass, t));
+                            }
+
+                            final BytecodeImportedLink theLink = theProvidingClass.linkfor(t);
+
+                            final String methodName = LLVMWriterUtils
+                                    .toMethodName(theProvidingClass.getClassName(), t.getName(), theSignature);
+
+                            pw.print("attributes #");
+                            pw.print(attributeCounter.get());
+                            pw.print(" = {");
+                            pw.print("\"wasm-import-module\"");
+                            pw.print("=");
+                            pw.print("\"");
+                            pw.print(theLink.getModuleName());
+                            pw.print("\" ");
+                            pw.print("\"wasm-import-name\"");
+                            pw.print("=");
+                            pw.print("\"");
+                            pw.print(theLink.getLinkName());
+                            pw.println("\"}");
+
+                            pw.print("declare ");
+                            pw.print(LLVMWriterUtils.toType(TypeRef.toType(t.getSignature().getReturnType())));
+                            pw.print(" @");
+                            pw.print(methodName);
+                            pw.print("(");
+
+                            pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
+                            pw.print(" ");
+                            pw.print("%thisRef");
+                            for (int i = 0; i < theSignature.getArguments().length; i++) {
+                                final BytecodeTypeRef theParamType = theSignature.getArguments()[i];
+                                pw.print(",");
+                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(theParamType)));
+                                pw.print(" ");
+                                pw.print("%p");
+                                pw.print(i + 1);
+                            }
+
+                            pw.print(")");
+                            pw.print(" #");
+                            pw.print(attributeCounter);
+                            pw.println();
+                            pw.println();
+
+                            attributeCounter.incrementAndGet();
+                        }
+                    });
+                });
+
+                // Now, we can continue to write implementation code
+                aLinkerContext.linkedClasses().forEach(aEntry -> {
+
+                    final BytecodeLinkedClass theLinkedClass = aEntry.targetNode();
+
+                    if (Objects.equals(aEntry.targetNode().getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+                        return;
+                    }
+                    if (theLinkedClass.emulatedByRuntime()) {
+                        return;
+                    }
+                    // Hack for unit-testing
+                    if (!theLinkedClass.getClassName().name().endsWith("LLVMCompilerBackendTest")) {
+                        return;
+                    }
+
+                    final BytecodeResolvedMethods theMethodMap = theLinkedClass.resolvedMethods();
+                    final String theClassName = LLVMWriterUtils.toClassName(aEntry.targetNode().getClassName());
+
+                    if (!theLinkedClass.getBytecodeClass().getAccessFlags().isInterface() && !theLinkedClass.getBytecodeClass().getAccessFlags().isAbstract()) {
+                        // TODO: generate instanceof function
+
+                        // TODO: generate vtable resolver function
+                    }
+
+                    theMethodMap.stream().forEach(aMethodMapEntry -> {
+
+                        final BytecodeMethod theMethod = aMethodMapEntry.getValue();
+                        final BytecodeMethodSignature theSignature = theMethod.getSignature();
+
+                        // If the method is provided by the runtime, we do not need to generate the implementation
+                        if (null != theMethod.getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName())) {
+                            return;
+                        }
+
+                        // Do not generate code for abstract methods
+                        if (theMethod.getAccessFlags().isAbstract()) {
+                            return;
+                        }
+
+                        if (theMethod.getAccessFlags().isNative()) {
+                            // Already written
+                            return;
+                        }
+
+                        if (!(aMethodMapEntry.getProvidingClass() == theLinkedClass)) {
+                            // Skip methods not implemented here
+                            // Skip methods not implemented in this class
+                            // But include static methods, as they are inherited from the base classes
+                            if (aMethodMapEntry.getValue().getAccessFlags().isStatic() && !aMethodMapEntry.getValue().isClassInitializer()) {
+                                // We need to create a delegate function here
+                                if (!theMethodMap.isImplementedBy(aMethodMapEntry.getValue(), theLinkedClass)) {
+                                    // TODO: generate delegate function for static methods
+                                }
+                            }
+                            return;
+                        }
+
+                        // We need to create a newInstance function in case this is a constructor
+                        if (theMethod.isConstructor() && !theLinkedClass.getBytecodeClass().getAccessFlags().isAbstract() && !theLinkedClass.getBytecodeClass().getAccessFlags().isInterface()) {
+
+                            // TODO: generate constructor code
+                            return;
+                        }
+
+                        final ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext, new Intrinsics());
+                        final Program theSSAProgram = theGenerator.generateFrom(aMethodMapEntry.getProvidingClass().getBytecodeClass(), theMethod);
+
+                        // Run optimizer
+                        // We use a special LLVM optimizer, which does only stuff LLVM CANNOT do, such
+                        // as virtual method invocation optimization. All other optimization work
+                        // is done by LLVM!
+                        KnownOptimizer.LLVM.optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
+
+                        // Now, we can generate the instance method here
+                        final String methodName = LLVMWriterUtils
+                                .toMethodName(theLinkedClass.getClassName(), theMethod.getName(), theSignature);
+
+                        final BytecodeAnnotation theExport = theMethod.getAttributes().getAnnotationByType(Export.class.getName());
+                        if (theExport != null) {
+                            pw.print("attributes #");
+                            pw.print(attributeCounter.get());
+                            pw.print(" = {");
+                            pw.print("\"wasm-export-name\"");
+                            pw.print("=");
+                            pw.print("\"");
+                            pw.print(theExport.getElementValueByName("value").stringValue());
+                            pw.println("\"}");
+                        }
+
+                        pw.print("define ");
+                        pw.print(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getReturnType())));
+                        pw.print(" @");
+                        pw.print(methodName);
+                        pw.print("(");
+
+                        pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
+                        pw.print(" ");
+                        if (theMethod.getAccessFlags().isStatic()) {
+                            pw.print("%UNUSED");
+                        } else {
+                            pw.print("%thisRef");
+                        }
+                        final List<Variable> theArguments = theSSAProgram.getArguments();
+                        for (int i = 0; i < theArguments.size(); i++) {
+                            final Variable theArgument = theArguments.get(i);
+                            final TypeRef theParamType = theArgument.resolveType();
+                            pw.print(",");
+                            pw.print(LLVMWriterUtils.toType(theParamType));
+                            pw.print(" ");
+                            pw.print("%");
+                            pw.print(theArgument.getName());
+                        }
+
+                        if (theExport != null) {
+                            pw.print(") #");
+                            pw.print(attributeCounter.get());
+                            pw.println(" {");
+                            attributeCounter.incrementAndGet();
+                        } else {
+                            pw.println(") {");
+                        }
+
+                        final LLVMWriter theWriter = new LLVMWriter(pw);
+                        theWriter.write(theSSAProgram);
+
+                        pw.println("}");
+                        pw.println();
+                    });
+                });
+
+            }
+            final LLVMCompileResult theCompileResult = new LLVMCompileResult();
+            try (final Reader reader = new InputStreamReader(new FileInputStream(theLLFile))) {
+                final String theLLContent = IOUtils.toString(reader);
+                theCompileResult.add(new CompileResult.StringContent("bytecoder.ll", theLLContent));
+            }
+            return theCompileResult;
+        } catch (final Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+}
