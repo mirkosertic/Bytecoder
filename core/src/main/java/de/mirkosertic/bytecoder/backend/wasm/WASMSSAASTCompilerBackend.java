@@ -1641,9 +1641,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             newRuntimeGeneratedTypeStringMethodTypeMethodHandleObject: function() {},");
             theWriter.println("         },");
             theWriter.println("         memorymanager: {");
-            theWriter.println("             logExceptionTextString : function(thisref, p1) {");
-            theWriter.println("                 console.log('Exception with message : ' + bytecoder.toJSString(p1));");
-            theWriter.println("             },");
             theWriter.println("             isUsedAsCallbackINT : function(thisref, ptr) {");
             theWriter.println("                 return bytecoder.callbacks.includes(ptr);");
             theWriter.println("             },");

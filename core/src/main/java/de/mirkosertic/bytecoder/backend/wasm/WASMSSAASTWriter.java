@@ -531,12 +531,6 @@ public class WASMSSAASTWriter {
             final WASMValue theValue = toValue(theException);
             flow.throwException(module.getEvents().eventIndex().byLabel(EXCEPTION_NAME), Collections.singletonList(theValue), aExpression);
         } else {
-            final Value theException = aExpression.incomingDataFlows().get(0);
-            final Callable function = weakFunctionReference(WASMWriterUtils.toMethodName(BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class), "logException", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Exception.class)})), aExpression);
-            final List<WASMValue> arguments = new ArrayList<>();
-            arguments.add(i32.c(0, aExpression));
-            arguments.add(toValue(theException));
-            flow.voidCall(function, arguments, aExpression);
             flow.unreachable(aExpression);
         }
     }
