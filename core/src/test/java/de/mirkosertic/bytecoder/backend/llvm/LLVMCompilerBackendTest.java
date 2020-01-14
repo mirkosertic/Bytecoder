@@ -32,7 +32,11 @@ import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 public class LLVMCompilerBackendTest {
 
     private static int intConst(final int x) {
-        return x + 42;
+        int a = 0;
+        for (int i = 0; i <10; i++) {
+            a++;
+        }
+        return a;
     }
 
     public static int doSomething() {

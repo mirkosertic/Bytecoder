@@ -15,33 +15,51 @@
  */
 package de.mirkosertic.bytecoder.backend.llvm;
 
-import java.io.PrintWriter;
-import java.util.List;
-
+import de.mirkosertic.bytecoder.backend.wasm.WASMWriterUtils;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.graph.GraphDFSOrder;
 import de.mirkosertic.bytecoder.ssa.BinaryExpression;
+import de.mirkosertic.bytecoder.ssa.BlockState;
+import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadExpression;
+import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
+import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
+import de.mirkosertic.bytecoder.ssa.LongValue;
+import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
+import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
+import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
+import de.mirkosertic.bytecoder.ssa.StackTopExpression;
+import de.mirkosertic.bytecoder.ssa.TypeConversionExpression;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
+import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
+import de.mirkosertic.bytecoder.ssa.VariableDescription;
+
+import java.io.PrintWriter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class LLVMWriter {
 
     private final PrintWriter target;
+    private RegionNode currentNode;
+    private final Map<PHIValue, String> phiMapping;
 
     public LLVMWriter(final PrintWriter target) {
         this.target = target;
+        this.phiMapping = new HashMap<>();
     }
 
     public void write(final Program aProgram) {
@@ -52,6 +70,7 @@ public class LLVMWriter {
                 RegionNode.FORWARD_EDGE_FILTER_REGULAR_FLOW_ONLY);
         final List<RegionNode> sorted = order.getNodesInOrder();
         for (final RegionNode theBlock : sorted) {
+            currentNode = theBlock;
             final BytecodeOpcodeAddress theBlockStart = theBlock.getStartAddress();
             if (theBlockStart.getAddress() == 0) {
                 target.println("entry:");
@@ -59,6 +78,47 @@ public class LLVMWriter {
                 target.print("block");
                 target.print(theBlockStart.getAddress());
                 target.println(":");
+            }
+            final BlockState theLiveIn = theBlock.liveIn();
+            for (final Map.Entry<VariableDescription, Value> theEntry : theLiveIn.getPorts().entrySet()) {
+                if (theEntry.getValue() instanceof PHIValue) {
+                    final PHIValue phi = (PHIValue) theEntry.getValue();
+                    if (!phiMapping.containsKey(phi)) {
+                        final String tempName = "phitemp" + phiMapping.size();
+                        phiMapping.put(phi, tempName);
+
+                        target.write("    %");
+                        target.write(tempName);
+                        target.write(" = phi ");
+                        target.write(WASMWriterUtils.toType(phi.resolveType()));
+                        target.write(" ");
+                        boolean first = true;
+                        for (final RegionNode pred : currentNode.getPredecessors()) {
+                            final Value theOut = pred.liveOut().getPorts().get(phi.getDescription());
+                            if (theOut instanceof Variable) {
+                                if (first) {
+                                    first = false;
+                                } else {
+                                    target.write(",");
+                                }
+                                target.write("[");
+
+                                target.write("%");
+                                target.write(((Variable) theOut).getName());
+                                target.write(",");
+                                if (pred.getStartAddress().getAddress() == 0) {
+                                    target.write("%entry");
+                                } else {
+                                    target.write("%block");
+                                    target.print(pred.getStartAddress().getAddress());
+                                }
+
+                                target.write("]");
+                            }
+                        }
+                        target.println();
+                    }
+                }
             }
             write(theBlock);
         }
@@ -78,10 +138,61 @@ public class LLVMWriter {
                 write((ReturnValueExpression) e);
             } else if (e instanceof GotoExpression) {
                 write((GotoExpression) e);
+            } else if (e instanceof IFExpression) {
+                write((IFExpression) e);
+            } else if (e instanceof InvokeStaticMethodExpression) {
+                write((InvokeStaticMethodExpression) e);
+                target.println();
+            } else if (e instanceof SetMemoryLocationExpression) {
+                write((SetMemoryLocationExpression) e);
+            } else if (e instanceof UnreachableExpression) {
+                write((UnreachableExpression) e);
             } else {
                 throw new IllegalStateException("Not implemented : " + e.getClass());
             }
         }
+    }
+
+    private void write(final UnreachableExpression expression) {
+        target.println("    unreachable");
+    }
+
+    private void write(final SetMemoryLocationExpression expression) {
+        final Value location = expression.incomingDataFlows().get(0);
+        final Value value = expression.incomingDataFlows().get(1);
+        target.print("    store i32 ");
+        write(value, true);
+        target.print(",");
+        write(location, true);
+        target.println();
+    }
+
+    private void write(final IFExpression expression) {
+        target.print("    %ifcond_");
+        target.print(expression.getAddress().getAddress());
+        target.print(" = ");
+        final Value cond = expression.incomingDataFlows().get(0);
+        write(cond, true);
+        target.println();
+        target.print("    br i1 %ifcond_");
+        target.print(expression.getAddress().getAddress());
+        target.write(", label %block_");
+        target.print(currentNode.getStartAddress().getAddress());
+        target.write("_true");
+        target.write(", label %block_");
+        target.print(currentNode.getStartAddress().getAddress());
+        target.write("_false");
+        target.println();
+
+        target.print("block_");
+        target.print(currentNode.getStartAddress().getAddress());
+        target.println("_true:");
+
+        write(expression.getExpressions());
+
+        target.print("block_");
+        target.print(currentNode.getStartAddress().getAddress());
+        target.println("_false:");
     }
 
     private void write(final GotoExpression expression) {
@@ -122,7 +233,11 @@ public class LLVMWriter {
         target.print("%");
         target.print(expression.getVariable().getName());
         target.print(" = ");
-        write(expression.incomingDataFlows().get(0), false);
+        final Value v = expression.incomingDataFlows().get(0);
+        if (v instanceof PHIValue) {
+            target.write("add i32 0,");
+        }
+        write(v, false);
         target.println();
     }
 
@@ -137,19 +252,90 @@ public class LLVMWriter {
             target.write(v.getName());
         } else if (aValue instanceof IntegerValue) {
             write((IntegerValue) aValue, useDirectVarRef);
+        } else if (aValue instanceof LongValue) {
+            write((LongValue) aValue, useDirectVarRef);
         } else if (aValue instanceof InvokeStaticMethodExpression) {
             write((InvokeStaticMethodExpression) aValue);
         } else if (aValue instanceof BinaryExpression) {
             write((BinaryExpression) aValue);
+        } else if (aValue instanceof PHIValue) {
+            write((PHIValue) aValue);
+        } else if (aValue instanceof MemorySizeExpression) {
+            write((MemorySizeExpression) aValue);
+        } else if (aValue instanceof ComputedMemoryLocationWriteExpression) {
+            write((ComputedMemoryLocationWriteExpression) aValue);
+        } else if (aValue instanceof ComputedMemoryLocationReadExpression) {
+            write((ComputedMemoryLocationReadExpression) aValue);
+        } else if (aValue instanceof TypeConversionExpression) {
+            write((TypeConversionExpression) aValue);
+        } else if (aValue instanceof StackTopExpression) {
+            write((StackTopExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue.getClass());
         }
+    }
+
+    private void write(final StackTopExpression e) {
+        target.write("@stacktop");
+    }
+
+    private void write(final TypeConversionExpression e) {
+        write(e.incomingDataFlows().get(0), true);
+    }
+
+    private void write(final ComputedMemoryLocationReadExpression e) {
+        final Value location = e.incomingDataFlows().get(0);
+        final Value offset = e.incomingDataFlows().get(1);
+        write(location, true);
+        target.write("+");
+        write(offset, true);
+    }
+
+    private void write(final ComputedMemoryLocationWriteExpression e) {
+        final Value location = e.incomingDataFlows().get(0);
+        final Value offset = e.incomingDataFlows().get(1);
+        write(location, true);
+        target.write("+");
+        write(offset, true);
+    }
+
+    private void write(final MemorySizeExpression aValue) {
+        target.write("@llv.masm.int_wasm_memory_size");
+    }
+
+    private void write(final PHIValue aValue) {
+        target.write("%");
+        target.write(phiMapping.get(aValue));
     }
 
     private void write(final BinaryExpression aValue) {
         switch (aValue.getOperator()) {
             case ADD:
                 target.write("add");
+                break;
+            case SUB:
+                target.write("sub");
+                break;
+            case MUL:
+                target.write("mul");
+                break;
+            case REMAINDER:
+                target.write("srem");
+                break;
+            case GREATEROREQUALS:
+                target.write("icmp sge");
+                break;
+            case LESSTHAN:
+                target.write("icmp slt");
+                break;
+            case LESSTHANOREQUALS:
+                target.write("icmp slte");
+                break;
+            case EQUALS:
+                target.write("icmp seq");
+                break;
+            case NOTEQUALS:
+                target.write("icmp sne");
                 break;
             default:
                 throw new IllegalStateException("Not implemented : " + aValue.getOperator());
@@ -164,16 +350,24 @@ public class LLVMWriter {
             }
             write(v.get(i), true);
         }
-        target.println();
     }
 
     private void write(final IntegerValue aValue, final boolean useDirectVarRef) {
         if (useDirectVarRef) {
-            target.print("i32 ");
             target.print(aValue.getIntValue());
         } else {
             target.print("add i32 ");
             target.print(aValue.getIntValue());
+            target.print(",0");
+        }
+    }
+
+    private void write(final LongValue aValue, final boolean useDirectVarRef) {
+        if (useDirectVarRef) {
+            target.print(aValue.getLongValue());
+        } else {
+            target.print("add i32 ");
+            target.print(aValue.getLongValue());
             target.print(",0");
         }
     }

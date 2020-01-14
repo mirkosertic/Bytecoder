@@ -112,12 +112,6 @@ public class MemoryManager {
         }
     }
 
-    public static native void logExceptionText(String aMessage);
-
-    public static void logException(final Exception e) {
-        logExceptionText(e.getMessage());
-    }
-
     @Export("free")
     public static void free(final int aPointer) {
 
