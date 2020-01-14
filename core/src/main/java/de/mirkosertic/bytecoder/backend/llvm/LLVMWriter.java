@@ -157,6 +157,13 @@ public class LLVMWriter {
         target.println("    unreachable");
     }
 
+    /*
+
+    %temp = add i32 %var1, %var2
+    %temp2 = inttoptr i32 %temp to i32*
+    store i32 %var3, i32* %temp2
+
+     */
     private void write(final SetMemoryLocationExpression expression) {
         final Value location = expression.incomingDataFlows().get(0);
         final Value value = expression.incomingDataFlows().get(1);
@@ -300,7 +307,7 @@ public class LLVMWriter {
     }
 
     private void write(final MemorySizeExpression aValue) {
-        target.write("@llv.masm.int_wasm_memory_size");
+        target.write("call i32 @llv.masm.int_wasm_memory_size()");
     }
 
     private void write(final PHIValue aValue) {
