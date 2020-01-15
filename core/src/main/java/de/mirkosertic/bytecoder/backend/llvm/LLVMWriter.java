@@ -47,19 +47,39 @@ import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.ssa.VariableDescription;
 
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class LLVMWriter {
+public class LLVMWriter implements AutoCloseable {
 
+    private final PrintWriter output;
     private final PrintWriter target;
+    private final StringWriter buffer;
     private RegionNode currentNode;
-    private final Map<PHIValue, String> phiMapping;
+    private final Map<Value, String> valueToSymbolMaping;
+    private final Map<PHIValue, String> prereservedPHIValueNames;
 
-    public LLVMWriter(final PrintWriter target) {
-        this.target = target;
-        this.phiMapping = new HashMap<>();
+    public LLVMWriter(final PrintWriter output) {
+        this.output = output;
+        this.buffer = new StringWriter();
+        this.target = new PrintWriter(this.buffer);
+        this.valueToSymbolMaping = new HashMap<>();
+        this.prereservedPHIValueNames = new HashMap<>();
+    }
+
+    @Override
+    public void close() {
+        target.flush();
+        String theUnencoded = buffer.toString();
+        for (final Map.Entry<Value, String> theEntry : valueToSymbolMaping.entrySet()) {
+            if (theEntry.getKey() instanceof Variable) {
+                final Variable v = (Variable) theEntry.getKey();
+                theUnencoded = theUnencoded.replaceAll("\\%" + v.getName() + "_", theEntry.getValue());
+            }
+        }
+        output.print(theUnencoded);
     }
 
     public void write(final Program aProgram) {
@@ -83,11 +103,16 @@ public class LLVMWriter {
             for (final Map.Entry<VariableDescription, Value> theEntry : theLiveIn.getPorts().entrySet()) {
                 if (theEntry.getValue() instanceof PHIValue) {
                     final PHIValue phi = (PHIValue) theEntry.getValue();
-                    if (!phiMapping.containsKey(phi)) {
-                        final String tempName = "phitemp" + phiMapping.size();
-                        phiMapping.put(phi, tempName);
+                    if (!valueToSymbolMaping.containsKey(phi)) {
+                        final String tempName;
+                        if (prereservedPHIValueNames.containsKey(phi)) {
+                            tempName = prereservedPHIValueNames.get(phi);
+                        } else {
+                            tempName ="%phitemp" + valueToSymbolMaping.size() + "_";
+                        }
+                        valueToSymbolMaping.put(phi, tempName);
 
-                        target.write("    %");
+                        target.write("    ");
                         target.write(tempName);
                         target.write(" = phi ");
                         target.write(WASMWriterUtils.toType(phi.resolveType()));
@@ -95,7 +120,12 @@ public class LLVMWriter {
                         boolean first = true;
                         for (final RegionNode pred : currentNode.getPredecessors()) {
                             final Value theOut = pred.liveOut().getPorts().get(phi.getDescription());
-                            if (theOut instanceof Variable) {
+                            String theReplacementSymbol = valueToSymbolMaping.get(theOut);
+                            if (theReplacementSymbol == null && theOut instanceof PHIValue) {
+                                theReplacementSymbol ="%futurephi_" + prereservedPHIValueNames.size() + "_";
+                                prereservedPHIValueNames.put((PHIValue) theOut, theReplacementSymbol);
+                            }
+                            if (theReplacementSymbol != null) {
                                 if (first) {
                                     first = false;
                                 } else {
@@ -103,8 +133,7 @@ public class LLVMWriter {
                                 }
                                 target.write("[");
 
-                                target.write("%");
-                                target.write(((Variable) theOut).getName());
+                                target.write(theReplacementSymbol);
                                 target.write(",");
                                 if (pred.getStartAddress().getAddress() == 0) {
                                     target.write("%entry");
@@ -114,6 +143,32 @@ public class LLVMWriter {
                                 }
 
                                 target.write("]");
+                            } else if (theOut instanceof Variable) {
+                                if (first) {
+                                    first = false;
+                                } else {
+                                    target.write(",");
+                                }
+                                target.write("[");
+
+                                if (valueToSymbolMaping.containsKey(theOut)) {
+                                    target.write(valueToSymbolMaping.get(theOut));
+                                } else {
+                                    target.write("%");
+                                    target.write(((Variable) theOut).getName());
+                                    target.write("_");
+                                }
+                                target.write(",");
+                                if (pred.getStartAddress().getAddress() == 0) {
+                                    target.write("%entry");
+                                } else {
+                                    target.write("%block");
+                                    target.print(pred.getStartAddress().getAddress());
+                                }
+
+                                target.write("]");
+                            } else {
+                                throw new RuntimeException("Unhandled type for PHI input : " + theOut.getClass());
                             }
                         }
                         target.println();
@@ -128,8 +183,51 @@ public class LLVMWriter {
         write(block.getExpressions());
     }
 
+    private void tempify(final Expression e) {
+        for (final Value v : e.incomingDataFlows()) {
+            if (v instanceof ComputedMemoryLocationReadExpression || v instanceof ComputedMemoryLocationWriteExpression) {
+                if (!valueToSymbolMaping.containsKey(v)) {
+                    final Value origin = v.incomingDataFlows().get(0);
+                    final Value offset = v.incomingDataFlows().get(1);
+                    final String theTempSymbol = "%temp_" + valueToSymbolMaping.size() + "_";
+                    target.print("    ");
+                    target.print(theTempSymbol);
+                    target.print(" = ");
+                    target.print("add i32 ");
+                    write(origin, true);
+                    target.print(", ");
+                    write(offset, true);
+                    target.println();
+
+                    final String theTempSymbol2 = theTempSymbol + "_ptr";
+                    target.print("    ");
+                    target.print(theTempSymbol2);
+                    target.print(" = inttoptr i32 ");
+                    target.print(theTempSymbol);
+                    target.println(" to i32*");
+
+                    valueToSymbolMaping.put(v, theTempSymbol);
+                }
+            } else if (v instanceof Expression) {
+                if (!valueToSymbolMaping.containsKey(v)) {
+                    final String theTempSymbol = "%temp_" + valueToSymbolMaping.size() + "_";
+
+                    target.print("    ");
+                    target.print(theTempSymbol);
+                    target.print(" = ");
+                    write(v, false);
+
+                    target.println();
+
+                    valueToSymbolMaping.put(v, theTempSymbol);
+                }
+            }
+        }
+    }
+
     private void write(final ExpressionList list) {
         for (final Expression e : list.toList()) {
+            tempify(e);
             if (e instanceof ReturnExpression) {
                 write((ReturnExpression) e);
             } else if (e instanceof VariableAssignmentExpression) {
@@ -141,6 +239,7 @@ public class LLVMWriter {
             } else if (e instanceof IFExpression) {
                 write((IFExpression) e);
             } else if (e instanceof InvokeStaticMethodExpression) {
+                target.print("    ");
                 write((InvokeStaticMethodExpression) e);
                 target.println();
             } else if (e instanceof SetMemoryLocationExpression) {
@@ -157,13 +256,6 @@ public class LLVMWriter {
         target.println("    unreachable");
     }
 
-    /*
-
-    %temp = add i32 %var1, %var2
-    %temp2 = inttoptr i32 %temp to i32*
-    store i32 %var3, i32* %temp2
-
-     */
     private void write(final SetMemoryLocationExpression expression) {
         final Value location = expression.incomingDataFlows().get(0);
         final Value value = expression.incomingDataFlows().get(1);
@@ -175,14 +267,8 @@ public class LLVMWriter {
     }
 
     private void write(final IFExpression expression) {
-        target.print("    %ifcond_");
-        target.print(expression.getAddress().getAddress());
-        target.print(" = ");
-        final Value cond = expression.incomingDataFlows().get(0);
-        write(cond, true);
-        target.println();
-        target.print("    br i1 %ifcond_");
-        target.print(expression.getAddress().getAddress());
+        target.print("    br i1 ");
+        write(expression.incomingDataFlows().get(0), true);
         target.write(", label %block_");
         target.print(currentNode.getStartAddress().getAddress());
         target.write("_true");
@@ -225,30 +311,38 @@ public class LLVMWriter {
         target.print("ret ");
         target.print(LLVMWriterUtils.toType(result.resolveType()));
         target.print(" ");
-        if (result instanceof Variable) {
-            final Variable v = (Variable) result;
-            target.print("%");
-            target.print(v.getName());
-        } else {
-            write(result, true);
-        }
+        write(result, true);
         target.println();
     }
 
     private void write(final VariableAssignmentExpression expression) {
-        target.print("    ");
-        target.print("%");
-        target.print(expression.getVariable().getName());
-        target.print(" = ");
-        final Value v = expression.incomingDataFlows().get(0);
-        if (v instanceof PHIValue) {
-            target.write("add i32 0,");
+        final Value value = expression.incomingDataFlows().get(0);
+        final String replacedBy = valueToSymbolMaping.get(value);
+        if (replacedBy != null) {
+            valueToSymbolMaping.put(expression.getVariable(), replacedBy);
+            target.print("    ; ignore assignment of ");
+            target.print(expression.getVariable().getName());
+            target.print(" as identical to ");
+            target.print(replacedBy);
+            target.println();
+        } else {
+            // TODO: handle assignment of constants here
+            target.print("    ");
+            target.print("%");
+            target.print(expression.getVariable().getName());
+            target.print("_ = ");
+            write(value, false);
+            target.println();
         }
-        write(v, false);
-        target.println();
     }
 
     private void write(final Value aValue, final boolean useDirectVarRef) {
+        final String replacedSymbol = valueToSymbolMaping.get(aValue);
+        if (replacedSymbol != null && !(aValue instanceof ComputedMemoryLocationWriteExpression) && !(aValue instanceof ComputedMemoryLocationReadExpression)) {
+            target.write(replacedSymbol);
+            return;
+        }
+
         if (aValue instanceof Variable) {
             final Variable v = (Variable) aValue;
             if (useDirectVarRef) {
@@ -257,6 +351,7 @@ public class LLVMWriter {
                 target.write("add i32 0,%");
             }
             target.write(v.getName());
+            target.write("_");
         } else if (aValue instanceof IntegerValue) {
             write((IntegerValue) aValue, useDirectVarRef);
         } else if (aValue instanceof LongValue) {
@@ -283,27 +378,26 @@ public class LLVMWriter {
     }
 
     private void write(final StackTopExpression e) {
-        target.write("@stacktop");
+        target.write("load i32, i32* @stacktop");
     }
 
     private void write(final TypeConversionExpression e) {
+        target.write("add i32 0,");
         write(e.incomingDataFlows().get(0), true);
     }
 
     private void write(final ComputedMemoryLocationReadExpression e) {
-        final Value location = e.incomingDataFlows().get(0);
-        final Value offset = e.incomingDataFlows().get(1);
-        write(location, true);
-        target.write("+");
-        write(offset, true);
+        final String theSymbol = valueToSymbolMaping.get(e);
+        target.write("i32* ");
+        target.write(theSymbol);
+        target.write("_ptr");
     }
 
     private void write(final ComputedMemoryLocationWriteExpression e) {
-        final Value location = e.incomingDataFlows().get(0);
-        final Value offset = e.incomingDataFlows().get(1);
-        write(location, true);
-        target.write("+");
-        write(offset, true);
+        final String theSymbol = valueToSymbolMaping.get(e);
+        target.write("i32* ");
+        target.write(theSymbol);
+        target.write("_ptr");
     }
 
     private void write(final MemorySizeExpression aValue) {
@@ -311,8 +405,7 @@ public class LLVMWriter {
     }
 
     private void write(final PHIValue aValue) {
-        target.write("%");
-        target.write(phiMapping.get(aValue));
+        throw new IllegalArgumentException("This should never happen!");
     }
 
     private void write(final BinaryExpression aValue) {
@@ -329,6 +422,9 @@ public class LLVMWriter {
             case REMAINDER:
                 target.write("srem");
                 break;
+            case GREATERTHAN:
+                target.write("icmp sgt");
+                break;
             case GREATEROREQUALS:
                 target.write("icmp sge");
                 break;
@@ -336,13 +432,13 @@ public class LLVMWriter {
                 target.write("icmp slt");
                 break;
             case LESSTHANOREQUALS:
-                target.write("icmp slte");
+                target.write("icmp sle");
                 break;
             case EQUALS:
-                target.write("icmp seq");
+                target.write("icmp eq");
                 break;
             case NOTEQUALS:
-                target.write("icmp sne");
+                target.write("icmp ne");
                 break;
             default:
                 throw new IllegalStateException("Not implemented : " + aValue.getOperator());

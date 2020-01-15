@@ -85,6 +85,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("target triple = \"wasm32-unknown-unknown\"");
                 pw.println();
 
+                pw.print("@stacktop = global i32 0");
+                pw.println();
                 final AtomicInteger attributeCounter = new AtomicInteger();
 
                 // We write the imported functions first
@@ -280,14 +282,14 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.print("%thisRef");
                         }
                         final List<Variable> theArguments = theSSAProgram.getArguments();
-                        for (int i = 0; i < theArguments.size(); i++) {
-                            final Variable theArgument = theArguments.get(i);
+                        for (final Variable theArgument : theArguments) {
                             final TypeRef theParamType = theArgument.resolveType();
                             pw.print(",");
                             pw.print(LLVMWriterUtils.toType(theParamType));
                             pw.print(" ");
                             pw.print("%");
                             pw.print(theArgument.getName());
+                            pw.print("_");
                         }
 
                         if (theExport != null) {
@@ -299,8 +301,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.println(") {");
                         }
 
-                        final LLVMWriter theWriter = new LLVMWriter(pw);
-                        theWriter.write(theSSAProgram);
+                        try (final LLVMWriter theWriter = new LLVMWriter(pw)) {
+                            theWriter.write(theSSAProgram);
+                        }
 
                         pw.println("}");
                         pw.println();
