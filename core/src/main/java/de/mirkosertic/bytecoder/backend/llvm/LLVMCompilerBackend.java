@@ -89,7 +89,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println();
                 pw.println();
 
-                pw.print("declare i32 @llv.wasm.int_wasm_memory_size()");
+                pw.print("declare i32 @llvm.wasm.memory.size.i32(i32) nounwind readonly");
                 pw.println();
                 pw.println();
 
@@ -275,6 +275,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         }
 
                         pw.print("define ");
+                        if (theExport == null) {
+                            pw.print("internal ");
+                        }
                         pw.print(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getReturnType())));
                         pw.print(" @");
                         pw.print(methodName);

@@ -416,7 +416,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final MemorySizeExpression aValue) {
-        target.write("call i32() @llv.wasm.int_wasm_memory_size()");
+        target.write("call i32 @llvm.wasm.memory.size.i32(i32 0)");
     }
 
     private void write(final PHIValue aValue) {
