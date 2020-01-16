@@ -87,6 +87,12 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                 pw.print("@stacktop = global i32 0");
                 pw.println();
+                pw.println();
+
+                pw.print("declare i32 @llv.wasm.int_wasm_memory_size()");
+                pw.println();
+                pw.println();
+
                 final AtomicInteger attributeCounter = new AtomicInteger();
 
                 // We write the imported functions first

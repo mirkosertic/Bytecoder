@@ -17,7 +17,10 @@ package de.mirkosertic.bytecoder.backend.llvm;
 
 import de.mirkosertic.bytecoder.backend.wasm.WASMWriterUtils;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.graph.Edge;
+import de.mirkosertic.bytecoder.graph.EdgeType;
 import de.mirkosertic.bytecoder.graph.GraphDFSOrder;
+import de.mirkosertic.bytecoder.graph.Node;
 import de.mirkosertic.bytecoder.ssa.BinaryExpression;
 import de.mirkosertic.bytecoder.ssa.BlockState;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadExpression;
@@ -51,6 +54,9 @@ import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class LLVMWriter implements AutoCloseable {
 
@@ -269,23 +275,32 @@ public class LLVMWriter implements AutoCloseable {
     private void write(final IFExpression expression) {
         target.print("    br i1 ");
         write(expression.incomingDataFlows().get(0), true);
-        target.write(", label %block_");
-        target.print(currentNode.getStartAddress().getAddress());
-        target.write("_true");
-        target.write(", label %block_");
-        target.print(currentNode.getStartAddress().getAddress());
-        target.write("_false");
-        target.println();
+        if (expression.getAddress().getAddress() == 0) {
+            target.write(", label %entry");
+        } else {
+            target.write(", label %block");
+            target.print(expression.getGotoAddress().getAddress());
+        }
 
-        target.print("block_");
-        target.print(currentNode.getStartAddress().getAddress());
-        target.println("_true:");
+        final Set<BytecodeOpcodeAddress> forwardNodes = currentNode.outgoingEdges()
+                .filter((Predicate<Edge<? extends EdgeType, ? extends Node>>) edge -> RegionNode.ALL_SUCCCESSORS_REGULAR_FLOW_ONLY
+                        .test((Edge<EdgeType, RegionNode>) edge))
+                .map(t -> t.targetNode().getStartAddress()).collect(Collectors.toSet());
+        forwardNodes.remove(expression.getGotoAddress());
 
-        write(expression.getExpressions());
+        if (forwardNodes.size() == 1) {
+            final BytecodeOpcodeAddress theElse = forwardNodes.iterator().next();
 
-        target.print("block_");
-        target.print(currentNode.getStartAddress().getAddress());
-        target.println("_false:");
+            if (theElse.getAddress() == 0) {
+                target.write(", label %entry");
+            } else {
+                target.write(", label %block");
+                target.print(theElse.getAddress());
+            }
+            target.println();
+        } else {
+            throw new IllegalArgumentException("Expected one node for else branch of if statement, got " + forwardNodes);
+        }
     }
 
     private void write(final GotoExpression expression) {
@@ -401,7 +416,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final MemorySizeExpression aValue) {
-        target.write("call i32 @llv.masm.int_wasm_memory_size()");
+        target.write("call i32() @llv.wasm.int_wasm_memory_size()");
     }
 
     private void write(final PHIValue aValue) {
