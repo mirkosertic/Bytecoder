@@ -28,6 +28,9 @@ install:
   - tar xzf hugo_0.59.0_Linux-64bit.tar.gz
   - sudo chmod +x hugo
   - git clone https://github.com/matcornic/hugo-theme-learn.git ./manual/themes/hugo-theme-learn
+  - wget https://apt.llvm.org/llvm.sh
+  - chmod +x llvm.sh
+  - sudo ./llvm.sh 10
 
 script:
   - mvn -B clean package -P jvmtestsonly

@@ -15,28 +15,13 @@
  */
 package de.mirkosertic.bytecoder.backend.llvm;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.Reader;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import de.mirkosertic.bytecoder.classlib.MemoryManager;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import org.apache.commons.io.IOUtils;
-
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.classlib.Address;
+import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeImportedLink;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
@@ -44,6 +29,7 @@ import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.intrinsics.Intrinsics;
@@ -53,6 +39,21 @@ import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Variable;
+import org.apache.commons.io.IOUtils;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
@@ -318,13 +319,80 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.println();
                     });
                 });
-
             }
+
             final LLVMCompileResult theCompileResult = new LLVMCompileResult();
             try (final Reader reader = new InputStreamReader(new FileInputStream(theLLFile))) {
                 final String theLLContent = IOUtils.toString(reader);
                 theCompileResult.add(new CompileResult.StringContent("bytecoder.ll", theLLContent));
             }
+
+            // Compile LLVM Assembly File to object file
+            final List<String> theLLCommand = new ArrayList<>();
+            if ("\\".equals(File.separator)) {
+                // We are running on windows
+                // llvm needs to be installed in the Windows Subsystem for Linux
+                theLLCommand.add("wsl");
+            }
+            final String theObjectFileName = theLLFile.getName() + ".o";
+            theLLCommand.add("llc-10");
+            theLLCommand.add("-O3");
+            theLLCommand.add("-filetype=obj");
+            theLLCommand.add(theLLFile.getName());
+            theLLCommand.add("-o");
+            theLLCommand.add(theObjectFileName);
+            final ProcessBuilder theLLCProcessBuilder = new ProcessBuilder(theLLCommand).directory(theLLFile.getParentFile()).inheritIO();
+            aOptions.getLogger().info("LLVM compiler command is {}", theLLCProcessBuilder.command());
+            final Process theLLCProcess = theLLCProcessBuilder.start();
+            if (theLLCProcess.waitFor() != 0) {
+                aOptions.getLogger().warn("llc returned with exit code {}", theLLCProcess.exitValue());
+
+                try (final BufferedReader processOutput = new BufferedReader(new InputStreamReader(theLLCProcess.getErrorStream()))) {
+                    String line;
+                    while ((line = processOutput.readLine()) != null) {
+                        System.out.println(line);
+                    }
+                }
+            } else {
+                try (final FileInputStream inputStream = new FileInputStream(new File(theLLFile.getParent(), theObjectFileName))) {
+                    theCompileResult.add(new CompileResult.BinaryContent(theObjectFileName,
+                            IOUtils.toByteArray(inputStream)));
+                }
+            }
+
+            // Link object file to wasm binary
+            final List<String> theLinkerCommand = new ArrayList<>();
+            if ("\\".equals(File.separator)) {
+                // We are running on windows
+                // llvm needs to be installed in the Windows Subsystem for Linux
+                theLinkerCommand.add("wsl");
+            }
+            final String theWASMFileName = theLLFile.getName() + ".wasm";
+            theLinkerCommand.add("wasm-ld-10");
+            theLinkerCommand.add(theObjectFileName);
+            theLinkerCommand.add("-o");
+            theLinkerCommand.add(theWASMFileName);
+            theLinkerCommand.add("-export-dynamic");
+            theLinkerCommand.add("-allow-undefined");
+            theLinkerCommand.add("--no-entry");
+            final ProcessBuilder theLinkerProcessBuilder = new ProcessBuilder(theLinkerCommand).directory(theLLFile.getParentFile());
+            aOptions.getLogger().info("LLVM linker command is {}", theLinkerProcessBuilder.command());
+            final Process theLinkerProcess = theLinkerProcessBuilder.start();
+            if (theLinkerProcess.waitFor() != 0) {
+                aOptions.getLogger().warn("wasm-ld returned with exit code {} ", theLinkerProcess.exitValue());
+                try (final BufferedReader processOutput = new BufferedReader(new InputStreamReader(theLinkerProcess.getErrorStream()))) {
+                    String line;
+                    while ((line = processOutput.readLine()) != null) {
+                        System.out.println(line);
+                    }
+                }
+            } else {
+                try (final FileInputStream inputStream = new FileInputStream(new File(theLLFile.getParent(), theWASMFileName))) {
+                    theCompileResult.add(new CompileResult.BinaryContent(theWASMFileName,
+                            IOUtils.toByteArray(inputStream)));
+                }
+            }
+
             return theCompileResult;
         } catch (final Exception e) {
             throw new RuntimeException(e);

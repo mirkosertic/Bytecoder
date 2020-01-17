@@ -95,6 +95,32 @@ public abstract class CompileResult<T> {
         }
     }
 
+    public static class BinaryContent implements Content {
+
+        private final String fileName;
+        private final byte[] data;
+
+        public BinaryContent(final String fileName, final byte[] data) {
+            this.fileName = fileName;
+            this.data = data;
+        }
+
+        @Override
+        public String getFileName() {
+            return fileName;
+        }
+
+        @Override
+        public void writeTo(final OutputStream stream) throws IOException {
+            stream.write(data);
+        }
+
+        @Override
+        public String asString() {
+            throw new IllegalStateException("Not implemented!");
+        }
+    }
+
     private final List<Content> content;
 
     public CompileResult() {
