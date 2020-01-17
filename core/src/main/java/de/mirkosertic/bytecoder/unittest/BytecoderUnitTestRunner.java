@@ -449,7 +449,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 theWriter.print(textualContent.getTypeIDFor(theTypeRef));
                 theWriter.print(",");
                 theWriter.print(textualContent.getVTableIndexOf(theTypeRef));
-                theWriter.println(", 0);");
+                theWriter.println(");");
                 theWriter.println("                             console.log(\"Bootstrapped\")");
                 theWriter.println("                             try {");
                 theWriter.println("                                 console.log(\"Starting main method\")");

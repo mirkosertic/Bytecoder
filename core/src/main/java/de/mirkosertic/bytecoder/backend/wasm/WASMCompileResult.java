@@ -51,7 +51,7 @@ public class WASMCompileResult extends CompileResult<String> {
         public int getVTableIndexOf(final BytecodeObjectTypeRef aObjectType) {
             final String theClassName = WASMWriterUtils.toClassName(aObjectType);
 
-            final String theMethodName = theClassName + "__resolvevtableindex";
+            final String theMethodName = theClassName + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX;
             return generatedFunctions.indexOf(theMethodName);
         }
     }
