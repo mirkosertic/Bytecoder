@@ -375,6 +375,11 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             theLinkerCommand.add("-export-dynamic");
             theLinkerCommand.add("-allow-undefined");
             theLinkerCommand.add("--no-entry");
+            theLinkerCommand.add("--initial-memory=" + aOptions.getWasmMinimumPageSize() * 65536);
+            theLinkerCommand.add("--max-memory=" + aOptions.getWasmMaximumPageSize() * 65536);
+            if (!aOptions.isDebugOutput()) {
+                theLinkerCommand.add("-s");
+            }
             final ProcessBuilder theLinkerProcessBuilder = new ProcessBuilder(theLinkerCommand).directory(theLLFile.getParentFile());
             aOptions.getLogger().info("LLVM linker command is {}", theLinkerProcessBuilder.command());
             final Process theLinkerProcess = theLinkerProcessBuilder.start();
