@@ -354,7 +354,7 @@ public class LLVMWriter implements AutoCloseable {
     private void write(final VariableAssignmentExpression expression) {
         final Value value = expression.incomingDataFlows().get(0);
         final String replacedBy = valueToSymbolMaping.get(value);
-        if (replacedBy != null) {
+        if (replacedBy != null && (!(value instanceof ComputedMemoryLocationReadExpression))) {
             valueToSymbolMaping.put(expression.getVariable(), replacedBy);
             target.print("    ; ignore assignment of ");
             target.print(expression.getVariable().getName());
@@ -424,7 +424,7 @@ public class LLVMWriter implements AutoCloseable {
 
     private void write(final ComputedMemoryLocationReadExpression e) {
         final String theSymbol = valueToSymbolMaping.get(e);
-        target.write("i32* ");
+        target.write("load i32, i32* ");
         target.write(theSymbol);
         target.write("_ptr");
     }
