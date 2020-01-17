@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.backend.llvm;
 
 import java.io.IOException;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import de.mirkosertic.bytecoder.allocator.Allocator;
@@ -55,5 +56,6 @@ public class LLVMCompilerBackendTest {
                 new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0])
         );
         System.out.println(theResult.getContent()[0].asString());
+        Assert.assertEquals(5, theResult.getContent().length);
     }
 }
