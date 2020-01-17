@@ -214,6 +214,27 @@ public class LLVMWriter implements AutoCloseable {
 
                     valueToSymbolMaping.put(v, theTempSymbol);
                 }
+            } else if (v instanceof MemorySizeExpression) {
+                if (!valueToSymbolMaping.containsKey(v)) {
+
+                    final String theTempSymbol = "%temp_" + valueToSymbolMaping.size() + "_raw_";
+                    target.print("    ");
+                    target.print(theTempSymbol);
+                    target.print(" = ");
+                    write(v, true);
+                    target.println();
+
+                    final String theTempSymbol2 = "%temp_" + valueToSymbolMaping.size() + "_";
+                    target.print("    ");
+                    target.print(theTempSymbol2);
+                    target.print(" = ");
+                    target.print("mul i32 ");
+                    target.print(theTempSymbol);
+                    target.print(", 65536");
+                    target.println();
+
+                    valueToSymbolMaping.put(v, theTempSymbol2);
+                }
             } else if (v instanceof Expression) {
                 if (!valueToSymbolMaping.containsKey(v)) {
                     final String theTempSymbol = "%temp_" + valueToSymbolMaping.size() + "_";
