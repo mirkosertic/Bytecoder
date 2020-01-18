@@ -60,6 +60,10 @@ import java.util.stream.Collectors;
 
 public class LLVMWriter implements AutoCloseable {
 
+    public static final String VTABLEFUNCTIONSUFFIX = "__resolvevtableindex";
+    public static final String INSTANCEOFSUFFIX = "__instanceof";
+    public static final int GENERATED_INSTANCEOF_METHOD_ID = -1;
+
     private final PrintWriter output;
     private final PrintWriter target;
     private final StringWriter buffer;

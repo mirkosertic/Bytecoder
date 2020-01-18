@@ -204,10 +204,49 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     final BytecodeResolvedMethods theMethodMap = theLinkedClass.resolvedMethods();
                     final String theClassName = LLVMWriterUtils.toClassName(aEntry.targetNode().getClassName());
 
+                    // TODO: implement class init function
+
                     if (!theLinkedClass.getBytecodeClass().getAccessFlags().isInterface() && !theLinkedClass.getBytecodeClass().getAccessFlags().isAbstract()) {
-                        // TODO: generate instanceof function
+                        pw.print("define internal i1 @");
+                        pw.print(theClassName);
+                        pw.print(LLVMWriter.INSTANCEOFSUFFIX);
+                        pw.println("(i32 %thisRef,i32 %typeId) {");
+                        pw.println("entry:");
+                        pw.println("    switch i32 %typeId, label %default [");
+                        for (final BytecodeLinkedClass theType : theLinkedClass.getImplementingTypes()) {
+                            pw.print("        i32 ");
+                            pw.print(theType.getUniqueId());
+                            pw.println(",label %true");
+                        }
+                        pw.println("    ]");
+                        pw.println("default:");
+                        pw.println("    ret i1 0");
+                        pw.println("true:");
+                        pw.println("    ret i1 1");
+                        pw.println("}");
+                        pw.println();
 
                         // TODO: generate vtable resolver function
+                        pw.print("define internal i32 @");
+                        pw.print(theClassName);
+                        pw.print(LLVMWriter.VTABLEFUNCTIONSUFFIX);
+                        pw.println("(i32 %thisRef,i32 %methodId) {");
+                        pw.println("entry:");
+                        pw.println("    switch i32 %methodId, label %default [");
+                        pw.print("        i32 ");
+                        pw.print(LLVMWriter.GENERATED_INSTANCEOF_METHOD_ID);
+                        pw.println(",label %instanceof");
+                        pw.println("    ]");
+                        pw.println("default:");
+                        pw.println("    unreachable");
+                        pw.println("instanceof:");
+                        pw.print("    %iofptr = ptrtoint i1(i32,i32)* @");
+                        pw.print(theClassName);
+                        pw.print(LLVMWriter.INSTANCEOFSUFFIX);
+                        pw.println(" to i32");
+                        pw.println("    ret i32 %iofptr");
+                        pw.println("}");
+                        pw.println();
                     }
 
                     theMethodMap.stream().forEach(aMethodMapEntry -> {
