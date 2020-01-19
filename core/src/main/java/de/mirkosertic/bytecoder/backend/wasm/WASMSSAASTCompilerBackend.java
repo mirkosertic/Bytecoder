@@ -26,6 +26,7 @@ import de.mirkosertic.bytecoder.api.Substitutes;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
+import de.mirkosertic.bytecoder.backend.NativeMemoryLayouter;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Block;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Callable;
 import de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions;
@@ -354,7 +355,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
         // Superclass resolver
         {
-            final ExportableFunction superTypeOf = module.getFunctions().newFunction("superTypeOf", Arrays.asList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32);
+            final ExportableFunction superTypeOf = module.getFunctions().newFunction("superTypeOf", Collections.singletonList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32);
             aLinkerContext.linkedClasses().forEach(aEntry -> {
                 final BytecodeLinkedClass theLinkedClass = aEntry.targetNode();
                 if (theLinkedClass.emulatedByRuntime()) {
@@ -405,14 +406,14 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         {
             final ExportableFunction theMethod = module.getFunctions()
                     .newFunction("jlClass_BOOLEANdesiredAssertionStatus",
-                            Arrays.asList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
+                            Collections.singletonList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
             theMethod.flow.ret(i32.c(0, null), null);
         }
 
         {
             final ExportableFunction theMethod = module.getFunctions()
                     .newFunction("jlClass_A1jlObjectgetEnumConstants",
-                            Arrays.asList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
+                            Collections.singletonList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
             theMethod.flow.ret(i32.c(0, null), null);
         }
 
@@ -420,7 +421,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             final String theWASMMethodName = WASMWriterUtils.toMethodName(BytecodeObjectTypeRef.fromRuntimeClass(Class.class), "getClassLoader", BytecodeLinkedClass.GET_CLASSLOADER_SIGNATURE);
             final ExportableFunction theMethod = module.getFunctions()
                     .newFunction(theWASMMethodName,
-                            Arrays.asList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
+                            Collections.singletonList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
 
             theMethod.flow.ret(i32.c(0, null), null);
         }
@@ -557,7 +558,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         });
 
         // Initialize memory layout for classes and instances
-        final WASMMemoryLayouter theMemoryLayout = new WASMMemoryLayouter(aLinkerContext);
+        final NativeMemoryLayouter theMemoryLayout = new NativeMemoryLayouter(aLinkerContext);
 
         // Now everything else
         aLinkerContext.linkedClasses().forEach(aEntry -> {
@@ -778,7 +779,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     );
                     final Local newInstance = theCreateFunction.newLocal("newInstance", PrimitiveType.i32);
 
-                    final WASMMemoryLayouter.MemoryLayout theLayout = theMemoryLayout.layoutFor(theLinkedClass.getClassName());
+                    final NativeMemoryLayouter.MemoryLayout theLayout = theMemoryLayout.layoutFor(theLinkedClass.getClassName());
 
                     final String theNewObjectMethodName = WASMWriterUtils.toMethodName(
                             BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
@@ -1244,7 +1245,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 final List<WASMValue> initArguments = new ArrayList<>();
                 initArguments.add(i32.c(theLinkedClass.getUniqueId(), null));
 
-                final WASMMemoryLayouter.MemoryLayout theLayout = theMemoryLayout.layoutFor(aEntry.targetNode().getClassName());
+                final NativeMemoryLayouter.MemoryLayout theLayout = theMemoryLayout.layoutFor(aEntry.targetNode().getClassName());
 
                 initArguments.add(i32.c(theLayout.classSize(), null));
 
@@ -1263,7 +1264,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
             });
 
-            final WASMMemoryLayouter.MemoryLayout theStringMemoryLayout = theMemoryLayout.layoutFor(theStringClass.getClassName());
+            final NativeMemoryLayouter.MemoryLayout theStringMemoryLayout = theMemoryLayout.layoutFor(theStringClass.getClassName());
             final List<StringValue> thePoolValues = theConstantPool.stringValues();
             for (int i=0;i<thePoolValues.size();i++) {
 

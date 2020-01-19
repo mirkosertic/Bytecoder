@@ -20,6 +20,7 @@ import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileResult;
+import de.mirkosertic.bytecoder.backend.NativeMemoryLayouter;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
@@ -80,6 +81,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
         theMemoryManagerClass.resolveStaticMethod("newArray", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
         try {
+            final NativeMemoryLayouter memoryLayouter = new NativeMemoryLayouter(aLinkerContext);
+
             final File theLLFile = File.createTempFile("llvm", ".ll");
             try (final PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(theLLFile), StandardCharsets.UTF_8))) {
                 // We write the header first
@@ -285,7 +288,54 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         // We need to create a newInstance function in case this is a constructor
                         if (theMethod.isConstructor() && !theLinkedClass.getBytecodeClass().getAccessFlags().isAbstract() && !theLinkedClass.getBytecodeClass().getAccessFlags().isInterface()) {
 
-                            // TODO: generate constructor code
+                            pw.print("attributes #");
+                            pw.print(attributeCounter.get());
+                            pw.print(" = {");
+                            pw.print("\"wasm-export-name\"");
+                            pw.print("=");
+                            pw.print("\"");
+                            pw.print(LLVMWriterUtils.toMethodName(theLinkedClass.getClassName(), LLVMWriter.NEWINSTANCE_METHOD_NAME, theMethod.getSignature()));
+                            pw.println("\"}");
+                            attributeCounter.incrementAndGet();
+
+                            pw.print("define i32 @");
+                            pw.print(LLVMWriterUtils.toMethodName(theLinkedClass.getClassName(), LLVMWriter.NEWINSTANCE_METHOD_NAME, theMethod.getSignature()));
+                            pw.print("(");
+                            for (int i=0;i<theMethod.getSignature().getArguments().length;i++) {
+                                if (i>0) {
+                                    pw.print(",");
+                                }
+                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(theMethod.getSignature().getArguments()[i])));
+                                pw.print(" %p");
+                                pw.print(i);
+                            }
+                            pw.print(") #");
+                            pw.print(attributeCounter.get());
+                            attributeCounter.incrementAndGet();
+                            pw.println(" {");
+                            pw.println("entry:");
+                            pw.print("    %vtableptr = ptrtoint i32(i32,i32)* @");
+                            pw.print(theClassName);
+                            pw.print(LLVMWriter.VTABLEFUNCTIONSUFFIX);
+                            pw.println(" to i32");
+                            pw.print("    %allocated = call i32(i32,i32,i32,i32) @");
+                            pw.print(LLVMWriterUtils.toMethodName(theMemoryManagerClass.getClassName(), "newObject",
+                                    new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT})));
+                            pw.print("(");
+                            pw.print("i32 0,");
+
+                            final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theLinkedClass.getClassName());
+                            pw.print("i32 ");
+                            pw.print(theLayout.instanceSize());
+                            pw.print(",");
+                            pw.print("i32 ");
+                            pw.print(theLinkedClass.getUniqueId());
+                            pw.print(",i32 %vtableptr");
+                            pw.println(")");
+                            // TODO: Invoke constructor
+                            pw.println("    ret i32 %allocated");
+                            pw.println("}");
+                            pw.println();
                             return;
                         }
 

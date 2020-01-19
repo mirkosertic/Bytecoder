@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
 import de.mirkosertic.bytecoder.allocator.Register;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.backend.NativeMemoryLayouter;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Block;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Callable;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Container;
@@ -199,13 +200,13 @@ public class WASMSSAASTWriter {
     private final Module module;
     private final CompileOptions compileOptions;
     private final List<Register> stackRegister;
-    private final WASMMemoryLayouter memoryLayouter;
+    private final NativeMemoryLayouter memoryLayouter;
     private boolean labelRequired;
     final AtomicBoolean stackifierEnabled;
     private final AbstractAllocator allocator;
 
     public WASMSSAASTWriter(
-            final Resolver aResolver, final BytecodeLinkerContext aLinkerContext, final Module aModule, final CompileOptions aOptions, final Program aProgram, final WASMMemoryLayouter aMemoryLayouter, final ExportableFunction aFunction, final AbstractAllocator aAllocator) {
+            final Resolver aResolver, final BytecodeLinkerContext aLinkerContext, final Module aModule, final CompileOptions aOptions, final Program aProgram, final NativeMemoryLayouter aMemoryLayouter, final ExportableFunction aFunction, final AbstractAllocator aAllocator) {
         resolver = aResolver;
         linkerContext = aLinkerContext;
         function = aFunction;
@@ -227,7 +228,7 @@ public class WASMSSAASTWriter {
     }
 
     private WASMSSAASTWriter(
-            final Resolver aResolver, final BytecodeLinkerContext aLinkerContext, final Module aModule, final CompileOptions aOptions, final WASMMemoryLayouter aMemoryLayouter, final ExportableFunction aFunction, final LabeledContainer aContainer,
+            final Resolver aResolver, final BytecodeLinkerContext aLinkerContext, final Module aModule, final CompileOptions aOptions, final NativeMemoryLayouter aMemoryLayouter, final ExportableFunction aFunction, final LabeledContainer aContainer,
             final List<Register> aStackRegister, final boolean aLabelRequired, final Expressions aFlow, final AtomicBoolean aStackifierEnabled,
             final AbstractAllocator aAllocator) {
         resolver = aResolver;
@@ -548,7 +549,7 @@ public class WASMSSAASTWriter {
         final BytecodeResolvedFields.FieldEntry theEntry = implementingClassForStaticField(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()),
                 aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
-        final WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theEntry.getProvidingClass().getClassName());
+        final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theEntry.getProvidingClass().getClassName());
         final int theMemoryOffset = theLayout.offsetForClassMember(theEntry.getValue().getName().stringValue());
 
         final List<Value> theIncomingData = aExpression.incomingDataFlows();
@@ -576,7 +577,7 @@ public class WASMSSAASTWriter {
 
     private void generatePutFieldExpression(final PutFieldExpression aExpression) {
 
-        final WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()));
+        final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()));
         final int theMemoryOffset = theLayout.offsetForInstanceMember(aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()));
@@ -1322,7 +1323,7 @@ public class WASMSSAASTWriter {
         final BytecodeResolvedFields.FieldEntry theEntry = implementingClassForStaticField(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()),
                 aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
-        final WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theEntry.getProvidingClass().getClassName());
+        final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theEntry.getProvidingClass().getClassName());
         final int theMemoryOffset = theLayout.offsetForClassMember(theEntry.getValue().getName().stringValue());
 
         final String theClassName = WASMWriterUtils.toClassName(theEntry.getProvidingClass().getClassName());
@@ -1342,7 +1343,7 @@ public class WASMSSAASTWriter {
 
         final BytecodeObjectTypeRef theType = BytecodeObjectTypeRef.fromUtf8Constant(aValue.getType().getConstant());
 
-        final WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theType);
+        final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theType);
 
         final String theMethodName = WASMWriterUtils.toMethodName(
                 BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
@@ -1360,7 +1361,7 @@ public class WASMSSAASTWriter {
     private WASMValue getFieldValue(final GetFieldExpression aValue) {
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
 
-        final WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
+        final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
         final int theMemoryOffset = theLayout.offsetForInstanceMember(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
         final String theFieldName = aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
 

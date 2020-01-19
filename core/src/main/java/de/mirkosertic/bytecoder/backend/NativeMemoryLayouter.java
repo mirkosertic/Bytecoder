@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.backend.wasm;
+package de.mirkosertic.bytecoder.backend;
 
 import java.util.HashMap;
 import java.util.List;
@@ -26,7 +26,7 @@ import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 
-public class WASMMemoryLayouter {
+public class NativeMemoryLayouter {
 
     public static final int CLASS_HEADER_SIZE = 24; // Object header plus initialization status + enum values offset + classname + typeid
     public static final int OBJECT_HEADER_SIZE = 8;
@@ -45,38 +45,38 @@ public class WASMMemoryLayouter {
 
     private final Map<BytecodeObjectTypeRef, BytecodeResolvedFields> fields;
 
-    public WASMMemoryLayouter(BytecodeLinkerContext aLinkerContext) {
+    public NativeMemoryLayouter(final BytecodeLinkerContext aLinkerContext) {
         fields = new HashMap<>();
         aLinkerContext.linkedClasses().forEach(aEntry -> registerClass(aEntry.targetNode()));
     }
 
-    private void registerClass(BytecodeLinkedClass aClass) {
+    private void registerClass(final BytecodeLinkedClass aClass) {
         fields.put(aClass.getClassName(), aClass.resolvedFields());
     }
 
-    public MemoryLayout layoutFor(BytecodeObjectTypeRef aType) {
+    public MemoryLayout layoutFor(final BytecodeObjectTypeRef aType) {
         if (!fields.containsKey(aType)) {
             throw new IllegalArgumentException("No field information found for " + aType.name());
         }
         return new MemoryLayout() {
             @Override
             public int instanceSize() {
-                BytecodeResolvedFields theInstanceFields = fields.get(aType);
+                final BytecodeResolvedFields theInstanceFields = fields.get(aType);
                 return OBJECT_HEADER_SIZE + OBJECT_FIELDSIZE * (int) theInstanceFields.streamForInstanceFields().count();
             }
 
             @Override
             public int classSize() {
-                BytecodeResolvedFields theClassFields = fields.get(aType);
+                final BytecodeResolvedFields theClassFields = fields.get(aType);
                 return CLASS_HEADER_SIZE + OBJECT_FIELDSIZE * (int) theClassFields.streamForStaticFields().count();
             }
 
             @Override
-            public int offsetForInstanceMember(String aName) {
-                BytecodeResolvedFields theInstanceFields = fields.get(aType);
-                List<BytecodeResolvedFields.FieldEntry> theFields = theInstanceFields.streamForInstanceFields().collect(Collectors.toList());
+            public int offsetForInstanceMember(final String aName) {
+                final BytecodeResolvedFields theInstanceFields = fields.get(aType);
+                final List<BytecodeResolvedFields.FieldEntry> theFields = theInstanceFields.streamForInstanceFields().collect(Collectors.toList());
                 int theOffset = OBJECT_HEADER_SIZE;
-                for (BytecodeResolvedFields.FieldEntry theField : theFields) {
+                for (final BytecodeResolvedFields.FieldEntry theField : theFields) {
                     if (Objects.equals(aName, theField.getValue().getName().stringValue())) {
                         return theOffset;
                     }
@@ -86,11 +86,11 @@ public class WASMMemoryLayouter {
             }
 
             @Override
-            public int offsetForClassMember(String aName) {
-                BytecodeResolvedFields theInstanceFields = fields.get(aType);
-                List<BytecodeResolvedFields.FieldEntry> theFields = theInstanceFields.streamForStaticFields().collect(Collectors.toList());
+            public int offsetForClassMember(final String aName) {
+                final BytecodeResolvedFields theInstanceFields = fields.get(aType);
+                final List<BytecodeResolvedFields.FieldEntry> theFields = theInstanceFields.streamForStaticFields().collect(Collectors.toList());
                 int theOffset = CLASS_HEADER_SIZE;
-                for (BytecodeResolvedFields.FieldEntry theField : theFields) {
+                for (final BytecodeResolvedFields.FieldEntry theField : theFields) {
                     if (Objects.equals(aName, theField.getValue().getName().stringValue())) {
                         return theOffset;
                     }

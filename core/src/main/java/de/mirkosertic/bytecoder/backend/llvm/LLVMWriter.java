@@ -63,6 +63,7 @@ public class LLVMWriter implements AutoCloseable {
     public static final String VTABLEFUNCTIONSUFFIX = "__resolvevtableindex";
     public static final String INSTANCEOFSUFFIX = "__instanceof";
     public static final int GENERATED_INSTANCEOF_METHOD_ID = -1;
+    public static final String NEWINSTANCE_METHOD_NAME = "$newInstance";
 
     private final PrintWriter output;
     private final PrintWriter target;
