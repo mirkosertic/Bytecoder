@@ -37,6 +37,7 @@ import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
@@ -279,10 +280,16 @@ public class LLVMWriter implements AutoCloseable {
                 write((SetMemoryLocationExpression) e);
             } else if (e instanceof UnreachableExpression) {
                 write((UnreachableExpression) e);
+            } else if (e instanceof PutFieldExpression) {
+                write((PutFieldExpression) e);
             } else {
                 throw new IllegalStateException("Not implemented : " + e.getClass());
             }
         }
+    }
+
+    private void write(final PutFieldExpression expression) {
+        //TODO: implement this
     }
 
     private void write(final UnreachableExpression expression) {

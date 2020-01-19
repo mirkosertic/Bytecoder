@@ -332,11 +332,23 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.print(theLinkedClass.getUniqueId());
                             pw.print(",i32 %vtableptr");
                             pw.println(")");
-                            // TODO: Invoke constructor
+
+                            pw.print("    call ");
+                            pw.print(LLVMWriterUtils.toSignature(theMethod.getSignature(), false));
+                            pw.print(" @");
+                            pw.print(LLVMWriterUtils.toMethodName(theLinkedClass.getClassName(), theMethod.getName(), theMethod.getSignature()));
+                            pw.print("(i32 %allocated");
+                            for (int i=0;i<theMethod.getSignature().getArguments().length;i++) {
+                                pw.print(",");
+                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(theMethod.getSignature().getArguments()[i])));
+                                pw.print(" %p");
+                                pw.print(i);
+                            }
+                            pw.println(")");
+
                             pw.println("    ret i32 %allocated");
                             pw.println("}");
                             pw.println();
-                            return;
                         }
 
                         final ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext, new Intrinsics());
@@ -372,18 +384,21 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.print(" @");
                         pw.print(methodName);
                         pw.print("(");
-
-                        pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
-                        pw.print(" ");
                         if (theMethod.getAccessFlags().isStatic()) {
+                            pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
+                            pw.print(" ");
                             pw.print("%UNUSED");
-                        } else {
-                            pw.print("%thisRef");
                         }
                         final List<Variable> theArguments = theSSAProgram.getArguments();
-                        for (final Variable theArgument : theArguments) {
+                        for (int i=0;i<theArguments.size();i++) {
+                            final Variable theArgument = theArguments.get(i);
                             final TypeRef theParamType = theArgument.resolveType();
-                            pw.print(",");
+                            if (i == 0 && theMethod.getAccessFlags().isStatic()) {
+                                pw.print(",");
+                            }
+                            if (i > 0) {
+                                pw.print(",");
+                            }
                             pw.print(LLVMWriterUtils.toType(theParamType));
                             pw.print(" ");
                             pw.print("%");
