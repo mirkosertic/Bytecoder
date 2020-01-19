@@ -415,7 +415,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.println(") {");
                         }
 
-                        try (final LLVMWriter theWriter = new LLVMWriter(pw)) {
+                        try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter)) {
                             theWriter.write(theSSAProgram);
                         }
 
@@ -478,6 +478,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             theLinkerCommand.add(theWASMFileName);
             theLinkerCommand.add("-export-dynamic");
             theLinkerCommand.add("-allow-undefined");
+            theLinkerCommand.add("--lto-O3");
             theLinkerCommand.add("--no-entry");
             theLinkerCommand.add("--initial-memory=" + aOptions.getWasmMinimumPageSize() * 65536);
             theLinkerCommand.add("--max-memory=" + aOptions.getWasmMaximumPageSize() * 65536);

@@ -15,7 +15,9 @@
  */
 package de.mirkosertic.bytecoder.backend.llvm;
 
+import de.mirkosertic.bytecoder.backend.NativeMemoryLayouter;
 import de.mirkosertic.bytecoder.backend.wasm.WASMWriterUtils;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.graph.EdgeType;
@@ -73,13 +75,15 @@ public class LLVMWriter implements AutoCloseable {
     private RegionNode currentNode;
     private final Map<Value, String> valueToSymbolMaping;
     private final Map<PHIValue, String> prereservedPHIValueNames;
+    private final NativeMemoryLayouter memoryLayouter;
 
-    public LLVMWriter(final PrintWriter output) {
+    public LLVMWriter(final PrintWriter output, final NativeMemoryLayouter memoryLayouter) {
         this.output = output;
         this.buffer = new StringWriter();
         this.target = new PrintWriter(this.buffer);
         this.valueToSymbolMaping = new HashMap<>();
         this.prereservedPHIValueNames = new HashMap<>();
+        this.memoryLayouter = memoryLayouter;
     }
 
     @Override
@@ -289,7 +293,29 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final PutFieldExpression expression) {
-        //TODO: implement this
+        final Value object = expression.incomingDataFlows().get(0);
+        final Value value = expression.incomingDataFlows().get(1);
+        target.print("    %exp_");
+        target.print(expression.getAddress().getAddress());
+        target.print(" = add i32 ");
+        write(object, true);
+        target.print(",");
+
+        final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(expression.getField().getClassIndex().getClassConstant().getConstant()));
+        target.print(theLayout.offsetForInstanceMember(expression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue()));
+        target.println();
+
+        target.print("    %exp_");
+        target.print(expression.getAddress().getAddress());
+        target.print("_ptr = inttoptr i32 %exp_");
+        target.print(expression.getAddress().getAddress());
+        target.println(" to i32*");
+
+        target.print("    store i32 ");
+        write(value, true);
+        target.print(",i32* %exp_");
+        target.print(expression.getAddress().getAddress());
+        target.println("_ptr");
     }
 
     private void write(final UnreachableExpression expression) {
