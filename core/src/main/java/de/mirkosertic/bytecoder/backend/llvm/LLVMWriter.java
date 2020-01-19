@@ -34,6 +34,7 @@ import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
+import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
@@ -119,7 +120,7 @@ public class LLVMWriter implements AutoCloseable {
                         if (prereservedPHIValueNames.containsKey(phi)) {
                             tempName = prereservedPHIValueNames.get(phi);
                         } else {
-                            tempName ="%phitemp" + valueToSymbolMaping.size() + "_";
+                            tempName = "%phitemp" + valueToSymbolMaping.size() + "_";
                         }
                         valueToSymbolMaping.put(phi, tempName);
 
@@ -133,7 +134,7 @@ public class LLVMWriter implements AutoCloseable {
                             final Value theOut = pred.liveOut().getPorts().get(phi.getDescription());
                             String theReplacementSymbol = valueToSymbolMaping.get(theOut);
                             if (theReplacementSymbol == null && theOut instanceof PHIValue) {
-                                theReplacementSymbol ="%futurephi_" + prereservedPHIValueNames.size() + "_";
+                                theReplacementSymbol = "%futurephi_" + prereservedPHIValueNames.size() + "_";
                                 prereservedPHIValueNames.put((PHIValue) theOut, theReplacementSymbol);
                             }
                             if (theReplacementSymbol != null) {
@@ -413,9 +414,33 @@ public class LLVMWriter implements AutoCloseable {
             write((TypeConversionExpression) aValue);
         } else if (aValue instanceof StackTopExpression) {
             write((StackTopExpression) aValue);
+        } else if (aValue instanceof NewObjectAndConstructExpression) {
+            write((NewObjectAndConstructExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue.getClass());
         }
+    }
+
+    private void write(final NewObjectAndConstructExpression e) {
+        target.write("call i32(");
+        for (int i=0;i<e.getSignature().getArguments().length;i++) {
+            if (i>0) {
+                target.write(",");
+            }
+            target.write(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
+        }
+        target.write(") @");
+        target.write(LLVMWriterUtils.toMethodName(e.getClazz(), LLVMWriter.NEWINSTANCE_METHOD_NAME, e.getSignature()));
+        target.write("(");
+        for (int i=0;i<e.incomingDataFlows().size();i++) {
+            if (i>0) {
+                target.write(",");
+            }
+            target.write(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
+            target.write(" ");
+            write(e.incomingDataFlows().get(i), true);
+        }
+        target.println(")");
     }
 
     private void write(final StackTopExpression e) {
