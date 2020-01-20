@@ -15,8 +15,16 @@
  */
 package de.mirkosertic.bytecoder.backend.llvm;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
 import de.mirkosertic.bytecoder.backend.NativeMemoryLayouter;
-import de.mirkosertic.bytecoder.backend.wasm.WASMWriterUtils;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.graph.Edge;
@@ -28,8 +36,10 @@ import de.mirkosertic.bytecoder.ssa.BlockState;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadExpression;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
@@ -52,15 +62,6 @@ import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.ssa.VariableDescription;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 public class LLVMWriter implements AutoCloseable {
 
@@ -132,7 +133,7 @@ public class LLVMWriter implements AutoCloseable {
                         target.write("    ");
                         target.write(tempName);
                         target.write(" = phi ");
-                        target.write(WASMWriterUtils.toType(phi.resolveType()));
+                        target.write(LLVMWriterUtils.toType(phi.resolveType()));
                         target.write(" ");
                         boolean first = true;
                         for (final RegionNode pred : currentNode.getPredecessors()) {
@@ -246,6 +247,27 @@ public class LLVMWriter implements AutoCloseable {
 
                     valueToSymbolMaping.put(v, theTempSymbol2);
                 }
+            } else if (v instanceof GetFieldExpression) {
+
+                final GetFieldExpression getField = (GetFieldExpression) v;
+
+                final Value object = getField.incomingDataFlows().get(0);
+                target.print("    %exp_");
+                target.print(getField.getAddress().getAddress());
+                target.print(" = add i32 ");
+                write(object, true);
+                target.print(",");
+
+                final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(getField.getField().getClassIndex().getClassConstant().getConstant()));
+                target.print(theLayout.offsetForInstanceMember(getField.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue()));
+                target.println();
+
+                target.print("    %exp_");
+                target.print(getField.getAddress().getAddress());
+                target.print("_ptr = inttoptr i32 %exp_");
+                target.print(getField.getAddress().getAddress());
+                target.println(" to i32*");
+
             } else if (v instanceof Expression) {
                 if (!valueToSymbolMaping.containsKey(v)) {
                     final String theTempSymbol = "%temp_" + valueToSymbolMaping.size() + "_";
@@ -286,10 +308,35 @@ public class LLVMWriter implements AutoCloseable {
                 write((UnreachableExpression) e);
             } else if (e instanceof PutFieldExpression) {
                 write((PutFieldExpression) e);
+            } else if (e instanceof DirectInvokeMethodExpression) {
+                target.write("    ");
+                write((DirectInvokeMethodExpression) e);
             } else {
                 throw new IllegalStateException("Not implemented : " + e.getClass());
             }
         }
+    }
+
+    private void write(final DirectInvokeMethodExpression e) {
+        target.write("call ");
+        target.write(LLVMWriterUtils.toSignature(e.getSignature()));
+        target.write(" @");
+        target.write(LLVMWriterUtils.toMethodName(e.getClazz(), e.getMethodName(), e.getSignature()));
+        target.write("(");
+        final List<Value> theValues = e.incomingDataFlows();
+        for (int i=0;i<theValues.size();i++) {
+            if (i>0) {
+                target.write(",");
+            }
+            if (i == 0) {
+                target.write("i32");
+            } else {
+                target.write(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i - 1])));
+            }
+            target.write(" ");
+            write(theValues.get(i), true);
+        }
+        target.println(")");
     }
 
     private void write(final PutFieldExpression expression) {
@@ -449,9 +496,19 @@ public class LLVMWriter implements AutoCloseable {
             write((StackTopExpression) aValue);
         } else if (aValue instanceof NewObjectAndConstructExpression) {
             write((NewObjectAndConstructExpression) aValue);
+        } else if (aValue instanceof GetFieldExpression) {
+            write((GetFieldExpression) aValue);
+        } else if (aValue instanceof DirectInvokeMethodExpression) {
+            write((DirectInvokeMethodExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue.getClass());
         }
+    }
+
+    private void write(final GetFieldExpression e) {
+        target.print("load i32, i32* %exp_");
+        target.print(e.getAddress().getAddress());
+        target.println("_ptr");
     }
 
     private void write(final NewObjectAndConstructExpression e) {
@@ -576,7 +633,7 @@ public class LLVMWriter implements AutoCloseable {
 
     private void write(final InvokeStaticMethodExpression aValue) {
         target.print("call ");
-        target.print(LLVMWriterUtils.toSignature(aValue.getSignature(), true));
+        target.print(LLVMWriterUtils.toSignature(aValue.getSignature()));
         target.print(" @");
         target.print(LLVMWriterUtils.toMethodName(aValue.getClassName(), aValue.getMethodName(), aValue.getSignature()));
         target.print("(i32 undef");

@@ -15,8 +15,28 @@
  */
 package de.mirkosertic.bytecoder.backend.llvm;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+import org.apache.commons.io.IOUtils;
+
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
+import de.mirkosertic.bytecoder.api.Substitutes;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileResult;
@@ -33,28 +53,13 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.intrinsics.Intrinsics;
+import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Variable;
-import org.apache.commons.io.IOUtils;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.Reader;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
@@ -79,6 +84,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
         theMemoryManagerClass.resolveStaticMethod("newObject", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
         theMemoryManagerClass.resolveStaticMethod("newArray", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
         theMemoryManagerClass.resolveStaticMethod("newArray", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+
+        final LLVMCompileResult theCompileResult = new LLVMCompileResult();
 
         try {
             final NativeMemoryLayouter memoryLayouter = new NativeMemoryLayouter(aLinkerContext);
@@ -200,7 +207,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         return;
                     }
                     // Hack for unit-testing
-                    if (!theLinkedClass.getClassName().name().endsWith("LLVMCompilerBackendTest") && !theLinkedClass.getClassName().name().endsWith("MemoryManager")) {
+                    if (!theLinkedClass.getClassName().name().contains("LLVMCompilerBackendTest") && !theLinkedClass.getClassName().name().endsWith("MemoryManager")) {
                         return;
                     }
 
@@ -229,7 +236,35 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.println("}");
                         pw.println();
 
-                        // TODO: generate vtable resolver function
+                        final List<BytecodeResolvedMethods.MethodEntry> thevTable = new ArrayList<>();
+                        final List<BytecodeResolvedMethods.MethodEntry> theEntries = theMethodMap.stream().collect(
+                                Collectors.toList());
+                        final Set<BytecodeVirtualMethodIdentifier> theVisitedMethods = new HashSet<>();
+                        for (int i = theEntries.size() - 1; 0 <= i; i--) {
+                            final BytecodeResolvedMethods.MethodEntry aMethodMapEntry = theEntries.get(i);
+                            final BytecodeMethod theMethod = aMethodMapEntry.getValue();
+
+                            if (!theMethod.getAccessFlags().isStatic() &&
+                                    !theMethod.isConstructor() &&
+                                    !theMethod.getAccessFlags().isAbstract() &&
+                                    !"desiredAssertionStatus".equals(theMethod.getName().stringValue()) &&
+                                    !"getEnumConstants".equals(theMethod.getName().stringValue()) &&
+                                    theMethod.getAttributes().getAnnotationByType(Substitutes.class.getName()) == null) {
+
+                                final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
+                                        .identifierFor(theMethod);
+
+                                if (theVisitedMethods.add(theMethodIdentifier)) {
+
+                                    if (!aMethodMapEntry.getProvidingClass().getClassName().name().contains("LLVMCompilerBackendTest") && !aMethodMapEntry.getProvidingClass().getClassName().name().endsWith("MemoryManager")) {
+
+                                    } else {
+                                        thevTable.add(aMethodMapEntry);
+                                    }
+                                }
+                            }
+                        }
+
                         pw.print("define internal i32 @");
                         pw.print(theClassName);
                         pw.print(LLVMWriter.VTABLEFUNCTIONSUFFIX);
@@ -239,9 +274,42 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.print("        i32 ");
                         pw.print(LLVMWriter.GENERATED_INSTANCEOF_METHOD_ID);
                         pw.println(",label %instanceof");
+
+                        for (int i=0;i<thevTable.size();i++) {
+                            final BytecodeMethod theMethod = thevTable.get(i).getValue();
+                            final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
+                                    .identifierFor(theMethod);
+
+                            pw.print("        i32 ");
+                            pw.print(theMethodIdentifier.getIdentifier());
+                            pw.print(",label %v_table_");
+                            pw.println(theMethodIdentifier.getIdentifier());
+                        }
+
                         pw.println("    ]");
                         pw.println("default:");
                         pw.println("    unreachable");
+
+                        for (int i=0;i<thevTable.size();i++) {
+                            final BytecodeMethod theMethod = thevTable.get(i).getValue();
+                            final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
+                                    .identifierFor(theMethod);
+
+                            pw.print("v_table_");
+                            pw.print(theMethodIdentifier.getIdentifier());
+                            pw.println(":");
+                            pw.print("    %ptr_");
+                            pw.print(theMethodIdentifier.getIdentifier());
+                            pw.print(" = ptrtoint ");
+                            pw.print(LLVMWriterUtils.toSignature(theMethod.getSignature()));
+                            pw.print("* @");
+                            pw.print(LLVMWriterUtils.toMethodName(thevTable.get(i).getProvidingClass().getClassName(),theMethod.getName(),theMethod.getSignature()));
+                            pw.println(" to i32");
+                            pw.print("    ret i32 %ptr_");
+                            pw.print(theMethodIdentifier.getIdentifier());
+                            pw.println();
+                        }
+
                         pw.println("instanceof:");
                         pw.print("    %iofptr = ptrtoint i1(i32,i32)* @");
                         pw.print(theClassName);
@@ -334,7 +402,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.println(")");
 
                             pw.print("    call ");
-                            pw.print(LLVMWriterUtils.toSignature(theMethod.getSignature(), false));
+                            pw.print(LLVMWriterUtils.toSignature(theMethod.getSignature()));
                             pw.print(" @");
                             pw.print(LLVMWriterUtils.toMethodName(theLinkedClass.getClassName(), theMethod.getName(), theMethod.getSignature()));
                             pw.print("(i32 %allocated");
@@ -351,7 +419,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.println();
                         }
 
-                        final ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext, new Intrinsics());
+                        final ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext, new LLVMIntrinsics());
                         final Program theSSAProgram = theGenerator.generateFrom(aMethodMapEntry.getProvidingClass().getBytecodeClass(), theMethod);
 
                         // Run optimizer
@@ -425,7 +493,6 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 });
             }
 
-            final LLVMCompileResult theCompileResult = new LLVMCompileResult();
             try (final Reader reader = new InputStreamReader(new FileInputStream(theLLFile))) {
                 final String theLLContent = IOUtils.toString(reader);
                 theCompileResult.add(new CompileResult.StringContent("bytecoder.ll", theLLContent));
@@ -487,17 +554,20 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             }
             final ProcessBuilder theLinkerProcessBuilder = new ProcessBuilder(theLinkerCommand).directory(theLLFile.getParentFile());
             aOptions.getLogger().info("LLVM linker command is {}", theLinkerProcessBuilder.command());
+
             final Process theLinkerProcess = theLinkerProcessBuilder.start();
             if (theLinkerProcess.waitFor() != 0) {
                 aOptions.getLogger().warn("wasm-ld returned with exit code {} ", theLinkerProcess.exitValue());
-                try (final BufferedReader processOutput = new BufferedReader(new InputStreamReader(theLinkerProcess.getErrorStream()))) {
+                try (final BufferedReader processOutput = new BufferedReader(
+                        new InputStreamReader(theLinkerProcess.getErrorStream()))) {
                     String line;
                     while ((line = processOutput.readLine()) != null) {
                         System.out.println(line);
                     }
                 }
             } else {
-                try (final FileInputStream inputStream = new FileInputStream(new File(theLLFile.getParent(), theWASMFileName))) {
+                try (final FileInputStream inputStream = new FileInputStream(
+                        new File(theLLFile.getParent(), theWASMFileName))) {
                     theCompileResult.add(new CompileResult.BinaryContent(theWASMFileName,
                             IOUtils.toByteArray(inputStream)));
                 }

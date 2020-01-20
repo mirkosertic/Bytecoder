@@ -32,14 +32,24 @@ import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 
 public class LLVMCompilerBackendTest {
 
-    private final int member;
-
-    public LLVMCompilerBackendTest() {
-        member = 0;
+    private static class Superclass {
+         int member;
     }
 
-    private LLVMCompilerBackendTest(final int argument) {
-        member = argument;
+    private static class Subclass extends Superclass {
+
+        public Subclass(final int value) {
+            member = value;
+            directCallVoid();
+            final int temp = directCall();
+        }
+
+        private final int directCall() {
+            return 42;
+        }
+
+        private final void directCallVoid() {
+        }
     }
 
     private static int intConst(final int x) {
@@ -51,8 +61,8 @@ public class LLVMCompilerBackendTest {
     }
 
     public static int doSomething() {
-        final LLVMCompilerBackendTest y = new LLVMCompilerBackendTest(10);
-        //int z = y.member;
+        final Subclass y = new Subclass(10);
+        final int z = y.member;
         final int x = intConst(20);
         return x;
     }

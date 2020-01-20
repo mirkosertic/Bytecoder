@@ -96,7 +96,7 @@ public class LLVMWriterUtils {
         }
     }
 
-    public static String toSignature(final BytecodeMethodSignature signature, final boolean aStatic) {
+    public static String toSignature(final BytecodeMethodSignature signature) {
         final StringBuilder theResult = new StringBuilder();
         theResult.append(toType(TypeRef.toType(signature.getReturnType())));
         theResult.append("(");
