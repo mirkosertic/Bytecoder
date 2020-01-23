@@ -46,11 +46,14 @@ public class LLVMCompilerBackendTest {
             o = this;
         }
 
-        private final int directCall() {
+        public void callVirtual() {
+        }
+
+        private int directCall() {
             return 42;
         }
 
-        private final void directCallVoid() {
+        private void directCallVoid() {
         }
     }
 
@@ -66,6 +69,7 @@ public class LLVMCompilerBackendTest {
         final Subclass y = new Subclass(10);
         final int z = y.member;
         final int x = intConst(20);
+        y.callVirtual();
         return x;
     }
 

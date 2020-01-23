@@ -15,18 +15,11 @@
  */
 package de.mirkosertic.bytecoder.backend.llvm;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
 import de.mirkosertic.bytecoder.backend.NativeMemoryLayouter;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.graph.EdgeType;
 import de.mirkosertic.bytecoder.graph.GraphDFSOrder;
@@ -44,6 +37,7 @@ import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
+import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
@@ -64,6 +58,15 @@ import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.ssa.VariableDescription;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
 public class LLVMWriter implements AutoCloseable {
 
     public static final String VTABLEFUNCTIONSUFFIX = "__resolvevtableindex";
@@ -78,14 +81,16 @@ public class LLVMWriter implements AutoCloseable {
     private final Map<Value, String> valueToSymbolMaping;
     private final Map<PHIValue, String> prereservedPHIValueNames;
     private final NativeMemoryLayouter memoryLayouter;
+    private final BytecodeLinkerContext linkerContext;
 
-    public LLVMWriter(final PrintWriter output, final NativeMemoryLayouter memoryLayouter) {
+    public LLVMWriter(final PrintWriter output, final NativeMemoryLayouter memoryLayouter, final BytecodeLinkerContext linkerContext) {
         this.output = output;
         this.buffer = new StringWriter();
         this.target = new PrintWriter(this.buffer);
         this.valueToSymbolMaping = new HashMap<>();
         this.prereservedPHIValueNames = new HashMap<>();
         this.memoryLayouter = memoryLayouter;
+        this.linkerContext = linkerContext;
     }
 
     @Override
@@ -312,10 +317,69 @@ public class LLVMWriter implements AutoCloseable {
             } else if (e instanceof DirectInvokeMethodExpression) {
                 target.write("    ");
                 write((DirectInvokeMethodExpression) e);
+            } else if (e instanceof InvokeVirtualMethodExpression) {
+                write((InvokeVirtualMethodExpression) e);
             } else {
                 throw new IllegalStateException("Not implemented : " + e.getClass());
             }
         }
+    }
+
+    private void write(final InvokeVirtualMethodExpression e) {
+
+        final Value value = e.incomingDataFlows().get(0);
+
+        // Compute offset to vtable resolver function
+        final String prefix = "temp_" + e.getAddress().getAddress();
+        target.print("    %");
+        target.print(prefix + "_ptr");
+        target.print(" = ");
+        target.print("add i32 ");
+        write(value, true);
+        target.print(", 4");
+        target.println();
+        target.print("    %");
+        target.print(prefix + "_vtable = inttoptr i32 %");
+        target.print(prefix + "_ptr");
+        target.println(" to i32(i32,i32)*");
+
+        // Resolve the index of the virtual identifier
+        target.print("    %");
+        target.print(prefix + "_resolved = call i32(i32,i32) %");
+        target.print(prefix + "_vtable");
+        target.print("(i32 ");
+        write(value, true);
+        target.print(",");
+
+        final BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(e.getMethodName(), e.getSignature());
+
+        target.print("i32 ");
+        target.print(theMethodIdentifier.getIdentifier());
+        target.println(")");
+
+        // Invoke function
+        target.print("    %");
+        target.print(prefix);
+        target.print("_resolved_ptr = inttoptr i32 %");
+        target.print(prefix);
+        target.print("_resolved to ");
+        target.print(LLVMWriterUtils.toSignature(e.getSignature()));
+        target.println("*");
+
+        target.print("    call ");
+        target.print(LLVMWriterUtils.toSignature(e.getSignature()));
+        target.print(" %");
+        target.print(prefix);
+        target.print("_resolved_ptr");
+        target.print(" (i32 ");
+        write(value, true);
+        for (int i=0;i<e.getSignature().getArguments().length;i++) {
+            target.write(",");
+            target.print(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
+            target.print(" ");
+            write(e.incomingDataFlows().get(i + 1), true);
+        }
+        target.println(")");
     }
 
     private void write(final DirectInvokeMethodExpression e) {

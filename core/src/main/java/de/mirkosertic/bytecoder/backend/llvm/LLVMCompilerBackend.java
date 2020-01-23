@@ -275,8 +275,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.print(LLVMWriter.GENERATED_INSTANCEOF_METHOD_ID);
                         pw.println(",label %instanceof");
 
-                        for (int i=0;i<thevTable.size();i++) {
-                            final BytecodeMethod theMethod = thevTable.get(i).getValue();
+                        for (BytecodeResolvedMethods.MethodEntry entry : thevTable) {
+                            final BytecodeMethod theMethod = entry.getValue();
                             final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
                                     .identifierFor(theMethod);
 
@@ -290,8 +290,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.println("default:");
                         pw.println("    unreachable");
 
-                        for (int i=0;i<thevTable.size();i++) {
-                            final BytecodeMethod theMethod = thevTable.get(i).getValue();
+                        for (BytecodeResolvedMethods.MethodEntry methodEntry : thevTable) {
+                            final BytecodeMethod theMethod = methodEntry.getValue();
                             final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
                                     .identifierFor(theMethod);
 
@@ -303,7 +303,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.print(" = ptrtoint ");
                             pw.print(LLVMWriterUtils.toSignature(theMethod.getSignature()));
                             pw.print("* @");
-                            pw.print(LLVMWriterUtils.toMethodName(thevTable.get(i).getProvidingClass().getClassName(),theMethod.getName(),theMethod.getSignature()));
+                            pw.print(LLVMWriterUtils.toMethodName(methodEntry.getProvidingClass().getClassName(), theMethod.getName(), theMethod.getSignature()));
                             pw.println(" to i32");
                             pw.print("    ret i32 %ptr_");
                             pw.print(theMethodIdentifier.getIdentifier());
@@ -483,7 +483,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.println(") {");
                         }
 
-                        try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter)) {
+                        try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter, aLinkerContext)) {
                             theWriter.write(theSSAProgram);
                         }
 
