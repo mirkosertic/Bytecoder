@@ -47,6 +47,7 @@ import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
+import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
@@ -500,9 +501,15 @@ public class LLVMWriter implements AutoCloseable {
             write((GetFieldExpression) aValue);
         } else if (aValue instanceof DirectInvokeMethodExpression) {
             write((DirectInvokeMethodExpression) aValue);
+        } else if (aValue instanceof NullValue) {
+            write((NullValue) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue.getClass());
         }
+    }
+
+    private void write(final NullValue e) {
+        target.print("add i32 0, 0");
     }
 
     private void write(final GetFieldExpression e) {

@@ -42,6 +42,8 @@ public class LLVMCompilerBackendTest {
             member = value;
             directCallVoid();
             final int temp = directCall();
+            Object o = null;
+            o = this;
         }
 
         private final int directCall() {
