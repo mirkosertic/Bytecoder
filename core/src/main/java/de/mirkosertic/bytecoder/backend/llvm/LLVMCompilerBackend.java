@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import org.apache.commons.io.IOUtils;
 
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
@@ -195,6 +196,30 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     });
                 });
 
+                // Some utility functions for runtime class management
+                pw.println("define internal i32 @runtimeClass__resolvevtableindex(i32 %thisRef,i32 %methodId) {");
+                pw.println("entry:");
+                pw.println("    unreachable");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal i32 @newRuntimeClass(i32 %type, i32 %staticSize, i32 %enumValuesOffset, i32 %nameStringPoolIndex) {");
+                pw.println("entry:");
+                pw.println("    %vtableptr = ptrtoint i32(i32,i32)* @runtimeClass__resolvevtableindex to i32");
+                pw.println("    %allocated = call i32 @dmbcMemoryManager_INTnewObjectINTINTINT(i32 0, i32 %staticSize, i32 -1, i32 %vtableptr)");
+                pw.println("    %enumpos = add i32 %allocated, 12");
+                pw.println("    %enumpos_ptr = inttoptr i32 %enumpos to i32*");
+                pw.println("    store i32 %enumValuesOffset, i32* %enumpos_ptr");
+                pw.println("    %namepos = add i32 %allocated, 16");
+                pw.println("    %namepos_ptr = inttoptr i32 %namepos to i32*");
+                pw.println("    store i32 %nameStringPoolIndex, i32* %namepos_ptr");
+                pw.println("    %typepos = add i32 %allocated, 20");
+                pw.println("    %typepos_ptr = inttoptr i32 %typepos to i32*");
+                pw.println("    store i32 %type, i32* %typepos_ptr");
+                pw.println("    ret i32 %allocated");
+                pw.println("}");
+                pw.println();
+
                 // Now, we can continue to write implementation code
                 aLinkerContext.linkedClasses().forEach(aEntry -> {
 
@@ -207,12 +232,17 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         return;
                     }
                     // Hack for unit-testing
-                    if (!theLinkedClass.getClassName().name().contains("LLVMCompilerBackendTest") && !theLinkedClass.getClassName().name().endsWith("MemoryManager")) {
+                    if (!LLVMWriterUtils.filteredForTest(theLinkedClass)) {
                         return;
                     }
 
                     final BytecodeResolvedMethods theMethodMap = theLinkedClass.resolvedMethods();
                     final String theClassName = LLVMWriterUtils.toClassName(aEntry.targetNode().getClassName());
+
+                    pw.print("@");
+                    pw.print(theClassName);
+                    pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
+                    pw.println(" = global i32 0");
 
                     // TODO: implement class init function
 
@@ -256,9 +286,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                                 if (theVisitedMethods.add(theMethodIdentifier)) {
 
-                                    if (!aMethodMapEntry.getProvidingClass().getClassName().name().contains("LLVMCompilerBackendTest") && !aMethodMapEntry.getProvidingClass().getClassName().name().endsWith("MemoryManager")) {
-
-                                    } else {
+                                    if (LLVMWriterUtils.filteredForTest(aMethodMapEntry.getProvidingClass())) {
                                         thevTable.add(aMethodMapEntry);
                                     }
                                 }
@@ -275,7 +303,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.print(LLVMWriter.GENERATED_INSTANCEOF_METHOD_ID);
                         pw.println(",label %instanceof");
 
-                        for (BytecodeResolvedMethods.MethodEntry entry : thevTable) {
+                        for (final BytecodeResolvedMethods.MethodEntry entry : thevTable) {
                             final BytecodeMethod theMethod = entry.getValue();
                             final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
                                     .identifierFor(theMethod);
@@ -290,7 +318,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.println("default:");
                         pw.println("    unreachable");
 
-                        for (BytecodeResolvedMethods.MethodEntry methodEntry : thevTable) {
+                        for (final BytecodeResolvedMethods.MethodEntry methodEntry : thevTable) {
                             final BytecodeMethod theMethod = methodEntry.getValue();
                             final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
                                     .identifierFor(theMethod);
@@ -491,6 +519,64 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.println();
                     });
                 });
+
+                // Generate bootstrap code
+                attributeCounter.incrementAndGet();
+                pw.print("attributes #");
+                pw.print(attributeCounter.get());
+                pw.println(" = { \"wasm-export-name\"=\"bootstrap\" }");
+                pw.print("define void @bootstrap() #");
+                pw.print(attributeCounter.get());
+                pw.println(" {");
+                pw.println("entry:");
+
+                aLinkerContext.linkedClasses().forEach(aEntry -> {
+                    final BytecodeLinkedClass theLinkedClass = aEntry.targetNode();
+
+                    if (Objects.equals(aEntry.targetNode().getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+                        return;
+                    }
+                    if (theLinkedClass.emulatedByRuntime()) {
+                        return;
+                    }
+                    // Hack for unit-testing
+                    if (!LLVMWriterUtils.filteredForTest(theLinkedClass)) {
+                        return;
+                    }
+
+                    final String theClassName = LLVMWriterUtils.toClassName(aEntry.targetNode().getClassName());
+
+                    final NativeMemoryLayouter.MemoryLayout theMemoryLayout = memoryLayouter.layoutFor(theLinkedClass.getClassName());
+
+                    pw.print("    %");
+                    pw.print(theClassName);
+                    pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
+                    pw.print("_allocated = call i32(i32,i32,i32,i32) @newRuntimeClass(i32 ");
+                    pw.print(theLinkedClass.getUniqueId());
+                    pw.print(",i32 ");
+                    pw.print(theMemoryLayout.classSize());
+                    pw.print(",i32 ");
+                    final BytecodeResolvedFields theStaticFields = theLinkedClass.resolvedFields();
+                    if (null != theStaticFields.fieldByName("$VALUES")) {
+                        pw.print(theMemoryLayout.offsetForClassMember("$VALUES"));
+                    } else {
+                        pw.print("-1");
+                    }
+                    // TODO: reference to class name as constant pool here
+                    pw.print(",i32 0");
+                    pw.println(")");
+
+                    pw.print("    store i32 %");
+                    pw.print(theClassName);
+                    pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
+                    pw.print("_allocated, i32* @");
+                    pw.print(theClassName);
+                    pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+                });
+
+                    pw.println("    ret void");
+                pw.println("}");
+                pw.println();
             }
 
             try (final Reader reader = new InputStreamReader(new FileInputStream(theLLFile))) {
