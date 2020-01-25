@@ -31,6 +31,8 @@ public class MemoryManager {
     }
 
     private static void initInternal(final int aSize) {
+        // TODO: Use __heap_base as the starting point, not 0
+
         // This is the list of free blocks
         Address.setIntValue(4, 0, 36);
 
