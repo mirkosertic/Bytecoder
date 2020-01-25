@@ -244,7 +244,6 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.println(" = global i32 0");
                     pw.println();
 
-                    // TODO: implement class init function
                     if (!Objects.equals(theLinkedClass.getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
 
                         pw.print("define internal i32 @");
@@ -456,6 +455,11 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             attributeCounter.incrementAndGet();
                             pw.println(" {");
                             pw.println("entry:");
+                            pw.print("    call i32 @");
+                            pw.print(theClassName);
+                            pw.print(LLVMWriter.CLASSINITSUFFIX);
+                            pw.println("()");
+
                             pw.print("    %vtableptr = ptrtoint i32(i32,i32)* @");
                             pw.print(theClassName);
                             pw.print(LLVMWriter.VTABLEFUNCTIONSUFFIX);

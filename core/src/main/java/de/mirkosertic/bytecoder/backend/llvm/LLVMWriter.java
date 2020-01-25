@@ -209,7 +209,22 @@ public class LLVMWriter implements AutoCloseable {
         write(block.getExpressions());
     }
 
+    private void tempify(final InvokeStaticMethodExpression e) {
+        final BytecodeObjectTypeRef theClass = e.getClassName();
+        final String theClassName = LLVMWriterUtils.toClassName(theClass);
+
+        target.print("    %runtimeclass_");
+        target.print(e.getAddress().getAddress());
+        target.print(" = call i32 @");
+        target.print(theClassName);
+        target.print(CLASSINITSUFFIX);
+        target.println("()");
+    }
+
     private void tempify(final Expression e) {
+        if (e instanceof InvokeStaticMethodExpression) {
+            tempify((InvokeStaticMethodExpression) e);
+        }
         for (final Value v : e.incomingDataFlows()) {
             if (v instanceof ComputedMemoryLocationReadExpression || v instanceof ComputedMemoryLocationWriteExpression) {
                 if (!valueToSymbolMaping.containsKey(v)) {
@@ -234,6 +249,10 @@ public class LLVMWriter implements AutoCloseable {
 
                     valueToSymbolMaping.put(v, theTempSymbol);
                 }
+            } else if (v instanceof InvokeStaticMethodExpression) {
+
+                tempify((InvokeStaticMethodExpression) v);
+
             } else if (v instanceof MemorySizeExpression) {
                 if (!valueToSymbolMaping.containsKey(v)) {
 
@@ -259,14 +278,22 @@ public class LLVMWriter implements AutoCloseable {
 
                 final GetFieldExpression getField = (GetFieldExpression) v;
 
+                final BytecodeObjectTypeRef theClass = BytecodeObjectTypeRef.fromUtf8Constant(getField.getField().getClassIndex().getClassConstant().getConstant());
+                final String theClassName = LLVMWriterUtils.toClassName(theClass);
+
                 final Value object = getField.incomingDataFlows().get(0);
+                target.print("    call i32 @");
+                target.print(theClassName);
+                target.print(CLASSINITSUFFIX);
+                target.println("()");
+
                 target.print("    %exp_");
                 target.print(getField.getAddress().getAddress());
                 target.print(" = add i32 ");
                 write(object, true);
                 target.print(",");
 
-                final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(getField.getField().getClassIndex().getClassConstant().getConstant()));
+                final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theClass);
                 target.print(theLayout.offsetForInstanceMember(getField.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue()));
                 target.println();
 
@@ -409,6 +436,7 @@ public class LLVMWriter implements AutoCloseable {
     private void write(final PutFieldExpression expression) {
         final Value object = expression.incomingDataFlows().get(0);
         final Value value = expression.incomingDataFlows().get(1);
+
         target.print("    %exp_");
         target.print(expression.getAddress().getAddress());
         target.print(" = add i32 ");
@@ -710,7 +738,8 @@ public class LLVMWriter implements AutoCloseable {
         target.print(LLVMWriterUtils.toSignature(aValue.getSignature()));
         target.print(" @");
         target.print(LLVMWriterUtils.toMethodName(aValue.getClassName(), aValue.getMethodName(), aValue.getSignature()));
-        target.print("(i32 undef");
+        target.print("(i32 %runtimeclass_");
+        target.print(aValue.getAddress().getAddress());
         final List<Value> args = aValue.incomingDataFlows();
         for (int i=0;i<args.size();i++) {
             target.print(",");
