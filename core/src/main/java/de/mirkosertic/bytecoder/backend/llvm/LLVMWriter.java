@@ -74,6 +74,7 @@ public class LLVMWriter implements AutoCloseable {
     public static final String RUNTIMECLASSSUFFIX = "__runtimeclass";
     public static final int GENERATED_INSTANCEOF_METHOD_ID = -1;
     public static final String NEWINSTANCE_METHOD_NAME = "$newInstance";
+    public static final String CLASSINITSUFFIX = "__init";
 
     private final PrintWriter output;
     private final PrintWriter target;
@@ -432,6 +433,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final UnreachableExpression expression) {
+        target.println("    call void @llvm.trap()");
         target.println("    unreachable");
     }
 

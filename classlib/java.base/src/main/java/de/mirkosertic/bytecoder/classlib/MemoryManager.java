@@ -35,7 +35,7 @@ public class MemoryManager {
         Address.setIntValue(4, 0, 36);
 
         // Free memory block
-        Address.setIntValue(36, 0, aSize - 12);
+        Address.setIntValue(36, 0, aSize - 48);
         Address.setIntValue(36, 4, 0);
         Address.setIntValue(36, 8, 0);
 

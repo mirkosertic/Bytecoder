@@ -38,6 +38,10 @@ public class LLVMCompilerBackendTest {
 
     private static class Subclass extends Superclass {
 
+        static {
+            final int x = 10;
+        }
+
         public Subclass(final int value) {
             member = value;
             directCallVoid();

@@ -15,26 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.llvm;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.Reader;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-
-import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
-import org.apache.commons.io.IOUtils;
-
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.Substitutes;
@@ -52,6 +32,7 @@ import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
@@ -61,6 +42,24 @@ import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Variable;
+import org.apache.commons.io.IOUtils;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
@@ -101,8 +100,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println();
                 pw.println();
 
-                pw.print("declare i32 @llvm.wasm.memory.size.i32(i32) nounwind readonly");
-                pw.println();
+                pw.println("declare i32 @llvm.wasm.memory.size.i32(i32) nounwind readonly");
+                pw.println("declare void @llvm.trap() cold noreturn nounwind");
                 pw.println();
 
                 final AtomicInteger attributeCounter = new AtomicInteger();
@@ -243,8 +242,54 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.print(theClassName);
                     pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
                     pw.println(" = global i32 0");
+                    pw.println();
 
                     // TODO: implement class init function
+                    if (!Objects.equals(theLinkedClass.getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+
+                        pw.print("define internal i32 @");
+                        pw.print(theClassName);
+                        pw.print(LLVMWriter.CLASSINITSUFFIX);
+                        pw.println("() {");
+                        pw.println("entry:");
+                        pw.print("    %ptr = ptrtoint i32* @");
+                        pw.print(theClassName);
+                        pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
+                        pw.println(" to i32");
+                        pw.println("    %status = add i32 %ptr, 8");
+                        pw.println("    %statusptr = inttoptr i32 %status to i32*");
+                        pw.println("    %value = load i32, i32* %statusptr");
+                        pw.println("    %initialized_compare = icmp eq i32 %value, 1");
+                        pw.println("    br i1 %initialized_compare, label %done, label %unitialized");
+                        pw.println("unitialized:");
+                        pw.println("    store i32 1,i32* %statusptr");
+
+                        // Call superclass init
+                        if (!theLinkedClass.getClassName().name().equals(Object.class.getName())) {
+                            final BytecodeLinkedClass theSuper = theLinkedClass.getSuperClass();
+                            if (LLVMWriterUtils.filteredForTest(theSuper)) {
+                                final String theSuperWASMName = LLVMWriterUtils.toClassName(theSuper.getClassName());
+                                pw.print("    call i32() @");
+                                pw.print(theSuperWASMName);
+                                pw.print(LLVMWriter.CLASSINITSUFFIX);
+                                pw.println("()");
+                            }
+                        }
+
+                        // Call class initializer
+                        if (theLinkedClass.hasClassInitializer()) {
+                            pw.print("    call void(i32) @");
+                            pw.print(theClassName);
+                            pw.println("_VOID$clinit$(i32 %ptr)");
+                        }
+
+                        pw.println("    br label %done");
+                        pw.println("done:");
+                        pw.println("    ret i32 %ptr");
+
+                        pw.println("}");
+                        pw.println();
+                    }
 
                     if (!theLinkedClass.getBytecodeClass().getAccessFlags().isInterface() && !theLinkedClass.getBytecodeClass().getAccessFlags().isAbstract()) {
                         pw.print("define internal i1 @");
@@ -316,6 +361,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                         pw.println("    ]");
                         pw.println("default:");
+                        pw.println("    call void @llvm.trap()");
                         pw.println("    unreachable");
 
                         for (final BytecodeResolvedMethods.MethodEntry methodEntry : thevTable) {
@@ -483,7 +529,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         if (theMethod.getAccessFlags().isStatic()) {
                             pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
                             pw.print(" ");
-                            pw.print("%UNUSED");
+                            pw.print("%runtimeClass");
                         }
                         final List<Variable> theArguments = theSSAProgram.getArguments();
                         for (int i=0;i<theArguments.size();i++) {
