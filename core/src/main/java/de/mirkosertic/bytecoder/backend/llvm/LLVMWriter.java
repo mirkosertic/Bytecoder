@@ -33,6 +33,7 @@ import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
+import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
@@ -45,6 +46,7 @@ import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
+import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
@@ -302,6 +304,36 @@ public class LLVMWriter implements AutoCloseable {
                 target.print("_ptr = inttoptr i32 %exp_");
                 target.print(getField.getAddress().getAddress());
                 target.println(" to i32*");
+            } else if (v instanceof GetStaticExpression) {
+                final GetStaticExpression getStatic = (GetStaticExpression) v;
+
+                final BytecodeObjectTypeRef theClass = BytecodeObjectTypeRef.fromUtf8Constant(getStatic.getField().getClassIndex().getClassConstant().getConstant());
+                final String theClassName = LLVMWriterUtils.toClassName(theClass);
+
+                target.print("    %runtimeclass_");
+                target.print(e.getAddress().getAddress());
+                target.print(" = call i32 @");
+                target.print(theClassName);
+                target.print(CLASSINITSUFFIX);
+                target.println("()");
+
+                final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theClass);
+                final int theStaticOffset = theLayout.offsetForClassMember(getStatic.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+
+                target.print("    %runtimeclass_");
+                target.print(e.getAddress().getAddress());
+                target.print("_offset = add i32 ");
+                target.print("%runtimeclass_");
+                target.print(e.getAddress().getAddress());
+                target.print(",");
+                target.println(theStaticOffset);
+
+                target.print("    %runtimeclass_");
+                target.print(e.getAddress().getAddress());
+                target.print("_ptr = inttoptr i32 ");
+                target.print("%runtimeclass_");
+                target.print(e.getAddress().getAddress());
+                target.println("_offset to i32*");
 
             } else if (v instanceof Expression) {
                 if (!valueToSymbolMaping.containsKey(v)) {
@@ -348,11 +380,50 @@ public class LLVMWriter implements AutoCloseable {
                 write((DirectInvokeMethodExpression) e);
             } else if (e instanceof InvokeVirtualMethodExpression) {
                 write((InvokeVirtualMethodExpression) e);
+            } else if (e instanceof PutStaticExpression) {
+                write((PutStaticExpression) e);
             } else {
                 throw new IllegalStateException("Not implemented : " + e.getClass());
             }
         }
     }
+
+    private void write(final PutStaticExpression e) {
+        final BytecodeObjectTypeRef theClass = BytecodeObjectTypeRef.fromUtf8Constant(e.getField().getClassIndex().getClassConstant().getConstant());
+        final String theClassName = LLVMWriterUtils.toClassName(theClass);
+
+        target.print("    %runtimeclass_");
+        target.print(e.getAddress().getAddress());
+        target.print(" = call i32 @");
+        target.print(theClassName);
+        target.print(CLASSINITSUFFIX);
+        target.println("()");
+
+        final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theClass);
+        final int theStaticOffset = theLayout.offsetForClassMember(e.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+
+        target.print("    %runtimeclass_");
+        target.print(e.getAddress().getAddress());
+        target.print("_offset = add i32 ");
+        target.print("%runtimeclass_");
+        target.print(e.getAddress().getAddress());
+        target.print(",");
+        target.println(theStaticOffset);
+
+        target.print("    %runtimeclass_");
+        target.print(e.getAddress().getAddress());
+        target.print("_ptr = inttoptr i32 ");
+        target.print("%runtimeclass_");
+        target.print(e.getAddress().getAddress());
+        target.println("_offset to i32*");
+
+        target.print("    store i32 ");
+        write(e.incomingDataFlows().get(0), true);
+        target.print(",i32* %runtimeclass_");
+        target.print(e.getAddress().getAddress());
+        target.println("_ptr");
+    }
+
 
     private void write(final InvokeVirtualMethodExpression e) {
 
@@ -598,9 +669,18 @@ public class LLVMWriter implements AutoCloseable {
             write((DirectInvokeMethodExpression) aValue);
         } else if (aValue instanceof NullValue) {
             write((NullValue) aValue);
+        } else if (aValue instanceof GetStaticExpression) {
+            write((GetStaticExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue.getClass());
         }
+    }
+
+    private void write(final GetStaticExpression e) {
+        target.print("load i32 ");
+        target.print(",i32* %runtimeclass_");
+        target.print(e.getAddress().getAddress());
+        target.println("_ptr");
     }
 
     private void write(final NullValue e) {

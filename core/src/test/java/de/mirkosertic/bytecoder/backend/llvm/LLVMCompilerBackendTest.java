@@ -38,6 +38,8 @@ public class LLVMCompilerBackendTest {
 
     private static class Subclass extends Superclass {
 
+        private static int st;
+
         static {
             final int x = 10;
         }
@@ -47,6 +49,7 @@ public class LLVMCompilerBackendTest {
             directCallVoid();
             final int temp = directCall();
             Object o = null;
+            st = 20;
             o = this;
         }
 
@@ -58,6 +61,7 @@ public class LLVMCompilerBackendTest {
         }
 
         private void directCallVoid() {
+            final int help = st;
         }
     }
 

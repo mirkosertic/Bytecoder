@@ -96,8 +96,11 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("target triple = \"wasm32-unknown-unknown\"");
                 pw.println();
 
-                pw.print("@stacktop = global i32 0");
-                pw.println();
+                pw.println("@__heap_base = external global i32");
+                pw.println("@__data_end = external global i32");
+                pw.println("@__memory_base = external global i32");
+
+                pw.println("@stacktop = global i32 0");
                 pw.println();
 
                 pw.println("declare i32 @llvm.wasm.memory.size.i32(i32) nounwind readonly");
