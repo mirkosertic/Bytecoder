@@ -103,6 +103,7 @@ import de.mirkosertic.bytecoder.ssa.FloorExpression;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
+import de.mirkosertic.bytecoder.ssa.HeapBaseExpression;
 import de.mirkosertic.bytecoder.ssa.IFElseExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InstanceOfExpression;
@@ -815,7 +816,14 @@ public class WASMSSAASTWriter {
         if (aValue instanceof SuperTypeOfExpression) {
             return superTypeOfExpression((SuperTypeOfExpression) aValue);
         }
+        if (aValue instanceof HeapBaseExpression) {
+            return heapBaseExpression((HeapBaseExpression) aValue);
+        }
         throw new IllegalStateException("Not supported : " + aValue);
+    }
+
+    private WASMValue heapBaseExpression(final HeapBaseExpression aValue) {
+        return i32.c(0, aValue);
     }
 
     private WASMValue superTypeOfExpression(final SuperTypeOfExpression aValue) {

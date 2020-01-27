@@ -15,6 +15,25 @@
  */
 package de.mirkosertic.bytecoder.backend.llvm;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+import org.apache.commons.io.IOUtils;
+
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.Substitutes;
@@ -42,24 +61,6 @@ import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Variable;
-import org.apache.commons.io.IOUtils;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.Reader;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
@@ -244,12 +245,11 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.print("@");
                     pw.print(theClassName);
                     pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
-                    pw.println(" = global i32 0");
+                    pw.println(" = private global i32 0");
                     pw.println();
 
                     if (!Objects.equals(theLinkedClass.getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
-
-                        pw.print("define internal i32 @");
+                        pw.print("define i32 @");
                         pw.print(theClassName);
                         pw.print(LLVMWriter.CLASSINITSUFFIX);
                         pw.println("() {");
@@ -513,6 +513,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         final String methodName = LLVMWriterUtils
                                 .toMethodName(theLinkedClass.getClassName(), theMethod.getName(), theSignature);
 
+                        final List<String> attributes = new ArrayList<>();
                         final BytecodeAnnotation theExport = theMethod.getAttributes().getAnnotationByType(Export.class.getName());
                         if (theExport != null) {
                             pw.print("attributes #");
@@ -523,10 +524,13 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.print("\"");
                             pw.print(theExport.getElementValueByName("value").stringValue());
                             pw.println("\"}");
+
+                            final int theAttribute = attributeCounter.getAndIncrement();
+                            attributes.add("#" + theAttribute);
                         }
 
                         pw.print("define ");
-                        if (theExport == null) {
+                        if (attributes.isEmpty()) {
                             pw.print("internal ");
                         }
                         pw.print(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getReturnType())));
@@ -555,11 +559,13 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.print("_");
                         }
 
-                        if (theExport != null) {
-                            pw.print(") #");
-                            pw.print(attributeCounter.get());
-                            pw.println(" {");
-                            attributeCounter.incrementAndGet();
+                        if (!attributes.isEmpty()) {
+                            pw.print(")");
+                            for (final String attr : attributes) {
+                                pw.print(" ");
+                                pw.print(attr);
+                            }
+                            pw.print(" {");
                         } else {
                             pw.println(") {");
                         }
@@ -570,6 +576,92 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                         pw.println("}");
                         pw.println();
+
+                        // Export main entry point
+                        if (theLinkedClass.getClassName().name().equals(aEntryPointClass.getName()) && theMethod.getName().stringValue().equals(aEntryPointMethodName) && theMethod.getSignature().matchesExactlyTo(aEntryPointSignatue)) {
+
+                            pw.print("attributes #");
+                            pw.print(attributeCounter.get());
+                            pw.print(" = {");
+                            pw.print("\"wasm-export-name\"");
+                            pw.print("=");
+                            pw.println("\"main\"}");
+
+                            final int theAttribute = attributeCounter.getAndIncrement();
+
+                            pw.print("define ");
+                            pw.print(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getReturnType())));
+                            pw.print(" @");
+                            pw.print(methodName);
+                            pw.print("_export_delegate (");
+                            if (theMethod.getAccessFlags().isStatic()) {
+                                pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
+                                pw.print(" ");
+                                pw.print("%runtimeClass");
+                            }
+                            for (int i=0;i<theArguments.size();i++) {
+                                final Variable theArgument = theArguments.get(i);
+                                final TypeRef theParamType = theArgument.resolveType();
+                                if (i == 0 && theMethod.getAccessFlags().isStatic()) {
+                                    pw.print(",");
+                                }
+                                if (i > 0) {
+                                    pw.print(",");
+                                }
+                                pw.print(LLVMWriterUtils.toType(theParamType));
+                                pw.print(" ");
+                                pw.print("%");
+                                pw.print(theArgument.getName());
+                                pw.print("_");
+                            }
+
+                            pw.print(") #");
+                            pw.print(theAttribute);
+                            pw.println(" {");
+                            pw.println("entry:");
+                            if (theMethod.getSignature().getReturnType().isVoid()) {
+                                pw.print("    call ");
+                            } else {
+                                pw.print("    %value = call ");
+                            }
+
+                            pw.print(LLVMWriterUtils.toSignature(theSignature));
+                            pw.print(" @");
+                            pw.print(methodName);
+                            pw.print("(");
+                            if (theMethod.getAccessFlags().isStatic()) {
+                                pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
+                                pw.print(" ");
+                                pw.print("%runtimeClass");
+                            }
+                            for (int i=0;i<theArguments.size();i++) {
+                                final Variable theArgument = theArguments.get(i);
+                                final TypeRef theParamType = theArgument.resolveType();
+                                if (i == 0 && theMethod.getAccessFlags().isStatic()) {
+                                    pw.print(",");
+                                }
+                                if (i > 0) {
+                                    pw.print(",");
+                                }
+                                pw.print(LLVMWriterUtils.toType(theParamType));
+                                pw.print(" ");
+                                pw.print("%");
+                                pw.print(theArgument.getName());
+                                pw.print("_");
+                            }
+                            pw.println(")");
+
+                            if (theMethod.getSignature().getReturnType().isVoid()) {
+                                pw.println("    ret void");
+                            } else {
+                                pw.print("    ret ");
+                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getReturnType())));
+                                pw.println(" %value");
+                            }
+
+                            pw.println("}");
+                            pw.println();
+                        }
                     });
                 });
 

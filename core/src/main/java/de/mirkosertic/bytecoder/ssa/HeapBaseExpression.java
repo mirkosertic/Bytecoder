@@ -13,24 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib;
+package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
-@EmulatedByRuntime
-public class Address {
+public class HeapBaseExpression extends Expression {
 
-    public static native int getIntValue(int aAddress, int aIndex);
+    public HeapBaseExpression(final Program aProgram, final BytecodeOpcodeAddress address) {
+        super(aProgram, address);
+    }
 
-    public static native void setIntValue(int aAddress, int aIndex, int aValue);
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.INT;
+    }
 
-    public static native int getStackTop();
-
-    public static native int getMemorySize();
-
-    public static native int getHeapBase();
-
-    public static native void unreachable();
-
-    public static native int ptrOf(final Object o);
 }

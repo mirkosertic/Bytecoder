@@ -15,6 +15,15 @@
  */
 package de.mirkosertic.bytecoder.backend.llvm;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
 import de.mirkosertic.bytecoder.backend.NativeMemoryLayouter;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
@@ -35,6 +44,7 @@ import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
+import de.mirkosertic.bytecoder.ssa.HeapBaseExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
@@ -59,15 +69,6 @@ import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.ssa.VariableDescription;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 public class LLVMWriter implements AutoCloseable {
 
@@ -671,9 +672,15 @@ public class LLVMWriter implements AutoCloseable {
             write((NullValue) aValue);
         } else if (aValue instanceof GetStaticExpression) {
             write((GetStaticExpression) aValue);
+        } else if (aValue instanceof HeapBaseExpression) {
+            write((HeapBaseExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue.getClass());
         }
+    }
+
+    private void write(final HeapBaseExpression e) {
+        target.print("load i32, i32* @__heap_base");
     }
 
     private void write(final GetStaticExpression e) {

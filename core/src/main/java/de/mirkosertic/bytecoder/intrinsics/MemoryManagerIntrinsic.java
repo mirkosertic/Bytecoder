@@ -20,6 +20,7 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadExpression;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteExpression;
+import de.mirkosertic.bytecoder.ssa.HeapBaseExpression;
 import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
 import de.mirkosertic.bytecoder.ssa.ParsingHelper;
 import de.mirkosertic.bytecoder.ssa.Program;
@@ -56,8 +57,11 @@ public class MemoryManagerIntrinsic extends Intrinsic {
                     return true;
                 }
                 case "getMemorySize": {
-
                     aHelper.push(aInstruction.getOpcodeAddress(), new MemorySizeExpression(aProgram, aInstruction.getOpcodeAddress()));
+                    return true;
+                }
+                case "getHeapBase": {
+                    aHelper.push(aInstruction.getOpcodeAddress(), new HeapBaseExpression(aProgram, aInstruction.getOpcodeAddress()));
                     return true;
                 }
                 case "getIntValue": {
