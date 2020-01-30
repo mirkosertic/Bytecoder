@@ -89,6 +89,19 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
         final LLVMCompileResult theCompileResult = new LLVMCompileResult();
 
         try {
+            final List<String> stringPool = new ArrayList<>();
+            final LLVMWriter.SymbolResolver theSymbolResolver = new LLVMWriter.SymbolResolver() {
+                @Override
+                public String globalFromStringPool(final String aValue) {
+                    final int i = stringPool.indexOf(aValue);
+                    if (i >= 0) {
+                        return "strpool_" + i;
+                    }
+                    stringPool.add(aValue);
+                    return "strpool_" + (stringPool.size() - 1);
+                }
+            };
+
             final NativeMemoryLayouter memoryLayouter = new NativeMemoryLayouter(aLinkerContext);
 
             final File theLLFile = File.createTempFile("llvm", ".ll");
@@ -106,6 +119,10 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                 pw.println("declare i32 @llvm.wasm.memory.size.i32(i32) nounwind readonly");
                 pw.println("declare void @llvm.trap() cold noreturn nounwind");
+                pw.println("declare float @llvm.minimum.f32(float %Val0, float %Val1)");
+                pw.println("declare float @llvm.maximum.f32(float %Val0, float %Val1)");
+                pw.println("declare float @llvm.floor.f32(float  %Val)");
+                pw.println("declare float @llvm.ceil.f32(float  %Val)");
                 pw.println();
 
                 final AtomicInteger attributeCounter = new AtomicInteger();
@@ -234,10 +251,6 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     if (theLinkedClass.emulatedByRuntime()) {
                         return;
                     }
-                    // Hack for unit-testing
-                    if (!LLVMWriterUtils.filteredForTest(theLinkedClass)) {
-                        return;
-                    }
 
                     final BytecodeResolvedMethods theMethodMap = theLinkedClass.resolvedMethods();
                     final String theClassName = LLVMWriterUtils.toClassName(aEntry.targetNode().getClassName());
@@ -269,13 +282,11 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         // Call superclass init
                         if (!theLinkedClass.getClassName().name().equals(Object.class.getName())) {
                             final BytecodeLinkedClass theSuper = theLinkedClass.getSuperClass();
-                            if (LLVMWriterUtils.filteredForTest(theSuper)) {
-                                final String theSuperWASMName = LLVMWriterUtils.toClassName(theSuper.getClassName());
-                                pw.print("    call i32() @");
-                                pw.print(theSuperWASMName);
-                                pw.print(LLVMWriter.CLASSINITSUFFIX);
-                                pw.println("()");
-                            }
+                            final String theSuperWASMName = LLVMWriterUtils.toClassName(theSuper.getClassName());
+                            pw.print("    call i32() @");
+                            pw.print(theSuperWASMName);
+                            pw.print(LLVMWriter.CLASSINITSUFFIX);
+                            pw.println("()");
                         }
 
                         // Call class initializer
@@ -332,10 +343,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                         .identifierFor(theMethod);
 
                                 if (theVisitedMethods.add(theMethodIdentifier)) {
-
-                                    if (LLVMWriterUtils.filteredForTest(aMethodMapEntry.getProvidingClass())) {
-                                        thevTable.add(aMethodMapEntry);
-                                    }
+                                    thevTable.add(aMethodMapEntry);
                                 }
                             }
                         }
@@ -570,7 +578,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.println(") {");
                         }
 
-                        try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter, aLinkerContext)) {
+                        try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter, aLinkerContext, theSymbolResolver)) {
                             theWriter.write(theSSAProgram);
                         }
 
@@ -665,6 +673,14 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     });
                 });
 
+                // We create the string pool now
+                for (int i=0;i<stringPool.size();i++) {
+                    pw.print("@");
+                    pw.print("strpool_");
+                    pw.print(i);
+                    pw.println(" private global i32 0");
+                }
+
                 // Generate bootstrap code
                 attributeCounter.incrementAndGet();
                 pw.print("attributes #");
@@ -682,10 +698,6 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         return;
                     }
                     if (theLinkedClass.emulatedByRuntime()) {
-                        return;
-                    }
-                    // Hack for unit-testing
-                    if (!LLVMWriterUtils.filteredForTest(theLinkedClass)) {
                         return;
                     }
 

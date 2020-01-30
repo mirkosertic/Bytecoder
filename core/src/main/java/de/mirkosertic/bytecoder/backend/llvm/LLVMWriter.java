@@ -15,15 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.llvm;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
 import de.mirkosertic.bytecoder.backend.NativeMemoryLayouter;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
@@ -33,42 +24,79 @@ import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.graph.EdgeType;
 import de.mirkosertic.bytecoder.graph.GraphDFSOrder;
 import de.mirkosertic.bytecoder.graph.Node;
+import de.mirkosertic.bytecoder.ssa.ArrayEntryExpression;
+import de.mirkosertic.bytecoder.ssa.ArrayLengthExpression;
+import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
 import de.mirkosertic.bytecoder.ssa.BinaryExpression;
 import de.mirkosertic.bytecoder.ssa.BlockState;
+import de.mirkosertic.bytecoder.ssa.ByteValue;
+import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
+import de.mirkosertic.bytecoder.ssa.CompareExpression;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadExpression;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
+import de.mirkosertic.bytecoder.ssa.DoubleValue;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.FixedBinaryExpression;
+import de.mirkosertic.bytecoder.ssa.FloatValue;
+import de.mirkosertic.bytecoder.ssa.FloatingPointCeilExpression;
+import de.mirkosertic.bytecoder.ssa.FloatingPointFloorExpression;
+import de.mirkosertic.bytecoder.ssa.FloorExpression;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.HeapBaseExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
+import de.mirkosertic.bytecoder.ssa.InstanceOfExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
+import de.mirkosertic.bytecoder.ssa.IsNaNExpression;
 import de.mirkosertic.bytecoder.ssa.LongValue;
+import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
+import de.mirkosertic.bytecoder.ssa.MaxExpression;
 import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
+import de.mirkosertic.bytecoder.ssa.MinExpression;
+import de.mirkosertic.bytecoder.ssa.NegatedExpression;
+import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
+import de.mirkosertic.bytecoder.ssa.NewObjectExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
+import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
+import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeExpression;
+import de.mirkosertic.bytecoder.ssa.SetEnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
 import de.mirkosertic.bytecoder.ssa.StackTopExpression;
+import de.mirkosertic.bytecoder.ssa.StringValue;
+import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
+import de.mirkosertic.bytecoder.ssa.ThrowExpression;
 import de.mirkosertic.bytecoder.ssa.TypeConversionExpression;
+import de.mirkosertic.bytecoder.ssa.TypeOfExpression;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.ssa.VariableDescription;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class LLVMWriter implements AutoCloseable {
 
@@ -79,6 +107,11 @@ public class LLVMWriter implements AutoCloseable {
     public static final String NEWINSTANCE_METHOD_NAME = "$newInstance";
     public static final String CLASSINITSUFFIX = "__init";
 
+    interface SymbolResolver {
+
+        String globalFromStringPool(final String aValue);
+    }
+
     private final PrintWriter output;
     private final PrintWriter target;
     private final StringWriter buffer;
@@ -87,8 +120,9 @@ public class LLVMWriter implements AutoCloseable {
     private final Map<PHIValue, String> prereservedPHIValueNames;
     private final NativeMemoryLayouter memoryLayouter;
     private final BytecodeLinkerContext linkerContext;
+    private final SymbolResolver symbolResolver;
 
-    public LLVMWriter(final PrintWriter output, final NativeMemoryLayouter memoryLayouter, final BytecodeLinkerContext linkerContext) {
+    public LLVMWriter(final PrintWriter output, final NativeMemoryLayouter memoryLayouter, final BytecodeLinkerContext linkerContext, final SymbolResolver symbolResolver) {
         this.output = output;
         this.buffer = new StringWriter();
         this.target = new PrintWriter(this.buffer);
@@ -96,6 +130,7 @@ public class LLVMWriter implements AutoCloseable {
         this.prereservedPHIValueNames = new HashMap<>();
         this.memoryLayouter = memoryLayouter;
         this.linkerContext = linkerContext;
+        this.symbolResolver = symbolResolver;
     }
 
     @Override
@@ -141,11 +176,11 @@ public class LLVMWriter implements AutoCloseable {
                         }
                         valueToSymbolMaping.put(phi, tempName);
 
-                        target.write("    ");
-                        target.write(tempName);
-                        target.write(" = phi ");
-                        target.write(LLVMWriterUtils.toType(phi.resolveType()));
-                        target.write(" ");
+                        target.print("    ");
+                        target.print(tempName);
+                        target.print(" = phi ");
+                        target.print(LLVMWriterUtils.toType(phi.resolveType()));
+                        target.print(" ");
                         boolean first = true;
                         for (final RegionNode pred : currentNode.getPredecessors()) {
                             final Value theOut = pred.liveOut().getPorts().get(phi.getDescription());
@@ -158,44 +193,44 @@ public class LLVMWriter implements AutoCloseable {
                                 if (first) {
                                     first = false;
                                 } else {
-                                    target.write(",");
+                                    target.print(",");
                                 }
-                                target.write("[");
+                                target.print("[");
 
-                                target.write(theReplacementSymbol);
-                                target.write(",");
+                                target.print(theReplacementSymbol);
+                                target.print(",");
                                 if (pred.getStartAddress().getAddress() == 0) {
-                                    target.write("%entry");
+                                    target.print("%entry");
                                 } else {
-                                    target.write("%block");
+                                    target.print("%block");
                                     target.print(pred.getStartAddress().getAddress());
                                 }
 
-                                target.write("]");
+                                target.print("]");
                             } else if (theOut instanceof Variable) {
                                 if (first) {
                                     first = false;
                                 } else {
-                                    target.write(",");
+                                    target.print(",");
                                 }
-                                target.write("[");
+                                target.print("[");
 
                                 if (valueToSymbolMaping.containsKey(theOut)) {
-                                    target.write(valueToSymbolMaping.get(theOut));
+                                    target.print(valueToSymbolMaping.get(theOut));
                                 } else {
-                                    target.write("%");
-                                    target.write(((Variable) theOut).getName());
-                                    target.write("_");
+                                    target.print("%");
+                                    target.print(((Variable) theOut).getName());
+                                    target.print("_");
                                 }
-                                target.write(",");
+                                target.print(",");
                                 if (pred.getStartAddress().getAddress() == 0) {
-                                    target.write("%entry");
+                                    target.print("%entry");
                                 } else {
-                                    target.write("%block");
+                                    target.print("%block");
                                     target.print(pred.getStartAddress().getAddress());
                                 }
 
-                                target.write("]");
+                                target.print("]");
                             } else {
                                 throw new RuntimeException("Unhandled type for PHI input : " + theOut.getClass());
                             }
@@ -224,9 +259,53 @@ public class LLVMWriter implements AutoCloseable {
         target.println("()");
     }
 
+    private void tempify(final InvokeVirtualMethodExpression e) {
+        final Value value = e.incomingDataFlows().get(0);
+
+        // Compute offset to vtable resolver function
+        final String prefix = "temp_" + e.getAddress().getAddress();
+        target.print("    %");
+        target.print(prefix + "_ptr");
+        target.print(" = ");
+        target.print("add i32 ");
+        write(value, true);
+        target.print(", 4");
+        target.println();
+        target.print("    %");
+        target.print(prefix + "_vtable = inttoptr i32 %");
+        target.print(prefix + "_ptr");
+        target.println(" to i32(i32,i32)*");
+
+        // Resolve the index of the virtual identifier
+        target.print("    %");
+        target.print(prefix + "_resolved = call i32(i32,i32) %");
+        target.print(prefix + "_vtable");
+        target.print("(i32 ");
+        write(value, true);
+        target.print(",");
+
+        final BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(e.getMethodName(), e.getSignature());
+
+        target.print("i32 ");
+        target.print(theMethodIdentifier.getIdentifier());
+        target.println(")");
+
+        // Invoke function
+        target.print("    %");
+        target.print(prefix);
+        target.print("_resolved_ptr = inttoptr i32 %");
+        target.print(prefix);
+        target.print("_resolved to ");
+        target.print(LLVMWriterUtils.toSignature(e.getSignature()));
+        target.println("*");
+    }
+
     private void tempify(final Expression e) {
         if (e instanceof InvokeStaticMethodExpression) {
             tempify((InvokeStaticMethodExpression) e);
+        }
+        if (e instanceof InvokeVirtualMethodExpression) {
+            tempify((InvokeVirtualMethodExpression) e);
         }
         for (final Value v : e.incomingDataFlows()) {
             if (v instanceof ComputedMemoryLocationReadExpression || v instanceof ComputedMemoryLocationWriteExpression) {
@@ -252,6 +331,10 @@ public class LLVMWriter implements AutoCloseable {
 
                     valueToSymbolMaping.put(v, theTempSymbol);
                 }
+            } else if (v instanceof InvokeVirtualMethodExpression) {
+
+                tempify((InvokeVirtualMethodExpression) v);
+
             } else if (v instanceof InvokeStaticMethodExpression) {
 
                 tempify((InvokeStaticMethodExpression) v);
@@ -305,6 +388,7 @@ public class LLVMWriter implements AutoCloseable {
                 target.print("_ptr = inttoptr i32 %exp_");
                 target.print(getField.getAddress().getAddress());
                 target.println(" to i32*");
+
             } else if (v instanceof GetStaticExpression) {
                 final GetStaticExpression getStatic = (GetStaticExpression) v;
 
@@ -377,16 +461,57 @@ public class LLVMWriter implements AutoCloseable {
             } else if (e instanceof PutFieldExpression) {
                 write((PutFieldExpression) e);
             } else if (e instanceof DirectInvokeMethodExpression) {
-                target.write("    ");
+                target.print("    ");
                 write((DirectInvokeMethodExpression) e);
             } else if (e instanceof InvokeVirtualMethodExpression) {
+                target.print("    ");
                 write((InvokeVirtualMethodExpression) e);
             } else if (e instanceof PutStaticExpression) {
                 write((PutStaticExpression) e);
+            } else if (e instanceof ThrowExpression) {
+                write((ThrowExpression) e);
+            } else if (e instanceof ArrayStoreExpression) {
+                write((ArrayStoreExpression) e);
+            } else if (e instanceof TableSwitchExpression) {
+                write((TableSwitchExpression) e);
+            } else if (e instanceof SetEnumConstantsExpression) {
+                write((SetEnumConstantsExpression) e);
+            } else if (e instanceof LookupSwitchExpression) {
+                write((LookupSwitchExpression) e);
             } else {
                 throw new IllegalStateException("Not implemented : " + e.getClass());
             }
         }
+    }
+
+    private void write(final SetEnumConstantsExpression e) {
+        //TODO: Implement this
+        target.println("setenumconstants");
+    }
+
+    private void write(final LookupSwitchExpression e) {
+        //TODO: Implement this
+        target.println("tableweitch");
+    }
+
+    private void write(final TableSwitchExpression e) {
+        //TODO: Implement this
+        target.println("tableweitch");
+    }
+
+    private void write(final ArrayStoreExpression e) {
+        //TODO: Implement this
+        target.println("arraystore");
+    }
+
+    private void write(final NewArrayExpression e) {
+        //TODO: Implement this
+        target.print("newarray");
+    }
+
+    private void write(final ThrowExpression e) {
+        target.println("    call void @llvm.trap()");
+        target.println("    unreachable");
     }
 
     private void write(final PutStaticExpression e) {
@@ -432,42 +557,8 @@ public class LLVMWriter implements AutoCloseable {
 
         // Compute offset to vtable resolver function
         final String prefix = "temp_" + e.getAddress().getAddress();
-        target.print("    %");
-        target.print(prefix + "_ptr");
-        target.print(" = ");
-        target.print("add i32 ");
-        write(value, true);
-        target.print(", 4");
-        target.println();
-        target.print("    %");
-        target.print(prefix + "_vtable = inttoptr i32 %");
-        target.print(prefix + "_ptr");
-        target.println(" to i32(i32,i32)*");
-
-        // Resolve the index of the virtual identifier
-        target.print("    %");
-        target.print(prefix + "_resolved = call i32(i32,i32) %");
-        target.print(prefix + "_vtable");
-        target.print("(i32 ");
-        write(value, true);
-        target.print(",");
-
-        final BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(e.getMethodName(), e.getSignature());
-
-        target.print("i32 ");
-        target.print(theMethodIdentifier.getIdentifier());
-        target.println(")");
-
         // Invoke function
-        target.print("    %");
-        target.print(prefix);
-        target.print("_resolved_ptr = inttoptr i32 %");
-        target.print(prefix);
-        target.print("_resolved to ");
-        target.print(LLVMWriterUtils.toSignature(e.getSignature()));
-        target.println("*");
-
-        target.print("    call ");
+        target.print("call ");
         target.print(LLVMWriterUtils.toSignature(e.getSignature()));
         target.print(" %");
         target.print(prefix);
@@ -475,7 +566,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print(" (i32 ");
         write(value, true);
         for (int i=0;i<e.getSignature().getArguments().length;i++) {
-            target.write(",");
+            target.print(",");
             target.print(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
             target.print(" ");
             write(e.incomingDataFlows().get(i + 1), true);
@@ -484,22 +575,22 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final DirectInvokeMethodExpression e) {
-        target.write("call ");
-        target.write(LLVMWriterUtils.toSignature(e.getSignature()));
-        target.write(" @");
-        target.write(LLVMWriterUtils.toMethodName(e.getClazz(), e.getMethodName(), e.getSignature()));
-        target.write("(");
+        target.print("call ");
+        target.print(LLVMWriterUtils.toSignature(e.getSignature()));
+        target.print(" @");
+        target.print(LLVMWriterUtils.toMethodName(e.getClazz(), e.getMethodName(), e.getSignature()));
+        target.print("(");
         final List<Value> theValues = e.incomingDataFlows();
         for (int i=0;i<theValues.size();i++) {
             if (i>0) {
-                target.write(",");
+                target.print(",");
             }
             if (i == 0) {
-                target.write("i32");
+                target.print("i32");
             } else {
-                target.write(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i - 1])));
+                target.print(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i - 1])));
             }
-            target.write(" ");
+            target.print(" ");
             write(theValues.get(i), true);
         }
         target.println(")");
@@ -551,9 +642,9 @@ public class LLVMWriter implements AutoCloseable {
         target.print("    br i1 ");
         write(expression.incomingDataFlows().get(0), true);
         if (expression.getAddress().getAddress() == 0) {
-            target.write(", label %entry");
+            target.print(", label %entry");
         } else {
-            target.write(", label %block");
+            target.print(", label %block");
             target.print(expression.getGotoAddress().getAddress());
         }
 
@@ -567,9 +658,9 @@ public class LLVMWriter implements AutoCloseable {
             final BytecodeOpcodeAddress theElse = forwardNodes.iterator().next();
 
             if (theElse.getAddress() == 0) {
-                target.write(", label %entry");
+                target.print(", label %entry");
             } else {
-                target.write(", label %block");
+                target.print(", label %block");
                 target.print(theElse.getAddress());
             }
             target.println();
@@ -629,19 +720,19 @@ public class LLVMWriter implements AutoCloseable {
     private void write(final Value aValue, final boolean useDirectVarRef) {
         final String replacedSymbol = valueToSymbolMaping.get(aValue);
         if (replacedSymbol != null && !(aValue instanceof ComputedMemoryLocationWriteExpression) && !(aValue instanceof ComputedMemoryLocationReadExpression)) {
-            target.write(replacedSymbol);
+            target.print(replacedSymbol);
             return;
         }
 
         if (aValue instanceof Variable) {
             final Variable v = (Variable) aValue;
             if (useDirectVarRef) {
-                target.write("%");
+                target.print("%");
             } else {
-                target.write("add i32 0,%");
+                target.print("add i32 0,%");
             }
-            target.write(v.getName());
-            target.write("_");
+            target.print(v.getName());
+            target.print("_");
         } else if (aValue instanceof IntegerValue) {
             write((IntegerValue) aValue, useDirectVarRef);
         } else if (aValue instanceof LongValue) {
@@ -674,9 +765,195 @@ public class LLVMWriter implements AutoCloseable {
             write((GetStaticExpression) aValue);
         } else if (aValue instanceof HeapBaseExpression) {
             write((HeapBaseExpression) aValue);
+        } else if (aValue instanceof StringValue) {
+            write((StringValue) aValue);
+        } else if (aValue instanceof InvokeVirtualMethodExpression) {
+            write((InvokeVirtualMethodExpression) aValue);
+        } else if (aValue instanceof ClassReferenceValue) {
+            write((ClassReferenceValue) aValue);
+        } else if (aValue instanceof NewArrayExpression) {
+            write((NewArrayExpression) aValue);
+        } else if (aValue instanceof ArrayLengthExpression) {
+            write((ArrayLengthExpression) aValue);
+        } else if (aValue instanceof FixedBinaryExpression) {
+            write((FixedBinaryExpression) aValue);
+        } else if (aValue instanceof ArrayEntryExpression) {
+            write((ArrayEntryExpression) aValue);
+        } else if (aValue instanceof NewInstanceFromDefaultConstructorExpression) {
+            write((NewInstanceFromDefaultConstructorExpression) aValue);
+        } else if (aValue instanceof InstanceOfExpression) {
+            write((InstanceOfExpression) aValue);
+        } else if (aValue instanceof NewObjectExpression) {
+            write((NewObjectExpression) aValue);
+        } else if (aValue instanceof CompareExpression) {
+            write((CompareExpression) aValue);
+        } else if (aValue instanceof NegatedExpression) {
+            write((NegatedExpression) aValue);
+        } else if (aValue instanceof FloorExpression) {
+            write((FloorExpression) aValue);
+        } else if (aValue instanceof MinExpression) {
+            write((MinExpression) aValue);
+        } else if (aValue instanceof TypeOfExpression) {
+            write((TypeOfExpression) aValue);
+        } else if (aValue instanceof IsNaNExpression) {
+            write((IsNaNExpression) aValue);
+        } else if (aValue instanceof FloatValue) {
+            write((FloatValue) aValue);
+        } else if (aValue instanceof ByteValue) {
+            write((ByteValue) aValue);
+        } else if (aValue instanceof ResolveCallsiteObjectExpression) {
+            write((ResolveCallsiteObjectExpression) aValue);
+        } else if (aValue instanceof DoubleValue) {
+            write((DoubleValue) aValue);
+        } else if (aValue instanceof FloatingPointCeilExpression) {
+            write((FloatingPointCeilExpression) aValue);
+        } else if (aValue instanceof FloatingPointFloorExpression) {
+            write((FloatingPointFloorExpression) aValue);
+        } else if (aValue instanceof MaxExpression) {
+            write((MaxExpression) aValue);
+        } else if (aValue instanceof RuntimeGeneratedTypeExpression) {
+            write((RuntimeGeneratedTypeExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue.getClass());
         }
+    }
+
+    private void write(final RuntimeGeneratedTypeExpression e) {
+        //TODO: Implement this
+        target.print("runtimegeneratedtype");
+    }
+
+    private void write(final MaxExpression e) {
+        target.print("call @llvm.maximum.");
+        target.print(LLVMWriterUtils.toType(e.resolveType()));
+        target.print("(");
+        write(e.incomingDataFlows().get(0), true);
+        target.print(",");
+        write(e.incomingDataFlows().get(1), true);
+        target.print(")");
+    }
+
+    private void write(final FloatingPointFloorExpression e) {
+        target.print("call i32 @llvm.floor.f32(");
+        write(e.incomingDataFlows().get(0), true);
+        target.print(")");
+    }
+
+    private void write(final FloatingPointCeilExpression e) {
+        target.print("call i32 @llvm.ceil.f32(");
+        write(e.incomingDataFlows().get(0), true);
+        target.print(")");
+    }
+
+    private void write(final ResolveCallsiteObjectExpression e) {
+        //TODO: Implement this
+        target.print("resolvcallsite");
+    }
+
+    private void write(final ByteValue e) {
+        target.print("i32 ");
+        target.print(e.getByteValue());
+    }
+
+    private void write(final FloatValue e) {
+        target.print("f32 ");
+        target.print(e.getFloatValue());
+    }
+
+    private void write(final DoubleValue e) {
+        target.print("f32 ");
+        target.print(e.getDoubleValue());
+    }
+
+    private void write(final IsNaNExpression e) {
+        //TODO: Implement this
+        target.print("isnan");
+    }
+
+    private void write(final TypeOfExpression e) {
+        //TODO: Implement this
+        target.print("typeof");
+    }
+
+    private void write(final MinExpression e) {
+        target.print("call @llvm.minimum.");
+        target.print(LLVMWriterUtils.toType(e.resolveType()));
+        target.print("(");
+        write(e.incomingDataFlows().get(0), true);
+        target.print(",");
+        write(e.incomingDataFlows().get(1), true);
+        target.print(")");
+    }
+
+    private void write(final FloorExpression e) {
+        //TODO: Implement this
+        target.print("floor");
+    }
+
+    private void write(final NegatedExpression e) {
+        switch (e.resolveType().resolve()) {
+            case FLOAT:
+            case DOUBLE:
+                target.print("fneg ");
+                target.print(LLVMWriterUtils.toType(e.resolveType()));
+                target.print(" ");
+                write(e.incomingDataFlows().get(0), true);
+                break;
+            default:
+                target.print("mul ");
+                target.print(LLVMWriterUtils.toType(e.resolveType()));
+                target.print(" ");
+                write(e.incomingDataFlows().get(0), true);
+                target.print(",-1");
+                break;
+        }
+    }
+
+    private void write(final CompareExpression e) {
+        //TODO: Implement this
+        target.print("compare");
+    }
+
+    private void write(final NewObjectExpression e) {
+        //TODO: Implement this
+        target.print("newobject");
+    }
+
+    private void write(final InstanceOfExpression e) {
+        //TODO: Implement this
+        target.print("instanceof");
+    }
+
+    private void write(final NewInstanceFromDefaultConstructorExpression e) {
+        //TODO: Implement this
+        target.print("newinstance");
+    }
+
+    private void write(final ArrayEntryExpression e) {
+        //TODO: Implement this
+        target.print("arrayentry");
+    }
+
+    private void write(final FixedBinaryExpression e) {
+        //TODO: Implement this
+        target.print("true");
+    }
+
+    private void write(final ArrayLengthExpression e) {
+        //TODO: Implement this
+        target.print("add i32 0,0");
+    }
+
+    private void write(final ClassReferenceValue e) {
+        target.print("call i32 @");
+        target.print(LLVMWriterUtils.toClassName(e.getType()));
+        target.print(LLVMWriter.CLASSINITSUFFIX);
+        target.print("()");
+    }
+
+    private void write(final StringValue e) {
+        target.print("load i32, i32* @");
+        target.print(symbolResolver.globalFromStringPool(e.getStringValue()));
     }
 
     private void write(final HeapBaseExpression e) {
@@ -701,52 +978,52 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final NewObjectAndConstructExpression e) {
-        target.write("call i32(");
+        target.print("call i32(");
         for (int i=0;i<e.getSignature().getArguments().length;i++) {
             if (i>0) {
-                target.write(",");
+                target.print(",");
             }
-            target.write(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
+            target.print(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
         }
-        target.write(") @");
-        target.write(LLVMWriterUtils.toMethodName(e.getClazz(), LLVMWriter.NEWINSTANCE_METHOD_NAME, e.getSignature()));
-        target.write("(");
+        target.print(") @");
+        target.print(LLVMWriterUtils.toMethodName(e.getClazz(), LLVMWriter.NEWINSTANCE_METHOD_NAME, e.getSignature()));
+        target.print("(");
         for (int i=0;i<e.incomingDataFlows().size();i++) {
             if (i>0) {
-                target.write(",");
+                target.print(",");
             }
-            target.write(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
-            target.write(" ");
+            target.print(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
+            target.print(" ");
             write(e.incomingDataFlows().get(i), true);
         }
         target.println(")");
     }
 
     private void write(final StackTopExpression e) {
-        target.write("load i32, i32* @stacktop");
+        target.print("load i32, i32* @stacktop");
     }
 
     private void write(final TypeConversionExpression e) {
-        target.write("add i32 0,");
+        target.print("add i32 0,");
         write(e.incomingDataFlows().get(0), true);
     }
 
     private void write(final ComputedMemoryLocationReadExpression e) {
         final String theSymbol = valueToSymbolMaping.get(e);
-        target.write("load i32, i32* ");
-        target.write(theSymbol);
-        target.write("_ptr");
+        target.print("load i32, i32* ");
+        target.print(theSymbol);
+        target.print("_ptr");
     }
 
     private void write(final ComputedMemoryLocationWriteExpression e) {
         final String theSymbol = valueToSymbolMaping.get(e);
-        target.write("i32* ");
-        target.write(theSymbol);
-        target.write("_ptr");
+        target.print("i32* ");
+        target.print(theSymbol);
+        target.print("_ptr");
     }
 
     private void write(final MemorySizeExpression aValue) {
-        target.write("call i32 @llvm.wasm.memory.size.i32(i32 0)");
+        target.print("call i32 @llvm.wasm.memory.size.i32(i32 0)");
     }
 
     private void write(final PHIValue aValue) {
@@ -756,45 +1033,66 @@ public class LLVMWriter implements AutoCloseable {
     private void write(final BinaryExpression aValue) {
         switch (aValue.getOperator()) {
             case ADD:
-                target.write("add");
+                target.print("add");
                 break;
             case SUB:
-                target.write("sub");
+                target.print("sub");
                 break;
             case MUL:
-                target.write("mul");
+                target.print("mul");
                 break;
             case REMAINDER:
-                target.write("srem");
+                target.print("srem");
                 break;
             case GREATERTHAN:
-                target.write("icmp sgt");
+                target.print("icmp sgt");
                 break;
             case GREATEROREQUALS:
-                target.write("icmp sge");
+                target.print("icmp sge");
                 break;
             case LESSTHAN:
-                target.write("icmp slt");
+                target.print("icmp slt");
                 break;
             case LESSTHANOREQUALS:
-                target.write("icmp sle");
+                target.print("icmp sle");
                 break;
             case EQUALS:
-                target.write("icmp eq");
+                target.print("icmp eq");
                 break;
             case NOTEQUALS:
-                target.write("icmp ne");
+                target.print("icmp ne");
+                break;
+            case BINARYSHIFTLEFT:
+                target.print("shl");
+                break;
+            case BINARYSHIFTRIGHT:
+                target.print("ashr");
+                break;
+            case BINARYUNSIGNEDSHIFTRIGHT:
+                target.print("shr");
+                break;
+            case BINARYOR:
+                target.print("or");
+                break;
+            case BINARYXOR:
+                target.print("xor");
+                break;
+            case BINARYAND:
+                target.print("and");
+                break;
+            case DIV:
+                target.print("div");
                 break;
             default:
                 throw new IllegalStateException("Not implemented : " + aValue.getOperator());
         }
-        target.write(" ");
-        target.write(LLVMWriterUtils.toType(aValue.resolveType()));
-        target.write(" ");
+        target.print(" ");
+        target.print(LLVMWriterUtils.toType(aValue.resolveType()));
+        target.print(" ");
         final List<Value> v = aValue.incomingDataFlows();
         for (int i=0;i<v.size();i++) {
             if (i>0) {
-                target.write(",");
+                target.print(",");
             }
             write(v.get(i), true);
         }

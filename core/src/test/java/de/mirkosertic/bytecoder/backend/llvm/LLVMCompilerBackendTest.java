@@ -15,11 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.llvm;
 
-import java.io.IOException;
-
-import org.junit.Assert;
-import org.junit.Test;
-
 import de.mirkosertic.bytecoder.allocator.Allocator;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileResult;
@@ -29,6 +24,12 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class LLVMCompilerBackendTest {
 
@@ -91,7 +92,9 @@ public class LLVMCompilerBackendTest {
                 "doSomething",
                 new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0])
         );
-        System.out.println(theResult.getContent()[0].asString());
+        try (final FileWriter fw = new FileWriter(new File("D:\\IdeaProjects\\Bytecoder\\core\\src\\main\\java\\de\\mirkosertic\\bytecoder\\backend\\llvm\\test.ll")))  {
+            fw.write(theResult.getContent()[0].asString());
+        }
         Assert.assertEquals(5, theResult.getContent().length);
     }
 }
