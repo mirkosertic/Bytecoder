@@ -16,9 +16,14 @@
 package de.mirkosertic.bytecoder.backend.llvm;
 
 import de.mirkosertic.bytecoder.backend.NativeMemoryLayouter;
+import de.mirkosertic.bytecoder.classlib.Array;
+import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.graph.EdgeType;
@@ -106,6 +111,7 @@ public class LLVMWriter implements AutoCloseable {
     public static final int GENERATED_INSTANCEOF_METHOD_ID = -1;
     public static final String NEWINSTANCE_METHOD_NAME = "$newInstance";
     public static final String CLASSINITSUFFIX = "__init";
+    public static final String NEWINSTANCEHELPER = "newinstancehelper";
 
     interface SymbolResolver {
 
@@ -300,6 +306,45 @@ public class LLVMWriter implements AutoCloseable {
         target.println("*");
     }
 
+    private void tempify(final NewArrayExpression e) {
+        final String theClassName = LLVMWriterUtils.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
+        target.print("    %classinit_");
+        target.print(e.getAddress().getAddress());
+        target.print(" = call i32 @");
+        target.print(theClassName);
+        target.print(CLASSINITSUFFIX);
+        target.println("()");
+        target.print("    %vtable_");
+        target.print(e.getAddress().getAddress());
+        target.print(" = ptrtoint i32* @");
+        target.print(theClassName);
+        target.print(VTABLEFUNCTIONSUFFIX);
+        target.println(" to i32");
+    }
+
+    private void tempify(final ArrayEntryExpression e) {
+
+        target.print("    %index_");
+        target.print(e.getAddress().getAddress());
+        target.print(" = mul i32 4,");
+        write(e.incomingDataFlows().get(1), true);
+        target.println();
+
+        target.print("    %index_2");
+        target.print(e.getAddress().getAddress());
+        target.print(" = add i32 ");
+        write(e.incomingDataFlows().get(0), true);
+        target.print(",%index_");
+        target.print(e.getAddress().getAddress());
+        target.println();
+
+        target.print("    %ptr_");
+        target.print(e.getAddress().getAddress());
+        target.print(" = add i32 20, %index_2");
+        target.print(e.getAddress().getAddress());
+        target.println();
+    }
+
     private void tempify(final Expression e) {
         if (e instanceof InvokeStaticMethodExpression) {
             tempify((InvokeStaticMethodExpression) e);
@@ -331,6 +376,15 @@ public class LLVMWriter implements AutoCloseable {
 
                     valueToSymbolMaping.put(v, theTempSymbol);
                 }
+
+            } else if (v instanceof NewArrayExpression) {
+
+                tempify((NewArrayExpression) v);
+
+            } else if (v instanceof ArrayEntryExpression) {
+
+                tempify((ArrayEntryExpression) v);
+
             } else if (v instanceof InvokeVirtualMethodExpression) {
 
                 tempify((InvokeVirtualMethodExpression) v);
@@ -500,13 +554,56 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final ArrayStoreExpression e) {
-        //TODO: Implement this
-        target.println("arraystore");
+        target.print("    %index_");
+        target.print(e.getAddress().getAddress());
+        target.print(" = mul i32 4,");
+        write(e.incomingDataFlows().get(1), true);
+        target.println();
+
+        target.print("    %index_2");
+        target.print(e.getAddress().getAddress());
+        target.print(" = add i32 ");
+        write(e.incomingDataFlows().get(0), true);
+        target.print(",%index_");
+        target.print(e.getAddress().getAddress());
+        target.println();
+
+        target.print("    %ptr_");
+        target.print(e.getAddress().getAddress());
+        target.print(" = add i32 20, %index_2");
+        target.print(e.getAddress().getAddress());
+        target.println();
+
+        target.print("    %ptr_");
+        target.print(e.getAddress().getAddress());
+        target.print("_ptr = inttoptr i32 %ptr_");
+        target.print(e.getAddress().getAddress());
+        target.println(" to i32*");
+
+        target.print("    store ");
+        target.print(LLVMWriterUtils.toType(e.getArrayType()));
+        target.print(" ");
+        write(e.incomingDataFlows().get(2), true);
+        target.print(", i32* %ptr_");
+        target.print(e.getAddress().getAddress());
+        target.println("_ptr");
     }
 
     private void write(final NewArrayExpression e) {
-        //TODO: Implement this
-        target.print("newarray");
+        final String theMethodName = LLVMWriterUtils.toMethodName(
+                BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
+                "newArray",
+                new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+
+        target.print("call i32 @");
+        target.print(theMethodName);
+        target.print("(i32 0,i32 ");
+        write(e.incomingDataFlows().get(0), true);
+        target.print(",i32 %classinit_");
+        target.print(e.getAddress().getAddress());
+        target.print(",i32 %vtable_");
+        target.print(e.getAddress().getAddress());
+        target.print(")");
     }
 
     private void write(final ThrowExpression e) {
@@ -925,18 +1022,41 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final NewInstanceFromDefaultConstructorExpression e) {
-        //TODO: Implement this
-        target.print("newinstance");
+        target.write("call i32 @");
+        target.write(NEWINSTANCEHELPER);
+        target.write("(i32 ");
+        write(e.incomingDataFlows().get(0), true);
+        target.write(")");
     }
 
     private void write(final ArrayEntryExpression e) {
-        //TODO: Implement this
-        target.print("arrayentry");
+        target.print("load ");
+        target.print(LLVMWriterUtils.toType(e.resolveType()));
+        target.print(", i32* @ptr_");
+        target.print(e.getAddress().getAddress());
+        target.println();
     }
 
     private void write(final FixedBinaryExpression e) {
-        //TODO: Implement this
-        target.print("true");
+        switch (e.getOperator()) {
+            case ISNULL:
+                target.print("icmp eq i32 ");
+                write(e.incomingDataFlows().get(0), true);
+                target.print(",0");
+                break;
+            case ISZERO:
+                target.print("icmp eq i32 ");
+                write(e.incomingDataFlows().get(0), true);
+                target.print(",0");
+                break;
+            case ISNONNULL:
+                target.print("icmp ne i32 ");
+                write(e.incomingDataFlows().get(0), true);
+                target.print(",0");
+                break;
+            default:
+                throw new IllegalStateException("Not implemented : " + e.getOperator());
+        }
     }
 
     private void write(final ArrayLengthExpression e) {

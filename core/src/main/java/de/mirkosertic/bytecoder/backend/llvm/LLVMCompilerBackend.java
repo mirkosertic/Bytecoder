@@ -15,25 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.llvm;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.Reader;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-
-import org.apache.commons.io.IOUtils;
-
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.Substitutes;
@@ -55,12 +36,31 @@ import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
+import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Variable;
+import org.apache.commons.io.IOUtils;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
@@ -672,6 +672,64 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         }
                     });
                 });
+
+                // New Instance helper for reflection stuff
+                pw.print("define internal i32 @");
+                pw.print(LLVMWriter.NEWINSTANCEHELPER);
+                pw.println("(i32 %runtimeclass) {");
+                pw.println("entry:");
+
+                aLinkerContext.linkedClasses().map(Edge::targetNode).forEach(search -> {
+                    if (!search.getBytecodeClass().getAccessFlags().isAbstract() && !search.getBytecodeClass().getAccessFlags()
+                            .isInterface() && !search.emulatedByRuntime()) {
+
+                        final String theClassName = LLVMWriterUtils.toClassName(search.getClassName());
+
+                        // Only if the class has a zero arg constructor
+                        final BytecodeResolvedMethods theResolved = search.resolvedMethods();
+                        theResolved.stream().filter(j -> j.getProvidingClass() == search).map(BytecodeResolvedMethods.MethodEntry::getValue)
+                                .filter(j -> j.isConstructor() && j.getSignature().getArguments().length == 0).forEach(m -> {
+
+                            // We found a zero arg constructor
+                            pw.print("    %runtimeclass_");
+                            pw.print(search.getUniqueId());
+                            pw.print(" = load i32, i32* @");
+                            pw.print(theClassName);
+                            pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+                            pw.print("    %runtimeclass_");
+                            pw.print(search.getUniqueId());
+                            pw.print("_check = icmp i32 %runtimeclass, %runtimeclass_");
+                            pw.println(search.getUniqueId());
+                            pw.print("    br i1 %runtimeclass_");
+                            pw.print(search.getUniqueId());
+                            pw.print("_check, label %checktrue_");
+                            pw.print(search.getUniqueId());
+                            pw.print(", label %checkfalse_");
+                            pw.println(search.getUniqueId());
+                            pw.print("checktrue_");
+                            pw.print(search.getUniqueId());
+                            pw.println(":");
+
+                            pw.print("    %newinstance_");
+                            pw.print(search.getUniqueId());
+                            pw.print(" = call i32 @");
+                            pw.print(LLVMWriterUtils.toMethodName(search.getClassName(), "$newInstance", m.getSignature()));
+                            pw.println("()");
+
+                            pw.print("    ret i32 %newinstance_");
+                            pw.println(search.getUniqueId());
+
+                            pw.print("checkfalse_");
+                            pw.print(search.getUniqueId());
+                            pw.println(":");
+                        });
+                    }
+                });
+
+                pw.println("    call void @llvm.trap()");
+                pw.println("    unreachable");
+                pw.println("}");
+                pw.println();
 
                 // We create the string pool now
                 for (int i=0;i<stringPool.size();i++) {
