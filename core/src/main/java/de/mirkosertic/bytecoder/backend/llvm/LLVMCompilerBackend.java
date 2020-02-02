@@ -216,6 +216,26 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     });
                 });
 
+                // Some utility function
+                pw.println("define internal i32 @instanceof(i32 %object, i32 %typeid) alwaysinline  {");
+                pw.println("entry:");
+                pw.println("    %nulltest = icmp eq i32 %object, 0");
+                pw.println("    br i1 %nulltest, label %isnull, label %notnull");
+                pw.println("notnull:");
+
+                pw.println("    %ptr = add i32 %object, 4");
+                pw.println("    %vtable = inttoptr i32 %ptr to i32(i32,i32)*");
+                pw.print("    %resolved = call i32(i32,i32) %vtable(i32 %object, i32 ");
+                pw.print(LLVMWriter.GENERATED_INSTANCEOF_METHOD_ID);
+                pw.println(")");
+                pw.println("    %resolved_ptr = inttoptr i32 %resolved to i32(i32,i32)*");
+                pw.println("    %result = call i32 %resolved_ptr(i32 %object, i32 %typeid)");
+                pw.println("    ret i32 %result");
+                pw.println("isnull:");
+                pw.println("    ret i32 0");
+                pw.println("}");
+                pw.println();
+
                 // Some utility functions for runtime class management
                 pw.println("define internal i32 @runtimeClass__resolvevtableindex(i32 %thisRef,i32 %methodId) {");
                 pw.println("entry:");

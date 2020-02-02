@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.backend.llvm;
 import de.mirkosertic.bytecoder.backend.NativeMemoryLayouter;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
@@ -1017,8 +1018,12 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final InstanceOfExpression e) {
-        //TODO: Implement this
-        target.print("instanceof");
+        target.print("call i32 @instanceof(i32 ");
+        write(e.incomingDataFlows().get(0), true);
+        target.print(",i32 ");
+        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(e.getType().getConstant()));
+        target.print(theLinkedClass.getUniqueId());
+        target.print(")");
     }
 
     private void write(final NewInstanceFromDefaultConstructorExpression e) {
