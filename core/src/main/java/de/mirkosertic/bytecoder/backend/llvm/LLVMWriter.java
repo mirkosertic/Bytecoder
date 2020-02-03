@@ -322,7 +322,7 @@ public class LLVMWriter implements AutoCloseable {
         target.println("()");
         target.print("    %");
         target.print(toTempSymbol(e, "vtable"));
-        target.print(" = ptrtoint i32* @");
+        target.print(" = ptrtoint i32(i32,i32)* @");
         target.print(theClassName);
         target.print(VTABLEFUNCTIONSUFFIX);
         target.println(" to i32");
