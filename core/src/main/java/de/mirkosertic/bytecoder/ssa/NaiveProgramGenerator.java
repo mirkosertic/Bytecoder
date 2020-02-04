@@ -1121,7 +1121,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 }
 
                 aTargetBlock.getExpressions().add(new TableSwitchExpression(aProgram, theInstruction.getOpcodeAddress(), theValue, theINS.getLowValue(), theINS.getHighValue(),
-                        theDefault, theOffsets));
+                        theDefault, theINS.getDefaultJumpTarget(), theOffsets));
             } else if (theInstruction instanceof BytecodeInstructionLOOKUPSWITCH) {
                 final BytecodeInstructionLOOKUPSWITCH theINS = (BytecodeInstructionLOOKUPSWITCH) theInstruction;
                 final Value theValue = aHelper.pop();

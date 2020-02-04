@@ -268,6 +268,20 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
+                pw.println("define internal i1 @exceedsrange(i32 %v, i32 %min, i32 %max) alwaysinline  {");
+                pw.println("entry:");
+                pw.println("    %test = icmp slt i32 %v, %min");
+                pw.println("    br i1 %test, label %exceed, label %continue");
+                pw.println("continue:");
+                pw.println("    %test2 = icmp sgt i32 %v, %max");
+                pw.println("    br i1 %test2, label %exceed, label %ok");
+                pw.println("ok:");
+                pw.println("    ret i1 false");
+                pw.println("exceed:");
+                pw.println("    ret i1 true");
+                pw.println("}");
+                pw.println();
+
                 // Some utility functions for runtime class management
                 pw.println("define internal i32 @runtimeClass__resolvevtableindex(i32 %thisRef,i32 %methodId) {");
                 pw.println("entry:");

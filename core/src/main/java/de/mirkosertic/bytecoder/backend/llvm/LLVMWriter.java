@@ -593,8 +593,54 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final TableSwitchExpression e) {
-        //TODO: Implement this
         target.println("tableswitch");
+        target.print("    %");
+        target.print(toTempSymbol(e, "value"));
+        target.print(" = i32 ");
+        write(e.incomingDataFlows().get(0), true);
+        target.println();
+
+        target.print("    %");
+        target.print(toTempSymbol(e, "cond"));
+        target.print(" = call i1 @exceedsrange(%");
+        target.print(toTempSymbol(e, "value"));
+        target.print(", i32 ");
+        target.print(e.getLowValue());
+        target.print(", i32 ");
+        target.print(e.getHighValue());
+        target.println(")");
+
+        target.print("    br i1 %");
+        target.print(toTempSymbol(e, "cond"));
+        target.print(" label %block_");
+        target.println(e.getDefaultJumpTarget().getAddress());
+
+        target.print("    %");
+        target.print(toTempSymbol(e, "sub"));
+        target.print(" = sub i32 %");
+        target.print(toTempSymbol(e, "value"));
+        target.print(", i32 ");
+        target.println(e.getLowValue());
+
+        target.print("    switch i32 %");
+        target.print(toTempSymbol(e, "sub"));
+        target.println(" [");
+        for (final Map.Entry<Long, ExpressionList> theEntry : e.getOffsets().entrySet()) {
+            target.print("       i32 ");
+            target.print(theEntry.getKey());
+            target.print(",");
+            for (final Expression ex : theEntry.getValue().toList()) {
+                if (ex instanceof GotoExpression) {
+                    final GotoExpression g = (GotoExpression) ex;
+                    target.print(" label %block_");
+                    target.println(g.jumpTarget().getAddress());
+                }
+            }
+        }
+        target.println("    ]");
+
+        target.println("    call void @llvm.trap()");
+        target.println("    unreachable");
     }
 
     private void write(final ArrayStoreExpression e) {
@@ -1022,7 +1068,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final FloorExpression e) {
-        //TODO: Implement this
+        //TODO: Implement this fptosi
         target.print("floor");
     }
 

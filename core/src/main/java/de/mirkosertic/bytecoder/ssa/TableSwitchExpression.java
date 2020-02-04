@@ -27,14 +27,16 @@ public class TableSwitchExpression extends Expression implements ExpressionListC
     private final long lowValue;
     private final long highValue;
     private final ExpressionList defaultExpressions;
+    private final BytecodeOpcodeAddress defaultJumpTarget;
     private final Map<Long, ExpressionList> offsets;
 
     public TableSwitchExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value aValue, final long aLowValue, final long aHighValue,
-            final ExpressionList aDefaultPath, final Map<Long, ExpressionList> aPathPerOffset) {
+            final ExpressionList aDefaultPath, final BytecodeOpcodeAddress aDefaultJumpTarget, final Map<Long, ExpressionList> aPathPerOffset) {
         super(aProgram, aAddress);
         lowValue = aLowValue;
         highValue = aHighValue;
         defaultExpressions = aDefaultPath;
+        defaultJumpTarget = aDefaultJumpTarget;
         offsets = aPathPerOffset;
         receivesDataFrom(aValue);
     }
@@ -63,6 +65,10 @@ public class TableSwitchExpression extends Expression implements ExpressionListC
         return theResult;
     }
 
+    public BytecodeOpcodeAddress getDefaultJumpTarget() {
+        return defaultJumpTarget;
+    }
+
     @Override
     public Expression deepCopy() {
         final Map<Long, ExpressionList> theHandler = new HashMap<>();
@@ -70,6 +76,6 @@ public class TableSwitchExpression extends Expression implements ExpressionListC
             theHandler.put(theEntry.getKey(), theEntry.getValue().deepCopy());
         }
         return new TableSwitchExpression(getProgram(), getAddress(), incomingDataFlows().get(0),
-                lowValue, highValue, defaultExpressions.deepCopy(), theHandler);
+                lowValue, highValue, defaultExpressions.deepCopy(), defaultJumpTarget, theHandler);
     }
 }
