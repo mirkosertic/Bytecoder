@@ -572,8 +572,24 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final LookupSwitchExpression e) {
-        //TODO: Implement this
-        target.println("lookupswitch");
+        target.print("    switch i32 ");
+        write(e.incomingDataFlows().get(0), true);
+        target.print(", label %block_");
+        target.print(e.getDefaultJumpTarget().getAddress());
+        target.println(" [");
+        for (final Map.Entry<Long, ExpressionList> theEntry : e.getPairs().entrySet()) {
+            target.print("       i32 ");
+            target.print(theEntry.getKey());
+            target.print(",");
+            for (final Expression ex : theEntry.getValue().toList()) {
+                if (ex instanceof GotoExpression) {
+                    final GotoExpression g = (GotoExpression) ex;
+                    target.print(" label %block_");
+                    target.println(g.jumpTarget().getAddress());
+                }
+            }
+        }
+        target.println("    ]");
     }
 
     private void write(final TableSwitchExpression e) {

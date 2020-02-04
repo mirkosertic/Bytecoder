@@ -1136,7 +1136,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     thePairs.put(thePair.getMatch(), thePairExpressions);
                 }
 
-                aTargetBlock.getExpressions().add(new LookupSwitchExpression(aProgram, theInstruction.getOpcodeAddress(), theValue, theDefault, thePairs));
+                aTargetBlock.getExpressions().add(new LookupSwitchExpression(aProgram, theInstruction.getOpcodeAddress(), theValue, theDefault, theINS.getDefaultJumpTarget(), thePairs));
             } else if (theInstruction instanceof BytecodeInstructionINVOKEDYNAMIC) {
                 final BytecodeInstructionINVOKEDYNAMIC theINS = (BytecodeInstructionINVOKEDYNAMIC) theInstruction;
 
