@@ -329,7 +329,6 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void tempify(final ArrayEntryExpression e) {
-
         target.print("    %");
         target.print(toTempSymbol(e, "index"));
         target.print(" = mul i32 4,");
@@ -354,7 +353,22 @@ public class LLVMWriter implements AutoCloseable {
         target.print(" = inttoptr i32 %");
         target.print(toTempSymbol(e, "ptr"));
         target.println(" to i32*");
+    }
 
+    private void tempify(final NewObjectExpression e) {
+        final String theClassName = LLVMWriterUtils.toClassName(BytecodeObjectTypeRef.fromUtf8Constant(e.getType().getConstant()));
+        target.print("    %");
+        target.print(toTempSymbol(e, "classinit"));
+        target.print(" = call i32 @");
+        target.print(theClassName);
+        target.print(CLASSINITSUFFIX);
+        target.println("()");
+        target.print("    %");
+        target.print(toTempSymbol(e, "vtable"));
+        target.print(" = ptrtoint i32(i32,i32)* @");
+        target.print(theClassName);
+        target.print(VTABLEFUNCTIONSUFFIX);
+        target.println(" to i32");
     }
 
     private void tempify(final Expression e) {
@@ -388,6 +402,10 @@ public class LLVMWriter implements AutoCloseable {
 
                     valueToSymbolMaping.put(v, theTempSymbol);
                 }
+
+            } else if (v instanceof NewObjectExpression) {
+
+                tempify((NewObjectExpression) v);
 
             } else if (v instanceof NewArrayExpression) {
 
@@ -555,12 +573,12 @@ public class LLVMWriter implements AutoCloseable {
 
     private void write(final LookupSwitchExpression e) {
         //TODO: Implement this
-        target.println("tableweitch");
+        target.println("lookupswitch");
     }
 
     private void write(final TableSwitchExpression e) {
         //TODO: Implement this
-        target.println("tableweitch");
+        target.println("tableswitch");
     }
 
     private void write(final ArrayStoreExpression e) {
@@ -964,8 +982,12 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final IsNaNExpression e) {
-        //TODO: Implement this
-        target.print("isnan");
+        final Value theValue = e.incomingDataFlows().get(0);
+        target.print("call i32 @isnan(");
+        target.print(LLVMWriterUtils.toType(theValue.resolveType()));
+        target.print(" ");
+        write(theValue, true);
+        target.print(")");
     }
 
     private void write(final TypeOfExpression e) {
@@ -1008,13 +1030,35 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final CompareExpression e) {
-        //TODO: Implement this
-        target.print("compare");
+        final Value theValue1 = e.incomingDataFlows().get(0);
+        final Value theValue2 = e.incomingDataFlows().get(1);
+        target.print("call i32 @compare(");
+        target.print(LLVMWriterUtils.toType(theValue1.resolveType()));
+        target.print(" ");
+        write(theValue1, true);
+        target.print(",");
+        target.print(LLVMWriterUtils.toType(theValue2.resolveType()));
+        target.print(" ");
+        write(theValue2, true);
+        target.print(")");
     }
 
     private void write(final NewObjectExpression e) {
-        //TODO: Implement this
-        target.print("newobject");
+        final String theMethodName = LLVMWriterUtils.toMethodName(
+                BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
+                "newObject",
+                new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+
+        target.print("call i32 @");
+        target.print(theMethodName);
+        target.print("(i32 0,i32 ");
+        final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(e.getType().getConstant()));
+        target.print(theLayout.instanceSize());
+        target.print(",i32 %");
+        target.print(toTempSymbol(e, "classinit"));
+        target.print(",i32 %");
+        target.print(toTempSymbol(e, "vtable"));
+        target.print(")");
     }
 
     private void write(final InstanceOfExpression e) {
