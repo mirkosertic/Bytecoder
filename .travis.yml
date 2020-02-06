@@ -34,6 +34,7 @@ install:
   - sudo chmod +x hugo
   - git clone https://github.com/matcornic/hugo-theme-learn.git ./manual/themes/hugo-theme-learn
 
+
 script:
   - mvn -B clean package -P jvmtestsonly
 
