@@ -24,7 +24,7 @@ before_install:
   - sudo chmod +x .travis/deploy.sh
   - sudo wget https://apt.llvm.org/llvm-snapshot.gpg.key
   - sudo apt-key add llvm-snapshot.gpg.key
-  - sudo add-apt-repository -y "deb http://apt.llvm.org/xenial/   llvm-toolchain-xenial$LLVM_VERSION_STRING  main"
+  - sudo add-apt-repository -y "deb http://apt.llvm.org/xenial/   llvm-toolchain-xenial-10  main"
   - sudo apt-get -q update
   - sudo apt-get install -y clang-10 lldb-10 lld-10 clangd-10
 
