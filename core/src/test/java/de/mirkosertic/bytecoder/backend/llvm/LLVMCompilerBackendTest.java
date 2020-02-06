@@ -19,6 +19,7 @@ import de.mirkosertic.bytecoder.allocator.Allocator;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.backend.CompileTarget;
+import de.mirkosertic.bytecoder.core.AbstractClassLinkTest;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
@@ -28,13 +29,17 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
 
 public class LLVMCompilerBackendTest {
 
     private static class Superclass {
          int member;
+    }
+
+    private enum Enum {
+        A
     }
 
     private static class Subclass extends Superclass {
@@ -79,21 +84,30 @@ public class LLVMCompilerBackendTest {
         final int z = y.member;
         final int x = intConst(20);
         y.callVirtual();
+        final boolean k = y instanceof Subclass;
+        final Class k1 = y.getClass();
+        final AbstractClassLinkTest.SubClass[] ar = new AbstractClassLinkTest.SubClass[10];
+        final int l = ar.length;
+        final Enum ii = Enum.A;
         return x;
     }
 
     @Test
     public void testGenerate() throws IOException {
         final CompileTarget theTarget = new CompileTarget(getClass().getClassLoader(), CompileTarget.BackendType.wasm_llvm);
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0], new String[0]);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "bytecoder", 100, 100, false, true, Allocator.passthru, new String[0], new String[0]);
         final CompileResult theResult = theTarget.compile(
                 theOptions,
                 LLVMCompilerBackendTest.class,
                 "doSomething",
                 new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0])
         );
-        try (final FileWriter fw = new FileWriter(new File("D:\\IdeaProjects\\Bytecoder\\core\\src\\main\\java\\de\\mirkosertic\\bytecoder\\backend\\llvm\\test.ll")))  {
-            fw.write(theResult.getContent()[0].asString());
+        final File targetDir = new File("D:\\IdeaProjects\\Bytecoder\\core\\src\\main\\java\\de\\mirkosertic\\bytecoder\\backend\\llvm");
+        for (final CompileResult.Content theContent : theResult.getContent()) {
+            final File targetFile = new File(targetDir, theContent.getFileName());
+            try (final FileOutputStream fos = new FileOutputStream(targetFile))  {
+                theContent.writeTo(fos);
+            }
         }
         Assert.assertEquals(5, theResult.getContent().length);
     }

@@ -312,6 +312,25 @@ public class LLVMWriter implements AutoCloseable {
         target.println("*");
     }
 
+    private void tempify(final ArrayLengthExpression e) {
+        final Value value = e.incomingDataFlows().get(0);
+
+        // Compute offset to vtable resolver function
+        target.print("    %");
+        target.print(toTempSymbol(e, "offset"));
+        target.print(" = ");
+        target.print("add i32 ");
+        write(value, true);
+        target.print(", 16");
+        target.println();
+
+        target.print("    %");
+        target.print(toTempSymbol(e, "ptr"));
+        target.print(" = inttoptr i32 %");
+        target.print(toTempSymbol(e, "offset"));
+        target.println(" to i32*");
+    }
+
     private void tempify(final NewArrayExpression e) {
         final String theClassName = LLVMWriterUtils.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
         target.print("    %");
@@ -371,6 +390,18 @@ public class LLVMWriter implements AutoCloseable {
         target.println(" to i32");
     }
 
+    private void tempify(final TypeOfExpression e) {
+        final Value value = e.incomingDataFlows().get(0);
+
+        // Compute offset to vtable resolver function
+        target.print("    %");
+        target.print(toTempSymbol(e, "ptr"));
+        target.print(" = ");
+        target.print("inttoptr i32 ");
+        write(value, true);
+        target.println(" to i32*");
+    }
+
     private void tempify(final Expression e) {
         if (e instanceof InvokeStaticMethodExpression) {
             tempify((InvokeStaticMethodExpression) e);
@@ -402,6 +433,14 @@ public class LLVMWriter implements AutoCloseable {
 
                     valueToSymbolMaping.put(v, theTempSymbol);
                 }
+
+            } else if (v instanceof ArrayLengthExpression) {
+
+                tempify((ArrayLengthExpression) v);
+
+            } else if (v instanceof TypeOfExpression) {
+
+                tempify((TypeOfExpression) v);
 
             } else if (v instanceof NewObjectExpression) {
 
@@ -548,6 +587,7 @@ public class LLVMWriter implements AutoCloseable {
             } else if (e instanceof InvokeVirtualMethodExpression) {
                 target.print("    ");
                 write((InvokeVirtualMethodExpression) e);
+                target.println();
             } else if (e instanceof PutStaticExpression) {
                 write((PutStaticExpression) e);
             } else if (e instanceof ThrowExpression) {
@@ -567,8 +607,33 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final SetEnumConstantsExpression e) {
-        //TODO: Implement this
-        target.println("setenumconstants");
+        final Value classptr = e.incomingDataFlows().get(0);
+        final Value value = e.incomingDataFlows().get(1);
+
+        target.print("    %");
+        target.print(toTempSymbol(e, "runtimeclass"));
+        target.print(" = ");
+        write(classptr, true);
+        target.println();
+
+        target.print("    %");
+        target.print(toTempSymbol(e, "offset"));
+        target.print(" = ");
+        target.print("add i32 %");
+        target.print(toTempSymbol(e, "runtimeclass"));
+        target.print(", 12");
+        target.println();
+
+        target.print("    %");
+        target.print(toTempSymbol(e, "ptr"));
+        target.print(" = inttoptr i32 %");
+        target.print(toTempSymbol(e, "offset"));
+        target.println(" to i32*");
+
+        target.print("    store i32 ");
+        write(value, true);
+        target.print(", i32* %");
+        target.println(toTempSymbol(e, "ptr"));
     }
 
     private void write(final LookupSwitchExpression e) {
@@ -750,7 +815,7 @@ public class LLVMWriter implements AutoCloseable {
             target.print(" ");
             write(e.incomingDataFlows().get(i + 1), true);
         }
-        target.println(")");
+        target.print(")");
     }
 
     private void write(final DirectInvokeMethodExpression e) {
@@ -1053,8 +1118,8 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final TypeOfExpression e) {
-        //TODO: Implement this
-        target.print("typeof");
+        target.print("load i32, i32* %");
+        target.print(toTempSymbol(e, "ptr"));
     }
 
     private void write(final MinExpression e) {
@@ -1068,8 +1133,9 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final FloorExpression e) {
-        //TODO: Implement this fptosi
-        target.print("floor");
+        target.print("fptosi float ");
+        write(e.incomingDataFlows().get(0), true);
+        target.print(" to i32");
     }
 
     private void write(final NegatedExpression e) {
@@ -1171,8 +1237,9 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final ArrayLengthExpression e) {
-        //TODO: Implement this
-        target.print("add i32 0,0");
+        target.print("load i32 ");
+        target.print(",i32* %");
+        target.print(toTempSymbol(e, "ptr"));
     }
 
     private void write(final ClassReferenceValue e) {

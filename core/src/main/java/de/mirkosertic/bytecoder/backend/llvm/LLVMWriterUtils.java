@@ -16,7 +16,9 @@
 package de.mirkosertic.bytecoder.backend.llvm;
 
 import de.mirkosertic.bytecoder.classlib.Array;
+import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
@@ -27,13 +29,13 @@ import de.mirkosertic.bytecoder.ssa.TypeRef;
 public class LLVMWriterUtils {
 
     public static String toMethodName(final String aMethodName, final BytecodeMethodSignature aSignature) {
-        String theName = typeRefToString(aSignature.getReturnType());
-        theName += aMethodName.replace("<", "$").replace(">", "$");
+        final StringBuilder theName = new StringBuilder(typeRefToString(aSignature.getReturnType()));
+        theName.append(aMethodName.replace("<", "$").replace(">", "$"));
 
         for (final BytecodeTypeRef theTypeRef : aSignature.getArguments()) {
-            theName += typeRefToString(theTypeRef);
+            theName.append(typeRefToString(theTypeRef));
         }
-        return theName;
+        return theName.toString();
     }
 
     public static String toMethodName(final BytecodeObjectTypeRef aClassName, final String aMethodName, final BytecodeMethodSignature aSignature) {
@@ -108,5 +110,15 @@ public class LLVMWriterUtils {
         }
         theResult.append(")");
         return theResult.toString();
+    }
+
+    public static boolean filteredForTest(final BytecodeLinkedClass aClass) {
+        if (!aClass.getClassName().name().contains("LLVMCompilerBackendTest")
+                && !aClass.getClassName().name().equals(MemoryManager.class.getName())
+                && !aClass.getClassName().name().equals(Array.class.getName())
+                && !aClass.getClassName().name().equals(Enum.class.getName())) {
+            return false;
+        }
+        return true;
     }
 }

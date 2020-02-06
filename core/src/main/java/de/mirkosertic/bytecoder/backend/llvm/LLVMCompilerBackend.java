@@ -311,6 +311,10 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                     final BytecodeLinkedClass theLinkedClass = aEntry.targetNode();
 
+                    if (!LLVMWriterUtils.filteredForTest(theLinkedClass)) {
+                        return;
+                    }
+
                     if (Objects.equals(aEntry.targetNode().getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                         return;
                     }
@@ -348,11 +352,13 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         // Call superclass init
                         if (!theLinkedClass.getClassName().name().equals(Object.class.getName())) {
                             final BytecodeLinkedClass theSuper = theLinkedClass.getSuperClass();
-                            final String theSuperWASMName = LLVMWriterUtils.toClassName(theSuper.getClassName());
-                            pw.print("    call i32() @");
-                            pw.print(theSuperWASMName);
-                            pw.print(LLVMWriter.CLASSINITSUFFIX);
-                            pw.println("()");
+                            if (LLVMWriterUtils.filteredForTest(theSuper)) {
+                                final String theSuperWASMName = LLVMWriterUtils.toClassName(theSuper.getClassName());
+                                pw.print("    call i32() @");
+                                pw.print(theSuperWASMName);
+                                pw.print(LLVMWriter.CLASSINITSUFFIX);
+                                pw.println("()");
+                            }
                         }
 
                         // Call class initializer
@@ -429,10 +435,12 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
                                     .identifierFor(theMethod);
 
-                            pw.print("        i32 ");
-                            pw.print(theMethodIdentifier.getIdentifier());
-                            pw.print(",label %v_table_");
-                            pw.println(theMethodIdentifier.getIdentifier());
+                            if (LLVMWriterUtils.filteredForTest(entry.getProvidingClass())) {
+                                pw.print("        i32 ");
+                                pw.print(theMethodIdentifier.getIdentifier());
+                                pw.print(",label %v_table_");
+                                pw.println(theMethodIdentifier.getIdentifier());
+                            }
                         }
 
                         pw.println("    ]");
@@ -445,19 +453,21 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
                                     .identifierFor(theMethod);
 
-                            pw.print("v_table_");
-                            pw.print(theMethodIdentifier.getIdentifier());
-                            pw.println(":");
-                            pw.print("    %ptr_");
-                            pw.print(theMethodIdentifier.getIdentifier());
-                            pw.print(" = ptrtoint ");
-                            pw.print(LLVMWriterUtils.toSignature(theMethod.getSignature()));
-                            pw.print("* @");
-                            pw.print(LLVMWriterUtils.toMethodName(methodEntry.getProvidingClass().getClassName(), theMethod.getName(), theMethod.getSignature()));
-                            pw.println(" to i32");
-                            pw.print("    ret i32 %ptr_");
-                            pw.print(theMethodIdentifier.getIdentifier());
-                            pw.println();
+                            if (LLVMWriterUtils.filteredForTest(methodEntry.getProvidingClass())) {
+                                pw.print("v_table_");
+                                pw.print(theMethodIdentifier.getIdentifier());
+                                pw.println(":");
+                                pw.print("    %ptr_");
+                                pw.print(theMethodIdentifier.getIdentifier());
+                                pw.print(" = ptrtoint ");
+                                pw.print(LLVMWriterUtils.toSignature(theMethod.getSignature()));
+                                pw.print("* @");
+                                pw.print(LLVMWriterUtils.toMethodName(methodEntry.getProvidingClass().getClassName(), theMethod.getName(), theMethod.getSignature()));
+                                pw.println(" to i32");
+                                pw.print("    ret i32 %ptr_");
+                                pw.print(theMethodIdentifier.getIdentifier());
+                                pw.println();
+                            }
                         }
 
                         pw.println("instanceof:");
@@ -746,6 +756,12 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("entry:");
 
                 aLinkerContext.linkedClasses().map(Edge::targetNode).forEach(search -> {
+
+                    // Hack for unit-testing
+                    if (!LLVMWriterUtils.filteredForTest(search)) {
+                        return;
+                    }
+
                     if (!search.getBytecodeClass().getAccessFlags().isAbstract() && !search.getBytecodeClass().getAccessFlags()
                             .isInterface() && !search.emulatedByRuntime()) {
 
@@ -764,7 +780,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
                             pw.print("    %runtimeclass_");
                             pw.print(search.getUniqueId());
-                            pw.print("_check = icmp i32 %runtimeclass, %runtimeclass_");
+                            pw.print("_check = icmp eq i32 %runtimeclass, %runtimeclass_");
                             pw.println(search.getUniqueId());
                             pw.print("    br i1 %runtimeclass_");
                             pw.print(search.getUniqueId());
@@ -802,8 +818,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.print("@");
                     pw.print("strpool_");
                     pw.print(i);
-                    pw.println(" private global i32 0");
+                    pw.println(" = private global i32 0");
                 }
+                pw.println();
 
                 // Generate bootstrap code
                 attributeCounter.incrementAndGet();
@@ -817,6 +834,10 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                 aLinkerContext.linkedClasses().forEach(aEntry -> {
                     final BytecodeLinkedClass theLinkedClass = aEntry.targetNode();
+
+                    if (!LLVMWriterUtils.filteredForTest(theLinkedClass)) {
+                        return;
+                    }
 
                     if (Objects.equals(aEntry.targetNode().getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                         return;
@@ -862,7 +883,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
             try (final Reader reader = new InputStreamReader(new FileInputStream(theLLFile))) {
                 final String theLLContent = IOUtils.toString(reader);
-                theCompileResult.add(new CompileResult.StringContent("bytecoder.ll", theLLContent));
+                theCompileResult.add(new CompileResult.StringContent(aOptions.getFilenamePrefix() + ".ll", theLLContent));
             }
 
             // Compile LLVM Assembly File to object file
@@ -893,7 +914,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 }
             } else {
                 try (final FileInputStream inputStream = new FileInputStream(new File(theLLFile.getParent(), theObjectFileName))) {
-                    theCompileResult.add(new CompileResult.BinaryContent(theObjectFileName,
+                    theCompileResult.add(new CompileResult.BinaryContent(aOptions.getFilenamePrefix() + ".o",
                             IOUtils.toByteArray(inputStream)));
                 }
             }
@@ -935,7 +956,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             } else {
                 try (final FileInputStream inputStream = new FileInputStream(
                         new File(theLLFile.getParent(), theWASMFileName))) {
-                    theCompileResult.add(new CompileResult.BinaryContent(theWASMFileName,
+                    theCompileResult.add(new CompileResult.BinaryContent(aOptions.getFilenamePrefix() + ".wasm",
                             IOUtils.toByteArray(inputStream)));
                 }
             }
