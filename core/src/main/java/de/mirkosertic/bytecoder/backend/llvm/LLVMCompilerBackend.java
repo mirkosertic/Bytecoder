@@ -896,6 +896,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             final String theObjectFileName = theLLFile.getName() + ".o";
             theLLCommand.add("llc-10");
             theLLCommand.add("-O3");
+            theLLCommand.add("--stats");
+            theLLCommand.add("--time-passes");
             theLLCommand.add("-filetype=obj");
             theLLCommand.add(theLLFile.getName());
             theLLCommand.add("-o");
@@ -913,6 +915,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     }
                 }
             } else {
+
                 try (final FileInputStream inputStream = new FileInputStream(new File(theLLFile.getParent(), theObjectFileName))) {
                     theCompileResult.add(new CompileResult.BinaryContent(aOptions.getFilenamePrefix() + ".o",
                             IOUtils.toByteArray(inputStream)));
