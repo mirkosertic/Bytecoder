@@ -102,7 +102,12 @@ public class LLVMCompilerBackendTest {
                 "doSomething",
                 new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0])
         );
-        final File targetDir = new File("D:\\IdeaProjects\\Bytecoder\\core\\src\\main\\java\\de\\mirkosertic\\bytecoder\\backend\\llvm");
+        final File targetDir;
+        if (File.separator.equals("/")) {
+            targetDir = new File(".");
+        } else {
+            targetDir = new File("D:\\IdeaProjects\\Bytecoder\\core\\src\\main\\java\\de\\mirkosertic\\bytecoder\\backend\\llvm");
+        }
         for (final CompileResult.Content theContent : theResult.getContent()) {
             final File targetFile = new File(targetDir, theContent.getFileName());
             try (final FileOutputStream fos = new FileOutputStream(targetFile))  {
