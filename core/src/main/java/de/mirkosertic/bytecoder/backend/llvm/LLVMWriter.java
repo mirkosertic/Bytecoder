@@ -545,6 +545,14 @@ public class LLVMWriter implements AutoCloseable {
 
                 // Nothing to be done here
 
+            } else if (v instanceof NewInstanceFromDefaultConstructorExpression) {
+
+                // Nothing to be done here
+
+            } else if (v instanceof NewObjectAndConstructExpression) {
+
+                // Nothing to be done here
+
             } else if (v instanceof Expression) {
 
                 target.print("    %");

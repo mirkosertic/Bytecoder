@@ -984,7 +984,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                                             if (theAssignment.getVariable().getName().equals(theTarget.getName()) &&
                                                     theAssignment.incomingDataFlows().get(0) instanceof NewObjectExpression) {
                                                 // We have a candidate!
-                                                aTargetBlock.getExpressions().remove(theAssignment);
+                                                theNode.getExpressions().remove(theAssignment);
                                             }
                                         }
                                     }
