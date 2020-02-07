@@ -19,7 +19,6 @@ import java.lang.invoke.CallSite;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -973,11 +972,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                             final List<Value> theInconingEdges = theTarget.incomingDataFlows();
                             if (theInconingEdges.size() == 1 && theInconingEdges.get(0) instanceof NewObjectExpression) {
 
-                                final Set<RegionNode> thePath = new HashSet<>();
-                                thePath.add(aTargetBlock);
-                                thePath.addAll(aTargetBlock.getPredecessorsIgnoringBackEdges());
-
-                                for (final RegionNode theNode : thePath) {
+                                for (final RegionNode theNode : aProgram.getControlFlowGraph().dominators().getPreOrder()) {
                                     for (final Expression theExpression : theNode.getExpressions().toList()) {
                                         if (theExpression instanceof VariableAssignmentExpression) {
                                             final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) theExpression;

@@ -956,7 +956,7 @@ public class LLVMWriter implements AutoCloseable {
             switch (value.resolveType().resolve()) {
                 case FLOAT:
                 case DOUBLE:
-                    target.print("add f32 %");
+                    target.print("fadd float %");
                     target.print(((Variable) value).getName());
                     target.print("_, 0.0");
                     break;
@@ -968,10 +968,10 @@ public class LLVMWriter implements AutoCloseable {
             }
         } else {
             if (value instanceof DoubleValue) {
-                target.print("add f32 0.0,");
+                target.print("fadd float 0.0,");
             }
             if (value instanceof FloatValue) {
-                target.print("add f32 0.0,");
+                target.print("fadd float 0.0,");
             }
             if (value instanceof IntegerValue) {
                 target.print("add i32 0,");
@@ -989,7 +989,7 @@ public class LLVMWriter implements AutoCloseable {
                 switch (value.resolveType().resolve()) {
                     case FLOAT:
                     case DOUBLE:
-                        target.print("add f32 0.0,");
+                        target.print("fadd float 0.0,");
                         break;
                     default:
                         target.print("add i32 0,");
