@@ -541,6 +541,10 @@ public class LLVMWriter implements AutoCloseable {
 
                 tempify((GetStaticExpression) v);
 
+            } else if (v instanceof DirectInvokeMethodExpression) {
+
+                // Nothing to be done here
+
             } else if (v instanceof Expression) {
 
                 target.print("    %");
