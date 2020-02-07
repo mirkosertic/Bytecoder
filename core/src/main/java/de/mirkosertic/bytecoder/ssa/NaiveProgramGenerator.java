@@ -969,8 +969,8 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     // Check if we are constructing a new object here
                     guard: {
                         if ("<init>".equals(theMethodName)) {
-                            final List<Value> theInconingEdges = theTarget.incomingDataFlows();
-                            if (theInconingEdges.size() == 1 && theInconingEdges.get(0) instanceof NewObjectExpression) {
+                            final List<Value> theIncomingValues = theTarget.incomingDataFlows();
+                            if (theIncomingValues.size() == 1 && theIncomingValues.get(0) instanceof NewObjectExpression) {
 
                                 for (final RegionNode theNode : aProgram.getControlFlowGraph().dominators().getPreOrder()) {
                                     for (final Expression theExpression : theNode.getExpressions().toList()) {
