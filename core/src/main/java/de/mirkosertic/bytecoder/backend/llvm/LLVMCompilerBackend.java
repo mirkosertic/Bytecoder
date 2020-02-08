@@ -264,7 +264,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i32 @compare(i32 %v1, i32 %v2) alwaysinline  {");
+                pw.println("define internal i32 @compare_i32(i32 %v1, i32 %v2) alwaysinline  {");
                 pw.println("entry:");
                 pw.println("    %test = icmp eq i32 %v1,%v2");
                 pw.println("    br i1 %test, label %iseq, label %isnoteq");
@@ -272,6 +272,22 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("    ret i32 0");
                 pw.println("isnoteq:");
                 pw.println("    %test2 = icmp sgt i32 %v1,%v2");
+                pw.println("    br i1 %test, label %isgreater, label %issmaller");
+                pw.println("isgreater:");
+                pw.println("    ret i32 1");
+                pw.println("issmaller:");
+                pw.println("    ret i32 -1");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal i32 @compare_f32(float %v1, float %v2) alwaysinline  {");
+                pw.println("entry:");
+                pw.println("    %test = fcmp oeq float %v1,%v2");
+                pw.println("    br i1 %test, label %iseq, label %isnoteq");
+                pw.println("iseq:");
+                pw.println("    ret i32 0");
+                pw.println("isnoteq:");
+                pw.println("    %test2 = fcmp ogt float %v1,%v2");
                 pw.println("    br i1 %test, label %isgreater, label %issmaller");
                 pw.println("isgreater:");
                 pw.println("    ret i32 1");

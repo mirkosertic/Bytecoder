@@ -559,6 +559,10 @@ public class LLVMWriter implements AutoCloseable {
 
                 // Nothing to be done here
 
+            } else if (v instanceof CompareExpression) {
+
+                // Nothing to be done here
+
             } else if (v instanceof NewInstanceFromDefaultConstructorExpression) {
 
                 // Nothing to be done here
@@ -1135,11 +1139,17 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final MaxExpression e) {
-        target.print("call @llvm.maximum.");
+        target.print("call ");
+        target.print(LLVMWriterUtils.toType(e.resolveType()));
+        target.print(" @llvm.maximum.");
         target.print(LLVMWriterUtils.toType(e.resolveType()));
         target.print("(");
+        target.print(LLVMWriterUtils.toType(e.incomingDataFlows().get(0).resolveType()));
+        target.print(" ");
         writeResolved(e.incomingDataFlows().get(0));
         target.print(",");
+        target.print(LLVMWriterUtils.toType(e.incomingDataFlows().get(1).resolveType()));
+        target.print(" ");
         writeResolved(e.incomingDataFlows().get(1));
         target.print(")");
     }
@@ -1188,11 +1198,17 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final MinExpression e) {
-        target.print("call @llvm.minimum.");
+        target.print("call ");
+        target.print(LLVMWriterUtils.toType(e.resolveType()));
+        target.print(" @llvm.minimum.");
         target.print(LLVMWriterUtils.toType(e.resolveType()));
         target.print("(");
+        target.print(LLVMWriterUtils.toType(e.incomingDataFlows().get(0).resolveType()));
+        target.print(" ");
         writeResolved(e.incomingDataFlows().get(0));
         target.print(",");
+        target.print(LLVMWriterUtils.toType(e.incomingDataFlows().get(1).resolveType()));
+        target.print(" ");
         writeResolved(e.incomingDataFlows().get(1));
         target.print(")");
     }
@@ -1225,7 +1241,22 @@ public class LLVMWriter implements AutoCloseable {
     private void write(final CompareExpression e) {
         final Value theValue1 = e.incomingDataFlows().get(0);
         final Value theValue2 = e.incomingDataFlows().get(1);
-        target.print("call i32 @compare(");
+
+        final TypeRef.Native theValue1Type = theValue1.resolveType().resolve();
+        final TypeRef.Native theValue2Type = theValue2.resolveType().resolve();
+        if (theValue1Type != theValue2Type) {
+            throw new IllegalStateException("Does not support mixed types : " + theValue1Type + " -> " + theValue2Type);
+        }
+
+        switch (theValue1Type) {
+            case FLOAT:
+            case DOUBLE:
+                target.print("call i32 @compare_f32(");
+                break;
+            default:
+                target.print("call i32 @compare_i32(");
+                break;
+        }
         target.print(LLVMWriterUtils.toType(theValue1.resolveType()));
         target.print(" ");
         writeResolved(theValue1);
@@ -1426,6 +1457,7 @@ public class LLVMWriter implements AutoCloseable {
                         target.write("sitofp i32 ");
                         writeResolved(theSource);
                         target.write(" to float");
+                        return;
                     }
                     case INT:
                     case SHORT:
@@ -1505,7 +1537,7 @@ public class LLVMWriter implements AutoCloseable {
                 target.print("ashr");
                 break;
             case BINARYUNSIGNEDSHIFTRIGHT:
-                target.print("shr");
+                target.print("lshr");
                 break;
             case BINARYOR:
                 target.print("or");
@@ -1517,8 +1549,8 @@ public class LLVMWriter implements AutoCloseable {
                 target.print("and");
                 break;
             case DIV:
-                target.print("sdiv");
-                break;
+                writeDivExpression(aValue);
+                return;
             default:
                 throw new IllegalStateException("Not implemented : " + aValue.getOperator());
         }
@@ -1532,6 +1564,23 @@ public class LLVMWriter implements AutoCloseable {
             }
             writeResolved(v.get(i));
         }
+    }
+
+    private void writeDivExpression(final BinaryExpression e) {
+        final Value left = e.incomingDataFlows().get(0);
+        final Value right = e.incomingDataFlows().get(0);
+        target.print("call float @div_");
+        target.print(LLVMWriterUtils.toType(left.resolveType()));
+        target.print(LLVMWriterUtils.toType(right.resolveType()));
+        target.print("(");
+        target.print(LLVMWriterUtils.toType(left.resolveType()));
+        target.print(" ");
+        writeResolved(left);
+        target.print(",");
+        target.print(LLVMWriterUtils.toType(right.resolveType()));
+        target.print(" ");
+        writeResolved(right);
+        target.print(")");
     }
 
     private void write(final IntegerValue aValue) {

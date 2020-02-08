@@ -673,7 +673,7 @@ public class WASMSSAASTWriter {
             return byteValue((ByteValue) aValue);
         }
         if (aValue instanceof IntegerValue) {
-            return tntegerValue((IntegerValue) aValue);
+            return integerValue((IntegerValue) aValue);
         }
         if (aValue instanceof DirectInvokeMethodExpression) {
             return directMethodInvokeValue((DirectInvokeMethodExpression) aValue);
@@ -1455,7 +1455,7 @@ public class WASMSSAASTWriter {
         return i32.c(aValue.getByteValue(), null);
     }
 
-    private I32Const tntegerValue(final IntegerValue aValue) {
+    private I32Const integerValue(final IntegerValue aValue) {
         return i32.c(aValue.getIntValue(), null);
     }
 
