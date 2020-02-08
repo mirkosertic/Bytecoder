@@ -100,6 +100,7 @@ import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -485,6 +486,15 @@ public class LLVMWriter implements AutoCloseable {
         target.println(" to i32*");
     }
 
+    private void tempify(final FloorExpression e) {
+        final Value value = e.incomingDataFlows().get(0);
+        target.print("    %");
+        target.print(toTempSymbol(value, "exp"));
+        target.print(" = ");
+        write(value, true);
+        target.println();
+    }
+
     private void tempify(final Expression e) {
         if (e instanceof InvokeStaticMethodExpression) {
             tempify((InvokeStaticMethodExpression) e);
@@ -541,6 +551,10 @@ public class LLVMWriter implements AutoCloseable {
 
                 tempify((GetStaticExpression) v);
 
+            } else if (v instanceof FloorExpression) {
+
+                tempify((FloorExpression) v);
+
             } else if (v instanceof DirectInvokeMethodExpression) {
 
                 // Nothing to be done here
@@ -567,6 +581,7 @@ public class LLVMWriter implements AutoCloseable {
 
     private void write(final ExpressionList list) {
         for (final Expression e : list.toList()) {
+            target.println(";; exp = " + e.getClass());
             tempify(e);
             if (e instanceof ReturnExpression) {
                 write((ReturnExpression) e);
@@ -948,6 +963,7 @@ public class LLVMWriter implements AutoCloseable {
 
     private void write(final VariableAssignmentExpression expression) {
         final Value value = expression.incomingDataFlows().get(0);
+        target.println(";; value = " + value.getClass());
         target.print("    ");
         target.print("%");
         target.print(expression.getVariable().getName());
@@ -1016,7 +1032,15 @@ public class LLVMWriter implements AutoCloseable {
             if (useDirectVarRef) {
                 target.print("%");
             } else {
-                target.print("add i32 0,%");
+                switch (v.resolveType().resolve()) {
+                    case FLOAT:
+                    case DOUBLE:
+                        target.print("fadd float 0,%");
+                        break;
+                    default:
+                        target.print("add i32 0,%");
+                        break;
+                }
             }
             target.print(v.getName());
             target.print("_");
@@ -1340,10 +1364,86 @@ public class LLVMWriter implements AutoCloseable {
         target.print("load i32, i32* @stacktop");
     }
 
-    private void write(final TypeConversionExpression e) {
-        target.print("add i32 0,");
-        writeResolved(e.incomingDataFlows().get(0));
+    private void writeSameAssignmentHack(final TypeRef theType, final Value aValue) {
+        switch (theType.resolve()) {
+            case FLOAT:
+            case DOUBLE:
+                target.print("fadd float 0.0,");
+                break;
+            default:
+                target.print("add i32 0,");
+                break;
+        }
+        writeResolved(aValue);
     }
+
+    private void write(final TypeConversionExpression e) {
+        final TypeRef theTargetType = e.resolveType();
+        final Value theSource = e.incomingDataFlows().get(0);
+        if (Objects.equals(theTargetType.resolve(), theSource.resolveType().resolve())) {
+            // Same type, nothing to be done here
+            writeSameAssignmentHack(theTargetType, theSource);
+            return;
+        }
+        switch (theSource.resolveType().resolve()) {
+            case DOUBLE:
+            case FLOAT: {
+                // Convert floating point to something else
+                switch (e.resolveType().resolve()) {
+                    case DOUBLE:
+                    case FLOAT: {
+                        // No conversion needed
+                        writeSameAssignmentHack(theTargetType, theSource);
+                        return;
+                    }
+                    case INT:
+                    case SHORT:
+                    case BYTE:
+                    case LONG:
+                    case CHAR: {
+                        // Convert f32 to i32
+                        // NaN == 0
+                        target.print("call i32 @toi32(");
+                        writeResolved(theSource);
+                        target.print(")");
+                        return;
+                    }
+                    default:
+                        throw new IllegalStateException("Coversion to " + e.resolveType() + " not supported!");
+                }
+            }
+            case INT:
+            case LONG:
+            case BYTE:
+            case SHORT:
+            case CHAR: {
+                // Convert integer type to something else
+                // Convert floating point to something else
+                switch (e.resolveType().resolve()) {
+                    case DOUBLE:
+                    case FLOAT: {
+                        // Convert i32 to f32
+                        target.write("sitofp i32 ");
+                        writeResolved(theSource);
+                        target.write(" to float");
+                    }
+                    case INT:
+                    case SHORT:
+                    case BYTE:
+                    case LONG:
+                    case CHAR: {
+                        // No conversion needed
+                        writeSameAssignmentHack(theTargetType, theSource);
+                        return;
+                    }
+                    default:
+                        throw new IllegalStateException("target type " + e.resolveType() + " not supported!");
+                }
+            }
+            default:
+                throw new IllegalStateException("Conversion to " + e.resolveType() + " not supported!");
+        }
+   }
 
     private void write(final ComputedMemoryLocationReadExpression e) {
         target.print("load i32, i32* %");
@@ -1417,7 +1517,7 @@ public class LLVMWriter implements AutoCloseable {
                 target.print("and");
                 break;
             case DIV:
-                target.print("div");
+                target.print("sdiv");
                 break;
             default:
                 throw new IllegalStateException("Not implemented : " + aValue.getOperator());
