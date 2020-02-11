@@ -58,8 +58,10 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -71,6 +73,16 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
     public LLVMCompilerBackend(final ProgramGeneratorFactory aProgramGeneratorFactory) {
         this.programGeneratorFactory = aProgramGeneratorFactory;
+    }
+
+    private static class CallSite {
+        private final Program program;
+        private final RegionNode bootstrapMethod;
+
+        private CallSite(final Program aProgram, final RegionNode aBootstrapMethod) {
+            this.program = aProgram;
+            this.bootstrapMethod = aBootstrapMethod;
+        }
     }
 
     @Override
@@ -96,7 +108,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
         try {
             final List<String> stringPool = new ArrayList<>();
-            final List<String> callsites = new ArrayList<>();
+            final Map<String, CallSite> callsites = new HashMap<>();
             final LLVMWriter.SymbolResolver theSymbolResolver = new LLVMWriter.SymbolResolver() {
                 @Override
                 public String globalFromStringPool(final String aValue) {
@@ -110,14 +122,12 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                 @Override
                 public String resolveCallsiteBootstrapFor(final BytecodeClass owningClass, final String callsiteId, final Program program, final RegionNode bootstrapMethod) {
-                    int i = callsiteId.indexOf(callsiteId);
-                    if (i >= 0) {
-
-                    } else {
-                        callsites.add(callsiteId);
-                        i = callsites.indexOf(callsiteId);
+                    CallSite callSite = callsites.get(callsiteId);
+                    if (callSite == null) {
+                        callSite = new CallSite(program, bootstrapMethod);
+                        callsites.put(callsiteId, callSite);
                     }
-                    return "__callsite" + i;
+                    return "resolvecallsite" + System.identityHashCode(callSite);
                 }
             };
 
@@ -140,6 +150,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("declare void @llvm.trap() cold noreturn nounwind");
                 pw.println("declare float @llvm.minimum.f32(float %Val0, float %Val1)");
                 pw.println("declare float @llvm.maximum.f32(float %Val0, float %Val1)");
+                pw.println("declare i32 @llvm.minimum.i32(i32 %Val0, i32 %Val1)");
+                pw.println("declare i32 @llvm.maximum.i32(i32 %Val0, i32 %Val1)");
                 pw.println("declare float @llvm.floor.f32(float  %Val)");
                 pw.println("declare float @llvm.ceil.f32(float  %Val)");
                 pw.println();
@@ -325,10 +337,69 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
+                pw.println("define internal float @div_floatfloat(float %a, float %b) alwaysinline  {");
+                pw.println("entry:");
+                pw.println("    %result = fdiv float %a, %b");
+                pw.println("    ret float %result");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal float @div_i32i32(i32 %a, i32 %b) alwaysinline  {");
+                pw.println("entry:");
+                pw.println("    %temp1 = sitofp i32 %a to float");
+                pw.println("    %temp2 = sitofp i32 %b to float");
+                pw.println("    %result = fdiv float %temp1, %temp2");
+                pw.println("    ret float %result");
+                pw.println("}");
+                pw.println();
+
+                // Lambda
+                pw.println("define internal i32 @newlambda(i32 %a, i32 %b, i32 %c) {");
+                pw.println("entry:");
+                // TODO: implement this
+                pw.println("    unreachable");
+                pw.println("}");
+
                 // Some utility functions for runtime class management
                 pw.println("define internal i32 @runtimeClass__resolvevtableindex(i32 %thisRef,i32 %methodId) {");
                 pw.println("entry:");
+                // TODO: implement this
                 pw.println("    unreachable");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal i32 @jlClass_jlStringgetName(i32 %thisRef) {");
+                pw.println("entry:");
+                // TODO: implement this
+                pw.println("    ret i32 0");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal i32 @jlClass_BOOLEANdesiredAssertionStatus(i32 %thisRef) {");
+                pw.println("entry:");
+                // TODO: implement this
+                pw.println("    ret i32 0");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal i32 @jlClass_A1jlObjectgetEnumConstants(i32 %thisRef) {");
+                pw.println("entry:");
+                // TODO: implement this
+                pw.println("    ret i32 0");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal i32 @jlClass_jlClassLoadergetClassLoader(i32 %thisRef) {");
+                pw.println("entry:");
+                // TODO: implement this
+                pw.println("    ret i32 0");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal i32 @jlClass_jlClassforNamejlStringBOOLEANjlClassLoader(i32 %thisRef, i32 %name, i32 %initialize, i32 %classloader) {");
+                pw.println("entry:");
+                // TODO: implement this
+                pw.println("    ret i32 0");
                 pw.println("}");
                 pw.println();
 
@@ -361,6 +432,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     if (Objects.equals(aEntry.targetNode().getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                         return;
                     }
+
                     if (theLinkedClass.emulatedByRuntime()) {
                         return;
                     }
@@ -547,10 +619,56 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             // Skip methods not implemented here
                             // Skip methods not implemented in this class
                             // But include static methods, as they are inherited from the base classes
-                            if (aMethodMapEntry.getValue().getAccessFlags().isStatic() && !aMethodMapEntry.getValue().isClassInitializer()) {
+                            if (theMethod.getAccessFlags().isStatic() && !theMethod.isClassInitializer()) {
                                 // We need to create a delegate function here
-                                if (!theMethodMap.isImplementedBy(aMethodMapEntry.getValue(), theLinkedClass)) {
-                                    // TODO: generate delegate function for static methods
+                                if (!theMethodMap.isImplementedBy(theMethod, theLinkedClass)) {
+                                    final String theMethodName = LLVMWriterUtils.toMethodName(aEntry.targetNode().getClassName(), theMethod.getName().stringValue(), theMethod.getSignature());
+                                    pw.print("define internal ");
+                                    pw.print(LLVMWriterUtils.toType(TypeRef.toType(theMethod.getSignature().getReturnType())));
+                                    pw.print(" @");
+                                    pw.print(theMethodName);
+                                    pw.print("(i32 %runtimeClass");
+                                    for (int i=0;i<theMethod.getSignature().getArguments().length;i++) {
+                                        pw.print(",");
+                                        pw.print(LLVMWriterUtils.toType(TypeRef.toType(theMethod.getSignature().getArguments()[i])));
+                                        pw.print(" %p");
+                                        pw.print(i);
+                                    }
+                                    pw.println(") {");
+                                    pw.println("entry:");
+
+                                    if (theMethod.getSignature().getReturnType().isVoid()) {
+                                        pw.print("    call void @");
+                                        pw.print(LLVMWriterUtils.toMethodName(aMethodMapEntry.getProvidingClass().getClassName(), theMethod.getName().stringValue(), theMethod.getSignature()));
+                                        pw.print("(i32 %runtimeClass");
+                                        for (int i=0;i<theMethod.getSignature().getArguments().length;i++) {
+                                            pw.print(",");
+                                            pw.print(LLVMWriterUtils.toType(TypeRef.toType(theMethod.getSignature().getArguments()[i])));
+                                            pw.print(" %p");
+                                            pw.print(i);
+                                        }
+                                        pw.println(")");
+                                        pw.println("    ret void");
+                                    } else {
+                                        pw.print("    %temp = call ");
+                                        pw.print(LLVMWriterUtils.toType(TypeRef.toType(theMethod.getSignature().getReturnType())));
+                                        pw.print(" @");
+                                        pw.print(LLVMWriterUtils.toMethodName(aMethodMapEntry.getProvidingClass().getClassName(), theMethod.getName().stringValue(), theMethod.getSignature()));
+                                        pw.print("(i32 %runtimeClass");
+                                        for (int i=0;i<theMethod.getSignature().getArguments().length;i++) {
+                                            pw.print(",");
+                                            pw.print(LLVMWriterUtils.toType(TypeRef.toType(theMethod.getSignature().getArguments()[i])));
+                                            pw.print(" %p");
+                                            pw.print(i);
+                                        }
+                                        pw.println(")");
+                                        pw.print("    ret ");
+                                        pw.print(LLVMWriterUtils.toType(TypeRef.toType(theMethod.getSignature().getReturnType())));
+                                        pw.println(" %temp");
+                                    }
+
+                                    pw.println("}");
+                                    pw.println();
                                 }
                             }
                             return;
@@ -791,6 +909,31 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         }
                     });
                 });
+
+                // Generate callsite resolver code
+                for (final Map.Entry<String, CallSite> theEntry : callsites.entrySet()) {
+                    final CallSite callsite = theEntry.getValue();
+
+                    pw.print("@");
+                    pw.print("callsite");
+                    pw.print(System.identityHashCode(callsite));
+                    pw.println(" = private global i32 0");
+
+                    pw.print(";; ");
+                    pw.println(theEntry.getKey());
+
+                    pw.print("define internal i32 @resolvecallsite");
+                    pw.print(System.identityHashCode(callsite));
+                    pw.println("() {");
+
+                    // TODO: implement logic here
+                    pw.println("entry:");
+                    pw.println("    call void @llvm.trap()");
+                    pw.println("    unreachable");
+
+                    pw.println("}");
+                    pw.println();
+                }
 
                 // New Instance helper for reflection stuff
                 pw.print("define internal i32 @");

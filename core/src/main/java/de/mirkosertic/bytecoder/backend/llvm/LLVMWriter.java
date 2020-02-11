@@ -26,6 +26,7 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.graph.Edge;
@@ -100,6 +101,7 @@ import de.mirkosertic.bytecoder.ssa.VariableDescription;
 
 import java.io.PrintWriter;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -152,6 +154,7 @@ public class LLVMWriter implements AutoCloseable {
                 RegionNode.NODE_COMPARATOR,
                 RegionNode.FORWARD_EDGE_FILTER_REGULAR_FLOW_ONLY);
         final List<RegionNode> regularFlow = order.getNodesInOrder();
+        final Set<String> alreadySeenPHIs = new HashSet<>();
         for (final RegionNode theBlock : regularFlow) {
             currentNode = theBlock;
             final BytecodeOpcodeAddress theBlockStart = theBlock.getStartAddress();
@@ -178,69 +181,72 @@ public class LLVMWriter implements AutoCloseable {
                         }
                     }
 
-                    if (thePreds.size() > 1 && theIncoming.values().stream().collect(Collectors.toSet()).size() != 1) {
+                    final Set<Value> theIncomingValues = theIncoming.values().stream().collect(Collectors.toSet());
+                    if (thePreds.size() > 1 && (theIncomingValues.size() > 1) || (theIncomingValues.size() == 1 && !theIncomingValues.contains(phi))) {
 
-                        target.print("    %");
-                        target.print(tempName);
-                        target.print(" = phi ");
-                        target.print(LLVMWriterUtils.toType(phi.resolveType()));
-                        target.print(" ");
-                        boolean first = true;
-                        for (final Map.Entry<RegionNode, Value> theIncomingEntry : theIncoming.entrySet()) {
-                            final RegionNode pred = theIncomingEntry.getKey();
+                        if (alreadySeenPHIs.add(tempName)) {
+                            target.print("    %");
+                            target.print(tempName);
+                            target.print(" = phi ");
+                            target.print(LLVMWriterUtils.toType(phi.resolveType()));
+                            target.print(" ");
+                            boolean first = true;
+                            for (final Map.Entry<RegionNode, Value> theIncomingEntry : theIncoming.entrySet()) {
+                                final RegionNode pred = theIncomingEntry.getKey();
 
-                            // Only consider regular flow here
-                            final Value theOut = theIncomingEntry.getValue();
+                                // Only consider regular flow here
+                                final Value theOut = theIncomingEntry.getValue();
 
-                            if (theOut instanceof Variable) {
-                                if (first) {
-                                    first = false;
-                                } else {
+                                if (theOut instanceof Variable) {
+                                    if (first) {
+                                        first = false;
+                                    } else {
+                                        target.print(",");
+                                    }
+                                    target.print("[");
+
+                                    target.print("%");
+                                    target.print(((Variable) theOut).getName());
+                                    target.print("_");
+
                                     target.print(",");
-                                }
-                                target.print("[");
+                                    if (pred.getStartAddress().getAddress() == 0) {
+                                        target.print("%entry");
+                                    } else {
+                                        target.print("%block");
+                                        target.print(pred.getStartAddress().getAddress());
+                                    }
 
-                                target.print("%");
-                                target.print(((Variable) theOut).getName());
-                                target.print("_");
+                                    target.print("]");
+                                } else if (theOut instanceof PHIValue) {
 
-                                target.print(",");
-                                if (pred.getStartAddress().getAddress() == 0) {
-                                    target.print("%entry");
-                                } else {
-                                    target.print("%block");
-                                    target.print(pred.getStartAddress().getAddress());
-                                }
+                                    if (first) {
+                                        first = false;
+                                    } else {
+                                        target.print(",");
+                                    }
+                                    target.print("[");
 
-                                target.print("]");
-                            } else if (theOut instanceof PHIValue) {
+                                    target.print("%");
+                                    target.print(toTempSymbol(theOut, "phi"));
 
-                                if (first) {
-                                    first = false;
-                                } else {
                                     target.print(",");
-                                }
-                                target.print("[");
+                                    if (pred.getStartAddress().getAddress() == 0) {
+                                        target.print("%entry");
+                                    } else {
+                                        target.print("%block");
+                                        target.print(pred.getStartAddress().getAddress());
+                                    }
 
-                                target.print("%");
-                                target.print(toTempSymbol(theOut, "phi"));
+                                    target.print("]");
 
-                                target.print(",");
-                                if (pred.getStartAddress().getAddress() == 0) {
-                                    target.print("%entry");
                                 } else {
-                                    target.print("%block");
-                                    target.print(pred.getStartAddress().getAddress());
+                                    throw new RuntimeException("Unhandled type for PHI input : " + theOut.getClass());
                                 }
-
-                                target.print("]");
-
-                            } else {
-                                throw new RuntimeException("Unhandled type for PHI input : " + theOut.getClass());
                             }
                         }
+                        target.println();
                     }
-                    target.println();
                 }
             }
             write(theBlock);
@@ -868,10 +874,19 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final DirectInvokeMethodExpression e) {
+
         target.print("call ");
         target.print(LLVMWriterUtils.toSignature(e.getSignature()));
         target.print(" @");
-        target.print(LLVMWriterUtils.toMethodName(e.getClazz(), e.getMethodName(), e.getSignature()));
+        if (!e.getMethodName().equals("<init>")) {
+            final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(e.getClazz());
+            final BytecodeResolvedMethods theResolvedMethods = theTargetClass.resolvedMethods();
+            final BytecodeResolvedMethods.MethodEntry theEntry = theResolvedMethods.implementingClassOf(e.getMethodName(), e.getSignature());
+
+            target.print(LLVMWriterUtils.toMethodName(theEntry.getProvidingClass().getClassName(), e.getMethodName(), e.getSignature()));
+        } else {
+            target.print(LLVMWriterUtils.toMethodName(e.getClazz(), e.getMethodName(), e.getSignature()));
+        }
         target.print("(");
         final List<Value> theValues = e.incomingDataFlows();
         for (int i=0;i<theValues.size();i++) {
@@ -1168,15 +1183,28 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final RuntimeGeneratedTypeExpression e) {
-        //TODO: Implement this
-        target.print("runtimegeneratedtype");
+        target.print("call i32 @newlambda(i32 ");
+        write(e.getType(), true);
+        target.print(",i32 ");
+        write(e.getMethodRef(), true);
+        target.print(",i32 ");
+        write(e.getStaticArguments(), true);
+        target.print(")");
     }
 
     private void write(final MaxExpression e) {
         target.print("call ");
         target.print(LLVMWriterUtils.toType(e.resolveType()));
         target.print(" @llvm.maximum.");
-        target.print(LLVMWriterUtils.toType(e.resolveType()));
+        switch (e.resolveType().resolve()) {
+            case FLOAT:
+            case DOUBLE:
+                target.print("f32");
+                break;
+            default:
+                target.print("i32");
+                break;
+        }
         target.print("(");
         target.print(LLVMWriterUtils.toType(e.incomingDataFlows().get(0).resolveType()));
         target.print(" ");
@@ -1242,7 +1270,15 @@ public class LLVMWriter implements AutoCloseable {
         target.print("call ");
         target.print(LLVMWriterUtils.toType(e.resolveType()));
         target.print(" @llvm.minimum.");
-        target.print(LLVMWriterUtils.toType(e.resolveType()));
+        switch (e.resolveType().resolve()) {
+            case FLOAT:
+            case DOUBLE:
+                target.print("f32");
+                break;
+            default:
+                target.print("i32");
+                break;
+        }
         target.print("(");
         target.print(LLVMWriterUtils.toType(e.incomingDataFlows().get(0).resolveType()));
         target.print(" ");
@@ -1664,10 +1700,10 @@ public class LLVMWriter implements AutoCloseable {
         for (int i=0;i<args.size();i++) {
             target.print(",");
             final Value theValue = args.get(i);
-            if (theValue instanceof Variable) {
-                target.print(LLVMWriterUtils.toType(TypeRef.toType(aValue.getSignature().getArguments()[i])));
-                target.print(" ");
-            }
+
+            target.print(LLVMWriterUtils.toType(TypeRef.toType(aValue.getSignature().getArguments()[i])));
+            target.print(" ");
+
             writeResolved(theValue);
         }
         target.print(")");
