@@ -150,8 +150,6 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("declare void @llvm.trap() cold noreturn nounwind");
                 pw.println("declare float @llvm.minimum.f32(float %Val0, float %Val1)");
                 pw.println("declare float @llvm.maximum.f32(float %Val0, float %Val1)");
-                pw.println("declare i32 @llvm.minimum.i32(i32 %Val0, i32 %Val1)");
-                pw.println("declare i32 @llvm.maximum.i32(i32 %Val0, i32 %Val1)");
                 pw.println("declare float @llvm.floor.f32(float  %Val)");
                 pw.println("declare float @llvm.ceil.f32(float  %Val)");
                 pw.println();
@@ -350,6 +348,28 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("    %temp2 = sitofp i32 %b to float");
                 pw.println("    %result = fdiv float %temp1, %temp2");
                 pw.println("    ret float %result");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal i32 @maximum(i32 %a, i32 %b) alwaysinline  {");
+                pw.println("entry:");
+                pw.println("   %test = icmp sgt i32 %a, %b");
+                pw.println("   br i1 %test, label %aisgreater, label %notgreater");
+                pw.println("aisgreater:");
+                pw.println("   ret i32 %a");
+                pw.println("notgreater:");
+                pw.println("   ret i32 %b");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal i32 @minimum(i32 %a, i32 %b) alwaysinline  {");
+                pw.println("entry:");
+                pw.println("   %test = icmp slt i32 %a, %b");
+                pw.println("   br i1 %test, label %aissmaller, label %notsmaller");
+                pw.println("aissmaller:");
+                pw.println("   ret i32 %a");
+                pw.println("notsmaller:");
+                pw.println("   ret i32 %b");
                 pw.println("}");
                 pw.println();
 

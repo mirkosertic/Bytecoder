@@ -176,12 +176,13 @@ public class LLVMWriter implements AutoCloseable {
                     final Map<RegionNode, Value> theIncoming = new HashMap<>();
                     for (final RegionNode pred : thePreds) {
                         if (regularFlow.contains(pred)) {
+                            target.println(";; pred for phi is " + pred.getStartAddress().getAddress());
                             final Value theOut = pred.liveOut().getPorts().get(phi.getDescription());
                             theIncoming.put(pred, theOut);
                         }
                     }
 
-                    final Set<Value> theIncomingValues = theIncoming.values().stream().collect(Collectors.toSet());
+                    final Set<Value> theIncomingValues = new HashSet<>(theIncoming.values());
                     if (thePreds.size() > 1 && (theIncomingValues.size() > 1) || (theIncomingValues.size() == 1 && !theIncomingValues.contains(phi))) {
 
                         if (alreadySeenPHIs.add(tempName)) {
@@ -1195,14 +1196,14 @@ public class LLVMWriter implements AutoCloseable {
     private void write(final MaxExpression e) {
         target.print("call ");
         target.print(LLVMWriterUtils.toType(e.resolveType()));
-        target.print(" @llvm.maximum.");
+
         switch (e.resolveType().resolve()) {
             case FLOAT:
             case DOUBLE:
-                target.print("f32");
+                target.print(" @llvm.maximum.f32");
                 break;
             default:
-                target.print("i32");
+                target.print(" @maximum");
                 break;
         }
         target.print("(");
@@ -1269,14 +1270,13 @@ public class LLVMWriter implements AutoCloseable {
     private void write(final MinExpression e) {
         target.print("call ");
         target.print(LLVMWriterUtils.toType(e.resolveType()));
-        target.print(" @llvm.minimum.");
         switch (e.resolveType().resolve()) {
             case FLOAT:
             case DOUBLE:
-                target.print("f32");
+                target.print(" @llvm.minimum.f32");
                 break;
             default:
-                target.print("i32");
+                target.print(" @minimum");
                 break;
         }
         target.print("(");
