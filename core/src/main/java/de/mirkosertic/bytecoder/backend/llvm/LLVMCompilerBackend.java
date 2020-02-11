@@ -26,6 +26,7 @@ import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
+import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeImportedLink;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
@@ -42,6 +43,7 @@ import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
+import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import org.apache.commons.io.IOUtils;
@@ -94,6 +96,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
         try {
             final List<String> stringPool = new ArrayList<>();
+            final List<String> callsites = new ArrayList<>();
             final LLVMWriter.SymbolResolver theSymbolResolver = new LLVMWriter.SymbolResolver() {
                 @Override
                 public String globalFromStringPool(final String aValue) {
@@ -103,6 +106,18 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     }
                     stringPool.add(aValue);
                     return "strpool_" + (stringPool.size() - 1);
+                }
+
+                @Override
+                public String resolveCallsiteBootstrapFor(final BytecodeClass owningClass, final String callsiteId, final Program program, final RegionNode bootstrapMethod) {
+                    int i = callsiteId.indexOf(callsiteId);
+                    if (i >= 0) {
+
+                    } else {
+                        callsites.add(callsiteId);
+                        i = callsites.indexOf(callsiteId);
+                    }
+                    return "__callsite" + i;
                 }
             };
 

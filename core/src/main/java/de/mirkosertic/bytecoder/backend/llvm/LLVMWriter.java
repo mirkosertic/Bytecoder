@@ -18,12 +18,14 @@ package de.mirkosertic.bytecoder.backend.llvm;
 import de.mirkosertic.bytecoder.backend.NativeMemoryLayouter;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
+import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.graph.Edge;
@@ -118,6 +120,8 @@ public class LLVMWriter implements AutoCloseable {
     interface SymbolResolver {
 
         String globalFromStringPool(final String aValue);
+
+        String resolveCallsiteBootstrapFor(BytecodeClass owningClass, String callsiteId, Program program, RegionNode bootstrapMethod);
     }
 
     private final PrintWriter target;
@@ -147,8 +151,8 @@ public class LLVMWriter implements AutoCloseable {
         final GraphDFSOrder<RegionNode> order = new GraphDFSOrder(theStart,
                 RegionNode.NODE_COMPARATOR,
                 RegionNode.FORWARD_EDGE_FILTER_REGULAR_FLOW_ONLY);
-        final List<RegionNode> sorted = order.getNodesInOrder();
-        for (final RegionNode theBlock : sorted) {
+        final List<RegionNode> regularFlow = order.getNodesInOrder();
+        for (final RegionNode theBlock : regularFlow) {
             currentNode = theBlock;
             final BytecodeOpcodeAddress theBlockStart = theBlock.getStartAddress();
             if (theBlockStart.getAddress() == 0) {
@@ -168,8 +172,10 @@ public class LLVMWriter implements AutoCloseable {
 
                     final Map<RegionNode, Value> theIncoming = new HashMap<>();
                     for (final RegionNode pred : thePreds) {
-                        final Value theOut = pred.liveOut().getPorts().get(phi.getDescription());
-                        theIncoming.put(pred, theOut);
+                        if (regularFlow.contains(pred)) {
+                            final Value theOut = pred.liveOut().getPorts().get(phi.getDescription());
+                            theIncoming.put(pred, theOut);
+                        }
                     }
 
                     if (thePreds.size() > 1 && theIncoming.values().stream().collect(Collectors.toSet()).size() != 1) {
@@ -182,6 +188,8 @@ public class LLVMWriter implements AutoCloseable {
                         boolean first = true;
                         for (final Map.Entry<RegionNode, Value> theIncomingEntry : theIncoming.entrySet()) {
                             final RegionNode pred = theIncomingEntry.getKey();
+
+                            // Only consider regular flow here
                             final Value theOut = theIncomingEntry.getValue();
 
                             if (theOut instanceof Variable) {
@@ -231,8 +239,8 @@ public class LLVMWriter implements AutoCloseable {
                                 throw new RuntimeException("Unhandled type for PHI input : " + theOut.getClass());
                             }
                         }
-                        target.println();
                     }
+                    target.println();
                 }
             }
             write(theBlock);
@@ -447,15 +455,20 @@ public class LLVMWriter implements AutoCloseable {
         write(object, true);
         target.print(",");
 
+        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(theClass);
         final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theClass);
-        target.print(theLayout.offsetForInstanceMember(e.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue()));
+        final BytecodeResolvedFields theInstanceFields = theLinkedClass.resolvedFields();
+        final BytecodeResolvedFields.FieldEntry theField = theInstanceFields.fieldByName(e.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+        target.print(theLayout.offsetForInstanceMember(theField.getValue().getName().stringValue()));
         target.println();
 
         target.print("    %");
         target.print(toTempSymbol(e, "ptr"));
         target.print(" = inttoptr i32 %");
         target.print(toTempSymbol(e, "exp"));
-        target.println(" to i32*");
+        target.println(" to ");
+        target.print(LLVMWriterUtils.toType(TypeRef.toType(theField.getValue().getTypeRef())));
+        target.println("*");
     }
 
     private void tempify(final GetStaticExpression e) {
@@ -665,7 +678,7 @@ public class LLVMWriter implements AutoCloseable {
     private void write(final LookupSwitchExpression e) {
         target.print("    switch i32 ");
         writeResolved(e.incomingDataFlows().get(0));
-        target.print(", label %block_");
+        target.print(", label %block");
         target.print(e.getDefaultJumpTarget().getAddress());
         target.println(" [");
         for (final Map.Entry<Long, ExpressionList> theEntry : e.getPairs().entrySet()) {
@@ -675,7 +688,7 @@ public class LLVMWriter implements AutoCloseable {
             for (final Expression ex : theEntry.getValue().toList()) {
                 if (ex instanceof GotoExpression) {
                     final GotoExpression g = (GotoExpression) ex;
-                    target.print(" label %block_");
+                    target.print(" label %block");
                     target.println(g.jumpTarget().getAddress());
                 }
             }
@@ -684,16 +697,15 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final TableSwitchExpression e) {
-        target.println("tableswitch");
         target.print("    %");
         target.print(toTempSymbol(e, "value"));
-        target.print(" = i32 ");
+        target.print(" = add i32 0,");
         writeResolved(e.incomingDataFlows().get(0));
         target.println();
 
         target.print("    %");
         target.print(toTempSymbol(e, "cond"));
-        target.print(" = call i1 @exceedsrange(%");
+        target.print(" = call i1 @exceedsrange(i32 %");
         target.print(toTempSymbol(e, "value"));
         target.print(", i32 ");
         target.print(e.getLowValue());
@@ -703,18 +715,28 @@ public class LLVMWriter implements AutoCloseable {
 
         target.print("    br i1 %");
         target.print(toTempSymbol(e, "cond"));
-        target.print(" label %block_");
-        target.println(e.getDefaultJumpTarget().getAddress());
+        target.print(", label %block");
+        target.print(e.getDefaultJumpTarget().getAddress());
+        target.print(", label %");
+        target.println(toTempSymbol(e, "else"));
 
         target.print("    %");
         target.print(toTempSymbol(e, "sub"));
         target.print(" = sub i32 %");
         target.print(toTempSymbol(e, "value"));
-        target.print(", i32 ");
+        target.print(", ");
         target.println(e.getLowValue());
+
+        target.print("    br label %");
+        target.println(toTempSymbol(e, "else"));
+
+        target.print(toTempSymbol(e, "else"));
+        target.println(":");
 
         target.print("    switch i32 %");
         target.print(toTempSymbol(e, "sub"));
+        target.print(", label %");
+        target.print(toTempSymbol(e, "trap"));
         target.println(" [");
         for (final Map.Entry<Long, ExpressionList> theEntry : e.getOffsets().entrySet()) {
             target.print("       i32 ");
@@ -723,13 +745,14 @@ public class LLVMWriter implements AutoCloseable {
             for (final Expression ex : theEntry.getValue().toList()) {
                 if (ex instanceof GotoExpression) {
                     final GotoExpression g = (GotoExpression) ex;
-                    target.print(" label %block_");
+                    target.print(" label %block");
                     target.println(g.jumpTarget().getAddress());
                 }
             }
         }
         target.println("    ]");
-
+        target.print(toTempSymbol(e, "trap"));
+        target.println(":");
         target.println("    call void @llvm.trap()");
         target.println("    unreachable");
     }
@@ -876,20 +899,31 @@ public class LLVMWriter implements AutoCloseable {
         writeResolved(object);
         target.print(",");
 
-        final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(expression.getField().getClassIndex().getClassConstant().getConstant()));
-        target.print(theLayout.offsetForInstanceMember(expression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue()));
+        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(expression.getField().getClassIndex().getClassConstant().getConstant()));
+        final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theLinkedClass.getClassName());
+        final BytecodeResolvedFields theInstanceFields = theLinkedClass.resolvedFields();
+        final BytecodeResolvedFields.FieldEntry theField = theInstanceFields.fieldByName(expression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+
+        target.print(theLayout.offsetForInstanceMember(theField.getValue().getName().stringValue()));
         target.println();
 
         target.print("    %");
         target.print(toTempSymbol(expression, "ptr"));
         target.print(" = inttoptr i32 %");
         target.print(toTempSymbol(expression, "exp"));
-        target.println(" to i32*");
+        target.print(" to ");
+        target.print(LLVMWriterUtils.toType(TypeRef.toType(theField.getValue().getTypeRef())));
+        target.println("*");
 
-        target.print("    store i32 ");
+
+        target.print("    store ");
+        target.print(LLVMWriterUtils.toType(TypeRef.toType(theField.getValue().getTypeRef())));
+        target.print(" ");
         writeResolved(value);
-        target.print(",i32* %");
-        target.print(toTempSymbol(expression, "ptr"));
+        target.print(",");
+        target.print(LLVMWriterUtils.toType(TypeRef.toType(theField.getValue().getTypeRef())));
+        target.print("* %");
+        target.println(toTempSymbol(expression, "ptr"));
     }
 
     private void write(final UnreachableExpression expression) {
@@ -1155,20 +1189,25 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final FloatingPointFloorExpression e) {
-        target.print("call i32 @llvm.floor.f32(");
+        target.print("call float @llvm.floor.f32(float ");
         writeResolved(e.incomingDataFlows().get(0));
         target.print(")");
     }
 
     private void write(final FloatingPointCeilExpression e) {
-        target.print("call i32 @llvm.ceil.f32(");
+        target.print("call float @llvm.ceil.f32(float ");
         writeResolved(e.incomingDataFlows().get(0));
         target.print(")");
     }
 
     private void write(final ResolveCallsiteObjectExpression e) {
-        //TODO: Implement this
-        target.print("resolvcallsite");
+        target.print("call i32 @");
+        target.print(symbolResolver.resolveCallsiteBootstrapFor(e.getOwningClass(),
+                e.getCallsiteId(),
+                e.getProgram(),
+                e.getBootstrapMethod()
+        ));
+        target.print("()");
     }
 
     private void write(final ByteValue e) {
@@ -1176,11 +1215,13 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final FloatValue e) {
-        target.print(e.getFloatValue());
+        final long doubleBits = Double.doubleToRawLongBits(e.getFloatValue());
+        target.print(String.format("0x%X", doubleBits));
     }
 
     private void write(final DoubleValue e) {
-        target.print(e.getDoubleValue());
+        final long doubleBits = Double.doubleToLongBits(e.getDoubleValue());
+        target.print(String.format("0x%X", doubleBits));
     }
 
     private void write(final IsNaNExpression e) {
@@ -1365,7 +1406,11 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final GetFieldExpression e) {
-        target.print("load i32, i32* %");
+        target.print("load ");
+        target.print(LLVMWriterUtils.toType(e.resolveType()));
+        target.print(", ");
+        target.print(LLVMWriterUtils.toType(e.resolveType()));
+        target.print("* %");
         target.println(toTempSymbol(e, "ptr"));
     }
 
@@ -1434,7 +1479,7 @@ public class LLVMWriter implements AutoCloseable {
                     case CHAR: {
                         // Convert f32 to i32
                         // NaN == 0
-                        target.print("call i32 @toi32(");
+                        target.print("call i32 @toi32(float ");
                         writeResolved(theSource);
                         target.print(")");
                         return;
@@ -1499,6 +1544,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final BinaryExpression aValue) {
+        final Value theValue1 = aValue.incomingDataFlows().get(0);
         switch (aValue.getOperator()) {
             case ADD:
                 target.print("add");
@@ -1507,10 +1553,26 @@ public class LLVMWriter implements AutoCloseable {
                 target.print("sub");
                 break;
             case MUL:
-                target.print("mul");
+                switch (theValue1.resolveType().resolve()) {
+                    case FLOAT:
+                    case DOUBLE:
+                        target.print("fmul");
+                        break;
+                    default:
+                        target.print("mul");
+                        break;
+                }
                 break;
             case REMAINDER:
-                target.print("srem");
+                switch (theValue1.resolveType().resolve()) {
+                    case FLOAT:
+                    case DOUBLE:
+                        target.print("frem");
+                        break;
+                    default:
+                        target.print("srem");
+                        break;
+                }
                 break;
             case GREATERTHAN:
                 target.print("icmp sgt");
