@@ -88,7 +88,31 @@ public class LLVMCompilerBackendTest {
         final Class k1 = y.getClass();
         final AbstractClassLinkTest.SubClass[] ar = new AbstractClassLinkTest.SubClass[10];
         final int l = ar.length;
+        final int k2;
+        switch (l) {
+            case 10:
+                k2 = 1;
+                break;
+            case 11:
+                k2 = 2;
+                break;
+            case 12:
+                k2 = 3;
+                break;
+            default:
+                k2 = 7;
+                break;
+        }
+        /*final int zz;
         final Enum ii = Enum.A;
+        switch (ii) {
+            case A:
+                zz = 22;
+                break;
+            default:
+                zz = 33;
+                break;
+        }*/
         return x;
     }
 

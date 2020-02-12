@@ -717,18 +717,15 @@ public class LLVMWriter implements AutoCloseable {
         target.print(", label %");
         target.println(toTempSymbol(e, "else"));
 
+        target.print(toTempSymbol(e, "else"));
+        target.println(":");
+
         target.print("    %");
         target.print(toTempSymbol(e, "sub"));
         target.print(" = sub i32 %");
         target.print(toTempSymbol(e, "value"));
         target.print(", ");
         target.println(e.getLowValue());
-
-        target.print("    br label %");
-        target.println(toTempSymbol(e, "else"));
-
-        target.print(toTempSymbol(e, "else"));
-        target.println(":");
 
         target.print("    switch i32 %");
         target.print(toTempSymbol(e, "sub"));
