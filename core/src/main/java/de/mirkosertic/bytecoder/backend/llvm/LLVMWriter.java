@@ -100,7 +100,7 @@ import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.ssa.VariableDescription;
 
 import java.io.PrintWriter;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -147,17 +147,57 @@ public class LLVMWriter implements AutoCloseable {
         return "t_" + System.identityHashCode(v) + "_" + suffix + "_";
     }
 
+    private static class PHIValuePair {
+
+        private final String nodeLabel;
+        private final Value phiValue;
+
+        public PHIValuePair(final String nodeLabel, final Value phiValue) {
+            this.nodeLabel = nodeLabel;
+            this.phiValue = phiValue;
+        }
+    }
+
+    private List<PHIValuePair> phiValuePairFor(final RegionNode aTarget, final PHIValue aPHI, final Set<RegionNode> aPreds, final List<RegionNode> aRegularFlow) {
+        final List<PHIValuePair> theResult = new ArrayList<>();
+        for (final RegionNode thePredecessor : aPreds) {
+            if (aRegularFlow.contains(thePredecessor)) {
+                final Value theOut = thePredecessor.liveOut().getPorts().get(aPHI.getDescription());
+                theResult.add(new PHIValuePair("block" + thePredecessor.getStartAddress().getAddress(), theOut));
+
+                // Special case fot table switch expressions, as the introduce artificial blocks
+                for (final Expression e : thePredecessor.getExpressions().toList()) {
+                    if (e instanceof TableSwitchExpression) {
+                        final TableSwitchExpression ts = (TableSwitchExpression) e;
+                        for (final Map.Entry<Long, ExpressionList> theOffset : ts.getOffsets().entrySet()) {
+                            for (final Expression e2 : theOffset.getValue().toList()) {
+                                if (e2 instanceof GotoExpression) {
+                                    final GotoExpression theGoto = (GotoExpression) e2;
+                                    if (theGoto.jumpTarget().equals(aTarget.getStartAddress())) {
+                                        // We have something!!
+                                        theResult.add(new PHIValuePair(toTempSymbol(e, "else"), theOut));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return theResult;
+    }
+
     public void write(final Program aProgram) {
         final ControlFlowGraph theGraph = aProgram.getControlFlowGraph();
         final RegionNode theStart = theGraph.startNode();
         final GraphDFSOrder<RegionNode> order = new GraphDFSOrder(theStart,
                 RegionNode.NODE_COMPARATOR,
                 RegionNode.FORWARD_EDGE_FILTER_REGULAR_FLOW_ONLY);
-        final List<RegionNode> regularFlow = order.getNodesInOrder();
-        final Set<String> alreadySeenPHIs = new HashSet<>();
+        final List<RegionNode> theRegularFlow = order.getNodesInOrder();
+        final Set<String> theAlreadySeenPHIs = new HashSet<>();
         target.println("entry:");
         target.println("    br label %block0");
-        for (final RegionNode theBlock : regularFlow) {
+        for (final RegionNode theBlock : theRegularFlow) {
             currentNode = theBlock;
             final BytecodeOpcodeAddress theBlockStart = theBlock.getStartAddress();
             target.print("block");
@@ -168,34 +208,24 @@ public class LLVMWriter implements AutoCloseable {
                 if (theEntry.getValue() instanceof PHIValue) {
                     final PHIValue phi = (PHIValue) theEntry.getValue();
 
-                    final String tempName = toTempSymbol(phi, "phi");
+                    final String thePHITempName = toTempSymbol(phi, "phi");
+
                     final Set<RegionNode> thePreds = currentNode.getPredecessors();
+                    final List<PHIValuePair> theIncoming = phiValuePairFor(currentNode, phi, thePreds, theRegularFlow);
+                    final Set<Value> theIncomingValues = theIncoming.stream().map(t -> t.phiValue).collect(Collectors.toSet());
 
-                    final Map<RegionNode, Value> theIncoming = new HashMap<>();
-                    for (final RegionNode pred : thePreds) {
-                        if (regularFlow.contains(pred)) {
-                            // TODO: handle multiple edges from the same pred node here for the case of table switches etc
-                            target.println(";; pred for phi is " + pred.getStartAddress().getAddress());
-                            final Value theOut = pred.liveOut().getPorts().get(phi.getDescription());
-                            theIncoming.put(pred, theOut);
-                        }
-                    }
-
-                    final Set<Value> theIncomingValues = new HashSet<>(theIncoming.values());
                     if (thePreds.size() > 1 && (theIncomingValues.size() > 1) || (theIncomingValues.size() == 1 && !theIncomingValues.contains(phi))) {
 
-                        if (alreadySeenPHIs.add(tempName)) {
+                        if (theAlreadySeenPHIs.add(thePHITempName)) {
                             target.print("    %");
-                            target.print(tempName);
+                            target.print(thePHITempName);
                             target.print(" = phi ");
                             target.print(LLVMWriterUtils.toType(phi.resolveType()));
                             target.print(" ");
                             boolean first = true;
-                            for (final Map.Entry<RegionNode, Value> theIncomingEntry : theIncoming.entrySet()) {
-                                final RegionNode pred = theIncomingEntry.getKey();
+                            for (final PHIValuePair theIncomingEntry : theIncoming) {
 
-                                // Only consider regular flow here
-                                final Value theOut = theIncomingEntry.getValue();
+                                final Value theOut = theIncomingEntry.phiValue;
 
                                 if (theOut instanceof Variable) {
                                     if (first) {
@@ -209,9 +239,8 @@ public class LLVMWriter implements AutoCloseable {
                                     target.print(((Variable) theOut).getName());
                                     target.print("_");
 
-                                    target.print(",");
-                                    target.print("%block");
-                                    target.print(pred.getStartAddress().getAddress());
+                                    target.print(",%");
+                                    target.print(theIncomingEntry.nodeLabel);
 
                                     target.print("]");
                                 } else if (theOut instanceof PHIValue) {
@@ -226,9 +255,8 @@ public class LLVMWriter implements AutoCloseable {
                                     target.print("%");
                                     target.print(toTempSymbol(theOut, "phi"));
 
-                                    target.print(",");
-                                    target.print("%block");
-                                    target.print(pred.getStartAddress().getAddress());
+                                    target.print(",%");
+                                    target.print(theIncomingEntry.nodeLabel);
 
                                     target.print("]");
 
@@ -1433,7 +1461,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print(", ");
         target.print(LLVMWriterUtils.toType(e.resolveType()));
         target.print("* %");
-        target.println(toTempSymbol(e, "ptr"));
+        target.print(toTempSymbol(e, "ptr"));
     }
 
     private void write(final NewObjectAndConstructExpression e) {
