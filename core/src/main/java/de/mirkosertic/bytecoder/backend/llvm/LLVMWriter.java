@@ -155,16 +155,14 @@ public class LLVMWriter implements AutoCloseable {
                 RegionNode.FORWARD_EDGE_FILTER_REGULAR_FLOW_ONLY);
         final List<RegionNode> regularFlow = order.getNodesInOrder();
         final Set<String> alreadySeenPHIs = new HashSet<>();
+        target.println("entry:");
+        target.println("    br label %block0");
         for (final RegionNode theBlock : regularFlow) {
             currentNode = theBlock;
             final BytecodeOpcodeAddress theBlockStart = theBlock.getStartAddress();
-            if (theBlockStart.getAddress() == 0) {
-                target.println("entry:");
-            } else {
-                target.print("block");
-                target.print(theBlockStart.getAddress());
-                target.println(":");
-            }
+            target.print("block");
+            target.print(theBlockStart.getAddress());
+            target.println(":");
             final BlockState theLiveIn = theBlock.liveIn();
             for (final Map.Entry<VariableDescription, Value> theEntry : theLiveIn.getPorts().entrySet()) {
                 if (theEntry.getValue() instanceof PHIValue) {
@@ -211,12 +209,8 @@ public class LLVMWriter implements AutoCloseable {
                                     target.print("_");
 
                                     target.print(",");
-                                    if (pred.getStartAddress().getAddress() == 0) {
-                                        target.print("%entry");
-                                    } else {
-                                        target.print("%block");
-                                        target.print(pred.getStartAddress().getAddress());
-                                    }
+                                    target.print("%block");
+                                    target.print(pred.getStartAddress().getAddress());
 
                                     target.print("]");
                                 } else if (theOut instanceof PHIValue) {
@@ -232,12 +226,8 @@ public class LLVMWriter implements AutoCloseable {
                                     target.print(toTempSymbol(theOut, "phi"));
 
                                     target.print(",");
-                                    if (pred.getStartAddress().getAddress() == 0) {
-                                        target.print("%entry");
-                                    } else {
-                                        target.print("%block");
-                                        target.print(pred.getStartAddress().getAddress());
-                                    }
+                                    target.print("%block");
+                                    target.print(pred.getStartAddress().getAddress());
 
                                     target.print("]");
 
@@ -991,13 +981,9 @@ public class LLVMWriter implements AutoCloseable {
     private void write(final GotoExpression expression) {
         target.print("    br label %");
         final BytecodeOpcodeAddress jumpTo = expression.jumpTarget();
-        if (jumpTo.getAddress() == 0) {
-            target.println("entry");
-        } else {
-            target.print("block");
-            target.print(jumpTo.getAddress());
-            target.println();
-        }
+        target.print("block");
+        target.print(jumpTo.getAddress());
+        target.println();
     }
 
     private void write(final ReturnExpression expression) {
