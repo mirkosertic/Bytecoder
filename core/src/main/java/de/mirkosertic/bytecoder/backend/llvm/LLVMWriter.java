@@ -174,6 +174,7 @@ public class LLVMWriter implements AutoCloseable {
                     final Map<RegionNode, Value> theIncoming = new HashMap<>();
                     for (final RegionNode pred : thePreds) {
                         if (regularFlow.contains(pred)) {
+                            // TODO: handle multiple edges from the same pred node here for the case of table switches etc
                             target.println(";; pred for phi is " + pred.getStartAddress().getAddress());
                             final Value theOut = pred.liveOut().getPorts().get(phi.getDescription());
                             theIncoming.put(pred, theOut);
