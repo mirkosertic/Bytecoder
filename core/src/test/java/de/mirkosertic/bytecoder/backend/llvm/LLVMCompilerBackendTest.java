@@ -103,9 +103,9 @@ public class LLVMCompilerBackendTest {
                 k2 = 7;
                 break;
         }
-        /*final int zz;
+        final int zz;
         final Enum ii = Enum.A;
-        switch (ii) {
+        /*switch (ii) {
             case A:
                 zz = 22;
                 break;
