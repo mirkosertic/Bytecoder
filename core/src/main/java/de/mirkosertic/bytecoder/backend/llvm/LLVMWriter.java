@@ -463,7 +463,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print(toTempSymbol(e, "ptr"));
         target.print(" = inttoptr i32 %");
         target.print(toTempSymbol(e, "exp"));
-        target.println(" to ");
+        target.print(" to ");
         target.print(LLVMWriterUtils.toType(TypeRef.toType(theField.getValue().getTypeRef())));
         target.println("*");
     }
@@ -607,6 +607,8 @@ public class LLVMWriter implements AutoCloseable {
                 write((GotoExpression) e);
             } else if (e instanceof IFExpression) {
                 write((IFExpression) e);
+                // Terminal expression
+                return;
             } else if (e instanceof InvokeStaticMethodExpression) {
                 target.print("    ");
                 write((InvokeStaticMethodExpression) e);
