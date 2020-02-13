@@ -46,6 +46,7 @@ import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
+import de.mirkosertic.bytecoder.ssa.EnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.FixedBinaryExpression;
@@ -165,7 +166,7 @@ public class LLVMWriter implements AutoCloseable {
                 final Value theOut = thePredecessor.liveOut().getPorts().get(aPHI.getDescription());
                 theResult.add(new PHIValuePair("block" + thePredecessor.getStartAddress().getAddress(), theOut));
 
-                // Special case fot table switch expressions, as the introduce artificial blocks
+                // Special case for table switch expressions, as the introduce artificial blocks
                 for (final Expression e : thePredecessor.getExpressions().toList()) {
                     if (e instanceof TableSwitchExpression) {
                         final TableSwitchExpression ts = (TableSwitchExpression) e;
@@ -534,12 +535,44 @@ public class LLVMWriter implements AutoCloseable {
         target.println();
     }
 
+    private void tempify(final EnumConstantsExpression e) {
+
+        target.print("    %");
+        target.print(toTempSymbol(e, "runtimeclass"));
+        target.print(" = ");
+        write(e.incomingDataFlows().get(0), true);
+        target.println();
+
+        target.print("    %");
+        target.print(toTempSymbol(e, "offset"));
+        target.print(" = add i32 12, %");
+        target.println(toTempSymbol(e, "runtimeclass"));
+
+        target.print("    %");
+        target.print(toTempSymbol(e, "ptr"));
+        target.print(" = inttoptr i32 %");
+        target.print(toTempSymbol(e, "offset"));
+        target.println(" to i32*");
+    }
+
+    private void tempify(final IFExpression e) {
+        final Value value = e.incomingDataFlows().get(0);
+        target.print("    %");
+        target.print(toTempSymbol(value, "exp"));
+        target.print(" = ");
+        write(value, true);
+        target.println();
+    }
+
     private void tempify(final Expression e) {
         if (e instanceof InvokeStaticMethodExpression) {
             tempify((InvokeStaticMethodExpression) e);
         }
         if (e instanceof InvokeVirtualMethodExpression) {
             tempify((InvokeVirtualMethodExpression) e);
+        }
+        if (e instanceof IFExpression) {
+            tempify((IFExpression) e);
         }
         for (final Value v : e.incomingDataFlows()) {
             if (v instanceof ComputedMemoryLocationReadExpression) {
@@ -553,6 +586,10 @@ public class LLVMWriter implements AutoCloseable {
             } else if (v instanceof GetFieldExpression) {
 
                 tempify((GetFieldExpression) v);
+
+            } else if (v instanceof EnumConstantsExpression) {
+
+                tempify((EnumConstantsExpression) v);
 
             } else if (v instanceof ArrayLengthExpression) {
 
@@ -610,14 +647,6 @@ public class LLVMWriter implements AutoCloseable {
 
                 // Nothing to be done here
 
-            } else if (v instanceof Expression) {
-
-                target.print("    %");
-                target.print(toTempSymbol(v, "exp"));
-                target.print(" = ");
-                write(v, false);
-
-                target.println();
             }
         }
     }
@@ -1192,9 +1221,16 @@ public class LLVMWriter implements AutoCloseable {
             write((MaxExpression) aValue);
         } else if (aValue instanceof RuntimeGeneratedTypeExpression) {
             write((RuntimeGeneratedTypeExpression) aValue);
+        } else if (aValue instanceof EnumConstantsExpression) {
+            write((EnumConstantsExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue.getClass());
         }
+    }
+
+    private void write(final EnumConstantsExpression e) {
+        target.print("load i32, i32* %");
+        target.print(toTempSymbol(e, "ptr"));
     }
 
     private void write(final RuntimeGeneratedTypeExpression e) {
@@ -1597,10 +1633,26 @@ public class LLVMWriter implements AutoCloseable {
         final Value theValue1 = aValue.incomingDataFlows().get(0);
         switch (aValue.getOperator()) {
             case ADD:
-                target.print("add");
+                switch (theValue1.resolveType().resolve()) {
+                    case FLOAT:
+                    case DOUBLE:
+                        target.print("fadd");
+                        break;
+                    default:
+                        target.print("add");
+                        break;
+                }
                 break;
             case SUB:
-                target.print("sub");
+                switch (theValue1.resolveType().resolve()) {
+                    case FLOAT:
+                    case DOUBLE:
+                        target.print("fsub");
+                        break;
+                    default:
+                        target.print("sub");
+                        break;
+                }
                 break;
             case MUL:
                 switch (theValue1.resolveType().resolve()) {

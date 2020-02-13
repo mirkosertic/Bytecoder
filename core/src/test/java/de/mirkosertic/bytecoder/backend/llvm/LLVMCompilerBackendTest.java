@@ -105,14 +105,14 @@ public class LLVMCompilerBackendTest {
         }
         final int zz;
         final Enum ii = Enum.A;
-        /*switch (ii) {
+        switch (ii) {
             case A:
                 zz = 22;
                 break;
             default:
                 zz = 33;
                 break;
-        }*/
+        }
         return x;
     }
 

@@ -15,6 +15,7 @@ Its key features are:
 
 * Ability to **cross-compile JVM Bytecode** to JavaScript, WebAssembly, OpenCL and other languages
 * Primary compile targets are JavaScript and WebAssembly
+* Optional **usage of LLVM compiler infrastructure**
 * **Work well with Debugger Toolchains and SourceMaps**
 * **Use OpenJDK 12 as Java Classlib**
 
