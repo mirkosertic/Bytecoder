@@ -152,6 +152,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("declare float @llvm.maximum.f32(float %Val0, float %Val1)");
                 pw.println("declare float @llvm.floor.f32(float  %Val)");
                 pw.println("declare float @llvm.ceil.f32(float  %Val)");
+                pw.println("declare float @llvm.sqrt.f32(float %Val)");
                 pw.println();
 
                 final AtomicInteger attributeCounter = new AtomicInteger();

@@ -73,6 +73,7 @@ import de.mirkosertic.bytecoder.ssa.MinExpression;
 import de.mirkosertic.bytecoder.ssa.NegatedExpression;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
+import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
@@ -89,6 +90,7 @@ import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeExpression;
 import de.mirkosertic.bytecoder.ssa.SetEnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
+import de.mirkosertic.bytecoder.ssa.SqrtExpression;
 import de.mirkosertic.bytecoder.ssa.StackTopExpression;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
@@ -369,6 +371,22 @@ public class LLVMWriter implements AutoCloseable {
         target.println(" to i32");
     }
 
+    private void tempify(final NewMultiArrayExpression e) {
+        final String theClassName = LLVMWriterUtils.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
+        target.print("    %");
+        target.print(toTempSymbol(e, "classinit"));
+        target.print(" = call i32 @");
+        target.print(theClassName);
+        target.print(CLASSINITSUFFIX);
+        target.println("()");
+        target.print("    %");
+        target.print(toTempSymbol(e, "vtable"));
+        target.print(" = ptrtoint i32(i32,i32)* @");
+        target.print(theClassName);
+        target.print(VTABLEFUNCTIONSUFFIX);
+        target.println(" to i32");
+    }
+
     private void tempify(final ArrayEntryExpression e) {
         target.print("    %");
         target.print(toTempSymbol(e, "index"));
@@ -542,7 +560,13 @@ public class LLVMWriter implements AutoCloseable {
         target.print("    %");
         target.print(toTempSymbol(e, "runtimeclass"));
         target.print(" = ");
-        write(e.incomingDataFlows().get(0), true);
+
+        final Value theClassRef = e.incomingDataFlows().get(0);
+        if (theClassRef instanceof Variable) {
+            writeSameAssignmentHack(TypeRef.Native.REFERENCE, theClassRef);
+        } else {
+            write(theClassRef, true);
+        }
         target.println();
 
         target.print("    %");
@@ -608,6 +632,10 @@ public class LLVMWriter implements AutoCloseable {
             } else if (v instanceof NewArrayExpression) {
 
                 tempify((NewArrayExpression) v);
+
+            } else if (v instanceof NewMultiArrayExpression) {
+
+                tempify((NewMultiArrayExpression) v);
 
             } else if (v instanceof ArrayEntryExpression) {
 
@@ -1229,9 +1257,54 @@ public class LLVMWriter implements AutoCloseable {
             write((MethodTypeArgumentCheckExpression) aValue);
         } else if (aValue instanceof ReinterpretAsNativeExpression) {
             write((ReinterpretAsNativeExpression) aValue);
+        } else if (aValue instanceof SqrtExpression) {
+            write((SqrtExpression) aValue);
+        } else if (aValue instanceof NewMultiArrayExpression) {
+            write((NewMultiArrayExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue.getClass());
         }
+    }
+
+    private void write(final NewMultiArrayExpression e) {
+        final List<Value> theDimensions = e.incomingDataFlows();
+
+        final String theMethodName;
+        switch (theDimensions.size()) {
+            case 1:
+                theMethodName = LLVMWriterUtils.toMethodName(
+                        BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
+                        "newArray",
+                        new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+                break;
+            case 2:
+                theMethodName = LLVMWriterUtils.toMethodName(
+                        BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
+                        "newArray",
+                        new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+                break;
+            default:
+                throw new IllegalStateException("Unsupported number of dimensions : " + theDimensions.size());
+        }
+
+        target.write("call i32 @");
+        target.write(theMethodName);
+        target.write("(i32 0");
+        for (final Value theDimension : theDimensions) {
+            target.write(",i32 ");
+            write(theDimension, true);
+        }
+        target.write(",i32 %");
+        target.write(toTempSymbol(e, "classinit"));
+        target.write(",i32 %");
+        target.write(toTempSymbol(e, "vtable"));
+        target.write(")");
+    }
+
+    private void write(final SqrtExpression e) {
+        target.print("call float @llvm.sqrt.f32(float ");
+        write(e.incomingDataFlows().get(0), true);
+        target.print(")");
     }
 
     private void write(final ReinterpretAsNativeExpression e) {
