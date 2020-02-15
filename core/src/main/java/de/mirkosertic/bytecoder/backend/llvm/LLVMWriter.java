@@ -1037,12 +1037,8 @@ public class LLVMWriter implements AutoCloseable {
     private void write(final IFExpression expression) {
         target.print("    br i1 ");
         writeResolved(expression.incomingDataFlows().get(0));
-        if (expression.getAddress().getAddress() == 0) {
-            target.print(", label %entry");
-        } else {
-            target.print(", label %block");
-            target.print(expression.getGotoAddress().getAddress());
-        }
+        target.print(", label %block");
+        target.print(expression.getGotoAddress().getAddress());
 
         final Set<BytecodeOpcodeAddress> forwardNodes = currentNode.outgoingEdges()
                 .filter((Predicate<Edge<? extends EdgeType, ? extends Node>>) edge -> RegionNode.ALL_SUCCCESSORS_REGULAR_FLOW_ONLY
@@ -1052,13 +1048,8 @@ public class LLVMWriter implements AutoCloseable {
 
         if (forwardNodes.size() == 1) {
             final BytecodeOpcodeAddress theElse = forwardNodes.iterator().next();
-
-            if (theElse.getAddress() == 0) {
-                target.print(", label %entry");
-            } else {
-                target.print(", label %block");
-                target.print(theElse.getAddress());
-            }
+            target.print(", label %block");
+            target.print(theElse.getAddress());
             target.println();
         } else {
             throw new IllegalArgumentException("Expected one node for else branch of if statement, got " + forwardNodes);
