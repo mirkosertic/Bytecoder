@@ -68,6 +68,7 @@ import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.MaxExpression;
 import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
+import de.mirkosertic.bytecoder.ssa.MethodTypeArgumentCheckExpression;
 import de.mirkosertic.bytecoder.ssa.MinExpression;
 import de.mirkosertic.bytecoder.ssa.NegatedExpression;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
@@ -80,6 +81,7 @@ import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
+import de.mirkosertic.bytecoder.ssa.ReinterpretAsNativeExpression;
 import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
@@ -1223,9 +1225,42 @@ public class LLVMWriter implements AutoCloseable {
             write((RuntimeGeneratedTypeExpression) aValue);
         } else if (aValue instanceof EnumConstantsExpression) {
             write((EnumConstantsExpression) aValue);
+        } else if (aValue instanceof MethodTypeArgumentCheckExpression) {
+            write((MethodTypeArgumentCheckExpression) aValue);
+        } else if (aValue instanceof ReinterpretAsNativeExpression) {
+            write((ReinterpretAsNativeExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue.getClass());
         }
+    }
+
+    private void write(final ReinterpretAsNativeExpression e) {
+        final Value theValue = e.incomingDataFlows().get(0);
+        switch (e.getExpectedType()) {
+            case FLOAT:
+            case DOUBLE:
+                target.print("sitofp i32 ");
+                write(theValue, true);
+                target.print(" to float");
+                break;
+            default:
+                writeSameAssignmentHack(theValue.resolveType(), theValue);
+                break;
+        }
+    }
+
+    private void write(final MethodTypeArgumentCheckExpression e) {
+        final TypeRef.Native theExpectedType = e.getExpectedType();
+        final Value theMethodType = e.incomingDataFlows().get(0);
+        final Value theIndex = e.incomingDataFlows().get(1);
+
+        target.print("call i32 @checkmethodtype(i32 ");
+        write(theMethodType, true);
+        target.print(", i32 ");
+        write(theIndex, true);
+        target.print(", i32 ");
+        target.print(- theExpectedType.ordinal());
+        target.print(")");
     }
 
     private void write(final EnumConstantsExpression e) {
