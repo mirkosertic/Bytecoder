@@ -65,6 +65,8 @@ jobs:
       name: "WASM Target Stackify OpenJDK 12"
     - script: mkdir /home/travis/openjdk13 && ~/install-jdk.sh -W /home/travis/openjdk13 -F 13 -L GPL && mvn -B -pl '!:bytecoder-integrationtest' clean test -P wasmtestsonly_stackify
       name: "WASM Target Stackify OpenJDK 13"
+    - script: mvn -B -pl '!:bytecoder-integrationtest' clean test -P wasmllvmtestsonly
+      name: "LLVM WASM Target OpenJDK 8"
     - stage: "Deploy to Maven Central"
       script: skip
       deploy:
