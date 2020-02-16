@@ -45,9 +45,12 @@ public class LLVMCompilerBackendTest {
     private static class Subclass extends Superclass {
 
         private static int st;
+        private static float fl;
 
         static {
             final int x = 10;
+            fl = 20;
+            final float dl = fl;
         }
 
         public Subclass(final int value) {

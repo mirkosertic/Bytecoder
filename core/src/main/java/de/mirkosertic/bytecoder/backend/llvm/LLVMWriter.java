@@ -546,7 +546,9 @@ public class LLVMWriter implements AutoCloseable {
         target.print(toTempSymbol(e, "ptr"));
         target.print(" = inttoptr i32 %");
         target.print(toTempSymbol(e, "offset"));
-        target.println(" to i32*");
+        target.print(" to ");
+        target.print(LLVMWriterUtils.toType(e.resolveType()));
+        target.println("*");
     }
 
     private void tempify(final FloorExpression e) {
@@ -915,8 +917,11 @@ public class LLVMWriter implements AutoCloseable {
         target.print(CLASSINITSUFFIX);
         target.println("()");
 
+        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(theClass);
+        final BytecodeResolvedFields theStaticFields = theLinkedClass.resolvedFields();
         final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theClass);
         final int theStaticOffset = theLayout.offsetForClassMember(e.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+        final BytecodeResolvedFields.FieldEntry theField = theStaticFields.fieldByName(e.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
         target.print("    %");
         target.print(toTempSymbol(e, "offset"));
@@ -929,11 +934,17 @@ public class LLVMWriter implements AutoCloseable {
         target.print(toTempSymbol(e, "ptr"));
         target.print(" = inttoptr i32 %");
         target.print(toTempSymbol(e, "offset"));
-        target.println(" to i32*");
+        target.println(" to ");
+        target.print(LLVMWriterUtils.toType(TypeRef.toType(theField.getValue().getTypeRef())));
+        target.println("*");
 
-        target.print("    store i32 ");
+        target.print("    store ");
+        target.print(LLVMWriterUtils.toType(TypeRef.toType(theField.getValue().getTypeRef())));
+        target.print(" ");
         writeResolved(e.incomingDataFlows().get(0));
-        target.print(",i32* %");
+        target.print(",");
+        target.print(LLVMWriterUtils.toType(TypeRef.toType(theField.getValue().getTypeRef())));
+        target.print("* %");
         target.println(toTempSymbol(e, "ptr"));
     }
 
@@ -1598,8 +1609,11 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final GetStaticExpression e) {
-        target.print("load i32 ");
-        target.print(",i32* %");
+        target.print("load ");
+        target.print(LLVMWriterUtils.toType(e.resolveType()));
+        target.print(", ");
+        target.print(LLVMWriterUtils.toType(e.resolveType()));
+        target.print("* %");
         target.print(toTempSymbol(e, "ptr"));
     }
 
