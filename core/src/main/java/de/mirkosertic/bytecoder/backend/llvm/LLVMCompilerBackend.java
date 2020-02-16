@@ -266,6 +266,13 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
+                pw.println("define internal i32 @jlClass_BOOLEANisAssignableFromjlClass(i32 %thisRef, i32 %otherType) {");
+                pw.println("entry:");
+                //TODO: implement this
+                pw.println("    ret i32 0");
+                pw.println("}");
+                pw.println();
+
                 pw.println("define internal i32 @jlClass_jlClassgetSuperclass(i32 %type) inlinehint {");
                 pw.println("entry:");
                 aLinkerContext.linkedClasses().forEach(aEntry -> {
