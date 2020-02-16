@@ -247,7 +247,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 });
 
                 // Some utility function
-                pw.println("define internal i32 @instanceof(i32 %object, i32 %typeid) alwaysinline  {");
+                pw.println("define internal i32 @instanceof(i32 %object, i32 %typeid) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %nulltest = icmp eq i32 %object, 0");
                 pw.println("    br i1 %nulltest, label %isnull, label %notnull");
@@ -266,8 +266,66 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
+                pw.println("define internal i32 @jlClass_jlClassgetSuperclass(i32 %type) inlinehint {");
+                pw.println("entry:");
+                aLinkerContext.linkedClasses().forEach(aEntry -> {
+                    final BytecodeLinkedClass theLinkedClass = aEntry.targetNode();
+                    if (theLinkedClass.emulatedByRuntime()) {
+                        return;
+                    }
+
+                    final String prefix = "pre" + theLinkedClass.getUniqueId();
+                    pw.print("    %");
+                    pw.print(prefix);
+                    pw.print("_runtimeclass = load i32, i32* @");
+                    pw.print(LLVMWriterUtils.toClassName(theLinkedClass.getClassName()));
+                    pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+
+                    pw.print("    %");
+                    pw.print(prefix);
+                    pw.print("_check = icmp eq i32 %type, %");
+                    pw.print(prefix);
+                    pw.println("_runtimeclass");
+
+                    pw.print("    br i1 %");
+                    pw.print(prefix);
+                    pw.print("_check");
+                    pw.print(", label %");
+                    pw.print(prefix);
+                    pw.print("_ok");
+                    pw.print(", label %");
+                    pw.print(prefix);
+                    pw.println("_notok");
+
+                    pw.print(prefix);
+                    pw.print("_ok");
+                    pw.println(":");
+
+                    if (!theLinkedClass.getClassName().name().equals(Object.class.getName())) {
+                        pw.print("    %");
+                        pw.print(prefix);
+                        pw.print("_superclass = load i32, i32* @");
+                        pw.print(LLVMWriterUtils.toClassName(theLinkedClass.getSuperClass().getClassName()));
+                        pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+                        pw.print("    ret i32 ");
+                        pw.print("%");
+                        pw.print(prefix);
+                        pw.println("_superclass");
+                    } else {
+                        pw.println("    ret i32 0");
+                    }
+
+                    pw.print(prefix);
+                    pw.print("_notok");
+                    pw.println(":");
+                });
+
+                pw.println("    ret i32 0");
+                pw.println("}");
+                pw.println();
+
                 // NaN values are not equals to themself
-                pw.println("define internal i32 @isnan(float %value) alwaysinline  {");
+                pw.println("define internal i32 @isnan(float %value) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %test = fcmp oeq float %value, %value");
                 pw.println("    br i1 %test, label %iseq, label %isnoteq");
@@ -278,7 +336,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i32 @toi32(float %value) alwaysinline {");
+                pw.println("define internal i32 @toi32(float %value) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %test = fcmp oeq float %value, %value");
                 pw.println("    br i1 %test, label %iseq, label %isnoteq");
@@ -290,7 +348,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i32 @compare_i32(i32 %v1, i32 %v2) alwaysinline  {");
+                pw.println("define internal i32 @compare_i32(i32 %v1, i32 %v2) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %test = icmp eq i32 %v1,%v2");
                 pw.println("    br i1 %test, label %iseq, label %isnoteq");
@@ -306,7 +364,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i32 @compare_f32(float %v1, float %v2) alwaysinline  {");
+                pw.println("define internal i32 @compare_f32(float %v1, float %v2) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %test = fcmp oeq float %v1,%v2");
                 pw.println("    br i1 %test, label %iseq, label %isnoteq");
@@ -322,7 +380,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i1 @exceedsrange(i32 %v, i32 %min, i32 %max) alwaysinline  {");
+                pw.println("define internal i1 @exceedsrange(i32 %v, i32 %min, i32 %max) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %test = icmp slt i32 %v, %min");
                 pw.println("    br i1 %test, label %exceed, label %continue");
@@ -336,14 +394,14 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal float @div_floatfloat(float %a, float %b) alwaysinline  {");
+                pw.println("define internal float @div_floatfloat(float %a, float %b) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %result = fdiv float %a, %b");
                 pw.println("    ret float %result");
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal float @div_i32i32(i32 %a, i32 %b) alwaysinline  {");
+                pw.println("define internal float @div_i32i32(i32 %a, i32 %b) alwaysinline inlinehint {");
                 pw.println("entry:");
                 pw.println("    %temp1 = sitofp i32 %a to float");
                 pw.println("    %temp2 = sitofp i32 %b to float");
@@ -352,7 +410,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i32 @maximum(i32 %a, i32 %b) alwaysinline  {");
+                pw.println("define internal i32 @maximum(i32 %a, i32 %b) inlinehint {");
                 pw.println("entry:");
                 pw.println("   %test = icmp sgt i32 %a, %b");
                 pw.println("   br i1 %test, label %aisgreater, label %notgreater");
@@ -363,7 +421,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i32 @minimum(i32 %a, i32 %b) alwaysinline  {");
+                pw.println("define internal i32 @minimum(i32 %a, i32 %b) inlinehint {");
                 pw.println("entry:");
                 pw.println("   %test = icmp slt i32 %a, %b");
                 pw.println("   br i1 %test, label %aissmaller, label %notsmaller");
@@ -375,7 +433,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println();
 
                 // Method type
-                pw.println("define internal i32 @checkmethodtype(i32 %methodType, i32 %index, i32 %expectedType) alwaysinline {");
+                pw.println("define internal i32 @checkmethodtype(i32 %methodType, i32 %index, i32 %expectedType) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %offset = mul i32 %index, 4");
                 pw.println("    %ptr1 = add i32 %index, 20");
@@ -665,7 +723,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                     pw.print(" @");
                                     pw.print(theMethodName);
                                     pw.print("(i32 %runtimeClass");
-                                    for (int i=0;i<theMethod.getSignature().getArguments().length;i++) {
+                                    for (int i = 0; i < theMethod.getSignature().getArguments().length; i++) {
                                         pw.print(",");
                                         pw.print(LLVMWriterUtils.toType(TypeRef.toType(theMethod.getSignature().getArguments()[i])));
                                         pw.print(" %p");
@@ -678,7 +736,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                         pw.print("    call void @");
                                         pw.print(LLVMWriterUtils.toMethodName(aMethodMapEntry.getProvidingClass().getClassName(), theMethod.getName().stringValue(), theMethod.getSignature()));
                                         pw.print("(i32 %runtimeClass");
-                                        for (int i=0;i<theMethod.getSignature().getArguments().length;i++) {
+                                        for (int i = 0; i < theMethod.getSignature().getArguments().length; i++) {
                                             pw.print(",");
                                             pw.print(LLVMWriterUtils.toType(TypeRef.toType(theMethod.getSignature().getArguments()[i])));
                                             pw.print(" %p");
@@ -692,7 +750,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                         pw.print(" @");
                                         pw.print(LLVMWriterUtils.toMethodName(aMethodMapEntry.getProvidingClass().getClassName(), theMethod.getName().stringValue(), theMethod.getSignature()));
                                         pw.print("(i32 %runtimeClass");
-                                        for (int i=0;i<theMethod.getSignature().getArguments().length;i++) {
+                                        for (int i = 0; i < theMethod.getSignature().getArguments().length; i++) {
                                             pw.print(",");
                                             pw.print(LLVMWriterUtils.toType(TypeRef.toType(theMethod.getSignature().getArguments()[i])));
                                             pw.print(" %p");
@@ -727,8 +785,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.print("define i32 @");
                             pw.print(LLVMWriterUtils.toMethodName(theLinkedClass.getClassName(), LLVMWriter.NEWINSTANCE_METHOD_NAME, theMethod.getSignature()));
                             pw.print("(");
-                            for (int i=0;i<theMethod.getSignature().getArguments().length;i++) {
-                                if (i>0) {
+                            for (int i = 0; i < theMethod.getSignature().getArguments().length; i++) {
+                                if (i > 0) {
                                     pw.print(",");
                                 }
                                 pw.print(LLVMWriterUtils.toType(TypeRef.toType(theMethod.getSignature().getArguments()[i])));
@@ -751,7 +809,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.println(" to i32");
                             pw.print("    %allocated = call i32(i32,i32,i32,i32) @");
                             pw.print(LLVMWriterUtils.toMethodName(theMemoryManagerClass.getClassName(), "newObject",
-                                    new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT})));
+                                    new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT})));
                             pw.print("(");
                             pw.print("i32 0,");
 
@@ -769,7 +827,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.print(" @");
                             pw.print(LLVMWriterUtils.toMethodName(theLinkedClass.getClassName(), theMethod.getName(), theMethod.getSignature()));
                             pw.print("(i32 %allocated");
-                            for (int i=0;i<theMethod.getSignature().getArguments().length;i++) {
+                            for (int i = 0; i < theMethod.getSignature().getArguments().length; i++) {
                                 pw.print(",");
                                 pw.print(LLVMWriterUtils.toType(TypeRef.toType(theMethod.getSignature().getArguments()[i])));
                                 pw.print(" %p");
@@ -825,7 +883,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.print("%runtimeClass");
                         }
                         final List<Variable> theArguments = theSSAProgram.getArguments();
-                        for (int i=0;i<theArguments.size();i++) {
+                        for (int i = 0; i < theArguments.size(); i++) {
                             final Variable theArgument = theArguments.get(i);
                             final TypeRef theParamType = theArgument.resolveType();
                             if (i == 0 && theMethod.getAccessFlags().isStatic()) {
@@ -881,7 +939,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                 pw.print(" ");
                                 pw.print("%runtimeClass");
                             }
-                            for (int i=0;i<theArguments.size();i++) {
+                            for (int i = 0; i < theArguments.size(); i++) {
                                 final Variable theArgument = theArguments.get(i);
                                 final TypeRef theParamType = theArgument.resolveType();
                                 if (i == 0 && theMethod.getAccessFlags().isStatic()) {
@@ -916,7 +974,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                 pw.print(" ");
                                 pw.print("%runtimeClass");
                             }
-                            for (int i=0;i<theArguments.size();i++) {
+                            for (int i = 0; i < theArguments.size(); i++) {
                                 final Variable theArgument = theArguments.get(i);
                                 final TypeRef theParamType = theArgument.resolveType();
                                 if (i == 0 && theMethod.getAccessFlags().isStatic()) {
@@ -1037,7 +1095,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println();
 
                 // We create the string pool now
-                for (int i=0;i<stringPool.size();i++) {
+                for (int i = 0; i < stringPool.size(); i++) {
                     pw.print("@");
                     pw.print("strpool_");
                     pw.print(i);
@@ -1099,7 +1157,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
                 });
 
-                    pw.println("    ret void");
+                pw.println("    ret void");
                 pw.println("}");
                 pw.println();
             }
@@ -1137,6 +1195,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         System.out.println(line);
                     }
                 }
+
+                throw new RuntimeException("llc reported an error!");
             } else {
 
                 try (final FileInputStream inputStream = new FileInputStream(new File(theLLFile.getParent(), theObjectFileName))) {
@@ -1179,6 +1239,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         System.out.println(line);
                     }
                 }
+
+                throw new RuntimeException("wasm-ld reported an error!");
+
             } else {
                 try (final FileInputStream inputStream = new FileInputStream(
                         new File(theLLFile.getParent(), theWASMFileName))) {
@@ -1188,6 +1251,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             }
 
             return theCompileResult;
+        } catch (RuntimeException e) {
+            throw e;
         } catch (final Exception e) {
             throw new RuntimeException(e);
         }

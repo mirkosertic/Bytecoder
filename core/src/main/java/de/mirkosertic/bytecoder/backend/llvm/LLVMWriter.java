@@ -93,6 +93,7 @@ import de.mirkosertic.bytecoder.ssa.ShortValue;
 import de.mirkosertic.bytecoder.ssa.SqrtExpression;
 import de.mirkosertic.bytecoder.ssa.StackTopExpression;
 import de.mirkosertic.bytecoder.ssa.StringValue;
+import de.mirkosertic.bytecoder.ssa.SuperTypeOfExpression;
 import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.ThrowExpression;
 import de.mirkosertic.bytecoder.ssa.TypeConversionExpression;
@@ -1252,9 +1253,17 @@ public class LLVMWriter implements AutoCloseable {
             write((SqrtExpression) aValue);
         } else if (aValue instanceof NewMultiArrayExpression) {
             write((NewMultiArrayExpression) aValue);
+        } else if (aValue instanceof SuperTypeOfExpression) {
+            write((SuperTypeOfExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue.getClass());
         }
+    }
+
+    private void write(final SuperTypeOfExpression e) {
+        target.print("call i32 @jlClass_jlClassgetSuperclass(i32 ");
+        write(e.incomingDataFlows().get(0), true);
+        target.print(")");
     }
 
     private void write(final NewMultiArrayExpression e) {
@@ -1398,7 +1407,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final DoubleValue e) {
-        final long doubleBits = Double.doubleToLongBits(e.getDoubleValue());
+        final long doubleBits = Double.doubleToRawLongBits((float) e.getDoubleValue());
         target.print(String.format("0x%X", doubleBits));
     }
 
