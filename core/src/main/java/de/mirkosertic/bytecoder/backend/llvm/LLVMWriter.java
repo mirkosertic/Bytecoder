@@ -412,7 +412,9 @@ public class LLVMWriter implements AutoCloseable {
         target.print(toTempSymbol(e, "ptrptr"));
         target.print(" = inttoptr i32 %");
         target.print(toTempSymbol(e, "ptr"));
-        target.println(" to i32*");
+        target.println(" to ");
+        target.print(LLVMWriterUtils.toType(e.resolveType()));
+        target.println("*");
     }
 
     private void tempify(final NewObjectExpression e) {
@@ -866,13 +868,17 @@ public class LLVMWriter implements AutoCloseable {
         target.print(toTempSymbol(e, "ptrptr"));
         target.print(" = inttoptr i32 %");
         target.print(toTempSymbol(e, "ptr"));
-        target.println(" to i32*");
+        target.println(" to ");
+        target.print(LLVMWriterUtils.toType(e.getArrayType()));
+        target.println("*");
 
         target.print("    store ");
         target.print(LLVMWriterUtils.toType(e.getArrayType()));
         target.print(" ");
         writeResolved(e.incomingDataFlows().get(2));
-        target.print(", i32* %");
+        target.print(", ");
+        target.print(LLVMWriterUtils.toType(e.getArrayType()));
+        target.print("* %");
         target.println(toTempSymbol(e, "ptrptr"));
     }
 
@@ -1540,7 +1546,9 @@ public class LLVMWriter implements AutoCloseable {
     private void write(final ArrayEntryExpression e) {
         target.print("load ");
         target.print(LLVMWriterUtils.toType(e.resolveType()));
-        target.print(", i32* %");
+        target.print(", ");
+        target.print(LLVMWriterUtils.toType(e.resolveType()));
+        target.print("* %");
         target.print(toTempSymbol(e, "ptrptr"));
         target.println();
     }
