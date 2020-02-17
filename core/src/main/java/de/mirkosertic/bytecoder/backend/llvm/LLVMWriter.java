@@ -412,7 +412,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print(toTempSymbol(e, "ptrptr"));
         target.print(" = inttoptr i32 %");
         target.print(toTempSymbol(e, "ptr"));
-        target.println(" to ");
+        target.print(" to ");
         target.print(LLVMWriterUtils.toType(e.resolveType()));
         target.println("*");
     }
@@ -870,7 +870,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print(toTempSymbol(e, "ptrptr"));
         target.print(" = inttoptr i32 %");
         target.print(toTempSymbol(e, "ptr"));
-        target.println(" to ");
+        target.print(" to ");
         target.print(LLVMWriterUtils.toType(e.getArrayType()));
         target.println("*");
 

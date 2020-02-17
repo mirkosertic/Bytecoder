@@ -193,7 +193,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                             // Native methods are imported via annotation
                             if (!t.getAccessFlags().isNative() && theProvidingClass.isOpaqueType()) {
-                                // For all the other methods we programatically generate
+                                // For all the other methods we generate
                                 // the JS wrapper implementation later by this compiler
                                 //opaqueReferenceMethods.add(new WASMSSAASTCompilerBackend.OpaqueReferenceMethod(theProvidingClass, t));
                             }
@@ -408,7 +408,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal float @div_i32i32(i32 %a, i32 %b) alwaysinline inlinehint {");
+                pw.println("define internal float @div_i32i32(i32 %a, i32 %b) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %temp1 = sitofp i32 %a to float");
                 pw.println("    %temp2 = sitofp i32 %b to float");
@@ -472,28 +472,27 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                 pw.println("define internal i32 @jlClass_jlStringgetName(i32 %thisRef) {");
                 pw.println("entry:");
-                // TODO: implement this
-                pw.println("    ret i32 0");
+                pw.println("    %offset = add i32 %thisRef, 16");
+                pw.println("    %ptr = inttoptr i32 %offset to i32*");
+                pw.println("    %classname = load i32, i32* %ptr");
+                pw.println("    ret i32 %classname");
                 pw.println("}");
                 pw.println();
 
                 pw.println("define internal i32 @jlClass_BOOLEANdesiredAssertionStatus(i32 %thisRef) {");
                 pw.println("entry:");
-                // TODO: implement this
                 pw.println("    ret i32 0");
                 pw.println("}");
                 pw.println();
 
                 pw.println("define internal i32 @jlClass_A1jlObjectgetEnumConstants(i32 %thisRef) {");
                 pw.println("entry:");
-                // TODO: implement this
                 pw.println("    ret i32 0");
                 pw.println("}");
                 pw.println();
 
                 pw.println("define internal i32 @jlClass_jlClassLoadergetClassLoader(i32 %thisRef) {");
                 pw.println("entry:");
-                // TODO: implement this
                 pw.println("    ret i32 0");
                 pw.println("}");
                 pw.println();
@@ -1101,15 +1100,6 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                // We create the string pool now
-                for (int i = 0; i < stringPool.size(); i++) {
-                    pw.print("@");
-                    pw.print("strpool_");
-                    pw.print(i);
-                    pw.println(" = private global i32 0");
-                }
-                pw.println();
-
                 // Generate bootstrap code
                 attributeCounter.incrementAndGet();
                 pw.print("attributes #");
@@ -1141,6 +1131,13 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.print("    %");
                     pw.print(theClassName);
                     pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
+                    pw.print("_classnameptr = ptrtoint i32* @");
+                    pw.print(theSymbolResolver.globalFromStringPool(theLinkedClass.getClassName().name()));
+                    pw.println(" to i32");
+
+                    pw.print("    %");
+                    pw.print(theClassName);
+                    pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
                     pw.print("_allocated = call i32(i32,i32,i32,i32) @newRuntimeClass(i32 ");
                     pw.print(theLinkedClass.getUniqueId());
                     pw.print(",i32 ");
@@ -1152,9 +1149,10 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     } else {
                         pw.print("-1");
                     }
-                    // TODO: reference to class name as constant pool here
-                    pw.print(",i32 0");
-                    pw.println(")");
+                    pw.print(",i32 %");
+                    pw.print(theClassName);
+                    pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
+                    pw.println("_classnameptr)");
 
                     pw.print("    store i32 %");
                     pw.print(theClassName);
@@ -1166,6 +1164,16 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                 pw.println("    ret void");
                 pw.println("}");
+                pw.println();
+
+                // We create the string pool now
+                for (int i = 0; i < stringPool.size(); i++) {
+                    pw.print("@");
+                    pw.print("strpool_");
+                    pw.print(i);
+                    pw.println(" = private global i32 0");
+                    //TODO: handle initialization here
+                }
                 pw.println();
             }
 
@@ -1258,7 +1266,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             }
 
             return theCompileResult;
-        } catch (RuntimeException e) {
+        } catch (final RuntimeException e) {
             throw e;
         } catch (final Exception e) {
             throw new RuntimeException(e);
