@@ -17,6 +17,9 @@ package de.mirkosertic.bytecoder.backend.llvm;
 
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
+import de.mirkosertic.bytecoder.api.OpaqueIndexed;
+import de.mirkosertic.bytecoder.api.OpaqueMethod;
+import de.mirkosertic.bytecoder.api.OpaqueProperty;
 import de.mirkosertic.bytecoder.api.Substitutes;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
@@ -56,6 +59,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Reader;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -69,12 +73,6 @@ import java.util.stream.Collectors;
 
 public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
-    private final ProgramGeneratorFactory programGeneratorFactory;
-
-    public LLVMCompilerBackend(final ProgramGeneratorFactory aProgramGeneratorFactory) {
-        this.programGeneratorFactory = aProgramGeneratorFactory;
-    }
-
     private static class CallSite {
         private final Program program;
         private final RegionNode bootstrapMethod;
@@ -83,6 +81,31 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             this.program = aProgram;
             this.bootstrapMethod = aBootstrapMethod;
         }
+    }
+
+    private static class OpaqueReferenceMethod {
+
+        private final BytecodeLinkedClass linkedClass;
+        private final BytecodeMethod method;
+
+        public OpaqueReferenceMethod(final BytecodeLinkedClass linkedClass, final BytecodeMethod method) {
+            this.linkedClass = linkedClass;
+            this.method = method;
+        }
+
+        public BytecodeLinkedClass getLinkedClass() {
+            return linkedClass;
+        }
+
+        public BytecodeMethod getMethod() {
+            return method;
+        }
+    }
+
+    private final ProgramGeneratorFactory programGeneratorFactory;
+
+    public LLVMCompilerBackend(final ProgramGeneratorFactory aProgramGeneratorFactory) {
+        this.programGeneratorFactory = aProgramGeneratorFactory;
     }
 
     @Override
@@ -105,6 +128,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
         theMemoryManagerClass.resolveStaticMethod("newArray", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
         final LLVMCompileResult theCompileResult = new LLVMCompileResult();
+        final List<OpaqueReferenceMethod> opaqueReferenceMethods = new ArrayList<>();
 
         try {
             final List<String> stringPool = new ArrayList<>();
@@ -454,18 +478,86 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("notequals:");
                 pw.println("    ret i32 0");
                 pw.println("}");
+                pw.println();
 
                 // Lambda
-                pw.println("define internal i32 @newlambda(i32 %a, i32 %b, i32 %c) {");
-                pw.println("entry:");
-                // TODO: implement this
-                pw.println("    unreachable");
+                pw.println("define internal i32 @lambda__resolvevtableindex(i32 %thisRef,i32 %methodId) {");
+                pw.println("    %offset = add i32 %thisRef, 8");
+                pw.println("    %offsetptr = inttoptr i32 %offset to i32*");
+                pw.println("    %ptr = load i32, i32* %offsetptr");
+                pw.println("    ret i32 %ptr");
                 pw.println("}");
+                pw.println();
+
+                pw.println("define internal i32 @newlambda(i32 %type, i32 %implMethodNumber, i32 %staticArguments) {");
+                pw.println("entry:");
+                pw.println("    %vtable = ptrtoint i32(i32,i32)* @lambda__resolvevtableindex to i32");
+                pw.print("    %allocated = call i32 @");
+                pw.print(LLVMWriterUtils.toClassName(theMemoryManagerClass.getClassName()));
+                pw.println("_INTnewObjectINTINTINT(i32 0,i32 16,i32 %type,i32 %vtable)");
+                pw.println("    %offset1 = add i32 %allocated, 8");
+                pw.println("    %offset1ptr = inttoptr i32 %offset1 to i32*");
+                pw.println("    store i32 %implMethodNumber, i32* %offset1ptr");
+                pw.println("    %offset2 = add i32 %allocated, 12");
+                pw.println("    %offset2ptr = inttoptr i32 %offset2 to i32*");
+                pw.println("    store i32 %staticArguments, i32* %offset2ptr");
+                pw.println("    ret i32 %allocated");
+                pw.println("}");
+                pw.println();
 
                 // Some utility functions for runtime class management
                 pw.println("define internal i32 @runtimeClass__resolvevtableindex(i32 %thisRef,i32 %methodId) {");
                 pw.println("entry:");
-                // TODO: implement this
+                final BytecodeLinkedClass theClassLinkedCass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Class.class));
+                final BytecodeResolvedMethods theRuntimeMethodMap = theClassLinkedCass.resolvedMethods();
+                theRuntimeMethodMap.stream().forEach(aMethodMapEntry -> {
+                    final BytecodeMethod theMethod = aMethodMapEntry.getValue();
+                    if (!theMethod.getAccessFlags().isStatic() && !theMethod.isConstructor() && !theMethod.isClassInitializer() &&
+                            aMethodMapEntry.getProvidingClass().getClassName().equals(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))) {
+
+                        final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(theMethod);
+                        pw.print("    %test");
+                        pw.print(theMethodIdentifier.getIdentifier());
+                        pw.print(" = icmp eq i32 %methodId, ");
+                        pw.println(theMethodIdentifier.getIdentifier());
+
+                        pw.print("    br i1 %test");
+                        pw.print(theMethodIdentifier.getIdentifier());
+                        pw.print(", label %test");
+                        pw.print(theMethodIdentifier.getIdentifier());
+                        pw.print("_ok, label %test");
+                        pw.print(theMethodIdentifier.getIdentifier());
+                        pw.println("_notok");
+
+                        pw.print("test");
+                        pw.print(theMethodIdentifier.getIdentifier());
+                        pw.println("_ok:");
+
+                        if (Objects.equals("getClass", theMethod.getName().stringValue())) {
+                            pw.println("    call void @llvm.trap()");
+                            pw.println("    unreachable");
+                        } else {
+                            // delegate to the corresponding method of java.lang.Class
+                            final String theMethodName = LLVMWriterUtils.toMethodName(aMethodMapEntry.getProvidingClass().getClassName(),
+                                    theMethod.getName(), theMethod.getSignature());
+                            pw.print("    %v");
+                            pw.print(theMethodIdentifier.getIdentifier());
+                            pw.print(" = ptrtoint ");
+                            pw.print(LLVMWriterUtils.toSignature(theMethod.getSignature()));
+                            pw.print("* @");
+                            pw.print(theMethodName);
+                            pw.println(" to i32");
+
+                            pw.print("    ret i32 %v");
+                            pw.println(theMethodIdentifier.getIdentifier());
+                        }
+
+                        pw.print("test");
+                        pw.print(theMethodIdentifier.getIdentifier());
+                        pw.println("_notok:");
+                    }
+                });
+                pw.println("    call void @llvm.trap()");
                 pw.println("    unreachable");
                 pw.println("}");
                 pw.println();
@@ -1182,6 +1274,643 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theCompileResult.add(new CompileResult.StringContent(aOptions.getFilenamePrefix() + ".ll", theLLContent));
             }
 
+            final StringWriter theJSCode = new StringWriter();
+            try (final PrintWriter theWriter = new PrintWriter(theJSCode)) {
+
+                theWriter.println("var bytecoder = {");
+                theWriter.println();
+                theWriter.println("     runningInstance: undefined,");
+                theWriter.println("     runningInstanceMemory: undefined,");
+                theWriter.println("     exports: undefined,");
+                theWriter.println("     referenceTable: ['EMPTY'],");
+                theWriter.println("     callbacks: [],");
+                theWriter.println("     filehandles: [],");
+                theWriter.println();
+
+                theWriter.println("     openForRead: function(path) {");
+                theWriter.println("         try {");
+                theWriter.println("             var request = new XMLHttpRequest();");
+                theWriter.println("             request.open('GET',path,false);");
+                theWriter.println("             request.overrideMimeType('text\\/plain; charset=x-user-defined');");
+                theWriter.println("             request.send(null);");
+                theWriter.println("             if (request.status == 200) {");
+                theWriter.println("                var length = request.getResponseHeader('content-length');");
+                theWriter.println("                var responsetext = request.response;");
+                theWriter.println("                var buf = new ArrayBuffer(responsetext.length);");
+                theWriter.println("                var bufView = new Uint8Array(buf);");
+                theWriter.println("                for (var i=0, strLen=responsetext.length; i<strLen; i++) {");
+                theWriter.println("                    bufView[i] = responsetext.charCodeAt(i) & 0xff;");
+                theWriter.println("                }");
+                theWriter.println("                var handle = bytecoder.filehandles.length;");
+                theWriter.println("                bytecoder.filehandles[handle] = {");
+                theWriter.println("                    currentpos: 0,");
+                theWriter.println("                    data: bufView,");
+                theWriter.println("                    size: length,");
+                theWriter.println("                    skip0LONGLONG: function(handle,amount) {");
+                theWriter.println("                        var remaining = this.size - this.currentpos;");
+                theWriter.println("                        var possible = Math.min(remaining, amount);");
+                theWriter.println("                        this.currentpos+=possible;");
+                theWriter.println("                        return possible;");
+                theWriter.println("                    },");
+                theWriter.println("                    available0LONG: function(handle) {");
+                theWriter.println("                        return this.size - this.currentpos;");
+                theWriter.println("                    },");
+                theWriter.println("                    read0LONG: function(handle) {");
+                theWriter.println("                        return this.data[this.currentpos++];");
+                theWriter.println("                    },");
+                theWriter.println("                    readBytesLONGL1BYTEINTINT: function(handle,target,offset,length) {");
+                theWriter.println("                        if (length === 0) {");
+                theWriter.println("                            return 0;");
+                theWriter.println("                        }");
+                theWriter.println("                        var remaining = this.size - this.currentpos;");
+                theWriter.println("                        var possible = Math.min(remaining, length);");
+                theWriter.println("                        if (possible === 0) {");
+                theWriter.println("                            return -1;");
+                theWriter.println("                        }");
+                theWriter.println("                        for (var j=0;j<possible;j++) {");
+                theWriter.println("                            bytecoder.runningInstanceMemory[target + 20 + offset * 4]=this.data[this.currentpos++];");
+                theWriter.println("                            offset++;");
+                theWriter.println("                        }");
+                theWriter.println("                        return possible;");
+                theWriter.println("                    }");
+                theWriter.println("                };");
+                theWriter.println("                return handle;");
+                theWriter.println("            }");
+                theWriter.println("            return -1;");
+                theWriter.println("         } catch(e) {");
+                theWriter.println("             return -1;");
+                theWriter.println("         }");
+                theWriter.println("     },");
+                theWriter.println();
+
+                theWriter.println("     init: function(instance) {");
+                theWriter.println("         bytecoder.runningInstance = instance;");
+                theWriter.println("         bytecoder.runningInstanceMemory = new Uint8Array(instance.exports.memory.buffer);");
+                theWriter.println("         bytecoder.exports = instance.exports;");
+                theWriter.println("     },");
+                theWriter.println();
+
+                theWriter.println("     initializeFileIO: function() {");
+                theWriter.println("         var stddin = {");
+                theWriter.println("         };");
+                theWriter.println("         var stdout = {");
+                theWriter.println("             buffer: \"\",");
+                theWriter.println("             writeBytesLONGL1BYTEINTINT: function(handle, data, offset, length) {");
+                theWriter.println("                 if (length > 0) {");
+                theWriter.println("                     var array = new Uint8Array(length);");
+                theWriter.println("                     data+=20;");
+                theWriter.println("                     for (var i = 0; i < length; i++) {");
+                theWriter.println("                         array[i] = bytecoder.intInMemory(data);");
+                theWriter.println("                         data+=4;");
+                theWriter.println("                     }");
+                theWriter.println("                     var asstring = String.fromCharCode.apply(null, array);");
+                theWriter.println("                     for (var i=0;i<asstring.length;i++) {");
+                theWriter.println("                         var c = asstring.charAt(i);");
+                theWriter.println("                         if (c == '\\n') {");
+                theWriter.println("                             console.log(stdout.buffer);");
+                theWriter.println("                             stdout.buffer=\"\";");
+                theWriter.println("                         } else {");
+                theWriter.println("                             stdout.buffer = stdout.buffer.concat(c);");
+                theWriter.println("                         }");
+                theWriter.println("                     }");
+                theWriter.println("                 }");
+                theWriter.println("             },");
+                theWriter.println("             close0LONG: function(handle) {");
+                theWriter.println("             },");
+                theWriter.println("             writeIntLONGINT: function(handle,value) {");
+                theWriter.println("                 var c = String.fromCharCode(value);");
+                theWriter.println("                 if (c == '\\n') {");
+                theWriter.println("                     console.log(stdout.buffer);");
+                theWriter.println("                     stdout.buffer=\"\";");
+                theWriter.println("                 } else {");
+                theWriter.println("                     stdout.buffer = stdout.buffer.concat(c);");
+                theWriter.println("                 }");
+                theWriter.println("             }");
+                theWriter.println("         };");
+                theWriter.println("         bytecoder.filehandles[0] = stddin;");
+                theWriter.println("         bytecoder.filehandles[1] = stdout;");
+                theWriter.println("         bytecoder.filehandles[2] = stdout;");
+                theWriter.println("         bytecoder.exports.initDefaultFileHandles(-1,0,1,2);");
+                theWriter.println("     },");
+                theWriter.println();
+
+                theWriter.println("     intInMemory: function(value) {");
+                theWriter.println("         return bytecoder.runningInstanceMemory[value]");
+                theWriter.println("                + (bytecoder.runningInstanceMemory[value + 1] * 256)");
+                theWriter.println("                + (bytecoder.runningInstanceMemory[value + 2] * 256 * 256)");
+                theWriter.println("                + (bytecoder.runningInstanceMemory[value + 3] * 256 * 256 * 256);");
+                theWriter.println("     },");
+
+                final BytecodeLinkedClass theStringClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(String.class));
+                final int theStringDataOffset = memoryLayouter.layoutFor(theStringClass.getClassName()).offsetForInstanceMember("value");
+
+                theWriter.println();
+                theWriter.println("     toJSString: function(value) {");
+                theWriter.println("         var theByteArray = bytecoder.intInMemory(value + " + theStringDataOffset + ");");
+                theWriter.println("         var theData = bytecoder.byteArraytoJSString(theByteArray);");
+                theWriter.println("         return theData;");
+                theWriter.println("     },");
+                theWriter.println();
+
+                theWriter.println("     byteArraytoJSString: function(value) {");
+                theWriter.println("         var theLength = bytecoder.intInMemory(value + 16);");
+                theWriter.println("         var theData = '';");
+                theWriter.println("         value = value + 20;");
+                theWriter.println("         for (var i=0;i<theLength;i++) {");
+                theWriter.println("             var theCharCode = bytecoder.intInMemory(value);");
+                theWriter.println("             value = value + 4;");
+                theWriter.println("             theData+= String.fromCharCode(theCharCode);");
+                theWriter.println("         }");
+                theWriter.println("         return theData;");
+                theWriter.println("     },");
+                theWriter.println();
+
+                theWriter.println("     toBytecoderReference: function(value) {");
+                theWriter.println("         var index = bytecoder.referenceTable.indexOf(value);");
+                theWriter.println("         if (index>=0) {");
+                theWriter.println("             return index;");
+                theWriter.println("         }");
+                theWriter.println("         bytecoder.referenceTable.push(value);");
+                theWriter.println("         return bytecoder.referenceTable.length - 1;");
+                theWriter.println("     },");
+                theWriter.println();
+
+                theWriter.println("     toJSReference: function(value) {");
+                theWriter.println("         return bytecoder.referenceTable[value];");
+                theWriter.println("     },");
+                theWriter.println();
+
+                theWriter.println("     toBytecoderString: function(value) {");
+                theWriter.println("         var newArray = bytecoder.exports.newByteArray(0, value.length);");
+                theWriter.println("         for (var i=0;i<value.length;i++) {");
+                theWriter.println("             bytecoder.exports.setByteArrayEntry(0,newArray,i,value.charCodeAt(i));");
+                theWriter.println("         }");
+                theWriter.println("         return bytecoder.exports.newStringUTF8(0, newArray);");
+                theWriter.println("     },");
+                theWriter.println();
+
+                theWriter.println("     registerCallback: function(ptr,callback) {");
+                theWriter.println("         bytecoder.callbacks.push(ptr);");
+                theWriter.println("         return callback;");
+                theWriter.println("     },");
+                theWriter.println();
+
+                theWriter.println("     imports: {");
+                theWriter.println("         stringutf16: {");
+                theWriter.println("             isBigEndian: function() {return 1;},");
+                theWriter.println("         },");
+                theWriter.println("         system: {");
+                theWriter.println("             currentTimeMillis: function() {return Date.now();},");
+                theWriter.println("             nanoTime: function() {return Date.now() * 1000000;},");
+                theWriter.println("         },");
+                theWriter.println("         vm: {");
+                theWriter.println("             newRuntimeGeneratedTypeStringMethodTypeMethodHandleObject: function() {},");
+                theWriter.println("         },");
+                theWriter.println("         memorymanager: {");
+                theWriter.println("             isUsedAsCallbackINT : function(thisref, ptr) {");
+                theWriter.println("                 return bytecoder.callbacks.includes(ptr);");
+                theWriter.println("             },");
+                theWriter.println("             printObjectDebugInternalObjectINTINTBOOLEANBOOLEAN: function(thisref, ptr, indexAlloc, indexFree, usedByStack, usedByHeap) {");
+                theWriter.println("                 console.log('Memory debug for ' + ptr);");
+                theWriter.println("                 var theAllocatedBlock = ptr - 12;");
+                theWriter.println("                 var theSize = bytecoder.intInMemory(theAllocatedBlock);");
+                theWriter.println("                 var theNext = bytecoder.intInMemory(theAllocatedBlock +  4);");
+                theWriter.println("                 var theSurvivorCount = bytecoder.intInMemory(theAllocatedBlock +  8);");
+                theWriter.println("                 console.log(' Allocation starts at '+ theAllocatedBlock);");
+                theWriter.println("                 console.log(' Size = ' + theSize + ', Next = ' + theNext);");
+                theWriter.println("                 console.log(' GC survivor count        : ' + theSurvivorCount);");
+                theWriter.println("                 console.log(' Index in allocation list : ' + indexAlloc);");
+                theWriter.println("                 console.log(' Index in free list       : ' + indexFree);");
+                theWriter.println("                 console.log(' Used by STACK            : ' + usedByStack);");
+                theWriter.println("                 console.log(' Used by HEAP             : ' + usedByHeap);");
+                theWriter.println("                 for (var i=0;i<theSize;i+=4) {");
+                theWriter.println("                     console.log(' Memory offset +' + i + ' = ' + bytecoder.intInMemory( theAllocatedBlock + i));");
+                theWriter.println("                 }");
+                theWriter.println("             }");
+                theWriter.println("         },");
+                theWriter.println("         opaquearrays : {");
+                theWriter.println("             createIntArrayINT: function(thisref, p1) {");
+                theWriter.println("                 return bytecoder.toBytecoderReference(new Int32Array(p1));");
+                theWriter.println("             },");
+                theWriter.println("             createFloatArrayINT: function(thisref, p1) {");
+                theWriter.println("                 return bytecoder.toBytecoderReference(new Float32Array(p1));");
+                theWriter.println("             },");
+                theWriter.println("             createObjectArray: function(thisref) {");
+                theWriter.println("                 return bytecoder.toBytecoderReference([]);");
+                theWriter.println("             },");
+                theWriter.println("             createInt8ArrayINT: function(thisref, p1) {");
+                theWriter.println("                 return bytecoder.toBytecoderReference(new Int8Array(p1));");
+                theWriter.println("             },");
+                theWriter.println("         },");
+
+                theWriter.println("         float : {");
+                theWriter.println("             floatToRawIntBitsFLOAT : function(thisref,value) {");
+                theWriter.println("                 var fl = new Float32Array(1);");
+                theWriter.println("                 fl[0] = value;");
+                theWriter.println("                 var br = new Int32Array(fl.buffer);");
+                theWriter.println("                 return br[0];");
+                theWriter.println("             },");
+                theWriter.println("             intBitsToFloatINT : function(thisref,value) {");
+                theWriter.println("                 var fl = new Int32Array(1);");
+                theWriter.println("                 fl[0] = value;");
+                theWriter.println("                 var br = new Float32Array(fl.buffer);");
+                theWriter.println("                 return br[0];");
+                theWriter.println("             },");
+                theWriter.println("         },");
+
+                theWriter.println("         double : {");
+                theWriter.println("             doubleToRawLongBitsDOUBLE : function(thisref, value) {");
+                theWriter.println("                 var fl = new Float64Array(1);");
+                theWriter.println("                 fl[0] = value;");
+                theWriter.println("                 var br = new BigInt64Array(fl.buffer);");
+                theWriter.println("                 return br[0];");
+                theWriter.println("             },");
+                theWriter.println("             longBitsToDoubleLONG : function(thisref, value) {");
+                theWriter.println("                 var fl = new BigInt64Array(1);");
+                theWriter.println("                 fl[0] = value;");
+                theWriter.println("                 var br = new Float64Array(fl.buffer);");
+                theWriter.println("                 return br[0];");
+                theWriter.println("             },");
+                theWriter.println("         },");
+
+                theWriter.println("         math: {");
+                theWriter.println("             floorDOUBLE: function (thisref, p1) {return Math.floor(p1);},");
+                theWriter.println("             ceilDOUBLE: function (thisref, p1) {return Math.ceil(p1);},");
+                theWriter.println("             sinDOUBLE: function (thisref, p1) {return Math.sin(p1);},");
+                theWriter.println("             cosDOUBLE: function  (thisref, p1) {return Math.cos(p1);},");
+                theWriter.println("             tanDOUBLE: function  (thisref, p1) {return Math.tan(p1);},");
+                theWriter.println("             roundDOUBLE: function  (thisref, p1) {return Math.round(p1);},");
+                theWriter.println("             sqrtDOUBLE: function(thisref, p1) {return Math.sqrt(p1);},");
+                theWriter.println("             cbrtDOUBLE: function(thisref, p1) {return Math.cbrt(p1);},");
+                theWriter.println("             add: function(thisref, p1, p2) {return p1 + p2;},");
+                theWriter.println("             maxLONGLONG: function(thisref, p1, p2) { return Math.max(p1, p2);},");
+                theWriter.println("             maxDOUBLEDOUBLE: function(thisref, p1, p2) { return Math.max(p1, p2);},");
+                theWriter.println("             maxINTINT: function(thisref, p1, p2) { return Math.max(p1, p2);},");
+                theWriter.println("             maxFLOATFLOAT: function(thisref, p1, p2) { return Math.max(p1, p2);},");
+                theWriter.println("             minFLOATFLOAT: function(thisref, p1, p2) { return Math.min(p1, p2);},");
+                theWriter.println("             minINTINT: function(thisref, p1, p2) { return Math.min(p1, p2);},");
+                theWriter.println("             minLONGLONG: function(thisref, p1, p2) { return Math.min(p1, p2);},");
+                theWriter.println("             minDOUBLEDOUBLE: function(thisref, p1, p2) { return Math.min(p1, p2);},");
+                theWriter.println("             toRadiansDOUBLE: function(thisref, p1) {");
+                theWriter.println("                 return p1 * (Math.PI / 180);");
+                theWriter.println("             },");
+                theWriter.println("             toDegreesDOUBLE: function(thisref, p1) {");
+                theWriter.println("                 return p1 * (180 / Math.PI);");
+                theWriter.println("             },");
+                theWriter.println("             random: function(thisref) { return Math.random();},");
+                theWriter.println("             logDOUBLE: function (thisref, p1) {return Math.log(p1);},");
+                theWriter.println("             powDOUBLEDOUBLE: function (thisref, p1, p2) {return Math.pow(p1, p2);},");
+                theWriter.println("             acosDOUBLE: function (thisref, p1, p2) {return Math.acos(p1);},");
+                theWriter.println("             atan2DOUBLE: function (thisref, p1, p2) {return Math.atan2(p1);},");
+                theWriter.println("         },");
+                theWriter.println("         strictmath: {");
+                theWriter.println("             floorDOUBLE: function (thisref, p1) {return Math.floor(p1);},");
+                theWriter.println("             ceilDOUBLE: function (thisref, p1) {return Math.ceil(p1);},");
+                theWriter.println("             sinDOUBLE: function (thisref, p1) {return Math.sin(p1);},");
+                theWriter.println("             cosDOUBLE: function  (thisref, p1) {return Math.cos(p1);},");
+                theWriter.println("             roundFLOAT: function  (thisref, p1) {return Math.round(p1);},");
+                theWriter.println("             sqrtDOUBLE: function(thisref, p1) {return Math.sqrt(p1);},");
+                theWriter.println("             atan2DOUBLEDOUBLE: function(thisref, p1) {return Math.sqrt(p1);},");
+                theWriter.println("         },");
+                theWriter.println("         runtime: {");
+                theWriter.println("             nativewindow: function(caller) {return bytecoder.toBytecoderReference(window);},");
+                theWriter.println("             nativeconsole: function(caller) {return bytecoder.toBytecoderReference(console);},");
+                theWriter.println("         },");
+
+                theWriter.println("         unixfilesystem :{");
+                theWriter.println("             getBooleanAttributes0String : function(thisref,path) {");
+                theWriter.println("                 var jsPath = bytecoder.toJSString(path);");
+                theWriter.println("                 try {");
+                theWriter.println("                     var request = new XMLHttpRequest();");
+                theWriter.println("                     request.open('HEAD',jsPath,false);");
+                theWriter.println("                     request.send(null);");
+                theWriter.println("                     if (request.status == 200) {");
+                theWriter.println("                         var length = request.getResponseHeader('content-length');");
+                theWriter.println("                         return 0x01;");
+                theWriter.println("                     }");
+                theWriter.println("                     return 0;");
+                theWriter.println("                 } catch(e) {");
+                theWriter.println("                     return 0;");
+                theWriter.println("                 }");
+                theWriter.println("             },");
+                theWriter.println("         },");
+
+                theWriter.println("         fileoutputstream : {");
+                theWriter.println("             writeBytesLONGL1BYTEINTINT : function(thisref, handle, data, offset, length) {");
+                theWriter.println("                 bytecoder.filehandles[handle].writeBytesLONGL1BYTEINTINT(handle,data,offset,length);");
+                theWriter.println("             },");
+                theWriter.println("             writeIntLONGINT : function(thisref, handle, intvalue) {");
+                theWriter.println("                 bytecoder.filehandles[handle].writeIntLONGINT(handle,intvalue);");
+                theWriter.println("             },");
+                theWriter.println("             close0LONG : function(thisref,handle) {");
+                theWriter.println("                 bytecoder.filehandles[handle].close0LONG(handle);");
+                theWriter.println("             },");
+                theWriter.println("         },");
+
+                theWriter.println("         fileinputstream : {");
+                theWriter.println("             open0String : function(thisref,name) {");
+                theWriter.println("                 return bytecoder.openForRead(bytecoder.toJSString(name));");
+                theWriter.println("             },");
+                theWriter.println("             read0LONG : function(thisref,handle) {");
+                theWriter.println("                 return bytecoder.filehandles[handle].read0LONG(handle);");
+                theWriter.println("             },");
+                theWriter.println("             readBytesLONGL1BYTEINTINT : function(thisref,handle,data,offset,length) {");
+                theWriter.println("                 return bytecoder.filehandles[handle].readBytesLONGL1BYTEINTINT(handle,data,offset,length);");
+                theWriter.println("             },");
+                theWriter.println("             skip0LONGLONG : function(thisref,handle,amount) {");
+                theWriter.println("                 return bytecoder.filehandles[handle].skip0LONGLONG(handle,amount);");
+                theWriter.println("             },");
+                theWriter.println("             available0LONG : function(thisref,handle) {");
+                theWriter.println("                 return bytecoder.filehandles[handle].available0LONG(handle);");
+                theWriter.println("             },");
+                theWriter.println("             close0LONG : function(thisref,handle) {");
+                theWriter.println("                 bytecoder.filehandles[handle].close0LONG(handle);");
+                theWriter.println("             },");
+                theWriter.println("         },");
+
+                theWriter.println("         inflater : {");
+                theWriter.println("             initIDs : function(thisref) {");
+                theWriter.println("             },");
+                theWriter.println("             initBOOLEAN : function(thisref,nowrap) {");
+                theWriter.println("             },");
+                theWriter.println("             inflateBytesBytesLONGL1BYTEINTINTL1BYTEINTINT : function(thisref,addr,inputArray,inputOff,inputLen,outputArray,outputOff,outputLen) {");
+                theWriter.println("             },");
+                theWriter.println("             inflateBufferBytesLONGLONGINTL1BYTEINTINT : function(thisref,addr,inputAddress,inputLen,outputArray,outputOff,outputLen) {");
+                theWriter.println("             },");
+                theWriter.println("             endLONG : function(thisref,addr) {");
+                theWriter.println("             },");
+                theWriter.println("         },");
+
+                final Map<String, List<OpaqueReferenceMethod>> theMethods = opaqueReferenceMethods.stream().collect(Collectors.groupingBy(opaqueReferenceMethod -> opaqueReferenceMethod.linkedClass.linkfor(opaqueReferenceMethod.getMethod()).getModuleName()));
+                for (final Map.Entry<String, List<OpaqueReferenceMethod>> theEntry : theMethods.entrySet()) {
+
+                    theWriter.print("         ");
+                    theWriter.print(theEntry.getKey());
+                    theWriter.println(": {");
+
+                    for (final OpaqueReferenceMethod theMethod : theEntry.getValue()) {
+                        final BytecodeMethod theBytecdeMethod = theMethod.getMethod();
+
+                        final BytecodeImportedLink theImportedLink = theMethod.getLinkedClass().linkfor(theBytecdeMethod);
+                        theWriter.print("             ");
+                        theWriter.print(theImportedLink.getLinkName());
+                        theWriter.print(": function(");
+                        theWriter.print("target");
+                        final BytecodeMethodSignature theSignature = theBytecdeMethod.getSignature();
+                        for (int i=0;i<theSignature.getArguments().length;i++) {
+                            theWriter.print(",arg");
+                            theWriter.print(i);
+                        }
+                        theWriter.println(") {");
+
+                        String theMethodName = theBytecdeMethod.getName().stringValue();
+                        final BytecodeAnnotation theOpaqueProperty = theBytecdeMethod.getAttributes().getAnnotationByType(OpaqueProperty.class.getName());
+                        final BytecodeAnnotation theOpaqueIndex = theBytecdeMethod.getAttributes().getAnnotationByType(OpaqueIndexed.class.getName());
+                        if (theOpaqueIndex != null) {
+                            if (theSignature.getReturnType().isVoid()) {
+                                theWriter.print("               ");
+                                theWriter.print("bytecoder.referenceTable[target]");
+                                theWriter.print("[arg0]");
+
+                                final String theConversionFunction = conversionFunctionToJSForOpaqueType(aLinkerContext, theSignature.getArguments()[1]);
+                                if (theConversionFunction != null) {
+                                    theWriter.print("=");
+                                    theWriter.print(theConversionFunction);
+                                    theWriter.println("(arg1);");
+                                } else {
+                                    theWriter.println("=arg1;");
+                                }
+                            } else {
+                                theWriter.print("               return ");
+
+                                boolean theWriteClosingBraces = false;
+
+                                final String theConversionFunction = conversionFunctionToWASMForOpaqueType(aLinkerContext, theSignature.getReturnType());
+                                if (theConversionFunction != null) {
+                                    theWriter.print(theConversionFunction);
+                                    theWriter.print("(");
+
+                                    theWriteClosingBraces = true;
+                                }
+
+                                theWriter.print("bytecoder.referenceTable[target][arg0]");
+
+                                if (theWriteClosingBraces) {
+                                    theWriter.print(")");
+                                }
+                                theWriter.println(";");
+                            }
+                        } else if (theOpaqueProperty != null) {
+                            final BytecodeAnnotation.ElementValue theValue = theOpaqueProperty.getElementValueByName("value");
+                            String theOpaquePropertyName;
+                            if (theValue == null) {
+                                if (theMethodName.startsWith("get")) {
+                                    theOpaquePropertyName = theMethodName.substring(3);
+                                    theOpaquePropertyName = Character.toLowerCase(theOpaquePropertyName.charAt(0)) + theOpaquePropertyName.substring(1);
+                                } else if (theMethodName.startsWith("is")) {
+                                    theOpaquePropertyName = theMethodName.substring(2);
+                                    theOpaquePropertyName = Character.toLowerCase(theOpaquePropertyName.charAt(0)) + theOpaquePropertyName.substring(1);
+                                } else if (theMethodName.startsWith("set")) {
+                                    theOpaquePropertyName = theMethodName.substring(3);
+                                    theOpaquePropertyName = Character.toLowerCase(theOpaquePropertyName.charAt(0)) + theOpaquePropertyName.substring(1);
+                                } else {
+                                    theOpaquePropertyName = theMethodName;
+                                }
+                            } else {
+                                theOpaquePropertyName = theValue.stringValue();
+                            }
+                            if (theSignature.getReturnType().isVoid()) {
+                                theWriter.print("               ");
+                                theWriter.print("bytecoder.referenceTable[target].");
+                                theWriter.print(theOpaquePropertyName);
+
+                                final String theConversionFunction = conversionFunctionToJSForOpaqueType(aLinkerContext, theSignature.getArguments()[0]);
+                                if (theConversionFunction != null) {
+                                    theWriter.print("=");
+                                    theWriter.print(theConversionFunction);
+                                    theWriter.println("(arg0);");
+                                } else {
+                                    theWriter.println("=arg0;");
+                                }
+                            } else {
+                                theWriter.print("               return ");
+
+                                boolean theWriteClosingBraces = false;
+
+                                final String theConversionFunction = conversionFunctionToWASMForOpaqueType(aLinkerContext, theSignature.getReturnType());
+                                if (theConversionFunction != null) {
+                                    theWriter.print(theConversionFunction);
+                                    theWriter.print("(");
+
+                                    theWriteClosingBraces = true;
+                                }
+
+                                theWriter.print("bytecoder.referenceTable[target].");
+                                theWriter.print(theOpaquePropertyName);
+
+                                if (theWriteClosingBraces) {
+                                    theWriter.print(")");
+                                }
+                                theWriter.println(";");
+                            }
+                        } else {
+                            // It is a method invocation
+                            final BytecodeAnnotation theMethodAnnotation = theBytecdeMethod.getAttributes().getAnnotationByType(OpaqueMethod.class.getName());
+                            if (theMethodAnnotation != null) {
+                                theMethodName = theMethodAnnotation.getElementValueByName("value").stringValue();
+                            }
+
+                            boolean theWriteClosingBraces = false;
+
+                            if (!theSignature.getReturnType().isVoid()) {
+                                theWriter.print("               return ");
+
+                                final String theConversionFunction = conversionFunctionToWASMForOpaqueType(aLinkerContext, theSignature.getReturnType());
+                                if (theConversionFunction != null) {
+                                    theWriter.print(theConversionFunction);
+                                    theWriter.print("(");
+
+                                    theWriteClosingBraces = true;
+                                }
+                            } else {
+                                theWriter.print("               ");
+                            }
+
+                            theWriter.print("bytecoder.referenceTable[target].");
+                            theWriter.print(theMethodName);
+                            theWriter.print("(");
+
+                            for (int i=0;i<theSignature.getArguments().length;i++) {
+                                if (i > 0) {
+                                    theWriter.print(",");
+                                }
+
+                                final BytecodeTypeRef theRef = theSignature.getArguments()[i];
+                                if (theRef.isPrimitive()) {
+                                    theWriter.print("arg");
+                                    theWriter.print(i);
+                                } else if (theRef.matchesExactlyTo(BytecodeObjectTypeRef.fromRuntimeClass(String.class))) {
+                                    theWriter.print("bytecoder.toJSString(");
+                                    theWriter.print("arg");
+                                    theWriter.print(i);
+                                    theWriter.print(")");
+                                } else {
+                                    final BytecodeObjectTypeRef theObjectType = (BytecodeObjectTypeRef) theRef;
+                                    final BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(theObjectType);
+                                    if (theLinkedClass.isOpaqueType()) {
+                                        theWriter.print("bytecoder.toJSReference(");
+                                        theWriter.print("arg");
+                                        theWriter.print(i);
+                                        theWriter.print(")");
+                                    } else if (theLinkedClass.isCallback()) {
+
+                                        final List<BytecodeMethod> theCallbackMethods = theLinkedClass.resolvedMethods().stream().filter(x -> x.getProvidingClass() == theLinkedClass).map(BytecodeResolvedMethods.MethodEntry::getValue).collect(Collectors.toList());
+                                        if (theCallbackMethods.size() != 1) {
+                                            throw new IllegalStateException("Wrong number of callback methods in " + theLinkedClass.getClassName().name() + ", expected 1, got " + theCallbackMethods.size());
+                                        }
+                                        final BytecodeMethod theImpl = theCallbackMethods.get(0);
+
+                                        theWriter.print("bytecoder.registerCallback(arg");
+                                        theWriter.print(i);
+                                        theWriter.print(",function (");
+                                        for (int j=0;j<theImpl.getSignature().getArguments().length;j++) {
+                                            if (j>0) {
+                                                theWriter.print(",");
+                                            }
+                                            theWriter.print("farg");
+                                            theWriter.print(j);
+                                        }
+                                        theWriter.print(") {");
+
+                                        for (int j=0;j<theImpl.getSignature().getArguments().length;j++) {
+                                            theWriter.print("var marg");
+                                            theWriter.print(j);
+                                            theWriter.print("=");
+
+                                            final BytecodeTypeRef theTypeRef = theImpl.getSignature().getArguments()[j];
+
+                                            if (theTypeRef.isPrimitive()) {
+                                                theWriter.print("farg");
+                                                theWriter.print(j);
+                                            } else if (theTypeRef.isArray()) {
+                                                throw new IllegalStateException("Type conversion to " + theTypeRef.name() + " is not supported!");
+                                            } else if (theTypeRef.matchesExactlyTo(BytecodeObjectTypeRef.fromRuntimeClass(String.class))) {
+                                                theWriter.print("bytecoder.toBytecoderString(");
+                                                theWriter.print("farg");
+                                                theWriter.print(j);
+                                                theWriter.print(")");
+                                            } else {
+                                                final BytecodeObjectTypeRef theArgObjectType = (BytecodeObjectTypeRef) theTypeRef;
+                                                final BytecodeLinkedClass theArgLinkedClass = aLinkerContext.resolveClass(theArgObjectType);
+                                                if (!theArgLinkedClass.isOpaqueType()) {
+                                                    throw new IllegalStateException("Type conversion from " + theTypeRef.name() + " is not supported!");
+
+                                                }
+                                                theWriter.print("bytecoder.toBytecoderReference(");
+                                                theWriter.print("farg");
+                                                theWriter.print(j);
+                                                theWriter.print(")");
+                                            }
+                                            theWriter.print(";");
+                                        }
+
+                                        final String theCallbackMethod = LLVMWriterUtils.toMethodName(theLinkedClass.getClassName(), theImpl.getName(), theImpl.getSignature());
+                                        theWriter.print("bytecoder.exports.");
+                                        theWriter.print(theCallbackMethod);
+                                        theWriter.print("(arg");
+                                        theWriter.print(i);
+
+                                        for (int j=0;j<theImpl.getSignature().getArguments().length;j++) {
+                                            theWriter.print(",");
+                                            theWriter.print("marg");
+                                            theWriter.print(j);
+                                        }
+
+                                        theWriter.print(");");
+
+                                        for (int j=0;j<theImpl.getSignature().getArguments().length;j++) {
+                                            final BytecodeTypeRef theTypeRef = theImpl.getSignature().getArguments()[j];
+
+                                            if (theTypeRef.isPrimitive()) {
+                                                // Nothing to clean up
+                                            } else if (theTypeRef.matchesExactlyTo(BytecodeObjectTypeRef.fromRuntimeClass(String.class))) {
+                                                // Nothinng to clean up
+                                            } else {
+                                                final BytecodeLinkedClass theLinkedType = aLinkerContext.resolveClass((BytecodeObjectTypeRef) theTypeRef);
+                                                if (theLinkedType.isEvent()) {
+                                                    // Cleanup object reference
+                                                    theWriter.print("delete bytecoder.referenceTable[marg");
+                                                    theWriter.print(j);
+                                                    theWriter.print("];");
+                                                }
+                                            }
+                                        }
+
+                                        theWriter.print("})");
+                                    } else {
+                                        throw new IllegalStateException("Type conversion from " + theRef.name() + " is not supported!");
+                                    }
+                                }
+                            }
+
+                            if (theWriteClosingBraces) {
+                                theWriter.print(")");
+                            }
+                            theWriter.println(");");
+
+                        }
+                        theWriter.println("             },");
+                    }
+
+                    theWriter.println("         },");
+
+                }
+
+                theWriter.println("     },");
+                theWriter.println("};");
+            }
+            theCompileResult.add(new CompileResult.StringContent(aOptions.getFilenamePrefix() + ".js", theJSCode.toString()));
+
             // Compile LLVM Assembly File to object file
             final List<String> theLLCommand = new ArrayList<>();
             if ("\\".equals(File.separator)) {
@@ -1270,6 +1999,41 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             throw e;
         } catch (final Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private String conversionFunctionToJSForOpaqueType(final BytecodeLinkerContext alinkerContext, final BytecodeTypeRef aTypeRef) {
+        if (aTypeRef.isPrimitive()) {
+            return null;
+        } else if (aTypeRef.isArray()) {
+            throw new IllegalStateException("Type conversion to " + aTypeRef.name() + " is not supported!");
+        } else if (aTypeRef.matchesExactlyTo(BytecodeObjectTypeRef.fromRuntimeClass(String.class))) {
+            return "bytecoder.toJSString";
+        } else {
+            final BytecodeObjectTypeRef theObjectType = (BytecodeObjectTypeRef) aTypeRef;
+            final BytecodeLinkedClass theLinkedClass = alinkerContext.resolveClass(theObjectType);
+            if (theLinkedClass.isOpaqueType()) {
+                return "bytecoder.toJSReference";
+            } else {
+                throw new IllegalStateException("Type conversion from " + aTypeRef.name() + " is not supported!");
+            }
+        }
+    }
+
+    private String conversionFunctionToWASMForOpaqueType(final BytecodeLinkerContext alinkerContext, final BytecodeTypeRef aTypeRef) {
+        if (aTypeRef.isPrimitive()) {
+            return null;
+        } else if (aTypeRef.isArray()) {
+            throw new IllegalStateException("Type conversion to " + aTypeRef.name() + " is not supported!");
+        } else if (aTypeRef.matchesExactlyTo(BytecodeObjectTypeRef.fromRuntimeClass(String.class))) {
+            return "bytecoder.toBytecoderString";
+        } else {
+            final BytecodeObjectTypeRef theObjectType = (BytecodeObjectTypeRef) aTypeRef;
+            final BytecodeLinkedClass theLinkedClass = alinkerContext.resolveClass(theObjectType);
+            if (theLinkedClass.isOpaqueType()) {
+                return "bytecoder.toBytecoderReference";
+            }
+            throw new IllegalStateException("Type conversion from " + aTypeRef.name() + " is not supported!");
         }
     }
 }

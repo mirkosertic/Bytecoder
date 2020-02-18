@@ -141,6 +141,6 @@ public class LLVMCompilerBackendTest {
                 theContent.writeTo(fos);
             }
         }
-        Assert.assertEquals(5, theResult.getContent().length);
+        Assert.assertEquals(6, theResult.getContent().length);
     }
 }
