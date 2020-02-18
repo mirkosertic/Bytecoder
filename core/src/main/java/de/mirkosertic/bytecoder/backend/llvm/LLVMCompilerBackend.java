@@ -219,7 +219,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             if (!t.getAccessFlags().isNative() && theProvidingClass.isOpaqueType()) {
                                 // For all the other methods we generate
                                 // the JS wrapper implementation later by this compiler
-                                //opaqueReferenceMethods.add(new WASMSSAASTCompilerBackend.OpaqueReferenceMethod(theProvidingClass, t));
+                                opaqueReferenceMethods.add(new OpaqueReferenceMethod(theProvidingClass, t));
                             }
 
                             final BytecodeImportedLink theLink = theProvidingClass.linkfor(t);
