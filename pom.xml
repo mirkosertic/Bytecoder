@@ -117,7 +117,7 @@
             <dependency>
                 <groupId>org.ow2.asm</groupId>
                 <artifactId>asm</artifactId>
-                <version>7.2</version>
+                <version>7.3.1</version>
             </dependency>
             <dependency>
                 <groupId>junit</groupId>
@@ -148,7 +148,7 @@
                 <plugin>
                     <groupId>org.pitest</groupId>
                     <artifactId>pitest-maven</artifactId>
-                    <version>1.4.10</version>
+                    <version>1.4.11</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
