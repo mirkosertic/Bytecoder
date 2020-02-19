@@ -4,5 +4,3 @@
 **/target/*
 **/.DS_Store
 /manual/public/
-/core/src/main/java/de/mirkosertic/bytecoder/backend/llvm/codelayout.wasm
-/core/src/main/java/de/mirkosertic/bytecoder/backend/llvm/codelayout.o
