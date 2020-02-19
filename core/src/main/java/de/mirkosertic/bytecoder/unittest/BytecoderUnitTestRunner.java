@@ -629,12 +629,12 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 theWriter.println("_VOID$newInstance(0);");
                 theWriter.println("                             console.log(\"Bootstrapped\")");
                 theWriter.println("                             try {");
-                theWriter.println("                                 console.log(\"Starting main method\")");
+                theWriter.println("                                 console.log(\"Starting main method\");");
 //                theWriter.println("                                 bytecoder.exports.main(theTest);");
-                theWriter.println("                                 console.log(\"Main finished\")");
-                theWriter.println("                                 console.log(\"Test finished OK\")");
+                theWriter.println("                                 console.log(\"Main finished\");");
+                theWriter.println("                                 console.log(\"Test finished OK\");");
                 theWriter.println("                             } catch (e) {");
-                theWriter.println("                                 console.log(\"Test threw error\")");
+                theWriter.println("                                 console.log(\"Test threw error\");");
                 theWriter.println("                                 throw e;");
                 theWriter.println("                             }");
                 theWriter.println("                         },");
