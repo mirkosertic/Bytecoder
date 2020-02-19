@@ -1254,6 +1254,58 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
                 });
 
+                pw.println("    %arrayvtableptr = ptrtoint i32(i32,i32)* @dmbcArray__resolvevtableindex to i32");
+                pw.println("    %arrayclassinit = call i32 @dmbcArray__init()");
+
+                // We create the string pool now
+                for (int i = 0; i < stringPool.size(); i++) {
+
+                    final String theData = stringPool.get(i);
+                    final int l = theData.length();
+                    final int[] theDataCharacters = new int[l];
+                    for (int j=0;j<l;j++) {
+                        theDataCharacters[j] = theData.charAt(j);
+                    }
+
+                    pw.println(";; Initialization for " + theData);
+                    pw.print("    %allocated_");
+                    pw.print(i);
+                    pw.print(" = call i32 @dmbcMemoryManager_INTnewArrayINTINTINT(i32 0,i32 ");
+                    pw.print(l);
+                    pw.println(",i32 %arrayclassinit,i32 %arrayvtableptr)");
+
+                    for (int j=0;j<l;j++) {
+                        pw.print("    %offset_" + i + "_" + j);
+                        pw.print(" = add i32 %allocated_");
+                        pw.print(i);
+                        pw.print(", ");
+                        pw.println(20 + j * 4);
+
+                        pw.print("    %offset_" + i + "_" + j + "_ptr");
+                        pw.print(" = inttoptr i32 ");
+                        pw.print("%offset_" + i + "_" + j);
+                        pw.println(" to i32 *");
+
+                        pw.print("    store i32 ");
+                        pw.print(theDataCharacters[j]);
+                        pw.print(", i32* ");
+                        pw.println("%offset_" + i + "_" + j + "_ptr");
+                    }
+
+                    pw.print("    %string_");
+                    pw.print(i);
+                    pw.print(" = call i32 @jlString_VOID$newInstanceA1BYTEBYTE(i32 ");
+                    pw.print("%allocated_");
+                    pw.print(i);
+                    pw.println(", i32 0)");
+
+                    pw.print("    store i32 %string_");
+                    pw.print(i);
+                    pw.print(", i32* @");
+                    pw.print("strpool_");
+                    pw.println(i);
+                }
+
                 pw.println("    ret void");
                 pw.println("}");
                 pw.println();
@@ -1264,7 +1316,6 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.print("strpool_");
                     pw.print(i);
                     pw.println(" = private global i32 0");
-                    //TODO: handle initialization here
                 }
                 pw.println();
             }
