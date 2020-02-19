@@ -1510,6 +1510,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("         stringutf16: {");
                 theWriter.println("             isBigEndian: function() {return 1;},");
                 theWriter.println("         },");
+                theWriter.println("         env: {");
+                theWriter.println("             fmodf: function(f1,f2) {return f1 % f2;},");
+                theWriter.println("         },");
                 theWriter.println("         system: {");
                 theWriter.println("             currentTimeMillis: function() {return Date.now();},");
                 theWriter.println("             nanoTime: function() {return Date.now() * 1000000;},");
@@ -1972,8 +1975,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             final String theObjectFileName = theLLFile.getName() + ".o";
             theLLCommand.add("llc-10");
             theLLCommand.add("-O3");
-            theLLCommand.add("--stats");
-            theLLCommand.add("--time-passes");
+            //theLLCommand.add("--stats");
+            //theLLCommand.add("--time-passes");
             theLLCommand.add("-filetype=obj");
             theLLCommand.add(theLLFile.getName());
             theLLCommand.add("-o");
