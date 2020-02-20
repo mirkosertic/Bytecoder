@@ -1618,7 +1618,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final HeapBaseExpression e) {
-        target.print("load i32, i32* @__heap_base");
+        target.print("ptrtoint i32* @__heap_base to i32");
     }
 
     private void write(final GetStaticExpression e) {
