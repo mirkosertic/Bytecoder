@@ -1644,7 +1644,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final NewObjectAndConstructExpression e) {
-        target.print("call i32(");
+        target.print("call i32 (");
         for (int i=0;i<e.getSignature().getArguments().length;i++) {
             if (i>0) {
                 target.print(",");

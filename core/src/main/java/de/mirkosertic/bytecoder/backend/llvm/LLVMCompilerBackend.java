@@ -896,7 +896,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             attributeCounter.incrementAndGet();
                             pw.println(" {");
                             pw.println("entry:");
-                            pw.print("    call i32 @");
+                            pw.print("    %class = call i32 @");
                             pw.print(theClassName);
                             pw.print(LLVMWriter.CLASSINITSUFFIX);
                             pw.println("()");
@@ -915,10 +915,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.print("i32 ");
                             pw.print(theLayout.instanceSize());
                             pw.print(",");
-                            pw.print("i32 ");
-                            pw.print(theLinkedClass.getUniqueId());
-                            pw.print(",i32 %vtableptr");
-                            pw.println(")");
+                            pw.println("i32 %class ,i32 %vtableptr)");
 
                             pw.print("    call ");
                             pw.print(LLVMWriterUtils.toSignature(theMethod.getSignature()));
