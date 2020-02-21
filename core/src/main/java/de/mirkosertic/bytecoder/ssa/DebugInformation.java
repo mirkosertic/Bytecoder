@@ -26,6 +26,11 @@ public abstract class DebugInformation {
             public DebugPosition debugPositionFor(final BytecodeOpcodeAddress aAddress) {
                 return null;
             }
+
+            @Override
+            public String originalFileName() {
+                return null;
+            }
         };
     }
 
@@ -34,8 +39,7 @@ public abstract class DebugInformation {
             @Override
             public DebugPosition debugPositionFor(final BytecodeOpcodeAddress aAddress) {
                 final BytecodeLineNumberTableAttributeInfo.Entry[] theEntries = aLineNumberInfo.getEntries();
-                for (int i=0;i<theEntries.length;i++) {
-                    final BytecodeLineNumberTableAttributeInfo.Entry theEntry = theEntries[i];
+                for (final BytecodeLineNumberTableAttributeInfo.Entry theEntry : theEntries) {
                     if (theEntry.getStartPc() == aAddress.getAddress()) {
                         // DebugPosition Line-Number indices are zero-based
                         return new DebugPosition(aOriginalFileName, theEntry.getLineNumber() - 1);
@@ -43,8 +47,15 @@ public abstract class DebugInformation {
                 }
                 return null;
             }
+
+            @Override
+            public String originalFileName() {
+                return aOriginalFileName;
+            }
         };
     }
 
     public abstract DebugPosition debugPositionFor(final BytecodeOpcodeAddress aAddress);
+
+    public abstract String originalFileName();
 }

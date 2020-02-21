@@ -134,6 +134,7 @@ public class LLVMWriter implements AutoCloseable {
 
     private final PrintWriter target;
     private RegionNode currentNode;
+    private LLVMDebugInformation.SubProgram currentSubProgram;
     private final NativeMemoryLayouter memoryLayouter;
     private final BytecodeLinkerContext linkerContext;
     private final SymbolResolver symbolResolver;
@@ -193,7 +194,7 @@ public class LLVMWriter implements AutoCloseable {
         return theResult;
     }
 
-    public void write(final Program aProgram) {
+    public void write(final Program aProgram, final LLVMDebugInformation.SubProgram aSubProgram) {
         final ControlFlowGraph theGraph = aProgram.getControlFlowGraph();
         final RegionNode theStart = theGraph.startNode();
         final GraphDFSOrder<RegionNode> order = new GraphDFSOrder(theStart,
@@ -201,6 +202,7 @@ public class LLVMWriter implements AutoCloseable {
                 RegionNode.FORWARD_EDGE_FILTER_REGULAR_FLOW_ONLY);
         final List<RegionNode> theRegularFlow = order.getNodesInOrder();
         final Set<String> theAlreadySeenPHIs = new HashSet<>();
+        currentSubProgram = aSubProgram;
         target.println("entry:");
         target.println("    br label %block0");
         for (final RegionNode theBlock : theRegularFlow) {
@@ -292,8 +294,11 @@ public class LLVMWriter implements AutoCloseable {
         target.print(" = call i32 @");
         target.print(theClassName);
         target.print(CLASSINITSUFFIX);
-        target.println("()");
-    }
+
+        target.print("()");
+        currentSubProgram.writeDebugSuffixFor(e, target);
+        target.println();
+   }
 
     private void tempify(final InvokeVirtualMethodExpression e) {
         final Value value = e.incomingDataFlows().get(0);
@@ -375,7 +380,9 @@ public class LLVMWriter implements AutoCloseable {
         target.print(" = call i32 @");
         target.print(theClassName);
         target.print(CLASSINITSUFFIX);
-        target.println("()");
+        target.print("()");
+        currentSubProgram.writeDebugSuffixFor(e, target);
+        target.println();
         target.print("    %");
         target.print(toTempSymbol(e, "vtable"));
         target.print(" = ptrtoint i32(i32,i32)* @");
@@ -391,7 +398,10 @@ public class LLVMWriter implements AutoCloseable {
         target.print(" = call i32 @");
         target.print(theClassName);
         target.print(CLASSINITSUFFIX);
-        target.println("()");
+        target.print("()");
+        currentSubProgram.writeDebugSuffixFor(e, target);
+        target.println();
+
         target.print("    %");
         target.print(toTempSymbol(e, "vtable"));
         target.print(" = ptrtoint i32(i32,i32)* @");
@@ -436,7 +446,10 @@ public class LLVMWriter implements AutoCloseable {
         target.print(" = call i32 @");
         target.print(theClassName);
         target.print(CLASSINITSUFFIX);
-        target.println("()");
+        target.print("()");
+        currentSubProgram.writeDebugSuffixFor(e, target);
+        target.println();
+
         target.print("    %");
         target.print(toTempSymbol(e, "vtable"));
         target.print(" = ptrtoint i32(i32,i32)* @");
@@ -797,7 +810,10 @@ public class LLVMWriter implements AutoCloseable {
                 }
             }
         }
-        target.println("    ]");
+        target.print("    ]");
+        currentSubProgram.writeDebugSuffixFor(e, target);
+        target.println();
+
     }
 
     private void write(final TableSwitchExpression e) {
@@ -851,7 +867,10 @@ public class LLVMWriter implements AutoCloseable {
                 }
             }
         }
-        target.println("    ]");
+        target.print("    ]");
+        currentSubProgram.writeDebugSuffixFor(e, target);
+        target.println();
+
         target.print(toTempSymbol(e, "trap"));
         target.println(":");
         target.println("    call void @llvm.trap()");
@@ -893,7 +912,10 @@ public class LLVMWriter implements AutoCloseable {
         target.print(", ");
         target.print(LLVMWriterUtils.toType(e.getArrayType()));
         target.print("* %");
-        target.println(toTempSymbol(e, "ptrptr"));
+        target.print(toTempSymbol(e, "ptrptr"));
+        currentSubProgram.writeDebugSuffixFor(e, target);
+        target.println();
+
     }
 
     private void write(final NewArrayExpression e) {
@@ -911,6 +933,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print(",i32 %");
         target.print(toTempSymbol(e, "vtable"));
         target.print(")");
+        currentSubProgram.writeDebugSuffixFor(e, target);
     }
 
     private void write(final ThrowExpression e) {
@@ -957,7 +980,10 @@ public class LLVMWriter implements AutoCloseable {
         target.print(",");
         target.print(LLVMWriterUtils.toType(TypeRef.toType(theField.getValue().getTypeRef())));
         target.print("* %");
-        target.println(toTempSymbol(e, "ptr"));
+        target.print(toTempSymbol(e, "ptr"));
+        currentSubProgram.writeDebugSuffixFor(e, target);
+        target.println();
+
     }
 
     private void write(final InvokeVirtualMethodExpression e) {
@@ -978,10 +1004,10 @@ public class LLVMWriter implements AutoCloseable {
             writeResolved(e.incomingDataFlows().get(i + 1));
         }
         target.print(")");
+        currentSubProgram.writeDebugSuffixFor(e, target);
     }
 
     private void write(final DirectInvokeMethodExpression e) {
-
         target.print("call ");
         target.print(LLVMWriterUtils.toSignature(e.getSignature()));
         target.print(" @");
@@ -1008,7 +1034,9 @@ public class LLVMWriter implements AutoCloseable {
             target.print(" ");
             writeResolved(theValues.get(i));
         }
-        target.println(")");
+        target.print(")");
+        currentSubProgram.writeDebugSuffixFor(e, target);
+        target.println();
     }
 
     private void write(final PutFieldExpression expression) {
@@ -1045,7 +1073,10 @@ public class LLVMWriter implements AutoCloseable {
         target.print(",");
         target.print(LLVMWriterUtils.toType(TypeRef.toType(theField.getValue().getTypeRef())));
         target.print("* %");
-        target.println(toTempSymbol(expression, "ptr"));
+        target.print(toTempSymbol(expression, "ptr"));
+        currentSubProgram.writeDebugSuffixFor(expression, target);
+        target.println();
+
     }
 
     private void write(final UnreachableExpression expression) {
@@ -1080,6 +1111,7 @@ public class LLVMWriter implements AutoCloseable {
                 final BytecodeOpcodeAddress theElse = forwardNodes.iterator().next();
                 target.print(", label %block");
                 target.print(theElse.getAddress());
+                currentSubProgram.writeDebugSuffixFor(expression, target);
                 target.println();
             } else {
                 throw new IllegalArgumentException("Expected one node for else branch of if statement, got " + forwardNodes);
@@ -1092,7 +1124,9 @@ public class LLVMWriter implements AutoCloseable {
             target.print(", label %block");
             target.print(expression.getGotoAddress().getAddress());
             target.print(", label %block");
-            target.println(expression.getGotoAddress().getAddress());
+            target.print(expression.getGotoAddress().getAddress());
+            currentSubProgram.writeDebugSuffixFor(expression, target);
+            target.println();
         } else {
             // Don't know what to do here
             throw new IllegalArgumentException("Expected one node for else branch of if statement, got " + forwardNodes);
@@ -1103,13 +1137,14 @@ public class LLVMWriter implements AutoCloseable {
         target.print("    br label %");
         final BytecodeOpcodeAddress jumpTo = expression.jumpTarget();
         target.print("block");
-        target.print(jumpTo.getAddress());
-        target.println();
+        target.println(jumpTo.getAddress());
     }
 
     private void write(final ReturnExpression expression) {
         target.print("    ");
-        target.println("ret void");
+        target.print("ret void");
+        currentSubProgram.writeDebugSuffixFor(expression, target);
+        target.println();
     }
 
     private void write(final ReturnValueExpression expression) {
@@ -1119,6 +1154,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print(LLVMWriterUtils.toType(result.resolveType()));
         target.print(" ");
         writeResolved(result);
+        currentSubProgram.writeDebugSuffixFor(expression, target);
         target.println();
     }
 
@@ -1175,6 +1211,7 @@ public class LLVMWriter implements AutoCloseable {
             }
             write(value, true);
         }
+        currentSubProgram.writeDebugSuffixFor(expression, target);
         target.println();
     }
 
@@ -1341,6 +1378,7 @@ public class LLVMWriter implements AutoCloseable {
         target.write(",i32 %");
         target.write(toTempSymbol(e, "vtable"));
         target.write(")");
+        currentSubProgram.writeDebugSuffixFor(e, target);
     }
 
     private void write(final SqrtExpression e) {
@@ -1560,6 +1598,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print(",i32 %");
         target.print(toTempSymbol(e, "vtable"));
         target.print(")");
+        currentSubProgram.writeDebugSuffixFor(e, target);
     }
 
     private void write(final InstanceOfExpression e) {
@@ -1928,5 +1967,7 @@ public class LLVMWriter implements AutoCloseable {
             writeResolved(theValue);
         }
         target.print(")");
+        currentSubProgram.writeDebugSuffixFor(aValue, target);
+
     }
 }

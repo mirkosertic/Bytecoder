@@ -154,7 +154,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     return "resolvecallsite" + System.identityHashCode(callSite);
                 }
             };
-
+            final LLVMDebugInformation debugInformation = new LLVMDebugInformation();
             final NativeMemoryLayouter memoryLayouter = new NativeMemoryLayouter(aLinkerContext);
 
             final File theLLFile = File.createTempFile("llvm", ".ll");
@@ -935,6 +935,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                         final ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext, new LLVMIntrinsics());
                         final Program theSSAProgram = theGenerator.generateFrom(aMethodMapEntry.getProvidingClass().getBytecodeClass(), theMethod);
+                        final LLVMDebugInformation.CompileUnit compileUnit = debugInformation.compileUnitFor(theSSAProgram);
+                        final LLVMDebugInformation.SubProgram subProgram = compileUnit.subProgram(theSSAProgram, theMethod.getName().stringValue(), theSignature);
 
                         // Run optimizer
                         // We use a special LLVM optimizer, which does only stuff LLVM CANNOT do, such
@@ -998,13 +1000,17 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                 pw.print(" ");
                                 pw.print(attr);
                             }
-                            pw.print(" {");
+                            pw.print(" ");
+                            subProgram.writeDebugSuffixTo(pw);
+                            pw.println(" {");
                         } else {
-                            pw.println(") {");
+                            pw.print(") ");
+                            subProgram.writeDebugSuffixTo(pw);
+                            pw.println(" {");
                         }
 
                         try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter, aLinkerContext, theSymbolResolver)) {
-                            theWriter.write(theSSAProgram);
+                            theWriter.write(theSSAProgram, subProgram);
                         }
 
                         pw.println("}");
@@ -1313,6 +1319,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.println(" = private global i32 0");
                 }
                 pw.println();
+
+                // finally we write the debug information
+                debugInformation.writeHeaderTo(pw);
             }
 
             try (final Reader reader = new InputStreamReader(new FileInputStream(theLLFile))) {
