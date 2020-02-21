@@ -645,11 +645,10 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.print(LLVMWriter.CLASSINITSUFFIX);
                         pw.println("() {");
                         pw.println("entry:");
-                        pw.print("    %ptr = ptrtoint i32* @");
+                        pw.print("    %class = load i32, i32* @");
                         pw.print(theClassName);
-                        pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
-                        pw.println(" to i32");
-                        pw.println("    %status = add i32 %ptr, 8");
+                        pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+                        pw.println("    %status = add i32 %class, 8");
                         pw.println("    %statusptr = inttoptr i32 %status to i32*");
                         pw.println("    %value = load i32, i32* %statusptr");
                         pw.println("    %initialized_compare = icmp eq i32 %value, 1");
@@ -673,13 +672,12 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         if (theLinkedClass.hasClassInitializer()) {
                             pw.print("    call void(i32) @");
                             pw.print(theClassName);
-                            pw.println("_VOID$clinit$(i32 %ptr)");
+                            pw.println("_VOID$clinit$(i32 %class)");
                         }
 
                         pw.println("    br label %done");
                         pw.println("done:");
-                        pw.println("    ret i32 %ptr");
-
+                        pw.println("    ret i32 %class");
                         pw.println("}");
                         pw.println();
                     }
@@ -1509,6 +1507,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("         },");
                 theWriter.println("         env: {");
                 theWriter.println("             fmodf: function(f1,f2) {return f1 % f2;},");
+                theWriter.println("             debug: function(thisref, f1) {console.log(f1);}");
                 theWriter.println("         },");
                 theWriter.println("         system: {");
                 theWriter.println("             currentTimeMillis: function() {return Date.now();},");

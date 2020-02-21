@@ -306,10 +306,22 @@ public class LLVMWriter implements AutoCloseable {
         write(value, true);
         target.print(", 4");
         target.println();
+
+        target.print("    %");
+        target.print(toTempSymbol(e, "vtableptr"));
+        target.print(" = inttoptr i32 %");
+        target.print(toTempSymbol(e, "ptr"));
+        target.println(" to i32*");
+
+        target.print("    %");
+        target.print(toTempSymbol(e, "vtableref"));
+        target.print(" = load i32, i32* %");
+        target.println(toTempSymbol(e, "vtableptr"));
+
         target.print("    %");
         target.print(toTempSymbol(e, "vtable"));
         target.print(" = inttoptr i32 %");
-        target.print(toTempSymbol(e, "ptr"));
+        target.print(toTempSymbol(e, "vtableref"));
         target.println(" to i32(i32,i32)*");
 
         // Resolve the index of the virtual identifier

@@ -35,7 +35,7 @@ public class MemoryManager {
         final int heapBase = Address.getHeapBase();
         final int initialFreeBlock = heapBase + 36;
 
-        Address.setIntValue(heapBase + 4, 0, initialFreeBlock);
+        Address.setIntValue(heapBase, 4, initialFreeBlock);
 
         // Free memory block
         Address.setIntValue(initialFreeBlock, 0, aSize - 48 - heapBase);
@@ -43,13 +43,13 @@ public class MemoryManager {
         Address.setIntValue(initialFreeBlock, 8, 0);
 
         // This is the List of reserved blocks
-        Address.setIntValue(heapBase + 8, 0, 0);
+        Address.setIntValue(heapBase, 8, 0);
 
         // Current work counter for GC resumes
-        Address.setIntValue(heapBase + 12, 0, 0);
+        Address.setIntValue(heapBase, 12, 0);
 
         // Current counter for GC epochs
-        Address.setIntValue(heapBase + 16, 0, 1);
+        Address.setIntValue(heapBase, 16, 1);
     }
 
     @Export("GCEpoch")
@@ -57,7 +57,7 @@ public class MemoryManager {
 
         final int heapBase = Address.getHeapBase();
 
-        return Address.getIntValue(heapBase + 16, 0);
+        return Address.getIntValue(heapBase, 16);
     }
 
     @Export("freeMem")
@@ -66,7 +66,7 @@ public class MemoryManager {
 
         final int heapBase = Address.getHeapBase();
 
-        final int theFreeStartPtr = Address.getIntValue(heapBase + 4, 0);
+        final int theFreeStartPtr = Address.getIntValue(heapBase, 4);
 
         int theCurrent = theFreeStartPtr;
         while (theCurrent != 0) {
@@ -82,7 +82,7 @@ public class MemoryManager {
 
         final int heapBase = Address.getHeapBase();
 
-        int theCurrent = Address.getIntValue(heapBase + 8, 0);
+        int theCurrent = Address.getIntValue(heapBase, 8);
         while (theCurrent != 0) {
             theResult += Address.getIntValue(theCurrent, 0);
             theCurrent = Address.getIntValue(theCurrent, 4);
@@ -95,7 +95,7 @@ public class MemoryManager {
         final int heapBase = Address.getHeapBase();
 
         // Remove the block from the list of allocated blocks
-        int theCurrent = Address.getIntValue(heapBase + 8, 0);
+        int theCurrent = Address.getIntValue(heapBase, 8);
 
         int thePrevious = 0;
         while(theCurrent != 0) {
@@ -141,7 +141,7 @@ public class MemoryManager {
 
         final int heapBase = Address.getHeapBase();
 
-        final int theFreeStartPtr = Address.getIntValue(heapBase + 4, 0);
+        final int theFreeStartPtr = Address.getIntValue(heapBase, 4);
 
         // We search the free list for a suitable sized block
         int thePrevious = 0;
@@ -162,7 +162,7 @@ public class MemoryManager {
                     Address.setIntValue(theNewFreeStart, 4, theNext);
 
                     if (thePrevious == 0) {
-                        Address.setIntValue(heapBase + 4, 0, theNewFreeStart);
+                        Address.setIntValue(heapBase, 4, theNewFreeStart);
                     } else {
                         Address.setIntValue(thePrevious, 4, theNewFreeStart);
                     }
@@ -171,17 +171,17 @@ public class MemoryManager {
                     Address.setIntValue(theCurrent, 0, theSize);
 
                     if (thePrevious == 0) {
-                        Address.setIntValue(heapBase + 4, 0, theNext);
+                        Address.setIntValue(heapBase, 4, theNext);
                     } else {
                         Address.setIntValue(thePrevious, 4, theNext);
                     }
                 }
 
                 // Add the current block to the allocated block ist by prepending it to the list
-                final int theReservedListPtr = Address.getIntValue(heapBase + 8, 0);
+                final int theReservedListPtr = Address.getIntValue(heapBase, 8);
 
                 Address.setIntValue(theCurrent, 4, theReservedListPtr);
-                Address.setIntValue(heapBase + 8, 0, theCurrent);
+                Address.setIntValue(heapBase, 8, theCurrent);
 
                 // Reset survivor count of the block
                 Address.setIntValue(theCurrent, 8, 1);
@@ -239,7 +239,7 @@ public class MemoryManager {
         final int theAllocationStart = aPtrToObject - 12;
         final int heapBase = Address.getHeapBase();
 
-        int theCurrent = Address.getIntValue(heapBase + 8, 0);
+        int theCurrent = Address.getIntValue(heapBase, 8);
         while(theCurrent != 0) {
             // Ignore self reference
             if (theAllocationStart != theCurrent) {
@@ -270,14 +270,14 @@ public class MemoryManager {
         final int heapBase = Address.getHeapBase();
 
         // Try to check if we can continue from a previous run
-        int theCurrent = Address.getIntValue(heapBase + 12, 0);
+        int theCurrent = Address.getIntValue(heapBase, 12);
         if (theCurrent == 0) {
             // No, we start at the beginning of the allocation list
-            theCurrent = Address.getIntValue(heapBase + 8, 0);
+            theCurrent = Address.getIntValue(heapBase, 8);
         }
 
         // We have to remember the current GC epoch
-        final int currentEpoch = Address.getIntValue(heapBase + 16, 0);
+        final int currentEpoch = Address.getIntValue(heapBase, 16);
 
         int freeCounter = 0;
         int stepCounter = 0;
@@ -297,7 +297,7 @@ public class MemoryManager {
                 if (stepCounter++ >= blockLimit) {
                     // We have reached the limit for the current run
                     // We save the next block to proceed and exit here
-                    Address.setIntValue(heapBase + 12, 0, theNext);
+                    Address.setIntValue(heapBase, 12, theNext);
                     return stepCounter;
                 }
             }
@@ -305,10 +305,10 @@ public class MemoryManager {
             theCurrent = theNext;
         }
         // Increment epoch
-        Address.setIntValue(heapBase + 16, 0, currentEpoch + 1);
+        Address.setIntValue(heapBase, 16, currentEpoch + 1);
 
         // The next run starts at the beginning
-        Address.setIntValue(heapBase + 12, 0, 0);
+        Address.setIntValue(heapBase, 12, 0);
 
         return freeCounter;
     }
@@ -338,7 +338,7 @@ public class MemoryManager {
         final int theAllocation = aObjectPtr - 12;
         final int heapBase = Address.getHeapBase();
 
-        final int theFreeStartPtr = Address.getIntValue(heapBase + 8, 0);
+        final int theFreeStartPtr = Address.getIntValue(heapBase, 8);
 
         int theCurrent = theFreeStartPtr;
         int index = 0;
@@ -356,7 +356,7 @@ public class MemoryManager {
         final int theAllocation = aObjectPtr - 12;
         final int heapBase = Address.getHeapBase();
 
-        final int theFreeStartPtr = Address.getIntValue(heapBase + 4, 0);
+        final int theFreeStartPtr = Address.getIntValue(heapBase, 4);
 
         int theCurrent = theFreeStartPtr;
         int index = 0;
