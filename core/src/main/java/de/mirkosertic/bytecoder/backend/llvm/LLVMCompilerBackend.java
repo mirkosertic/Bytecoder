@@ -158,6 +158,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             final NativeMemoryLayouter memoryLayouter = new NativeMemoryLayouter(aLinkerContext);
 
             final File theLLFile = File.createTempFile("llvm", ".ll");
+            theLLFile.deleteOnExit();
             try (final PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(theLLFile), StandardCharsets.UTF_8))) {
                 // We write the header first
                 pw.println("target triple = \"wasm32-unknown-unknown\"");
@@ -2001,8 +2002,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                 throw new RuntimeException("llc reported an error!");
             } else {
-
-                try (final FileInputStream inputStream = new FileInputStream(new File(theLLFile.getParent(), theObjectFileName))) {
+                final File theObjectFile = new File(theLLFile.getParent(), theObjectFileName);
+                theObjectFile.deleteOnExit();
+                try (final FileInputStream inputStream = new FileInputStream(theObjectFile)) {
                     theCompileResult.add(new CompileResult.BinaryContent(aOptions.getFilenamePrefix() + ".o",
                             IOUtils.toByteArray(inputStream)));
                 }
@@ -2046,8 +2048,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 throw new RuntimeException("wasm-ld reported an error!");
 
             } else {
-                try (final FileInputStream inputStream = new FileInputStream(
-                        new File(theLLFile.getParent(), theWASMFileName))) {
+                final File theWASMFile = new File(theLLFile.getParent(), theWASMFileName);
+                theWASMFile.deleteOnExit();
+                try (final FileInputStream inputStream = new FileInputStream(theWASMFile)) {
                     theCompileResult.add(new CompileResult.BinaryContent(aOptions.getFilenamePrefix() + ".wasm",
                             IOUtils.toByteArray(inputStream)));
                 }
