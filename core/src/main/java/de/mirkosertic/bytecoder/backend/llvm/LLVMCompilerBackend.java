@@ -1271,7 +1271,6 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         theDataCharacters[j] = theData.charAt(j);
                     }
 
-                    pw.println(";; Initialization for " + theData);
                     pw.print("    %allocated_");
                     pw.print(i);
                     pw.print(" = call i32 @dmbcMemoryManager_INTnewArrayINTINTINT(i32 0,i32 ");
