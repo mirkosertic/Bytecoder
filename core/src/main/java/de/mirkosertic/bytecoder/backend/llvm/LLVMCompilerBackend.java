@@ -279,7 +279,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("notnull:");
 
                 pw.println("    %ptr = add i32 %object, 4");
-                pw.println("    %vtable = inttoptr i32 %ptr to i32(i32,i32)*");
+                pw.println("    %ptr_ptr = inttoptr i32 %ptr to i32*");
+                pw.println("    %ptr_loaded = load i32, i32* %ptr_ptr");
+                pw.println("    %vtable = inttoptr i32 %ptr_loaded to i32(i32,i32)*");
                 pw.print("    %resolved = call i32(i32,i32) %vtable(i32 %object, i32 ");
                 pw.print(LLVMWriter.GENERATED_INSTANCEOF_METHOD_ID);
                 pw.println(")");
@@ -2026,6 +2028,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             theLinkerCommand.add("-allow-undefined");
             theLinkerCommand.add("--lto-O3");
             theLinkerCommand.add("--no-entry");
+            theLinkerCommand.add("--demangle");
             theLinkerCommand.add("--initial-memory=" + aOptions.getWasmMinimumPageSize() * 65536);
             theLinkerCommand.add("--max-memory=" + aOptions.getWasmMaximumPageSize() * 65536);
             if (!aOptions.isDebugOutput()) {

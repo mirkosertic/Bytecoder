@@ -157,7 +157,7 @@ public class LLVMDebugInformation {
             pw.print(compileUnit.id);
             pw.print("= distinct !DICompileUnit(language: DW_LANG_Java, file: !");
             pw.print(file.id);
-            pw.println(")");
+            pw.println(", isOptimized: true, runtimeVersion: 0, emissionKind: FullDebug, enums: !3)");
 
             for (final SubProgram prog : compileUnit.programs) {
                 pw.print("!");
@@ -166,7 +166,11 @@ public class LLVMDebugInformation {
                 pw.print(prog.name);
                 pw.print("\", unit: !");
                 pw.print(compileUnit.id);
-                pw.println(", isDefinition: true)");
+                pw.print(", file: !");
+                pw.print(file.id);
+                pw.print(", scope: !");
+                pw.print(file.id);
+                pw.println(", isDefinition: true, type: !4, isLocal: false, isOptimized: true,  retainedNodes: !3)");
 
                 for (final Location l : prog.locations.values()) {
                     pw.print("!");
@@ -195,6 +199,9 @@ public class LLVMDebugInformation {
         pw.println("!0 = !{i32 2, !\"Dwarf Version\", i32 4}");
         pw.println("!1 = !{i32 2, !\"Debug Info Version\", i32 3}");
         pw.println("!2 = !{!\"Bytecoder\"}");
+        pw.println("!3 = !{}");
+        pw.println("!4 = !DISubroutineType(types: !5)");
+        pw.println("!5 = !{null}");
 
         pw.println("!llvm.module.flags = !{!0, !1}");
         pw.println("!llvm.ident = !{!2}");
