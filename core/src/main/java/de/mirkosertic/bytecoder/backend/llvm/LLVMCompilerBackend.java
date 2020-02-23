@@ -1323,6 +1323,73 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 }
                 pw.println();
 
+                // We need to generate the callbacks
+                aLinkerContext.linkedClasses().map(Edge::targetNode).filter(t -> t.isCallback() && t.getBytecodeClass().getAccessFlags().isInterface()).forEach(t -> {
+
+                    final BytecodeResolvedMethods theMethods = t.resolvedMethods();
+                    final List<BytecodeMethod> availableCallbacks = theMethods.stream().filter(x -> !x.getValue().isConstructor() && !x.getValue().isClassInitializer()
+                            && x.getProvidingClass() == t).map(BytecodeResolvedMethods.MethodEntry::getValue).collect(Collectors.toList());
+
+                    if (availableCallbacks.size() > 0) {
+
+                        if (availableCallbacks.size() != 1) {
+                            throw new IllegalStateException(
+                                    "Invalid number of callback methods available for type " + t.getClassName().name()
+                                            + ", expected 1, got " + availableCallbacks.size());
+                        }
+
+                        final BytecodeMethod theDelegateMethod = availableCallbacks.get(0);
+
+                        final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(theDelegateMethod);
+
+                        final String theFunctionName = LLVMWriterUtils
+                                .toMethodName(t.getClassName(), theDelegateMethod.getName(), theDelegateMethod.getSignature());
+
+                        attributeCounter.incrementAndGet();
+                        pw.print("attributes #");
+                        pw.print(attributeCounter.get());
+                        pw.print(" = { \"wasm-export-name\"=\"");
+                        pw.print(theFunctionName);
+                        pw.println("\" }");
+                        pw.print("define void @");
+                        pw.print(theFunctionName);
+                        pw.print("(i32 %target");
+                        for (int i = 0; i < theDelegateMethod.getSignature().getArguments().length; i++) {
+                            pw.print(",");
+                            pw.print(LLVMWriterUtils.toType(TypeRef.toType(theDelegateMethod.getSignature().getArguments()[i])));
+                            pw.print(" %param");
+                            pw.print(i);
+                        }
+                        pw.print(") #");
+                        pw.print(attributeCounter.get());
+                        pw.println(" {");
+
+                        pw.println("    %ptr = add i32 %target, 4");
+                        pw.println("    %ptr_ptr = inttoptr i32 %ptr to i32*");
+                        pw.println("    %ptr_loaded = load i32, i32* %ptr_ptr");
+                        pw.println("    %vtable = inttoptr i32 %ptr_loaded to i32(i32,i32)*");
+                        pw.print("    %resolved = call i32(i32,i32) %vtable(i32 %target, i32 ");
+                        pw.print(theMethodIdentifier.getIdentifier());
+                        pw.println(")");
+                        pw.print("    %resolved_ptr = inttoptr i32 %resolved to ");
+                        pw.print(LLVMWriterUtils.toSignature(theDelegateMethod.getSignature()));
+                        pw.println("*");
+                        pw.print("    call ");
+                        pw.print(LLVMWriterUtils.toSignature(theDelegateMethod.getSignature()));
+                        pw.print(" %resolved_ptr (i32 %target");
+                        for (int i = 0; i < theDelegateMethod.getSignature().getArguments().length; i++) {
+                            pw.print(",");
+                            pw.print(LLVMWriterUtils.toType(TypeRef.toType(theDelegateMethod.getSignature().getArguments()[i])));
+                            pw.print(" %param");
+                            pw.print(i);
+                        }
+                        pw.println(")");
+                        pw.println("    ret void");
+                        pw.println("}");
+                    }
+                });
+
+
                 // finally we write the debug information
                 debugInformation.writeHeaderTo(pw);
             }

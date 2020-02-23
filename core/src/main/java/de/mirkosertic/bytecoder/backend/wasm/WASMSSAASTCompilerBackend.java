@@ -1381,7 +1381,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             mainFunction.exportAs("main");
         }
 
-        // We need to generate
+        // We need to generate the callbacks
         aLinkerContext.linkedClasses().map(Edge::targetNode).filter(t -> t.isCallback() && t.getBytecodeClass().getAccessFlags().isInterface()).forEach(t -> {
 
             final BytecodeResolvedMethods theMethods = t.resolvedMethods();

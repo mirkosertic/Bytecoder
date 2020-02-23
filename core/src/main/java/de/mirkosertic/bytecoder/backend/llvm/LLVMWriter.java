@@ -21,6 +21,7 @@ import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
@@ -301,6 +302,28 @@ public class LLVMWriter implements AutoCloseable {
    }
 
     private void tempify(final InvokeVirtualMethodExpression e) {
+
+        final BytecodeTypeRef theInvokedClassName = e.getInvokedClass();
+        if (!theInvokedClassName.isPrimitive() && !theInvokedClassName.isArray()) {
+            final BytecodeLinkedClass theInvokedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) theInvokedClassName);
+            if (theInvokedClass.isOpaqueType()) {
+                final BytecodeResolvedMethods theMethods = theInvokedClass.resolvedMethods();
+                final List<BytecodeResolvedMethods.MethodEntry> theImplMethods = theMethods.stream().filter(
+                        t -> t.getValue().getName().stringValue().equals(e.getMethodName()) &&
+                                t.getValue().getSignature().matchesExactlyTo(e.getSignature()))
+                        .collect(Collectors.toList());
+                if (theImplMethods.size() != 1) {
+                    throw new IllegalStateException("Cannot find unique method " + e.getMethodName() + " with signature " + e.getSignature() + " in " + theInvokedClassName.name());
+                }
+                final BytecodeMethod theMethod = theImplMethods.get(0).getValue();
+                if (!theMethod.isConstructor()) {
+                    // At this point, we are creating a direct call invocation to the function
+                    // Which is imported fom the WASM Host environment
+                    return;
+                }
+            }
+        }
+
         final Value value = e.incomingDataFlows().get(0);
 
         // Compute offset to vtable resolver function
@@ -988,7 +1011,44 @@ public class LLVMWriter implements AutoCloseable {
 
     private void write(final InvokeVirtualMethodExpression e) {
 
-        final Value value = e.incomingDataFlows().get(0);
+        final Value invocationTarget = e.incomingDataFlows().get(0);
+
+        final BytecodeTypeRef theInvokedClassName = e.getInvokedClass();
+        if (!theInvokedClassName.isPrimitive() && !theInvokedClassName.isArray()) {
+            final BytecodeLinkedClass theInvokedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) theInvokedClassName);
+            if (theInvokedClass.isOpaqueType()) {
+                final BytecodeResolvedMethods theMethods = theInvokedClass.resolvedMethods();
+                final List<BytecodeResolvedMethods.MethodEntry> theImplMethods = theMethods.stream().filter(
+                        t -> t.getValue().getName().stringValue().equals(e.getMethodName()) &&
+                                t.getValue().getSignature().matchesExactlyTo(e.getSignature()))
+                        .collect(Collectors.toList());
+                if (theImplMethods.size() != 1) {
+                    throw new IllegalStateException("Cannot find unique method " + e.getMethodName() + " with signature " + e.getSignature() + " in " + theInvokedClassName.name());
+                }
+                final BytecodeLinkedClass theImplClass = theImplMethods.get(0).getProvidingClass();
+                final BytecodeMethod theMethod = theImplMethods.get(0).getValue();
+                if (!theMethod.isConstructor()) {
+                    // At this point, we are creating a direct call invocation to the function
+                    // Which is imported fom the WASM Host environment
+
+                    target.print("call ");
+                    target.print(LLVMWriterUtils.toSignature(e.getSignature()));
+                    target.print(" @");
+                    target.print(LLVMWriterUtils.toMethodName(theImplClass.getClassName(), e.getMethodName(), e.getSignature()));
+                    target.print(" (i32 ");
+                    writeResolved(invocationTarget);
+                    for (int i=0;i<e.getSignature().getArguments().length;i++) {
+                        target.print(",");
+                        target.print(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
+                        target.print(" ");
+                        writeResolved(e.incomingDataFlows().get(i + 1));
+                    }
+                    target.print(")");
+                    currentSubProgram.writeDebugSuffixFor(e, target);
+                    return;
+                }
+            }
+        }
 
         // Invoke function
         target.print("call ");
@@ -996,7 +1056,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print(" %");
         target.print(toTempSymbol(e, "resolved_ptr"));
         target.print(" (i32 ");
-        writeResolved(value);
+        writeResolved(invocationTarget);
         for (int i=0;i<e.getSignature().getArguments().length;i++) {
             target.print(",");
             target.print(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
@@ -1008,17 +1068,44 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final DirectInvokeMethodExpression e) {
+
+        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(e.getClazz());
+        final String theMethodName = e.getMethodName();
+        final BytecodeMethodSignature theSignature = e.getSignature();
+
+        if (theTargetClass.isOpaqueType() && !theMethodName.equals("<init>")) {
+            target.print("call ");
+            target.print(LLVMWriterUtils.toSignature(theSignature));
+            target.print(" @");
+            target.print(LLVMWriterUtils.toMethodName(theTargetClass.getClassName(), theMethodName, theSignature));
+            target.print("(");
+            final List<Value> theValues = e.incomingDataFlows();
+            for (int i=0;i<theValues.size();i++) {
+                if (i>0) {
+                    target.print(",");
+                }
+                if (i == 0) {
+                    target.print("i32");
+                } else {
+                    target.print(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i - 1])));
+                }
+                target.print(" ");
+                writeResolved(theValues.get(i));
+            }
+            target.print(")");
+            return;
+        }
+
         target.print("call ");
-        target.print(LLVMWriterUtils.toSignature(e.getSignature()));
+        target.print(LLVMWriterUtils.toSignature(theSignature));
         target.print(" @");
         if (!e.getMethodName().equals("<init>")) {
-            final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(e.getClazz());
             final BytecodeResolvedMethods theResolvedMethods = theTargetClass.resolvedMethods();
-            final BytecodeResolvedMethods.MethodEntry theEntry = theResolvedMethods.implementingClassOf(e.getMethodName(), e.getSignature());
+            final BytecodeResolvedMethods.MethodEntry theEntry = theResolvedMethods.implementingClassOf(theMethodName, theSignature);
 
-            target.print(LLVMWriterUtils.toMethodName(theEntry.getProvidingClass().getClassName(), e.getMethodName(), e.getSignature()));
+            target.print(LLVMWriterUtils.toMethodName(theEntry.getProvidingClass().getClassName(), theMethodName, theSignature));
         } else {
-            target.print(LLVMWriterUtils.toMethodName(e.getClazz(), e.getMethodName(), e.getSignature()));
+            target.print(LLVMWriterUtils.toMethodName(e.getClazz(), theMethodName, theSignature));
         }
         target.print("(");
         final List<Value> theValues = e.incomingDataFlows();
