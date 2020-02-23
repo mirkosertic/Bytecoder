@@ -1926,7 +1926,7 @@ public class LLVMWriter implements AutoCloseable {
 
     private void writeDivExpression(final BinaryExpression e) {
         final Value left = e.incomingDataFlows().get(0);
-        final Value right = e.incomingDataFlows().get(0);
+        final Value right = e.incomingDataFlows().get(1);
         target.print("call float @div_");
         target.print(LLVMWriterUtils.toType(left.resolveType()));
         target.print(LLVMWriterUtils.toType(right.resolveType()));

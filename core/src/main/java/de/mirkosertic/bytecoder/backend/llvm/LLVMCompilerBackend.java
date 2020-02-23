@@ -390,7 +390,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("    ret i32 0");
                 pw.println("isnoteq:");
                 pw.println("    %test2 = icmp sgt i32 %v1,%v2");
-                pw.println("    br i1 %test, label %isgreater, label %issmaller");
+                pw.println("    br i1 %test2, label %isgreater, label %issmaller");
                 pw.println("isgreater:");
                 pw.println("    ret i32 1");
                 pw.println("issmaller:");
@@ -406,7 +406,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("    ret i32 0");
                 pw.println("isnoteq:");
                 pw.println("    %test2 = fcmp ogt float %v1,%v2");
-                pw.println("    br i1 %test, label %isgreater, label %issmaller");
+                pw.println("    br i1 %test2, label %isgreater, label %issmaller");
                 pw.println("isgreater:");
                 pw.println("    ret i32 1");
                 pw.println("issmaller:");
