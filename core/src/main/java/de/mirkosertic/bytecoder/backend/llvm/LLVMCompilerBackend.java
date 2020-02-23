@@ -1267,7 +1267,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     final String theData = stringPool.get(i);
                     final int l = theData.length();
                     final int[] theDataCharacters = new int[l];
-                    for (int j=0;j<l;j++) {
+                    for (int j = 0; j < l; j++) {
                         theDataCharacters[j] = theData.charAt(j);
                     }
 
@@ -1278,7 +1278,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.print(l);
                     pw.println(",i32 %arrayclassinit,i32 %arrayvtableptr)");
 
-                    for (int j=0;j<l;j++) {
+                    for (int j = 0; j < l; j++) {
                         pw.print("    %offset_" + i + "_" + j);
                         pw.print(" = add i32 %allocated_");
                         pw.print(i);
@@ -1719,7 +1719,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         theWriter.print(": function(");
                         theWriter.print("target");
                         final BytecodeMethodSignature theSignature = theBytecdeMethod.getSignature();
-                        for (int i=0;i<theSignature.getArguments().length;i++) {
+                        for (int i = 0; i < theSignature.getArguments().length; i++) {
                             theWriter.print(",arg");
                             theWriter.print(i);
                         }
@@ -1842,7 +1842,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             theWriter.print(theMethodName);
                             theWriter.print("(");
 
-                            for (int i=0;i<theSignature.getArguments().length;i++) {
+                            for (int i = 0; i < theSignature.getArguments().length; i++) {
                                 if (i > 0) {
                                     theWriter.print(",");
                                 }
@@ -1875,8 +1875,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                         theWriter.print("bytecoder.registerCallback(arg");
                                         theWriter.print(i);
                                         theWriter.print(",function (");
-                                        for (int j=0;j<theImpl.getSignature().getArguments().length;j++) {
-                                            if (j>0) {
+                                        for (int j = 0; j < theImpl.getSignature().getArguments().length; j++) {
+                                            if (j > 0) {
                                                 theWriter.print(",");
                                             }
                                             theWriter.print("farg");
@@ -1884,7 +1884,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                         }
                                         theWriter.print(") {");
 
-                                        for (int j=0;j<theImpl.getSignature().getArguments().length;j++) {
+                                        for (int j = 0; j < theImpl.getSignature().getArguments().length; j++) {
                                             theWriter.print("var marg");
                                             theWriter.print(j);
                                             theWriter.print("=");
@@ -1922,7 +1922,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                         theWriter.print("(arg");
                                         theWriter.print(i);
 
-                                        for (int j=0;j<theImpl.getSignature().getArguments().length;j++) {
+                                        for (int j = 0; j < theImpl.getSignature().getArguments().length; j++) {
                                             theWriter.print(",");
                                             theWriter.print("marg");
                                             theWriter.print(j);
@@ -1930,7 +1930,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                                         theWriter.print(");");
 
-                                        for (int j=0;j<theImpl.getSignature().getArguments().length;j++) {
+                                        for (int j = 0; j < theImpl.getSignature().getArguments().length; j++) {
                                             final BytecodeTypeRef theTypeRef = theImpl.getSignature().getArguments()[j];
 
                                             if (theTypeRef.isPrimitive()) {
@@ -2028,12 +2028,13 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             theLinkerCommand.add("-allow-undefined");
             theLinkerCommand.add("--lto-O3");
             theLinkerCommand.add("--no-entry");
-            theLinkerCommand.add("--demangle");
-            theLinkerCommand.add("--initial-memory=" + aOptions.getWasmMinimumPageSize() * 65536);
-            theLinkerCommand.add("--max-memory=" + aOptions.getWasmMaximumPageSize() * 65536);
-            if (!aOptions.isDebugOutput()) {
+            if (aOptions.isDebugOutput()) {
+                theLinkerCommand.add("--demangle");
+            } else {
                 theLinkerCommand.add("-s");
             }
+            theLinkerCommand.add("--initial-memory=" + aOptions.getWasmMinimumPageSize() * 65536);
+            theLinkerCommand.add("--max-memory=" + aOptions.getWasmMaximumPageSize() * 65536);
             final ProcessBuilder theLinkerProcessBuilder = new ProcessBuilder(theLinkerCommand).directory(theLLFile.getParentFile());
             aOptions.getLogger().info("LLVM linker command is {}", theLinkerProcessBuilder.command());
 
