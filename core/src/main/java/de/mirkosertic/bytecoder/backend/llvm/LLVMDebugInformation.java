@@ -139,6 +139,16 @@ public class LLVMDebugInformation {
         return unit;
     }
 
+    public CompileUnit compileUnitFor(final String fileName) {
+        CompileUnit unit = compileUnits.get(fileName);
+        if (unit == null) {
+            final CompileFile compileFile = new CompileFile(elementCounter++, fileName);
+            unit = new CompileUnit(elementCounter++, compileFile);
+            compileUnits.put(fileName, unit);
+        }
+        return unit;
+    }
+
     public void writeHeaderTo(final PrintWriter pw) {
         final List<CompileUnit> theUnits = new ArrayList<>(compileUnits.values());
         for (final CompileUnit compileUnit : theUnits) {

@@ -1008,9 +1008,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                                     case DOUBLE:
                                                     case FLOAT: {
                                                         theDispatchArguments.add(ConstExpressions.f32.load(20, thePtr, null));
+                                                        break;
                                                     }
                                                     default: {
                                                         theDispatchArguments.add(ConstExpressions.i32.load(20, thePtr, null));
+                                                        break;
                                                     }
                                                 }
                                             }
@@ -1039,9 +1041,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                                     case DOUBLE:
                                                     case FLOAT: {
                                                         theDispatchArguments.add(ConstExpressions.f32.load(20, thePtr, null));
+                                                        break;
                                                     }
                                                     default: {
                                                         theDispatchArguments.add(ConstExpressions.i32.load(20, thePtr, null));
+                                                        break;
                                                     }
                                                 }
                                             }
@@ -1101,9 +1105,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                                     case DOUBLE:
                                                     case FLOAT: {
                                                         theDispatchArguments.add(ConstExpressions.f32.load(20, thePtr, null));
+                                                        break;
                                                     }
                                                     default: {
                                                         theDispatchArguments.add(ConstExpressions.i32.load(20, thePtr, null));
+                                                        break;
                                                     }
                                                 }
                                             }
@@ -1132,9 +1138,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                                     case DOUBLE:
                                                     case FLOAT: {
                                                         theDispatchArguments.add(ConstExpressions.f32.load(20, thePtr, null));
+                                                        break;
                                                     }
                                                     default: {
                                                         theDispatchArguments.add(ConstExpressions.i32.load(20, thePtr, null));
+                                                        break;
                                                     }
                                                 }
                                             }

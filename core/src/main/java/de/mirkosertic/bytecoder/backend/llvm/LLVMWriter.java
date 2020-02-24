@@ -69,7 +69,10 @@ import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.MaxExpression;
 import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
+import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupExpression;
+import de.mirkosertic.bytecoder.ssa.MethodRefExpression;
 import de.mirkosertic.bytecoder.ssa.MethodTypeArgumentCheckExpression;
+import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
 import de.mirkosertic.bytecoder.ssa.MinExpression;
 import de.mirkosertic.bytecoder.ssa.NegatedExpression;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
@@ -131,6 +134,8 @@ public class LLVMWriter implements AutoCloseable {
         String globalFromStringPool(final String aValue);
 
         String resolveCallsiteBootstrapFor(BytecodeClass owningClass, String callsiteId, Program program, RegionNode bootstrapMethod);
+
+        String methodTypeFactoryNameFor(final BytecodeMethodSignature aSignature);
     }
 
     private final PrintWriter target;
@@ -1421,9 +1426,42 @@ public class LLVMWriter implements AutoCloseable {
             write((NewMultiArrayExpression) aValue);
         } else if (aValue instanceof SuperTypeOfExpression) {
             write((SuperTypeOfExpression) aValue);
+        } else if (aValue instanceof MethodHandlesGeneratedLookupExpression) {
+            write((MethodHandlesGeneratedLookupExpression) aValue);
+        } else if (aValue instanceof MethodTypeExpression) {
+            write((MethodTypeExpression) aValue);
+        } else if (aValue instanceof MethodRefExpression) {
+            write((MethodRefExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue.getClass());
         }
+    }
+
+    private void write(final MethodRefExpression e) {
+        target.print("ptrtoint ");
+
+        target.print(LLVMWriterUtils.toSignature(e.getSignature()));
+
+        final String theMethodName = LLVMWriterUtils.toMethodName(
+                e.getClassName(),
+                e.getMethodName(),
+                e.getSignature());
+
+        target.print("* @");
+        target.print(theMethodName);
+
+        target.print(" to i32");
+    }
+
+    private void write(final MethodTypeExpression e) {
+        final BytecodeMethodSignature theSignature = e.getSignature();
+        target.print("call i32 @");
+        target.print(symbolResolver.methodTypeFactoryNameFor(theSignature));
+        target.print("()");
+    }
+
+    private void write(final MethodHandlesGeneratedLookupExpression e) {
+        target.print("add i32 0, 0");
     }
 
     private void write(final SuperTypeOfExpression e) {

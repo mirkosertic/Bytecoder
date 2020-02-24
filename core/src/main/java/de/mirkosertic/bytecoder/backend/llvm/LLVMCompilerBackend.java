@@ -43,11 +43,16 @@ import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
+import de.mirkosertic.bytecoder.ssa.Expression;
+import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
+import de.mirkosertic.bytecoder.ssa.MethodRefExpression;
+import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
+import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import org.apache.commons.io.IOUtils;
 
@@ -60,6 +65,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.lang.invoke.LambdaMetafactory;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -133,6 +139,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
         try {
             final List<String> stringPool = new ArrayList<>();
             final Map<String, CallSite> callsites = new HashMap<>();
+            final List<BytecodeMethodSignature> theMethodTypes = new ArrayList<>();
             final LLVMWriter.SymbolResolver theSymbolResolver = new LLVMWriter.SymbolResolver() {
                 @Override
                 public String globalFromStringPool(final String aValue) {
@@ -152,6 +159,17 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         callsites.put(callsiteId, callSite);
                     }
                     return "resolvecallsite" + System.identityHashCode(callSite);
+                }
+
+                @Override
+                public String methodTypeFactoryNameFor(final BytecodeMethodSignature aSignature) {
+                    for (int i=0;i<theMethodTypes.size();i++) {
+                        if (aSignature.matchesExactlyTo(theMethodTypes.get(0))) {
+                            return "methodtypefactory" + i;
+                        }
+                    }
+                    theMethodTypes.add(aSignature);
+                    return "methodtypefactory" + (theMethodTypes.size() - 1);
                 }
             };
             final LLVMDebugInformation debugInformation = new LLVMDebugInformation();
@@ -594,8 +612,64 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                 pw.println("define internal i32 @jlClass_jlClassforNamejlStringBOOLEANjlClassLoader(i32 %thisRef, i32 %name, i32 %initialize, i32 %classloader) {");
                 pw.println("entry:");
-                // TODO: implement this
-                pw.println("    ret i32 0");
+                aLinkerContext.linkedClasses().forEach(aEntry -> {
+
+                    final BytecodeLinkedClass theLinkedClass = aEntry.targetNode();
+
+                    if (theLinkedClass.getBytecodeClass().getAccessFlags().isInterface() || theLinkedClass.isOpaqueType()) {
+                        return;
+                    }
+
+                    if (Objects.equals(theLinkedClass.getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
+                        return;
+                    }
+
+                    if (theLinkedClass.emulatedByRuntime()) {
+                        return;
+                    }
+
+                    pw.print("    %class_");
+                    pw.print(theLinkedClass.getUniqueId());
+                    pw.print(" = load i32, i32* @");
+                    pw.println(theSymbolResolver.globalFromStringPool(theLinkedClass.getClassName().name()));
+
+                    pw.print("    %test_");
+                    pw.print(theLinkedClass.getUniqueId());
+                    pw.print(" = call i32 @jlString_BOOLEANequalsjlObject(i32 %class_");
+                    pw.print(theLinkedClass.getUniqueId());
+                    pw.println(",i32 %name)");
+
+                    pw.print("    %check_");
+                    pw.print(theLinkedClass.getUniqueId());
+                    pw.print(" = icmp eq i32 1, %test_");
+                    pw.println(theLinkedClass.getUniqueId());
+
+                    pw.print("    br i1 %check_");
+                    pw.print(theLinkedClass.getUniqueId());
+                    pw.print(", label %check_ok_");
+                    pw.print(theLinkedClass.getUniqueId());
+                    pw.print(", label %check_notok_");
+                    pw.println(theLinkedClass.getUniqueId());
+
+                    pw.print("check_ok_");
+                    pw.print(theLinkedClass.getUniqueId());
+                    pw.println(":");
+
+                    pw.print("    %init_");
+                    pw.println(theLinkedClass.getUniqueId());
+                    pw.print(" = call i32 @");
+                    pw.print(LLVMWriterUtils.toClassName(theLinkedClass.getClassName()));
+                    pw.print(LLVMWriter.CLASSINITSUFFIX);
+                    pw.println("()");
+                    pw.print("    ret i32 %init_");
+                    pw.println(theLinkedClass.getUniqueId());
+
+                    pw.print("check_notok_");
+                    pw.print(theLinkedClass.getUniqueId());
+                    pw.println(":");
+                });
+                pw.println("    call void @llvm.trap()");
+                pw.println("    unreachable");
                 pw.println("}");
                 pw.println();
 
@@ -1109,7 +1183,284 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                 // Generate callsite resolver code
                 for (final Map.Entry<String, CallSite> theEntry : callsites.entrySet()) {
+
                     final CallSite callsite = theEntry.getValue();
+
+                    // At this point, we need to determine if there are lambdas generated
+                    // so we can generate the adapter methods at compile time. This needs
+                    // to be done because WebAssembly cannot generate code at runtime
+
+                    final RegionNode theBootStrapcode = theEntry.getValue().bootstrapMethod;
+                    for (final Expression theExpression : theBootStrapcode.getExpressions().toList()) {
+                        final List<Value> theIncomingDataFlows = theExpression.incomingDataFlows();
+                        for (final Value theValue : theIncomingDataFlows) {
+                            if (theValue instanceof InvokeStaticMethodExpression) {
+                                final InvokeStaticMethodExpression theStatic = (InvokeStaticMethodExpression) theValue;
+                                if (theStatic.getClassName().name().equals(LambdaMetafactory.class.getName()) && theStatic.getMethodName().equals("metafactory")) {
+                                    // We have a winner
+                                    final List<Value> theArguments = new ArrayList<>();
+                                    for (final Value theArg : theStatic.incomingDataFlows()) {
+                                        if (theArg instanceof Variable) {
+                                            theArguments.add(theArg.incomingDataFlows().get(0));
+                                        } else {
+                                            theArguments.add(theArg);
+                                        }
+                                    }
+                                    final MethodTypeExpression theStaticInvocationType = (MethodTypeExpression) theArguments.get(2);
+                                    final MethodTypeExpression theDynamicInvocationType = (MethodTypeExpression) theArguments.get(5);
+                                    final MethodRefExpression theImplementationMethod = (MethodRefExpression) theArguments.get(4);
+
+                                    if (theStaticInvocationType.getSignature().getArguments().length == 0) {
+                                        // If we have no static invocation arguments, we do not need to generate an adapter method
+                                        // We can directly refer to the implementation method
+                                    } else {
+                                        // We need to create an adapter method to make the two signatures compatible
+                                        final BytecodeMethodSignature theImplementationSignature = theImplementationMethod.getSignature();
+
+                                        final String theAdapterFunctionName = LLVMWriterUtils.toMethodName(theImplementationMethod.getClassName(),
+                                                theImplementationMethod.getMethodName() + theEntry.getKey(), theImplementationMethod.getSignature());
+
+                                        final String theImplementationOriginalMethodName = theImplementationMethod.getMethodName();
+
+                                        // This is our new implementation
+                                        // We can safely rename the method here
+                                        theImplementationMethod.retargetToMethodName(theImplementationMethod.getMethodName() + theEntry.getKey());
+
+                                        if (theImplementationSignature.getReturnType().isVoid()) {
+                                            pw.print("define internal void @");
+                                        } else {
+                                            pw.print("define internal ");
+                                            pw.print(LLVMWriterUtils.toType(TypeRef.toType(theImplementationSignature.getReturnType())));
+                                            pw.print("@");
+                                        }
+
+                                        pw.print(theAdapterFunctionName);
+                                        pw.print("(i32 selfRef");
+                                        for (int i=0;i<theDynamicInvocationType.getSignature().getArguments().length;i++) {
+                                            pw.print(",");
+                                            pw.print(LLVMWriterUtils.toType(TypeRef.toType(theDynamicInvocationType.getSignature().getArguments()[i])));
+                                            pw.print(" %arg");
+                                            pw.print(i);
+                                        }
+                                        pw.println(") {");
+
+                                        final List<String> theDispatchArguments = new ArrayList<>();
+
+                                        switch (theImplementationMethod.getReferenceKind()) {
+                                            case REF_invokeStatic:
+                                                theDispatchArguments.add("i32 -1");
+                                            case REF_invokeSpecial:
+                                            case REF_invokeVirtual: {
+                                                pw.println("    %base_offset = add i32 %selfRef, 12");
+                                                pw.println("    %base_offset_ptr = inttoptr i32 %base_offset to i32*");
+                                                pw.println("    %base_ptr = load i32, i32* %base_offset_ptr");
+
+                                                // Add static arguments
+                                                for (int i=0;i<theStaticInvocationType.getSignature().getArguments().length;i++) {
+
+                                                    pw.print("    %static");
+                                                    pw.print(i);
+                                                    pw.print("_offset = add i32 ");
+                                                    pw.print(20 + i * 4);
+                                                    pw.println(", i32 %base_ptr");
+
+                                                    switch (TypeRef.toType(theStaticInvocationType.getSignature().getArguments()[i]).resolve()) {
+                                                        case DOUBLE:
+                                                        case FLOAT: {
+                                                            pw.print("    %static");
+                                                            pw.print(i);
+                                                            pw.print("_ptr = inttoptr %static");
+                                                            pw.print(i);
+                                                            pw.println(" to float*");
+
+                                                            pw.print("    %static");
+                                                            pw.print(i);
+                                                            pw.print("_value = load f32, f32* %static");
+                                                            pw.print(i);
+                                                            pw.println("ptr");
+
+                                                            theDispatchArguments.add("f32 %static" + i);
+                                                            break;
+                                                        }
+                                                        default: {
+                                                            pw.print("    %static");
+                                                            pw.print(i);
+                                                            pw.print("_ptr = inttoptr %static");
+                                                            pw.print(i);
+                                                            pw.println(" to i32*");
+
+                                                            pw.print("    %static");
+                                                            pw.print(i);
+                                                            pw.print("_value = load i32, i32* %static");
+                                                            pw.print(i);
+                                                            pw.println("ptr");
+
+                                                            theDispatchArguments.add("i32 %static" + i);
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+
+                                                // Add dynamic arguments
+                                                for (int i=0;i<theDynamicInvocationType.getSignature().getArguments().length;i++) {
+                                                    theDispatchArguments.add(LLVMWriterUtils.toType(TypeRef.toType(theDynamicInvocationType.getSignature().getArguments()[i]))
+                                                    + " %arg" + i);
+                                                }
+
+                                                if (theImplementationSignature.getReturnType().isVoid()) {
+                                                    pw.print("    call void @");
+                                                    pw.print(LLVMWriterUtils.toMethodName(
+                                                            theImplementationMethod.getClassName(),
+                                                            theImplementationOriginalMethodName,
+                                                            theImplementationSignature
+                                                    ));
+                                                    pw.print("(");
+                                                    for (int i = 0; i < theDispatchArguments.size(); i++) {
+                                                        if (i > 0) {
+                                                            pw.print(",");
+                                                        }
+                                                        pw.print(theDispatchArguments.get(i));
+                                                    }
+                                                    pw.println(")");
+                                                } else {
+                                                    pw.print("    %result = call ");
+                                                    pw.print(LLVMWriterUtils.toType(TypeRef.toType(theImplementationSignature.getReturnType())));
+                                                    pw.print("  @");
+                                                    pw.print(LLVMWriterUtils.toMethodName(
+                                                            theImplementationMethod.getClassName(),
+                                                            theImplementationOriginalMethodName,
+                                                            theImplementationSignature
+                                                    ));
+                                                    pw.print("(");
+                                                    for (int i = 0; i < theDispatchArguments.size(); i++) {
+                                                        if (i > 0) {
+                                                            pw.print(",");
+                                                        }
+                                                        pw.print(theDispatchArguments.get(i));
+                                                    }
+                                                    pw.println(")");
+
+                                                    pw.print("    ret ");
+                                                    pw.print(LLVMWriterUtils.toType(TypeRef.toType(theImplementationSignature.getReturnType())));
+                                                    pw.println(" %result");
+
+                                                }
+                                                break;
+                                            }
+                                            case REF_invokeInterface: {
+
+                                                pw.println("    %base_offset = add i32 %selfRef, 12");
+                                                pw.println("    %base_offset_ptr = inttoptr i32 %base_offset to i32*");
+                                                pw.println("    %base_ptr = load i32, i32* %base_offset_ptr");
+
+                                                // Add static arguments
+                                                for (int i=0;i<theStaticInvocationType.getSignature().getArguments().length;i++) {
+
+                                                    pw.print("    %static");
+                                                    pw.print(i);
+                                                    pw.print("_offset = add i32 ");
+                                                    pw.print(20 + i * 4);
+                                                    pw.println(", i32 %base_ptr");
+
+                                                    switch (TypeRef.toType(theStaticInvocationType.getSignature().getArguments()[i]).resolve()) {
+                                                        case DOUBLE:
+                                                        case FLOAT: {
+                                                            pw.print("    %static");
+                                                            pw.print(i);
+                                                            pw.print("_ptr = inttoptr %static");
+                                                            pw.print(i);
+                                                            pw.println(" to float*");
+
+                                                            pw.print("    %static");
+                                                            pw.print(i);
+                                                            pw.print("_value = load f32, f32* %static");
+                                                            pw.print(i);
+                                                            pw.println("ptr");
+
+                                                            theDispatchArguments.add("f32 %static" + i);
+                                                            break;
+                                                        }
+                                                        default: {
+                                                            pw.print("    %static");
+                                                            pw.print(i);
+                                                            pw.print("_ptr = inttoptr %static");
+                                                            pw.print(i);
+                                                            pw.println(" to i32*");
+
+                                                            pw.print("    %static");
+                                                            pw.print(i);
+                                                            pw.print("_value = load i32, i32* %static");
+                                                            pw.print(i);
+                                                            pw.println("ptr");
+
+                                                            theDispatchArguments.add("i32 %static" + i);
+                                                            break;
+                                                        }
+                                                    }
+                                                }
+
+                                                // Add dynamic arguments
+                                                for (int i=0;i<theDynamicInvocationType.getSignature().getArguments().length;i++) {
+                                                    theDispatchArguments.add(LLVMWriterUtils.toType(TypeRef.toType(theDynamicInvocationType.getSignature().getArguments()[i]))
+                                                            + " %arg" + i);
+                                                }
+
+                                                final BytecodeMethodSignature theInvocationSignature = theDynamicInvocationType.getSignature();
+                                                final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(theImplementationOriginalMethodName, theInvocationSignature);
+
+                                                final String theCalledFunction = LLVMWriterUtils.toSignature(theInvocationSignature);
+
+                                                pw.print("    %ptr = add ");
+                                                pw.print(theDispatchArguments.get(0));
+                                                pw.println(", 4");
+
+                                                pw.println("    %vtable = inttoptr i32 %ptr to i32(i32,i32)*");
+                                                pw.print("      %resolved = call i32(i32,i32) %vtable(i32 %object, i32 ");
+                                                pw.print(theMethodIdentifier.getIdentifier());
+                                                pw.println(")");
+
+                                                pw.print("    %resolved_ptr = inttoptr i32 %resolved to ");
+                                                pw.print(theCalledFunction);
+                                                pw.println("*");
+
+                                                if (theImplementationSignature.getReturnType().isVoid()) {
+                                                    pw.print("    call ");
+                                                    pw.print(theCalledFunction);
+                                                    pw.print("* %resolved_ptr (");
+                                                    for (int i = 0; i < theDispatchArguments.size(); i++) {
+                                                        if (i > 0) {
+                                                            pw.print(",");
+                                                        }
+                                                        pw.print(theDispatchArguments.get(i));
+                                                    }
+                                                    pw.println(")");
+                                                } else {
+                                                    pw.print("    %result = call ");
+                                                    pw.print(theCalledFunction);
+                                                    pw.print("* %resolved_ptr (");
+                                                    for (int i = 0; i < theDispatchArguments.size(); i++) {
+                                                        if (i > 0) {
+                                                            pw.print(",");
+                                                        }
+                                                        pw.print(theDispatchArguments.get(i));
+                                                    }
+                                                    pw.println(")");
+
+                                                    pw.print("    ret ");
+                                                    pw.print(LLVMWriterUtils.toType(TypeRef.toType(theImplementationSignature.getReturnType())));
+                                                    pw.println(" %result");
+
+                                                }
+                                                break;
+                                            }
+                                            default:
+                                                throw new IllegalStateException("Not implemented : " + theImplementationMethod.getReferenceKind() + " for LambdaMetaFactory!");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
 
                     pw.print("@");
                     pw.print("callsite");
@@ -1119,14 +1470,45 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.print(";; ");
                     pw.println(theEntry.getKey());
 
+                    final Program theSSAProgram = theEntry.getValue().program;
+                    final LLVMDebugInformation.CompileUnit compileUnit = debugInformation.compileUnitFor("/resolvecallsite" + callsite);
+                    final LLVMDebugInformation.SubProgram subProgram = compileUnit.subProgram(theSSAProgram, "/resolvecallsite" + callsite, new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
+
+                    // Run optimizer
+                    // We use a special LLVM optimizer, which does only stuff LLVM CANNOT do, such
+                    // as virtual method invocation optimization. All other optimization work
+                    // is done by LLVM!
+                    KnownOptimizer.LLVM.optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
+
                     pw.print("define internal i32 @resolvecallsite");
                     pw.print(System.identityHashCode(callsite));
                     pw.println("() {");
-
-                    // TODO: implement logic here
                     pw.println("entry:");
-                    pw.println("    call void @llvm.trap()");
-                    pw.println("    unreachable");
+                    pw.print("    %value = load i32, i32* @callsite");
+                    pw.println(System.identityHashCode(callsite));
+                    pw.println("    %test = icmp eq i32 %value, 0");
+                    pw.println("    br i1 %test, label %notinitialized, label %initialized");
+                    pw.println("notinitialized:");
+                    pw.print("    %initstatus = call i32  @resolvecallsite");
+                    pw.print(System.identityHashCode(callsite));
+                    pw.println("_factory()");
+                    pw.print("    store i32 %initstatus, i32* @callsite");
+                    pw.println(System.identityHashCode(callsite));
+                    pw.println("    ret i32 %initstatus");
+                    pw.println("initialized:");
+                    pw.println("    ret i32 %value");
+                    pw.println("}");
+                    pw.println();
+
+                    pw.print("define internal i32 @resolvecallsite");
+                    pw.print(System.identityHashCode(callsite));
+                    pw.print("_factory() ");
+                    subProgram.writeDebugSuffixTo(pw);
+                    pw.println(" {");
+
+                    try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter, aLinkerContext, theSymbolResolver)) {
+                        theWriter.write(theEntry.getValue().program, subProgram);
+                    }
 
                     pw.println("}");
                     pw.println();
@@ -1216,6 +1598,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     if (Objects.equals(aEntry.targetNode().getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                         return;
                     }
+
                     if (theLinkedClass.emulatedByRuntime()) {
                         return;
                     }
@@ -1321,6 +1704,90 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.println(" = private global i32 0");
                 }
                 pw.println();
+
+                // Factory for method types
+                for (int j=0;j<theMethodTypes.size();j++) {
+
+                    final BytecodeMethodSignature theSignature = theMethodTypes.get(j);
+
+                    pw.print("define internal i32 @methodtypefactory");
+                    pw.print(j);
+                    pw.println("() {");
+                    pw.println("entry:");
+
+                    pw.println("    %data_classinit = call i32 @dmbcArray__init()");
+                    pw.println("    %data_vtable = ptrtoint i32(i32,i32)* @dmbcArray__resolvevtableindex to i32");
+                    pw.print("    %data = call i32 @dmbcMemoryManager_INTnewArrayINTINTINT(i32 0,i32 ");
+                    pw.print(1 + theSignature.getArguments().length);
+                    pw.println(",i32 %data_classinit,i32 %data_vtable)");
+
+                    final java.util.function.BiFunction<BytecodeTypeRef, Integer, Void> theAdder = (aType, aIndex) -> {
+                        final int offset = 20 + aIndex * 4;
+
+                        pw.print("    %data_");
+                        pw.print(aIndex);
+                        pw.print(" = add i32 %data, ");
+                        pw.println(offset);
+
+                        pw.print("    %data_");
+                        pw.print(aIndex);
+                        pw.print("_ptr = inttoptr i32 %data_");
+                        pw.print(aIndex);
+                        pw.println(" to i32*");
+
+                        if (aType.isPrimitive()) {
+                            final TypeRef.Native theNativeType = (TypeRef.Native) TypeRef.toType(aType);
+                            // Negative number to indicate it is a primitive type
+                            pw.print("    store i32 ");
+                            pw.print(-theNativeType.ordinal());
+                            pw.print(", i32* %data_");
+                            pw.print(aIndex);
+                            pw.println("_ptr");
+                        } else {
+                            // Positive number with the id of the class
+                            if (aType.isArray()) {
+                                final BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
+                                pw.print("    %status");
+                                pw.print(aIndex);
+                                pw.print(" = call i32 @");
+                                pw.print(LLVMWriterUtils.toClassName(theLinkedClass.getClassName()));
+                                pw.print(LLVMWriter.CLASSINITSUFFIX);
+                                pw.println("()");
+
+                                pw.print("    store i32 %status");
+                                pw.print(aIndex);
+                                pw.print(", i32* %data_");
+                                pw.print(aIndex);
+                                pw.println("_ptr");
+                            } else {
+                                final BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass((BytecodeObjectTypeRef) aType);
+                                pw.print("    %status");
+                                pw.print(aIndex);
+                                pw.print(" = call i32 @");
+                                pw.print(LLVMWriterUtils.toClassName(theLinkedClass.getClassName()));
+                                pw.print(LLVMWriter.CLASSINITSUFFIX);
+                                pw.println("()");
+
+                                pw.print("    store i32 %status");
+                                pw.print(aIndex);
+                                pw.print(", i32* %data_");
+                                pw.print(aIndex);
+                                pw.println("_ptr");
+                            }
+                        }
+                        return null;
+                    };
+                    // Return type and arguments
+                    theAdder.apply(theSignature.getReturnType(), 0);
+                    for (int i=0;i<theSignature.getArguments().length;i++) {
+                        final BytecodeTypeRef theArgument = theSignature.getArguments()[i];
+                        theAdder.apply(theArgument, i + 1);
+                    }
+
+                    pw.println("    ret i32 %data");
+                    pw.println("}");
+                    pw.println();
+                }
 
                 // We need to generate the callbacks
                 aLinkerContext.linkedClasses().map(Edge::targetNode).filter(t -> t.isCallback() && t.getBytecodeClass().getAccessFlags().isInterface()).forEach(t -> {
@@ -2094,7 +2561,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             theLinkerCommand.add("-allow-undefined");
             theLinkerCommand.add("--lto-O3");
             theLinkerCommand.add("--no-entry");
-            if (aOptions.isDebugOutput()) {
+            if (!aOptions.isMinify()) {
                 theLinkerCommand.add("--demangle");
             } else {
                 theLinkerCommand.add("-s");
