@@ -587,7 +587,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("entry:");
                 pw.println("    %offset = add i32 %thisRef, 16");
                 pw.println("    %ptr = inttoptr i32 %offset to i32*");
-                pw.println("    %classname = load i32, i32* %ptr");
+                pw.println("    %classname_ptr = load i32, i32* %ptr");
+                pw.println("    %classname_ptrptr = inttoptr i32 %classname_ptr to i32*");
+                pw.println("    %classname = load i32, i32* %classname_ptrptr");
                 pw.println("    ret i32 %classname");
                 pw.println("}");
                 pw.println();
