@@ -29,7 +29,7 @@ public class LLVMWriterUtils {
 
     public static String toMethodName(final String aMethodName, final BytecodeMethodSignature aSignature) {
         final StringBuilder theName = new StringBuilder(typeRefToString(aSignature.getReturnType()));
-        theName.append(aMethodName.replace("<", "$").replace(">", "$"));
+        theName.append(aMethodName.replace("<", "$").replace(">", "$").replace("/","_"));
 
         for (final BytecodeTypeRef theTypeRef : aSignature.getArguments()) {
             theName.append(typeRefToString(theTypeRef));

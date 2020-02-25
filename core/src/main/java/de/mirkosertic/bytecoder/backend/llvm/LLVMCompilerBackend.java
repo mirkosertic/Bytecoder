@@ -1218,13 +1218,14 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                         final BytecodeMethodSignature theImplementationSignature = theImplementationMethod.getSignature();
 
                                         final String theAdapterFunctionName = LLVMWriterUtils.toMethodName(theImplementationMethod.getClassName(),
-                                                theImplementationMethod.getMethodName() + theEntry.getKey(), theImplementationMethod.getSignature());
+                                                theImplementationMethod.getMethodName() + theEntry.getKey(), theDynamicInvocationType.getSignature());
 
                                         final String theImplementationOriginalMethodName = theImplementationMethod.getMethodName();
 
                                         // This is our new implementation
                                         // We can safely rename the method here
                                         theImplementationMethod.retargetToMethodName(theImplementationMethod.getMethodName() + theEntry.getKey());
+                                        theImplementationMethod.retargetToSignature(theDynamicInvocationType.getSignature());
 
                                         if (theImplementationSignature.getReturnType().isVoid()) {
                                             pw.print("define internal void @");
@@ -1235,7 +1236,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                         }
 
                                         pw.print(theAdapterFunctionName);
-                                        pw.print("(i32 selfRef");
+                                        pw.print("(i32 %selfRef");
                                         for (int i=0;i<theDynamicInvocationType.getSignature().getArguments().length;i++) {
                                             pw.print(",");
                                             pw.print(LLVMWriterUtils.toType(TypeRef.toType(theDynamicInvocationType.getSignature().getArguments()[i])));
@@ -1260,42 +1261,41 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                                                     pw.print("    %static");
                                                     pw.print(i);
-                                                    pw.print("_offset = add i32 ");
-                                                    pw.print(20 + i * 4);
-                                                    pw.println(", i32 %base_ptr");
+                                                    pw.print("_offset = add i32 %base_ptr, ");
+                                                    pw.println(20 + i * 4);
 
                                                     switch (TypeRef.toType(theStaticInvocationType.getSignature().getArguments()[i]).resolve()) {
                                                         case DOUBLE:
                                                         case FLOAT: {
                                                             pw.print("    %static");
                                                             pw.print(i);
-                                                            pw.print("_ptr = inttoptr %static");
+                                                            pw.print("_ptr = inttoptr i32 %static");
                                                             pw.print(i);
-                                                            pw.println(" to float*");
+                                                            pw.println("_offset to float*");
 
                                                             pw.print("    %static");
                                                             pw.print(i);
                                                             pw.print("_value = load f32, f32* %static");
                                                             pw.print(i);
-                                                            pw.println("ptr");
+                                                            pw.println("_ptr");
 
-                                                            theDispatchArguments.add("f32 %static" + i);
+                                                            theDispatchArguments.add("f32 %static" + i + "_value");
                                                             break;
                                                         }
                                                         default: {
                                                             pw.print("    %static");
                                                             pw.print(i);
-                                                            pw.print("_ptr = inttoptr %static");
+                                                            pw.print("_ptr = inttoptr i32 %static");
                                                             pw.print(i);
-                                                            pw.println(" to i32*");
+                                                            pw.println("_offset to i32*");
 
                                                             pw.print("    %static");
                                                             pw.print(i);
                                                             pw.print("_value = load i32, i32* %static");
                                                             pw.print(i);
-                                                            pw.println("ptr");
+                                                            pw.println("_ptr");
 
-                                                            theDispatchArguments.add("i32 %static" + i);
+                                                            theDispatchArguments.add("i32 %static" + i + "_value");
                                                             break;
                                                         }
                                                     }
@@ -1322,6 +1322,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                                         pw.print(theDispatchArguments.get(i));
                                                     }
                                                     pw.println(")");
+                                                    pw.println("    ret void");
                                                 } else {
                                                     pw.print("    %result = call ");
                                                     pw.print(LLVMWriterUtils.toType(TypeRef.toType(theImplementationSignature.getReturnType())));
@@ -1358,42 +1359,41 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                                                     pw.print("    %static");
                                                     pw.print(i);
-                                                    pw.print("_offset = add i32 ");
-                                                    pw.print(20 + i * 4);
-                                                    pw.println(", i32 %base_ptr");
+                                                    pw.print("_offset = add i32 %base_ptr, ");
+                                                    pw.println(20 + i * 4);
 
                                                     switch (TypeRef.toType(theStaticInvocationType.getSignature().getArguments()[i]).resolve()) {
                                                         case DOUBLE:
                                                         case FLOAT: {
                                                             pw.print("    %static");
                                                             pw.print(i);
-                                                            pw.print("_ptr = inttoptr %static");
+                                                            pw.print("_ptr = inttoptr i32 %static");
                                                             pw.print(i);
-                                                            pw.println(" to float*");
+                                                            pw.println("_offset to float*");
 
                                                             pw.print("    %static");
                                                             pw.print(i);
                                                             pw.print("_value = load f32, f32* %static");
                                                             pw.print(i);
-                                                            pw.println("ptr");
+                                                            pw.println("_ptr");
 
-                                                            theDispatchArguments.add("f32 %static" + i);
+                                                            theDispatchArguments.add("f32 %static" + i + "_value");
                                                             break;
                                                         }
                                                         default: {
                                                             pw.print("    %static");
                                                             pw.print(i);
-                                                            pw.print("_ptr = inttoptr %static");
+                                                            pw.print("_ptr = inttoptr i32 %static");
                                                             pw.print(i);
-                                                            pw.println(" to i32*");
+                                                            pw.println("_offset to i32*");
 
                                                             pw.print("    %static");
                                                             pw.print(i);
                                                             pw.print("_value = load i32, i32* %static");
                                                             pw.print(i);
-                                                            pw.println("ptr");
+                                                            pw.println("_ptr");
 
-                                                            theDispatchArguments.add("i32 %static" + i);
+                                                            theDispatchArguments.add("i32 %static" + i + "_value");
                                                             break;
                                                         }
                                                     }
@@ -1434,6 +1434,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                                         pw.print(theDispatchArguments.get(i));
                                                     }
                                                     pw.println(")");
+                                                    pw.println("    ret void");
                                                 } else {
                                                     pw.print("    %result = call ");
                                                     pw.print(theCalledFunction);
@@ -1456,6 +1457,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                             default:
                                                 throw new IllegalStateException("Not implemented : " + theImplementationMethod.getReferenceKind() + " for LambdaMetaFactory!");
                                         }
+
+                                        pw.println("}");
+                                        pw.println();
                                     }
                                 }
                             }
