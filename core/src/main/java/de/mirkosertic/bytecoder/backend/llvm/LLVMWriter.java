@@ -160,6 +160,12 @@ public class LLVMWriter implements AutoCloseable {
         return "t_" + System.identityHashCode(v) + "_" + suffix + "_";
     }
 
+    private BytecodeResolvedFields.FieldEntry implementingClassForStaticField(final BytecodeObjectTypeRef aClass, final String aFieldName) {
+        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aClass);
+        final BytecodeResolvedFields theFields = theLinkedClass.resolvedFields();
+        return theFields.fieldByName(aFieldName);
+    }
+
     private static class PHIValuePair {
 
         private final String nodeLabel;
@@ -575,7 +581,13 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void tempify(final GetStaticExpression e) {
-        final BytecodeObjectTypeRef theClass = BytecodeObjectTypeRef.fromUtf8Constant(e.getField().getClassIndex().getClassConstant().getConstant());
+
+        final BytecodeResolvedFields.FieldEntry theEntry = implementingClassForStaticField(BytecodeObjectTypeRef.fromUtf8Constant(e.getField().getClassIndex().getClassConstant().getConstant()),
+                e.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+
+        final BytecodeObjectTypeRef theClass = theEntry.getProvidingClass().getClassName();
+        final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theClass);
+        final int theStaticOffset = theLayout.offsetForClassMember(theEntry.getValue().getName().stringValue());
         final String theClassName = LLVMWriterUtils.toClassName(theClass);
 
         target.print("    %");
@@ -584,9 +596,6 @@ public class LLVMWriter implements AutoCloseable {
         target.print(theClassName);
         target.print(CLASSINITSUFFIX);
         target.println("()");
-
-        final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theClass);
-        final int theStaticOffset = theLayout.offsetForClassMember(e.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
         target.print("    %");
         target.print(toTempSymbol(e, "offset"));
@@ -970,7 +979,13 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final PutStaticExpression e) {
-        final BytecodeObjectTypeRef theClass = BytecodeObjectTypeRef.fromUtf8Constant(e.getField().getClassIndex().getClassConstant().getConstant());
+
+        final BytecodeResolvedFields.FieldEntry theEntry = implementingClassForStaticField(BytecodeObjectTypeRef.fromUtf8Constant(e.getField().getClassIndex().getClassConstant().getConstant()),
+                e.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
+
+        final BytecodeObjectTypeRef theClass = theEntry.getProvidingClass().getClassName();
+        final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theClass);
+        final int theStaticOffset = theLayout.offsetForClassMember(theEntry.getValue().getName().stringValue());
         final String theClassName = LLVMWriterUtils.toClassName(theClass);
 
         target.print("    %");
@@ -982,8 +997,6 @@ public class LLVMWriter implements AutoCloseable {
 
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(theClass);
         final BytecodeResolvedFields theStaticFields = theLinkedClass.resolvedFields();
-        final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theClass);
-        final int theStaticOffset = theLayout.offsetForClassMember(e.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
         final BytecodeResolvedFields.FieldEntry theField = theStaticFields.fieldByName(e.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
         target.print("    %");

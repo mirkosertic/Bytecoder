@@ -129,7 +129,10 @@ public class LLVMDebugInformation {
         elementCounter = 10;
     }
     public CompileUnit compileUnitFor(final Program program) {
-        final String fileName = program.getDebugInformation().originalFileName();
+        String fileName = program.getDebugInformation().originalFileName();
+        if (fileName == null) {
+            fileName = "/unknown";
+        }
         CompileUnit unit = compileUnits.get(fileName);
         if (unit == null) {
             final CompileFile compileFile = new CompileFile(elementCounter++, fileName);
