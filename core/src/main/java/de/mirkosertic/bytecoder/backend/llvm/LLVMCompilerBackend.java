@@ -313,8 +313,87 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                 pw.println("define internal i32 @jlClass_BOOLEANisAssignableFromjlClass(i32 %thisRef, i32 %otherType) {");
                 pw.println("entry:");
-                //TODO: implement this
+
+                aLinkerContext.linkedClasses().forEach(aEntry -> {
+
+                    final BytecodeLinkedClass theLinkedClass = aEntry.targetNode();
+                    if (theLinkedClass.emulatedByRuntime()) {
+                        return;
+                    }
+
+                    if (theLinkedClass.getClassName().equals(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))) {
+                        return;
+                    }
+
+                    pw.print("    %runtimeclass_");
+                    pw.print(theLinkedClass.getUniqueId());
+                    pw.print(" = call i32 @");
+                    pw.print(LLVMWriterUtils.toClassName(theLinkedClass.getClassName()));
+                    pw.print(LLVMWriter.CLASSINITSUFFIX);
+                    pw.println("()");
+
+                    pw.print("    %test");
+                    pw.print(theLinkedClass.getUniqueId());
+                    pw.print(" = icmp eq i32 %otherType, %runtimeclass_");
+                    pw.println(theLinkedClass.getUniqueId());
+
+                    pw.print("    br i1 %test");
+                    pw.print(theLinkedClass.getUniqueId());
+                    pw.print(", label %class");
+                    pw.print(theLinkedClass.getUniqueId());
+                    pw.print(", label %notclass");
+                    pw.println(theLinkedClass.getUniqueId());
+
+                    pw.print("class");
+                    pw.print(theLinkedClass.getUniqueId());
+                    pw.println(":");
+
+                    for (final BytecodeLinkedClass theImplType : theLinkedClass.getImplementingTypes()) {
+                        pw.print("    %runtimeclass_");
+                        pw.print(theLinkedClass.getUniqueId());
+                        pw.print("_");
+                        pw.print(theImplType.getUniqueId());
+                        pw.print(" = call i32 @");
+                        pw.print(LLVMWriterUtils.toClassName(theImplType.getClassName()));
+                        pw.print(LLVMWriter.CLASSINITSUFFIX);
+                        pw.println("()");
+
+                        pw.print("    %test_");
+                        pw.print(theLinkedClass.getUniqueId());
+                        pw.print("_");
+                        pw.print(theImplType.getUniqueId());
+                        pw.print(" = icmp eq i32 %thisRef, %");
+                        pw.print("runtimeclass_");
+                        pw.print(theLinkedClass.getUniqueId());
+                        pw.print("_");
+                        pw.println(theImplType.getUniqueId());
+
+                        pw.print("    br i1 %test_");
+                        pw.print(theLinkedClass.getUniqueId());
+                        pw.print("_");
+                        pw.print(theImplType.getUniqueId());
+                        pw.print(", label %assignable, label %test");
+                        pw.print(theLinkedClass.getUniqueId());
+                        pw.print("_");
+                        pw.print(theImplType.getUniqueId());
+                        pw.println("_notok");
+
+                        pw.print("test");
+                        pw.print(theLinkedClass.getUniqueId());
+                        pw.print("_");
+                        pw.print(theImplType.getUniqueId());
+                        pw.println("_notok:");
+                    }
+                    pw.println("    ret i32 0");
+
+                    pw.print("notclass");
+                    pw.print(theLinkedClass.getUniqueId());
+                    pw.println(":");
+                });
+
                 pw.println("    ret i32 0");
+                pw.println("assignable:");
+                pw.println("    ret i32 1");
                 pw.println("}");
                 pw.println();
 

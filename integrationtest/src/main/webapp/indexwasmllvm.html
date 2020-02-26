@@ -1,6 +1,6 @@
 <html>
     <head>
-        <title>Bytecoder JBox2D WebAssembly-Backend Performance Test</title>
+        <title>Bytecoder JBox2D WebAssembly-LLVM-Backend Performance Test</title>
         <script type="application/javascript">
             var doNotTrack = false;
             if (!doNotTrack) {
@@ -38,7 +38,7 @@
             </tr>
         </table>
         <a href="https://github.com/mirkosertic/Bytecoder">Go to Bytecoder @ Github</a>
-        <script src="bytecoder_wasmbindings.js"></script>
+        <script src="bytecoder-llvm.js"></script>
         <script type="text/javascript">
 
             function sortNumber(a,b) {
@@ -104,7 +104,9 @@
                 var gcMaxObjectsPerRun = 30;
                 var gcRunning = false;
                 var runcounter = 0;
-                setInterval(function() {
+
+                // Disabled until GC is working
+                /*setInterval(function() {
                     if (!gcRunning) {
                         gcRunning = true;
                         var freed = bytecoder.exports.IncrementalGC(0, gcMaxObjectsPerRun);
@@ -115,18 +117,18 @@
                         }
                         gcRunning = false;
                     }
-                }, gcInterval);
+                }, gcInterval);*/
 
                 document.getElementById("button").style.display = "block";
             };
 
             // Try to load the WASM file
-            WebAssembly.instantiateStreaming(fetch('bytecoder.wasm'), bytecoder.imports)
+            WebAssembly.instantiateStreaming(fetch('bytecoder-llvm.wasm'), bytecoder.imports)
                 .then(instantiated)
                 .catch(function(error) {
                     console.log("Using fallback method to load WebAssembly! Check if mime types for WebAssembly are configured correctly!");
                     var request = new XMLHttpRequest();
-                    request.open('GET', 'bytecoder.wasm');
+                    request.open('GET', 'bytecoder-llvm.wasm');
                     request.responseType = 'arraybuffer';
                     request.send();
 

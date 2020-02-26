@@ -90,9 +90,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, false));
                 testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, true));
                 testOptions.add(new TestOption(CompileTarget.BackendType.js, true, false, false));
-                testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, true));
-                testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, true));
-                testOptions.add(new TestOption(CompileTarget.BackendType.wasm_llvm, false, false, true));
+                testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, false));
+                testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, false));
+                testOptions.add(new TestOption(CompileTarget.BackendType.wasm_llvm, false, false, false));
 
             } else {
                 for (final BytecoderTestOption o : declaredOptions.value()) {
@@ -106,9 +106,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
             testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, false));
             testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, true));
             testOptions.add(new TestOption(CompileTarget.BackendType.js, true, false, false));
-            testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, true));
-            testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, true));
-            testOptions.add(new TestOption(CompileTarget.BackendType.wasm_llvm, false, false, true));
+            testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, false));
+            testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, false));
+            testOptions.add(new TestOption(CompileTarget.BackendType.wasm_llvm, false, false, false));
 
             additionalClassesToLink = new String[0];
             additionalResources = new String[0];
@@ -630,7 +630,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 theWriter.println("                             console.log(\"Bootstrapped\")");
                 theWriter.println("                             try {");
                 theWriter.println("                                 console.log(\"Starting main method\");");
-//                theWriter.println("                                 bytecoder.exports.main(theTest);");
+                theWriter.println("                                 bytecoder.exports.main(theTest);");
                 theWriter.println("                                 console.log(\"Main finished\");");
                 theWriter.println("                                 console.log(\"Test finished OK\");");
                 theWriter.println("                             } catch (e) {");
@@ -682,10 +682,9 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 final URL theTestURL = getTestFileUrl(theGeneratedFile);
 
                 final long theStart = System.currentTimeMillis();
-                boolean theTestSuccedded = true; // TODO
+                boolean theTestSuccedded = false;
 
-                /*theDriver.get(theTestURL.toString());
-
+                theDriver.get(theTestURL.toString());
 
                 while (!theTestSuccedded && 10 * 1000 > System.currentTimeMillis() - theStart) {
                     final List<LogEntry> theAll = theDriver.manage().logs().get(LogType.BROWSER).getAll();
@@ -701,7 +700,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                     if (!theTestSuccedded) {
                         Thread.sleep(100);
                     }
-                }*/
+                }
 
                 if (!theTestSuccedded) {
                     aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed!")));
