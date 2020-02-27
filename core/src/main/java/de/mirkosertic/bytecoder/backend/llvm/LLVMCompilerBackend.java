@@ -1497,7 +1497,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                                 pw.println(", 4");
 
                                                 pw.println("    %vtable = inttoptr i32 %ptr to i32(i32,i32)*");
-                                                pw.print("      %resolved = call i32(i32,i32) %vtable(i32 %object, i32 ");
+                                                pw.print("    %resolved = call i32(i32,i32) %vtable(i32 %selfRef, i32 ");
                                                 pw.print(theMethodIdentifier.getIdentifier());
                                                 pw.println(")");
 
@@ -1508,7 +1508,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                                 if (theImplementationSignature.getReturnType().isVoid()) {
                                                     pw.print("    call ");
                                                     pw.print(theCalledFunction);
-                                                    pw.print("* %resolved_ptr (");
+                                                    pw.print(" %resolved_ptr (");
                                                     for (int i = 0; i < theDispatchArguments.size(); i++) {
                                                         if (i > 0) {
                                                             pw.print(",");
@@ -1520,7 +1520,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                                 } else {
                                                     pw.print("    %result = call ");
                                                     pw.print(theCalledFunction);
-                                                    pw.print("* %resolved_ptr (");
+                                                    pw.print(" %resolved_ptr (");
                                                     for (int i = 0; i < theDispatchArguments.size(); i++) {
                                                         if (i > 0) {
                                                             pw.print(",");
