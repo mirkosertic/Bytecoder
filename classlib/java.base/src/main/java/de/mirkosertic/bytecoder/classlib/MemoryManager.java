@@ -213,12 +213,32 @@ public class MemoryManager {
         return theAddress;
     }
 
+    public static boolean isUsedByStaticData(final int aOwningBlock) {
+        final int aPtrToObject = aOwningBlock + 12;
+        return isUsedByStaticDataUserSpace(aPtrToObject);
+    }
+
+    public static boolean isUsedByStaticDataUserSpace(final int aPtrToObject) {
+        int theDataStart = 0;
+        final int theDataEnd = Address.getDataEnd();
+        while(theDataStart <= theDataEnd) {
+            if (Address.getIntValue(theDataStart, 0) == aPtrToObject) {
+                return true;
+            }
+            theDataStart += 4;
+        }
+        return false;
+    }
+
     public static boolean isUsedByStack(final int aOwningBlock) {
         final int theOwningData = aOwningBlock + 12;
         return isUsedByStackUserSpace(theOwningData);
     }
 
     public static boolean isUsedByStackUserSpace(final int aPtrToObject) {
+        if (Address.systemHasStack() == 0) {
+            return false;
+        }
         int theStackStart = Address.getStackTop();
         final int theMemorySize = Address.getMemorySize();
         while(theStackStart + 4 < theMemorySize) {
@@ -285,7 +305,7 @@ public class MemoryManager {
             final int theNext = Address.getIntValue(theCurrent, 4);
             final int theSurvivorCount = Address.getIntValue(theCurrent, 8);
             if (currentEpoch % theSurvivorCount == 0) {
-                if (!isUsedByHeap(theCurrent) && !isUsedByStack(theCurrent) && (!isUsedAsCallback(theCurrent + 12))) {
+                if (!isUsedByHeap(theCurrent) && !isUsedByStack(theCurrent)  && !(isUsedByStaticData(theCurrent)) && (!isUsedAsCallback(theCurrent + 12))) {
                     internalFree(theCurrent);
                     freeCounter++;
                 } else {

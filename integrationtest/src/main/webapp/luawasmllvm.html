@@ -58,8 +58,8 @@ Run Lua to see the output!
                 var gcMaxObjectsPerRun = 30;
                 var gcRunning = false;
                 var runcounter = 0;
-                // Disabled until GC is working
-                /*setInterval(function() {
+
+                setInterval(function() {
                     if (!gcRunning) {
                         gcRunning = true;
                         var freed = bytecoder.exports.IncrementalGC(0, gcMaxObjectsPerRun);
@@ -70,7 +70,7 @@ Run Lua to see the output!
                         }
                         gcRunning = false;
                     }
-                }, gcInterval);*/
+                }, gcInterval);
 
                 document.getElementById("runlua").style.display = "block";
             };

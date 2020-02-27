@@ -45,6 +45,7 @@ import de.mirkosertic.bytecoder.ssa.CompareExpression;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadExpression;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.DataEndExpression;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
 import de.mirkosertic.bytecoder.ssa.EnumConstantsExpression;
@@ -83,6 +84,7 @@ import de.mirkosertic.bytecoder.ssa.NewObjectExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.PtrOfExpression;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
@@ -98,6 +100,7 @@ import de.mirkosertic.bytecoder.ssa.SqrtExpression;
 import de.mirkosertic.bytecoder.ssa.StackTopExpression;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.SuperTypeOfExpression;
+import de.mirkosertic.bytecoder.ssa.SystemHasStackExpression;
 import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.ThrowExpression;
 import de.mirkosertic.bytecoder.ssa.TypeConversionExpression;
@@ -1377,6 +1380,10 @@ public class LLVMWriter implements AutoCloseable {
             write((GetStaticExpression) aValue);
         } else if (aValue instanceof HeapBaseExpression) {
             write((HeapBaseExpression) aValue);
+        } else if (aValue instanceof SystemHasStackExpression) {
+            write((SystemHasStackExpression) aValue);
+        } else if (aValue instanceof DataEndExpression) {
+            write((DataEndExpression) aValue);
         } else if (aValue instanceof StringValue) {
             write((StringValue) aValue);
         } else if (aValue instanceof InvokeVirtualMethodExpression) {
@@ -1443,8 +1450,19 @@ public class LLVMWriter implements AutoCloseable {
             write((MethodTypeExpression) aValue);
         } else if (aValue instanceof MethodRefExpression) {
             write((MethodRefExpression) aValue);
+        } else if (aValue instanceof PtrOfExpression) {
+            write((PtrOfExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue.getClass());
+        }
+    }
+
+    private void write(final PtrOfExpression aValue) {
+        final Value v = aValue.incomingDataFlows().get(0);
+        if (v instanceof Variable) {
+            writeSameAssignmentHack(v.resolveType(), v);
+        } else {
+            write(v, true);
         }
     }
 
@@ -1804,8 +1822,16 @@ public class LLVMWriter implements AutoCloseable {
         target.print(symbolResolver.globalFromStringPool(e.getStringValue()));
     }
 
+    private void write(final SystemHasStackExpression e) {
+        target.print("add i32 0, 1");
+    }
+
     private void write(final HeapBaseExpression e) {
         target.print("ptrtoint i32* @__heap_base to i32");
+    }
+
+    private void write(final DataEndExpression e) {
+        target.print("ptrtoint i32* @__data_end to i32");
     }
 
     private void write(final GetStaticExpression e) {

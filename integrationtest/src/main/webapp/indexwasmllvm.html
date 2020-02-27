@@ -105,8 +105,7 @@
                 var gcRunning = false;
                 var runcounter = 0;
 
-                // Disabled until GC is working
-                /*setInterval(function() {
+                setInterval(function() {
                     if (!gcRunning) {
                         gcRunning = true;
                         var freed = bytecoder.exports.IncrementalGC(0, gcMaxObjectsPerRun);
@@ -117,7 +116,7 @@
                         }
                         gcRunning = false;
                     }
-                }, gcInterval);*/
+                }, gcInterval);
 
                 document.getElementById("button").style.display = "block";
             };

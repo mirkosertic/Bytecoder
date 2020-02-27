@@ -30,7 +30,11 @@ public class Address {
 
     public static native int getHeapBase();
 
+    public static native int getDataEnd();
+
     public static native void unreachable();
 
     public static native int ptrOf(final Object o);
+
+    public static native int systemHasStack();
 }

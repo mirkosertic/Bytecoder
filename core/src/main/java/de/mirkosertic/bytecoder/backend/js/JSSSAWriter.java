@@ -51,6 +51,7 @@ import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadExpression;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteExpression;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.CurrentExceptionExpression;
+import de.mirkosertic.bytecoder.ssa.DataEndExpression;
 import de.mirkosertic.bytecoder.ssa.DebugPosition;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
@@ -108,6 +109,7 @@ import de.mirkosertic.bytecoder.ssa.SqrtExpression;
 import de.mirkosertic.bytecoder.ssa.StackTopExpression;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.SuperTypeOfExpression;
+import de.mirkosertic.bytecoder.ssa.SystemHasStackExpression;
 import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.ThrowExpression;
 import de.mirkosertic.bytecoder.ssa.TypeConversionExpression;
@@ -279,12 +281,24 @@ public class JSSSAWriter {
             print((SuperTypeOfExpression) aValue);
         } else if (aValue instanceof HeapBaseExpression) {
             print((HeapBaseExpression) aValue);
+        } else if (aValue instanceof DataEndExpression) {
+            print((DataEndExpression) aValue);
+        } else if (aValue instanceof SystemHasStackExpression) {
+            print((SystemHasStackExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
     }
 
+    private void print(final SystemHasStackExpression aExpression) {
+        writer.text("0");
+    }
+
     private void print(final HeapBaseExpression aExpression) {
+        writer.text("0");
+    }
+
+    private void print(final DataEndExpression aExpression) {
         writer.text("0");
     }
 

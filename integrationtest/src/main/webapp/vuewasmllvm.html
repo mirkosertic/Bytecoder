@@ -120,8 +120,7 @@ public class VueDemo {
         var gcRunning = false;
         var runcounter = 0;
 
-        // Disabled until GC is working
-        /*setInterval(function() {
+        setInterval(function() {
             if (!gcRunning) {
                 gcRunning = true;
                 var freed = bytecoder.exports.IncrementalGC(0, gcMaxObjectsPerRun);
@@ -132,7 +131,7 @@ public class VueDemo {
                 }
                 gcRunning = false;
             }
-        }, gcInterval);*/
+        }, gcInterval);
     };
 
     // Try to load the WASM file
