@@ -180,6 +180,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             try (final PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(theLLFile), StandardCharsets.UTF_8))) {
                 // We write the header first
                 pw.println("target triple = \"wasm32-unknown-unknown\"");
+                pw.println("target datalayout = \"e-m:e-p:32:32-i64:64-n32:64-S128\"");
                 pw.println();
 
                 pw.println("@__heap_base = external global i32");
@@ -798,10 +799,10 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.println();
 
                     if (!Objects.equals(theLinkedClass.getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
-                        pw.print("define i32 @");
+                        pw.print("define internal i32 @");
                         pw.print(theClassName);
                         pw.print(LLVMWriter.CLASSINITSUFFIX);
-                        pw.println("() {");
+                        pw.println("() inlinehint {");
                         pw.println("entry:");
                         pw.print("    %class = load i32, i32* @");
                         pw.print(theClassName);
