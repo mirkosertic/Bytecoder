@@ -750,7 +750,6 @@ public class LLVMWriter implements AutoCloseable {
 
     private void write(final ExpressionList list) {
         for (final Expression e : list.toList()) {
-            target.println(";; exp = " + e.getClass());
             tempify(e);
             if (e instanceof ReturnExpression) {
                 write((ReturnExpression) e);
@@ -1010,7 +1009,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print(toTempSymbol(e, "ptr"));
         target.print(" = inttoptr i32 %");
         target.print(toTempSymbol(e, "offset"));
-        target.println(" to ");
+        target.print(" to ");
         target.print(LLVMWriterUtils.toType(TypeRef.toType(theField.getValue().getTypeRef())));
         target.println("*");
 
@@ -1265,7 +1264,6 @@ public class LLVMWriter implements AutoCloseable {
 
     private void write(final VariableAssignmentExpression expression) {
         final Value value = expression.incomingDataFlows().get(0);
-        target.println(";; value = " + value.getClass());
         target.print("    ");
         target.print("%");
         target.print(expression.getVariable().getName());

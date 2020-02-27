@@ -1553,9 +1553,6 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.print(System.identityHashCode(callsite));
                     pw.println(" = private global i32 0");
 
-                    pw.print(";; ");
-                    pw.println(theEntry.getKey());
-
                     final Program theSSAProgram = theEntry.getValue().program;
                     final LLVMDebugInformation.CompileUnit compileUnit = debugInformation.compileUnitFor("/resolvecallsite" + callsite);
                     final LLVMDebugInformation.SubProgram subProgram = compileUnit.subProgram(theSSAProgram, "/resolvecallsite" + callsite, new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
@@ -2647,7 +2644,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             theLinkerCommand.add("-allow-undefined");
             theLinkerCommand.add("--lto-O3");
             theLinkerCommand.add("--no-entry");
-            if (!aOptions.isMinify()) {
+            if (aOptions.isDebugOutput()) {
                 theLinkerCommand.add("--demangle");
             } else {
                 theLinkerCommand.add("-s");

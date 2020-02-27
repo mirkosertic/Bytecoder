@@ -199,7 +199,6 @@
                             <backend>wasm_llvm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <filenamePrefix>bytecoder-llvm</filenamePrefix>
-                            <minifyCompileResult>false</minifyCompileResult>
                         </configuration>
                     </execution>
                     <execution>
@@ -236,7 +235,6 @@
                             <backend>wasm_llvm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <filenamePrefix>vuedemollvm</filenamePrefix>
-                            <minifyCompileResult>false</minifyCompileResult>
                         </configuration>
                     </execution>
                     <execution>
@@ -262,6 +260,18 @@
                             <backend>wasm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <filenamePrefix>bytecoder-luademowasm</filenamePrefix>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>lua-wasmllvm</id>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>de.mirkosertic.bytecoder.integrationtest.LuaDemo</mainClass>
+                            <backend>wasm_llvm</backend>
+                            <enableExceptionHandling>false</enableExceptionHandling>
+                            <filenamePrefix>bytecoder-luademowasmllvm</filenamePrefix>
                         </configuration>
                     </execution>
                 </executions>

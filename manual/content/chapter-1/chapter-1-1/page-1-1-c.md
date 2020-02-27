@@ -13,3 +13,5 @@ weight: 3
 [Lua4J Demo compiled to JavaScript](/Bytecoder/luajs.html)
 
 [Lua4J Demo compiled to WebAssembly](/Bytecoder/luawasm.html)
+
+[Lua4J Demo compiled to WebAssembly with LLVM](/Bytecoder/luawasmllvm.html)
