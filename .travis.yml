@@ -1,4 +1,4 @@
-sudo: false
+os: linux
 
 addons:
   apt:
@@ -89,10 +89,10 @@ jobs:
       script: mvn clean package -P notest && ./hugo -s ./manual -d ../integrationtest/target/bytecoder-integrationtest
       deploy:
         - provider: pages
-          skip-cleanup: true
-          github-token: $GITHUB_TOKEN
-          keep-history: false
-          local-dir: integrationtest/target/bytecoder-integrationtest
+          skip_cleanup: true
+          github_token: $GITHUB_TOKEN
+          keep_history: false
+          local_dir: integrationtest/target/bytecoder-integrationtest
           on:
             repo: mirkosertic/Bytecoder
             branch: master
