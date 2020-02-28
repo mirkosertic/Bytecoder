@@ -36,6 +36,9 @@ public class RegionNode extends Node<RegionNode, ControlFlowEdgeType> {
     public static final Predicate<Edge> FORWARD_EDGE_FILTER_REGULAR_FLOW_ONLY = edge -> edge.edgeType() == ControlFlowEdgeType.forward &&
             ((RegionNode) edge.targetNode()).getType() == BlockType.NORMAL;
 
+    public static final Predicate<Edge> ALL_SUCCCESSORS_REGULAR_FLOW_ONLY = edge ->
+            ((RegionNode) edge.targetNode()).getType() == BlockType.NORMAL;
+
     public static class ExceptionHandler {
 
         private final BytecodeOpcodeAddress startPc;

@@ -9,4 +9,7 @@ weight: 4
 
 ![Demo screenshot](/Bytecoder/docassets/vuedemo.png)
 
+
 [vue.js integration Demo compiled to WebAssembly](/Bytecoder/vuewasm.html)
+
+[vue.js integration Demo compiled to WebAssembly with LLVM](/Bytecoder/vuewasmllvm.html)

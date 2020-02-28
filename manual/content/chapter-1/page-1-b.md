@@ -19,7 +19,7 @@ The following configuration options are available:
 
 * `mainClass` The Classname with the main class to be compiled. Required.
 
-* `backend`: The Backend to be used. Can be `js` or `wasm`. Defaults to `js`.
+* `backend`: The Backend to be used. Can be `js`, `wasm`  or `wasm_llvm`. Defaults to `js`.
 
 * `debugOutput`: Shall debug output be generated? Defaults to `false`.
 

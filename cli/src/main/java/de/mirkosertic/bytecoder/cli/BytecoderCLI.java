@@ -51,7 +51,7 @@ public class BytecoderCLI {
         @Option(names = "-mainclass", required = true, description = "Name of the class that contains the main() method")
         protected String mainClass;
 
-        @Option(names = "-backend", required = true, description = "The compiler backend to use. Can be 'wasm' or 'js'.")
+        @Option(names = "-backend", required = true, description = "The compiler backend to use. Can be 'wasm','wasm_llvm' or 'js'.")
         protected String backend;
 
         @Option(names = "-builddirectory", required = false, description = "The directory to output the generated code to. Defaults to '.'")

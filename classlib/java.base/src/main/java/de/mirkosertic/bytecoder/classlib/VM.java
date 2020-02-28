@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.classlib;
 
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
+import de.mirkosertic.bytecoder.api.Import;
 
 import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
@@ -195,4 +196,7 @@ public class VM {
 
     @EmulatedByRuntime
     public static native boolean reinterpretAsBoolean(final Object o);
+
+    @Import(module = "env", name = "debug")
+    public static native void debug(int aValue);
 }

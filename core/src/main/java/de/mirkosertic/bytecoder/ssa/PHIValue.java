@@ -29,4 +29,8 @@ public class PHIValue extends Value {
     public TypeRef resolveType() {
         return typeRef;
     }
+
+    public VariableDescription getDescription() {
+        return description;
+    }
 }

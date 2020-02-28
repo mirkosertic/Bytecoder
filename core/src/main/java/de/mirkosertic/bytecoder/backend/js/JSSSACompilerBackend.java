@@ -25,6 +25,7 @@ import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
 import de.mirkosertic.bytecoder.backend.SourceMapWriter;
 import de.mirkosertic.bytecoder.classlib.Array;
@@ -1276,8 +1277,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theStrWriter.append(System.lineSeparator()).append("//# sourceMappingURL=").append(aOptions.getFilenamePrefix()).append(".js.map");
 
         return new JSCompileResult(theMinifier,
-                new JSCompileResult.JSContent(aOptions.getFilenamePrefix() + ".js", theStrWriter.toString()),
-                new JSCompileResult.JSContent(aOptions.getFilenamePrefix() + ".js.map", theSourceMapWriter.toSourceMap(aOptions.getFilenamePrefix() + ".js")));
+                new CompileResult.StringContent(aOptions.getFilenamePrefix() + ".js", theStrWriter.toString()),
+                new CompileResult.StringContent(aOptions.getFilenamePrefix() + ".js.map", theSourceMapWriter.toSourceMap(aOptions.getFilenamePrefix() + ".js")));
     }
 
     public String toArray(final String aData) {

@@ -15,30 +15,10 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.f32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.select;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.teeLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Stack;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-
 import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
 import de.mirkosertic.bytecoder.allocator.Register;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.backend.NativeMemoryLayouter;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Block;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Callable;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Container;
@@ -89,6 +69,7 @@ import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadExpression;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteExpression;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.CurrentExceptionExpression;
+import de.mirkosertic.bytecoder.ssa.DataEndExpression;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
 import de.mirkosertic.bytecoder.ssa.EnumConstantsExpression;
@@ -102,6 +83,7 @@ import de.mirkosertic.bytecoder.ssa.FloorExpression;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
+import de.mirkosertic.bytecoder.ssa.HeapBaseExpression;
 import de.mirkosertic.bytecoder.ssa.IFElseExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InstanceOfExpression;
@@ -143,6 +125,7 @@ import de.mirkosertic.bytecoder.ssa.SqrtExpression;
 import de.mirkosertic.bytecoder.ssa.StackTopExpression;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.SuperTypeOfExpression;
+import de.mirkosertic.bytecoder.ssa.SystemHasStackExpression;
 import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.ThrowExpression;
 import de.mirkosertic.bytecoder.ssa.TypeConversionExpression;
@@ -153,6 +136,27 @@ import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Stack;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.f32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.select;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.teeLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
 
 public class WASMSSAASTWriter {
 
@@ -199,13 +203,13 @@ public class WASMSSAASTWriter {
     private final Module module;
     private final CompileOptions compileOptions;
     private final List<Register> stackRegister;
-    private final WASMMemoryLayouter memoryLayouter;
+    private final NativeMemoryLayouter memoryLayouter;
     private boolean labelRequired;
     final AtomicBoolean stackifierEnabled;
     private final AbstractAllocator allocator;
 
     public WASMSSAASTWriter(
-            final Resolver aResolver, final BytecodeLinkerContext aLinkerContext, final Module aModule, final CompileOptions aOptions, final Program aProgram, final WASMMemoryLayouter aMemoryLayouter, final ExportableFunction aFunction, final AbstractAllocator aAllocator) {
+            final Resolver aResolver, final BytecodeLinkerContext aLinkerContext, final Module aModule, final CompileOptions aOptions, final Program aProgram, final NativeMemoryLayouter aMemoryLayouter, final ExportableFunction aFunction, final AbstractAllocator aAllocator) {
         resolver = aResolver;
         linkerContext = aLinkerContext;
         function = aFunction;
@@ -227,7 +231,7 @@ public class WASMSSAASTWriter {
     }
 
     private WASMSSAASTWriter(
-            final Resolver aResolver, final BytecodeLinkerContext aLinkerContext, final Module aModule, final CompileOptions aOptions, final WASMMemoryLayouter aMemoryLayouter, final ExportableFunction aFunction, final LabeledContainer aContainer,
+            final Resolver aResolver, final BytecodeLinkerContext aLinkerContext, final Module aModule, final CompileOptions aOptions, final NativeMemoryLayouter aMemoryLayouter, final ExportableFunction aFunction, final LabeledContainer aContainer,
             final List<Register> aStackRegister, final boolean aLabelRequired, final Expressions aFlow, final AtomicBoolean aStackifierEnabled,
             final AbstractAllocator aAllocator) {
         resolver = aResolver;
@@ -531,12 +535,6 @@ public class WASMSSAASTWriter {
             final WASMValue theValue = toValue(theException);
             flow.throwException(module.getEvents().eventIndex().byLabel(EXCEPTION_NAME), Collections.singletonList(theValue), aExpression);
         } else {
-            final Value theException = aExpression.incomingDataFlows().get(0);
-            final Callable function = weakFunctionReference(WASMWriterUtils.toMethodName(BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class), "logException", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Exception.class)})), aExpression);
-            final List<WASMValue> arguments = new ArrayList<>();
-            arguments.add(i32.c(0, aExpression));
-            arguments.add(toValue(theException));
-            flow.voidCall(function, arguments, aExpression);
             flow.unreachable(aExpression);
         }
     }
@@ -554,7 +552,7 @@ public class WASMSSAASTWriter {
         final BytecodeResolvedFields.FieldEntry theEntry = implementingClassForStaticField(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()),
                 aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
-        final WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theEntry.getProvidingClass().getClassName());
+        final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theEntry.getProvidingClass().getClassName());
         final int theMemoryOffset = theLayout.offsetForClassMember(theEntry.getValue().getName().stringValue());
 
         final List<Value> theIncomingData = aExpression.incomingDataFlows();
@@ -582,7 +580,7 @@ public class WASMSSAASTWriter {
 
     private void generatePutFieldExpression(final PutFieldExpression aExpression) {
 
-        final WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()));
+        final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()));
         final int theMemoryOffset = theLayout.offsetForInstanceMember(aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()));
@@ -677,7 +675,7 @@ public class WASMSSAASTWriter {
             return byteValue((ByteValue) aValue);
         }
         if (aValue instanceof IntegerValue) {
-            return tntegerValue((IntegerValue) aValue);
+            return integerValue((IntegerValue) aValue);
         }
         if (aValue instanceof DirectInvokeMethodExpression) {
             return directMethodInvokeValue((DirectInvokeMethodExpression) aValue);
@@ -820,7 +818,28 @@ public class WASMSSAASTWriter {
         if (aValue instanceof SuperTypeOfExpression) {
             return superTypeOfExpression((SuperTypeOfExpression) aValue);
         }
+        if (aValue instanceof HeapBaseExpression) {
+            return heapBaseExpression((HeapBaseExpression) aValue);
+        }
+        if (aValue instanceof DataEndExpression) {
+            return dataEndExpression((DataEndExpression) aValue);
+        }
+        if (aValue instanceof SystemHasStackExpression) {
+            return systmHasStackExpression((SystemHasStackExpression) aValue);
+        }
         throw new IllegalStateException("Not supported : " + aValue);
+    }
+
+    private WASMValue systmHasStackExpression(final SystemHasStackExpression aValue) {
+        return i32.c(1, aValue);
+    }
+
+    private WASMValue dataEndExpression(final DataEndExpression aValue) {
+        return i32.c(0, aValue);
+    }
+
+    private WASMValue heapBaseExpression(final HeapBaseExpression aValue) {
+        return i32.c(0, aValue);
     }
 
     private WASMValue superTypeOfExpression(final SuperTypeOfExpression aValue) {
@@ -1328,7 +1347,7 @@ public class WASMSSAASTWriter {
         final BytecodeResolvedFields.FieldEntry theEntry = implementingClassForStaticField(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()),
                 aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
-        final WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theEntry.getProvidingClass().getClassName());
+        final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theEntry.getProvidingClass().getClassName());
         final int theMemoryOffset = theLayout.offsetForClassMember(theEntry.getValue().getName().stringValue());
 
         final String theClassName = WASMWriterUtils.toClassName(theEntry.getProvidingClass().getClassName());
@@ -1348,7 +1367,7 @@ public class WASMSSAASTWriter {
 
         final BytecodeObjectTypeRef theType = BytecodeObjectTypeRef.fromUtf8Constant(aValue.getType().getConstant());
 
-        final WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theType);
+        final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theType);
 
         final String theMethodName = WASMWriterUtils.toMethodName(
                 BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
@@ -1366,7 +1385,7 @@ public class WASMSSAASTWriter {
     private WASMValue getFieldValue(final GetFieldExpression aValue) {
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
 
-        final WASMMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
+        final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
         final int theMemoryOffset = theLayout.offsetForInstanceMember(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
         final String theFieldName = aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
 
@@ -1452,7 +1471,7 @@ public class WASMSSAASTWriter {
         return i32.c(aValue.getByteValue(), null);
     }
 
-    private I32Const tntegerValue(final IntegerValue aValue) {
+    private I32Const integerValue(final IntegerValue aValue) {
         return i32.c(aValue.getIntValue(), null);
     }
 

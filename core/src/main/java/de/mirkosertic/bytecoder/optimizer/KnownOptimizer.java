@@ -15,11 +15,11 @@
  */
 package de.mirkosertic.bytecoder.optimizer;
 
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 
 public enum KnownOptimizer implements Optimizer {
 
@@ -55,6 +55,17 @@ public enum KnownOptimizer implements Optimizer {
         public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
             final List<Optimizer> theOptimizer = new ArrayList<>();
             theOptimizer.add(ALL);
+            run(aGraph, aLinkerContext, theOptimizer);
+        }
+    },
+
+    LLVM {
+        @Override
+        public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
+            final List<Optimizer> theOptimizer = new ArrayList<>();
+            theOptimizer.add(new SinglePassOptimizer(new OptimizerStage[] {
+                    new InvokeVirtualOptimizerStage(),
+            }));
             run(aGraph, aLinkerContext, theOptimizer);
         }
     };

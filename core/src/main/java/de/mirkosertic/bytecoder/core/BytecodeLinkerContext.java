@@ -162,11 +162,4 @@ public class BytecodeLinkerContext {
     }
 
     private final Map<BytecodeVirtualMethodIdentifier, List<BytecodeLinkedClass>> alreadyKnown = new HashMap<>();
-
-    public List<BytecodeLinkedClass> getAllClassesAndInterfacesWithMethod(final BytecodeVirtualMethodIdentifier aIdentifier) {
-        return alreadyKnown.computeIfAbsent(aIdentifier, bytecodeVirtualMethodIdentifier -> linkedClasses()
-                .map(Edge::targetNode)
-                .filter(t -> t.implementsMethod(aIdentifier))
-                .collect(Collectors.toList()));
-    }
 }

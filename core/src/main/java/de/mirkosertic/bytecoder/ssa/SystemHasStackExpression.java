@@ -13,22 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.backend.js;
+package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.backend.CompileResult;
+import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
-public class JSCompileResult extends CompileResult<String> {
+public class SystemHasStackExpression extends Expression {
 
-    private final JSMinifier minifier;
-
-    public JSCompileResult(final JSMinifier aMinifier, final StringContent... content) {
-        this.minifier = aMinifier;
-        for (final StringContent c : content) {
-            add(c);
-        }
+    public SystemHasStackExpression(final Program aProgram, final BytecodeOpcodeAddress address) {
+        super(aProgram, address);
     }
 
-    public JSMinifier getMinifier() {
-        return minifier;
+    @Override
+    public TypeRef resolveType() {
+        return TypeRef.Native.INT;
     }
+
 }
