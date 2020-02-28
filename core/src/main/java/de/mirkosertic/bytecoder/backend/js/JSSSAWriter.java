@@ -15,14 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import static java.util.Comparator.comparingLong;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Stack;
-import java.util.stream.Collectors;
-
 import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
 import de.mirkosertic.bytecoder.allocator.Register;
 import de.mirkosertic.bytecoder.api.Import;
@@ -59,6 +51,7 @@ import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadExpression;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteExpression;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.CurrentExceptionExpression;
+import de.mirkosertic.bytecoder.ssa.DataEndExpression;
 import de.mirkosertic.bytecoder.ssa.DebugPosition;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
@@ -73,6 +66,7 @@ import de.mirkosertic.bytecoder.ssa.FloorExpression;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
+import de.mirkosertic.bytecoder.ssa.HeapBaseExpression;
 import de.mirkosertic.bytecoder.ssa.IFElseExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InstanceOfExpression;
@@ -115,6 +109,7 @@ import de.mirkosertic.bytecoder.ssa.SqrtExpression;
 import de.mirkosertic.bytecoder.ssa.StackTopExpression;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.SuperTypeOfExpression;
+import de.mirkosertic.bytecoder.ssa.SystemHasStackExpression;
 import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.ThrowExpression;
 import de.mirkosertic.bytecoder.ssa.TypeConversionExpression;
@@ -126,6 +121,14 @@ import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.stackifier.Block;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Stack;
+import java.util.stream.Collectors;
+
+import static java.util.Comparator.comparingLong;
 
 public class JSSSAWriter {
 
@@ -276,9 +279,27 @@ public class JSSSAWriter {
             print((ReinterpretAsNativeExpression) aValue);
         } else if (aValue instanceof SuperTypeOfExpression) {
             print((SuperTypeOfExpression) aValue);
+        } else if (aValue instanceof HeapBaseExpression) {
+            print((HeapBaseExpression) aValue);
+        } else if (aValue instanceof DataEndExpression) {
+            print((DataEndExpression) aValue);
+        } else if (aValue instanceof SystemHasStackExpression) {
+            print((SystemHasStackExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
+    }
+
+    private void print(final SystemHasStackExpression aExpression) {
+        writer.text("0");
+    }
+
+    private void print(final HeapBaseExpression aExpression) {
+        writer.text("0");
+    }
+
+    private void print(final DataEndExpression aExpression) {
+        writer.text("0");
     }
 
     private void print(final SuperTypeOfExpression aExpression) {

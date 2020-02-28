@@ -25,18 +25,25 @@ import java.util.Set;
 public class LookupSwitchExpression extends Expression implements ExpressionListContainer {
 
     private final ExpressionList defaultExpressions;
+    private final BytecodeOpcodeAddress defaultJumpTarget;
     private final Map<Long, ExpressionList> pairs;
 
     public LookupSwitchExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value aValue, final ExpressionList aDefaultExpressions,
-            final Map<Long, ExpressionList> aPairs) {
+                                  final BytecodeOpcodeAddress aDefaultJumpTarget,
+                                  final Map<Long, ExpressionList> aPairs) {
         super(aProgram, aAddress);
         defaultExpressions = aDefaultExpressions;
+        this.defaultJumpTarget = aDefaultJumpTarget;
         pairs = aPairs;
         receivesDataFrom(aValue);
     }
 
     public ExpressionList getDefaultExpressions() {
         return defaultExpressions;
+    }
+
+    public BytecodeOpcodeAddress getDefaultJumpTarget() {
+        return defaultJumpTarget;
     }
 
     public Map<Long, ExpressionList> getPairs() {
@@ -57,6 +64,7 @@ public class LookupSwitchExpression extends Expression implements ExpressionList
         for (final Map.Entry<Long, ExpressionList> theEntry : pairs.entrySet()) {
             thePairs.put(theEntry.getKey(), theEntry.getValue().deepCopy());
         }
-        return new LookupSwitchExpression(getProgram(), getAddress(), incomingDataFlows().get(0), defaultExpressions.deepCopy(), thePairs);
+        return new LookupSwitchExpression(getProgram(), getAddress(), incomingDataFlows().get(0), defaultExpressions.deepCopy(),
+                defaultJumpTarget, thePairs);
     }
 }

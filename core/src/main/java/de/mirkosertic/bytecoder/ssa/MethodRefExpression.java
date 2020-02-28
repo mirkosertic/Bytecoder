@@ -24,7 +24,7 @@ public class MethodRefExpression extends Expression {
 
     private final BytecodeObjectTypeRef className;
     private String methodName;
-    private final BytecodeMethodSignature signature;
+    private BytecodeMethodSignature signature;
     private final BytecodeReferenceKind referenceKind;
 
     public MethodRefExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef className, final String methodName,
@@ -54,6 +54,10 @@ public class MethodRefExpression extends Expression {
 
     public void retargetToMethodName(final String aNewMethodName) {
         methodName = aNewMethodName;
+    }
+
+    public void retargetToSignature(final BytecodeMethodSignature aSignature) {
+        signature = aSignature;
     }
 
     @Override

@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>Bytecoder Vue-to-WebAssembly WebAssembly-Backend Test</title>
+    <title>Bytecoder Vue-to-WebAssembly WebAssembly-LLVM-Backend Test</title>
     <script type="application/javascript">
         var doNotTrack = false;
         if (!doNotTrack) {
@@ -63,7 +63,7 @@ public class VueDemo {
 </script>
 <a href="https://github.com/mirkosertic/Bytecoder">Go to Bytecoder @ Github</a>
 <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-<script src="vuedemo_wasmbindings.js"></script>
+<script src="vuedemollvm.js"></script>
 <script type="text/javascript">
 
     bytecoder.imports.vue = {
@@ -119,6 +119,7 @@ public class VueDemo {
         var gcMaxObjectsPerRun = 30;
         var gcRunning = false;
         var runcounter = 0;
+
         setInterval(function() {
             if (!gcRunning) {
                 gcRunning = true;
@@ -134,12 +135,12 @@ public class VueDemo {
     };
 
     // Try to load the WASM file
-    WebAssembly.instantiateStreaming(fetch('vuedemo.wasm'), bytecoder.imports)
+    WebAssembly.instantiateStreaming(fetch('vuedemollvm.wasm'), bytecoder.imports)
         .then(instantiated)
         .catch(function(error) {
             console.log("Using fallback method to load WebAssembly! Check if mime types for WebAssembly are configured correctly!");
             var request = new XMLHttpRequest();
-            request.open('GET', 'vuedemo.wasm');
+            request.open('GET', 'vuedemollvm.wasm');
             request.responseType = 'arraybuffer';
             request.send();
 

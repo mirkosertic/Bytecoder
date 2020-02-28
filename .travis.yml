@@ -22,12 +22,18 @@ before_install:
   - wget -N https://github.com/sormuras/bach/raw/master/install-jdk.sh -P ~/
   - sudo chmod +x ~/install-jdk.sh
   - sudo chmod +x .travis/deploy.sh
+  - sudo wget https://apt.llvm.org/llvm-snapshot.gpg.key
+  - sudo apt-key add llvm-snapshot.gpg.key
+  - sudo add-apt-repository -y "deb http://apt.llvm.org/xenial/   llvm-toolchain-xenial-10  main"
+  - sudo apt-get -q update
+  - sudo apt-get install -y clang-10 lldb-10 lld-10 clangd-10
 
 install:
   - wget https://github.com/gohugoio/hugo/releases/download/v0.59.0/hugo_0.59.0_Linux-64bit.tar.gz
   - tar xzf hugo_0.59.0_Linux-64bit.tar.gz
   - sudo chmod +x hugo
   - git clone https://github.com/matcornic/hugo-theme-learn.git ./manual/themes/hugo-theme-learn
+
 
 script:
   - mvn -B clean package -P jvmtestsonly
@@ -59,6 +65,8 @@ jobs:
       name: "WASM Target Stackify OpenJDK 12"
     - script: mkdir /home/travis/openjdk13 && ~/install-jdk.sh -W /home/travis/openjdk13 -F 13 -L GPL && mvn -B -pl '!:bytecoder-integrationtest' clean test -P wasmtestsonly_stackify
       name: "WASM Target Stackify OpenJDK 13"
+    - script: mvn -B -pl '!:bytecoder-integrationtest' clean test -P wasmllvmtestsonly
+      name: "LLVM WASM Target OpenJDK 8"
     - stage: "Deploy to Maven Central"
       script: skip
       deploy:

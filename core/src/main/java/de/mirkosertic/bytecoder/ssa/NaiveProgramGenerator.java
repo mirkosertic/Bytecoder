@@ -19,7 +19,6 @@ import java.lang.invoke.CallSite;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -970,21 +969,17 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     // Check if we are constructing a new object here
                     guard: {
                         if ("<init>".equals(theMethodName)) {
-                            final List<Value> theInconingEdges = theTarget.incomingDataFlows();
-                            if (theInconingEdges.size() == 1 && theInconingEdges.get(0) instanceof NewObjectExpression) {
+                            final List<Value> theIncomingValues = theTarget.incomingDataFlows();
+                            if (theIncomingValues.size() == 1 && theIncomingValues.get(0) instanceof NewObjectExpression) {
 
-                                final Set<RegionNode> thePath = new HashSet<>();
-                                thePath.add(aTargetBlock);
-                                thePath.addAll(aTargetBlock.getPredecessorsIgnoringBackEdges());
-
-                                for (final RegionNode theNode : thePath) {
+                                for (final RegionNode theNode : aProgram.getControlFlowGraph().dominators().getPreOrder()) {
                                     for (final Expression theExpression : theNode.getExpressions().toList()) {
                                         if (theExpression instanceof VariableAssignmentExpression) {
                                             final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) theExpression;
                                             if (theAssignment.getVariable().getName().equals(theTarget.getName()) &&
                                                     theAssignment.incomingDataFlows().get(0) instanceof NewObjectExpression) {
                                                 // We have a candidate!
-                                                aTargetBlock.getExpressions().remove(theAssignment);
+                                                theNode.getExpressions().remove(theAssignment);
                                             }
                                         }
                                     }
@@ -1121,7 +1116,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 }
 
                 aTargetBlock.getExpressions().add(new TableSwitchExpression(aProgram, theInstruction.getOpcodeAddress(), theValue, theINS.getLowValue(), theINS.getHighValue(),
-                        theDefault, theOffsets));
+                        theDefault, theINS.getDefaultJumpTarget(), theOffsets));
             } else if (theInstruction instanceof BytecodeInstructionLOOKUPSWITCH) {
                 final BytecodeInstructionLOOKUPSWITCH theINS = (BytecodeInstructionLOOKUPSWITCH) theInstruction;
                 final Value theValue = aHelper.pop();
@@ -1136,7 +1131,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     thePairs.put(thePair.getMatch(), thePairExpressions);
                 }
 
-                aTargetBlock.getExpressions().add(new LookupSwitchExpression(aProgram, theInstruction.getOpcodeAddress(), theValue, theDefault, thePairs));
+                aTargetBlock.getExpressions().add(new LookupSwitchExpression(aProgram, theInstruction.getOpcodeAddress(), theValue, theDefault, theINS.getDefaultJumpTarget(), thePairs));
             } else if (theInstruction instanceof BytecodeInstructionINVOKEDYNAMIC) {
                 final BytecodeInstructionINVOKEDYNAMIC theINS = (BytecodeInstructionINVOKEDYNAMIC) theInstruction;
 

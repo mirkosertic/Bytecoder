@@ -5,9 +5,10 @@ draft: false
 weight: 2
 ---
 
-## A JBox2D simulation transpiled to JavaScript and WebAssembly
+## A JBox2D/Kotlin simulation transpiled to JavaScript and WebAssembly
 
 ![Demo screenshot](/Bytecoder/docassets/jbox2ddemo.png)
+
 
 [JBox2D Demo compiled from Kotlin to JavaScript](/Bytecoder/index-kotlin.html)
 
