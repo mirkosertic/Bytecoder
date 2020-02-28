@@ -553,13 +553,7 @@ public class LLVMWriter implements AutoCloseable {
 
     private void tempify(final GetFieldExpression e) {
         final BytecodeObjectTypeRef theClass = BytecodeObjectTypeRef.fromUtf8Constant(e.getField().getClassIndex().getClassConstant().getConstant());
-        final String theClassName = LLVMWriterUtils.toClassName(theClass);
-
         final Value object = e.incomingDataFlows().get(0);
-        target.print("    call i32 @");
-        target.print(theClassName);
-        target.print(CLASSINITSUFFIX);
-        target.println("()");
 
         target.print("    %");
         target.print(toTempSymbol(e, "exp"));
