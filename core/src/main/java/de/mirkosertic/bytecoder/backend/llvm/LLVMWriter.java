@@ -29,6 +29,7 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeVTable;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.graph.EdgeType;
@@ -130,6 +131,7 @@ public class LLVMWriter implements AutoCloseable {
     public static final int GENERATED_INSTANCEOF_METHOD_ID = -1;
     public static final String NEWINSTANCE_METHOD_NAME = "$newInstance";
     public static final String CLASSINITSUFFIX = "__init";
+    public static final String VTABLESUFFIX = "__vtable";
     public static final String NEWINSTANCEHELPER = "newinstancehelper";
 
     interface SymbolResolver {
@@ -139,6 +141,8 @@ public class LLVMWriter implements AutoCloseable {
         String resolveCallsiteBootstrapFor(BytecodeClass owningClass, String callsiteId, Program program, RegionNode bootstrapMethod);
 
         String methodTypeFactoryNameFor(final BytecodeMethodSignature aSignature);
+
+        BytecodeVTable vtableFor(final BytecodeLinkedClass aClass);
     }
 
     private final PrintWriter target;

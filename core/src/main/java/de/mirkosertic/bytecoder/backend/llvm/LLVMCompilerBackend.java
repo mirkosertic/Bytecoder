@@ -40,6 +40,7 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeVTable;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
@@ -171,6 +172,18 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     theMethodTypes.add(aSignature);
                     return "methodtypefactory" + (theMethodTypes.size() - 1);
                 }
+
+                private final Map<BytecodeLinkedClass, BytecodeVTable> tablesCache = new HashMap<>();
+
+                @Override
+                public BytecodeVTable vtableFor(final BytecodeLinkedClass aClass) {
+                    BytecodeVTable theTable = tablesCache.get(aClass);
+                    if (theTable == null) {
+                        theTable = aClass.resolveVTable();
+                        tablesCache.put(aClass, theTable);
+                    }
+                    return theTable;
+                }
             };
             final LLVMDebugInformation debugInformation = new LLVMDebugInformation();
             final NativeMemoryLayouter memoryLayouter = new NativeMemoryLayouter(aLinkerContext);
@@ -242,7 +255,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                 opaqueReferenceMethods.add(new OpaqueReferenceMethod(theProvidingClass, t));
                             }
 
-                            final BytecodeImportedLink theLink = theProvidingClass.linkfor(t);
+                            final BytecodeImportedLink theLink = theProvidingClass.linkFor(t);
 
                             final String methodName = LLVMWriterUtils
                                     .toMethodName(theProvidingClass.getClassName(), t.getName(), theSignature);
@@ -606,10 +619,40 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
+                final BytecodeLinkedClass theClassLinkedCass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Class.class));
+                final BytecodeVTable theClassVTable = theSymbolResolver.vtableFor(theClassLinkedCass);
+                final List<BytecodeVTable.Slot> theClassSlots = theClassVTable.sortedSlots();
+                pw.print("@");
+                pw.print(LLVMWriterUtils.toClassName(theClassLinkedCass.getClassName()));
+                pw.print(LLVMWriter.VTABLESUFFIX);
+                pw.print(" = private global {i1(i32,i32)*");
+                for (final BytecodeVTable.Slot slot : theClassSlots) {
+                    final BytecodeVTable.VPtr ptr = theClassVTable.slot(slot);
+                    if (ptr.getImplementingClass().equals(theClassLinkedCass.getClassName())) {
+                        pw.print(",");
+                        pw.print(LLVMWriterUtils.toSignature(ptr.getSignature()));
+                        pw.print("*");
+                    }
+                }
+                pw.println("} {");
+                pw.print("    i1(i32,i32)* undef");
+                for (final BytecodeVTable.Slot slot : theClassSlots) {
+                    final BytecodeVTable.VPtr ptr = theClassVTable.slot(slot);
+                    if (ptr.getImplementingClass().equals(theClassLinkedCass.getClassName())) {
+                        pw.println(",");
+                        pw.print("    ");
+                        pw.print(LLVMWriterUtils.toSignature(ptr.getSignature()));
+                        pw.print("* @");
+                        pw.print(LLVMWriterUtils.toMethodName(ptr.getImplementingClass(), ptr.getMethodName(), ptr.getSignature()));
+                    }
+                }
+                pw.println();
+                pw.println("}");
+                pw.println();
+
                 // Some utility functions for runtime class management
                 pw.println("define internal i32 @runtimeClass__resolvevtableindex(i32 %thisRef,i32 %methodId) {");
                 pw.println("entry:");
-                final BytecodeLinkedClass theClassLinkedCass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Class.class));
                 final BytecodeResolvedMethods theRuntimeMethodMap = theClassLinkedCass.resolvedMethods();
                 theRuntimeMethodMap.stream().forEach(aMethodMapEntry -> {
                     final BytecodeMethod theMethod = aMethodMapEntry.getValue();
@@ -790,13 +833,65 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     }
 
                     final BytecodeResolvedMethods theMethodMap = theLinkedClass.resolvedMethods();
-                    final String theClassName = LLVMWriterUtils.toClassName(aEntry.targetNode().getClassName());
-
+                    final String theClassName = LLVMWriterUtils.toClassName(theLinkedClass.getClassName());
                     pw.print("@");
                     pw.print(theClassName);
                     pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
                     pw.println(" = private global i32 0");
                     pw.println();
+
+                    if (theLinkedClass != theClassLinkedCass) {
+                        final BytecodeVTable theVtable = theSymbolResolver.vtableFor(theLinkedClass);
+                        final List<BytecodeVTable.Slot> theSlots = theVtable.sortedSlots();
+                        pw.print("@");
+                        pw.print(theClassName);
+                        pw.print(LLVMWriter.VTABLESUFFIX);
+                        pw.print(" = private global {i1(i32,i32)*");
+                        for (final BytecodeVTable.Slot slot : theSlots) {
+                            final BytecodeVTable.VPtr ptr = theVtable.slot(slot);
+                            pw.print(",");
+                            pw.print(LLVMWriterUtils.toSignature(ptr.getSignature()));
+                            pw.print("*");
+                        }
+                        pw.println("} {");
+
+                        if (!theLinkedClass.getBytecodeClass().getAccessFlags().isInterface() && !theLinkedClass.getBytecodeClass().getAccessFlags().isAbstract()) {
+                            pw.print("    i1(i32,i32)* @");
+                            pw.print(theClassName);
+                            pw.print(LLVMWriter.INSTANCEOFSUFFIX);
+                        } else {
+                            pw.print("    i1(i32,i32)* undef");
+                        }
+
+                        for (final BytecodeVTable.Slot slot : theSlots) {
+                            final BytecodeVTable.VPtr ptr = theVtable.slot(slot);
+
+                            pw.println(",");
+                            if (ptr.getImplementingClass() != null) {
+                                pw.println("    ;;" + slot.getPos() + ", " + ptr.getMethodName() + "," + ptr.getSignature() + "," + ptr.getImplementingClass().name());
+                            } else {
+                                pw.println("    ;;" + slot.getPos() + ", " + ptr.getMethodName() + "," + ptr.getSignature() + ", abstract");
+                            }
+                            pw.print("    ");
+                            pw.print(LLVMWriterUtils.toSignature(ptr.getSignature()));
+                            pw.print("* ");
+                            if (ptr.getImplementingClass() != null) {
+                                final BytecodeLinkedClass theSlotClass = aLinkerContext.resolveClass(ptr.getImplementingClass());
+                                final BytecodeMethod theMethod = theSlotClass.getBytecodeClass().methodByNameAndSignatureOrNull(ptr.getMethodName(), ptr.getSignature());
+                                if (theMethod != null && !theMethod.getAccessFlags().isAbstract()) {
+                                    pw.print("@");
+                                    pw.print(LLVMWriterUtils.toMethodName(ptr.getImplementingClass(), ptr.getMethodName(), ptr.getSignature()));
+                                } else {
+                                    pw.print("undef");
+                                }
+                            } else {
+                                pw.print("undef");
+                            }
+                        }
+                        pw.println();
+                        pw.println("}");
+                        pw.println();
+                    }
 
                     if (!Objects.equals(theLinkedClass.getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
                         pw.print("define internal i32 @");
@@ -1686,7 +1781,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         return;
                     }
 
-                    final String theClassName = LLVMWriterUtils.toClassName(aEntry.targetNode().getClassName());
+                    final String theClassName = LLVMWriterUtils.toClassName(theLinkedClass.getClassName());
 
                     final NativeMemoryLayouter.MemoryLayout theMemoryLayout = memoryLayouter.layoutFor(theLinkedClass.getClassName());
 
@@ -1716,6 +1811,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
                     pw.println("_classnameptr)");
 
+                    // Store the runtime class itself
                     pw.print("    store i32 %");
                     pw.print(theClassName);
                     pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
@@ -2319,7 +2415,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("             },");
                 theWriter.println("         },");
 
-                final Map<String, List<OpaqueReferenceMethod>> theMethods = opaqueReferenceMethods.stream().collect(Collectors.groupingBy(opaqueReferenceMethod -> opaqueReferenceMethod.linkedClass.linkfor(opaqueReferenceMethod.getMethod()).getModuleName()));
+                final Map<String, List<OpaqueReferenceMethod>> theMethods = opaqueReferenceMethods.stream().collect(Collectors.groupingBy(opaqueReferenceMethod -> opaqueReferenceMethod.linkedClass.linkFor(opaqueReferenceMethod.getMethod()).getModuleName()));
                 for (final Map.Entry<String, List<OpaqueReferenceMethod>> theEntry : theMethods.entrySet()) {
 
                     theWriter.print("         ");
@@ -2329,7 +2425,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     for (final OpaqueReferenceMethod theMethod : theEntry.getValue()) {
                         final BytecodeMethod theBytecdeMethod = theMethod.getMethod();
 
-                        final BytecodeImportedLink theImportedLink = theMethod.getLinkedClass().linkfor(theBytecdeMethod);
+                        final BytecodeImportedLink theImportedLink = theMethod.getLinkedClass().linkFor(theBytecdeMethod);
                         theWriter.print("             ");
                         theWriter.print(theImportedLink.getLinkName());
                         theWriter.print(": function(");
