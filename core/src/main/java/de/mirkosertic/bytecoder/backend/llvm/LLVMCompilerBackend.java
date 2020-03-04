@@ -622,10 +622,10 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 final BytecodeLinkedClass theClassLinkedCass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Class.class));
                 final BytecodeVTable theClassVTable = theSymbolResolver.vtableFor(theClassLinkedCass);
                 final List<BytecodeVTable.Slot> theClassSlots = theClassVTable.sortedSlots();
-                pw.print("@");
+                pw.print("%");
                 pw.print(LLVMWriterUtils.toClassName(theClassLinkedCass.getClassName()));
-                pw.print(LLVMWriter.VTABLESUFFIX);
-                pw.print(" = private global {i1(i32,i32)*");
+                pw.print(LLVMWriter.VTABLETYPESUFFIX);
+                pw.print(" = type {i1(i32,i32)*");
                 for (final BytecodeVTable.Slot slot : theClassSlots) {
                     final BytecodeVTable.VPtr ptr = theClassVTable.slot(slot);
                     if (ptr.getImplementingClass().equals(theClassLinkedCass.getClassName())) {
@@ -634,7 +634,16 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.print("*");
                     }
                 }
-                pw.println("} {");
+                pw.println("}");
+                pw.println();
+
+                pw.print("@");
+                pw.print(LLVMWriterUtils.toClassName(theClassLinkedCass.getClassName()));
+                pw.print(LLVMWriter.VTABLESUFFIX);
+                pw.print(" = private global %");
+                pw.print(LLVMWriterUtils.toClassName(theClassLinkedCass.getClassName()));
+                pw.print(LLVMWriter.VTABLETYPESUFFIX);
+                pw.println(" {");
                 pw.print("    i1(i32,i32)* undef");
                 for (final BytecodeVTable.Slot slot : theClassSlots) {
                     final BytecodeVTable.VPtr ptr = theClassVTable.slot(slot);
@@ -843,17 +852,27 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     if (theLinkedClass != theClassLinkedCass) {
                         final BytecodeVTable theVtable = theSymbolResolver.vtableFor(theLinkedClass);
                         final List<BytecodeVTable.Slot> theSlots = theVtable.sortedSlots();
-                        pw.print("@");
-                        pw.print(theClassName);
-                        pw.print(LLVMWriter.VTABLESUFFIX);
-                        pw.print(" = private global {i1(i32,i32)*");
+
+                        pw.print("%");
+                        pw.print(LLVMWriterUtils.toClassName(theLinkedClass.getClassName()));
+                        pw.print(LLVMWriter.VTABLETYPESUFFIX);
+                        pw.print(" = type {i1(i32,i32)*");
                         for (final BytecodeVTable.Slot slot : theSlots) {
                             final BytecodeVTable.VPtr ptr = theVtable.slot(slot);
                             pw.print(",");
                             pw.print(LLVMWriterUtils.toSignature(ptr.getSignature()));
                             pw.print("*");
                         }
-                        pw.println("} {");
+                        pw.println("}");
+                        pw.println();
+
+                        pw.print("@");
+                        pw.print(theClassName);
+                        pw.print(LLVMWriter.VTABLESUFFIX);
+                        pw.print(" = private global %");
+                        pw.print(LLVMWriterUtils.toClassName(theLinkedClass.getClassName()));
+                        pw.print(LLVMWriter.VTABLETYPESUFFIX);
+                        pw.print(" {");
 
                         if (!theLinkedClass.getBytecodeClass().getAccessFlags().isInterface() && !theLinkedClass.getBytecodeClass().getAccessFlags().isAbstract()) {
                             pw.print("    i1(i32,i32)* @");

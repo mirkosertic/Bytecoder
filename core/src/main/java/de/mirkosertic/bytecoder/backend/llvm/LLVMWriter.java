@@ -132,6 +132,7 @@ public class LLVMWriter implements AutoCloseable {
     public static final String NEWINSTANCE_METHOD_NAME = "$newInstance";
     public static final String CLASSINITSUFFIX = "__init";
     public static final String VTABLESUFFIX = "__vtable";
+    public static final String VTABLETYPESUFFIX = "__vtable__type";
     public static final String NEWINSTANCEHELPER = "newinstancehelper";
 
     interface SymbolResolver {
