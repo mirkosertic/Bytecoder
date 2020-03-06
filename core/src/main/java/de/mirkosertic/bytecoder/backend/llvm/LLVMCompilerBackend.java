@@ -590,23 +590,16 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println();
 
                 // Lambda
-                pw.println("define internal i32 @lambda__resolvevtableindex(i32 %thisRef,i32 %methodId) {");
-                pw.println("    %offset = add i32 %thisRef, 8");
-                pw.println("    %offsetptr = inttoptr i32 %offset to i32*");
-                pw.println("    %ptr = load i32, i32* %offsetptr");
-                pw.println("    ret i32 %ptr");
-                pw.println("}");
-                pw.println();
-
-                pw.println("define internal i32 @newlambda(i32 %type, i32 %implMethodNumber, i32 %staticArguments) {");
+                pw.println("define internal i32 @newlambda(i32 %methodType, i32 %implementationMethod, i32 %staticArguments) {");
                 pw.println("entry:");
-                pw.println("    %vtable = ptrtoint i32(i32,i32)* @lambda__resolvevtableindex to i32");
+                pw.println("    %type_offset = add i32 20, %methodType");
+                pw.println("    %type_offset_ptr = inttoptr i32 %type_offset to i32*");
+                pw.println("    %runtimeClass = load i32, i32* %type_offset_ptr");
+                pw.println("    %vtable = call i32 @dynamicvtable(i32 %runtimeClass, i32 %implementationMethod)");
+
                 pw.print("    %allocated = call i32 @");
                 pw.print(LLVMWriterUtils.toClassName(theMemoryManagerClass.getClassName()));
-                pw.println("_INTnewObjectINTINTINT(i32 0,i32 16,i32 %type,i32 %vtable)");
-                pw.println("    %offset1 = add i32 %allocated, 8");
-                pw.println("    %offset1ptr = inttoptr i32 %offset1 to i32*");
-                pw.println("    store i32 %implMethodNumber, i32* %offset1ptr");
+                pw.println("_INTnewObjectINTINTINT(i32 0,i32 16,i32 %runtimeClass,i32 %vtable)");
                 pw.println("    %offset2 = add i32 %allocated, 12");
                 pw.println("    %offset2ptr = inttoptr i32 %offset2 to i32*");
                 pw.println("    store i32 %staticArguments, i32* %offset2ptr");
@@ -1769,6 +1762,139 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.print(i);
                     pw.println(" = private global i32 0");
                 }
+                pw.println();
+
+                // Generate code for lambda vtables
+                // Lambdas are referenced by method types, hence we use the known methodtypes to generate the code
+                pw.println("define internal i32 @dynamicvtable(i32 %runtimeClass, i32 %implementationMethod) {");
+                pw.println("entry:");
+
+                for (int j=0;j<theMethodTypes.size();j++) {
+                    final BytecodeMethodSignature theSignature = theMethodTypes.get(j);
+                    final BytecodeTypeRef theReturnType = theSignature.getReturnType();
+                    if (!theReturnType.isArray() && !theReturnType.isVoid() && ! theReturnType.isPrimitive()) {
+                        // Return type is object
+                        final BytecodeObjectTypeRef theObjectTypeRef = (BytecodeObjectTypeRef) theReturnType;
+                        final BytecodeLinkedClass theClass = aLinkerContext.resolveClass(theObjectTypeRef);
+                        if (theClass.getBytecodeClass().getAccessFlags().isAbstract() || theClass.getBytecodeClass().getAccessFlags().isInterface()) {
+                            pw.print("    %cl_");
+                            pw.print(j);
+                            pw.print(" = call i32 @");
+                            pw.print(LLVMWriterUtils.toClassName(theObjectTypeRef));
+                            pw.print(LLVMWriter.CLASSINITSUFFIX);
+                            pw.println("()");
+
+                            pw.print("    %te_");
+                            pw.print(j);
+                            pw.print(" = icmp eq i32 %runtimeClass, %cl_");
+                            pw.print(j);
+                            pw.println();
+
+                            pw.print("    br i1 %te_");
+                            pw.print(j);
+                            pw.print(", label %te_");
+                            pw.print(j);
+                            pw.print("_ok, label %te_");
+                            pw.print(j);
+                            pw.println("_not_ok");
+
+                            pw.print("te_");
+                            pw.print(j);
+                            pw.println("_ok:");
+
+                            // We fill in the vtable data
+                            final BytecodeVTable theTable = theSymbolResolver.vtableFor(theClass);
+                            final List<BytecodeVTable.Slot> theSlots = theTable.sortedSlots();
+
+                            pw.print("    %memory_");
+                            pw.print(j);
+                            pw.print(" = call i32 @dmbcMemoryManager_INTmallocINT(i32 undef,i32 ");
+                            pw.print(4 + (theSlots.size() + 1) * 4);
+                            pw.println(")");
+
+                            // First position is the instanceof function, which is undef here
+                            pw.print("    %te_");
+                            pw.print(j);
+                            pw.print("_0");
+                            pw.print(" = inttoptr i32 %memory_");
+                            pw.print(j);
+                            pw.println(" to i32*");
+                            pw.print("    store i32 undef, i32* %te_");
+                            pw.print(j);
+                            pw.println("_0");
+
+                            for (final BytecodeVTable.Slot sl : theSlots) {
+                                final BytecodeVTable.VPtr ptr = theTable.slot(sl);
+                                pw.println("    ;; slot " + sl.getPos() + ", " + ptr.getMethodName() + ", " + ptr.getSignature());
+                                pw.print("    %te_");
+                                pw.print(j);
+                                pw.print("_offset_");
+                                pw.print(1 + sl.getPos());
+                                pw.print(" = add i32 %memory_");
+                                pw.print(j);
+                                pw.print(", ");
+                                pw.println(4 + sl.getPos() * 4);
+
+                                pw.print("    %te_");
+                                pw.print(j);
+                                pw.print("_ptr_");
+                                pw.print(1 + sl.getPos());
+                                pw.print(" = inttoptr i32 %te_");
+                                pw.print(j);
+                                pw.print("_offset_");
+                                pw.print(1 + sl.getPos());
+                                pw.println(" to i32*");
+
+                                if (ptr.getImplementingClass() != null) {
+                                    final BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(ptr.getImplementingClass());
+                                    final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull(ptr.getMethodName(), ptr.getSignature());
+                                    if (theMethod != null && !theMethod.getAccessFlags().isAbstract()) {
+                                        pw.print("    %te_");
+                                        pw.print(j);
+                                        pw.print("_impl_");
+                                        pw.print(1 + sl.getPos());
+                                        pw.print(" = ptrtoint ");
+                                        pw.print(LLVMWriterUtils.toSignature(ptr.getSignature()));
+                                        pw.print("* @");
+                                        pw.print(LLVMWriterUtils.toMethodName(ptr.getImplementingClass(), ptr.getMethodName(), ptr.getSignature()));
+                                        pw.println(" to i32");
+
+                                        pw.print("    store i32 %te_");
+                                        pw.print(j);
+                                        pw.print("_impl_");
+                                        pw.print(1 + sl.getPos());
+                                        pw.print(", i32* %te_");
+                                        pw.print(j);
+                                        pw.print("_ptr_");
+                                        pw.println(1 + sl.getPos());
+                                    } else {
+                                        pw.print("    store i32 %implementationMethod, i32* ");
+                                        pw.print("%te_");
+                                        pw.print(j);
+                                        pw.print("_ptr_");
+                                        pw.println(1 + sl.getPos());
+                                    }
+                                } else {
+                                    pw.print("    store i32 %implementationMethod, i32* ");
+                                    pw.print("%te_");
+                                    pw.print(j);
+                                    pw.print("_ptr_");
+                                    pw.println(1 + sl.getPos());
+                                }
+                            }
+
+                            pw.print("    ret i32 %memory_");
+                            pw.println(j);
+
+                            pw.print("te_");
+                            pw.print(j);
+                            pw.println("_not_ok:");
+                        }
+                    }
+                }
+
+                pw.println("    ret i32 0");
+                pw.println("}");
                 pw.println();
 
                 // Factory for method types
