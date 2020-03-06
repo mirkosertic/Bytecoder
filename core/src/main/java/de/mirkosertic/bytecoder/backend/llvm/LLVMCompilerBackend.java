@@ -114,7 +114,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
     @Override
     public LLVMCompileResult generateCodeFor(final CompileOptions aOptions, final BytecodeLinkerContext aLinkerContext,
-            final Class aEntryPointClass, final String aEntryPointMethodName, final BytecodeMethodSignature aEntryPointSignatue) {
+            final Class aEntryPointClass, final String aEntryPointMethodName, final BytecodeMethodSignature aEntryPointSignature) {
 
         final BytecodeLinkedClass theArrayClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
         theArrayClass.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
@@ -1151,7 +1151,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.println();
 
                         // Export main entry point
-                        if (theLinkedClass.getClassName().name().equals(aEntryPointClass.getName()) && theMethod.getName().stringValue().equals(aEntryPointMethodName) && theMethod.getSignature().matchesExactlyTo(aEntryPointSignatue)) {
+                        if (theLinkedClass.getClassName().name().equals(aEntryPointClass.getName()) && theMethod.getName().stringValue().equals(aEntryPointMethodName) && theMethod.getSignature().matchesExactlyTo(aEntryPointSignature)) {
 
                             pw.print("attributes #");
                             pw.print(attributeCounter.get());
@@ -1998,7 +1998,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                         final BytecodeMethod theDelegateMethod = availableCallbacks.get(0);
 
-                        final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(theDelegateMethod);
+                        final BytecodeVTable theTable = theSymbolResolver.vtableFor(t);
+                        final BytecodeVTable.Slot sl = theTable.slotOf(theDelegateMethod.getName().stringValue(), theDelegateMethod.getSignature());
 
                         final String theFunctionName = LLVMWriterUtils
                                 .toMethodName(t.getClassName(), theDelegateMethod.getName(), theDelegateMethod.getSignature());
@@ -2025,10 +2026,10 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.println("    %ptr = add i32 %target, 4");
                         pw.println("    %ptr_ptr = inttoptr i32 %ptr to i32*");
                         pw.println("    %ptr_loaded = load i32, i32* %ptr_ptr");
-                        pw.println("    %vtable = inttoptr i32 %ptr_loaded to i32(i32,i32)*");
-                        pw.print("    %resolved = call i32(i32,i32) %vtable(i32 %target, i32 ");
-                        pw.print(theMethodIdentifier.getIdentifier());
-                        pw.println(")");
+                        pw.print("    %vtable = add i32 %ptr_loaded, ");
+                        pw.print(4 + (sl.getPos() * 4));
+                        pw.println("    %vtable_ptr = inttoptr i32 %vtable to i32*");
+                        pw.println("    %resolved = load i32, i32* %vtable_ptr");
                         pw.print("    %resolved_ptr = inttoptr i32 %resolved to ");
                         pw.print(LLVMWriterUtils.toSignature(theDelegateMethod.getSignature()));
                         pw.println("*");
