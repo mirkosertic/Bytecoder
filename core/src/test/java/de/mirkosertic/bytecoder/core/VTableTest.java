@@ -73,5 +73,7 @@ public class VTableTest {
 
         Assert.assertEquals("process", theBaseTable.slot(theBaseSlots.get(0)).getMethodName());
         Assert.assertEquals(theBaseClass.getClassName().name(), theBaseTable.slot(theBaseSlots.get(0)).getImplementingClass().name());
+
+        Assert.assertEquals(theBaseSlots.get(0), theBaseTable.slotOf("process", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0])));
     }
 }

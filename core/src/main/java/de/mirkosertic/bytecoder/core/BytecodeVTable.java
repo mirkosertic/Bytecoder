@@ -86,7 +86,7 @@ public class BytecodeVTable {
             final Slot slot = theEntry.getKey();
             final VPtr vPtr = theEntry.getValue();
             if (aMethod.getName().stringValue().equals(vPtr.methodName) &&
-                aMethod.getSignature().matchesExactlyTo(aMethod.getSignature())) {
+                aMethod.getSignature().matchesExactlyTo(vPtr.signature)) {
                 if (!aMethod.getAccessFlags().isAbstract()) {
                     slots.put(slot, new VPtr(aMethod.getName().stringValue(), aMethod.getSignature(), aClass.getClassName()));
                 }
@@ -103,5 +103,17 @@ public class BytecodeVTable {
 
     public VPtr slot(final Slot slot) {
         return slots.get(slot);
+    }
+
+    public Slot slotOf(final String methodName, final BytecodeMethodSignature signature) {
+        for (final Map.Entry<Slot, VPtr> theEntry : slots.entrySet()) {
+            final Slot slot = theEntry.getKey();
+            final VPtr vPtr = theEntry.getValue();
+            if (methodName.equals(vPtr.methodName) &&
+                    signature.matchesExactlyTo(vPtr.signature)) {
+                return slot;
+            }
+        }
+        throw new IllegalArgumentException("No slot for " + methodName + " and signature " + signature);
     }
 }

@@ -20,7 +20,6 @@ import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.OpaqueIndexed;
 import de.mirkosertic.bytecoder.api.OpaqueMethod;
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
-import de.mirkosertic.bytecoder.api.Substitutes;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileResult;
@@ -70,11 +69,9 @@ import java.lang.invoke.LambdaMetafactory;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -313,12 +310,10 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("    %ptr = add i32 %object, 4");
                 pw.println("    %ptr_ptr = inttoptr i32 %ptr to i32*");
                 pw.println("    %ptr_loaded = load i32, i32* %ptr_ptr");
-                pw.println("    %vtable = inttoptr i32 %ptr_loaded to i32(i32,i32)*");
-                pw.print("    %resolved = call i32(i32,i32) %vtable(i32 %object, i32 ");
-                pw.print(LLVMWriter.GENERATED_INSTANCEOF_METHOD_ID);
-                pw.println(")");
-                pw.println("    %resolved_ptr = inttoptr i32 %resolved to i32(i32,i32)*");
-                pw.println("    %result = call i32 %resolved_ptr(i32 %object, i32 %typeid)");
+                pw.println("    %vtable = inttoptr i32 %ptr_loaded to i32*");
+                pw.println("    %resolved_ptr = load i32, i32* %vtable");
+                pw.println("    %resolved_ptr_ptr = inttoptr i32 %resolved_ptr to i32(i32,i32)*");
+                pw.println("    %result = call i32 %resolved_ptr_ptr(i32 %object, i32 %typeid)");
                 pw.println("    ret i32 %result");
                 pw.println("isnull:");
                 pw.println("    ret i32 0");
@@ -619,6 +614,12 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
+                pw.println("define internal i32 @jlObject_jlClassgetClassInternal(i32 %thisRef) {");
+                pw.println("entry:");
+                pw.println("    ret i32 0");
+                pw.println("}");
+                pw.println();
+
                 final BytecodeLinkedClass theClassLinkedCass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Class.class));
                 final BytecodeVTable theClassVTable = theSymbolResolver.vtableFor(theClassLinkedCass);
                 final List<BytecodeVTable.Slot> theClassSlots = theClassVTable.sortedSlots();
@@ -628,11 +629,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.print(" = type {i1(i32,i32)*");
                 for (final BytecodeVTable.Slot slot : theClassSlots) {
                     final BytecodeVTable.VPtr ptr = theClassVTable.slot(slot);
-                    if (ptr.getImplementingClass().equals(theClassLinkedCass.getClassName())) {
-                        pw.print(",");
-                        pw.print(LLVMWriterUtils.toSignature(ptr.getSignature()));
-                        pw.print("*");
-                    }
+                    pw.print(",");
+                    pw.print(LLVMWriterUtils.toSignature(ptr.getSignature()));
+                    pw.print("*");
                 }
                 pw.println("}");
                 pw.println();
@@ -647,71 +646,20 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.print("    i1(i32,i32)* undef");
                 for (final BytecodeVTable.Slot slot : theClassSlots) {
                     final BytecodeVTable.VPtr ptr = theClassVTable.slot(slot);
-                    if (ptr.getImplementingClass().equals(theClassLinkedCass.getClassName())) {
+                    if (ptr.getImplementingClass() != null) {
                         pw.println(",");
                         pw.print("    ");
                         pw.print(LLVMWriterUtils.toSignature(ptr.getSignature()));
                         pw.print("* @");
                         pw.print(LLVMWriterUtils.toMethodName(ptr.getImplementingClass(), ptr.getMethodName(), ptr.getSignature()));
+                    } else {
+                        pw.println(",");
+                        pw.print("    ");
+                        pw.print(LLVMWriterUtils.toSignature(ptr.getSignature()));
+                        pw.print("* undef");
                     }
                 }
                 pw.println();
-                pw.println("}");
-                pw.println();
-
-                // Some utility functions for runtime class management
-                pw.println("define internal i32 @runtimeClass__resolvevtableindex(i32 %thisRef,i32 %methodId) {");
-                pw.println("entry:");
-                final BytecodeResolvedMethods theRuntimeMethodMap = theClassLinkedCass.resolvedMethods();
-                theRuntimeMethodMap.stream().forEach(aMethodMapEntry -> {
-                    final BytecodeMethod theMethod = aMethodMapEntry.getValue();
-                    if (!theMethod.getAccessFlags().isStatic() && !theMethod.isConstructor() && !theMethod.isClassInitializer() &&
-                            aMethodMapEntry.getProvidingClass().getClassName().equals(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))) {
-
-                        final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(theMethod);
-                        pw.print("    %test");
-                        pw.print(theMethodIdentifier.getIdentifier());
-                        pw.print(" = icmp eq i32 %methodId, ");
-                        pw.println(theMethodIdentifier.getIdentifier());
-
-                        pw.print("    br i1 %test");
-                        pw.print(theMethodIdentifier.getIdentifier());
-                        pw.print(", label %test");
-                        pw.print(theMethodIdentifier.getIdentifier());
-                        pw.print("_ok, label %test");
-                        pw.print(theMethodIdentifier.getIdentifier());
-                        pw.println("_notok");
-
-                        pw.print("test");
-                        pw.print(theMethodIdentifier.getIdentifier());
-                        pw.println("_ok:");
-
-                        if (Objects.equals("getClass", theMethod.getName().stringValue())) {
-                            pw.println("    call void @llvm.trap()");
-                            pw.println("    unreachable");
-                        } else {
-                            // delegate to the corresponding method of java.lang.Class
-                            final String theMethodName = LLVMWriterUtils.toMethodName(aMethodMapEntry.getProvidingClass().getClassName(),
-                                    theMethod.getName(), theMethod.getSignature());
-                            pw.print("    %v");
-                            pw.print(theMethodIdentifier.getIdentifier());
-                            pw.print(" = ptrtoint ");
-                            pw.print(LLVMWriterUtils.toSignature(theMethod.getSignature()));
-                            pw.print("* @");
-                            pw.print(theMethodName);
-                            pw.println(" to i32");
-
-                            pw.print("    ret i32 %v");
-                            pw.println(theMethodIdentifier.getIdentifier());
-                        }
-
-                        pw.print("test");
-                        pw.print(theMethodIdentifier.getIdentifier());
-                        pw.println("_notok:");
-                    }
-                });
-                pw.println("    call void @llvm.trap()");
-                pw.println("    unreachable");
                 pw.println("}");
                 pw.println();
 
@@ -809,7 +757,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                 pw.println("define internal i32 @newRuntimeClass(i32 %type, i32 %staticSize, i32 %enumValuesOffset, i32 %nameStringPoolIndex) {");
                 pw.println("entry:");
-                pw.println("    %vtableptr = ptrtoint i32(i32,i32)* @runtimeClass__resolvevtableindex to i32");
+                pw.println("    %vtableptr = ptrtoint %jlClass__vtable__type* @jlClass__vtable to i32");
                 pw.println("    %allocated = call i32 @dmbcMemoryManager_INTnewObjectINTINTINT(i32 0, i32 %staticSize, i32 -1, i32 %vtableptr)");
                 pw.println("    %enumpos = add i32 %allocated, 12");
                 pw.println("    %enumpos_ptr = inttoptr i32 %enumpos to i32*");
@@ -872,7 +820,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.print(" = private global %");
                         pw.print(LLVMWriterUtils.toClassName(theLinkedClass.getClassName()));
                         pw.print(LLVMWriter.VTABLETYPESUFFIX);
-                        pw.print(" {");
+                        pw.println(" {");
 
                         if (!theLinkedClass.getBytecodeClass().getAccessFlags().isInterface() && !theLinkedClass.getBytecodeClass().getAccessFlags().isAbstract()) {
                             pw.print("    i1(i32,i32)* @");
@@ -972,89 +920,6 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.println("    ret i1 0");
                         pw.println("true:");
                         pw.println("    ret i1 1");
-                        pw.println("}");
-                        pw.println();
-
-                        final List<BytecodeResolvedMethods.MethodEntry> thevTable = new ArrayList<>();
-                        final List<BytecodeResolvedMethods.MethodEntry> theEntries = theMethodMap.stream().collect(
-                                Collectors.toList());
-                        final Set<BytecodeVirtualMethodIdentifier> theVisitedMethods = new HashSet<>();
-                        for (int i = theEntries.size() - 1; 0 <= i; i--) {
-                            final BytecodeResolvedMethods.MethodEntry aMethodMapEntry = theEntries.get(i);
-                            final BytecodeMethod theMethod = aMethodMapEntry.getValue();
-
-                            if (!theMethod.getAccessFlags().isStatic() &&
-                                    !theMethod.isConstructor() &&
-                                    !theMethod.getAccessFlags().isAbstract() &&
-                                    !"desiredAssertionStatus".equals(theMethod.getName().stringValue()) &&
-                                    !"getEnumConstants".equals(theMethod.getName().stringValue()) &&
-                                    theMethod.getAttributes().getAnnotationByType(Substitutes.class.getName()) == null) {
-
-                                final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
-                                        .identifierFor(theMethod);
-
-                                if (theVisitedMethods.add(theMethodIdentifier)) {
-                                    thevTable.add(aMethodMapEntry);
-                                }
-                            }
-                        }
-
-                        pw.print("define internal i32 @");
-                        pw.print(theClassName);
-                        pw.print(LLVMWriter.VTABLEFUNCTIONSUFFIX);
-                        pw.println("(i32 %thisRef,i32 %methodId) {");
-                        pw.println("entry:");
-                        pw.println("    switch i32 %methodId, label %default [");
-                        pw.print("        i32 ");
-                        pw.print(LLVMWriter.GENERATED_INSTANCEOF_METHOD_ID);
-                        pw.println(",label %instanceof");
-
-                        for (final BytecodeResolvedMethods.MethodEntry entry : thevTable) {
-                            final BytecodeMethod theMethod = entry.getValue();
-                            final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
-                                    .identifierFor(theMethod);
-
-                            if (LLVMWriterUtils.filteredForTest(entry.getProvidingClass())) {
-                                pw.print("        i32 ");
-                                pw.print(theMethodIdentifier.getIdentifier());
-                                pw.print(",label %v_table_");
-                                pw.println(theMethodIdentifier.getIdentifier());
-                            }
-                        }
-
-                        pw.println("    ]");
-                        pw.println("default:");
-                        pw.println("    call void @llvm.trap()");
-                        pw.println("    unreachable");
-
-                        for (final BytecodeResolvedMethods.MethodEntry methodEntry : thevTable) {
-                            final BytecodeMethod theMethod = methodEntry.getValue();
-                            final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
-                                    .identifierFor(theMethod);
-
-                            if (LLVMWriterUtils.filteredForTest(methodEntry.getProvidingClass())) {
-                                pw.print("v_table_");
-                                pw.print(theMethodIdentifier.getIdentifier());
-                                pw.println(":");
-                                pw.print("    %ptr_");
-                                pw.print(theMethodIdentifier.getIdentifier());
-                                pw.print(" = ptrtoint ");
-                                pw.print(LLVMWriterUtils.toSignature(theMethod.getSignature()));
-                                pw.print("* @");
-                                pw.print(LLVMWriterUtils.toMethodName(methodEntry.getProvidingClass().getClassName(), theMethod.getName(), theMethod.getSignature()));
-                                pw.println(" to i32");
-                                pw.print("    ret i32 %ptr_");
-                                pw.print(theMethodIdentifier.getIdentifier());
-                                pw.println();
-                            }
-                        }
-
-                        pw.println("instanceof:");
-                        pw.print("    %iofptr = ptrtoint i1(i32,i32)* @");
-                        pw.print(theClassName);
-                        pw.print(LLVMWriter.INSTANCEOFSUFFIX);
-                        pw.println(" to i32");
-                        pw.println("    ret i32 %iofptr");
                         pw.println("}");
                         pw.println();
                     }
@@ -1172,9 +1037,12 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.print(LLVMWriter.CLASSINITSUFFIX);
                             pw.println("()");
 
-                            pw.print("    %vtableptr = ptrtoint i32(i32,i32)* @");
+                            pw.print("    %vtableptr = ptrtoint %");
                             pw.print(theClassName);
-                            pw.print(LLVMWriter.VTABLEFUNCTIONSUFFIX);
+                            pw.print(LLVMWriter.VTABLETYPESUFFIX);
+                            pw.print("* @");
+                            pw.print(theClassName);
+                            pw.print(LLVMWriter.VTABLESUFFIX);
                             pw.println(" to i32");
                             pw.print("    %allocated = call i32(i32,i32,i32,i32) @");
                             pw.print(LLVMWriterUtils.toMethodName(theMemoryManagerClass.getClassName(), "newObject",
@@ -1839,7 +1707,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
                 });
 
-                pw.println("    %arrayvtableptr = ptrtoint i32(i32,i32)* @dmbcArray__resolvevtableindex to i32");
+                pw.println("    %arrayvtableptr = ptrtoint %dmbcArray__vtable__type* @dmbcArray__vtable to i32");
                 pw.println("    %arrayclassinit = call i32 @dmbcArray__init()");
 
                 // We create the string pool now
@@ -1914,7 +1782,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.println("entry:");
 
                     pw.println("    %data_classinit = call i32 @dmbcArray__init()");
-                    pw.println("    %data_vtable = ptrtoint i32(i32,i32)* @dmbcArray__resolvevtableindex to i32");
+                    pw.println("    %data_vtable = ptrtoint %dmbcArray__vtable__type* @dmbcArray__vtable to i32");
                     pw.print("    %data = call i32 @dmbcMemoryManager_INTnewArrayINTINTINT(i32 0,i32 ");
                     pw.print(1 + theSignature.getArguments().length);
                     pw.println(",i32 %data_classinit,i32 %data_vtable)");
