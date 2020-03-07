@@ -367,13 +367,15 @@ public class LLVMWriter implements AutoCloseable {
         final BytecodeVTable table;
         if (e.getInvokedClass().isArray()) {
             final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
+            target.println("    ;; vtable of " + theLinkedClass.getClassName().name());
             table = symbolResolver.vtableFor(theLinkedClass);
         } else {
             final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) e.getInvokedClass());
+            target.println("    ;; vtable of " + theLinkedClass.getClassName().name());
             table = symbolResolver.vtableFor(theLinkedClass);
         }
         final BytecodeVTable.Slot slot = table.slotOf(e.getMethodName(), e.getSignature());
-
+        target.println("    ;; slot " + slot.getPos() + "," + e.getMethodName() + ", " + e.getSignature());
         target.print("    %");
         target.print(toTempSymbol(e, "vtable"));
         target.print(" = add i32 %");

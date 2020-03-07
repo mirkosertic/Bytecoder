@@ -40,7 +40,6 @@ import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVTable;
-import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.ssa.Expression;
@@ -1277,6 +1276,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                         final String theAdapterFunctionName = LLVMWriterUtils.toMethodName(theImplementationMethod.getClassName(),
                                                 theImplementationMethod.getMethodName() + theEntry.getKey(), theDynamicInvocationType.getSignature());
 
+                                        final BytecodeObjectTypeRef theImplementationOriginalClassName = theImplementationMethod.getClassName();
                                         final String theImplementationOriginalMethodName = theImplementationMethod.getMethodName();
 
                                         // This is our new implementation
@@ -1463,7 +1463,10 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                                 }
 
                                                 final BytecodeMethodSignature theInvocationSignature = theDynamicInvocationType.getSignature();
-                                                final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(theImplementationOriginalMethodName, theInvocationSignature);
+
+                                                final BytecodeLinkedClass theImplclass = aLinkerContext.resolveClass(theImplementationOriginalClassName);
+                                                final BytecodeVTable theVTable = theSymbolResolver.vtableFor(theImplclass);
+                                                final BytecodeVTable.Slot theSlot = theVTable.slotOf(theImplementationOriginalMethodName, theInvocationSignature);
 
                                                 final String theCalledFunction = LLVMWriterUtils.toSignature(theInvocationSignature);
 
@@ -1471,10 +1474,12 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                                 pw.print(theDispatchArguments.get(0));
                                                 pw.println(", 4");
 
-                                                pw.println("    %vtable = inttoptr i32 %ptr to i32(i32,i32)*");
-                                                pw.print("    %resolved = call i32(i32,i32) %vtable(i32 %selfRef, i32 ");
-                                                pw.print(theMethodIdentifier.getIdentifier());
-                                                pw.println(")");
+                                                pw.println("    %ptr_ptr = inttoptr i32 %ptr to i32*");
+                                                pw.println("    %vtable = load i32, i32* %ptr_ptr");
+                                                pw.println("    %vtable_offset = add i32 %vtable, ");
+                                                pw.println(4 + (theSlot.getPos() * 4));
+                                                pw.println("    %vtable_offset_ptr = inttoptr i32 %vtable_offset to i32*");
+                                                pw.println("    %resolved = load i32, i32* %vtable_offset_ptr");
 
                                                 pw.print("    %resolved_ptr = inttoptr i32 %resolved to ");
                                                 pw.print(theCalledFunction);
@@ -1768,7 +1773,6 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 // Lambdas are referenced by method types, hence we use the known methodtypes to generate the code
                 pw.println("define internal i32 @dynamicvtable(i32 %runtimeClass, i32 %implementationMethod) {");
                 pw.println("entry:");
-
                 for (int j=0;j<theMethodTypes.size();j++) {
                     final BytecodeMethodSignature theSignature = theMethodTypes.get(j);
                     final BytecodeTypeRef theReturnType = theSignature.getReturnType();
@@ -1893,7 +1897,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     }
                 }
 
-                pw.println("    ret i32 0");
+                pw.println("    call void @llvm.trap()");
+                pw.println("    unreachable");
                 pw.println("}");
                 pw.println();
 
