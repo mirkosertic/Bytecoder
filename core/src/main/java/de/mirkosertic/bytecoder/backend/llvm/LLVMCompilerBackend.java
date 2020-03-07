@@ -20,6 +20,7 @@ import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.OpaqueIndexed;
 import de.mirkosertic.bytecoder.api.OpaqueMethod;
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
+import de.mirkosertic.bytecoder.api.Substitutes;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileResult;
@@ -40,6 +41,7 @@ import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVTable;
+import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.ssa.Expression;
@@ -68,9 +70,11 @@ import java.lang.invoke.LambdaMetafactory;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -599,6 +603,11 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.print("    %allocated = call i32 @");
                 pw.print(LLVMWriterUtils.toClassName(theMemoryManagerClass.getClassName()));
                 pw.println("_INTnewObjectINTINTINT(i32 0,i32 16,i32 %runtimeClass,i32 %vtable)");
+
+                pw.println("    %offset1 = add i32 %allocated, 8");
+                pw.println("    %offset1ptr = inttoptr i32 %offset1 to i32*");
+                pw.println("    store i32 %implMethodNumber, i32* %offset1ptr");
+
                 pw.println("    %offset2 = add i32 %allocated, 12");
                 pw.println("    %offset2ptr = inttoptr i32 %offset2 to i32*");
                 pw.println("    store i32 %staticArguments, i32* %offset2ptr");
@@ -912,6 +921,79 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.println("    ret i1 0");
                         pw.println("true:");
                         pw.println("    ret i1 1");
+                        pw.println("}");
+                        pw.println();
+
+                        final List<BytecodeResolvedMethods.MethodEntry> thevTable = new ArrayList<>();
+                        final List<BytecodeResolvedMethods.MethodEntry> theEntries = theMethodMap.stream().collect(
+                                Collectors.toList());
+                        final Set<BytecodeVirtualMethodIdentifier> theVisitedMethods = new HashSet<>();
+                        for (int i = theEntries.size() - 1; 0 <= i; i--) {
+                            final BytecodeResolvedMethods.MethodEntry aMethodMapEntry = theEntries.get(i);
+                            final BytecodeMethod theMethod = aMethodMapEntry.getValue();
+
+                            if (!theMethod.getAccessFlags().isStatic() &&
+                                    !theMethod.isConstructor() &&
+                                    !theMethod.getAccessFlags().isAbstract() &&
+                                    !"desiredAssertionStatus".equals(theMethod.getName().stringValue()) &&
+                                    !"getEnumConstants".equals(theMethod.getName().stringValue()) &&
+                                    theMethod.getAttributes().getAnnotationByType(Substitutes.class.getName()) == null) {
+
+                                final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
+                                        .identifierFor(theMethod);
+
+                                if (theVisitedMethods.add(theMethodIdentifier)) {
+                                    thevTable.add(aMethodMapEntry);
+                                }
+                            }
+                        }
+
+                        pw.print("define internal i32 @");
+                        pw.print(theClassName);
+                        pw.print(LLVMWriter.INTERFACEDISPATCHSUFFIX);
+                        pw.println("(i32 %thisRef,i32 %methodId) {");
+                        pw.println("entry:");
+                        pw.println("    switch i32 %methodId, label %default [");
+
+                        for (final BytecodeResolvedMethods.MethodEntry entry : thevTable) {
+                            final BytecodeMethod theMethod = entry.getValue();
+                            final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
+                                    .identifierFor(theMethod);
+
+                            if (LLVMWriterUtils.filteredForTest(entry.getProvidingClass())) {
+                                pw.print("        i32 ");
+                                pw.print(theMethodIdentifier.getIdentifier());
+                                pw.print(",label %v_table_");
+                                pw.println(theMethodIdentifier.getIdentifier());
+                            }
+                        }
+
+                        pw.println("    ]");
+                        pw.println("default:");
+                        pw.println("    call void @llvm.trap()");
+                        pw.println("    unreachable");
+
+                        for (final BytecodeResolvedMethods.MethodEntry methodEntry : thevTable) {
+                            final BytecodeMethod theMethod = methodEntry.getValue();
+                            final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
+                                    .identifierFor(theMethod);
+
+                            if (LLVMWriterUtils.filteredForTest(methodEntry.getProvidingClass())) {
+                                pw.print("v_table_");
+                                pw.print(theMethodIdentifier.getIdentifier());
+                                pw.println(":");
+                                pw.print("    %ptr_");
+                                pw.print(theMethodIdentifier.getIdentifier());
+                                pw.print(" = ptrtoint ");
+                                pw.print(LLVMWriterUtils.toSignature(theMethod.getSignature()));
+                                pw.print("* @");
+                                pw.print(LLVMWriterUtils.toMethodName(methodEntry.getProvidingClass().getClassName(), theMethod.getName(), theMethod.getSignature()));
+                                pw.println(" to i32");
+                                pw.print("    ret i32 %ptr_");
+                                pw.print(theMethodIdentifier.getIdentifier());
+                                pw.println();
+                            }
+                        }
                         pw.println("}");
                         pw.println();
                     }
@@ -1809,11 +1891,12 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             // We fill in the vtable data
                             final BytecodeVTable theTable = theSymbolResolver.vtableFor(theClass);
                             final List<BytecodeVTable.Slot> theSlots = theTable.sortedSlots();
+                            final int theNumberOfSlots = theTable.numberOfSlots();
 
                             pw.print("    %memory_");
                             pw.print(j);
                             pw.print(" = call i32 @dmbcMemoryManager_INTmallocINT(i32 undef,i32 ");
-                            pw.print(4 + (theSlots.size() + 1) * 4);
+                            pw.print(4 + theNumberOfSlots * 4);
                             pw.println(")");
 
                             // First position is the instanceof function, which is undef here

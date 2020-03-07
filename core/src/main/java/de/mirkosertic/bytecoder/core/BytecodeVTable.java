@@ -101,6 +101,14 @@ public class BytecodeVTable {
         return slots.keySet().stream().sorted(Comparator.comparingInt(o -> o.pos)).collect(Collectors.toList());
     }
 
+    public int numberOfSlots() {
+        int max = -1;
+        for (final Slot s : slots.keySet()) {
+            max = Math.max(max, s.pos);
+        }
+        return max + 1;
+    }
+
     public VPtr slot(final Slot slot) {
         return slots.get(slot);
     }
