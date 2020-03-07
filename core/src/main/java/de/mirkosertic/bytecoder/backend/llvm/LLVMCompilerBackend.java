@@ -593,12 +593,21 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println();
 
                 // Lambda
+                pw.println("define internal i32 @lambda__interfacedispatch(i32 %thisRef,i32 %methodId) {");
+                pw.println("    %offset = add i32 %thisRef, 8");
+                pw.println("    %offsetptr = inttoptr i32 %offset to i32*");
+                pw.println("    %ptr = load i32, i32* %offsetptr");
+                pw.println("    ret i32 %ptr");
+                pw.println("}");
+                pw.println();
+
                 pw.println("define internal i32 @newlambda(i32 %methodType, i32 %implementationMethod, i32 %staticArguments) {");
                 pw.println("entry:");
+                pw.println("    %lambda_interface_dispatch = ptrtoint i32(i32,i32)* @lambda__interfacedispatch to i32");
                 pw.println("    %type_offset = add i32 20, %methodType");
                 pw.println("    %type_offset_ptr = inttoptr i32 %type_offset to i32*");
                 pw.println("    %runtimeClass = load i32, i32* %type_offset_ptr");
-                pw.println("    %vtable = call i32 @dynamicvtable(i32 %runtimeClass, i32 %implementationMethod)");
+                pw.println("    %vtable = call i32 @dynamicvtable(i32 %runtimeClass, i32 %implementationMethod,i32 %lambda_interface_dispatch)");
 
                 pw.print("    %allocated = call i32 @");
                 pw.print(LLVMWriterUtils.toClassName(theMemoryManagerClass.getClassName()));
@@ -606,7 +615,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                 pw.println("    %offset1 = add i32 %allocated, 8");
                 pw.println("    %offset1ptr = inttoptr i32 %offset1 to i32*");
-                pw.println("    store i32 %implMethodNumber, i32* %offset1ptr");
+                pw.println("    store i32 %implementationMethod, i32* %offset1ptr");
 
                 pw.println("    %offset2 = add i32 %allocated, 12");
                 pw.println("    %offset2ptr = inttoptr i32 %offset2 to i32*");
@@ -627,7 +636,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.print("%");
                 pw.print(LLVMWriterUtils.toClassName(theClassLinkedCass.getClassName()));
                 pw.print(LLVMWriter.VTABLETYPESUFFIX);
-                pw.print(" = type {i1(i32,i32)*");
+                pw.print(" = type {i1(i32,i32)*,i32(i32,i32)*");
                 for (final BytecodeVTable.Slot slot : theClassSlots) {
                     final BytecodeVTable.VPtr ptr = theClassVTable.slot(slot);
                     pw.print(",");
@@ -644,7 +653,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.print(LLVMWriterUtils.toClassName(theClassLinkedCass.getClassName()));
                 pw.print(LLVMWriter.VTABLETYPESUFFIX);
                 pw.println(" {");
-                pw.print("    i1(i32,i32)* undef");
+                pw.println("    i1(i32,i32)* undef,");
+                pw.println("    i32(i32,i32)* undef");
                 for (final BytecodeVTable.Slot slot : theClassSlots) {
                     final BytecodeVTable.VPtr ptr = theClassVTable.slot(slot);
                     if (ptr.getImplementingClass() != null) {
@@ -805,7 +815,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.print("%");
                         pw.print(LLVMWriterUtils.toClassName(theLinkedClass.getClassName()));
                         pw.print(LLVMWriter.VTABLETYPESUFFIX);
-                        pw.print(" = type {i1(i32,i32)*");
+                        pw.print(" = type {i1(i32,i32)*,i32(i32,i32)*");
                         for (final BytecodeVTable.Slot slot : theSlots) {
                             final BytecodeVTable.VPtr ptr = theVtable.slot(slot);
                             pw.print(",");
@@ -827,8 +837,13 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.print("    i1(i32,i32)* @");
                             pw.print(theClassName);
                             pw.print(LLVMWriter.INSTANCEOFSUFFIX);
+                            pw.println(",");
+                            pw.print("    i32(i32,i32)* @");
+                            pw.print(theClassName);
+                            pw.print(LLVMWriter.INTERFACEDISPATCHSUFFIX);
                         } else {
-                            pw.print("    i1(i32,i32)* undef");
+                            pw.println("    i1(i32,i32)* undef,");
+                            pw.print("    i32(i32,i32)* undef");
                         }
 
                         for (final BytecodeVTable.Slot slot : theSlots) {
@@ -1559,7 +1574,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                                 pw.println("    %ptr_ptr = inttoptr i32 %ptr to i32*");
                                                 pw.println("    %vtable = load i32, i32* %ptr_ptr");
                                                 pw.println("    %vtable_offset = add i32 %vtable, ");
-                                                pw.println(4 + (theSlot.getPos() * 4));
+                                                pw.println(8 + (theSlot.getPos() * 4));
                                                 pw.println("    %vtable_offset_ptr = inttoptr i32 %vtable_offset to i32*");
                                                 pw.println("    %resolved = load i32, i32* %vtable_offset_ptr");
 
@@ -1853,7 +1868,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                 // Generate code for lambda vtables
                 // Lambdas are referenced by method types, hence we use the known methodtypes to generate the code
-                pw.println("define internal i32 @dynamicvtable(i32 %runtimeClass, i32 %implementationMethod) {");
+                pw.println("define internal i32 @dynamicvtable(i32 %runtimeClass, i32 %implementationMethod, i32 %interfaceDispatch) {");
                 pw.println("entry:");
                 for (int j=0;j<theMethodTypes.size();j++) {
                     final BytecodeMethodSignature theSignature = theMethodTypes.get(j);
@@ -1896,7 +1911,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.print("    %memory_");
                             pw.print(j);
                             pw.print(" = call i32 @dmbcMemoryManager_INTmallocINT(i32 undef,i32 ");
-                            pw.print(4 + theNumberOfSlots * 4);
+                            pw.print(8 + theNumberOfSlots * 4);
                             pw.println(")");
 
                             // First position is the instanceof function, which is undef here
@@ -1910,6 +1925,22 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.print(j);
                             pw.println("_0");
 
+                            pw.print("    %te_");
+                            pw.print(j);
+                            pw.print("_00_offset = add i32 4, %memory_");
+                            pw.println(j);
+                            pw.print("    %te_");
+                            pw.print(j);
+                            pw.print("_00");
+                            pw.print(" = inttoptr i32 %te_");
+                            pw.print(j);
+                            pw.println("_00_offset to i32*");
+                            pw.print("    store i32 %interfaceDispatch, i32* %te_");
+                            pw.print(j);
+                            pw.println("_00");
+
+                            // Secong position is interface dispatch
+
                             for (final BytecodeVTable.Slot sl : theSlots) {
                                 final BytecodeVTable.VPtr ptr = theTable.slot(sl);
                                 pw.println("    ;; slot " + sl.getPos() + ", " + ptr.getMethodName() + ", " + ptr.getSignature());
@@ -1920,7 +1951,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                 pw.print(" = add i32 %memory_");
                                 pw.print(j);
                                 pw.print(", ");
-                                pw.println(4 + sl.getPos() * 4);
+                                pw.println(8 + sl.getPos() * 4);
 
                                 pw.print("    %te_");
                                 pw.print(j);
@@ -2115,7 +2146,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.println("    %ptr_ptr = inttoptr i32 %ptr to i32*");
                         pw.println("    %ptr_loaded = load i32, i32* %ptr_ptr");
                         pw.print("    %vtable = add i32 %ptr_loaded, ");
-                        pw.print(4 + (sl.getPos() * 4));
+                        pw.print(8 + (sl.getPos() * 4));
                         pw.println("    %vtable_ptr = inttoptr i32 %vtable to i32*");
                         pw.println("    %resolved = load i32, i32* %vtable_ptr");
                         pw.print("    %resolved_ptr = inttoptr i32 %resolved to ");

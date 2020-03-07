@@ -30,6 +30,7 @@ import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVTable;
+import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.graph.EdgeType;
 import de.mirkosertic.bytecoder.graph.GraphDFSOrder;
@@ -343,6 +344,79 @@ public class LLVMWriter implements AutoCloseable {
 
         final Value value = e.incomingDataFlows().get(0);
 
+        if (e.isInterfaceInvocation()) {
+            // Interface invocation uses the dispatcher method instead of the virtual table lookuo
+
+            // Compute offset to dispatcher function
+            target.print("    %");
+            target.print(toTempSymbol(e, "ptr"));
+            target.print(" = ");
+            target.print("add i32 ");
+            write(value, true);
+            target.print(", 4");
+            target.println();
+
+            target.print("    %");
+            target.print(toTempSymbol(e, "vtableptr"));
+            target.print(" = inttoptr i32 %");
+            target.print(toTempSymbol(e, "ptr"));
+            target.println(" to i32*");
+
+            target.print("    %");
+            target.print(toTempSymbol(e, "vtableref"));
+            target.print(" = load i32, i32* %");
+            target.println(toTempSymbol(e, "vtableptr"));
+
+            target.print("    %");
+            target.print(toTempSymbol(e, "vtableref_offset"));
+            target.print(" = add i32 %");
+            target.print(toTempSymbol(e, "vtableref"));
+            target.println(", 4");
+
+            target.print("    %");
+            target.print(toTempSymbol(e, "vtableref_offset_ptr"));
+            target.print(" = inttoptr i32 %");
+            target.print(toTempSymbol(e, "vtableref_offset"));
+            target.println(" to i32*");
+
+            target.print("    %");
+            target.print(toTempSymbol(e, "dispatcher"));
+            target.print(" = load i32, i32* %");
+            target.println(toTempSymbol(e, "vtableref_offset_ptr"));
+
+            target.print("    %");
+            target.print(toTempSymbol(e, "vtable"));
+            target.print(" = inttoptr i32 %");
+            target.print(toTempSymbol(e, "dispatcher"));
+            target.println(" to i32(i32,i32)*");
+
+            // Resolve the index of the virtual identifier
+            target.print("    %");
+            target.print(toTempSymbol(e, "resolved"));
+            target.print(" = call i32(i32,i32) %");
+            target.print(toTempSymbol(e, "vtable"));
+            target.print("(i32 ");
+            write(value, true);
+            target.print(",");
+
+            final BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(e.getMethodName(), e.getSignature());
+
+            target.print("i32 ");
+            target.print(theMethodIdentifier.getIdentifier());
+            target.println(")");
+
+            // Invoke function
+            target.print("    %");
+            target.print(toTempSymbol(e, "resolved_ptr"));
+            target.print(" = inttoptr i32 %");
+            target.print(toTempSymbol(e, "resolved"));
+            target.print(" to ");
+            target.print(LLVMWriterUtils.toSignature(e.getSignature()));
+            target.println("*");
+
+            return;
+        }
+
         // Compute offset to vtable resolver function
         target.print("    %");
         target.print(toTempSymbol(e, "ptr"));
@@ -381,7 +455,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print(" = add i32 %");
         target.print(toTempSymbol(e, "vtableref"));
         target.print(", ");
-        target.println(4 + 4 * (slot.getPos()));
+        target.println(8 + 4 * (slot.getPos()));
 
         target.print("    %");
         target.print(toTempSymbol(e, "vtablefunptr"));
