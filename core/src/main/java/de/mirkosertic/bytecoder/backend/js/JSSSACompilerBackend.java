@@ -1144,7 +1144,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                         return;
                     }
 
-                    final BytecodeImportedLink theLink = theLinkedClass.linkfor(theMethod);
+                    final BytecodeImportedLink theLink = theLinkedClass.linkFor(theMethod);
 
                     theWriter.tab().text("C.");
 

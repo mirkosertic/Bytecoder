@@ -26,4 +26,8 @@ public abstract class TCallSite {
     public abstract MethodHandle getTarget();
 
     public abstract MethodType type();
+
+    public Object invokeExact(final Object... args) throws Throwable {
+        return null;
+    }
 }
