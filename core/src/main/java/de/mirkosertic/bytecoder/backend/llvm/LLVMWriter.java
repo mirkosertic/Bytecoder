@@ -344,7 +344,28 @@ public class LLVMWriter implements AutoCloseable {
 
         final Value value = e.incomingDataFlows().get(0);
 
-        if (e.isInterfaceInvocation()) {
+        final BytecodeVTable table;
+        if (e.getInvokedClass().isArray()) {
+            final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
+            target.println("    ;; vtable of " + theLinkedClass.getClassName().name());
+            table = symbolResolver.vtableFor(theLinkedClass);
+        } else {
+            final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) e.getInvokedClass());
+            target.println("    ;; vtable of " + theLinkedClass.getClassName().name());
+            table = symbolResolver.vtableFor(theLinkedClass);
+        }
+        BytecodeVTable.Slot slot;
+        boolean fallbackToInterfaceInvocation;
+        try {
+            slot = table.slotOf(e.getMethodName(), e.getSignature());
+            fallbackToInterfaceInvocation = false;
+        } catch (final IllegalArgumentException ex) {
+            // Fallback to interface invocation
+            fallbackToInterfaceInvocation = true;
+            slot = null;
+        }
+
+        if (e.isInterfaceInvocation() || fallbackToInterfaceInvocation) {
             // Interface invocation uses the dispatcher method instead of the virtual table lookuo
 
             // Compute offset to dispatcher function
@@ -438,17 +459,6 @@ public class LLVMWriter implements AutoCloseable {
         target.println(toTempSymbol(e, "vtableptr"));
 
         // Now we need to compute the offset in the table
-        final BytecodeVTable table;
-        if (e.getInvokedClass().isArray()) {
-            final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
-            target.println("    ;; vtable of " + theLinkedClass.getClassName().name());
-            table = symbolResolver.vtableFor(theLinkedClass);
-        } else {
-            final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) e.getInvokedClass());
-            target.println("    ;; vtable of " + theLinkedClass.getClassName().name());
-            table = symbolResolver.vtableFor(theLinkedClass);
-        }
-        final BytecodeVTable.Slot slot = table.slotOf(e.getMethodName(), e.getSignature());
         target.println("    ;; slot " + slot.getPos() + "," + e.getMethodName() + ", " + e.getSignature());
         target.print("    %");
         target.print(toTempSymbol(e, "vtable"));

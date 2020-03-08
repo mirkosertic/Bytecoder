@@ -1560,11 +1560,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                                 }
 
                                                 final BytecodeMethodSignature theInvocationSignature = theDynamicInvocationType.getSignature();
-
-                                                final BytecodeLinkedClass theImplclass = aLinkerContext.resolveClass(theImplementationOriginalClassName);
-                                                final BytecodeVTable theVTable = theSymbolResolver.vtableFor(theImplclass);
-                                                final BytecodeVTable.Slot theSlot = theVTable.slotOf(theImplementationOriginalMethodName, theInvocationSignature);
-
+                                                final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(theImplementationOriginalMethodName, theInvocationSignature);
                                                 final String theCalledFunction = LLVMWriterUtils.toSignature(theInvocationSignature);
 
                                                 pw.print("    %ptr = add ");
@@ -1573,11 +1569,13 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                                                 pw.println("    %ptr_ptr = inttoptr i32 %ptr to i32*");
                                                 pw.println("    %vtable = load i32, i32* %ptr_ptr");
-                                                pw.println("    %vtable_offset = add i32 %vtable, ");
-                                                pw.println(8 + (theSlot.getPos() * 4));
+                                                pw.println("    %vtable_offset = add i32 %vtable, 4");
                                                 pw.println("    %vtable_offset_ptr = inttoptr i32 %vtable_offset to i32*");
-                                                pw.println("    %resolved = load i32, i32* %vtable_offset_ptr");
-
+                                                pw.println("    %vtable_fun = load i32, i32* %vtable_offset_ptr");
+                                                pw.println("    %vtable_fun_ptr = inttoptr i32 %vtable_fun to i32(i32,i32)*");
+                                                pw.print("    %resolved = call i32(i32,i32) %vtable_fun_ptr(i32 %selfRef, i32 ");
+                                                pw.print(theMethodIdentifier.getIdentifier());
+                                                pw.println(")");
                                                 pw.print("    %resolved_ptr = inttoptr i32 %resolved to ");
                                                 pw.print(theCalledFunction);
                                                 pw.println("*");
