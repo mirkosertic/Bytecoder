@@ -29,6 +29,7 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeVTable;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.graph.EdgeType;
@@ -124,13 +125,14 @@ import java.util.stream.Collectors;
 
 public class LLVMWriter implements AutoCloseable {
 
-    public static final String VTABLEFUNCTIONSUFFIX = "__resolvevtableindex";
     public static final String INSTANCEOFSUFFIX = "__instanceof";
     public static final String RUNTIMECLASSSUFFIX = "__runtimeclass";
-    public static final int GENERATED_INSTANCEOF_METHOD_ID = -1;
     public static final String NEWINSTANCE_METHOD_NAME = "$newInstance";
     public static final String CLASSINITSUFFIX = "__init";
+    public static final String VTABLESUFFIX = "__vtable";
+    public static final String VTABLETYPESUFFIX = "__vtable__type";
     public static final String NEWINSTANCEHELPER = "newinstancehelper";
+    public static final String INTERFACEDISPATCHSUFFIX = "__interfacedispatch";
 
     interface SymbolResolver {
 
@@ -139,6 +141,8 @@ public class LLVMWriter implements AutoCloseable {
         String resolveCallsiteBootstrapFor(BytecodeClass owningClass, String callsiteId, Program program, RegionNode bootstrapMethod);
 
         String methodTypeFactoryNameFor(final BytecodeMethodSignature aSignature);
+
+        BytecodeVTable vtableFor(final BytecodeLinkedClass aClass);
     }
 
     private final PrintWriter target;
@@ -340,6 +344,100 @@ public class LLVMWriter implements AutoCloseable {
 
         final Value value = e.incomingDataFlows().get(0);
 
+        final BytecodeVTable table;
+        if (e.getInvokedClass().isArray()) {
+            final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
+            target.println("    ;; vtable of " + theLinkedClass.getClassName().name());
+            table = symbolResolver.vtableFor(theLinkedClass);
+        } else {
+            final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) e.getInvokedClass());
+            target.println("    ;; vtable of " + theLinkedClass.getClassName().name());
+            table = symbolResolver.vtableFor(theLinkedClass);
+        }
+        BytecodeVTable.Slot slot;
+        boolean fallbackToInterfaceInvocation;
+        try {
+            slot = table.slotOf(e.getMethodName(), e.getSignature());
+            fallbackToInterfaceInvocation = false;
+        } catch (final IllegalArgumentException ex) {
+            // Fallback to interface invocation
+            fallbackToInterfaceInvocation = true;
+            slot = null;
+        }
+
+        if (e.isInterfaceInvocation() || fallbackToInterfaceInvocation) {
+            // Interface invocation uses the dispatcher method instead of the virtual table lookuo
+
+            // Compute offset to dispatcher function
+            target.print("    %");
+            target.print(toTempSymbol(e, "ptr"));
+            target.print(" = ");
+            target.print("add i32 ");
+            write(value, true);
+            target.print(", 4");
+            target.println();
+
+            target.print("    %");
+            target.print(toTempSymbol(e, "vtableptr"));
+            target.print(" = inttoptr i32 %");
+            target.print(toTempSymbol(e, "ptr"));
+            target.println(" to i32*");
+
+            target.print("    %");
+            target.print(toTempSymbol(e, "vtableref"));
+            target.print(" = load i32, i32* %");
+            target.println(toTempSymbol(e, "vtableptr"));
+
+            target.print("    %");
+            target.print(toTempSymbol(e, "vtableref_offset"));
+            target.print(" = add i32 %");
+            target.print(toTempSymbol(e, "vtableref"));
+            target.println(", 4");
+
+            target.print("    %");
+            target.print(toTempSymbol(e, "vtableref_offset_ptr"));
+            target.print(" = inttoptr i32 %");
+            target.print(toTempSymbol(e, "vtableref_offset"));
+            target.println(" to i32*");
+
+            target.print("    %");
+            target.print(toTempSymbol(e, "dispatcher"));
+            target.print(" = load i32, i32* %");
+            target.println(toTempSymbol(e, "vtableref_offset_ptr"));
+
+            target.print("    %");
+            target.print(toTempSymbol(e, "vtable"));
+            target.print(" = inttoptr i32 %");
+            target.print(toTempSymbol(e, "dispatcher"));
+            target.println(" to i32(i32,i32)*");
+
+            // Resolve the index of the virtual identifier
+            target.print("    %");
+            target.print(toTempSymbol(e, "resolved"));
+            target.print(" = call i32(i32,i32) %");
+            target.print(toTempSymbol(e, "vtable"));
+            target.print("(i32 ");
+            write(value, true);
+            target.print(",");
+
+            final BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(e.getMethodName(), e.getSignature());
+
+            target.print("i32 ");
+            target.print(theMethodIdentifier.getIdentifier());
+            target.println(")");
+
+            // Invoke function
+            target.print("    %");
+            target.print(toTempSymbol(e, "resolved_ptr"));
+            target.print(" = inttoptr i32 %");
+            target.print(toTempSymbol(e, "resolved"));
+            target.print(" to ");
+            target.print(LLVMWriterUtils.toSignature(e.getSignature()));
+            target.println("*");
+
+            return;
+        }
+
         // Compute offset to vtable resolver function
         target.print("    %");
         target.print(toTempSymbol(e, "ptr"));
@@ -360,26 +458,25 @@ public class LLVMWriter implements AutoCloseable {
         target.print(" = load i32, i32* %");
         target.println(toTempSymbol(e, "vtableptr"));
 
+        // Now we need to compute the offset in the table
+        target.println("    ;; slot " + slot.getPos() + "," + e.getMethodName() + ", " + e.getSignature());
         target.print("    %");
         target.print(toTempSymbol(e, "vtable"));
-        target.print(" = inttoptr i32 %");
+        target.print(" = add i32 %");
         target.print(toTempSymbol(e, "vtableref"));
-        target.println(" to i32(i32,i32)*");
+        target.print(", ");
+        target.println(8 + 4 * (slot.getPos()));
 
-        // Resolve the index of the virtual identifier
+        target.print("    %");
+        target.print(toTempSymbol(e, "vtablefunptr"));
+        target.print(" = inttoptr i32 %");
+        target.print(toTempSymbol(e, "vtable"));
+        target.println(" to i32 *");
+
         target.print("    %");
         target.print(toTempSymbol(e, "resolved"));
-        target.print(" = call i32(i32,i32) %");
-        target.print(toTempSymbol(e, "vtable"));
-        target.print("(i32 ");
-        write(value, true);
-        target.print(",");
-
-        final BytecodeVirtualMethodIdentifier theMethodIdentifier = linkerContext.getMethodCollection().identifierFor(e.getMethodName(), e.getSignature());
-
-        target.print("i32 ");
-        target.print(theMethodIdentifier.getIdentifier());
-        target.println(")");
+        target.print("= load i32, i32* %");
+        target.println(toTempSymbol(e, "vtablefunptr"));
 
         // Invoke function
         target.print("    %");
@@ -422,10 +519,7 @@ public class LLVMWriter implements AutoCloseable {
         target.println();
         target.print("    %");
         target.print(toTempSymbol(e, "vtable"));
-        target.print(" = ptrtoint i32(i32,i32)* @");
-        target.print(theClassName);
-        target.print(VTABLEFUNCTIONSUFFIX);
-        target.println(" to i32");
+        target.println(" = ptrtoint %dmbcArray__vtable__type* @dmbcArray__vtable to i32");
     }
 
     private void tempify(final NewMultiArrayExpression e) {
@@ -441,10 +535,7 @@ public class LLVMWriter implements AutoCloseable {
 
         target.print("    %");
         target.print(toTempSymbol(e, "vtable"));
-        target.print(" = ptrtoint i32(i32,i32)* @");
-        target.print(theClassName);
-        target.print(VTABLEFUNCTIONSUFFIX);
-        target.println(" to i32");
+        target.println(" = ptrtoint %dmbcArray__vtable__type* @dmbcArray__vtable to i32");
     }
 
     private void tempify(final ArrayEntryExpression e) {
@@ -489,9 +580,12 @@ public class LLVMWriter implements AutoCloseable {
 
         target.print("    %");
         target.print(toTempSymbol(e, "vtable"));
-        target.print(" = ptrtoint i32(i32,i32)* @");
+        target.print(" = ptrtoint %");
         target.print(theClassName);
-        target.print(VTABLEFUNCTIONSUFFIX);
+        target.print(VTABLETYPESUFFIX);
+        target.print("* @");
+        target.print(theClassName);
+        target.print(VTABLESUFFIX);
         target.println(" to i32");
     }
 

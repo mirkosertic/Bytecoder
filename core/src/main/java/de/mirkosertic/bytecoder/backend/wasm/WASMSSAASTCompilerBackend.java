@@ -268,7 +268,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         opaqueReferenceMethods.add(new OpaqueReferenceMethod(theProvidingClass, t));
                     }
 
-                    final BytecodeImportedLink theLink = theProvidingClass.linkfor(t);
+                    final BytecodeImportedLink theLink = theProvidingClass.linkFor(t);
 
                     final String methodName = WASMWriterUtils.toMethodName(theProvidingClass.getClassName(), t.getName(), theSignature);
                     final ImportReference importReference = new ImportReference(theLink.getModuleName(), theLink.getLinkName());
@@ -1824,7 +1824,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             },");
             theWriter.println("         },");
 
-            final Map<String, List<OpaqueReferenceMethod>> theMethods = opaqueReferenceMethods.stream().collect(Collectors.groupingBy(opaqueReferenceMethod -> opaqueReferenceMethod.linkedClass.linkfor(opaqueReferenceMethod.getMethod()).getModuleName()));
+            final Map<String, List<OpaqueReferenceMethod>> theMethods = opaqueReferenceMethods.stream().collect(Collectors.groupingBy(opaqueReferenceMethod -> opaqueReferenceMethod.linkedClass.linkFor(opaqueReferenceMethod.getMethod()).getModuleName()));
             for (final Map.Entry<String, List<OpaqueReferenceMethod>> theEntry : theMethods.entrySet()) {
 
                 theWriter.print("         ");
@@ -1834,7 +1834,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 for (final OpaqueReferenceMethod theMethod : theEntry.getValue()) {
                     final BytecodeMethod theBytecdeMethod = theMethod.getMethod();
 
-                    final BytecodeImportedLink theImportedLink = theMethod.getLinkedClass().linkfor(theBytecdeMethod);
+                    final BytecodeImportedLink theImportedLink = theMethod.getLinkedClass().linkFor(theBytecdeMethod);
                     theWriter.print("             ");
                     theWriter.print(theImportedLink.getLinkName());
                     theWriter.print(": function(");

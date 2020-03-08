@@ -243,6 +243,32 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
         return theMap;
     }
 
+    public BytecodeVTable resolveVTable() {
+
+        final BytecodeLinkedClass theSuperclass = getSuperClass();
+        final BytecodeVTable theTable = theSuperclass != null ? theSuperclass.resolveVTable() : new BytecodeVTable();
+
+        for (final BytecodeLinkedClass theImplementedInterface : getImplementingTypes(false, false)) {
+            theImplementedInterface.outgoingEdges(BytecodeProvidesMethodEdgeType.filter()).forEach(c -> {
+                final BytecodeLinkedClass theClass = (BytecodeLinkedClass) c.sourceNode();
+                final BytecodeMethod theMethod = (BytecodeMethod) c.targetNode();
+                if (!theMethod.isClassInitializer() && !theMethod.isConstructor() && !theMethod.getAccessFlags().isStatic()) {
+                    theTable.register(theMethod, theClass);
+                }
+            });
+        }
+
+        outgoingEdges(BytecodeProvidesMethodEdgeType.filter()).forEach(c -> {
+            final BytecodeLinkedClass theClass = (BytecodeLinkedClass) c.sourceNode();
+            final BytecodeMethod theMethod = (BytecodeMethod) c.targetNode();
+            if (!theMethod.isClassInitializer() && !theMethod.isConstructor() && !theMethod.getAccessFlags().isStatic()) {
+                theTable.register(theMethod, theClass);
+            }
+        });
+
+        return theTable;
+    }
+
     public BytecodeResolvedMethods resolvedMethods() {
         final BytecodeLinkedClass theSuperclass = getSuperClass();
         final BytecodeResolvedMethods theMap = theSuperclass != null ? theSuperclass.resolvedMethods() : new BytecodeResolvedMethods();
@@ -314,7 +340,7 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
 
     public boolean resolveConstructorInvocation(final BytecodeMethodSignature aSignature) {
 
-        // Do we aready have a link?
+        // Do we already have a link?
         if (outgoingEdges(BytecodeProvidesMethodEdgeType.filter())
                 .map(t -> (BytecodeMethod) t.targetNode())
                 .anyMatch(t -> t.isConstructor() && t.getSignature().matchesExactlyTo(aSignature))) {
@@ -437,7 +463,7 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
         return aFullQualifiedClassName;
     }
 
-    public BytecodeImportedLink linkfor(final BytecodeMethod aMethod) {
+    public BytecodeImportedLink linkFor(final BytecodeMethod aMethod) {
         final BytecodeAnnotation theImportAnnotation = aMethod.getAttributes().getAnnotationByType(Import.class.getName());
         if (theImportAnnotation == null) {
             final String theClassName = simpleClassNameOf(className.name());
