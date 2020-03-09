@@ -706,6 +706,9 @@ public class LLVMWriter implements AutoCloseable {
 
     private void tempify(final FloorExpression e) {
         final Value value = e.incomingDataFlows().get(0);
+        if (value instanceof BinaryExpression)  {
+            tempify((BinaryExpression) value);
+        }
         target.print("    %");
         target.print(toTempSymbol(value, "exp"));
         target.print(" = ");
@@ -783,6 +786,31 @@ public class LLVMWriter implements AutoCloseable {
         target.println();
     }
 
+    private void tempify(final BinaryExpression e) {
+        if (e.getOperator() == BinaryExpression.Operator.DIV) {
+            final Value v1 = e.incomingDataFlows().get(0);
+            final Value v2 = e.incomingDataFlows().get(1);
+            switch (v1.resolveType().resolve()) {
+                case FLOAT:
+                case DOUBLE:
+                    return;
+                default:
+                    // We need a conversion
+                    target.print("    %");
+                    target.print(toTempSymbol(e, "v1"));
+                    target.print(" = sitofp i32 ");
+                    write(v1, true);
+                    target.println(" to float");
+
+                    target.print("    %");
+                    target.print(toTempSymbol(e, "v2"));
+                    target.print(" = sitofp i32 ");
+                    write(v2, true);
+                    target.println(" to float");
+            }
+        }
+    }
+
     private void tempifyValue(final Value v) {
         if (v instanceof ComputedMemoryLocationReadExpression) {
 
@@ -803,6 +831,10 @@ public class LLVMWriter implements AutoCloseable {
         } else if (v instanceof ArrayLengthExpression) {
 
             tempify((ArrayLengthExpression) v);
+
+        } else if (v instanceof BinaryExpression) {
+
+            tempify((BinaryExpression) v);
 
         } else if (v instanceof TypeOfExpression) {
 
@@ -2262,18 +2294,19 @@ public class LLVMWriter implements AutoCloseable {
     private void writeDivExpression(final BinaryExpression e) {
         final Value left = e.incomingDataFlows().get(0);
         final Value right = e.incomingDataFlows().get(1);
-        target.print("call float @div_");
-        target.print(LLVMWriterUtils.toType(left.resolveType()));
-        target.print(LLVMWriterUtils.toType(right.resolveType()));
-        target.print("(");
-        target.print(LLVMWriterUtils.toType(left.resolveType()));
-        target.print(" ");
-        writeResolved(left);
-        target.print(",");
-        target.print(LLVMWriterUtils.toType(right.resolveType()));
-        target.print(" ");
-        writeResolved(right);
-        target.print(")");
+        switch (left.resolveType().resolve()) {
+            case FLOAT:
+            case DOUBLE:
+                target.print("fdiv float ");
+                writeResolved(left);
+                target.print(", ");
+                writeResolved(right);
+                return;
+        }
+        target.print("fdiv float %");
+        target.print(toTempSymbol(e, "v1"));
+        target.print(", %" );
+        target.print(toTempSymbol(e, "v2"));
     }
 
     private void write(final IntegerValue aValue) {
