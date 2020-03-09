@@ -110,6 +110,7 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTFIELD;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionPUTSTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionRETURN;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionSIPUSH;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionSWAP;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionTABLESWITCH;
 import de.mirkosertic.bytecoder.core.BytecodeIntegerConstant;
 import de.mirkosertic.bytecoder.core.BytecodeInvokeDynamicConstant;
@@ -702,6 +703,12 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 final Value theValue1 = aHelper.pop();
                 final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theINS.getType()), new BinaryExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.toType(theINS.getType()), theValue1, BinaryExpression.Operator.ADD, theValue2));
                 aHelper.push(theINS.getOpcodeAddress(), theNewVariable);
+            } else if (theInstruction instanceof BytecodeInstructionSWAP) {
+                final BytecodeInstructionSWAP theINS = (BytecodeInstructionSWAP) theInstruction;
+                final Value theValue2 = aHelper.pop();
+                final Value theValue1 = aHelper.pop();
+                aHelper.push(theINS.getOpcodeAddress(), theValue1);
+                aHelper.push(theINS.getOpcodeAddress(), theValue2);
             } else if (theInstruction instanceof BytecodeInstructionGenericDIV) {
                 final BytecodeInstructionGenericDIV theINS = (BytecodeInstructionGenericDIV) theInstruction;
                 final Value theValue2 = aHelper.pop();
