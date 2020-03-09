@@ -31,7 +31,7 @@ Now, we have the compiled .class files. Now we can use the Bytecoder CLI to comp
 **Step 1: Download the CLI from Maven central**:
 
 ``` 
-wget http://central.maven.org/maven2/de/mirkosertic/bytecoder/bytecoder-cli/{{% siteparam "bytecoderversion" %}}/bytecoder-cli-{{% siteparam "bytecoderversion" %}}-executable.jar
+wget https://repo.maven.apache.org/maven2/de/mirkosertic/bytecoder/bytecoder-cli/{{% siteparam "bytecoderversion" %}}/bytecoder-cli-{{% siteparam "bytecoderversion" %}}-executable.jar
 ```
 
 **Step 2: Invoke the CLI and compile to JavaScript**:
