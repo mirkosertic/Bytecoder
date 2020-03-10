@@ -56,7 +56,7 @@ HTML file embedding the Bytecoder JavaScript and invoking it:
 
             console.log("Init");
             bytecoder.bootstrap();
-            bytecocer.initializeFileIO();
+            bytecoder.initializeFileIO();
 
             bytecoder.exports.main();
             console.log("Done");
