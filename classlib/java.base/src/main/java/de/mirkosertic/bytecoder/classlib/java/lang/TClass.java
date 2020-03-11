@@ -70,6 +70,14 @@ public class TClass {
         return false;
     }
 
+    public boolean isAnonymousClass() {
+        return false;
+    }
+
+    public boolean isLocalClass() {
+        return false;
+    }
+
     @EmulatedByRuntime
     public Object[] getEnumConstants() {
         return null;

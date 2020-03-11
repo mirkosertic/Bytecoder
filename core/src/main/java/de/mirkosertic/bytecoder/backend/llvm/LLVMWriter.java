@@ -650,7 +650,7 @@ public class LLVMWriter implements AutoCloseable {
         final Value object = e.incomingDataFlows().get(0);
 
         target.print("    %");
-        target.print(toTempSymbol(e, "exp"));
+        target.print(toTempSymbol(e, "offset"));
         target.print(" = add i32 ");
         write(object, true);
         target.print(",");
@@ -665,7 +665,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print("    %");
         target.print(toTempSymbol(e, "ptr"));
         target.print(" = inttoptr i32 %");
-        target.print(toTempSymbol(e, "exp"));
+        target.print(toTempSymbol(e, "offset"));
         target.print(" to ");
         target.print(LLVMWriterUtils.toType(TypeRef.toType(theField.getValue().getTypeRef())));
         target.println("*");
@@ -706,6 +706,9 @@ public class LLVMWriter implements AutoCloseable {
 
     private void tempify(final FloorExpression e) {
         final Value value = e.incomingDataFlows().get(0);
+        if (value instanceof BinaryExpression)  {
+            tempify((BinaryExpression) value);
+        }
         target.print("    %");
         target.print(toTempSymbol(value, "exp"));
         target.print(" = ");
@@ -741,11 +744,155 @@ public class LLVMWriter implements AutoCloseable {
 
     private void tempify(final IFExpression e) {
         final Value value = e.incomingDataFlows().get(0);
+        if (value instanceof FixedBinaryExpression) {
+            final Value v = value.incomingDataFlows().get(0);
+            if (v instanceof Expression) {
+                tempifyValue(v);
+                target.print("    ");
+                target.print("%");
+                target.print(toTempSymbol(v, "exp"));
+                target.print(" = ");
+                write(v, true);
+                target.println();
+            }
+        }
+        if (value instanceof BinaryExpression) {
+            final Value v1 = value.incomingDataFlows().get(0);
+            if (v1 instanceof Expression) {
+                tempifyValue(v1);
+                target.print("    ");
+                target.print("%");
+                target.print(toTempSymbol(v1, "exp"));
+                target.print(" = ");
+                write(v1, true);
+                target.println();
+            }
+            final Value v2 = value.incomingDataFlows().get(1);
+            if (v2 instanceof Expression) {
+                tempifyValue(v2);
+                target.print("    ");
+                target.print("%");
+                target.print(toTempSymbol(v2, "exp"));
+                target.print(" = ");
+                write(v2, true);
+                target.println();
+            }
+        }
+
         target.print("    %");
         target.print(toTempSymbol(value, "exp"));
         target.print(" = ");
         write(value, true);
         target.println();
+    }
+
+    private void tempify(final BinaryExpression e) {
+        if (e.getOperator() == BinaryExpression.Operator.DIV) {
+            final Value v1 = e.incomingDataFlows().get(0);
+            final Value v2 = e.incomingDataFlows().get(1);
+            switch (v1.resolveType().resolve()) {
+                case FLOAT:
+                case DOUBLE:
+                    return;
+                default:
+                    // We need a conversion
+                    target.print("    %");
+                    target.print(toTempSymbol(e, "v1"));
+                    target.print(" = sitofp i32 ");
+                    write(v1, true);
+                    target.println(" to float");
+
+                    target.print("    %");
+                    target.print(toTempSymbol(e, "v2"));
+                    target.print(" = sitofp i32 ");
+                    write(v2, true);
+                    target.println(" to float");
+            }
+        }
+    }
+
+    private void tempifyValue(final Value v) {
+        if (v instanceof ComputedMemoryLocationReadExpression) {
+
+            tempify((ComputedMemoryLocationReadExpression) v);
+
+        } else if (v instanceof ComputedMemoryLocationWriteExpression) {
+
+            tempify((ComputedMemoryLocationWriteExpression) v);
+
+        } else if (v instanceof GetFieldExpression) {
+
+            tempify((GetFieldExpression) v);
+
+        } else if (v instanceof EnumConstantsExpression) {
+
+            tempify((EnumConstantsExpression) v);
+
+        } else if (v instanceof ArrayLengthExpression) {
+
+            tempify((ArrayLengthExpression) v);
+
+        } else if (v instanceof BinaryExpression) {
+
+            tempify((BinaryExpression) v);
+
+        } else if (v instanceof TypeOfExpression) {
+
+            tempify((TypeOfExpression) v);
+
+        } else if (v instanceof NewObjectExpression) {
+
+            tempify((NewObjectExpression) v);
+
+        } else if (v instanceof NewArrayExpression) {
+
+            tempify((NewArrayExpression) v);
+
+        } else if (v instanceof NewMultiArrayExpression) {
+
+            tempify((NewMultiArrayExpression) v);
+
+        } else if (v instanceof ArrayEntryExpression) {
+
+            tempify((ArrayEntryExpression) v);
+
+        } else if (v instanceof InvokeVirtualMethodExpression) {
+
+            tempify((InvokeVirtualMethodExpression) v);
+
+        } else if (v instanceof InvokeStaticMethodExpression) {
+
+            tempify((InvokeStaticMethodExpression) v);
+
+        } else if (v instanceof MemorySizeExpression) {
+
+            tempify((MemorySizeExpression) v);
+
+        } else if (v instanceof GetStaticExpression) {
+
+            tempify((GetStaticExpression) v);
+
+        } else if (v instanceof FloorExpression) {
+
+            tempify((FloorExpression) v);
+
+        } else if (v instanceof DirectInvokeMethodExpression) {
+
+            // Nothing to be done here
+
+        } else if (v instanceof CompareExpression) {
+
+            // Nothing to be done here
+
+        } else if (v instanceof NewInstanceFromDefaultConstructorExpression) {
+
+            // Nothing to be done here
+
+        } else if (v instanceof NewObjectAndConstructExpression) {
+
+            // Nothing to be done here
+
+        }
     }
 
     private void tempify(final Expression e) {
@@ -759,83 +906,7 @@ public class LLVMWriter implements AutoCloseable {
             tempify((IFExpression) e);
         }
         for (final Value v : e.incomingDataFlows()) {
-            if (v instanceof ComputedMemoryLocationReadExpression) {
-
-                tempify((ComputedMemoryLocationReadExpression) v);
-
-            } else if (v instanceof ComputedMemoryLocationWriteExpression) {
-
-                tempify((ComputedMemoryLocationWriteExpression) v);
-
-            } else if (v instanceof GetFieldExpression) {
-
-                tempify((GetFieldExpression) v);
-
-            } else if (v instanceof EnumConstantsExpression) {
-
-                tempify((EnumConstantsExpression) v);
-
-            } else if (v instanceof ArrayLengthExpression) {
-
-                tempify((ArrayLengthExpression) v);
-
-            } else if (v instanceof TypeOfExpression) {
-
-                tempify((TypeOfExpression) v);
-
-            } else if (v instanceof NewObjectExpression) {
-
-                tempify((NewObjectExpression) v);
-
-            } else if (v instanceof NewArrayExpression) {
-
-                tempify((NewArrayExpression) v);
-
-            } else if (v instanceof NewMultiArrayExpression) {
-
-                tempify((NewMultiArrayExpression) v);
-
-            } else if (v instanceof ArrayEntryExpression) {
-
-                tempify((ArrayEntryExpression) v);
-
-            } else if (v instanceof InvokeVirtualMethodExpression) {
-
-                tempify((InvokeVirtualMethodExpression) v);
-
-            } else if (v instanceof InvokeStaticMethodExpression) {
-
-                tempify((InvokeStaticMethodExpression) v);
-
-            } else if (v instanceof MemorySizeExpression) {
-
-                tempify((MemorySizeExpression) v);
-
-            } else if (v instanceof GetStaticExpression) {
-
-                tempify((GetStaticExpression) v);
-
-            } else if (v instanceof FloorExpression) {
-
-                tempify((FloorExpression) v);
-
-            } else if (v instanceof DirectInvokeMethodExpression) {
-
-                // Nothing to be done here
-
-            } else if (v instanceof CompareExpression) {
-
-                // Nothing to be done here
-
-            } else if (v instanceof NewInstanceFromDefaultConstructorExpression) {
-
-                // Nothing to be done here
-
-            } else if (v instanceof NewObjectAndConstructExpression) {
-
-                // Nothing to be done here
-
-            }
+            tempifyValue(v);
         }
     }
 
@@ -1239,7 +1310,7 @@ public class LLVMWriter implements AutoCloseable {
         final Value value = expression.incomingDataFlows().get(1);
 
         target.print("    %");
-        target.print(toTempSymbol(expression, "exp"));
+        target.print(toTempSymbol(expression, "offset"));
         target.print(" = add i32 ");
         writeResolved(object);
         target.print(",");
@@ -1255,7 +1326,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print("    %");
         target.print(toTempSymbol(expression, "ptr"));
         target.print(" = inttoptr i32 %");
-        target.print(toTempSymbol(expression, "exp"));
+        target.print(toTempSymbol(expression, "offset"));
         target.print(" to ");
         target.print(LLVMWriterUtils.toType(TypeRef.toType(theField.getValue().getTypeRef())));
         target.println("*");
@@ -2080,10 +2151,10 @@ public class LLVMWriter implements AutoCloseable {
                 switch (theValue1.resolveType().resolve()) {
                     case FLOAT:
                     case DOUBLE:
-                        target.print("fadd");
+                        target.print("fadd float");
                         break;
                     default:
-                        target.print("add");
+                        target.print("add i32");
                         break;
                 }
                 break;
@@ -2091,10 +2162,10 @@ public class LLVMWriter implements AutoCloseable {
                 switch (theValue1.resolveType().resolve()) {
                     case FLOAT:
                     case DOUBLE:
-                        target.print("fsub");
+                        target.print("fsub float");
                         break;
                     default:
-                        target.print("sub");
+                        target.print("sub i32");
                         break;
                 }
                 break;
@@ -2102,10 +2173,10 @@ public class LLVMWriter implements AutoCloseable {
                 switch (theValue1.resolveType().resolve()) {
                     case FLOAT:
                     case DOUBLE:
-                        target.print("fmul");
+                        target.print("fmul float");
                         break;
                     default:
-                        target.print("mul");
+                        target.print("mul i32");
                         break;
                 }
                 break;
@@ -2113,48 +2184,96 @@ public class LLVMWriter implements AutoCloseable {
                 switch (theValue1.resolveType().resolve()) {
                     case FLOAT:
                     case DOUBLE:
-                        target.print("frem");
+                        target.print("frem float");
                         break;
                     default:
-                        target.print("srem");
+                        target.print("srem i32");
                         break;
                 }
                 break;
             case GREATERTHAN:
-                target.print("icmp sgt");
+                switch (theValue1.resolveType().resolve()) {
+                    case FLOAT:
+                    case DOUBLE:
+                        target.print("fcmp ogt float");
+                        break;
+                    default:
+                        target.print("icmp sgt i32");
+                        break;
+                }
                 break;
             case GREATEROREQUALS:
-                target.print("icmp sge");
+                switch (theValue1.resolveType().resolve()) {
+                    case FLOAT:
+                    case DOUBLE:
+                        target.print("fcmp oge float");
+                        break;
+                    default:
+                        target.print("icmp sge i32");
+                        break;
+                }
                 break;
             case LESSTHAN:
-                target.print("icmp slt");
+                switch (theValue1.resolveType().resolve()) {
+                    case FLOAT:
+                    case DOUBLE:
+                        target.print("fcmp olt float");
+                        break;
+                    default:
+                        target.print("icmp slt i32");
+                        break;
+                }
                 break;
             case LESSTHANOREQUALS:
-                target.print("icmp sle");
+                switch (theValue1.resolveType().resolve()) {
+                    case FLOAT:
+                    case DOUBLE:
+                        target.print("fcmp ole float");
+                        break;
+                    default:
+                        target.print("icmp sle i32");
+                        break;
+                }
                 break;
             case EQUALS:
-                target.print("icmp eq");
+                switch (theValue1.resolveType().resolve()) {
+                    case FLOAT:
+                    case DOUBLE:
+                        target.print("fcmp oeq float");
+                        break;
+                    default:
+                        target.print("icmp eq i32");
+                        break;
+                }
                 break;
             case NOTEQUALS:
-                target.print("icmp ne");
+                switch (theValue1.resolveType().resolve()) {
+                    case FLOAT:
+                    case DOUBLE:
+                        target.print("fcmp one float");
+                        break;
+                    default:
+                        target.print("icmp ne i32");
+                        break;
+                }
                 break;
             case BINARYSHIFTLEFT:
-                target.print("shl");
+                target.print("shl i32");
                 break;
             case BINARYSHIFTRIGHT:
-                target.print("ashr");
+                target.print("ashr i32");
                 break;
             case BINARYUNSIGNEDSHIFTRIGHT:
-                target.print("lshr");
+                target.print("lshr i32");
                 break;
             case BINARYOR:
-                target.print("or");
+                target.print("or i32");
                 break;
             case BINARYXOR:
-                target.print("xor");
+                target.print("xor i32");
                 break;
             case BINARYAND:
-                target.print("and");
+                target.print("and i32");
                 break;
             case DIV:
                 writeDivExpression(aValue);
@@ -2162,8 +2281,6 @@ public class LLVMWriter implements AutoCloseable {
             default:
                 throw new IllegalStateException("Not implemented : " + aValue.getOperator());
         }
-        target.print(" ");
-        target.print(LLVMWriterUtils.toType(aValue.resolveType()));
         target.print(" ");
         final List<Value> v = aValue.incomingDataFlows();
         for (int i=0;i<v.size();i++) {
@@ -2177,18 +2294,19 @@ public class LLVMWriter implements AutoCloseable {
     private void writeDivExpression(final BinaryExpression e) {
         final Value left = e.incomingDataFlows().get(0);
         final Value right = e.incomingDataFlows().get(1);
-        target.print("call float @div_");
-        target.print(LLVMWriterUtils.toType(left.resolveType()));
-        target.print(LLVMWriterUtils.toType(right.resolveType()));
-        target.print("(");
-        target.print(LLVMWriterUtils.toType(left.resolveType()));
-        target.print(" ");
-        writeResolved(left);
-        target.print(",");
-        target.print(LLVMWriterUtils.toType(right.resolveType()));
-        target.print(" ");
-        writeResolved(right);
-        target.print(")");
+        switch (left.resolveType().resolve()) {
+            case FLOAT:
+            case DOUBLE:
+                target.print("fdiv float ");
+                writeResolved(left);
+                target.print(", ");
+                writeResolved(right);
+                return;
+        }
+        target.print("fdiv float %");
+        target.print(toTempSymbol(e, "v1"));
+        target.print(", %" );
+        target.print(toTempSymbol(e, "v2"));
     }
 
     private void write(final IntegerValue aValue) {

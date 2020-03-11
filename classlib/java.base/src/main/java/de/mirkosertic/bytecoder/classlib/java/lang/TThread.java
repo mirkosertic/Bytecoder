@@ -143,4 +143,8 @@ public class TThread implements Runnable {
     public Thread.UncaughtExceptionHandler getUncaughtExceptionHandler() {
         return null;
     }
+
+    public StackTraceElement[] getStackTrace() {
+        return new StackTraceElement[0];
+    }
 }
