@@ -537,22 +537,6 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal float @div_floatfloat(float %a, float %b) inlinehint {");
-                pw.println("entry:");
-                pw.println("    %result = fdiv float %a, %b");
-                pw.println("    ret float %result");
-                pw.println("}");
-                pw.println();
-
-                pw.println("define internal float @div_i32i32(i32 %a, i32 %b) inlinehint {");
-                pw.println("entry:");
-                pw.println("    %temp1 = sitofp i32 %a to float");
-                pw.println("    %temp2 = sitofp i32 %b to float");
-                pw.println("    %result = fdiv float %temp1, %temp2");
-                pw.println("    ret float %result");
-                pw.println("}");
-                pw.println();
-
                 pw.println("define internal i32 @maximum(i32 %a, i32 %b) inlinehint {");
                 pw.println("entry:");
                 pw.println("   %test = icmp sgt i32 %a, %b");
