@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -91,12 +91,14 @@ class ObjectIdentifier implements Serializable
      * the 4th case, non-huge OID is still supportable in old versions, while
      * huge OID is not.
      */
+    @java.io.Serial
     private static final long serialVersionUID = 8697030238860181294L;
 
     /**
      * Changed to Object
      * @serial
      */
+    @SuppressWarnings("serial") // Not statically typed as Serializable
     private Object      components   = null;          // path from root
     /**
      * @serial
@@ -106,6 +108,7 @@ class ObjectIdentifier implements Serializable
     // Is the components field calculated?
     private transient boolean   componentsCalculated = false;
 
+    @java.io.Serial
     private void readObject(ObjectInputStream is)
             throws IOException, ClassNotFoundException {
         is.defaultReadObject();
@@ -119,6 +122,7 @@ class ObjectIdentifier implements Serializable
         }
     }
 
+    @java.io.Serial
     private void writeObject(ObjectOutputStream os)
             throws IOException {
         if (!componentsCalculated) {
@@ -135,6 +139,7 @@ class ObjectIdentifier implements Serializable
     }
 
     static class HugeOidNotSupportedByOldJDK implements Serializable {
+        @java.io.Serial
         private static final long serialVersionUID = 1L;
         static HugeOidNotSupportedByOldJDK theOne = new HugeOidNotSupportedByOldJDK();
     }

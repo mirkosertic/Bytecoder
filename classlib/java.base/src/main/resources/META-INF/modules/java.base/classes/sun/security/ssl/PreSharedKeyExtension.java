@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,8 +32,6 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Arrays;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.Collection;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
@@ -43,6 +41,9 @@ import sun.security.ssl.ClientHello.ClientHelloMessage;
 import sun.security.ssl.SSLExtension.ExtensionConsumer;
 import sun.security.ssl.SSLExtension.SSLExtensionSpec;
 import sun.security.ssl.SSLHandshake.HandshakeMessage;
+import sun.security.ssl.SessionTicketExtension.SessionTicketSpec;
+import sun.security.util.HexDumpEncoder;
+
 import static sun.security.ssl.SSLExtension.*;
 
 /**
@@ -89,7 +90,7 @@ final class PreSharedKeyExtension {
 
         @Override
         public String toString() {
-            return "{" + Utilities.toHexString(identity) + "," +
+            return "{" + Utilities.toHexString(identity) + ", " +
                 obfuscatedAge + "}";
         }
     }
@@ -209,8 +210,10 @@ final class PreSharedKeyExtension {
         public String toString() {
             MessageFormat messageFormat = new MessageFormat(
                 "\"PreSharedKey\": '{'\n" +
-                "  \"identities\"    : \"{0}\",\n" +
-                "  \"binders\"       : \"{1}\",\n" +
+                "  \"identities\": '{'\n" +
+                "{0}\n" +
+                "  '}'" +
+                "  \"binders\": \"{1}\",\n" +
                 "'}'",
                 Locale.ENGLISH);
 
@@ -223,9 +226,13 @@ final class PreSharedKeyExtension {
         }
 
         String identitiesString() {
+            HexDumpEncoder hexEncoder = new HexDumpEncoder();
+
             StringBuilder result = new StringBuilder();
             for (PskIdentity curId : identities) {
-                result.append(curId.toString() + "\n");
+                result.append("  {\n"+ Utilities.indent(
+                        hexEncoder.encode(curId.identity), "    ") +
+                        "\n  }\n");
             }
 
             return result.toString();
@@ -279,7 +286,7 @@ final class PreSharedKeyExtension {
             this.selectedIdentity = Record.getInt16(m);
         }
 
-        byte[] getEncoded() throws IOException {
+        byte[] getEncoded() {
             return new byte[] {
                 (byte)((selectedIdentity >> 8) & 0xFF),
                 (byte)(selectedIdentity & 0xFF)
@@ -369,8 +376,36 @@ final class PreSharedKeyExtension {
                 SSLSessionContextImpl sessionCache = (SSLSessionContextImpl)
                         shc.sslContext.engineGetServerSessionContext();
                 int idIndex = 0;
+                SSLSessionImpl s = null;
+
                 for (PskIdentity requestedId : pskSpec.identities) {
-                    SSLSessionImpl s = sessionCache.get(requestedId.identity);
+                    // If we are keeping state, see if the identity is in the cache
+                    if (requestedId.identity.length == SessionId.MAX_LENGTH) {
+                        s = sessionCache.get(requestedId.identity);
+                    }
+                    // See if the identity is a stateless ticket
+                    if (s == null &&
+                            requestedId.identity.length > SessionId.MAX_LENGTH &&
+                            sessionCache.statelessEnabled()) {
+                        ByteBuffer b =
+                                new SessionTicketSpec(requestedId.identity).
+                                        decrypt(shc);
+                        if (b != null) {
+                            try {
+                                s = new SSLSessionImpl(shc, b);
+                            } catch (IOException | RuntimeException e) {
+                                s = null;
+                            }
+                        }
+                        if (b == null || s == null) {
+                            if (SSLLogger.isOn &&
+                                    SSLLogger.isOn("ssl,handshake")) {
+                                SSLLogger.fine(
+                                        "Stateless session ticket invalid");
+                            }
+                        }
+                    }
+
                     if (s != null && canRejoin(clientHello, shc, s)) {
                         if (SSLLogger.isOn && SSLLogger.isOn("ssl,handshake")) {
                             SSLLogger.fine("Resuming session: ", s);
@@ -392,7 +427,6 @@ final class PreSharedKeyExtension {
                     shc.resumingSession = null;
                 }
             }
-
             // update the context
             shc.handshakeExtensions.put(
                 SSLExtension.CH_PRE_SHARED_KEY, pskSpec);
@@ -402,7 +436,7 @@ final class PreSharedKeyExtension {
     private static boolean canRejoin(ClientHelloMessage clientHello,
         ServerHandshakeContext shc, SSLSessionImpl s) {
 
-        boolean result = s.isRejoinable() && s.getPreSharedKey().isPresent();
+        boolean result = s.isRejoinable() && (s.getPreSharedKey() != null);
 
         // Check protocol version
         if (result && s.getProtocolVersion() != shc.negotiatedProtocol) {
@@ -458,7 +492,7 @@ final class PreSharedKeyExtension {
         String identityAlg = shc.sslConfig.identificationProtocol;
         if (result && identityAlg != null) {
             String sessionIdentityAlg = s.getIdentificationProtocol();
-            if (!Objects.equals(identityAlg, sessionIdentityAlg)) {
+            if (!identityAlg.equalsIgnoreCase(sessionIdentityAlg)) {
                 if (SSLLogger.isOn &&
                     SSLLogger.isOn("ssl,handshake,verbose")) {
 
@@ -530,12 +564,11 @@ final class PreSharedKeyExtension {
     private static void checkBinder(ServerHandshakeContext shc,
             SSLSessionImpl session,
             HandshakeHash pskBinderHash, byte[] binder) throws IOException {
-        Optional<SecretKey> pskOpt = session.getPreSharedKey();
-        if (!pskOpt.isPresent()) {
+        SecretKey psk = session.getPreSharedKey();
+        if (psk == null) {
             throw shc.conContext.fatal(Alert.INTERNAL_ERROR,
                     "Session has no PSK");
         }
-        SecretKey psk = pskOpt.get();
 
         SecretKey binderKey = deriveBinderKey(shc, psk, session);
         byte[] computedBinder =
@@ -647,27 +680,28 @@ final class PreSharedKeyExtension {
             }
 
             // The session must have a pre-shared key
-            Optional<SecretKey> pskOpt = chc.resumingSession.getPreSharedKey();
-            if (!pskOpt.isPresent()) {
+            SecretKey psk = chc.resumingSession.getPreSharedKey();
+            if (psk == null) {
                 if (SSLLogger.isOn && SSLLogger.isOn("ssl,handshake")) {
                     SSLLogger.fine("Existing session has no PSK.");
                 }
                 return null;
             }
-            SecretKey psk = pskOpt.get();
+
             // The PSK ID can only be used in one connections, but this method
             // may be called twice in a connection if the server sends HRR.
             // ID is saved in the context so it can be used in the second call.
-            Optional<byte[]> pskIdOpt = Optional.ofNullable(chc.pskIdentity)
-                .or(chc.resumingSession::consumePskIdentity);
-            if (!pskIdOpt.isPresent()) {
+            if (chc.pskIdentity == null) {
+                chc.pskIdentity = chc.resumingSession.consumePskIdentity();
+            }
+
+            if (chc.pskIdentity == null) {
                 if (SSLLogger.isOn && SSLLogger.isOn("ssl,handshake")) {
                     SSLLogger.fine(
                         "PSK has no identity, or identity was already used");
                 }
                 return null;
             }
-            chc.pskIdentity = pskIdOpt.get();
 
             //The session cannot be used again. Remove it from the cache.
             SSLSessionContextImpl sessionCache = (SSLSessionContextImpl)
@@ -709,7 +743,8 @@ final class PreSharedKeyExtension {
                 int hashLength, List<PskIdentity> identities) {
             List<byte[]> binders = new ArrayList<>();
             byte[] binderProto = new byte[hashLength];
-            for (PskIdentity curId : identities) {
+            int i = identities.size();
+            while (i-- > 0) {
                 binders.add(binderProto);
             }
 
@@ -765,7 +800,7 @@ final class PreSharedKeyExtension {
             String hmacAlg =
                 "Hmac" + hashAlg.name.replace("-", "");
             try {
-                Mac hmac = JsseJce.getMac(hmacAlg);
+                Mac hmac = Mac.getInstance(hmacAlg);
                 hmac.init(finishedKey);
                 return hmac.doFinal(digest);
             } catch (NoSuchAlgorithmException | InvalidKeyException ex) {

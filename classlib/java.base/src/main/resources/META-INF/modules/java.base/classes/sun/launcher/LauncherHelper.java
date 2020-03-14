@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2007, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2007, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -821,7 +821,7 @@ public final class LauncherHelper {
         } catch (Throwable e) {
             if (mainClass.getModule().isNamed()) {
                 abort(e, "java.launcher.module.error5",
-                      mainClass.getName(), mainClass.getModule(),
+                      mainClass.getName(), mainClass.getModule().getName(),
                       e.getClass().getName(), e.getLocalizedMessage());
             } else {
                 abort(e, "java.launcher.cls.error7", mainClass.getName(),

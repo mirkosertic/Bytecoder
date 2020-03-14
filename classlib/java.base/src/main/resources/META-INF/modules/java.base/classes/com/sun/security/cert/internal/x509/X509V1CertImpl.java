@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -51,8 +51,10 @@ import java.util.Vector;
  *
  * @author Jeff Nisewanger
  */
-@Deprecated
+@SuppressWarnings("removal")
+@Deprecated(since="9", forRemoval=true)
 public class X509V1CertImpl extends X509Certificate implements Serializable {
+    @java.io.Serial
     static final long serialVersionUID = -2048442350420423405L;
     private java.security.cert.X509Certificate wrappedCert;
 
@@ -306,6 +308,7 @@ public class X509V1CertImpl extends X509Certificate implements Serializable {
         return wrappedCert.getSigAlgParams();
     }
 
+    @java.io.Serial
     private synchronized void writeObject(ObjectOutputStream stream)
         throws IOException {
         try {
@@ -315,6 +318,7 @@ public class X509V1CertImpl extends X509Certificate implements Serializable {
         }
     }
 
+    @java.io.Serial
     private synchronized void readObject(ObjectInputStream stream)
         throws IOException {
         try {

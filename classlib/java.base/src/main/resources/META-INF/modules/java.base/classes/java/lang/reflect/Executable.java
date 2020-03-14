@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -111,16 +111,13 @@ public abstract class Executable extends AccessibleObject
 
             printModifiersIfNonzero(sb, modifierMask, isDefault);
             specificToStringHeader(sb);
-            sb.append('(');
-
-            sb.append(Stream.of(parameterTypes).map(Type::getTypeName).
-                      collect(Collectors.joining(",")));
-
-            sb.append(')');
-
+            sb.append(Arrays.stream(parameterTypes)
+                      .map(Type::getTypeName)
+                      .collect(Collectors.joining(",", "(", ")")));
             if (exceptionTypes.length > 0) {
-                sb.append(Stream.of(exceptionTypes).map(Type::getTypeName).
-                          collect(Collectors.joining(",", " throws ", "")));
+                sb.append(Arrays.stream(exceptionTypes)
+                          .map(Type::getTypeName)
+                          .collect(Collectors.joining(",", " throws ", "")));
             }
             return sb.toString();
         } catch (Exception e) {
@@ -140,8 +137,9 @@ public abstract class Executable extends AccessibleObject
             return typeVar.getName();
         } else {
             return typeVar.getName() + " extends " +
-                Stream.of(bounds).map(Type::getTypeName).
-                collect(Collectors.joining(" & "));
+                Arrays.stream(bounds)
+                .map(Type::getTypeName)
+                .collect(Collectors.joining(" & "));
         }
     }
 
@@ -153,8 +151,9 @@ public abstract class Executable extends AccessibleObject
 
             TypeVariable<?>[] typeparms = getTypeParameters();
             if (typeparms.length > 0) {
-                sb.append(Stream.of(typeparms).map(Executable::typeVarBounds).
-                          collect(Collectors.joining(",", "<", "> ")));
+                sb.append(Arrays.stream(typeparms)
+                          .map(Executable::typeVarBounds)
+                          .collect(Collectors.joining(",", "<", "> ")));
             }
 
             specificToGenericStringHeader(sb);
@@ -173,8 +172,9 @@ public abstract class Executable extends AccessibleObject
 
             Type[] exceptionTypes = getGenericExceptionTypes();
             if (exceptionTypes.length > 0) {
-                sb.append(Stream.of(exceptionTypes).map(Type::getTypeName).
-                          collect(Collectors.joining(",", " throws ", "")));
+                sb.append(Arrays.stream(exceptionTypes)
+                          .map(Type::getTypeName)
+                          .collect(Collectors.joining(",", " throws ", "")));
             }
             return sb.toString();
         } catch (Exception e) {
@@ -234,6 +234,9 @@ public abstract class Executable extends AccessibleObject
      * parameter types, in declaration order, of the executable
      * represented by this object.  Returns an array of length
      * 0 if the underlying executable takes no parameters.
+     * Note that the constructors of some inner classes
+     * may have an implicitly declared parameter in addition to
+     * explicitly declared ones.
      *
      * @return the parameter types for the executable this object
      * represents
@@ -257,10 +260,13 @@ public abstract class Executable extends AccessibleObject
      * parameter types, in declaration order, of the executable represented by
      * this object. Returns an array of length 0 if the
      * underlying executable takes no parameters.
+     * Note that the constructors of some inner classes
+     * may have an implicitly declared parameter in addition to
+     * explicitly declared ones.
      *
      * <p>If a formal parameter type is a parameterized type,
      * the {@code Type} object returned for it must accurately reflect
-     * the actual type parameters used in the source code.
+     * the actual type arguments used in the source code.
      *
      * <p>If a formal parameter type is a type variable or a parameterized
      * type, it is created. Otherwise, it is resolved.
@@ -673,6 +679,10 @@ public abstract class Executable extends AccessibleObject
      * @return an object representing the receiver type of the method or
      * constructor represented by this {@code Executable} or {@code null} if
      * this {@code Executable} can not have a receiver parameter
+     *
+     * @jls 8.4 Method Declarations
+     * @jls 8.4.1 Formal Parameters
+     * @jls 8.8 Constructor Declarations
      */
     public AnnotatedType getAnnotatedReceiverType() {
         if (Modifier.isStatic(this.getModifiers()))
@@ -695,6 +705,9 @@ public abstract class Executable extends AccessibleObject
      *
      * Returns an array of length 0 if the method/constructor declares no
      * parameters.
+     * Note that the constructors of some inner classes
+     * may have an implicitly declared parameter in addition to
+     * explicitly declared ones.
      *
      * @return an array of objects representing the types of the
      * formal parameters of the method or constructor represented by this

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -42,7 +42,6 @@ import javax.net.ssl.SSLHandshakeException;
 import sun.security.ssl.DHKeyExchange.DHECredentials;
 import sun.security.ssl.DHKeyExchange.DHEPossession;
 import sun.security.ssl.SSLHandshake.HandshakeMessage;
-import sun.security.ssl.SupportedGroupsExtension.NamedGroup;
 import sun.security.util.HexDumpEncoder;
 
 /**
@@ -280,7 +279,7 @@ final class DHClientKeyExchange {
                 DHPublicKeySpec spec = new DHPublicKeySpec(
                         new BigInteger(1, ckem.y),
                         params.getP(), params.getG());
-                KeyFactory kf = JsseJce.getKeyFactory("DiffieHellman");
+                KeyFactory kf = KeyFactory.getInstance("DiffieHellman");
                 DHPublicKey peerPublicKey =
                         (DHPublicKey)kf.generatePublic(spec);
 
