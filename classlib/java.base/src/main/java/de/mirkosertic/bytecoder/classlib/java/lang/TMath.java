@@ -177,6 +177,10 @@ public class TMath {
         return r;
     }
 
+    public static int multiplyExact(final int a, final int b) {
+        return a * b;
+    }
+
     public static native double pow(double a, double b);
 
     public static int round(final float value) {
