@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -108,7 +108,7 @@ import jdk.internal.reflect.Reflection;
  * <em>named modules</em>.  Instead those packages are automatically defined
  * and have no specification and implementation versioning information.
  *
- * @jvms 5.3 Run-time package
+ * @jvms 5.3 Creation and Loading
  * @see <a href="{@docRoot}/../specs/jar/jar.html#package-sealing">
  * The JAR File Specification: Package Sealing</a>
  * @see ClassLoader#definePackage(String, String, String, String, String, String, String, URL)
@@ -233,7 +233,7 @@ public class Package extends NamedPackage implements java.lang.reflect.Annotated
      * Returns true if this package is sealed with respect to the specified
      * code source {@code url}.
      *
-     * @param url the code source URL
+     * @param  url the code source URL
      * @return true if this package is sealed with respect to the given {@code url}
      */
     public boolean isSealed(URL url) {
@@ -267,12 +267,12 @@ public class Package extends NamedPackage implements java.lang.reflect.Annotated
      * If the values are equal the period is skipped and the next pair of
      * components is compared.
      *
-     * @param desired the version string of the desired version.
+     * @param  desired the version string of the desired version.
      * @return true if this package's version number is greater
-     *          than or equal to the desired version number
+     *         than or equal to the desired version number
      *
-     * @exception NumberFormatException if the current version is not known or
-     *          the desired or current version is not of the correct dotted form.
+     * @throws NumberFormatException if the current version is not known or
+     *         the desired or current version is not of the correct dotted form.
      */
     public boolean isCompatibleWith(String desired)
         throws NumberFormatException

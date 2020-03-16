@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -242,6 +242,9 @@ public final class TimeZoneNames extends TimeZoneNamesBundle {
         String TMT[] = new String[] {"Turkmenistan Time", "TMT",
                                      "Turkmenistan Summer Time", "TMST",
                                      "Turkmenistan Time", "TMT"};
+        String TRT[] = new String[] {"Turkey Time", "TRT",
+                                     "Turkey Summer Time", "TRST",
+                                     "Turkey Time", "TRT"};
         String ULAT[]= new String[] {"Ulaanbaatar Time", "ULAT",
                                      "Ulaanbaatar Summer Time", "ULAST",
                                      "Ulaanbaatar Time", "ULAT"};
@@ -370,7 +373,7 @@ public final class TimeZoneNames extends TimeZoneNamesBundle {
             {"Africa/Nouakchott", GMT},
             {"Africa/Ouagadougou", GMT},
             {"Africa/Porto-Novo", WAT},
-            {"Africa/Sao_Tome", WAT},
+            {"Africa/Sao_Tome", GMT},
             {"Africa/Timbuktu", GMT},
             {"Africa/Tripoli", EET},
             {"Africa/Tunis", CET},
@@ -647,7 +650,7 @@ public final class TimeZoneNames extends TimeZoneNamesBundle {
                                         "Hovd Summer Time", "HOVST",
                                         "Hovd Time", "HOVT"}},
             {"Asia/Irkutsk", IRKT},
-            {"Asia/Istanbul", EET},
+            {"Asia/Istanbul", TRT},
             {"Asia/Jakarta", WIT},
             {"Asia/Jayapura", new String[] {"East Indonesia Time", "WIT",
                                             "East Indonesia Summer Time", "EIST",
@@ -691,6 +694,9 @@ public final class TimeZoneNames extends TimeZoneNamesBundle {
             {"Asia/Pontianak", WIT},
             {"Asia/Pyongyang", KST},
             {"Asia/Qatar", ARAST},
+            {"Asia/Qostanay", new String[] {"Kostanay Standard Time", "QOST",
+                                            "Kostanay Summer Time", "QOSST",
+                                            "Kostanay Time", "QOST"}},
             {"Asia/Qyzylorda", new String[] {"Qyzylorda Time", "QYZT",
                                              "Qyzylorda Summer Time", "QYZST",
                                              "Qyzylorda Time", "QYZT"}},
@@ -830,7 +836,7 @@ public final class TimeZoneNames extends TimeZoneNamesBundle {
             {"Europe/Guernsey", GMTBST},
             {"Europe/Helsinki", EET},
             {"Europe/Isle_of_Man", GMTBST},
-            {"Europe/Istanbul", EET},
+            {"Europe/Istanbul", TRT},
             {"Europe/Jersey", GMTBST},
             {"Europe/Kaliningrad", EET},
             {"Europe/Kiev", EET},
@@ -1041,7 +1047,7 @@ public final class TimeZoneNames extends TimeZoneNamesBundle {
             {"SystemV/PST8PDT", PST},
             {"SystemV/YST9", AKST},
             {"SystemV/YST9YDT", AKST},
-            {"Turkey", EET},
+            {"Turkey", TRT},
             {"UCT", UTC},
             {"Universal", UTC},
             {"US/Alaska", AKST},

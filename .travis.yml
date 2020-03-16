@@ -49,6 +49,8 @@ jobs:
       name: "JS Target OpenJDK 12"
     - script: mkdir /home/travis/openjdk13 && ~/install-jdk.sh -W /home/travis/openjdk13 -F 13 -L GPL && mvn -B -pl '!:bytecoder-integrationtest' clean test -P jstestsonly
       name: "JS Target OpenJDK 13"
+    - script: mkdir /home/travis/openjdk14 && ~/install-jdk.sh -W /home/travis/openjdk14 -F 14 -L GPL && mvn -B -pl '!:bytecoder-integrationtest' clean test -P jstestsonly
+      name: "JS Target OpenJDK 14"
     - script: mvn -B -pl '!:bytecoder-integrationtest' clean test -P wasmtestsonly_reloop
       name: "WASM Target Reloop OpenJDK 8"
     - script: mkdir /home/travis/openjdk11 && ~/install-jdk.sh -W /home/travis/openjdk11 -F 11 -L GPL && mvn -B -pl '!:bytecoder-integrationtest' clean test -P wasmtestsonly_reloop
@@ -67,6 +69,8 @@ jobs:
       name: "WASM Target Stackify OpenJDK 13"
     - script: mvn -B -pl '!:bytecoder-integrationtest' clean test -P wasmllvmtestsonly
       name: "LLVM WASM Target OpenJDK 8"
+    - script: mkdir /home/travis/openjdk14 && ~/install-jdk.sh -W /home/travis/openjdk14 -F 14 -L GPL && mvn -B -pl '!:bytecoder-integrationtest' clean test -P wasmllvmtestsonly
+      name: "LLVM WASM Target OpenJDK 14"
     - stage: "Deploy to Maven Central"
       script: skip
       deploy:

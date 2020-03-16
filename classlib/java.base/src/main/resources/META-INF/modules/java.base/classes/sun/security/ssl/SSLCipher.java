@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,6 +31,7 @@ import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivilegedAction;
 import java.security.SecureRandom;
 import java.security.Security;
@@ -42,6 +43,7 @@ import java.util.Map;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.ShortBufferException;
 import javax.crypto.spec.GCMParameterSpec;
@@ -491,14 +493,29 @@ enum SSLCipher {
 
         // availability of this bulk cipher
         //
-        // We assume all supported ciphers are always available since they are
-        // shipped with the SunJCE  provider.  However, AES/256 is unavailable
-        // when the default JCE policy jurisdiction files are installed because
-        // of key length restrictions.
-        this.isAvailable = allowed && isUnlimited(keySize, transformation);
+        // AES/256 is unavailable when the default JCE policy jurisdiction files
+        // are installed because of key length restrictions.
+        this.isAvailable = allowed && isUnlimited(keySize, transformation) &&
+                isTransformationAvailable(transformation);
 
         this.readCipherGenerators = readCipherGenerators;
         this.writeCipherGenerators = writeCipherGenerators;
+    }
+
+    private static boolean isTransformationAvailable(String transformation) {
+        if (transformation.equals("NULL")) {
+            return true;
+        }
+        try {
+            Cipher.getInstance(transformation);
+            return true;
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+            if (SSLLogger.isOn && SSLLogger.isOn("ssl")) {
+                SSLLogger.fine("Transformation " + transformation + " is" +
+                        " not available.");
+            }
+        }
+        return false;
     }
 
     SSLReadCipher createReadCipher(Authenticator authenticator,
@@ -851,7 +868,7 @@ enum SSLCipher {
                     Key key, AlgorithmParameterSpec params,
                     SecureRandom random) throws GeneralSecurityException {
                 super(authenticator, protocolVersion);
-                this.cipher = JsseJce.getCipher(algorithm);
+                this.cipher = Cipher.getInstance(algorithm);
                 cipher.init(Cipher.DECRYPT_MODE, key, params, random);
             }
 
@@ -933,7 +950,7 @@ enum SSLCipher {
                     Key key, AlgorithmParameterSpec params,
                     SecureRandom random) throws GeneralSecurityException {
                 super(authenticator, protocolVersion);
-                this.cipher = JsseJce.getCipher(algorithm);
+                this.cipher = Cipher.getInstance(algorithm);
                 cipher.init(Cipher.ENCRYPT_MODE, key, params, random);
             }
 
@@ -1023,7 +1040,7 @@ enum SSLCipher {
                     Key key, AlgorithmParameterSpec params,
                     SecureRandom random) throws GeneralSecurityException {
                 super(authenticator, protocolVersion);
-                this.cipher = JsseJce.getCipher(algorithm);
+                this.cipher = Cipher.getInstance(algorithm);
                 cipher.init(Cipher.DECRYPT_MODE, key, params, random);
             }
 
@@ -1175,7 +1192,7 @@ enum SSLCipher {
                     Key key, AlgorithmParameterSpec params,
                     SecureRandom random) throws GeneralSecurityException {
                 super(authenticator, protocolVersion);
-                this.cipher = JsseJce.getCipher(algorithm);
+                this.cipher = Cipher.getInstance(algorithm);
                 cipher.init(Cipher.ENCRYPT_MODE, key, params, random);
             }
 
@@ -1291,7 +1308,7 @@ enum SSLCipher {
                     Key key, AlgorithmParameterSpec params,
                     SecureRandom random) throws GeneralSecurityException {
                 super(authenticator, protocolVersion);
-                this.cipher = JsseJce.getCipher(algorithm);
+                this.cipher = Cipher.getInstance(algorithm);
                 if (params == null) {
                     params = new IvParameterSpec(new byte[sslCipher.ivSize]);
                 }
@@ -1455,7 +1472,7 @@ enum SSLCipher {
                     Key key, AlgorithmParameterSpec params,
                     SecureRandom random) throws GeneralSecurityException {
                 super(authenticator, protocolVersion);
-                this.cipher = JsseJce.getCipher(algorithm);
+                this.cipher = Cipher.getInstance(algorithm);
                 this.random = random;
                 if (params == null) {
                     params = new IvParameterSpec(new byte[sslCipher.ivSize]);
@@ -1590,7 +1607,7 @@ enum SSLCipher {
                     Key key, AlgorithmParameterSpec params,
                     SecureRandom random) throws GeneralSecurityException {
                 super(authenticator, protocolVersion);
-                this.cipher = JsseJce.getCipher(algorithm);
+                this.cipher = Cipher.getInstance(algorithm);
                 this.tagSize = sslCipher.tagSize;
                 this.key = key;
                 this.fixedIv = ((IvParameterSpec)params).getIV();
@@ -1705,7 +1722,7 @@ enum SSLCipher {
                     Key key, AlgorithmParameterSpec params,
                     SecureRandom random) throws GeneralSecurityException {
                 super(authenticator, protocolVersion);
-                this.cipher = JsseJce.getCipher(algorithm);
+                this.cipher = Cipher.getInstance(algorithm);
                 this.tagSize = sslCipher.tagSize;
                 this.key = key;
                 this.fixedIv = ((IvParameterSpec)params).getIV();
@@ -1838,7 +1855,7 @@ enum SSLCipher {
                     Key key, AlgorithmParameterSpec params,
                     SecureRandom random) throws GeneralSecurityException {
                 super(authenticator, protocolVersion);
-                this.cipher = JsseJce.getCipher(algorithm);
+                this.cipher = Cipher.getInstance(algorithm);
                 this.tagSize = sslCipher.tagSize;
                 this.key = key;
                 this.iv = ((IvParameterSpec)params).getIV();
@@ -1992,7 +2009,7 @@ enum SSLCipher {
                     Key key, AlgorithmParameterSpec params,
                     SecureRandom random) throws GeneralSecurityException {
                 super(authenticator, protocolVersion);
-                this.cipher = JsseJce.getCipher(algorithm);
+                this.cipher = Cipher.getInstance(algorithm);
                 this.tagSize = sslCipher.tagSize;
                 this.key = key;
                 this.iv = ((IvParameterSpec)params).getIV();
@@ -2133,7 +2150,7 @@ enum SSLCipher {
                     Key key, AlgorithmParameterSpec params,
                     SecureRandom random) throws GeneralSecurityException {
                 super(authenticator, protocolVersion);
-                this.cipher = JsseJce.getCipher(algorithm);
+                this.cipher = Cipher.getInstance(algorithm);
                 this.tagSize = sslCipher.tagSize;
                 this.key = key;
                 this.iv = ((IvParameterSpec)params).getIV();
@@ -2252,7 +2269,7 @@ enum SSLCipher {
                     Key key, AlgorithmParameterSpec params,
                     SecureRandom random) throws GeneralSecurityException {
                 super(authenticator, protocolVersion);
-                this.cipher = JsseJce.getCipher(algorithm);
+                this.cipher = Cipher.getInstance(algorithm);
                 this.tagSize = sslCipher.tagSize;
                 this.key = key;
                 this.iv = ((IvParameterSpec)params).getIV();
@@ -2392,7 +2409,7 @@ enum SSLCipher {
                     Key key, AlgorithmParameterSpec params,
                     SecureRandom random) throws GeneralSecurityException {
                 super(authenticator, protocolVersion);
-                this.cipher = JsseJce.getCipher(algorithm);
+                this.cipher = Cipher.getInstance(algorithm);
                 this.tagSize = sslCipher.tagSize;
                 this.key = key;
                 this.iv = ((IvParameterSpec)params).getIV();
@@ -2534,7 +2551,7 @@ enum SSLCipher {
                     Key key, AlgorithmParameterSpec params,
                     SecureRandom random) throws GeneralSecurityException {
                 super(authenticator, protocolVersion);
-                this.cipher = JsseJce.getCipher(algorithm);
+                this.cipher = Cipher.getInstance(algorithm);
                 this.tagSize = sslCipher.tagSize;
                 this.key = key;
                 this.iv = ((IvParameterSpec)params).getIV();

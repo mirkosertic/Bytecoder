@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -46,13 +46,7 @@ class DatagramPacket {
      * Perform class initialization
      */
     static {
-        java.security.AccessController.doPrivileged(
-            new java.security.PrivilegedAction<>() {
-                public Void run() {
-                    System.loadLibrary("net");
-                    return null;
-                }
-            });
+        jdk.internal.loader.BootLoader.loadLibrary("net");
         init();
     }
 
@@ -102,7 +96,7 @@ class DatagramPacket {
 
     /**
      * Constructs a datagram packet for sending packets of length
-     * {@code length} with offset {@code ioffset}to the
+     * {@code length} with offset {@code offset} to the
      * specified port number on the specified host. The
      * {@code length} argument must be less than or equal to
      * {@code buf.length}.
@@ -125,7 +119,7 @@ class DatagramPacket {
 
     /**
      * Constructs a datagram packet for sending packets of length
-     * {@code length} with offset {@code ioffset}to the
+     * {@code length} with offset {@code offset} to the
      * specified port number on the specified host. The
      * {@code length} argument must be less than or equal to
      * {@code buf.length}.
@@ -251,7 +245,7 @@ class DatagramPacket {
      * @param length the length of the data
      *       and/or the length of the buffer used to receive data
      *
-     * @exception NullPointerException if the argument is null
+     * @throws    NullPointerException if the argument is null
      *
      * @see #getData
      * @see #getOffset
@@ -337,7 +331,7 @@ class DatagramPacket {
      *
      * @param buf the buffer to set for this packet.
      *
-     * @exception NullPointerException if the argument is null.
+     * @throws    NullPointerException if the argument is null.
      *
      * @see #getLength
      * @see #getData
@@ -363,7 +357,7 @@ class DatagramPacket {
      *
      * @param length the length to set for this packet.
      *
-     * @exception IllegalArgumentException if the length is negative
+     * @throws    IllegalArgumentException if the length is negative
      * of if the length is greater than the packet's data buffer
      * length.
      *

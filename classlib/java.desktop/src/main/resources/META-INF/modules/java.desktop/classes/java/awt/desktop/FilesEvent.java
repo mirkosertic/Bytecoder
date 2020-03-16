@@ -39,7 +39,15 @@ import java.util.List;
  */
 public class FilesEvent extends AppEvent {
 
+    /**
+     * Use serialVersionUID from JDK 9 for interoperability.
+     */
     private static final long serialVersionUID = 5271763715462312871L;
+
+    /**
+     * The list of files.
+     */
+    @SuppressWarnings("serial") // Not statically typed as Serializable
     final List<File> files;
 
     /**

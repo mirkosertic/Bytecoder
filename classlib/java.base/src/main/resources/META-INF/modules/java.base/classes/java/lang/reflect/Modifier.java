@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,10 +25,7 @@
 
 package java.lang.reflect;
 
-import java.security.AccessController;
 import java.util.StringJoiner;
-import jdk.internal.reflect.LangReflectAccess;
-import jdk.internal.reflect.ReflectionFactory;
 
 /**
  * The Modifier class provides {@code static} methods and
@@ -46,16 +43,12 @@ import jdk.internal.reflect.ReflectionFactory;
  * @since 1.1
  */
 public class Modifier {
-
-    /*
-     * Bootstrapping protocol between java.lang and java.lang.reflect
-     *  packages
+    /**
+     * Do not call.
      */
-    static {
-        ReflectionFactory factory = AccessController.doPrivileged(
-                new ReflectionFactory.GetReflectionFactoryAction());
-        factory.setLangReflectAccess(new java.lang.reflect.ReflectAccess());
-    }
+    @Deprecated(forRemoval=true, since="14")
+    public Modifier() {}
+
 
     /**
      * Return {@code true} if the integer argument includes the
@@ -394,7 +387,7 @@ public class Modifier {
 
     /**
      * The Java source modifiers that can be applied to a field.
-     * @jls 8.3.1  Field Modifiers
+     * @jls 8.3.1 Field Modifiers
      */
     private static final int FIELD_MODIFIERS =
         Modifier.PUBLIC         | Modifier.PROTECTED    | Modifier.PRIVATE |

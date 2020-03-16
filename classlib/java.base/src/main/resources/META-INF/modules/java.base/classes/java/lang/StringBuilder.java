@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -88,6 +88,7 @@ public final class StringBuilder
 {
 
     /** use serialVersionUID for interoperability */
+    @java.io.Serial
     static final long serialVersionUID = 4383685877147921099L;
 
     /**
@@ -121,8 +122,7 @@ public final class StringBuilder
      */
     @HotSpotIntrinsicCandidate
     public StringBuilder(String str) {
-        super(str.length() + 16);
-        append(str);
+        super(str);
     }
 
     /**
@@ -134,8 +134,7 @@ public final class StringBuilder
      * @param      seq   the sequence to copy.
      */
     public StringBuilder(CharSequence seq) {
-        this(seq.length() + 16);
-        append(seq);
+        super(seq);
     }
 
     /**
@@ -460,6 +459,7 @@ public final class StringBuilder
      *             characters currently stored in the string builder, in which
      *             case extra characters are ignored.
      */
+    @java.io.Serial
     private void writeObject(java.io.ObjectOutputStream s)
         throws java.io.IOException {
         s.defaultWriteObject();
@@ -477,6 +477,7 @@ public final class StringBuilder
      * readObject is called to restore the state of the StringBuffer from
      * a stream.
      */
+    @java.io.Serial
     private void readObject(java.io.ObjectInputStream s)
         throws java.io.IOException, ClassNotFoundException {
         s.defaultReadObject();

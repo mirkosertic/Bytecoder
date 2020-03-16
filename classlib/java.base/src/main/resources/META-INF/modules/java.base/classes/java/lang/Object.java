@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -37,11 +37,6 @@ import jdk.internal.HotSpotIntrinsicCandidate;
  * @since   1.0
  */
 public class Object {
-
-    private static native void registerNatives();
-    static {
-        registerNatives();
-    }
 
     /**
      * Constructs a new object.
@@ -430,7 +425,7 @@ public class Object {
      * }</pre>
      *
      * @param  timeoutMillis the maximum time to wait, in milliseconds
-     * @param  nanos   additional time, in nanoseconds, in the range range 0-999999 inclusive
+     * @param  nanos   additional time, in nanoseconds, in the range 0-999999 inclusive
      * @throws IllegalArgumentException if {@code timeoutMillis} is negative,
      *         or if the value of {@code nanos} is out of range
      * @throws IllegalMonitorStateException if the current thread is not

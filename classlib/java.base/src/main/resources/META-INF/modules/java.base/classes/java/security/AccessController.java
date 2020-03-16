@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,6 +30,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.ref.Reference;
+
+import jdk.internal.vm.annotation.Hidden;
 import sun.security.util.Debug;
 import sun.security.util.SecurityConstants;
 import jdk.internal.reflect.CallerSensitive;
@@ -296,7 +298,7 @@ public final class AccessController {
      *
      * @return the value returned by the action's {@code run} method.
      *
-     * @exception NullPointerException if the action is {@code null}
+     * @throws    NullPointerException if the action is {@code null}
      *
      * @see #doPrivileged(PrivilegedAction,AccessControlContext)
      * @see #doPrivileged(PrivilegedExceptionAction)
@@ -328,7 +330,7 @@ public final class AccessController {
      *
      * @return the value returned by the action's {@code run} method.
      *
-     * @exception NullPointerException if the action is {@code null}
+     * @throws    NullPointerException if the action is {@code null}
      *
      * @see #doPrivileged(PrivilegedAction)
      * @see java.security.DomainCombiner
@@ -375,7 +377,7 @@ public final class AccessController {
      *
      * @return the value returned by the action's {@code run} method.
      *
-     * @exception NullPointerException if the action is {@code null}
+     * @throws    NullPointerException if the action is {@code null}
      *
      * @see #doPrivileged(PrivilegedAction)
      * @see #doPrivileged(PrivilegedExceptionAction,AccessControlContext)
@@ -443,7 +445,8 @@ public final class AccessController {
             throw new NullPointerException("null permissions parameter");
         }
         Class<?> caller = Reflection.getCallerClass();
-        return AccessController.doPrivileged(action, createWrapper(null,
+        DomainCombiner dc = (context == null) ? null : context.getCombiner();
+        return AccessController.doPrivileged(action, createWrapper(dc,
             caller, parent, context, perms));
     }
 
@@ -531,9 +534,9 @@ public final class AccessController {
      *
      * @return the value returned by the action's {@code run} method
      *
-     * @exception PrivilegedActionException if the specified action's
+     * @throws    PrivilegedActionException if the specified action's
      *         {@code run} method threw a <i>checked</i> exception
-     * @exception NullPointerException if the action is {@code null}
+     * @throws    NullPointerException if the action is {@code null}
      *
      * @see #doPrivileged(PrivilegedAction)
      * @see #doPrivileged(PrivilegedExceptionAction,AccessControlContext)
@@ -574,9 +577,9 @@ public final class AccessController {
      *
      * @return the value returned by the action's {@code run} method
      *
-     * @exception PrivilegedActionException if the specified action's
+     * @throws    PrivilegedActionException if the specified action's
      *         {@code run} method threw a <i>checked</i> exception
-     * @exception NullPointerException if the action is {@code null}
+     * @throws    NullPointerException if the action is {@code null}
      *
      * @see #doPrivileged(PrivilegedAction)
      * @see #doPrivileged(PrivilegedExceptionAction,AccessControlContext)
@@ -669,9 +672,9 @@ public final class AccessController {
      *
      * @return the value returned by the action's {@code run} method
      *
-     * @exception PrivilegedActionException if the specified action's
+     * @throws    PrivilegedActionException if the specified action's
      *         {@code run} method threw a <i>checked</i> exception
-     * @exception NullPointerException if the action is {@code null}
+     * @throws    NullPointerException if the action is {@code null}
      *
      * @see #doPrivileged(PrivilegedAction)
      * @see #doPrivileged(PrivilegedAction,AccessControlContext)
@@ -790,16 +793,6 @@ public final class AccessController {
 
 
     /**
-     * Internal marker for hidden implementation frames.
-     */
-    /*non-public*/
-    @Target(ElementType.METHOD)
-    @Retention(RetentionPolicy.RUNTIME)
-    @interface Hidden {
-    }
-
-
-    /**
      * Wrap an exception.  The annotations are used in a best effort to
      * avoid StackOverflowError in the caller.  Inlining the callees as
      * well and tail-call elimination could also help here, but are not
@@ -868,7 +861,8 @@ public final class AccessController {
             throw new NullPointerException("null permissions parameter");
         }
         Class<?> caller = Reflection.getCallerClass();
-        return AccessController.doPrivileged(action, createWrapper(null, caller, parent, context, perms));
+        DomainCombiner dc = (context == null) ? null : context.getCombiner();
+        return AccessController.doPrivileged(action, createWrapper(dc, caller, parent, context, perms));
     }
 
 
@@ -996,9 +990,9 @@ public final class AccessController {
      *
      * @param perm the requested permission.
      *
-     * @exception AccessControlException if the specified permission
+     * @throws    AccessControlException if the specified permission
      *            is not permitted, based on the current security policy.
-     * @exception NullPointerException if the specified permission
+     * @throws    NullPointerException if the specified permission
      *            is {@code null} and is checked based on the
      *            security policy currently in effect.
      */

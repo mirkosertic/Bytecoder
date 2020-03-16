@@ -1778,6 +1778,12 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             },");
             theWriter.println("         },");
 
+            theWriter.println("         nullpointerexception : {");
+            theWriter.println("             getExtendedNPEMessage : function(thisref) {");
+            theWriter.println("                 return 0;");
+            theWriter.println("             },");
+            theWriter.println("         },");
+
             theWriter.println("         fileoutputstream : {");
             theWriter.println("             writeBytesLONGL1BYTEINTINT : function(thisref, handle, data, offset, length) {");
             theWriter.println("                 bytecoder.filehandles[handle].writeBytesLONGL1BYTEINTINT(handle,data,offset,length);");

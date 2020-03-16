@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -68,6 +68,7 @@ import java.util.StringJoiner;
 import jdk.internal.access.JavaNetHttpCookieAccess;
 import jdk.internal.access.SharedSecrets;
 import sun.net.*;
+import sun.net.util.IPAddressUtil;
 import sun.net.www.*;
 import sun.net.www.http.HttpClient;
 import sun.net.www.http.PosterOutputStream;
@@ -311,6 +312,8 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
     private CookieHandler cookieHandler;
     private final ResponseCache cacheHandler;
 
+    private volatile boolean usingProxy;
+
     // the cached response, and cached response headers and body
     protected CacheResponse cachedResponse;
     private MessageHeader cachedHeaders;
@@ -318,7 +321,6 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
 
     /* output stream to server */
     protected PrintStream ps = null;
-
 
     /* buffered error stream */
     private InputStream errorStream = null;
@@ -868,8 +870,13 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
                 throw new MalformedURLException("Illegal character in URL");
             }
         }
+        String s = IPAddressUtil.checkAuthority(u);
+        if (s != null) {
+            throw new MalformedURLException(s);
+        }
         return u;
     }
+
     protected HttpURLConnection(URL u, Proxy p, Handler handler)
             throws IOException {
         super(checkURL(u));
@@ -1172,7 +1179,13 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
                     if (logger.isLoggable(PlatformLogger.Level.FINEST)) {
                         logger.finest("ProxySelector Request for " + uri);
                     }
-                    Iterator<Proxy> it = sel.select(uri).iterator();
+                    final List<Proxy> proxies;
+                    try {
+                        proxies = sel.select(uri);
+                    } catch (IllegalArgumentException iae) {
+                        throw new IOException("Failed to select a proxy", iae);
+                    }
+                    final Iterator<Proxy> it = proxies.iterator();
                     Proxy p;
                     while (it.hasNext()) {
                         p = it.next();
@@ -1228,6 +1241,7 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
                 }
             }
 
+            usingProxy = usingProxy || usingProxyInternal();
             ps = (PrintStream)http.getOutputStream();
         } catch (IOException e) {
             throw e;
@@ -2159,6 +2173,10 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
             } while (retryTunnel < maxRedirects);
 
             if (retryTunnel >= maxRedirects || (respCode != HTTP_OK)) {
+                if (respCode != HTTP_PROXY_AUTH) {
+                    // remove all but authenticate responses
+                    responses.reset();
+                }
                 throw new IOException("Unable to tunnel through proxy."+
                                       " Proxy returns \"" +
                                       statusLine + "\"");
@@ -2259,6 +2277,8 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
         if (host != null && authhdr.isPresent()) {
             HeaderParser p = authhdr.headerParser();
             String realm = p.findValue("realm");
+            String charset = p.findValue("charset");
+            boolean isUTF8 = (charset != null && charset.equalsIgnoreCase("UTF-8"));
             String scheme = authhdr.scheme();
             AuthScheme authScheme = UNKNOWN;
             if ("basic".equalsIgnoreCase(scheme)) {
@@ -2304,7 +2324,7 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
                                     realm, scheme, url, RequestorType.PROXY);
                     if (a != null) {
                         ret = new BasicAuthentication(true, host, port, realm, a,
-                                             getAuthenticatorKey());
+                                             isUTF8, getAuthenticatorKey());
                     }
                     break;
                 case DIGEST:
@@ -2422,6 +2442,8 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
             HeaderParser p = authhdr.headerParser();
             String realm = p.findValue("realm");
             String scheme = authhdr.scheme();
+            String charset = p.findValue("charset");
+            boolean isUTF8 = (charset != null && charset.equalsIgnoreCase("UTF-8"));
             AuthScheme authScheme = UNKNOWN;
             if ("basic".equalsIgnoreCase(scheme)) {
                 authScheme = BASIC;
@@ -2473,7 +2495,7 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
                             realm, scheme, url, RequestorType.SERVER);
                     if (a != null) {
                         ret = new BasicAuthentication(false, url, realm, a,
-                                    getAuthenticatorKey());
+                                    isUTF8, getAuthenticatorKey());
                     }
                     break;
                 case DIGEST:
@@ -2897,7 +2919,7 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
      * closed the connection to the web server.
      */
     private void disconnectWeb() throws IOException {
-        if (usingProxy() && http.isKeepingAlive()) {
+        if (usingProxyInternal() && http.isKeepingAlive()) {
             responseCode = -1;
             // clean up, particularly, skip the content part
             // of a 401 error response
@@ -3000,10 +3022,28 @@ public class HttpURLConnection extends java.net.HttpURLConnection {
         }
     }
 
-    public boolean usingProxy() {
+    /**
+     * Returns true only if the established connection is using a proxy
+     */
+    boolean usingProxyInternal() {
         if (http != null) {
             return (http.getProxyHostUsed() != null);
         }
+        return false;
+    }
+
+    /**
+     * Returns true if the established connection is using a proxy
+     * or if a proxy is specified for the inactive connection
+     */
+    @Override
+    public boolean usingProxy() {
+        if (usingProxy || usingProxyInternal())
+            return true;
+
+        if (instProxy != null)
+            return instProxy.type().equals(Proxy.Type.HTTP);
+
         return false;
     }
 

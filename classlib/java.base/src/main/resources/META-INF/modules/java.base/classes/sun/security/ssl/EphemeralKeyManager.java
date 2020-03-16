@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,6 +26,7 @@
 package sun.security.ssl;
 
 import java.security.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * The "KeyManager" for ephemeral RSA keys. Ephemeral DH and ECDH keys
@@ -48,6 +49,8 @@ final class EphemeralKeyManager {
         new EphemeralKeyPair(null),
     };
 
+    private final ReentrantLock cachedKeysLock = new ReentrantLock();
+
     EphemeralKeyManager() {
         // empty
     }
@@ -65,20 +68,32 @@ final class EphemeralKeyManager {
             index = INDEX_RSA1024;
         }
 
-        synchronized (keys) {
-            KeyPair kp = keys[index].getKeyPair();
-            if (kp == null) {
-                try {
-                    KeyPairGenerator kgen = JsseJce.getKeyPairGenerator("RSA");
-                    kgen.initialize(length, random);
-                    keys[index] = new EphemeralKeyPair(kgen.genKeyPair());
-                    kp = keys[index].getKeyPair();
-                } catch (Exception e) {
-                    // ignore
-                }
-            }
+        KeyPair kp = keys[index].getKeyPair();
+        if (kp != null) {
             return kp;
         }
+
+        cachedKeysLock.lock();
+        try {
+            // double check
+            kp = keys[index].getKeyPair();
+            if (kp != null) {
+                return kp;
+            }
+
+            try {
+                KeyPairGenerator kgen = KeyPairGenerator.getInstance("RSA");
+                kgen.initialize(length, random);
+                keys[index] = new EphemeralKeyPair(kgen.genKeyPair());
+                kp = keys[index].getKeyPair();
+            } catch (Exception e) {
+                // ignore
+            }
+        } finally {
+            cachedKeysLock.unlock();
+        }
+
+        return kp;
     }
 
     /**

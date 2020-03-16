@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -75,7 +75,7 @@ import jdk.internal.vm.annotation.Stable;
  * ModuleLayer.boot().configuration()}. The configuration for the boot layer
  * will often be the parent when creating new configurations. </p>
  *
- * <h3> Example </h3>
+ * <h2> Example </h2>
  *
  * <p> The following example uses the {@link
  * #resolve(ModuleFinder,ModuleFinder,Collection) resolve} method to resolve a
@@ -312,7 +312,7 @@ public final class Configuration {
     {
         List<Configuration> parents = List.of(empty());
         Resolver resolver = new Resolver(finder, parents, ModuleFinder.of(), traceOutput);
-        resolver.resolve(roots).bind();
+        resolver.resolve(roots).bind(/*bindIncubatorModules*/false);
         return new Configuration(parents, resolver);
     }
 
@@ -575,7 +575,8 @@ public final class Configuration {
     }
 
     Set<ResolvedModule> reads(ResolvedModule m) {
-        return Collections.unmodifiableSet(graph.get(m));
+        // The sets stored in the graph are already immutable sets
+        return Set.copyOf(graph.get(m));
     }
 
     /**
