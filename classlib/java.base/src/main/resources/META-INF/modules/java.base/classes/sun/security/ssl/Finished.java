@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -102,7 +102,7 @@ final class Finished {
             }
 
             if (m.remaining() != verifyDataLen) {
-                throw context.conContext.fatal(Alert.ILLEGAL_PARAMETER,
+                throw context.conContext.fatal(Alert.DECODE_ERROR,
                     "Inappropriate finished message: need " + verifyDataLen +
                     " but remaining " + m.remaining() + " bytes verify_data");
             }
@@ -120,7 +120,7 @@ final class Finished {
                         "Failed to generate verify_data", ioe);
             }
             if (!MessageDigest.isEqual(myVerifyData, verifyData)) {
-                throw context.conContext.fatal(Alert.ILLEGAL_PARAMETER,
+                throw context.conContext.fatal(Alert.DECRYPT_ERROR,
                         "The Finished message cannot be verified.");
             }
         }
@@ -257,7 +257,7 @@ final class Finished {
                 TlsPrfParameterSpec spec = new TlsPrfParameterSpec(
                     masterSecretKey, tlsLabel, seed, 12,
                     hashAlg.name, hashAlg.hashLength, hashAlg.blockSize);
-                KeyGenerator kg = JsseJce.getKeyGenerator(prfAlg);
+                KeyGenerator kg = KeyGenerator.getInstance(prfAlg);
                 kg.init(spec);
                 SecretKey prfKey = kg.generateKey();
                 if (!"RAW".equals(prfKey.getFormat())) {
@@ -309,7 +309,7 @@ final class Finished {
                 TlsPrfParameterSpec spec = new TlsPrfParameterSpec(
                     masterSecretKey, tlsLabel, seed, 12,
                     hashAlg.name, hashAlg.hashLength, hashAlg.blockSize);
-                KeyGenerator kg = JsseJce.getKeyGenerator(prfAlg);
+                KeyGenerator kg = KeyGenerator.getInstance(prfAlg);
                 kg.init(spec);
                 SecretKey prfKey = kg.generateKey();
                 if (!"RAW".equals(prfKey.getFormat())) {
@@ -350,7 +350,7 @@ final class Finished {
             String hmacAlg =
                 "Hmac" + hashAlg.name.replace("-", "");
             try {
-                Mac hmac = JsseJce.getMac(hmacAlg);
+                Mac hmac = Mac.getInstance(hmacAlg);
                 hmac.init(finishedSecret);
                 return hmac.doFinal(context.handshakeHash.digest());
             } catch (NoSuchAlgorithmException |InvalidKeyException ex) {
@@ -410,6 +410,10 @@ final class Finished {
                 chc.conContext.clientVerifyData = fm.verifyData;
             }
 
+            if (chc.statelessResumption) {
+                chc.handshakeConsumers.put(
+                        SSLHandshake.NEW_SESSION_TICKET.id, SSLHandshake.NEW_SESSION_TICKET);
+            }
             // update the consumers and producers
             if (!chc.isResumption) {
                 chc.conContext.consumers.put(ContentType.CHANGE_CIPHER_SPEC.id,
@@ -441,6 +445,10 @@ final class Finished {
 
         private byte[] onProduceFinished(ServerHandshakeContext shc,
                 HandshakeMessage message) throws IOException {
+            if (shc.statelessResumption) {
+                NewSessionTicket.handshake12Producer.produce(shc, message);
+            }
+
             // Refresh handshake hash
             shc.handshakeHash.update();
 
@@ -473,7 +481,8 @@ final class Finished {
                         SSLHandshake.FINISHED.id, SSLHandshake.FINISHED);
                 shc.conContext.inputRecord.expectingFinishFlight();
             } else {
-                if (shc.handshakeSession.isRejoinable()) {
+                if (shc.handshakeSession.isRejoinable() &&
+                        !shc.handshakeSession.isStatelessable(shc)) {
                     ((SSLSessionContextImpl)shc.sslContext.
                         engineGetServerSessionContext()).put(
                             shc.handshakeSession);
@@ -580,6 +589,16 @@ final class Finished {
 
         private void onConsumeFinished(ServerHandshakeContext shc,
                 ByteBuffer message) throws IOException {
+            // Make sure that any expected CertificateVerify message
+            // has been received and processed.
+            if (!shc.isResumption) {
+                if (shc.handshakeConsumers.containsKey(
+                        SSLHandshake.CERTIFICATE_VERIFY.id)) {
+                    throw shc.conContext.fatal(Alert.UNEXPECTED_MESSAGE,
+                            "Unexpected Finished handshake message");
+                }
+            }
+
             FinishedMessage fm = new FinishedMessage(shc, message);
             if (SSLLogger.isOn && SSLLogger.isOn("ssl,handshake")) {
                 SSLLogger.fine(
@@ -591,7 +610,8 @@ final class Finished {
             }
 
             if (shc.isResumption) {
-                if (shc.handshakeSession.isRejoinable()) {
+                if (shc.handshakeSession.isRejoinable() &&
+                        !shc.statelessResumption) {
                     ((SSLSessionContextImpl)shc.sslContext.
                         engineGetServerSessionContext()).put(
                             shc.handshakeSession);
@@ -837,6 +857,8 @@ final class Finished {
                 shc.conContext.serverVerifyData = fm.verifyData;
             }
 
+            shc.conContext.conSession = shc.handshakeSession.finish();
+
             // update the context
             shc.handshakeConsumers.put(
                     SSLHandshake.FINISHED.id, SSLHandshake.FINISHED);
@@ -871,6 +893,16 @@ final class Finished {
 
         private void onConsumeFinished(ClientHandshakeContext chc,
                 ByteBuffer message) throws IOException {
+            // Make sure that any expected CertificateVerify message
+            // has been received and processed.
+            if (!chc.isResumption) {
+                if (chc.handshakeConsumers.containsKey(
+                        SSLHandshake.CERTIFICATE_VERIFY.id)) {
+                    throw chc.conContext.fatal(Alert.UNEXPECTED_MESSAGE,
+                            "Unexpected Finished handshake message");
+                }
+            }
+
             FinishedMessage fm = new FinishedMessage(chc, message);
             if (SSLLogger.isOn && SSLLogger.isOn("ssl,handshake")) {
                 SSLLogger.fine(
@@ -915,9 +947,9 @@ final class Finished {
 
             // save the session
             if (!chc.isResumption && chc.handshakeSession.isRejoinable()) {
-                SSLSessionContextImpl sessionContext = (SSLSessionContextImpl)
-                chc.sslContext.engineGetClientSessionContext();
-                sessionContext.put(chc.handshakeSession);
+                ((SSLSessionContextImpl)chc.sslContext.
+                        engineGetClientSessionContext()).
+                        put(chc.handshakeSession);
             }
 
             // derive salt secret
@@ -993,6 +1025,16 @@ final class Finished {
 
         private void onConsumeFinished(ServerHandshakeContext shc,
                 ByteBuffer message) throws IOException {
+            // Make sure that any expected CertificateVerify message
+            // has been received and processed.
+            if (!shc.isResumption) {
+                if (shc.handshakeConsumers.containsKey(
+                        SSLHandshake.CERTIFICATE_VERIFY.id)) {
+                    throw shc.conContext.fatal(Alert.UNEXPECTED_MESSAGE,
+                            "Unexpected Finished handshake message");
+                }
+            }
+
             FinishedMessage fm = new FinishedMessage(shc, message);
             if (SSLLogger.isOn && SSLLogger.isOn("ssl,handshake")) {
                 SSLLogger.fine(
@@ -1028,10 +1070,11 @@ final class Finished {
                         shc.negotiatedProtocol);
             }
 
-            // save the session
-            if (!shc.isResumption && shc.handshakeSession.isRejoinable()) {
+            // Save the session if possible and not stateless
+            if (!shc.statelessResumption && !shc.isResumption &&
+                    shc.handshakeSession.isRejoinable()) {
                 SSLSessionContextImpl sessionContext = (SSLSessionContextImpl)
-                shc.sslContext.engineGetServerSessionContext();
+                        shc.sslContext.engineGetServerSessionContext();
                 sessionContext.put(shc.handshakeSession);
             }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,6 +28,7 @@ package sun.security.ssl;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import javax.crypto.AEADBadTagException;
 import javax.crypto.BadPaddingException;
 import javax.net.ssl.SSLHandshakeException;
 
@@ -71,7 +72,7 @@ interface SSLTransport {
      * destination application data buffers.
      *
      * For SSL/TLS connections, if no source data, the network data may be
-     * received from the underlying underlying SSL/TLS input stream.
+     * received from the underlying SSL/TLS input stream.
      *
      * @param context      the transportation context
      * @param srcs         an array of {@code ByteBuffers} containing the
@@ -116,6 +117,8 @@ interface SSLTransport {
             }
 
             throw context.fatal(Alert.UNEXPECTED_MESSAGE, unsoe);
+        } catch (AEADBadTagException bte) {
+            throw context.fatal(Alert.BAD_RECORD_MAC, bte);
         } catch (BadPaddingException bpe) {
             /*
              * The basic SSLv3 record protection involves (optional)
@@ -123,9 +126,9 @@ interface SSLTransport {
              * data origin authentication.  We do them both here, and
              * throw a fatal alert if the integrity check fails.
              */
-            Alert alert = (context.handshakeContext != null) ?
-                    Alert.HANDSHAKE_FAILURE :
-                    Alert.BAD_RECORD_MAC;
+             Alert alert = (context.handshakeContext != null) ?
+                     Alert.HANDSHAKE_FAILURE :
+                     Alert.BAD_RECORD_MAC;
             throw context.fatal(alert, bpe);
         } catch (SSLHandshakeException she) {
             // may be record sequence number overflow

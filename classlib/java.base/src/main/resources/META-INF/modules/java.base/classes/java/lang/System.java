@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -74,6 +74,7 @@ import jdk.internal.logger.LazyLoggers;
 import jdk.internal.logger.LocalizedLoggerWrapper;
 import jdk.internal.util.SystemProps;
 import jdk.internal.vm.annotation.Stable;
+import sun.nio.fs.DefaultFileSystemProvider;
 import sun.reflect.annotation.AnnotationType;
 import sun.nio.ch.Interruptible;
 import sun.security.util.SecurityConstants;
@@ -93,10 +94,8 @@ import sun.security.util.SecurityConstants;
 public final class System {
     /* Register the natives via the static initializer.
      *
-     * VM will invoke the initializeSystemClass method to complete
-     * the initialization for this class separated from clinit.
-     * Note that to use properties set by the VM, see the constraints
-     * described in the initializeSystemClass method.
+     * The VM will invoke the initPhase1 method to complete the initialization
+     * of this class separate from <clinit>.
      */
     private static native void registerNatives();
     static {
@@ -339,6 +338,8 @@ public final class System {
             if (security == null) {
                 // ensure image reader is initialized
                 Object.class.getResource("java/lang/ANY");
+                // ensure the default file system is initialized
+                DefaultFileSystemProvider.theFileSystem();
             }
             if (sm != null) {
                 try {
@@ -618,8 +619,9 @@ public final class System {
      * {@link #getProperty(String)} method is returned as a
      * {@code Properties} object. If there is no current set of
      * system properties, a set of system properties is first created and
-     * initialized. This set of system properties always includes values
-     * for the following keys:
+     * initialized. This set of system properties includes a value
+     * for each of the following keys unless the description of the associated
+     * value indicates that the value is optional.
      * <table class="striped" style="text-align:left">
      * <caption style="display:none">Shows property keys and associated values</caption>
      * <thead>
@@ -639,7 +641,7 @@ public final class System {
      * <tr><th scope="row">{@systemProperty java.vendor.url}</th>
      *     <td>Java vendor URL</td></tr>
      * <tr><th scope="row">{@systemProperty java.vendor.version}</th>
-     *     <td>Java vendor version</td></tr>
+     *     <td>Java vendor version <em>(optional)</em> </td></tr>
      * <tr><th scope="row">{@systemProperty java.home}</th>
      *     <td>Java installation directory</td></tr>
      * <tr><th scope="row">{@systemProperty java.vm.specification.version}</th>
@@ -984,7 +986,7 @@ public final class System {
      * <p>If a security manager exists, its
      * {@link SecurityManager#checkPermission checkPermission}
      * method is called with a
-     * {@code {@link RuntimePermission}("getenv."+name)}
+     * {@link RuntimePermission RuntimePermission("getenv."+name)}
      * permission.  This may result in a {@link SecurityException}
      * being thrown.  If no exception is thrown the value of the
      * variable {@code name} is returned.
@@ -1055,7 +1057,7 @@ public final class System {
      * <p>If a security manager exists, its
      * {@link SecurityManager#checkPermission checkPermission}
      * method is called with a
-     * {@code {@link RuntimePermission}("getenv.*")} permission.
+     * {@link RuntimePermission RuntimePermission("getenv.*")} permission.
      * This may result in a {@link SecurityException} being thrown.
      *
      * <p>When passing information to a Java subprocess,
@@ -1782,14 +1784,17 @@ public final class System {
     }
 
     /**
-     * Runs the garbage collector.
-     *
-     * Calling the {@code gc} method suggests that the Java Virtual
-     * Machine expend effort toward recycling unused objects in order to
-     * make the memory they currently occupy available for quick reuse.
-     * When control returns from the method call, the Java Virtual
-     * Machine has made a best effort to reclaim space from all discarded
-     * objects.
+     * Runs the garbage collector in the Java Virtual Machine.
+     * <p>
+     * Calling the {@code gc} method suggests that the Java Virtual Machine
+     * expend effort toward recycling unused objects in order to
+     * make the memory they currently occupy available for reuse
+     * by the Java Virtual Machine.
+     * When control returns from the method call, the Java Virtual Machine
+     * has made a best effort to reclaim space from all unused objects.
+     * There is no guarantee that this effort will recycle any particular
+     * number of unused objects, reclaim any particular amount of space, or
+     * complete at any particular time, if at all, before the method returns or ever.
      * <p>
      * The call {@code System.gc()} is effectively equivalent to the
      * call:
@@ -2038,6 +2043,8 @@ public final class System {
         // register shared secrets
         setJavaLangAccess();
 
+        ClassLoader.initLibraryPaths();
+
         // Subsystems that are invoked during initialization can invoke
         // VM.isBooted() in order to avoid doing things that should
         // wait until the VM is fully initialized. The initialization level
@@ -2269,6 +2276,11 @@ public final class System {
 
             public void setCause(Throwable t, Throwable cause) {
                 t.setCause(cause);
+            }
+
+            public void loadLibrary(Class<?> caller, String library) {
+                assert library.indexOf(java.io.File.separatorChar) < 0;
+                ClassLoader.loadLibrary(caller, library, false);
             }
         });
     }

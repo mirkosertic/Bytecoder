@@ -72,7 +72,7 @@ public interface ClassDesc
      *
      * @param name the fully qualified (dot-separated) binary class name
      * @return a {@linkplain ClassDesc} describing the desired class
-     * @throws NullPointerException if any argument is {@code null}
+     * @throws NullPointerException if the argument is {@code null}
      * @throws IllegalArgumentException if the name string is not in the
      * correct format
      */
@@ -101,10 +101,8 @@ public interface ClassDesc
             return of(className);
         }
         validateMemberName(requireNonNull(className), false);
-        return ofDescriptor(String.format("L%s%s%s;",
-                                          binaryToInternal(packageName),
-                                          (packageName.length() > 0 ? "/" : ""),
-                                          className));
+        return ofDescriptor("L" + binaryToInternal(packageName) +
+                (packageName.length() > 0 ? "/" : "") + className + ";");
     }
 
     /**
@@ -125,7 +123,7 @@ public interface ClassDesc
      *
      * @param descriptor a field descriptor string
      * @return a {@linkplain ClassDesc} describing the desired class
-     * @throws NullPointerException if any argument is {@code null}
+     * @throws NullPointerException if the argument is {@code null}
      * @throws IllegalArgumentException if the name string is not in the
      * correct format
      * @jvms 4.3.2 Field Descriptors
@@ -134,12 +132,14 @@ public interface ClassDesc
     static ClassDesc ofDescriptor(String descriptor) {
         requireNonNull(descriptor);
         if (descriptor.isEmpty()) {
-            throw new IllegalArgumentException(String.format("not a valid reference type descriptor: %s", descriptor));
+            throw new IllegalArgumentException(
+                    "not a valid reference type descriptor: " + descriptor);
         }
         int depth = ConstantUtils.arrayDepth(descriptor);
         if (depth > ConstantUtils.MAX_ARRAY_TYPE_DESC_DIMENSIONS) {
-            throw new IllegalArgumentException(String.format("Cannot create an array type descriptor with more than %d dimensions",
-                    ConstantUtils.MAX_ARRAY_TYPE_DESC_DIMENSIONS));
+            throw new IllegalArgumentException(
+                    "Cannot create an array type descriptor with more than " +
+                    ConstantUtils.MAX_ARRAY_TYPE_DESC_DIMENSIONS + " dimensions");
         }
         return (descriptor.length() == 1)
                ? new PrimitiveClassDescImpl(descriptor)
@@ -157,8 +157,9 @@ public interface ClassDesc
     default ClassDesc arrayType() {
         int depth = ConstantUtils.arrayDepth(descriptorString());
         if (depth >= ConstantUtils.MAX_ARRAY_TYPE_DESC_DIMENSIONS) {
-            throw new IllegalStateException(String.format("Cannot create an array type descriptor with more than %d dimensions",
-                    ConstantUtils.MAX_ARRAY_TYPE_DESC_DIMENSIONS));
+            throw new IllegalStateException(
+                    "Cannot create an array type descriptor with more than " +
+                    ConstantUtils.MAX_ARRAY_TYPE_DESC_DIMENSIONS + " dimensions");
         }
         return arrayType(1);
     }
@@ -169,7 +170,7 @@ public interface ClassDesc
      *
      * @param rank the rank of the array
      * @return a {@linkplain ClassDesc} describing the array type
-     * @throws IllegalArgumentException if the rank is less than zero or if the rank of the resulting array type is
+     * @throws IllegalArgumentException if the rank is less than or equal to zero or if the rank of the resulting array type is
      * greater than 255
      * @jvms 4.4.1 The CONSTANT_Class_info Structure
      */
@@ -192,7 +193,7 @@ public interface ClassDesc
      *
      * @param nestedName the unqualified name of the nested class
      * @return a {@linkplain ClassDesc} describing the nested class
-     * @throws NullPointerException if any argument is {@code null}
+     * @throws NullPointerException if the argument is {@code null}
      * @throws IllegalStateException if this {@linkplain ClassDesc} does not
      * describe a class or interface type
      * @throws IllegalArgumentException if the nested class name is invalid
@@ -201,7 +202,7 @@ public interface ClassDesc
         validateMemberName(nestedName, false);
         if (!isClassOrInterface())
             throw new IllegalStateException("Outer class is not a class or interface type");
-        return ClassDesc.ofDescriptor(String.format("%s$%s;", dropLastChar(descriptorString()), nestedName));
+        return ClassDesc.ofDescriptor(dropLastChar(descriptorString()) + "$" + nestedName + ";");
     }
 
     /**
@@ -212,7 +213,7 @@ public interface ClassDesc
      * @param moreNestedNames the unqualified name(s) of the remaining levels of
      *                       nested class
      * @return a {@linkplain ClassDesc} describing the nested class
-     * @throws NullPointerException if any argument is {@code null}
+     * @throws NullPointerException if any argument or its contents is {@code null}
      * @throws IllegalStateException if this {@linkplain ClassDesc} does not
      * describe a class or interface type
      * @throws IllegalArgumentException if the nested class name is invalid
@@ -220,6 +221,11 @@ public interface ClassDesc
     default ClassDesc nested(String firstNestedName, String... moreNestedNames) {
         if (!isClassOrInterface())
             throw new IllegalStateException("Outer class is not a class or interface type");
+        validateMemberName(firstNestedName, false);
+        requireNonNull(moreNestedNames);
+        for (String addNestedNames : moreNestedNames) {
+            validateMemberName(addNestedNames, false);
+        }
         return moreNestedNames.length == 0
                ? nested(firstNestedName)
                : nested(firstNestedName + Stream.of(moreNestedNames).collect(joining("$", "$", "")));

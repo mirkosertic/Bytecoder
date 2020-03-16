@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -113,9 +113,7 @@ public final class Method extends Executable {
     }
 
     /**
-     * Package-private constructor used by ReflectAccess to enable
-     * instantiation of these objects in Java code from the java.lang
-     * package via sun.reflect.LangReflectAccess.
+     * Package-private constructor
      */
     Method(Class<?> declaringClass,
            String name,
@@ -269,7 +267,7 @@ public final class Method extends Executable {
      *
      * <p>If the return type is a parameterized type,
      * the {@code Type} object returned must accurately reflect
-     * the actual type parameters used in the source code.
+     * the actual type arguments used in the source code.
      *
      * <p>If the return type is a type variable or a parameterized type, it
      * is created. Otherwise, it is resolved.
@@ -403,7 +401,7 @@ public final class Method extends Executable {
      * @return a string describing this {@code Method}
      *
      * @jls 8.4.3 Method Modifiers
-     * @jls 9.4   Method Declarations
+     * @jls 9.4 Method Declarations
      * @jls 9.6.1 Annotation Type Elements
      */
     public String toString() {
@@ -422,17 +420,16 @@ public final class Method extends Executable {
 
     @Override
     String toShortString() {
-        StringBuilder sb = new StringBuilder("method ");
-        sb.append(getDeclaringClass().getTypeName()).append('.');
-        sb.append(getName());
-        sb.append('(');
-        StringJoiner sj = new StringJoiner(",");
+        return "method " + getDeclaringClass().getTypeName() +
+                '.' + toShortSignature();
+    }
+
+    String toShortSignature() {
+        StringJoiner sj = new StringJoiner(",", getName() + "(", ")");
         for (Class<?> parameterType : getParameterTypes()) {
             sj.add(parameterType.getTypeName());
         }
-        sb.append(sj);
-        sb.append(')');
-        return sb.toString();
+        return sj.toString();
     }
 
     /**
@@ -474,7 +471,7 @@ public final class Method extends Executable {
      * @since 1.5
      *
      * @jls 8.4.3 Method Modifiers
-     * @jls 9.4   Method Declarations
+     * @jls 9.4 Method Declarations
      * @jls 9.6.1 Annotation Type Elements
      */
     @Override
@@ -527,10 +524,10 @@ public final class Method extends Executable {
      * this object on {@code obj} with parameters
      * {@code args}
      *
-     * @exception IllegalAccessException    if this {@code Method} object
+     * @throws    IllegalAccessException    if this {@code Method} object
      *              is enforcing Java language access control and the underlying
      *              method is inaccessible.
-     * @exception IllegalArgumentException  if the method is an
+     * @throws    IllegalArgumentException  if the method is an
      *              instance method and the specified object argument
      *              is not an instance of the class or interface
      *              declaring the underlying method (or of a subclass
@@ -540,11 +537,11 @@ public final class Method extends Executable {
      *              after possible unwrapping, a parameter value
      *              cannot be converted to the corresponding formal
      *              parameter type by a method invocation conversion.
-     * @exception InvocationTargetException if the underlying method
+     * @throws    InvocationTargetException if the underlying method
      *              throws an exception.
-     * @exception NullPointerException      if the specified object is null
+     * @throws    NullPointerException      if the specified object is null
      *              and the method is an instance method.
-     * @exception ExceptionInInitializerError if the initialization
+     * @throws    ExceptionInInitializerError if the initialization
      * provoked by this method fails.
      */
     @CallerSensitive

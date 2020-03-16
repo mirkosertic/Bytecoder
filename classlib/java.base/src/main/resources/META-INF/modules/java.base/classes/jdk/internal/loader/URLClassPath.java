@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -103,10 +103,13 @@ public class URLClassPath {
         DISABLE_ACC_CHECKING = p != null ? p.equals("true") || p.isEmpty() : false;
 
         // This property will be removed in a later release
-        p = props.getProperty("jdk.net.URLClassPath.disableClassPathURLCheck", "true");
-
+        p = props.getProperty("jdk.net.URLClassPath.disableClassPathURLCheck");
         DISABLE_CP_URL_CHECK = p != null ? p.equals("true") || p.isEmpty() : false;
-        DEBUG_CP_URL_CHECK = "debug".equals(p);
+
+        // Print a message for each Class-Path entry that is ignored (assuming
+        // the check is not disabled).
+        p = props.getProperty("jdk.net.URLClassPath.showIgnoredClassPathEntries");
+        DEBUG_CP_URL_CHECK = p != null ? p.equals("true") || p.isEmpty() : false;
     }
 
     /* The original search path of URLs. */
@@ -696,7 +699,7 @@ public class URLClassPath {
     /*
      * Nested class used to represent a Loader of resources from a JAR URL.
      */
-    static class JarLoader extends Loader {
+    private static class JarLoader extends Loader {
         private JarFile jar;
         private final URL csu;
         private JarIndex index;
@@ -711,9 +714,9 @@ public class URLClassPath {
          * Creates a new JarLoader for the specified URL referring to
          * a JAR file.
          */
-        JarLoader(URL url, URLStreamHandler jarHandler,
-                  HashMap<String, Loader> loaderMap,
-                  AccessControlContext acc)
+        private JarLoader(URL url, URLStreamHandler jarHandler,
+                          HashMap<String, Loader> loaderMap,
+                          AccessControlContext acc)
             throws IOException
         {
             super(new URL("jar", "", -1, url + "!/", jarHandler));
@@ -1092,10 +1095,15 @@ public class URLClassPath {
             int i = 0;
             while (st.hasMoreTokens()) {
                 String path = st.nextToken();
-                URL url = DISABLE_CP_URL_CHECK ? new URL(base, path) : safeResolve(base, path);
+                URL url = DISABLE_CP_URL_CHECK ? new URL(base, path) : tryResolve(base, path);
                 if (url != null) {
                     urls[i] = url;
                     i++;
+                } else {
+                    if (DEBUG_CP_URL_CHECK) {
+                        System.err.println("Class-Path entry: \"" + path
+                                           + "\" ignored in JAR file " + base);
+                    }
                 }
             }
             if (i == 0) {
@@ -1107,35 +1115,67 @@ public class URLClassPath {
             return urls;
         }
 
-        /*
-         * Return a URL for the given path resolved against the base URL, or
-         * null if the resulting URL is invalid.
+        static URL tryResolve(URL base, String input) throws MalformedURLException {
+            if ("file".equalsIgnoreCase(base.getProtocol())) {
+                return tryResolveFile(base, input);
+            } else {
+                return tryResolveNonFile(base, input);
+            }
+        }
+
+        /**
+         * Attempt to return a file URL by resolving input against a base file
+         * URL.
+         * @return the resolved URL or null if the input is an absolute URL with
+         *         a scheme other than file (ignoring case)
+         * @throws MalformedURLException
          */
-        static URL safeResolve(URL base, String path) {
-            String child = path.replace(File.separatorChar, '/');
-            try {
-                if (!URI.create(child).isAbsolute()) {
-                    URL url = new URL(base, child);
-                    if (base.getProtocol().equalsIgnoreCase("file")) {
-                        return url;
-                    } else {
-                        String bp = base.getPath();
-                        String urlp = url.getPath();
-                        int pos = bp.lastIndexOf('/');
-                        if (pos == -1) {
-                            pos = bp.length() - 1;
-                        }
-                        if (urlp.regionMatches(0, bp, 0, pos + 1)
-                            && urlp.indexOf("..", pos) == -1) {
-                            return url;
-                        }
-                    }
+        static URL tryResolveFile(URL base, String input) throws MalformedURLException {
+            URL retVal = new URL(base, input);
+            if (input.indexOf(':') >= 0 &&
+                    !"file".equalsIgnoreCase(retVal.getProtocol())) {
+                // 'input' contains a ':', which might be a scheme, or might be
+                // a Windows drive letter.  If the protocol for the resolved URL
+                // isn't "file:", it should be ignored.
+                return null;
+            }
+            return retVal;
+        }
+
+        /**
+         * Attempt to return a URL by resolving input against a base URL. Returns
+         * null if the resolved URL is not contained by the base URL.
+         *
+         * @return the resolved URL or null
+         * @throws MalformedURLException
+         */
+        static URL tryResolveNonFile(URL base, String input) throws MalformedURLException {
+            String child = input.replace(File.separatorChar, '/');
+            if (isRelative(child)) {
+                URL url = new URL(base, child);
+                String bp = base.getPath();
+                String urlp = url.getPath();
+                int pos = bp.lastIndexOf('/');
+                if (pos == -1) {
+                    pos = bp.length() - 1;
                 }
-            } catch (MalformedURLException | IllegalArgumentException e) {}
-            if (DEBUG_CP_URL_CHECK) {
-                System.err.println("Class-Path entry: \"" + path + "\" ignored in JAR file " + base);
+                if (urlp.regionMatches(0, bp, 0, pos + 1)
+                        && urlp.indexOf("..", pos) == -1) {
+                    return url;
+                }
             }
             return null;
+        }
+
+        /**
+         * Returns true if the given input is a relative URI.
+         */
+        static boolean isRelative(String child) {
+            try {
+                return !URI.create(child).isAbsolute();
+            } catch (IllegalArgumentException e) {
+                return false;
+            }
         }
     }
 
@@ -1147,11 +1187,11 @@ public class URLClassPath {
         /* Canonicalized File */
         private File dir;
 
-        FileLoader(URL url) throws IOException {
+        /*
+         * Creates a new FileLoader for the specified URL with a file protocol.
+         */
+        private FileLoader(URL url) throws IOException {
             super(url);
-            if (!"file".equals(url.getProtocol())) {
-                throw new IllegalArgumentException("url");
-            }
             String path = url.getFile().replace('/', File.separatorChar);
             path = ParseUtil.decode(path);
             dir = (new File(path)).getCanonicalFile();

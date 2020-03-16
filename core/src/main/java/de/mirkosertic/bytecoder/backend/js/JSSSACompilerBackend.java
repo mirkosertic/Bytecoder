@@ -670,6 +670,12 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(2).text("},").newLine();
 
+        theWriter.tab(2).text("nullpointerexception").space().text(":").space().text("{").newLine();
+        theWriter.tab(3).text("getExtendedNPEMessage").colon().text("function(handle, data, offset, length)").space().text("{").newLine();
+        theWriter.tab(4).text("return null;").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
         theWriter.tab(2).text("fileoutputstream").space().text(":").space().text("{").newLine();
         theWriter.tab(3).text("writeBytesLONGL1BYTEINTINT").colon().text("function(handle, data, offset, length)").space().text("{").newLine();
         theWriter.tab(4).text("bytecoder.filehandles[handle].writeBytesLONGL1BYTEINTINT(handle,data,offset,length);").newLine();

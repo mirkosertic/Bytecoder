@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,8 +27,10 @@ package sun.security.ssl;
 
 import java.io.IOException;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.concurrent.locks.ReentrantLock;
 import static sun.security.ssl.ClientHello.ClientHelloMessage;
 
 /**
@@ -44,6 +46,8 @@ abstract class HelloCookieManager {
         private volatile D13HelloCookieManager d13HelloCookieManager;
         private volatile T13HelloCookieManager t13HelloCookieManager;
 
+        private final ReentrantLock managerLock = new ReentrantLock();
+
         Builder(SecureRandom secureRandom) {
             this.secureRandom = secureRandom;
         }
@@ -55,11 +59,14 @@ abstract class HelloCookieManager {
                         return d13HelloCookieManager;
                     }
 
-                    synchronized (this) {
+                    managerLock.lock();
+                    try {
                         if (d13HelloCookieManager == null) {
                             d13HelloCookieManager =
                                     new D13HelloCookieManager(secureRandom);
                         }
+                    } finally {
+                        managerLock.unlock();
                     }
 
                     return d13HelloCookieManager;
@@ -68,11 +75,14 @@ abstract class HelloCookieManager {
                         return d10HelloCookieManager;
                     }
 
-                    synchronized (this) {
+                    managerLock.lock();
+                    try {
                         if (d10HelloCookieManager == null) {
                             d10HelloCookieManager =
                                     new D10HelloCookieManager(secureRandom);
                         }
+                    } finally {
+                        managerLock.unlock();
                     }
 
                     return d10HelloCookieManager;
@@ -83,11 +93,14 @@ abstract class HelloCookieManager {
                         return t13HelloCookieManager;
                     }
 
-                    synchronized (this) {
+                    managerLock.lock();
+                    try {
                         if (t13HelloCookieManager == null) {
                             t13HelloCookieManager =
                                     new T13HelloCookieManager(secureRandom);
                         }
+                    } finally {
+                        managerLock.unlock();
                     }
 
                     return t13HelloCookieManager;
@@ -113,6 +126,8 @@ abstract class HelloCookieManager {
         private byte[]      cookieSecret;
         private byte[]      legacySecret;
 
+        private final ReentrantLock d10ManagerLock = new ReentrantLock();
+
         D10HelloCookieManager(SecureRandom secureRandom) {
             this.secureRandom = secureRandom;
 
@@ -130,7 +145,8 @@ abstract class HelloCookieManager {
             int version;
             byte[] secret;
 
-            synchronized (this) {
+            d10ManagerLock.lock();
+            try {
                 version = cookieVersion;
                 secret = cookieSecret;
 
@@ -141,9 +157,17 @@ abstract class HelloCookieManager {
                 }
 
                 cookieVersion++;
+            } finally {
+                d10ManagerLock.unlock();
             }
 
-            MessageDigest md = JsseJce.getMessageDigest("SHA-256");
+            MessageDigest md;
+            try {
+                md = MessageDigest.getInstance("SHA-256");
+            } catch (NoSuchAlgorithmException nsae) {
+                throw new RuntimeException(
+                    "MessageDigest algorithm SHA-256 is not available", nsae);
+            }
             byte[] helloBytes = clientHello.getHelloCookieBytes();
             md.update(helloBytes);
             byte[] cookie = md.digest(secret);      // 32 bytes
@@ -161,15 +185,24 @@ abstract class HelloCookieManager {
             }
 
             byte[] secret;
-            synchronized (this) {
+            d10ManagerLock.lock();
+            try {
                 if (((cookieVersion >> 24) & 0xFF) == cookie[0]) {
                     secret = cookieSecret;
                 } else {
                     secret = legacySecret;  // including out of window cookies
                 }
+            } finally {
+                d10ManagerLock.unlock();
             }
 
-            MessageDigest md = JsseJce.getMessageDigest("SHA-256");
+            MessageDigest md;
+            try {
+                md = MessageDigest.getInstance("SHA-256");
+            } catch (NoSuchAlgorithmException nsae) {
+                throw new RuntimeException(
+                    "MessageDigest algorithm SHA-256 is not available", nsae);
+            }
             byte[] helloBytes = clientHello.getHelloCookieBytes();
             md.update(helloBytes);
             byte[] target = md.digest(secret);      // 32 bytes
@@ -205,6 +238,8 @@ abstract class HelloCookieManager {
         private final byte[]    cookieSecret;
         private final byte[]    legacySecret;
 
+        private final ReentrantLock t13ManagerLock = new ReentrantLock();
+
         T13HelloCookieManager(SecureRandom secureRandom) {
             this.secureRandom = secureRandom;
             this.cookieVersion = secureRandom.nextInt();
@@ -221,7 +256,8 @@ abstract class HelloCookieManager {
             int version;
             byte[] secret;
 
-            synchronized (this) {
+            t13ManagerLock.lock();
+            try {
                 version = cookieVersion;
                 secret = cookieSecret;
 
@@ -232,10 +268,20 @@ abstract class HelloCookieManager {
                 }
 
                 cookieVersion++;        // allow wrapped version number
+            } finally {
+                t13ManagerLock.unlock();
             }
 
-            MessageDigest md = JsseJce.getMessageDigest(
+            MessageDigest md;
+            try {
+                md = MessageDigest.getInstance(
                     context.negotiatedCipherSuite.hashAlg.name);
+            } catch (NoSuchAlgorithmException nsae) {
+                throw new RuntimeException(
+                        "MessageDigest algorithm " +
+                        context.negotiatedCipherSuite.hashAlg.name +
+                        " is not available", nsae);
+            }
             byte[] headerBytes = clientHello.getHeaderBytes();
             md.update(headerBytes);
             byte[] headerCookie = md.digest(secret);
@@ -292,15 +338,25 @@ abstract class HelloCookieManager {
                     Arrays.copyOfRange(cookie, 3 + hashLen, cookie.length);
 
             byte[] secret;
-            synchronized (this) {
+            t13ManagerLock.lock();
+            try {
                 if ((byte)((cookieVersion >> 24) & 0xFF) == cookie[2]) {
                     secret = cookieSecret;
                 } else {
                     secret = legacySecret;  // including out of window cookies
                 }
+            } finally {
+                t13ManagerLock.unlock();
             }
 
-            MessageDigest md = JsseJce.getMessageDigest(cs.hashAlg.name);
+            MessageDigest md;
+            try {
+                md = MessageDigest.getInstance(cs.hashAlg.name);
+            } catch (NoSuchAlgorithmException nsae) {
+                throw new RuntimeException(
+                        "MessageDigest algorithm " +
+                        cs.hashAlg.name + " is not available", nsae);
+            }
             byte[] headerBytes = clientHello.getHeaderBytes();
             md.update(headerBytes);
             byte[] headerCookie = md.digest(secret);

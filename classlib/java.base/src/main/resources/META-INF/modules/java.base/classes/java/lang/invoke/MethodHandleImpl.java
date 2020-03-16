@@ -33,6 +33,7 @@ import jdk.internal.org.objectweb.asm.MethodVisitor;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.Reflection;
 import jdk.internal.vm.annotation.ForceInline;
+import jdk.internal.vm.annotation.Hidden;
 import jdk.internal.vm.annotation.Stable;
 import sun.invoke.empty.Empty;
 import sun.invoke.util.ValueConversions;
@@ -40,6 +41,7 @@ import sun.invoke.util.VerifyType;
 import sun.invoke.util.Wrapper;
 
 import java.lang.reflect.Array;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -58,7 +60,8 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
  * Trusted implementation code for MethodHandle.
  * @author jrose
  */
-/*non-public*/ abstract class MethodHandleImpl {
+/*non-public*/
+abstract class MethodHandleImpl {
 
     /// Factory methods to create method handles:
 
@@ -681,9 +684,8 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
         return SimpleMethodHandle.make(srcType, form);
     }
 
-    @LambdaForm.Hidden
-    static
-    MethodHandle selectAlternative(boolean testResult, MethodHandle target, MethodHandle fallback) {
+    @Hidden
+    static MethodHandle selectAlternative(boolean testResult, MethodHandle target, MethodHandle fallback) {
         if (testResult) {
             return target;
         } else {
@@ -692,10 +694,9 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
     }
 
     // Intrinsified by C2. Counters are used during parsing to calculate branch frequencies.
-    @LambdaForm.Hidden
+    @Hidden
     @jdk.internal.HotSpotIntrinsicCandidate
-    static
-    boolean profileBoolean(boolean result, int[] counters) {
+    static boolean profileBoolean(boolean result, int[] counters) {
         // Profile is int[2] where [0] and [1] correspond to false and true occurrences respectively.
         int idx = result ? 1 : 0;
         try {
@@ -708,15 +709,13 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
     }
 
     // Intrinsified by C2. Returns true if obj is a compile-time constant.
-    @LambdaForm.Hidden
+    @Hidden
     @jdk.internal.HotSpotIntrinsicCandidate
-    static
-    boolean isCompileConstant(Object obj) {
+    static boolean isCompileConstant(Object obj) {
         return false;
     }
 
-    static
-    MethodHandle makeGuardWithTest(MethodHandle test,
+    static MethodHandle makeGuardWithTest(MethodHandle test,
                                    MethodHandle target,
                                    MethodHandle fallback) {
         MethodType type = target.type();
@@ -743,8 +742,7 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
     }
 
 
-    static
-    MethodHandle profile(MethodHandle target) {
+    static MethodHandle profile(MethodHandle target) {
         if (DONT_INLINE_THRESHOLD >= 0) {
             return makeBlockInliningWrapper(target);
         } else {
@@ -756,8 +754,7 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
      * Block inlining during JIT-compilation of a target method handle if it hasn't been invoked enough times.
      * Corresponding LambdaForm has @DontInline when compiled into bytecode.
      */
-    static
-    MethodHandle makeBlockInliningWrapper(MethodHandle target) {
+    static MethodHandle makeBlockInliningWrapper(MethodHandle target) {
         LambdaForm lform;
         if (DONT_INLINE_THRESHOLD > 0) {
             lform = Makers.PRODUCE_BLOCK_INLINING_FORM.apply(target);
@@ -894,8 +891,7 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
         }
     }
 
-    static
-    LambdaForm makeGuardWithTestForm(MethodType basicType) {
+    static LambdaForm makeGuardWithTestForm(MethodType basicType) {
         LambdaForm lform = basicType.form().cachedLambdaForm(MethodTypeForm.LF_GWT);
         if (lform != null)  return lform;
         final int THIS_MH      = 0;  // the BMH_LLL
@@ -1025,8 +1021,7 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
         return basicType.form().setCachedLambdaForm(MethodTypeForm.LF_GWC, lform);
     }
 
-    static
-    MethodHandle makeGuardWithCatch(MethodHandle target,
+    static MethodHandle makeGuardWithCatch(MethodHandle target,
                                     Class<? extends Throwable> exType,
                                     MethodHandle catcher) {
         MethodType type = target.type();
@@ -1054,7 +1049,7 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
      * Intrinsified during LambdaForm compilation
      * (see {@link InvokerBytecodeGenerator#emitGuardWithCatch emitGuardWithCatch}).
      */
-    @LambdaForm.Hidden
+    @Hidden
     static Object guardWithCatch(MethodHandle target, Class<? extends Throwable> exType, MethodHandle catcher,
                                  Object... av) throws Throwable {
         // Use asFixedArity() to avoid unnecessary boxing of last argument for VarargsCollector case.
@@ -1067,7 +1062,7 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
     }
 
     /** Prepend elements to an array. */
-    @LambdaForm.Hidden
+    @Hidden
     private static Object[] prepend(Object[] array, Object... elems) {
         int nArray = array.length;
         int nElems = elems.length;
@@ -1077,8 +1072,7 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
         return newArray;
     }
 
-    static
-    MethodHandle throwException(MethodType type) {
+    static MethodHandle throwException(MethodType type) {
         assert(Throwable.class.isAssignableFrom(type.parameterType(0)));
         int arity = type.parameterCount();
         if (arity > 1) {
@@ -1136,8 +1130,7 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
      * is sensitive to its caller.  A small number of system methods
      * are in this category, including Class.forName and Method.invoke.
      */
-    static
-    MethodHandle bindCaller(MethodHandle mh, Class<?> hostClass) {
+    static MethodHandle bindCaller(MethodHandle mh, Class<?> hostClass) {
         return BindCaller.bindCaller(mh, hostClass);
     }
 
@@ -1146,8 +1139,7 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
     private static class BindCaller {
         private static MethodType INVOKER_MT = MethodType.methodType(Object.class, MethodHandle.class, Object[].class);
 
-        static
-        MethodHandle bindCaller(MethodHandle mh, Class<?> hostClass) {
+        static MethodHandle bindCaller(MethodHandle mh, Class<?> hostClass) {
             // Code in the boot layer should now be careful while creating method handles or
             // functional interface instances created from method references to @CallerSensitive  methods,
             // it needs to be ensured the handles or interface instances are kept safe and are not passed
@@ -1265,7 +1257,7 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
                           null, null);
 
             // Suppress invoker method in stack traces.
-            AnnotationVisitor av0 = mv.visitAnnotation("Ljava/lang/invoke/LambdaForm$Hidden;", true);
+            AnnotationVisitor av0 = mv.visitAnnotation(InvokerBytecodeGenerator.HIDDEN_SIG, true);
             av0.visitEnd();
 
             mv.visitCode();
@@ -1664,7 +1656,8 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
         return getConstantHandle(MH_copyAsPrimitiveArray).bindTo(Wrapper.forPrimitiveType(elemType));
     }
 
-    /*non-public*/ static void assertSame(Object mh1, Object mh2) {
+    /*non-public*/
+    static void assertSame(Object mh1, Object mh2) {
         if (mh1 != mh2) {
             String msg = String.format("mh1 != mh2: mh1 = %s (form: %s); mh2 = %s (form: %s)",
                     mh1, ((MethodHandle)mh1).form,
@@ -1798,6 +1791,44 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
                                 invokerMethodTypes, callSiteMethodTypes);
             }
 
+            @Override
+            public VarHandle memoryAddressViewVarHandle(Class<?> carrier, long alignmentMask,
+                                                        ByteOrder order, long offset, long[] strides) {
+                return VarHandles.makeMemoryAddressViewHandle(carrier, alignmentMask, order, offset, strides);
+            }
+
+            @Override
+            public Class<?> memoryAddressCarrier(VarHandle handle) {
+                return checkMemAccessHandle(handle).carrier();
+            }
+
+            @Override
+            public long memoryAddressAlignmentMask(VarHandle handle) {
+                return checkMemAccessHandle(handle).alignmentMask;
+            }
+
+            @Override
+            public ByteOrder memoryAddressByteOrder(VarHandle handle) {
+                return checkMemAccessHandle(handle).be ?
+                        ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN;
+            }
+
+            @Override
+            public long memoryAddressOffset(VarHandle handle) {
+                return checkMemAccessHandle(handle).offset;
+            }
+
+            @Override
+            public long[] memoryAddressStrides(VarHandle handle) {
+                return checkMemAccessHandle(handle).strides();
+            }
+
+            private VarHandleMemoryAddressBase checkMemAccessHandle(VarHandle handle) {
+                if (!(handle instanceof VarHandleMemoryAddressBase)) {
+                    throw new IllegalArgumentException("Not a memory access varhandle: " + handle);
+                }
+                return (VarHandleMemoryAddressBase) handle;
+            }
         });
     }
 
@@ -1969,7 +2000,7 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
      * Intrinsified during LambdaForm compilation
      * (see {@link InvokerBytecodeGenerator#emitLoop(int)}).
      */
-    @LambdaForm.Hidden
+    @Hidden
     static Object loop(BasicType[] localTypes, LoopClauses clauseData, Object... av) throws Throwable {
         final MethodHandle[] init = clauseData.clauses[0];
         final MethodHandle[] step = clauseData.clauses[1];
@@ -2174,7 +2205,7 @@ import static jdk.internal.org.objectweb.asm.Opcodes.*;
      * Intrinsified during LambdaForm compilation
      * (see {@link InvokerBytecodeGenerator#emitTryFinally emitTryFinally}).
      */
-    @LambdaForm.Hidden
+    @Hidden
     static Object tryFinally(MethodHandle target, MethodHandle cleanup, Object... av) throws Throwable {
         Throwable t = null;
         Object r = null;

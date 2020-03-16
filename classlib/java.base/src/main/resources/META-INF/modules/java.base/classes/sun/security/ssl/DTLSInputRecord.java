@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -58,7 +58,7 @@ final class DTLSInputRecord extends InputRecord implements DTLSRecord {
     }
 
     @Override
-    public synchronized void close() throws IOException {
+    public void close() throws IOException {
         if (!isClosed) {
             super.close();
         }
@@ -359,7 +359,19 @@ final class DTLSInputRecord extends InputRecord implements DTLSRecord {
             return null;
         }
 
+        // Fail fast for unknown handshake message.
         byte handshakeType = plaintextFragment.get();       // pos: 0
+        if (!SSLHandshake.isKnown(handshakeType)) {
+            if (SSLLogger.isOn && SSLLogger.isOn("ssl")) {
+                SSLLogger.fine("Discard invalid record: " +
+                        "unknown handshake type size, Handshake.msg_type = " +
+                        (handshakeType & 0xFF));
+            }
+
+            // invalid, discard this record [section 4.1.2.7, RFC 6347]
+            return null;
+        }
+
         int messageLength =
                 ((plaintextFragment.get() & 0xFF) << 16) |
                 ((plaintextFragment.get() & 0xFF) << 8) |

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,7 +34,6 @@ import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
 import java.lang.ref.Cleaner.Cleanable;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.Files;
@@ -65,6 +64,7 @@ import jdk.internal.misc.VM;
 import jdk.internal.perf.PerfCounter;
 import jdk.internal.ref.CleanerFactory;
 import jdk.internal.vm.annotation.Stable;
+import sun.nio.cs.UTF_8;
 
 import static java.util.zip.ZipConstants64.*;
 import static java.util.zip.ZipUtils.*;
@@ -87,8 +87,7 @@ import static java.util.zip.ZipUtils.*;
  * @author      David Connelly
  * @since 1.1
  */
-public
-class ZipFile implements ZipConstants, Closeable {
+public class ZipFile implements ZipConstants, Closeable {
 
     private final String name;     // zip file name
     private volatile boolean closeRequested;
@@ -166,7 +165,7 @@ class ZipFile implements ZipConstants, Closeable {
      * @since 1.3
      */
     public ZipFile(File file, int mode) throws IOException {
-        this(file, mode, StandardCharsets.UTF_8);
+        this(file, mode, UTF_8.INSTANCE);
     }
 
     /**
@@ -673,7 +672,7 @@ class ZipFile implements ZipConstants, Closeable {
         e.method = CENHOW(cen, pos);
         if (elen != 0) {
             int start = pos + CENHDR + nlen;
-            e.setExtra0(Arrays.copyOfRange(cen, start, start + elen), true);
+            e.setExtra0(Arrays.copyOfRange(cen, start, start + elen), true, false);
         }
         if (clen != 0) {
             int start = pos + CENHDR + nlen + elen;
@@ -867,6 +866,7 @@ class ZipFile implements ZipConstants, Closeable {
     private class ZipFileInputStream extends InputStream {
         private volatile boolean closeRequested;
         private   long pos;     // current position within entry data
+        private   long startingPos; // Start position for the entry data
         protected long rem;     // number of remaining bytes within entry
         protected long size;    // uncompressed size of this entry
 
@@ -938,6 +938,7 @@ class ZipFile implements ZipConstants, Closeable {
                     throw new ZipException("ZipFile invalid LOC header (bad signature)");
                 }
                 pos += LOCHDR + LOCNAM(loc) + LOCEXT(loc);
+                startingPos = pos; // Save starting position for the entry
             }
             return pos;
         }
@@ -979,8 +980,19 @@ class ZipFile implements ZipConstants, Closeable {
         public long skip(long n) throws IOException {
             synchronized (ZipFile.this) {
                 initDataOffset();
-                if (n > rem) {
-                    n = rem;
+                long newPos = pos + n;
+                if (n > 0) {
+                    // If we overflowed adding the skip value or are moving
+                    // past EOF, set the skip value to number of bytes remaining
+                    // to reach EOF
+                    if (newPos < 0 || n > rem) {
+                        n = rem;
+                    }
+                } else if (newPos < startingPos) {
+                    // Tried to position before BOF so set position to the
+                    // BOF and return the number of bytes we moved backwards
+                    // to reach BOF
+                    n = startingPos - pos;
                 }
                 pos += n;
                 rem -= n;
@@ -1030,7 +1042,7 @@ class ZipFile implements ZipConstants, Closeable {
             for (int i = 0; i < names.length; i++) {
                 int pos = zsrc.metanames[i];
                 names[i] = new String(cen, pos + CENHDR, CENNAM(cen, pos),
-                                      StandardCharsets.UTF_8);
+                                      UTF_8.INSTANCE);
             }
             return names;
         }
