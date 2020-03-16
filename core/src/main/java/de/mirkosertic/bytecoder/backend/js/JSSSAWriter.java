@@ -507,7 +507,16 @@ public class JSSSAWriter {
         final BytecodeMethodSignature theSignature = aValue.getSignature();
         final BytecodeLinkedClass theClass = linkerContext.resolveClass(aValue.getClassName());
         final BytecodeMethod theMethod = theClass.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
-        writer.text(minifier.toClassName(aValue.getClassName())).text(".").text(minifier.toMethodName(theMethodName, theSignature));
+        if (theMethod.isConstructor()) {
+            if (theMethod.getSignature().getArguments().length != 0) {
+                throw new IllegalStateException("Constructor reference with more than zero arguments is not supported!");
+            }
+            writer.text(minifier.toClassName(aValue.getClassName()))
+                    .text(".").text(minifier.toSymbol("newInstance"));
+        } else {
+            writer.text(minifier.toClassName(aValue.getClassName())).text(".")
+                    .text(minifier.toMethodName(theMethodName, theSignature));
+        }
     }
 
     private void print(final FloorExpression aValue) {

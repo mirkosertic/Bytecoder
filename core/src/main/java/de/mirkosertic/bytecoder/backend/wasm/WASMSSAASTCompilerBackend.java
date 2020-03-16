@@ -771,6 +771,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
                     final String theMethodName = WASMWriterUtils.toMethodName(theLinkedClass.getClassName(), "$newInstance", theMethod.getSignature());
                     final List<Param> theParams = new ArrayList<>();
+                    theParams.add(param("thisRef", PrimitiveType.i32));
                     for (int i=0;i<theMethod.getSignature().getArguments().length;i++) {
                         theParams.add(param("p" + i, toType(TypeRef.toType(theMethod.getSignature().getArguments()[i]))));
                     }
@@ -803,6 +804,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     theCreateFunction.flow.voidCall(theConsRef, theArguments, null);
 
                     theCreateFunction.flow.ret(getLocal(newInstance, null), null);
+
+                    theCreateFunction.toTable();
                 }
 
                 final ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext, new WASMIntrinsics());
@@ -928,7 +931,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         final Iff theIff = theInstanceOfHelper.flow.iff(search.getClassName().name(),
                                 i32.eq(getGlobal(theGlobal, null), getLocal(theInstanceOfHelper.localByLabel("runtimeClass"), null), null), null);
 
-                        theIff.flow.ret(call(weakFunctionReference(theNewInstanceMethodName, null), Collections.emptyList(), null), null);
+                        theIff.flow.ret(call(weakFunctionReference(theNewInstanceMethodName, null),
+                                Collections.singletonList(i32.c(0, null)), null), null);
                     });
                 }
             });

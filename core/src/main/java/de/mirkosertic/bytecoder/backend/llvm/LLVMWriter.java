@@ -15,7 +15,10 @@
  */
 package de.mirkosertic.bytecoder.backend.llvm;
 
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
+
 import de.mirkosertic.bytecoder.backend.NativeMemoryLayouter;
+import de.mirkosertic.bytecoder.backend.wasm.WASMWriterUtils;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
@@ -1626,8 +1629,32 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final MethodRefExpression e) {
-        target.print("ptrtoint ");
 
+        final String theName = e.getMethodName();
+        final BytecodeMethodSignature theSignature = e.getSignature();
+        final BytecodeLinkedClass theClass = linkerContext.resolveClass(e.getClassName());
+        final BytecodeMethod theMethod = theClass.getBytecodeClass().methodByNameAndSignatureOrNull(theName, theSignature);
+
+        if (theMethod.isConstructor()) {
+            if (theMethod.getSignature().getArguments().length != 0) {
+                throw new IllegalStateException("Constructor reference with more than zero arguments is not supported!");
+            }
+
+            final String theMethodName = LLVMWriterUtils.toMethodName(theClass.getClassName(), NEWINSTANCE_METHOD_NAME, theMethod.getSignature());
+
+            target.print("ptrtoint ");
+            final BytecodeMethodSignature theNewInstanceSignature = new
+                    BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
+                    theSignature.getArguments());
+            target.print(LLVMWriterUtils.toSignature(theNewInstanceSignature));
+
+            target.print("* @");
+            target.print(theMethodName);
+            target.print(" to i32");
+            return;
+        }
+
+        target.print("ptrtoint ");
         target.print(LLVMWriterUtils.toSignature(e.getSignature()));
 
         final String theMethodName = LLVMWriterUtils.toMethodName(
@@ -1637,7 +1664,6 @@ public class LLVMWriter implements AutoCloseable {
 
         target.print("* @");
         target.print(theMethodName);
-
         target.print(" to i32");
     }
 
@@ -2016,20 +2042,16 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final NewObjectAndConstructExpression e) {
-        target.print("call i32 (");
+        target.print("call i32 (i32");
         for (int i=0;i<e.getSignature().getArguments().length;i++) {
-            if (i>0) {
-                target.print(",");
-            }
+            target.print(",");
             target.print(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
         }
         target.print(") @");
         target.print(LLVMWriterUtils.toMethodName(e.getClazz(), LLVMWriter.NEWINSTANCE_METHOD_NAME, e.getSignature()));
-        target.print("(");
+        target.print("(i32 0");
         for (int i=0;i<e.incomingDataFlows().size();i++) {
-            if (i>0) {
-                target.print(",");
-            }
+            target.print(",");
             target.print(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
             target.print(" ");
             writeResolved(e.incomingDataFlows().get(i));

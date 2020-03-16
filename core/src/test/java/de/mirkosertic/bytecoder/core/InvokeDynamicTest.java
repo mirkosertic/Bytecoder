@@ -20,10 +20,12 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.function.Supplier;
+
 @RunWith(BytecoderUnitTestRunner.class)
 public class InvokeDynamicTest {
 
-    private static int compute(int a, int b) {
+    private static int compute(final int a, final int b) {
         return a + b;
     }
 
@@ -31,16 +33,16 @@ public class InvokeDynamicTest {
         int compute(int a, int b);
     }
 
-    private static int computeWith(Computer aComputer, int a, int b) {
+    private static int computeWith(final Computer aComputer, final int a, final int b) {
         return aComputer.compute(a, b);
     }
 
     @Test
     public void testLambda() {
-        String theLala = "";
+        final String theLala = "";
         final int x = 1;
         final int y = 2;
-        Runnable theRun = () -> {
+        final Runnable theRun = () -> {
             compute(x, y);
         };
     }
@@ -49,39 +51,64 @@ public class InvokeDynamicTest {
         int add(int aValue);
     }
 
-    public static int add(int aValue) {
+    public static int add(final int aValue) {
         return aValue + 1;
     }
 
-    public int addMethodRef(int aValue) {
+    public int addMethodRef(final int aValue) {
         return aValue + 1;
     }
 
-    public int add(Adder adder) {
+    public int add(final Adder adder) {
         return adder.add(10);
     }
 
     @Test
     public void testLambdaArguments() {
-        int theResult = computeWith((x,y) -> x + y, 10, 20);
+        final int theResult = computeWith((x,y) -> x + y, 10, 20);
         Assert.assertEquals(theResult, 30, 0);
     }
 
     @Test
     public void testLambdaAdd() {
-        int theResult = add((i) -> i + 10);
+        final int theResult = add((i) -> i + 10);
         Assert.assertEquals(20, theResult, 0);
     }
 
     @Test
     public void testStaticMethodRefAdd() {
-        int theResult = add(InvokeDynamicTest::add);
+        final int theResult = add(InvokeDynamicTest::add);
         Assert.assertEquals(11, theResult, 0);
     }
 
     @Test
     public void testInstanceMethodRefAdd() {
-        int theResult = add(this::addMethodRef);
+        final int theResult = add(this::addMethodRef);
         Assert.assertEquals(11, theResult, 0);
+    }
+
+    public static class TestConstructorInvoke<T> {
+
+        TestConstructorInvoke() {
+
+        }
+
+        public void test(final Supplier<T> layoutSupplier) {
+            final T t = layoutSupplier.get();
+            System.out.println(t.toString());
+        }
+
+        public static class TestObject {
+            @Override
+            public String toString() {
+                return "TestConstructorInvoke{}";
+            }
+        }
+    }
+
+    @Test
+    public void testConstructorRef() {
+        final TestConstructorInvoke<TestConstructorInvoke.TestObject> testConstructorInvoke = new TestConstructorInvoke<>();
+        testConstructorInvoke.test(TestConstructorInvoke.TestObject::new);
     }
 }

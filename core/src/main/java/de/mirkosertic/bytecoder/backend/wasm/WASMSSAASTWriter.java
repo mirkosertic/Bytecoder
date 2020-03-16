@@ -933,6 +933,7 @@ public class WASMSSAASTWriter {
         final WeakFunctionReferenceCallable theFunction = weakFunctionReference(theMethodName, aValue);
 
         final List<WASMValue> theArguments = new ArrayList<>();
+        theArguments.add(i32.c(0, null));
         for (final Value theValue : aValue.incomingDataFlows()) {
             theArguments.add(toValue(theValue));
         }
@@ -1026,6 +1027,20 @@ public class WASMSSAASTWriter {
     }
 
     private WASMValue methodRefValue(final MethodRefExpression aValue) {
+        final String theName = aValue.getMethodName();
+        final BytecodeMethodSignature theSignature = aValue.getSignature();
+        final BytecodeLinkedClass theClass = linkerContext.resolveClass(aValue.getClassName());
+        final BytecodeMethod theMethod = theClass.getBytecodeClass().methodByNameAndSignatureOrNull(theName, theSignature);
+
+        if (theMethod.isConstructor()) {
+            if (theMethod.getSignature().getArguments().length != 0) {
+                throw new IllegalStateException("Constructor reference with more than zero arguments is not supported!");
+            }
+
+            final String theMethodName = WASMWriterUtils.toMethodName(theClass.getClassName(), "$newInstance", theMethod.getSignature());
+            return weakFunctionTableReference(theMethodName, aValue);
+        }
+
         final String theMethodName = WASMWriterUtils.toMethodName(
                 aValue.getClassName(),
                 aValue.getMethodName(),
