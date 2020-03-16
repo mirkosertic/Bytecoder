@@ -1636,27 +1636,6 @@ public class LLVMWriter implements AutoCloseable {
         final BytecodeLinkedClass theClass = linkerContext.resolveClass(e.getClassName());
 
         if (e.getReferenceKind() == BytecodeReferenceKind.REF_invokeStatic) {
-/*            final BytecodeMethod theMethod = theClass.getBytecodeClass().methodByNameAndSignatureOrNull(theName, theSignature);
-
-            if (theMethod != null && theMethod.isConstructor()) {
-                if (theMethod.getSignature().getArguments().length != 0) {
-                    throw new IllegalStateException("Constructor reference with more than zero arguments is not supported!");
-                }
-
-                final String theMethodName = LLVMWriterUtils.toMethodName(theClass.getClassName(), NEWINSTANCE_METHOD_NAME, theMethod.getSignature());
-
-                target.print("ptrtoint ");
-                final BytecodeMethodSignature theNewInstanceSignature = new
-                        BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
-                        theSignature.getArguments());
-                target.print(LLVMWriterUtils.toSignature(theNewInstanceSignature));
-
-                target.print("* @");
-                target.print(theMethodName);
-                target.print(" to i32");
-                return;
-            }*/
-
             target.print("ptrtoint ");
             target.print(LLVMWriterUtils.toSignature(e.getSignature()));
 
@@ -1672,26 +1651,30 @@ public class LLVMWriter implements AutoCloseable {
         }
 
         final BytecodeResolvedMethods theMethods = theClass.resolvedMethods();
-        final BytecodeResolvedMethods.MethodEntry theMethodEntry = theMethods.implementingClassOf(theName, theSignature);
-        final BytecodeMethod theMethod = theMethodEntry.getValue();
+        try {
+            final BytecodeResolvedMethods.MethodEntry theMethodEntry = theMethods.implementingClassOf(theName, theSignature);
+            final BytecodeMethod theMethod = theMethodEntry.getValue();
 
-        if (theMethod.isConstructor()) {
-            if (theMethod.getSignature().getArguments().length != 0) {
-                throw new IllegalStateException("Constructor reference with more than zero arguments is not supported!");
+            if (theMethod.isConstructor()) {
+                if (theMethod.getSignature().getArguments().length != 0) {
+                    throw new IllegalStateException("Constructor reference with more than zero arguments is not supported!");
+                }
+
+                final String theMethodName = LLVMWriterUtils.toMethodName(theMethodEntry.getProvidingClass().getClassName(), NEWINSTANCE_METHOD_NAME, theMethod.getSignature());
+
+                target.print("ptrtoint ");
+                final BytecodeMethodSignature theNewInstanceSignature = new
+                        BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
+                        theSignature.getArguments());
+                target.print(LLVMWriterUtils.toSignature(theNewInstanceSignature));
+
+                target.print("* @");
+                target.print(theMethodName);
+                target.print(" to i32");
+                return;
             }
-
-            final String theMethodName = LLVMWriterUtils.toMethodName(theMethodEntry.getProvidingClass().getClassName(), NEWINSTANCE_METHOD_NAME, theMethod.getSignature());
-
-            target.print("ptrtoint ");
-            final BytecodeMethodSignature theNewInstanceSignature = new
-                    BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
-                    theSignature.getArguments());
-            target.print(LLVMWriterUtils.toSignature(theNewInstanceSignature));
-
-            target.print("* @");
-            target.print(theMethodName);
-            target.print(" to i32");
-            return;
+        } catch (IllegalArgumentException ex) {
+            // Method not found
         }
 
         target.print("ptrtoint ");

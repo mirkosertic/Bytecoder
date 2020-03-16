@@ -1033,16 +1033,6 @@ public class WASMSSAASTWriter {
         final BytecodeLinkedClass theClass = linkerContext.resolveClass(aValue.getClassName());
 
         if (aValue.getReferenceKind() == BytecodeReferenceKind.REF_invokeStatic) {
-            /*final BytecodeMethod theMethod = theClass.getBytecodeClass().methodByNameAndSignatureOrNull(theName, theSignature);
-            if (theMethod!= null && theMethod.isConstructor()) {
-                if (theMethod.getSignature().getArguments().length != 0) {
-                    throw new IllegalStateException("Constructor reference with more than zero arguments is not supported!");
-                }
-
-                final String theMethodName = WASMWriterUtils.toMethodName(theClass.getClassName(), "$newInstance", theMethod.getSignature());
-                return weakFunctionTableReference(theMethodName, aValue);
-            }*/
-
             final String theMethodName = WASMWriterUtils.toMethodName(
                     aValue.getClassName(),
                     aValue.getMethodName(),
@@ -1052,16 +1042,20 @@ public class WASMSSAASTWriter {
         }
 
         final BytecodeResolvedMethods theMethods = theClass.resolvedMethods();
-        final BytecodeResolvedMethods.MethodEntry theMethodEntry = theMethods.implementingClassOf(theName, theSignature);
-        final BytecodeMethod theMethod = theMethodEntry.getValue();
+        try {
+            final BytecodeResolvedMethods.MethodEntry theMethodEntry = theMethods.implementingClassOf(theName, theSignature);
+            final BytecodeMethod theMethod = theMethodEntry.getValue();
 
-        if (theMethod.isConstructor()) {
-            if (theMethod.getSignature().getArguments().length != 0) {
-                throw new IllegalStateException("Constructor reference with more than zero arguments is not supported!");
+            if (theMethod.isConstructor()) {
+                if (theMethod.getSignature().getArguments().length != 0) {
+                    throw new IllegalStateException("Constructor reference with more than zero arguments is not supported!");
+                }
+
+                final String theMethodName = WASMWriterUtils.toMethodName(theMethodEntry.getProvidingClass().getClassName(), "$newInstance", theSignature);
+                return weakFunctionTableReference(theMethodName, aValue);
             }
-
-            final String theMethodName = WASMWriterUtils.toMethodName(theMethodEntry.getProvidingClass().getClassName(), "$newInstance", theSignature);
-            return weakFunctionTableReference(theMethodName, aValue);
+        } catch (IllegalArgumentException ex) {
+            // Method not found
         }
 
         final String theMethodName = WASMWriterUtils.toMethodName(
