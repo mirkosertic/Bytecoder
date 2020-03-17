@@ -50,6 +50,7 @@ import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeReferenceKind;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
@@ -933,6 +934,7 @@ public class WASMSSAASTWriter {
         final WeakFunctionReferenceCallable theFunction = weakFunctionReference(theMethodName, aValue);
 
         final List<WASMValue> theArguments = new ArrayList<>();
+        theArguments.add(i32.c(0, null));
         for (final Value theValue : aValue.incomingDataFlows()) {
             theArguments.add(toValue(theValue));
         }
@@ -1026,10 +1028,41 @@ public class WASMSSAASTWriter {
     }
 
     private WASMValue methodRefValue(final MethodRefExpression aValue) {
+        final String theName = aValue.getMethodName();
+        final BytecodeMethodSignature theSignature = aValue.getSignature();
+        final BytecodeLinkedClass theClass = linkerContext.resolveClass(aValue.getClassName());
+
+        if (aValue.getReferenceKind() == BytecodeReferenceKind.REF_invokeStatic) {
+            final String theMethodName = WASMWriterUtils.toMethodName(
+                    aValue.getClassName(),
+                    aValue.getMethodName(),
+                    aValue.getSignature());
+
+            return weakFunctionTableReference(theMethodName, aValue);
+        }
+
+        final BytecodeResolvedMethods theMethods = theClass.resolvedMethods();
+        try {
+            final BytecodeResolvedMethods.MethodEntry theMethodEntry = theMethods.implementingClassOf(theName, theSignature);
+            final BytecodeMethod theMethod = theMethodEntry.getValue();
+
+            if (theMethod.isConstructor()) {
+                if (theMethod.getSignature().getArguments().length != 0) {
+                    throw new IllegalStateException("Constructor reference with more than zero arguments is not supported!");
+                }
+
+                final String theMethodName = WASMWriterUtils.toMethodName(theMethodEntry.getProvidingClass().getClassName(), "$newInstance", theSignature);
+                return weakFunctionTableReference(theMethodName, aValue);
+            }
+        } catch (IllegalArgumentException ex) {
+            // Method not found
+        }
+
         final String theMethodName = WASMWriterUtils.toMethodName(
                 aValue.getClassName(),
-                aValue.getMethodName(),
-                aValue.getSignature());
+                theName,
+                theSignature);
+
         return weakFunctionTableReference(theMethodName, aValue);
     }
 
