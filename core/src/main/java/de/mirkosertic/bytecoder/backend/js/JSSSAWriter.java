@@ -33,6 +33,7 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeReferenceKind;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
@@ -505,9 +506,36 @@ public class JSSSAWriter {
     private void print(final MethodRefExpression aValue) {
         final String theMethodName = aValue.getMethodName();
         final BytecodeMethodSignature theSignature = aValue.getSignature();
+
         final BytecodeLinkedClass theClass = linkerContext.resolveClass(aValue.getClassName());
-        final BytecodeMethod theMethod = theClass.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
-        writer.text(minifier.toClassName(aValue.getClassName())).text(".").text(minifier.toMethodName(theMethodName, theSignature));
+
+        if (aValue.getReferenceKind() == BytecodeReferenceKind.REF_invokeStatic) {
+            writer.text(minifier.toClassName(aValue.getClassName())).text(".")
+                    .text(minifier.toMethodName(theMethodName, theSignature));
+            return;
+        }
+
+        final BytecodeResolvedMethods theMethods = theClass.resolvedMethods();
+        try {
+            final BytecodeResolvedMethods.MethodEntry theMethodEntry = theMethods.implementingClassOf(theMethodName, theSignature);
+            final BytecodeMethod theMethod = theMethodEntry.getValue();
+
+            if (theMethod.isConstructor()) {
+                if (theMethod.getSignature().getArguments().length != 0) {
+                    throw new IllegalStateException("Constructor reference with more than zero arguments is not supported!");
+                }
+                writer.text(minifier.toClassName(theMethodEntry.getProvidingClass().getClassName()))
+                        .text(".").text(minifier.toSymbol("newInstance"));
+            } else {
+                writer.text(minifier.toClassName(theMethodEntry.getProvidingClass().getClassName())).text(".")
+                        .text(minifier.toMethodName(theMethodName, theSignature));
+            }
+            return;
+        } catch (final IllegalArgumentException ex) {
+            // Nothing found
+        }
+        writer.text(minifier.toClassName(theClass.getClassName())).text(".")
+                .text(minifier.toMethodName(theMethodName, theSignature));
     }
 
     private void print(final FloorExpression aValue) {

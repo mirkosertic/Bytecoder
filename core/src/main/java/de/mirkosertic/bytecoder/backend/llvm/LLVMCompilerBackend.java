@@ -1091,11 +1091,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                             pw.print("define i32 @");
                             pw.print(LLVMWriterUtils.toMethodName(theLinkedClass.getClassName(), LLVMWriter.NEWINSTANCE_METHOD_NAME, theMethod.getSignature()));
-                            pw.print("(");
+                            pw.print("(i32 %thisRef");
                             for (int i = 0; i < theMethod.getSignature().getArguments().length; i++) {
-                                if (i > 0) {
-                                    pw.print(",");
-                                }
+                                pw.print(",");
                                 pw.print(LLVMWriterUtils.toType(TypeRef.toType(theMethod.getSignature().getArguments()[i])));
                                 pw.print(" %p");
                                 pw.print(i);
@@ -1703,7 +1701,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.print(search.getUniqueId());
                             pw.print(" = call i32 @");
                             pw.print(LLVMWriterUtils.toMethodName(search.getClassName(), "$newInstance", m.getSignature()));
-                            pw.println("()");
+                            pw.println("(i32 0)");
 
                             pw.print("    ret i32 %newinstance_");
                             pw.println(search.getUniqueId());
@@ -1823,7 +1821,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                     pw.print("    %string_");
                     pw.print(i);
-                    pw.print(" = call i32 @jlString_VOID$newInstanceA1BYTEBYTE(i32 ");
+                    pw.print(" = call i32 @jlString_VOID$newInstanceA1BYTEBYTE(i32 0,i32 ");
                     pw.print("%allocated_");
                     pw.print(i);
                     pw.println(", i32 0)");
