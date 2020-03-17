@@ -510,34 +510,32 @@ public class JSSSAWriter {
         final BytecodeLinkedClass theClass = linkerContext.resolveClass(aValue.getClassName());
 
         if (aValue.getReferenceKind() == BytecodeReferenceKind.REF_invokeStatic) {
-/*            final BytecodeMethod theMethod = theClass.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
-            if (theMethod != null && theMethod.isConstructor()) {
-                if (theMethod.getSignature().getArguments().length != 0) {
-                    throw new IllegalStateException("Constructor reference with more than zero arguments is not supported!");
-                }
-                writer.text(minifier.toClassName(aValue.getClassName()))
-                        .text(".").text(minifier.toSymbol("newInstance"));
-            } else {*/
-                writer.text(minifier.toClassName(aValue.getClassName())).text(".")
-                        .text(minifier.toMethodName(theMethodName, theSignature));
-           // }
+            writer.text(minifier.toClassName(aValue.getClassName())).text(".")
+                    .text(minifier.toMethodName(theMethodName, theSignature));
             return;
         }
 
         final BytecodeResolvedMethods theMethods = theClass.resolvedMethods();
-        final BytecodeResolvedMethods.MethodEntry theMethodEntry = theMethods.implementingClassOf(theMethodName, theSignature);
-        final BytecodeMethod theMethod = theMethodEntry.getValue();
+        try {
+            final BytecodeResolvedMethods.MethodEntry theMethodEntry = theMethods.implementingClassOf(theMethodName, theSignature);
+            final BytecodeMethod theMethod = theMethodEntry.getValue();
 
-        if (theMethod.isConstructor()) {
-            if (theMethod.getSignature().getArguments().length != 0) {
-                throw new IllegalStateException("Constructor reference with more than zero arguments is not supported!");
+            if (theMethod.isConstructor()) {
+                if (theMethod.getSignature().getArguments().length != 0) {
+                    throw new IllegalStateException("Constructor reference with more than zero arguments is not supported!");
+                }
+                writer.text(minifier.toClassName(theMethodEntry.getProvidingClass().getClassName()))
+                        .text(".").text(minifier.toSymbol("newInstance"));
+            } else {
+                writer.text(minifier.toClassName(theMethodEntry.getProvidingClass().getClassName())).text(".")
+                        .text(minifier.toMethodName(theMethodName, theSignature));
             }
-            writer.text(minifier.toClassName(theMethodEntry.getProvidingClass().getClassName()))
-                    .text(".").text(minifier.toSymbol("newInstance"));
-        } else {
-            writer.text(minifier.toClassName(theMethodEntry.getProvidingClass().getClassName())).text(".")
-                    .text(minifier.toMethodName(theMethodName, theSignature));
+            return;
+        } catch (final IllegalArgumentException ex) {
+            // Nothing found
         }
+        writer.text(minifier.toClassName(theClass.getClassName())).text(".")
+                .text(minifier.toMethodName(theMethodName, theSignature));
     }
 
     private void print(final FloorExpression aValue) {
