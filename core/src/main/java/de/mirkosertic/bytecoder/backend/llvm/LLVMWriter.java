@@ -15,10 +15,7 @@
  */
 package de.mirkosertic.bytecoder.backend.llvm;
 
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
-
 import de.mirkosertic.bytecoder.backend.NativeMemoryLayouter;
-import de.mirkosertic.bytecoder.backend.wasm.WASMWriterUtils;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
@@ -97,7 +94,7 @@ import de.mirkosertic.bytecoder.ssa.ReinterpretAsNativeExpression;
 import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
-import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaWithStaticImplExpression;
 import de.mirkosertic.bytecoder.ssa.SetEnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
@@ -1593,8 +1590,8 @@ public class LLVMWriter implements AutoCloseable {
             write((FloatingPointFloorExpression) aValue);
         } else if (aValue instanceof MaxExpression) {
             write((MaxExpression) aValue);
-        } else if (aValue instanceof RuntimeGeneratedTypeExpression) {
-            write((RuntimeGeneratedTypeExpression) aValue);
+        } else if (aValue instanceof LambdaWithStaticImplExpression) {
+            write((LambdaWithStaticImplExpression) aValue);
         } else if (aValue instanceof EnumConstantsExpression) {
             write((EnumConstantsExpression) aValue);
         } else if (aValue instanceof MethodTypeArgumentCheckExpression) {
@@ -1673,7 +1670,7 @@ public class LLVMWriter implements AutoCloseable {
                 target.print(" to i32");
                 return;
             }
-        } catch (IllegalArgumentException ex) {
+        } catch (final IllegalArgumentException ex) {
             // Method not found
         }
 
@@ -1783,8 +1780,8 @@ public class LLVMWriter implements AutoCloseable {
         target.print(toTempSymbol(e, "ptr"));
     }
 
-    private void write(final RuntimeGeneratedTypeExpression e) {
-        target.print("call i32 @newlambda(i32 ");
+    private void write(final LambdaWithStaticImplExpression e) {
+        target.print("call i32 @newLambdaWithStaticImpl(i32 ");
         write(e.getType(), true);
         target.print(",i32 ");
         write(e.getMethodRef(), true);

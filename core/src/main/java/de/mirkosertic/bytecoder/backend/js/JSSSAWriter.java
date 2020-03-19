@@ -101,7 +101,7 @@ import de.mirkosertic.bytecoder.ssa.ReinterpretAsNativeExpression;
 import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
-import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaWithStaticImplExpression;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.SetEnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
@@ -244,8 +244,8 @@ public class JSSSAWriter {
             print((MethodHandlesGeneratedLookupExpression) aValue);
         } else if (aValue instanceof MethodTypeExpression) {
             print((MethodTypeExpression) aValue);
-        } else if (aValue instanceof RuntimeGeneratedTypeExpression) {
-            print((RuntimeGeneratedTypeExpression) aValue);
+        } else if (aValue instanceof LambdaWithStaticImplExpression) {
+            print((LambdaWithStaticImplExpression) aValue);
         } else if (aValue instanceof ResolveCallsiteObjectExpression) {
             print((ResolveCallsiteObjectExpression) aValue);
         } else if (aValue instanceof StackTopExpression) {
@@ -443,8 +443,8 @@ public class JSSSAWriter {
         writer.text("})");
     }
 
-    private void print(final RuntimeGeneratedTypeExpression aValue) {
-        writer.text("bytecoder.dynamicType(");
+    private void print(final LambdaWithStaticImplExpression aValue) {
+        writer.text("bytecoder.lambdaWithStaticImpl(");
         print(aValue.getMethodRef());
         writer.text(",");
         print(aValue.getStaticArguments());

@@ -118,7 +118,7 @@ import de.mirkosertic.bytecoder.ssa.ReinterpretAsNativeExpression;
 import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
-import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaWithStaticImplExpression;
 import de.mirkosertic.bytecoder.ssa.SetEnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
@@ -771,8 +771,8 @@ public class WASMSSAASTWriter {
         if (aValue instanceof TypeOfExpression) {
             return typeOfValue((TypeOfExpression) aValue);
         }
-        if (aValue instanceof RuntimeGeneratedTypeExpression) {
-            return runtimeGeneratedTypeValue((RuntimeGeneratedTypeExpression) aValue);
+        if (aValue instanceof LambdaWithStaticImplExpression) {
+            return lambdaWithStaticImplValue((LambdaWithStaticImplExpression) aValue);
         }
         if (aValue instanceof MethodRefExpression) {
             return methodRefValue((MethodRefExpression) aValue);
@@ -1054,7 +1054,7 @@ public class WASMSSAASTWriter {
                 final String theMethodName = WASMWriterUtils.toMethodName(theMethodEntry.getProvidingClass().getClassName(), "$newInstance", theSignature);
                 return weakFunctionTableReference(theMethodName, aValue);
             }
-        } catch (IllegalArgumentException ex) {
+        } catch (final IllegalArgumentException ex) {
             // Method not found
         }
 
@@ -1066,8 +1066,8 @@ public class WASMSSAASTWriter {
         return weakFunctionTableReference(theMethodName, aValue);
     }
 
-    private WASMExpression runtimeGeneratedTypeValue(final RuntimeGeneratedTypeExpression aValue) {
-        final Function theNew = module.functionIndex().firstByLabel("newLambda");
+    private WASMExpression lambdaWithStaticImplValue(final LambdaWithStaticImplExpression aValue) {
+        final Function theNew = module.functionIndex().firstByLabel("newLambdaWithStaticImpl");
         return call(theNew, Arrays.asList(toValue(aValue.getType()), toValue(aValue.getMethodRef()), toValue(aValue.getStaticArguments())), aValue);
     }
 

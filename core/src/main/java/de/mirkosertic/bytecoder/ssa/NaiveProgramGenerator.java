@@ -16,7 +16,10 @@
 package de.mirkosertic.bytecoder.ssa;
 
 import java.lang.invoke.CallSite;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +29,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import de.mirkosertic.bytecoder.classlib.Array;
+import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
 import de.mirkosertic.bytecoder.core.BytecodeBootstrapMethod;
@@ -1248,13 +1252,47 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                         theArguments.add(theNewVarargsArray);
                     }
 
-                    final InvokeStaticMethodExpression theInvokeStaticValue = new InvokeStaticMethodExpression(aProgram, theInstruction.getOpcodeAddress(),
-                            BytecodeObjectTypeRef.fromUtf8Constant(theBootstrapMethodToInvoke.getClassIndex().getClassConstant().getConstant()),
-                            theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
-                            theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature(),
-                            theArguments);
-                    final Variable theNewVariable = theInitNode.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theInvokeStaticValue);
-                    theInitNode.getExpressions().add(new ReturnValueExpression(aProgram, theInstruction.getOpcodeAddress(), theNewVariable));
+                    // Are we creating a lambda here?
+                    final String theMethodName = theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
+                    if ("metafactory".equals(theMethodName)) {
+                        // We have something here
+                        final StringValue theLambdaMethodName = (StringValue) theArguments.get(1).incomingDataFlows().get(0);
+                        final MethodTypeExpression theMethodType = (MethodTypeExpression) theArguments.get(2).incomingDataFlows().get(0);
+                        final MethodRefExpression theImplRef = (MethodRefExpression) theArguments.get(4).incomingDataFlows().get(0);
+
+                        System.out.println("lambda " + theLambdaMethodName.getStringValue() + " -> " + theImplRef.getReferenceKind()  + " type = " + theMethodType.getSignature());
+
+                        switch (theImplRef.getReferenceKind()) {
+                            case REF_invokeStatic: {
+                                final NewObjectAndConstructExpression theValue = new NewObjectAndConstructExpression(
+                                        aProgram, theInstruction.getOpcodeAddress(),
+                                        BytecodeObjectTypeRef.fromRuntimeClass(VM.LambdaStaticImplCallsite.class),
+                                        new BytecodeMethodSignature(
+                                                BytecodePrimitiveTypeRef.VOID,
+                                                new BytecodeTypeRef[]{
+                                                        BytecodeObjectTypeRef.fromRuntimeClass(String.class),
+                                                        BytecodeObjectTypeRef.fromRuntimeClass(MethodType.class),
+                                                        BytecodeObjectTypeRef.fromRuntimeClass(MethodHandle.class)
+                                                }
+                                        ),
+                                        Arrays.asList(theArguments.get(1), theArguments.get(2), theArguments.get(4))
+                                );
+                                final Variable theNewVariable = theInitNode.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theValue);
+                                theInitNode.getExpressions().add(new ReturnValueExpression(aProgram, theInstruction.getOpcodeAddress(), theNewVariable));
+                                break;
+                            }
+                            default:
+                                throw new IllegalStateException(theImplRef.getReferenceKind() + " not supported for lambda " + theLambdaMethodName.getStringValue() + " -> " + theImplRef.getReferenceKind()  + " type = " + theMethodType.getSignature());
+                        }
+                    } else {
+                        final InvokeStaticMethodExpression theInvokeStaticValue = new InvokeStaticMethodExpression(aProgram, theInstruction.getOpcodeAddress(),
+                                BytecodeObjectTypeRef.fromUtf8Constant(theBootstrapMethodToInvoke.getClassIndex().getClassConstant().getConstant()),
+                                theMethodName,
+                                theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature(),
+                                theArguments);
+                        final Variable theNewVariable = theInitNode.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theInvokeStaticValue);
+                        theInitNode.getExpressions().add(new ReturnValueExpression(aProgram, theInstruction.getOpcodeAddress(), theNewVariable));
+                    }
 
                     // First step, we construct a callsite
                     final ResolveCallsiteObjectExpression theValue = new ResolveCallsiteObjectExpression(theInstruction.getOpcodeAddress(), aOwningClass.getThisInfo().getConstant().stringValue() + "_" + aMethod.getName().stringValue() + "_" + theINS.getOpcodeAddress().getAddress(), aOwningClass, theProgram, theInitNode);

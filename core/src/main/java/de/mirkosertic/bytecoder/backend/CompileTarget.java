@@ -36,6 +36,8 @@ import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
 
 import java.io.FileDescriptor;
 import java.lang.invoke.CallSite;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
@@ -93,6 +95,16 @@ public class CompileTarget {
         theCallsite.resolveVirtualMethod("invokeExact", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
                 new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), 1)}));
         theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.ImplementingCallsite.class));
+
+        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.LambdaStaticImplCallsite.class))
+            .resolveConstructorInvocation(new BytecodeMethodSignature(
+                        BytecodePrimitiveTypeRef.VOID,
+                        new BytecodeTypeRef[]{
+                                BytecodeObjectTypeRef.fromRuntimeClass(String.class),
+                                BytecodeObjectTypeRef.fromRuntimeClass(MethodType.class),
+                                BytecodeObjectTypeRef.fromRuntimeClass(MethodHandle.class)
+                        }
+                ));
 
         // We have to link character set implementations
         // to make them available via reflection API

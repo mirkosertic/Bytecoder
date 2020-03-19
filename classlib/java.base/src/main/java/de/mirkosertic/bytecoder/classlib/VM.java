@@ -98,7 +98,26 @@ public class VM {
         public abstract Object invokeExact(Object... args) throws Throwable;
     }
 
-    public static native Object newRuntimeGeneratedType(String methodName, MethodType aType, MethodHandle aHandle, Object... staticArguments);
+    public static class LambdaStaticImplCallsite extends ImplementingCallsite {
+
+        private final String methodName;
+        private final MethodType invokedType;
+        private final MethodHandle implMethod;
+
+        public LambdaStaticImplCallsite(final String aMethodName, final MethodType aInvokedType, final MethodHandle aImplMethod) {
+            super(null);
+            methodName = aMethodName;
+            invokedType = aInvokedType;
+            implMethod = aImplMethod;
+        }
+
+        @Override
+        public Object invokeExact(final Object... args) {
+            return newLambdaWithWithStaticImpl(methodName, invokedType, implMethod, args);
+        }
+    }
+
+    public static native Object newLambdaWithWithStaticImpl(String methodName, MethodType aType, MethodHandle aHandle, Object... staticArguments);
 
     public static Object newInstanceWithDefaultConstructor(final Class clz) {
         return null;
