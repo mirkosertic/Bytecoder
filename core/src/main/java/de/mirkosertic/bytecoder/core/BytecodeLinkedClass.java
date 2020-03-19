@@ -505,6 +505,7 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
             implementedIdentifiersCache = outgoingEdges(
                     BytecodeProvidesMethodEdgeType.filter())
                     .map(t -> (BytecodeMethod) t.targetNode())
+                    .filter(t -> !t.getAccessFlags().isAbstract())
                     .map(t -> linkerContext.getMethodCollection().identifierFor(t))
                     .collect(Collectors.toSet());
         }
