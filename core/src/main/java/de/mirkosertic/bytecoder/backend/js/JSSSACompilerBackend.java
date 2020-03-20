@@ -164,9 +164,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab().text("},").newLine();
 
         theWriter.tab().text("lambdaWithStaticImpl").colon().text("function(aFunction,staticArguments,name,typeToConstruct)").space().text("{").newLine();
-
         theWriter.tab(2).text("if").space().text("(aFunction.static)").space().text("{").newLine();
-
         theWriter.tab(3).text("var handler").assign().text("function()").space().text("{").newLine();
         theWriter.tab(4).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();
         theWriter.tab(5).text("var concated").assign().text("staticArguments.data.concat(args);").newLine();
@@ -176,6 +174,16 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         theWriter.tab(2).text("}").newLine();
 
+        theWriter.tab(2).text("var handler").assign().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();
+        theWriter.tab(3).text("var concated").assign().text("staticArguments.data.splice(1).concat(args);").newLine();
+        theWriter.tab(3).text("return aFunction.apply(staticArguments.data[0],concated);").newLine();
+        theWriter.tab(2).text("};").newLine();
+        theWriter.tab(2).text("return typeToConstruct.returntype.").text(theMinifier.toSymbol("newLambdaInstance")).text("(handler);").newLine();
+        theWriter.tab().text("},").newLine();
+
+        theWriter.tab().text("lambdaConstructorRef").colon().text("function(typeToConstruct,constructorRef,staticArguments)").space().text("{").newLine();
+        theWriter.tab(2).text("var aFunction").assign().text("constructorRef.returntype.").text(theMinifier.toSymbol("newInstance")).text(";").newLine();
         theWriter.tab(2).text("var handler").assign().text("function()").space().text("{").newLine();
         theWriter.tab(3).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();
         theWriter.tab(3).text("var concated").assign().text("staticArguments.data.splice(1).concat(args);").newLine();

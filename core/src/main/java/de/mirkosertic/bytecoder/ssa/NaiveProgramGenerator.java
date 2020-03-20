@@ -1281,6 +1281,23 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                                 theInitNode.getExpressions().add(new ReturnValueExpression(aProgram, theInstruction.getOpcodeAddress(), theNewVariable));
                                 break;
                             }
+                            case REF_newInvokeSpecial: {
+                                final NewObjectAndConstructExpression theValue = new NewObjectAndConstructExpression(
+                                        aProgram, theInstruction.getOpcodeAddress(),
+                                        BytecodeObjectTypeRef.fromRuntimeClass(VM.LambdaConstructorRefCallsite.class),
+                                        new BytecodeMethodSignature(
+                                                BytecodePrimitiveTypeRef.VOID,
+                                                new BytecodeTypeRef[]{
+                                                        BytecodeObjectTypeRef.fromRuntimeClass(MethodType.class),
+                                                        BytecodeObjectTypeRef.fromRuntimeClass(MethodType.class),
+                                                }
+                                        ),
+                                        Arrays.asList(theArguments.get(2), theArguments.get(5))
+                                );
+                                final Variable theNewVariable = theInitNode.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theValue);
+                                theInitNode.getExpressions().add(new ReturnValueExpression(aProgram, theInstruction.getOpcodeAddress(), theNewVariable));
+                                break;
+                            }
                             default:
                                 throw new IllegalStateException(theImplRef.getReferenceKind() + " not supported for lambda " + theLambdaMethodName.getStringValue() + " -> " + theImplRef.getReferenceKind()  + " type = " + theMethodType.getSignature());
                         }

@@ -17,15 +17,13 @@ package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
-public class
-LambdaWithStaticImplExpression extends Expression {
+public class LambdaConstructorReferenceExpression extends Expression {
 
-    public LambdaWithStaticImplExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value type, final Value methodRef, final Value staticArguments, final Value name) {
+    public LambdaConstructorReferenceExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value type, final Value constructorRef, final Value staticArguments) {
         super(aProgram, aAddress);
         receivesDataFrom(type);
-        receivesDataFrom(methodRef);
+        receivesDataFrom(constructorRef);
         receivesDataFrom(staticArguments);
-        receivesDataFrom(name);
     }
 
     @Override
@@ -37,16 +35,11 @@ LambdaWithStaticImplExpression extends Expression {
         return incomingDataFlows().get(0);
     }
 
-    public Value getMethodRef() {
+    public Value getConstructorRef() {
         return incomingDataFlows().get(1);
     }
 
     public Value getStaticArguments() {
         return incomingDataFlows().get(2);
     }
-
-    public Value getName() {
-        return incomingDataFlows().get(3);
-    }
-
 }

@@ -101,23 +101,42 @@ public class VM {
     public static class LambdaStaticImplCallsite extends ImplementingCallsite {
 
         private final String methodName;
-        private final MethodType invokedType;
+        private final MethodType constructedType;
         private final MethodHandle implMethod;
 
-        public LambdaStaticImplCallsite(final String aMethodName, final MethodType aInvokedType, final MethodHandle aImplMethod) {
+        public LambdaStaticImplCallsite(final String aMethodName, final MethodType aConstructedType, final MethodHandle aImplMethod) {
             super(null);
             methodName = aMethodName;
-            invokedType = aInvokedType;
+            constructedType = aConstructedType;
             implMethod = aImplMethod;
         }
 
         @Override
         public Object invokeExact(final Object... args) {
-            return newLambdaWithWithStaticImpl(methodName, invokedType, implMethod, args);
+            return newLambdaWithWithStaticImpl(methodName, constructedType, implMethod, args);
         }
     }
 
-    public static native Object newLambdaWithWithStaticImpl(String methodName, MethodType aType, MethodHandle aHandle, Object... staticArguments);
+    public static class LambdaConstructorRefCallsite extends ImplementingCallsite {
+
+        private final MethodType constructedType;
+        private final MethodType constructorRef;
+
+        public LambdaConstructorRefCallsite(final MethodType aConstructedType, final MethodType aConstructorRef) {
+            super(null);
+            constructedType = aConstructedType;
+            constructorRef = aConstructorRef;
+        }
+
+        @Override
+        public Object invokeExact(final Object... args) {
+            return newLambdaConstructorInvocation(constructedType, constructorRef, args);
+        }
+    }
+
+    public static native Object newLambdaWithWithStaticImpl(final String methodName, final MethodType aConstructedType, final MethodHandle aImplMethod, final Object... staticArguments);
+
+    public static native Object newLambdaConstructorInvocation(final MethodType aConstructedType, final MethodType aConstructorRef, final Object... staticArguments);
 
     public static Object newInstanceWithDefaultConstructor(final Class clz) {
         return null;

@@ -75,6 +75,7 @@ import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.IsNaNExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaConstructorReferenceExpression;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.MaxExpression;
@@ -246,6 +247,10 @@ public class JSSSAWriter {
             print((MethodTypeExpression) aValue);
         } else if (aValue instanceof LambdaWithStaticImplExpression) {
             print((LambdaWithStaticImplExpression) aValue);
+        } else if (aValue instanceof LambdaWithStaticImplExpression) {
+            print((LambdaWithStaticImplExpression) aValue);
+        } else if (aValue instanceof LambdaConstructorReferenceExpression) {
+            print((LambdaConstructorReferenceExpression) aValue);
         } else if (aValue instanceof ResolveCallsiteObjectExpression) {
             print((ResolveCallsiteObjectExpression) aValue);
         } else if (aValue instanceof StackTopExpression) {
@@ -452,6 +457,16 @@ public class JSSSAWriter {
         print(aValue.getName());
         writer.text(",");
         print(aValue.getType());
+        writer.text(")");
+    }
+
+    private void print(final LambdaConstructorReferenceExpression aValue) {
+        writer.text("bytecoder.lambdaConstructorRef(");
+        print(aValue.getType());
+        writer.text(",");
+        print(aValue.getConstructorRef());
+        writer.text(",");
+        print(aValue.getStaticArguments());
         writer.text(")");
     }
 
