@@ -1261,7 +1261,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                         final MethodTypeExpression theMethodType = (MethodTypeExpression) theArguments.get(2).incomingDataFlows().get(0);
                         final MethodRefExpression theImplRef = (MethodRefExpression) theArguments.get(4).incomingDataFlows().get(0);
 
-                        System.out.println("lambda " + theLambdaMethodName.getStringValue() + " -> " + theImplRef.getReferenceKind()  + " type = " + theMethodType.getSignature());
+                        //System.out.println("lambda " + theLambdaMethodName.getStringValue() + " -> " + theImplRef.getReferenceKind()  + " type = " + theMethodType.getSignature());
 
                         switch (theImplRef.getReferenceKind()) {
                             case REF_invokeStatic: {

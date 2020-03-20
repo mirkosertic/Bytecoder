@@ -68,6 +68,7 @@ import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.IsNaNExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaConstructorReferenceExpression;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.MaxExpression;
@@ -1592,6 +1593,8 @@ public class LLVMWriter implements AutoCloseable {
             write((MaxExpression) aValue);
         } else if (aValue instanceof LambdaWithStaticImplExpression) {
             write((LambdaWithStaticImplExpression) aValue);
+        } else if (aValue instanceof LambdaConstructorReferenceExpression) {
+            write((LambdaConstructorReferenceExpression) aValue);
         } else if (aValue instanceof EnumConstantsExpression) {
             write((EnumConstantsExpression) aValue);
         } else if (aValue instanceof MethodTypeArgumentCheckExpression) {
@@ -1640,6 +1643,24 @@ public class LLVMWriter implements AutoCloseable {
                     e.getClassName(),
                     e.getMethodName(),
                     e.getSignature());
+
+            target.print("* @");
+            target.print(theMethodName);
+            target.print(" to i32");
+            return;
+        }
+
+        if (e.getReferenceKind() == BytecodeReferenceKind.REF_newInvokeSpecial) {
+
+            final BytecodeMethodSignature theConstructorSignature = new BytecodeMethodSignature(e.getClassName(), theSignature.getArguments());
+
+            target.print("ptrtoint ");
+            target.print(LLVMWriterUtils.toSignature(theConstructorSignature));
+
+            final String theMethodName = LLVMWriterUtils.toMethodName(
+                    e.getClassName(),
+                    NEWINSTANCE_METHOD_NAME,
+                    theSignature);
 
             target.print("* @");
             target.print(theMethodName);
@@ -1785,6 +1806,16 @@ public class LLVMWriter implements AutoCloseable {
         write(e.getType(), true);
         target.print(",i32 ");
         write(e.getMethodRef(), true);
+        target.print(",i32 ");
+        write(e.getStaticArguments(), true);
+        target.print(")");
+    }
+
+    private void write(final LambdaConstructorReferenceExpression e) {
+        target.print("call i32 @newLambdaWithStaticImpl(i32 ");
+        write(e.getType(), true);
+        target.print(",i32 ");
+        write(e.getConstructorRef(), true);
         target.print(",i32 ");
         write(e.getStaticArguments(), true);
         target.print(")");
