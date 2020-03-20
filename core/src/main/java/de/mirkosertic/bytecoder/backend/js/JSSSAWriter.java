@@ -529,6 +529,14 @@ public class JSSSAWriter {
                     .text(minifier.toMethodName(theMethodName, theSignature));
             return;
         }
+        if (aValue.getReferenceKind() == BytecodeReferenceKind.REF_newInvokeSpecial) {
+            if (theSignature.getArguments().length != 0) {
+                throw new IllegalStateException("Constructor reference with more than zero arguments is not supported! Trying to reference " + theClass.getClassName().name() + " with signatue " + theSignature);
+            }
+            writer.text(minifier.toClassName(aValue.getClassName())).text(".")
+                    .text(minifier.toSymbol("newInstance"));
+            return;
+        }
 
         final BytecodeResolvedMethods theMethods = theClass.resolvedMethods();
         try {

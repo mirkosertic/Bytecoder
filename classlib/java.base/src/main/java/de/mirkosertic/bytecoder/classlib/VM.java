@@ -120,9 +120,9 @@ public class VM {
     public static class LambdaConstructorRefCallsite extends ImplementingCallsite {
 
         private final MethodType constructedType;
-        private final MethodType constructorRef;
+        private final MethodHandle constructorRef;
 
-        public LambdaConstructorRefCallsite(final MethodType aConstructedType, final MethodType aConstructorRef) {
+        public LambdaConstructorRefCallsite(final MethodType aConstructedType, final MethodHandle aConstructorRef) {
             super(null);
             constructedType = aConstructedType;
             constructorRef = aConstructorRef;
@@ -136,7 +136,7 @@ public class VM {
 
     public static native Object newLambdaWithWithStaticImpl(final String methodName, final MethodType aConstructedType, final MethodHandle aImplMethod, final Object... staticArguments);
 
-    public static native Object newLambdaConstructorInvocation(final MethodType aConstructedType, final MethodType aConstructorRef, final Object... staticArguments);
+    public static native Object newLambdaConstructorInvocation(final MethodType aConstructedType, final MethodHandle aConstructorRef, final Object... staticArguments);
 
     public static Object newInstanceWithDefaultConstructor(final Class clz) {
         return null;

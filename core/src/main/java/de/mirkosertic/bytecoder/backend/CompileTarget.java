@@ -110,7 +110,7 @@ public class CompileTarget {
                         BytecodePrimitiveTypeRef.VOID,
                         new BytecodeTypeRef[]{
                                 BytecodeObjectTypeRef.fromRuntimeClass(MethodType.class),
-                                BytecodeObjectTypeRef.fromRuntimeClass(MethodType.class),
+                                BytecodeObjectTypeRef.fromRuntimeClass(MethodHandle.class),
                         }
                 ));
 

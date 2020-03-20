@@ -133,6 +133,7 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
 import de.mirkosertic.bytecoder.core.BytecodeReferenceIndex;
+import de.mirkosertic.bytecoder.core.BytecodeReferenceKind;
 import de.mirkosertic.bytecoder.core.BytecodeSourceFileAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
@@ -1282,6 +1283,16 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                                 break;
                             }
                             case REF_newInvokeSpecial: {
+                                final MethodTypeExpression theConstructorType = (MethodTypeExpression) theArguments.get(5).incomingDataFlows().get(0);
+                                final BytecodeMethodSignature theConstructorSignature = theConstructorType.getSignature();
+                                final BytecodeObjectTypeRef theClassToInstantiate = (BytecodeObjectTypeRef) theConstructorSignature.getReturnType();
+                                final BytecodeMethodSignature theInvocationSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, theConstructorSignature.getArguments());
+
+                                // We need to create a new MethodHandle for the constructor
+                                final Value theConstructorMethodRef = new MethodRefExpression(aProgram, theInitNode.getStartAddress(),
+                                        theClassToInstantiate, "<init>", theInvocationSignature, BytecodeReferenceKind.REF_newInvokeSpecial);
+                                final Variable theConstructorMethodRefVariable = theInitNode.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theConstructorMethodRef);
+
                                 final NewObjectAndConstructExpression theValue = new NewObjectAndConstructExpression(
                                         aProgram, theInstruction.getOpcodeAddress(),
                                         BytecodeObjectTypeRef.fromRuntimeClass(VM.LambdaConstructorRefCallsite.class),
@@ -1289,10 +1300,10 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                                                 BytecodePrimitiveTypeRef.VOID,
                                                 new BytecodeTypeRef[]{
                                                         BytecodeObjectTypeRef.fromRuntimeClass(MethodType.class),
-                                                        BytecodeObjectTypeRef.fromRuntimeClass(MethodType.class),
+                                                        BytecodeObjectTypeRef.fromRuntimeClass(MethodHandle.class),
                                                 }
                                         ),
-                                        Arrays.asList(theArguments.get(2), theArguments.get(5))
+                                        Arrays.asList(theArguments.get(2), theConstructorMethodRefVariable)
                                 );
                                 final Variable theNewVariable = theInitNode.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theValue);
                                 theInitNode.getExpressions().add(new ReturnValueExpression(aProgram, theInstruction.getOpcodeAddress(), theNewVariable));

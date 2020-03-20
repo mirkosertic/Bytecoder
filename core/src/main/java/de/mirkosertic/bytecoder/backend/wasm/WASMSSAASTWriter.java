@@ -92,6 +92,7 @@ import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.IsNaNExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaConstructorReferenceExpression;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.MaxExpression;
@@ -774,6 +775,9 @@ public class WASMSSAASTWriter {
         if (aValue instanceof LambdaWithStaticImplExpression) {
             return lambdaWithStaticImplValue((LambdaWithStaticImplExpression) aValue);
         }
+        if (aValue instanceof LambdaConstructorReferenceExpression) {
+            return lambdaConstructorReferenceValue((LambdaConstructorReferenceExpression) aValue);
+        }
         if (aValue instanceof MethodRefExpression) {
             return methodRefValue((MethodRefExpression) aValue);
         }
@@ -826,12 +830,12 @@ public class WASMSSAASTWriter {
             return dataEndExpression((DataEndExpression) aValue);
         }
         if (aValue instanceof SystemHasStackExpression) {
-            return systmHasStackExpression((SystemHasStackExpression) aValue);
+            return systemmHasStackExpression((SystemHasStackExpression) aValue);
         }
         throw new IllegalStateException("Not supported : " + aValue);
     }
 
-    private WASMValue systmHasStackExpression(final SystemHasStackExpression aValue) {
+    private WASMValue systemmHasStackExpression(final SystemHasStackExpression aValue) {
         return i32.c(1, aValue);
     }
 
@@ -1041,6 +1045,19 @@ public class WASMSSAASTWriter {
             return weakFunctionTableReference(theMethodName, aValue);
         }
 
+        if (aValue.getReferenceKind() == BytecodeReferenceKind.REF_newInvokeSpecial) {
+            if (theSignature.getArguments().length != 0) {
+                throw new IllegalStateException("Constructor reference with more than zero arguments is not supported! Trying to reference " + theClass.getClassName().name() + " with signatue " + theSignature);
+            }
+
+            final String theMethodName = WASMWriterUtils.toMethodName(
+                    aValue.getClassName(),
+                    "$newInstance",
+                    aValue.getSignature());
+
+            return weakFunctionTableReference(theMethodName, aValue);
+        }
+
         final BytecodeResolvedMethods theMethods = theClass.resolvedMethods();
         try {
             final BytecodeResolvedMethods.MethodEntry theMethodEntry = theMethods.implementingClassOf(theName, theSignature);
@@ -1069,6 +1086,11 @@ public class WASMSSAASTWriter {
     private WASMExpression lambdaWithStaticImplValue(final LambdaWithStaticImplExpression aValue) {
         final Function theNew = module.functionIndex().firstByLabel("newLambdaWithStaticImpl");
         return call(theNew, Arrays.asList(toValue(aValue.getType()), toValue(aValue.getMethodRef()), toValue(aValue.getStaticArguments())), aValue);
+    }
+
+    private WASMExpression lambdaConstructorReferenceValue(final LambdaConstructorReferenceExpression aValue) {
+        final Function theNew = module.functionIndex().firstByLabel("newLambdaConstructorReference");
+        return call(theNew, Arrays.asList(toValue(aValue.getType()), toValue(aValue.getConstructorRef()), toValue(aValue.getStaticArguments())), aValue);
     }
 
     private WASMValue typeOfValue(final TypeOfExpression aValue) {

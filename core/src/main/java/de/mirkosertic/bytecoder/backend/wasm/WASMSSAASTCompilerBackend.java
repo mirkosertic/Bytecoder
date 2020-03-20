@@ -296,8 +296,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             });
         });
 
-        final ExportableFunction lambdaResolvevtableindex = module.getFunctions().newFunction("LAMBDAWITHSTATICIMPL" + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX, Arrays.asList(param("thisRef", PrimitiveType.i32), param("methodId", PrimitiveType.i32)), PrimitiveType.i32).toTable();
-        lambdaResolvevtableindex.flow.ret(i32.load(8, getLocal(lambdaResolvevtableindex.localByLabel("thisRef"), null), null), null);
+        final ExportableFunction lambdaStaticResolvevtableindex = module.getFunctions().newFunction("LAMBDAWITHSTATICIMPL" + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX, Arrays.asList(param("thisRef", PrimitiveType.i32), param("methodId", PrimitiveType.i32)), PrimitiveType.i32).toTable();
+        lambdaStaticResolvevtableindex.flow.ret(i32.load(8, getLocal(lambdaStaticResolvevtableindex.localByLabel("thisRef"), null), null), null);
+
+        final ExportableFunction lambdaConstructorRef = module.getFunctions().newFunction("LAMBDACONSTRUCTORREF" + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX, Arrays.asList(param("thisRef", PrimitiveType.i32), param("methodId", PrimitiveType.i32)), PrimitiveType.i32).toTable();
+        lambdaConstructorRef.flow.ret(i32.load(8, getLocal(lambdaConstructorRef.localByLabel("thisRef"), null), null), null);
 
         final ExportableFunction classGetName = module.getFunctions().newFunction("jlClass_jlStringgetName", Collections.singletonList(param("thisRef", PrimitiveType.i32)), PrimitiveType.i32).toTable();
         {
@@ -453,6 +456,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         }
 
         final ExportableFunction newLambdaWithStaticImplFunction = module.getFunctions().newFunction("newLambdaWithStaticImpl", Arrays.asList(param("type", PrimitiveType.i32), param("implMethodNumber", PrimitiveType.i32), param("staticArguments", PrimitiveType.i32)), PrimitiveType.i32);
+        final ExportableFunction newLambdaConstructorRefFunction = module.getFunctions().newFunction("newLambdaConstructorReference", Arrays.asList(param("type", PrimitiveType.i32), param("constructorRef", PrimitiveType.i32), param("staticArguments", PrimitiveType.i32)), PrimitiveType.i32);
 
         aLinkerContext.linkedClasses().forEach(aEntry -> {
 
@@ -1379,10 +1383,22 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             newLambdaWithStaticImplFunction.flow.setLocal(newRef,
                     call(module.functionIndex().firstByLabel(mallocFunctionName),
                             Arrays.asList(i32.c(0, null), i32.c(16, null),
-                                    getLocal(newLambdaWithStaticImplFunction.localByLabel("type"), null), i32.c(module.getTables().funcTable().indexOf(lambdaResolvevtableindex), null)), null), null);
+                                    getLocal(newLambdaWithStaticImplFunction.localByLabel("type"), null), i32.c(module.getTables().funcTable().indexOf(lambdaStaticResolvevtableindex), null)), null), null);
             newLambdaWithStaticImplFunction.flow.i32.store(8, getLocal(newRef, null), getLocal(newLambdaWithStaticImplFunction.localByLabel("implMethodNumber"), null), null);
             newLambdaWithStaticImplFunction.flow.i32.store(12, getLocal(newRef, null), getLocal(newLambdaWithStaticImplFunction.localByLabel("staticArguments"), null), null);
             newLambdaWithStaticImplFunction.flow.ret(getLocal(newRef, null), null);
+        }
+
+        {
+            final String mallocFunctionName = WASMWriterUtils.toClassName(theMemoryManagerClass.getClassName()) + "_INTnewObjectINTINTINT";
+            final Local newRef = newLambdaConstructorRefFunction.newLocal("newRef", PrimitiveType.i32);
+            newLambdaConstructorRefFunction.flow.setLocal(newRef,
+                    call(module.functionIndex().firstByLabel(mallocFunctionName),
+                            Arrays.asList(i32.c(0, null), i32.c(16, null),
+                                    getLocal(newLambdaConstructorRefFunction.localByLabel("type"), null), i32.c(module.getTables().funcTable().indexOf(lambdaConstructorRef), null)), null), null);
+            newLambdaConstructorRefFunction.flow.i32.store(8, getLocal(newRef, null), getLocal(newLambdaConstructorRefFunction.localByLabel("constructorRef"), null), null);
+            newLambdaConstructorRefFunction.flow.i32.store(12, getLocal(newRef, null), getLocal(newLambdaConstructorRefFunction.localByLabel("staticArguments"), null), null);
+            newLambdaConstructorRefFunction.flow.ret(getLocal(newRef, null), null);
         }
 
         // Main function must be exported
@@ -1652,6 +1668,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("         },");
             theWriter.println("         vm: {");
             theWriter.println("             newLambdaWithWithStaticImplStringMethodTypeMethodHandleObject: function() {},");
+            theWriter.println("             newLambdaConstructorInvocationMethodTypeMethodHandleObject: function() {},");
             theWriter.println("         },");
             theWriter.println("         memorymanager: {");
             theWriter.println("             isUsedAsCallbackINT : function(thisref, ptr) {");
