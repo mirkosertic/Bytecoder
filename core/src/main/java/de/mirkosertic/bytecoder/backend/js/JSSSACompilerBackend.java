@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.backend.js;
 import java.io.StringWriter;
 import java.lang.reflect.Constructor;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 
 import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
@@ -46,6 +47,7 @@ import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.relooper.Relooper;
+import de.mirkosertic.bytecoder.ssa.MethodHandleExpression;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
@@ -187,6 +189,24 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();
         theWriter.tab(3).text("var concated").assign().text("staticArguments.data.splice(1).concat(args);").newLine();
         theWriter.tab(3).text("return constructorRef.apply(staticArguments.data[0],concated);").newLine();
+        theWriter.tab(2).text("};").newLine();
+        theWriter.tab(2).text("return typeToConstruct.returntype.").text(theMinifier.toSymbol("newLambdaInstance")).text("(handler);").newLine();
+        theWriter.tab().text("},").newLine();
+
+        theWriter.tab().text("lambdaInterfaceRef").colon().text("function(typeToConstruct,methodRef,staticArguments)").space().text("{").newLine();
+        theWriter.tab(2).text("var handler").assign().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();
+        theWriter.tab(3).text("var concated").assign().text("staticArguments.data.concat(args.splice(1));").newLine();
+        theWriter.tab(3).text("return methodRef.apply(args[0],concated);").newLine();
+        theWriter.tab(2).text("};").newLine();
+        theWriter.tab(2).text("return typeToConstruct.returntype.").text(theMinifier.toSymbol("newLambdaInstance")).text("(handler);").newLine();
+        theWriter.tab().text("},").newLine();
+
+        theWriter.tab().text("lambdaVirtualRef").colon().text("function(typeToConstruct,methodRef,staticArguments)").space().text("{").newLine();
+        theWriter.tab(2).text("var handler").assign().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();
+        theWriter.tab(3).text("var concated").assign().text("staticArguments.data.splice(1).concat(args);").newLine();
+        theWriter.tab(3).text("return methodRef.apply(staticArguments.data[0],concated);").newLine();
         theWriter.tab(2).text("};").newLine();
         theWriter.tab(2).text("return typeToConstruct.returntype.").text(theMinifier.toSymbol("newLambdaInstance")).text("(handler);").newLine();
         theWriter.tab().text("},").newLine();
@@ -724,6 +744,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         theWriter.tab().text("stringpool").colon().text("[],").newLine();
 
+        theWriter.tab().text("methodhandles").colon().text("[],").newLine();
+
         theWriter.tab().text("memory").colon().text("[],").newLine();
         theWriter.tab().text("openForRead").colon().space().text("function(path)").space().text("{").newLine();
         theWriter.tab(2).text("try").space().text("{").newLine();
@@ -877,6 +899,15 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         final ConstantPool thePool = new ConstantPool();
 
         final BytecodeClassTopologicOrder theOrderedClasses = new BytecodeClassTopologicOrder(aLinkerContext);
+        final List<MethodHandleExpression> methodHandles = new ArrayList<>();
+        final JSSSAWriter.IDResolver theResolver = new JSSSAWriter.IDResolver() {
+            @Override
+            public String methodHandleDelegateFor(final MethodHandleExpression e) {
+                final int pos = methodHandles.size();
+                methodHandles.add(e);
+                return "handle" + pos;
+            }
+        };
 
         theOrderedClasses.getClassesInOrder().stream().forEach(theEntry -> {
 
@@ -1200,7 +1231,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 // Perform register allocation
                 final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram, Variable::resolveType, aLinkerContext);
 
-                final JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram, 2, theWriter, aLinkerContext, thePool, false, theMinifier, theAllocator);
+                final JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram, 2, theWriter, aLinkerContext, thePool, false, theMinifier, theAllocator, theResolver);
                 theVariablesWriter.printRegisterDeclarations();
 
                 // Try to reloop it or stackify it!
@@ -1251,6 +1282,64 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
             theWriter.text("}();").newLine();
         });
+
+        // Generate method handle delegate functions here
+        for (int i=0;i<methodHandles.size();i++) {
+            final MethodHandleExpression mh = methodHandles.get(i);
+            final BytecodeMethodSignature theSignature = mh.getSignature();
+            final String theSymbol = theMinifier.toSymbol("handle" + i);
+            theWriter.text("bytecoder.methodhandles.").text(theSymbol).assign().text("function(");
+            for (int j=0;j<theSignature.getArguments().length;j++) {
+                if (j>0) {
+                    theWriter.text(",");
+                }
+                theWriter.text("arg").text("" + j);
+            }
+            theWriter.text(") {").newLine();
+            switch (mh.getReferenceKind()) {
+                case REF_invokeInterface:
+                case REF_invokeVirtual: {
+                    theWriter.tab(1).text("return this.");
+                    theWriter.text(theMinifier.toMethodName(mh.getMethodName(), mh.getSignature()));
+                    theWriter.text("(");
+                    for (int j=0;j<theSignature.getArguments().length;j++) {
+                        if (j>0) {
+                            theWriter.text(",");
+                        }
+                        theWriter.text("arg").text("" + j);
+                    }
+                    theWriter.text(");");
+                    theWriter.newLine();
+                    break;
+                }
+                case REF_newInvokeSpecial: {
+                    theWriter.tab(1).text("return ");
+                    theWriter.text(theMinifier.toClassName(mh.getClassName()));
+                    theWriter.text(".");
+                    theWriter.text(theMinifier.toSymbol("init"));
+                    theWriter.text("().");
+                    theWriter.text(theMinifier.toSymbol("__runtimeclass"));
+                    theWriter.text(".");
+                    theWriter.text(theMinifier.toMethodName("$newInstance", mh.getSignature()));
+                    theWriter.text("(");
+                    for (int j=0;j<theSignature.getArguments().length;j++) {
+                        if (j>0) {
+                            theWriter.text(",");
+                        }
+                        theWriter.text("arg").text("" + j);
+                    }
+                    theWriter.text(");");
+                    theWriter.newLine();
+                    break;
+                }
+                default:
+                    throw new IllegalArgumentException("Not supported reference kind " + mh.getReferenceKind() + " for method " + mh.getMethodName() + " with signature " + mh.getSignature());
+
+            }
+            theWriter.text("};").newLine();
+        }
+        theWriter.text("bytecoder.bootstrap").assign().text("{").newLine();
+        theWriter.text("};").newLine();
 
         theWriter.text("bytecoder.bootstrap").assign().text("function()").space().text("{").newLine();
 

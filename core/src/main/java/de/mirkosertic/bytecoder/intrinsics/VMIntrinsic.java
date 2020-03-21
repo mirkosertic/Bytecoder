@@ -24,6 +24,9 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.ssa.ByteValue;
 import de.mirkosertic.bytecoder.ssa.LambdaConstructorReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaInterfaceReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaVirtualReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaWithStaticImplExpression;
 import de.mirkosertic.bytecoder.ssa.MethodTypeArgumentCheckExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
@@ -31,7 +34,6 @@ import de.mirkosertic.bytecoder.ssa.ParsingHelper;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.ReinterpretAsNativeExpression;
-import de.mirkosertic.bytecoder.ssa.LambdaWithStaticImplExpression;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
@@ -50,6 +52,18 @@ public class VMIntrinsic extends Intrinsic {
                 final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theValue);
                 aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
 
+                return true;
+            }
+            if ("newLambdaInterfaceInvocation".equals(aMethodName)) {
+                final LambdaInterfaceReferenceExpression theValue = new LambdaInterfaceReferenceExpression(aProgram, aInstruction.getOpcodeAddress(), aArguments.get(0), aArguments.get(1), aArguments.get(2));
+                final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theValue);
+                aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
+                return true;
+            }
+            if ("newLambdaVirtualInvocation".equals(aMethodName)) {
+                final LambdaVirtualReferenceExpression theValue = new LambdaVirtualReferenceExpression(aProgram, aInstruction.getOpcodeAddress(), aArguments.get(0), aArguments.get(1), aArguments.get(2));
+                final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theValue);
+                aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
                 return true;
             }
             if ("newLambdaConstructorInvocation".equals(aMethodName)) {

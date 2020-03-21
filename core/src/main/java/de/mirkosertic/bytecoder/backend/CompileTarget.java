@@ -94,7 +94,6 @@ public class CompileTarget {
         final BytecodeLinkedClass theCallsite = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(CallSite.class));
         theCallsite.resolveVirtualMethod("invokeExact", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
                 new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), 1)}));
-        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.ImplementingCallsite.class));
 
         theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.LambdaStaticImplCallsite.class))
             .resolveConstructorInvocation(new BytecodeMethodSignature(
@@ -106,6 +105,22 @@ public class CompileTarget {
                         }
                 ));
         theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.LambdaConstructorRefCallsite.class))
+                .resolveConstructorInvocation(new BytecodeMethodSignature(
+                        BytecodePrimitiveTypeRef.VOID,
+                        new BytecodeTypeRef[]{
+                                BytecodeObjectTypeRef.fromRuntimeClass(MethodType.class),
+                                BytecodeObjectTypeRef.fromRuntimeClass(MethodHandle.class),
+                        }
+                ));
+        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.InvokeInterfaceCallsite.class))
+                .resolveConstructorInvocation(new BytecodeMethodSignature(
+                        BytecodePrimitiveTypeRef.VOID,
+                        new BytecodeTypeRef[]{
+                                BytecodeObjectTypeRef.fromRuntimeClass(MethodType.class),
+                                BytecodeObjectTypeRef.fromRuntimeClass(MethodHandle.class),
+                        }
+                ));
+        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.InvokeVirtualCallsite.class))
                 .resolveConstructorInvocation(new BytecodeMethodSignature(
                         BytecodePrimitiveTypeRef.VOID,
                         new BytecodeTypeRef[]{

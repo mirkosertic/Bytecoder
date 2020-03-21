@@ -70,7 +70,7 @@ import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
-import de.mirkosertic.bytecoder.ssa.MethodRefExpression;
+import de.mirkosertic.bytecoder.ssa.MethodHandleExpression;
 import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
@@ -973,7 +973,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                             }
                             final MethodTypeExpression theStaticInvocationType = (MethodTypeExpression) theArguments.get(2);
                             final MethodTypeExpression theDynamicInvocationType = (MethodTypeExpression) theArguments.get(5);
-                            final MethodRefExpression theImplementationMethod = (MethodRefExpression) theArguments.get(4);
+                            final MethodHandleExpression theImplementationMethod = (MethodHandleExpression) theArguments.get(4);
                             if (theStaticInvocationType.getSignature().getArguments().length == 0) {
                                 // If we have no static invocation arguments, we do not need to generate an adapter method
                                 // We can directly refer to the implementation method

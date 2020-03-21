@@ -76,13 +76,16 @@ import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.IsNaNExpression;
 import de.mirkosertic.bytecoder.ssa.LambdaConstructorReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaInterfaceReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaVirtualReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaWithStaticImplExpression;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.MaxExpression;
 import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
+import de.mirkosertic.bytecoder.ssa.MethodHandleExpression;
 import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupExpression;
 import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
-import de.mirkosertic.bytecoder.ssa.MethodRefExpression;
 import de.mirkosertic.bytecoder.ssa.MethodTypeArgumentCheckExpression;
 import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
 import de.mirkosertic.bytecoder.ssa.MinExpression;
@@ -102,7 +105,6 @@ import de.mirkosertic.bytecoder.ssa.ReinterpretAsNativeExpression;
 import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
-import de.mirkosertic.bytecoder.ssa.LambdaWithStaticImplExpression;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.SetEnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
@@ -134,6 +136,11 @@ import static java.util.Comparator.comparingLong;
 
 public class JSSSAWriter {
 
+    interface IDResolver {
+
+        String methodHandleDelegateFor(final MethodHandleExpression e);
+    }
+
     protected final Program program;
     protected final BytecodeLinkerContext linkerContext;
     protected final JSPrintWriter writer;
@@ -143,9 +150,10 @@ public class JSSSAWriter {
     private final JSMinifier minifier;
     private final int indent;
     private final AbstractAllocator allocator;
+    private final IDResolver idResolver;
 
     public JSSSAWriter(final CompileOptions aOptions, final Program aProgram, final int aIndent, final JSPrintWriter aWriter, final BytecodeLinkerContext aLinkerContext,
-                       final ConstantPool aConstantPool, final boolean aLabelRequired, final JSMinifier aMinifier, final AbstractAllocator aAllocator) {
+                       final ConstantPool aConstantPool, final boolean aLabelRequired, final JSMinifier aMinifier, final AbstractAllocator aAllocator, final IDResolver aIdResolver) {
         program = aProgram;
         linkerContext = aLinkerContext;
         writer = aWriter;
@@ -155,10 +163,11 @@ public class JSSSAWriter {
         minifier = aMinifier;
         indent = aIndent;
         allocator = aAllocator;
+        idResolver = aIdResolver;
     }
 
     public JSSSAWriter withDeeperIndent() {
-        return new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier, allocator);
+        return new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier, allocator, idResolver);
     }
 
     public JSPrintWriter startLine() {
@@ -235,8 +244,8 @@ public class JSSSAWriter {
             print((CurrentExceptionExpression) aValue);
         } else if (aValue instanceof FloorExpression) {
             print((FloorExpression) aValue);
-        } else if (aValue instanceof MethodRefExpression) {
-            print((MethodRefExpression) aValue);
+        } else if (aValue instanceof MethodHandleExpression) {
+            print((MethodHandleExpression) aValue);
         } else if (aValue instanceof ComputedMemoryLocationReadExpression) {
             print((ComputedMemoryLocationReadExpression) aValue);
         } else if (aValue instanceof ComputedMemoryLocationWriteExpression) {
@@ -251,6 +260,10 @@ public class JSSSAWriter {
             print((LambdaWithStaticImplExpression) aValue);
         } else if (aValue instanceof LambdaConstructorReferenceExpression) {
             print((LambdaConstructorReferenceExpression) aValue);
+        } else if (aValue instanceof LambdaInterfaceReferenceExpression) {
+            print((LambdaInterfaceReferenceExpression) aValue);
+        } else if (aValue instanceof LambdaVirtualReferenceExpression) {
+            print((LambdaVirtualReferenceExpression) aValue);
         } else if (aValue instanceof ResolveCallsiteObjectExpression) {
             print((ResolveCallsiteObjectExpression) aValue);
         } else if (aValue instanceof StackTopExpression) {
@@ -439,7 +452,7 @@ public class JSSSAWriter {
         final RegionNode theBootstrapCode = aValue.getBootstrapMethod();
 
         final AbstractAllocator theAllocator = options.getAllocator().allocate(theProgram, Variable::resolveType, linkerContext);
-        final JSSSAWriter theNested = new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier, theAllocator);
+        final JSSSAWriter theNested = new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier, theAllocator, idResolver);
 
         theNested.printRegisterDeclarations();
 
@@ -462,6 +475,26 @@ public class JSSSAWriter {
 
     private void print(final LambdaConstructorReferenceExpression aValue) {
         writer.text("bytecoder.lambdaConstructorRef(");
+        print(aValue.getType());
+        writer.text(",");
+        print(aValue.getConstructorRef());
+        writer.text(",");
+        print(aValue.getStaticArguments());
+        writer.text(")");
+    }
+
+    private void print(final LambdaInterfaceReferenceExpression aValue) {
+        writer.text("bytecoder.lambdaInterfaceRef(");
+        print(aValue.getType());
+        writer.text(",");
+        print(aValue.getConstructorRef());
+        writer.text(",");
+        print(aValue.getStaticArguments());
+        writer.text(")");
+    }
+
+    private void print(final LambdaVirtualReferenceExpression aValue) {
+        writer.text("bytecoder.lambdaVirtualRef(");
         print(aValue.getType());
         writer.text(",");
         print(aValue.getConstructorRef());
@@ -518,47 +551,19 @@ public class JSSSAWriter {
         writer.text("]");
     }
 
-    private void print(final MethodRefExpression aValue) {
+    private void print(final MethodHandleExpression aValue) {
         final String theMethodName = aValue.getMethodName();
         final BytecodeMethodSignature theSignature = aValue.getSignature();
 
-        final BytecodeLinkedClass theClass = linkerContext.resolveClass(aValue.getClassName());
-
         if (aValue.getReferenceKind() == BytecodeReferenceKind.REF_invokeStatic) {
+            // An easy one, we can directly refer to the implementation method here
             writer.text(minifier.toClassName(aValue.getClassName())).text(".")
                     .text(minifier.toMethodName(theMethodName, theSignature));
-            return;
+        } else {
+            // In all other cases, we compile a delegate function
+            writer.text("bytecoder.methodhandles.");
+            writer.text(minifier.toSymbol(idResolver.methodHandleDelegateFor(aValue)));
         }
-        if (aValue.getReferenceKind() == BytecodeReferenceKind.REF_newInvokeSpecial) {
-            if (theSignature.getArguments().length != 0) {
-                throw new IllegalStateException("Constructor reference with more than zero arguments is not supported! Trying to reference " + theClass.getClassName().name() + " with signatue " + theSignature);
-            }
-            writer.text(minifier.toClassName(aValue.getClassName())).text(".")
-                    .text(minifier.toSymbol("newInstance"));
-            return;
-        }
-
-        final BytecodeResolvedMethods theMethods = theClass.resolvedMethods();
-        try {
-            final BytecodeResolvedMethods.MethodEntry theMethodEntry = theMethods.implementingClassOf(theMethodName, theSignature);
-            final BytecodeMethod theMethod = theMethodEntry.getValue();
-
-            if (theMethod.isConstructor()) {
-                if (theMethod.getSignature().getArguments().length != 0) {
-                    throw new IllegalStateException("Constructor reference with more than zero arguments is not supported!");
-                }
-                writer.text(minifier.toClassName(theMethodEntry.getProvidingClass().getClassName()))
-                        .text(".").text(minifier.toSymbol("newInstance"));
-            } else {
-                writer.text(minifier.toClassName(theMethodEntry.getProvidingClass().getClassName())).text(".")
-                        .text(minifier.toMethodName(theMethodName, theSignature));
-            }
-            return;
-        } catch (final IllegalArgumentException ex) {
-            // Nothing found
-        }
-        writer.text(minifier.toClassName(theClass.getClassName())).text(".")
-                .text(minifier.toMethodName(theMethodName, theSignature));
     }
 
     private void print(final FloorExpression aValue) {

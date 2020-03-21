@@ -74,7 +74,7 @@ import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.MaxExpression;
 import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
 import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupExpression;
-import de.mirkosertic.bytecoder.ssa.MethodRefExpression;
+import de.mirkosertic.bytecoder.ssa.MethodHandleExpression;
 import de.mirkosertic.bytecoder.ssa.MethodTypeArgumentCheckExpression;
 import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
 import de.mirkosertic.bytecoder.ssa.MinExpression;
@@ -1611,8 +1611,8 @@ public class LLVMWriter implements AutoCloseable {
             write((MethodHandlesGeneratedLookupExpression) aValue);
         } else if (aValue instanceof MethodTypeExpression) {
             write((MethodTypeExpression) aValue);
-        } else if (aValue instanceof MethodRefExpression) {
-            write((MethodRefExpression) aValue);
+        } else if (aValue instanceof MethodHandleExpression) {
+            write((MethodHandleExpression) aValue);
         } else if (aValue instanceof PtrOfExpression) {
             write((PtrOfExpression) aValue);
         } else {
@@ -1629,7 +1629,7 @@ public class LLVMWriter implements AutoCloseable {
         }
     }
 
-    private void write(final MethodRefExpression e) {
+    private void write(final MethodHandleExpression e) {
 
         final String theName = e.getMethodName();
         final BytecodeMethodSignature theSignature = e.getSignature();

@@ -117,6 +117,40 @@ public class VM {
         }
     }
 
+    public static class InvokeInterfaceCallsite extends ImplementingCallsite {
+
+        private final MethodType constructedType;
+        private final MethodHandle delegateMethod;
+
+        public InvokeInterfaceCallsite(final MethodType aConstructedType, final MethodHandle aDelegateMethod) {
+            super(null);
+            constructedType = aConstructedType;
+            delegateMethod = aDelegateMethod;
+        }
+
+        @Override
+        public Object invokeExact(final Object... args) {
+            return newLambdaInterfaceInvocation(constructedType, delegateMethod, args);
+        }
+    }
+
+    public static class InvokeVirtualCallsite extends ImplementingCallsite {
+
+        private final MethodType constructedType;
+        private final MethodHandle delegateMethod;
+
+        public InvokeVirtualCallsite(final MethodType aConstructedType, final MethodHandle aDelegateMethod) {
+            super(null);
+            constructedType = aConstructedType;
+            delegateMethod = aDelegateMethod;
+        }
+
+        @Override
+        public Object invokeExact(final Object... args) {
+            return newLambdaVirtualInvocation(constructedType, delegateMethod, args);
+        }
+    }
+
     public static class LambdaConstructorRefCallsite extends ImplementingCallsite {
 
         private final MethodType constructedType;
@@ -137,6 +171,10 @@ public class VM {
     public static native Object newLambdaWithWithStaticImpl(final String methodName, final MethodType aConstructedType, final MethodHandle aImplMethod, final Object... staticArguments);
 
     public static native Object newLambdaConstructorInvocation(final MethodType aConstructedType, final MethodHandle aConstructorRef, final Object... staticArguments);
+
+    public static native Object newLambdaInterfaceInvocation(final MethodType aConstructedType, final MethodHandle aDelegateMethod, final Object... staticArguments);
+
+    public static native Object newLambdaVirtualInvocation(final MethodType aConstructedType, final MethodHandle aDelegateMethod, final Object... staticArguments);
 
     public static Object newInstanceWithDefaultConstructor(final Class clz) {
         return null;

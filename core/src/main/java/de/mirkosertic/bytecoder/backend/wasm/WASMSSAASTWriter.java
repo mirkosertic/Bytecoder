@@ -98,7 +98,7 @@ import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.MaxExpression;
 import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
 import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupExpression;
-import de.mirkosertic.bytecoder.ssa.MethodRefExpression;
+import de.mirkosertic.bytecoder.ssa.MethodHandleExpression;
 import de.mirkosertic.bytecoder.ssa.MethodTypeArgumentCheckExpression;
 import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
 import de.mirkosertic.bytecoder.ssa.MinExpression;
@@ -778,8 +778,8 @@ public class WASMSSAASTWriter {
         if (aValue instanceof LambdaConstructorReferenceExpression) {
             return lambdaConstructorReferenceValue((LambdaConstructorReferenceExpression) aValue);
         }
-        if (aValue instanceof MethodRefExpression) {
-            return methodRefValue((MethodRefExpression) aValue);
+        if (aValue instanceof MethodHandleExpression) {
+            return methodRefValue((MethodHandleExpression) aValue);
         }
         if (aValue instanceof NewMultiArrayExpression) {
             return newMultiArrayValue((NewMultiArrayExpression) aValue);
@@ -1031,7 +1031,7 @@ public class WASMSSAASTWriter {
         return call(theFunction, theArguments, aValue);
     }
 
-    private WASMValue methodRefValue(final MethodRefExpression aValue) {
+    private WASMValue methodRefValue(final MethodHandleExpression aValue) {
         final String theName = aValue.getMethodName();
         final BytecodeMethodSignature theSignature = aValue.getSignature();
         final BytecodeLinkedClass theClass = linkerContext.resolveClass(aValue.getClassName());
