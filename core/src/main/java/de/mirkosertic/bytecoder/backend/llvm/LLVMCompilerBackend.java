@@ -1946,6 +1946,34 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             }
                             break;
                         }
+                        case REF_invokeStatic: {
+                            if (!theSignature.getReturnType().isVoid()) {
+                                pw.print("    %result = ");
+                            }
+
+                            pw.print("call ");
+                            pw.print(LLVMWriterUtils.toSignature(theSignature));
+                            pw.print(" @");
+                            pw.print(LLVMWriterUtils.toMethodName(theMethodHandle.getClassName(), theMethodHandle.getMethodName(), theMethodHandle.getOriginalSignature()));
+                            pw.print("(i32 undef");
+                            for (int j = 0; j < theSignature.getArguments().length; j++) {
+                                pw.print(",");
+                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getArguments()[j])));
+                                pw.print(" %arg");
+                                pw.print(j);
+                            }
+                            pw.println(")");
+
+                            if (theSignature.getReturnType().isVoid()) {
+                                pw.println("    ret void");
+                            } else {
+                                pw.print("    ret ");
+                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getReturnType())));
+                                pw.println(" %result");
+                            }
+
+                            break;
+                        }
                         case REF_newInvokeSpecial: {
                             pw.print("    %allocated = call i32 @");
                             pw.print(LLVMWriterUtils.toMethodName(theMethodHandle.getClassName(), LLVMWriter.NEWINSTANCE_METHOD_NAME, theSignature));
