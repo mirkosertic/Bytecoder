@@ -23,9 +23,10 @@ import de.mirkosertic.bytecoder.core.BytecodeReferenceKind;
 public class MethodHandleExpression extends Expression {
 
     private final BytecodeObjectTypeRef className;
-    private String methodName;
+    private final String methodName;
     private BytecodeMethodSignature signature;
     private final BytecodeReferenceKind referenceKind;
+    private final BytecodeMethodSignature originalSignature;
 
     public MethodHandleExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef className, final String methodName,
                                   final BytecodeMethodSignature signature, final BytecodeReferenceKind referenceKind) {
@@ -34,6 +35,7 @@ public class MethodHandleExpression extends Expression {
         this.methodName = methodName;
         this.signature = signature;
         this.referenceKind = referenceKind;
+        this.originalSignature = signature;
     }
 
     public BytecodeReferenceKind getReferenceKind() {
@@ -52,8 +54,12 @@ public class MethodHandleExpression extends Expression {
         return signature;
     }
 
+    public BytecodeMethodSignature getOriginalSignature() {
+        return originalSignature;
+    }
+
     public void retargetToMethodName(final String aNewMethodName) {
-        methodName = aNewMethodName;
+        //methodName = aNewMethodName;
     }
 
     public void retargetToSignature(final BytecodeMethodSignature aSignature) {

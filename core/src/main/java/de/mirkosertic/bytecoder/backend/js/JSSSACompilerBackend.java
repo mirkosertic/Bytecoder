@@ -1285,10 +1285,10 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         // Generate method handle delegate functions here
         for (int i=0;i<methodHandles.size();i++) {
-            final MethodHandleExpression mh = methodHandles.get(i);
-            final BytecodeMethodSignature theSignature = mh.getSignature();
-            final String theSymbol = theMinifier.toSymbol("handle" + i);
-            theWriter.text("bytecoder.methodhandles.").text(theSymbol).assign().text("function(");
+            final MethodHandleExpression theMethodHandle = methodHandles.get(i);
+            final BytecodeMethodSignature theSignature = theMethodHandle.getSignature();
+            final String theDelegateMethodName = theMinifier.toSymbol("handle" + i);
+            theWriter.text("bytecoder.methodhandles.").text(theDelegateMethodName).assign().text("function(");
             for (int j=0;j<theSignature.getArguments().length;j++) {
                 if (j>0) {
                     theWriter.text(",");
@@ -1296,11 +1296,11 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.text("arg").text("" + j);
             }
             theWriter.text(") {").newLine();
-            switch (mh.getReferenceKind()) {
+            switch (theMethodHandle.getReferenceKind()) {
                 case REF_invokeInterface:
                 case REF_invokeVirtual: {
                     theWriter.tab(1).text("return this.");
-                    theWriter.text(theMinifier.toMethodName(mh.getMethodName(), mh.getSignature()));
+                    theWriter.text(theMinifier.toMethodName(theMethodHandle.getMethodName(), theMethodHandle.getSignature()));
                     theWriter.text("(");
                     for (int j=0;j<theSignature.getArguments().length;j++) {
                         if (j>0) {
@@ -1314,13 +1314,13 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 }
                 case REF_newInvokeSpecial: {
                     theWriter.tab(1).text("return ");
-                    theWriter.text(theMinifier.toClassName(mh.getClassName()));
+                    theWriter.text(theMinifier.toClassName(theMethodHandle.getClassName()));
                     theWriter.text(".");
                     theWriter.text(theMinifier.toSymbol("init"));
                     theWriter.text("().");
                     theWriter.text(theMinifier.toSymbol("__runtimeclass"));
                     theWriter.text(".");
-                    theWriter.text(theMinifier.toMethodName("$newInstance", mh.getSignature()));
+                    theWriter.text(theMinifier.toMethodName("$newInstance", theMethodHandle.getSignature()));
                     theWriter.text("(");
                     for (int j=0;j<theSignature.getArguments().length;j++) {
                         if (j>0) {
@@ -1333,7 +1333,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     break;
                 }
                 default:
-                    throw new IllegalArgumentException("Not supported reference kind " + mh.getReferenceKind() + " for method " + mh.getMethodName() + " with signature " + mh.getSignature());
+                    throw new IllegalArgumentException("Not supported reference kind " + theMethodHandle.getReferenceKind() + " for method " + theMethodHandle.getMethodName() + " with signature " + theMethodHandle.getSignature());
 
             }
             theWriter.text("};").newLine();

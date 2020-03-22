@@ -1258,10 +1258,13 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     if ("metafactory".equals(theMethodName)) {
                         // We have something here
                         final StringValue theLambdaMethodName = (StringValue) theArguments.get(1).incomingDataFlows().get(0);
-                        final MethodTypeExpression theMethodType = (MethodTypeExpression) theArguments.get(2).incomingDataFlows().get(0);
+                        final MethodTypeExpression theStaticInvocationType = (MethodTypeExpression) theArguments.get(2).incomingDataFlows().get(0);
                         final MethodHandleExpression theImplRef = (MethodHandleExpression) theArguments.get(4).incomingDataFlows().get(0);
+                        final MethodTypeExpression theDynamicInvocationType = (MethodTypeExpression) theArguments.get(5).incomingDataFlows().get(0);
 
-                        // System.out.println("lambda " + theLambdaMethodName.getStringValue() + " -> " + theImplRef.getReferenceKind()  + " type = " + theMethodType.getSignature());
+                        theImplRef.retargetToSignature(theDynamicInvocationType.getSignature());
+
+                        System.out.println("lambda " + theLambdaMethodName.getStringValue() + " -> " + theImplRef.getReferenceKind()  + " statictype = " + theStaticInvocationType.getSignature() + ", dynamictype = " + theDynamicInvocationType.getSignature()+ ", implsignature = " + theImplRef.getSignature());
 
                         switch (theImplRef.getReferenceKind()) {
                             case REF_invokeInterface: {
@@ -1345,7 +1348,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                                 break;
                             }
                             default:
-                                throw new IllegalStateException(theImplRef.getReferenceKind() + " not supported for lambda " + theLambdaMethodName.getStringValue() + " -> " + theImplRef.getReferenceKind()  + " type = " + theMethodType.getSignature());
+                                throw new IllegalStateException(theImplRef.getReferenceKind() + " not supported for lambda " + theLambdaMethodName.getStringValue() + " -> " + theImplRef.getReferenceKind()  + " statictype = " + theStaticInvocationType.getSignature() + ", dynamictype = " + theDynamicInvocationType.getSignature());
                         }
                     } else {
                         final InvokeStaticMethodExpression theInvokeStaticValue = new InvokeStaticMethodExpression(aProgram, theInstruction.getOpcodeAddress(),
