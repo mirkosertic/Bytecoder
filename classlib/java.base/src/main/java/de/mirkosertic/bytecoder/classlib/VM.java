@@ -151,6 +151,23 @@ public class VM {
         }
     }
 
+    public static class InvokeSpecialCallsite extends ImplementingCallsite {
+
+        private final MethodType constructedType;
+        private final MethodHandle delegateMethod;
+
+        public InvokeSpecialCallsite(final MethodType aConstructedType, final MethodHandle aDelegateMethod) {
+            super(null);
+            constructedType = aConstructedType;
+            delegateMethod = aDelegateMethod;
+        }
+
+        @Override
+        public Object invokeExact(final Object... args) {
+            return newLambdaSpecialInvocation(constructedType, delegateMethod, args);
+        }
+    }
+
     public static class LambdaConstructorRefCallsite extends ImplementingCallsite {
 
         private final MethodType constructedType;
@@ -175,6 +192,8 @@ public class VM {
     public static native Object newLambdaInterfaceInvocation(final MethodType aConstructedType, final MethodHandle aDelegateMethod, final Object... staticArguments);
 
     public static native Object newLambdaVirtualInvocation(final MethodType aConstructedType, final MethodHandle aDelegateMethod, final Object... staticArguments);
+
+    public static native Object newLambdaSpecialInvocation(final MethodType aConstructedType, final MethodHandle aDelegateMethod, final Object... staticArguments);
 
     public static Object newInstanceWithDefaultConstructor(final Class clz) {
         return null;

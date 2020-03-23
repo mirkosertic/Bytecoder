@@ -29,7 +29,6 @@ import de.mirkosertic.bytecoder.backend.ConstantPool;
 import de.mirkosertic.bytecoder.backend.NativeMemoryLayouter;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Block;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Callable;
-import de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions;
 import de.mirkosertic.bytecoder.backend.wasm.ast.ExportableFunction;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Exporter;
 import de.mirkosertic.bytecoder.backend.wasm.ast.Expressions;
@@ -68,17 +67,12 @@ import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.relooper.Relooper;
-import de.mirkosertic.bytecoder.ssa.Expression;
-import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
-import de.mirkosertic.bytecoder.ssa.MethodHandleExpression;
-import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
-import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.stackifier.HeadToHeadControlFlowException;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
@@ -87,7 +81,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.lang.invoke.LambdaMetafactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -950,249 +943,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
             final ExportableFunction theFunction = module.functionIndex().firstByLabel(theEntry.getKey());
             final Program theSSAProgram = theEntry.getValue().program;
-
-            // At this point, we need to determine if there are lambdas generated
-            // so we can generate the adapter methods at compile time. This needs
-            // to be done because WebAssembly cannot generate code at runtime
-
-            final RegionNode theBootStrapcode = theEntry.getValue().bootstrapMethod;
-            for (final Expression theExpression : theBootStrapcode.getExpressions().toList()) {
-                final List<Value> theIncomingDataFlows = theExpression.incomingDataFlows();
-                for (final Value theValue : theIncomingDataFlows) {
-                    if (theValue instanceof InvokeStaticMethodExpression) {
-                        final InvokeStaticMethodExpression theStatic = (InvokeStaticMethodExpression) theValue;
-                        if (theStatic.getClassName().name().equals(LambdaMetafactory.class.getName()) && theStatic.getMethodName().equals("metafactory")) {
-                            // We have a winner
-                            final List<Value> theArguments = new ArrayList<>();
-                            for (final Value theArg : theStatic.incomingDataFlows()) {
-                                if (theArg instanceof Variable) {
-                                    theArguments.add(theArg.incomingDataFlows().get(0));
-                                } else {
-                                    theArguments.add(theArg);
-                                }
-                            }
-                            final MethodTypeExpression theStaticInvocationType = (MethodTypeExpression) theArguments.get(2);
-                            final MethodTypeExpression theDynamicInvocationType = (MethodTypeExpression) theArguments.get(5);
-                            final MethodHandleExpression theImplementationMethod = (MethodHandleExpression) theArguments.get(4);
-                            if (theStaticInvocationType.getSignature().getArguments().length == 0) {
-                                // If we have no static invocation arguments, we do not need to generate an adapter method
-                                // We can directly refer to the implementation method
-                            } else {
-                                // We need to create an adapter method to make the two signatures compatible
-                                final List<Param> theParams = new ArrayList<>();
-                                theParams.add(param("selfRef", PrimitiveType.i32));
-                                for (int i=0;i<theDynamicInvocationType.getSignature().getArguments().length;i++) {
-                                    theParams.add(param("arg" + i, toType(TypeRef.toType(theDynamicInvocationType.getSignature().getArguments()[i]))));
-                                }
-                                final BytecodeMethodSignature theImplementationSignature = theImplementationMethod.getSignature();
-
-                                final String theFunctionName = WASMWriterUtils.toMethodName(theImplementationMethod.getClassName(),
-                                        theImplementationMethod.getMethodName() + theEntry.getKey(), theImplementationMethod.getSignature());
-
-                                final String theImplementationOriginalMethodName = theImplementationMethod.getMethodName();
-
-                                // This is our new implementation
-                                theImplementationMethod.retargetToMethodName(theImplementationMethod.getMethodName() + theEntry.getKey());
-
-                                if (theImplementationSignature.getReturnType().isVoid()) {
-
-                                    final ExportableFunction theAdapterFunction = module.getFunctions().newFunction(theFunctionName,
-                                            theParams).toTable();
-
-                                    final List<WASMValue> theDispatchArguments = new ArrayList<>();
-
-                                    switch (theImplementationMethod.getReferenceKind()) {
-                                        case REF_invokeStatic:
-                                            theDispatchArguments.add(i32.c(-1, null));
-                                        case REF_invokeSpecial:
-                                        case REF_invokeVirtual: {
-
-                                            // Add static arguments
-                                            for (int i=0;i<theStaticInvocationType.getSignature().getArguments().length;i++) {
-
-                                                final WASMValue theBasePtr = i32.load(12, getLocal(theAdapterFunction.localByLabel("selfRef"), null), null);
-                                                final WASMValue thePtr = i32.add(theBasePtr, i32.c(i * 4, null), null);
-                                                switch (TypeRef.toType(theStaticInvocationType.getSignature().getArguments()[i]).resolve()) {
-                                                    case DOUBLE:
-                                                    case FLOAT: {
-                                                        theDispatchArguments.add(ConstExpressions.f32.load(20, thePtr, null));
-                                                        break;
-                                                    }
-                                                    default: {
-                                                        theDispatchArguments.add(ConstExpressions.i32.load(20, thePtr, null));
-                                                        break;
-                                                    }
-                                                }
-                                            }
-
-                                            // Add dynamic arguments
-                                            for (int i=0;i<theDynamicInvocationType.getSignature().getArguments().length;i++) {
-                                                theDispatchArguments.add(getLocal(theAdapterFunction.localByLabel("arg" + i), null));
-                                            }
-
-                                            final Function theImplementationFunction = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(
-                                                    theImplementationMethod.getClassName(),
-                                                    theImplementationOriginalMethodName,
-                                                    theImplementationSignature
-                                            ));
-                                            theAdapterFunction.flow.voidCall(theImplementationFunction, theDispatchArguments, null);
-                                            break;
-                                        }
-                                        case REF_invokeInterface: {
-
-                                            // Add static arguments
-                                            for (int i=0;i<theStaticInvocationType.getSignature().getArguments().length;i++) {
-
-                                                final WASMValue theBasePtr = i32.load(12, getLocal(theAdapterFunction.localByLabel("selfRef"), null), null);
-                                                final WASMValue thePtr = i32.add(theBasePtr, i32.c(i * 4, null), null);
-                                                switch (TypeRef.toType(theStaticInvocationType.getSignature().getArguments()[i]).resolve()) {
-                                                    case DOUBLE:
-                                                    case FLOAT: {
-                                                        theDispatchArguments.add(ConstExpressions.f32.load(20, thePtr, null));
-                                                        break;
-                                                    }
-                                                    default: {
-                                                        theDispatchArguments.add(ConstExpressions.i32.load(20, thePtr, null));
-                                                        break;
-                                                    }
-                                                }
-                                            }
-
-                                            // Add dynamic arguments
-                                            for (int i=0;i<theDynamicInvocationType.getSignature().getArguments().length;i++) {
-                                                theDispatchArguments.add(getLocal(theAdapterFunction.localByLabel("arg" + i), null));
-                                            }
-
-                                            final BytecodeMethodSignature theInvocationSignature = theDynamicInvocationType.getSignature();
-                                            final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(theImplementationOriginalMethodName, theInvocationSignature);
-                                            final List<PrimitiveType> theSignatureParams = new ArrayList<>();
-                                            theSignatureParams.add(PrimitiveType.i32);
-                                            for (int i = 0; i < theInvocationSignature.getArguments().length; i++) {
-                                                final BytecodeTypeRef theParamType = theInvocationSignature.getArguments()[i];
-                                                theSignatureParams.add(toType(TypeRef.toType(theParamType)));
-                                            }
-
-                                            final WASMType theCalledFunction;
-                                            if (!theInvocationSignature.getReturnType().isVoid()) {
-                                                theCalledFunction = module.getTypes().typeFor(theSignatureParams, toType(TypeRef.toType(theInvocationSignature.getReturnType())));
-                                            } else {
-                                                theCalledFunction = module.getTypes().typeFor(theSignatureParams);
-                                            }
-
-                                            final WASMType theResolveType = module.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
-                                            final List<WASMValue> theResolveArgument = new ArrayList<>();
-                                            theResolveArgument.add(theDispatchArguments.get(0));
-                                            theResolveArgument.add(i32.c(theMethodIdentifier.getIdentifier(), null));
-                                            final WASMValue theIndex = call(theResolveType, theResolveArgument, theDispatchArguments.get(0), null);
-
-                                            theAdapterFunction.flow.voidCallIndirect(theCalledFunction, theDispatchArguments, theIndex, null);
-                                            break;
-                                        }
-                                        default:
-                                            throw new IllegalStateException("Not implemented : " + theImplementationMethod.getReferenceKind() + " for LambdaMetaFactory!");
-                                    }
-                                } else {
-
-                                    final ExportableFunction theAdapterFunction = module.getFunctions().newFunction(theFunctionName,
-                                            theParams, toType(TypeRef.toType(theDynamicInvocationType.getSignature().getReturnType()))).toTable();
-
-                                    final List<WASMValue> theDispatchArguments = new ArrayList<>();
-
-                                    switch (theImplementationMethod.getReferenceKind()) {
-                                        case REF_invokeStatic:
-                                            theDispatchArguments.add(i32.c(-1, null));
-                                        case REF_invokeSpecial:
-                                        case REF_invokeVirtual: {
-
-                                            // Add static arguments
-                                            for (int i=0;i<theStaticInvocationType.getSignature().getArguments().length;i++) {
-
-                                                final WASMValue theBasePtr = i32.load(12, getLocal(theAdapterFunction.localByLabel("selfRef"), null), null);
-                                                final WASMValue thePtr = i32.add(theBasePtr, i32.c(i * 4, null), null);
-                                                switch (TypeRef.toType(theStaticInvocationType.getSignature().getArguments()[i]).resolve()) {
-                                                    case DOUBLE:
-                                                    case FLOAT: {
-                                                        theDispatchArguments.add(ConstExpressions.f32.load(20, thePtr, null));
-                                                        break;
-                                                    }
-                                                    default: {
-                                                        theDispatchArguments.add(ConstExpressions.i32.load(20, thePtr, null));
-                                                        break;
-                                                    }
-                                                }
-                                            }
-
-                                            // Add dynamic arguments
-                                            for (int i=0;i<theDynamicInvocationType.getSignature().getArguments().length;i++) {
-                                                theDispatchArguments.add(getLocal(theAdapterFunction.localByLabel("arg" + i), null));
-                                            }
-
-                                            final Function theImplementationFunction = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(
-                                                    theImplementationMethod.getClassName(),
-                                                    theImplementationOriginalMethodName,
-                                                    theImplementationSignature
-                                            ));
-                                            theAdapterFunction.flow.ret(call(theImplementationFunction, theDispatchArguments, null), null);
-                                            break;
-                                        }
-                                        case REF_invokeInterface: {
-
-                                            // Add static arguments
-                                            for (int i=0;i<theStaticInvocationType.getSignature().getArguments().length;i++) {
-
-                                                final WASMValue theBasePtr = i32.load(12, getLocal(theAdapterFunction.localByLabel("selfRef"), null), null);
-                                                final WASMValue thePtr = i32.add(theBasePtr, i32.c(i * 4, null), null);
-                                                switch (TypeRef.toType(theStaticInvocationType.getSignature().getArguments()[i]).resolve()) {
-                                                    case DOUBLE:
-                                                    case FLOAT: {
-                                                        theDispatchArguments.add(ConstExpressions.f32.load(20, thePtr, null));
-                                                        break;
-                                                    }
-                                                    default: {
-                                                        theDispatchArguments.add(ConstExpressions.i32.load(20, thePtr, null));
-                                                        break;
-                                                    }
-                                                }
-                                            }
-
-                                            // Add dynamic arguments
-                                            for (int i=0;i<theDynamicInvocationType.getSignature().getArguments().length;i++) {
-                                                theDispatchArguments.add(getLocal(theAdapterFunction.localByLabel("arg" + i), null));
-                                            }
-
-                                            final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(theImplementationOriginalMethodName, theImplementationSignature);
-                                            final List<PrimitiveType> theSignatureParams = new ArrayList<>();
-                                            theSignatureParams.add(PrimitiveType.i32);
-                                            for (int i = 0; i < theImplementationSignature.getArguments().length; i++) {
-                                                final BytecodeTypeRef theParamType = theImplementationSignature.getArguments()[i];
-                                                theSignatureParams.add(toType(TypeRef.toType(theParamType)));
-                                            }
-
-                                            final WASMType theCalledFunction;
-                                            if (!theImplementationSignature.getReturnType().isVoid()) {
-                                                theCalledFunction = module.getTypes().typeFor(theSignatureParams, toType(TypeRef.toType(theImplementationSignature.getReturnType())));
-                                            } else {
-                                                theCalledFunction = module.getTypes().typeFor(theSignatureParams);
-                                            }
-
-                                            final WASMType theResolveType = module.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
-                                            final List<WASMValue> theResolveArgument = new ArrayList<>();
-                                            theResolveArgument.add(theDispatchArguments.get(0));
-                                            theResolveArgument.add(i32.c(theMethodIdentifier.getIdentifier(), null));
-                                            final WASMValue theIndex = call(theResolveType, theResolveArgument, theDispatchArguments.get(0), null);
-
-                                            theAdapterFunction.flow.ret(call(theCalledFunction, theDispatchArguments, theIndex, null), null);
-                                            break;
-                                        }
-                                        default:
-                                            throw new IllegalStateException("Not implemented : " + theImplementationMethod.getReferenceKind() + " for LambdaMetaFactory!");
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
 
             // Perform register allocation
             final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram, variable -> {

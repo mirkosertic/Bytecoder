@@ -1804,7 +1804,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 for (int i=0;i<methodHandles.size();i++) {
 
                     final MethodHandleExpression theMethodHandle = methodHandles.get(i);
-                    final BytecodeMethodSignature theSignature = theMethodHandle.getSignature();
+                    final BytecodeMethodSignature theImplementationSignature = theMethodHandle.getImplementationSignature();
                     final String theAdapterMethodName = "handle" + i;
 
                     if (theMethodHandle.getReferenceKind() == BytecodeReferenceKind.REF_newInvokeSpecial) {
@@ -1812,21 +1812,21 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.print(theAdapterMethodName);
                         pw.print("(i32 %thisRef");
                     } else {
-                        if (theSignature.getReturnType().isVoid()) {
+                        if (theImplementationSignature.getReturnType().isVoid()) {
                             pw.print("define internal void @");
                             pw.print(theAdapterMethodName);
                             pw.print("(i32 %thisRef");
                         } else {
                             pw.print("define internal ");
-                            pw.print(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getReturnType())));
+                            pw.print(LLVMWriterUtils.toType(TypeRef.toType(theImplementationSignature.getReturnType())));
                             pw.print(" @");
                             pw.print(theAdapterMethodName);
                             pw.print("(i32 %thisRef");
                         }
                     }
-                    for (int j = 0; j < theSignature.getArguments().length; j++) {
+                    for (int j = 0; j < theImplementationSignature.getArguments().length; j++) {
                         pw.print(",");
-                        pw.print(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getArguments()[j])));
+                        pw.print(LLVMWriterUtils.toType(TypeRef.toType(theImplementationSignature.getArguments()[j])));
                         pw.print(" %arg");
                         pw.print(j);
                     }
@@ -1846,25 +1846,25 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.println("    %dispatcher = load i32, i32* %vtableref_offset_ptr");
                             pw.println("    %vtable = inttoptr i32 %dispatcher to i32(i32,i32)*");
 
-                            pw.println("    ;; trying to resolve " + theMethodHandle.getMethodName() + " with signature " + theMethodHandle.getOriginalSignature());
+                            pw.println("    ;; trying to resolve " + theMethodHandle.getMethodName() + " with signature " + theImplementationSignature);
 
                             // Resolve the index of the virtual identifier
                             pw.print("    %resolved = call i32(i32,i32) %vtable (i32 %thisRef,");
 
-                            final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(theMethodHandle.getMethodName(), theMethodHandle.getOriginalSignature());
+                            final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(theMethodHandle.getMethodName(), theImplementationSignature);
 
                             pw.print("i32 ");
                             pw.print(theMethodIdentifier.getIdentifier());
                             pw.println(")");
 
                             // Invoke function
-                            final BytecodeMethodSignature theOriginal = theMethodHandle.getOriginalSignature();
+                            final BytecodeMethodSignature theOriginal = theImplementationSignature;
 
                             pw.print("    %resolved_ptr = inttoptr i32 %resolved to ");
                             pw.print(LLVMWriterUtils.toSignature(theOriginal));
                             pw.println("*");
 
-                            if (!theSignature.getReturnType().isVoid()) {
+                            if (!theImplementationSignature.getReturnType().isVoid()) {
                                 pw.print("    %result = ");
                             }
 
@@ -1880,11 +1880,11 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             }
                             pw.println(")");
 
-                            if (theSignature.getReturnType().isVoid()) {
+                            if (theImplementationSignature.getReturnType().isVoid()) {
                                 pw.println("    ret void");
                             } else {
                                 pw.print("    ret ");
-                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getReturnType())));
+                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(theImplementationSignature.getReturnType())));
                                 pw.println(" %result");
                             }
                             break;
@@ -1903,7 +1903,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             // Resolve the index of the virtual identifier
                             pw.print("    %resolved = call i32(i32,i32) %vtable (i32 %thisRef,");
 
-                            final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(theMethodHandle.getMethodName(), theSignature);
+                            final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(theMethodHandle.getMethodName(), theImplementationSignature);
 
                             pw.print("i32 ");
                             pw.print(theMethodIdentifier.getIdentifier());
@@ -1912,7 +1912,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             // Invoke function
 
                             pw.print("    %resolved_ptr = inttoptr i32 %resolved to ");
-                            pw.print(LLVMWriterUtils.toSignature(theSignature));
+                            pw.print(LLVMWriterUtils.toSignature(theImplementationSignature));
                             pw.println("*");
 
                             pw.println("    %staticdata = add i32 %thisRef, 12");
@@ -1922,53 +1922,53 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.println("    %selfrefoffset_ptr = inttoptr i32 %selfrefoffset to i32*");
                             pw.println("    %receiver = load i32, i32* %selfrefoffset_ptr");
 
-                            if (!theSignature.getReturnType().isVoid()) {
+                            if (!theImplementationSignature.getReturnType().isVoid()) {
                                 pw.print("    %result = ");
                             }
 
                             pw.print("call ");
-                            pw.print(LLVMWriterUtils.toSignature(theSignature));
+                            pw.print(LLVMWriterUtils.toSignature(theImplementationSignature));
                             pw.print(" %resolved_ptr(i32 %receiver");
-                            for (int j = 0; j < theSignature.getArguments().length; j++) {
+                            for (int j = 0; j < theImplementationSignature.getArguments().length; j++) {
                                 pw.print(",");
-                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getArguments()[j])));
+                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(theImplementationSignature.getArguments()[j])));
                                 pw.print(" %arg");
                                 pw.print(j);
                             }
                             pw.println(")");
 
-                            if (theSignature.getReturnType().isVoid()) {
+                            if (theImplementationSignature.getReturnType().isVoid()) {
                                 pw.println("    ret void");
                             } else {
                                 pw.print("    ret ");
-                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getReturnType())));
+                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(theImplementationSignature.getReturnType())));
                                 pw.println(" %result");
                             }
                             break;
                         }
                         case REF_invokeStatic: {
-                            if (!theSignature.getReturnType().isVoid()) {
+                            if (!theImplementationSignature.getReturnType().isVoid()) {
                                 pw.print("    %result = ");
                             }
 
                             pw.print("call ");
-                            pw.print(LLVMWriterUtils.toSignature(theSignature));
+                            pw.print(LLVMWriterUtils.toSignature(theImplementationSignature));
                             pw.print(" @");
-                            pw.print(LLVMWriterUtils.toMethodName(theMethodHandle.getClassName(), theMethodHandle.getMethodName(), theMethodHandle.getOriginalSignature()));
+                            pw.print(LLVMWriterUtils.toMethodName(theMethodHandle.getClassName(), theMethodHandle.getMethodName(), theImplementationSignature));
                             pw.print("(i32 undef");
-                            for (int j = 0; j < theSignature.getArguments().length; j++) {
+                            for (int j = 0; j < theImplementationSignature.getArguments().length; j++) {
                                 pw.print(",");
-                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getArguments()[j])));
+                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(theImplementationSignature.getArguments()[j])));
                                 pw.print(" %arg");
                                 pw.print(j);
                             }
                             pw.println(")");
 
-                            if (theSignature.getReturnType().isVoid()) {
+                            if (theImplementationSignature.getReturnType().isVoid()) {
                                 pw.println("    ret void");
                             } else {
                                 pw.print("    ret ");
-                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getReturnType())));
+                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(theImplementationSignature.getReturnType())));
                                 pw.println(" %result");
                             }
 
@@ -1976,11 +1976,11 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         }
                         case REF_newInvokeSpecial: {
                             pw.print("    %allocated = call i32 @");
-                            pw.print(LLVMWriterUtils.toMethodName(theMethodHandle.getClassName(), LLVMWriter.NEWINSTANCE_METHOD_NAME, theSignature));
+                            pw.print(LLVMWriterUtils.toMethodName(theMethodHandle.getClassName(), LLVMWriter.NEWINSTANCE_METHOD_NAME, theImplementationSignature));
                             pw.print("(i32 %thisRef");
-                            for (int j = 0; j < theSignature.getArguments().length; j++) {
+                            for (int j = 0; j < theImplementationSignature.getArguments().length; j++) {
                                 pw.print(",");
-                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getArguments()[j])));
+                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(theImplementationSignature.getArguments()[j])));
                                 pw.print(" %arg");
                                 pw.print(j);
                             }
@@ -1990,7 +1990,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             break;
                         }
                         default:
-                            throw new IllegalArgumentException("Not supported reference kind " + theMethodHandle.getReferenceKind() + " for method " + theMethodHandle.getMethodName() + " with signature " + theMethodHandle.getSignature());
+                            throw new IllegalArgumentException("Not supported reference kind " + theMethodHandle.getReferenceKind() + " for method " + theMethodHandle.getMethodName() + " with signature " + theImplementationSignature);
 
                     }
 

@@ -15,12 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.js;
 
-import java.io.StringWriter;
-import java.lang.reflect.Constructor;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-
 import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
@@ -55,6 +49,12 @@ import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.stackifier.HeadToHeadControlFlowException;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
+
+import java.io.StringWriter;
+import java.lang.reflect.Constructor;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
@@ -203,6 +203,15 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab().text("},").newLine();
 
         theWriter.tab().text("lambdaVirtualRef").colon().text("function(typeToConstruct,methodRef,staticArguments)").space().text("{").newLine();
+        theWriter.tab(2).text("var handler").assign().text("function()").space().text("{").newLine();
+        theWriter.tab(3).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();
+        theWriter.tab(3).text("var concated").assign().text("staticArguments.data.splice(1).concat(args);").newLine();
+        theWriter.tab(3).text("return methodRef.apply(staticArguments.data[0],concated);").newLine();
+        theWriter.tab(2).text("};").newLine();
+        theWriter.tab(2).text("return typeToConstruct.returntype.").text(theMinifier.toSymbol("newLambdaInstance")).text("(handler);").newLine();
+        theWriter.tab().text("},").newLine();
+
+        theWriter.tab().text("lambdaSpecialRef").colon().text("function(typeToConstruct,methodRef,staticArguments)").space().text("{").newLine();
         theWriter.tab(2).text("var handler").assign().text("function()").space().text("{").newLine();
         theWriter.tab(3).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();
         theWriter.tab(3).text("var concated").assign().text("staticArguments.data.splice(1).concat(args);").newLine();
@@ -1286,57 +1295,28 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         // Generate method handle delegate functions here
         for (int i=0;i<methodHandles.size();i++) {
             final MethodHandleExpression theMethodHandle = methodHandles.get(i);
-            final BytecodeMethodSignature theSignature = theMethodHandle.getSignature();
-            final String theDelegateMethodName = theMinifier.toSymbol("handle" + i);
-            theWriter.text("bytecoder.methodhandles.").text(theDelegateMethodName).assign().text("function(");
-            for (int j=0;j<theSignature.getArguments().length;j++) {
-                if (j>0) {
-                    theWriter.text(",");
-                }
-                theWriter.text("arg").text("" + j);
-            }
-            theWriter.text(") {").newLine();
-            switch (theMethodHandle.getReferenceKind()) {
-                case REF_invokeInterface:
-                case REF_invokeVirtual: {
-                    theWriter.tab(1).text("return this.");
-                    theWriter.text(theMinifier.toMethodName(theMethodHandle.getMethodName(), theMethodHandle.getSignature()));
-                    theWriter.text("(");
-                    for (int j=0;j<theSignature.getArguments().length;j++) {
-                        if (j>0) {
-                            theWriter.text(",");
-                        }
-                        theWriter.text("arg").text("" + j);
-                    }
-                    theWriter.text(");");
-                    theWriter.newLine();
-                    break;
-                }
-                case REF_newInvokeSpecial: {
-                    theWriter.tab(1).text("return ");
-                    theWriter.text(theMinifier.toClassName(theMethodHandle.getClassName()));
-                    theWriter.text(".");
-                    theWriter.text(theMinifier.toSymbol("init"));
-                    theWriter.text("().");
-                    theWriter.text(theMinifier.toSymbol("__runtimeclass"));
-                    theWriter.text(".");
-                    theWriter.text(theMinifier.toMethodName("$newInstance", theMethodHandle.getSignature()));
-                    theWriter.text("(");
-                    for (int j=0;j<theSignature.getArguments().length;j++) {
-                        if (j>0) {
-                            theWriter.text(",");
-                        }
-                        theWriter.text("arg").text("" + j);
-                    }
-                    theWriter.text(");");
-                    theWriter.newLine();
-                    break;
-                }
-                default:
-                    throw new IllegalArgumentException("Not supported reference kind " + theMethodHandle.getReferenceKind() + " for method " + theMethodHandle.getMethodName() + " with signature " + theMethodHandle.getSignature());
 
+            final String theDelegateMethodName = theMinifier.toSymbol("handle" + i);
+
+            switch (theMethodHandle.getReferenceKind()) {
+                case REF_invokeStatic:
+                    writeMethodHandleDelegateInvokeStatic(theMethodHandle, theDelegateMethodName, theWriter, theMinifier);
+                    break;
+                case REF_newInvokeSpecial:
+                    writeMethodHandleDelegateNewInvokeSpecial(theMethodHandle, theDelegateMethodName, theWriter, theMinifier);
+                    break;
+                case REF_invokeInterface:
+                    writeMethodHandleDelegateInvokeInterface(theMethodHandle, theDelegateMethodName, theWriter, theMinifier);
+                    break;
+                case REF_invokeVirtual:
+                    writeMethodHandleDelegateInvokeVirtual(theMethodHandle, theDelegateMethodName, theWriter, theMinifier);
+                    break;
+                case REF_invokeSpecial:
+                    writeMethodHandleDelegateInvokeSpecial(theMethodHandle, theDelegateMethodName, theWriter, theMinifier);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Not supported refkind for method handle " + theMethodHandle.getReferenceKind());
             }
-            theWriter.text("};").newLine();
         }
         theWriter.text("bytecoder.bootstrap").assign().text("{").newLine();
         theWriter.text("};").newLine();
@@ -1394,5 +1374,287 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         }
         theResult.append("]");
         return theResult.toString();
+    }
+
+    private void writeMethodHandleDelegateInvokeStatic(final MethodHandleExpression aMethodHandle, final String aDelegateMethodName, final JSPrintWriter aWriter, final JSMinifier aMinifier) {
+        aWriter.text("bytecoder.methodhandles.").text(aDelegateMethodName).assign().text("function(");
+
+        final MethodHandleExpression.AdapterAnnotation theAdapterAnnotation = aMethodHandle.getAdapterAnnotation();
+
+        // We build the dynamic signature here
+        final List<String> theDelegateArgs = new ArrayList<>();
+        final List<String> theCallingArgs = new ArrayList<>();
+        final List<BytecodeTypeRef> theEffectiveArguments = new ArrayList<>();
+        for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
+            // We ignore the first static arg, as this is passed as "this" to the function
+            final String theArgName = "linkArg" + theDelegateArgs.size();
+            if (k>0) {
+                theDelegateArgs.add(theArgName);
+                theCallingArgs.add(theArgName);
+            } else {
+                theCallingArgs.add("this");
+            }
+            theEffectiveArguments.add(theAdapterAnnotation.getLinkageSignature().getArguments()[k]);
+        }
+        for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
+            final String theArgName = "captureArg" + theDelegateArgs.size();
+            theDelegateArgs.add(theArgName);
+            theCallingArgs.add(theArgName);
+
+            theEffectiveArguments.add(theAdapterAnnotation.getCaptureSignature().getArguments()[k]);
+        }
+
+        final BytecodeMethodSignature theEffectiveSignature = new BytecodeMethodSignature(
+                aMethodHandle.getImplementationSignature().getReturnType(),
+                theEffectiveArguments.toArray(new BytecodeTypeRef[0])
+        );
+
+        for (int j=0;j<theDelegateArgs.size();j++) {
+            if (j>0) {
+                aWriter.text(",");
+            }
+            aWriter.text(theDelegateArgs.get(j));
+        }
+        aWriter.text(") {").newLine();
+
+        aWriter.tab(1).text("return ");
+        aWriter.text(aMinifier.toClassName(aMethodHandle.getClassName()));
+        aWriter.text(".").text(aMinifier.toSymbol("init")).text("().");
+        aWriter.text(aMinifier.toMethodName(aMethodHandle.getMethodName(), theEffectiveSignature));
+
+        aWriter.text("(");
+        for (int j=0;j<theCallingArgs.size();j++) {
+            if (j>0) {
+                aWriter.text(",");
+            }
+            aWriter.text(theCallingArgs.get(j));
+        }
+        aWriter.text(");");
+        aWriter.newLine();
+
+        aWriter.text("};").newLine();
+    }
+
+    private void writeMethodHandleDelegateInvokeInterface(final MethodHandleExpression aMethodHandle, final String aDelegateMethodName, final JSPrintWriter aWriter, final JSMinifier aMinifier) {
+        aWriter.text("bytecoder.methodhandles.").text(aDelegateMethodName).assign().text("function(");
+
+        final MethodHandleExpression.AdapterAnnotation theAdapterAnnotation = aMethodHandle.getAdapterAnnotation();
+
+        // We build the dynamic signature here
+        final List<String> theDelegateArgs = new ArrayList<>();
+        final List<String> theCallingArgs = new ArrayList<>();
+        final List<BytecodeTypeRef> theEffectiveArguments = new ArrayList<>();
+        for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
+            // We ignore the first static arg, as this is passed as "this" to the function
+            final String theArgName = "linkArg" + theDelegateArgs.size();
+            theDelegateArgs.add(theArgName);
+            theCallingArgs.add(theArgName);
+            theEffectiveArguments.add(theAdapterAnnotation.getLinkageSignature().getArguments()[k]);
+        }
+        for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
+            final String theArgName = "captureArg" + theDelegateArgs.size();
+            if (k>0) {
+                theDelegateArgs.add(theArgName);
+                theCallingArgs.add(theArgName);
+                theEffectiveArguments.add(theAdapterAnnotation.getCaptureSignature().getArguments()[k]);
+            } else {
+                theCallingArgs.add("this");
+            }
+        }
+
+        final BytecodeMethodSignature theEffectiveSignature = new BytecodeMethodSignature(
+                aMethodHandle.getImplementationSignature().getReturnType(),
+                theEffectiveArguments.toArray(new BytecodeTypeRef[0])
+        );
+
+        for (int j=0;j<theDelegateArgs.size();j++) {
+            if (j>0) {
+                aWriter.text(",");
+            }
+            aWriter.text(theDelegateArgs.get(j));
+        }
+        aWriter.text(") {").newLine();
+
+        aWriter.tab(1).text("return this.");
+        aWriter.text(aMinifier.toMethodName(aMethodHandle.getMethodName(), theEffectiveSignature));
+
+        aWriter.text("(");
+        for (int j=0;j<theCallingArgs.size();j++) {
+            if (j>0) {
+                aWriter.text(",");
+            }
+            aWriter.text(theCallingArgs.get(j));
+        }
+        aWriter.text(");");
+        aWriter.newLine();
+
+        aWriter.text("};").newLine();
+    }
+
+    private void writeMethodHandleDelegateNewInvokeSpecial(final MethodHandleExpression aMethodHandle, final String aDelegateMethodName, final JSPrintWriter aWriter, final JSMinifier aMinifier) {
+        aWriter.text("bytecoder.methodhandles.").text(aDelegateMethodName).assign().text("function(");
+
+        final MethodHandleExpression.AdapterAnnotation theAdapterAnnotation = aMethodHandle.getAdapterAnnotation();
+
+        // We build the dynamic signature here
+        final List<String> theDelegateArgs = new ArrayList<>();
+        final List<String> theCallingArgs = new ArrayList<>();
+        final List<BytecodeTypeRef> theEffectiveArguments = new ArrayList<>();
+        for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
+            // We ignore the first static arg, as this is passed as "this" to the function
+            final String theArgName = "linkArg" + theDelegateArgs.size();
+            if (k>0) {
+                theDelegateArgs.add(theArgName);
+                theCallingArgs.add(theArgName);
+            } else {
+                theCallingArgs.add("this");
+            }
+            theEffectiveArguments.add(theAdapterAnnotation.getLinkageSignature().getArguments()[k]);
+        }
+        for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
+            final String theArgName = "captureArg" + theDelegateArgs.size();
+            theDelegateArgs.add(theArgName);
+            theCallingArgs.add(theArgName);
+
+            theEffectiveArguments.add(theAdapterAnnotation.getCaptureSignature().getArguments()[k]);
+        }
+
+        final BytecodeMethodSignature theEffectiveSignature = new BytecodeMethodSignature(
+                aMethodHandle.getImplementationSignature().getReturnType(),
+                theEffectiveArguments.toArray(new BytecodeTypeRef[0])
+        );
+
+        for (int j=0;j<theDelegateArgs.size();j++) {
+            if (j>0) {
+                aWriter.text(",");
+            }
+            aWriter.text(theDelegateArgs.get(j));
+        }
+        aWriter.text(") {").newLine();
+
+        aWriter.tab(1).text("return ");
+        aWriter.text(aMinifier.toClassName(aMethodHandle.getClassName()));
+        aWriter.text(".").text(aMinifier.toSymbol("init")).text("()");
+        aWriter.text(".").text(aMinifier.toSymbol("__runtimeclass"));
+        aWriter.text(".").text(aMinifier.toMethodName("$newInstance", theEffectiveSignature));
+
+        aWriter.text("(");
+        for (int j=0;j<theCallingArgs.size();j++) {
+            if (j>0) {
+                aWriter.text(",");
+            }
+            aWriter.text(theCallingArgs.get(j));
+        }
+        aWriter.text(");");
+        aWriter.newLine();
+
+        aWriter.text("};").newLine();
+    }
+
+    private void writeMethodHandleDelegateInvokeVirtual(final MethodHandleExpression aMethodHandle, final String aDelegateMethodName, final JSPrintWriter aWriter, final JSMinifier aMinifier) {
+        aWriter.text("bytecoder.methodhandles.").text(aDelegateMethodName).assign().text("function(");
+
+        final MethodHandleExpression.AdapterAnnotation theAdapterAnnotation = aMethodHandle.getAdapterAnnotation();
+
+        // We build the dynamic signature here
+        final List<String> theDelegateArgs = new ArrayList<>();
+        final List<String> theCallingArgs = new ArrayList<>();
+        final List<BytecodeTypeRef> theEffectiveArguments = new ArrayList<>();
+        for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
+            // We ignore the first static arg, as this is passed as "this" to the function
+            final String theArgName = "linkArg" + theDelegateArgs.size();
+            if (k>0) {
+                theDelegateArgs.add(theArgName);
+                theCallingArgs.add(theArgName);
+                theEffectiveArguments.add(theAdapterAnnotation.getLinkageSignature().getArguments()[k]);
+            }
+        }
+        for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
+            final String theArgName = "captureArg" + theDelegateArgs.size();
+            theDelegateArgs.add(theArgName);
+            theCallingArgs.add(theArgName);
+            theEffectiveArguments.add(theAdapterAnnotation.getCaptureSignature().getArguments()[k]);
+        }
+
+        final BytecodeMethodSignature theEffectiveSignature = new BytecodeMethodSignature(
+                aMethodHandle.getImplementationSignature().getReturnType(),
+                theEffectiveArguments.toArray(new BytecodeTypeRef[0])
+        );
+
+        for (int j=0;j<theDelegateArgs.size();j++) {
+            if (j>0) {
+                aWriter.text(",");
+            }
+            aWriter.text(theDelegateArgs.get(j));
+        }
+        aWriter.text(") {").newLine();
+
+        aWriter.tab(1).text("return this.");
+        aWriter.text(aMinifier.toMethodName(aMethodHandle.getMethodName(), theEffectiveSignature));
+
+        aWriter.text("(");
+        for (int j=0;j<theCallingArgs.size();j++) {
+            if (j>0) {
+                aWriter.text(",");
+            }
+            aWriter.text(theCallingArgs.get(j));
+        }
+        aWriter.text(");");
+        aWriter.newLine();
+
+        aWriter.text("};").newLine();
+    }
+
+    private void writeMethodHandleDelegateInvokeSpecial(final MethodHandleExpression aMethodHandle, final String aDelegateMethodName, final JSPrintWriter aWriter, final JSMinifier aMinifier) {
+        aWriter.text("bytecoder.methodhandles.").text(aDelegateMethodName).assign().text("function(");
+
+        final MethodHandleExpression.AdapterAnnotation theAdapterAnnotation = aMethodHandle.getAdapterAnnotation();
+
+        // We build the dynamic signature here
+        final List<String> theDelegateArgs = new ArrayList<>();
+        final List<String> theCallingArgs = new ArrayList<>();
+        final List<BytecodeTypeRef> theEffectiveArguments = new ArrayList<>();
+        for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
+            // We ignore the first static arg, as this is passed as "this" to the function
+            final String theArgName = "linkArg" + theDelegateArgs.size();
+            if (k>0) {
+                theDelegateArgs.add(theArgName);
+                theCallingArgs.add(theArgName);
+                theEffectiveArguments.add(theAdapterAnnotation.getLinkageSignature().getArguments()[k]);
+            }
+        }
+        for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
+            final String theArgName = "captureArg" + theDelegateArgs.size();
+            theDelegateArgs.add(theArgName);
+            theCallingArgs.add(theArgName);
+            theEffectiveArguments.add(theAdapterAnnotation.getCaptureSignature().getArguments()[k]);
+        }
+
+        final BytecodeMethodSignature theEffectiveSignature = new BytecodeMethodSignature(
+                aMethodHandle.getImplementationSignature().getReturnType(),
+                theEffectiveArguments.toArray(new BytecodeTypeRef[0])
+        );
+
+        for (int j=0;j<theDelegateArgs.size();j++) {
+            if (j>0) {
+                aWriter.text(",");
+            }
+            aWriter.text(theDelegateArgs.get(j));
+        }
+        aWriter.text(") {").newLine();
+
+        aWriter.tab(1).text("return ");
+        aWriter.text(aMinifier.toClassName(aMethodHandle.getClassName()));
+        aWriter.text(".");
+        aWriter.text(aMinifier.toMethodName(aMethodHandle.getMethodName(), theEffectiveSignature));
+        aWriter.text(".call(this");
+        for (final String theCallingArg : theCallingArgs) {
+            aWriter.text(",");
+            aWriter.text(theCallingArg);
+        }
+        aWriter.text(");");
+        aWriter.newLine();
+
+        aWriter.text("};").newLine();
     }
 }

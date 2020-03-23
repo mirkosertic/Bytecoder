@@ -33,7 +33,6 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeReferenceKind;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
@@ -77,6 +76,7 @@ import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.IsNaNExpression;
 import de.mirkosertic.bytecoder.ssa.LambdaConstructorReferenceExpression;
 import de.mirkosertic.bytecoder.ssa.LambdaInterfaceReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaSpecialReferenceExpression;
 import de.mirkosertic.bytecoder.ssa.LambdaVirtualReferenceExpression;
 import de.mirkosertic.bytecoder.ssa.LambdaWithStaticImplExpression;
 import de.mirkosertic.bytecoder.ssa.LongValue;
@@ -264,6 +264,8 @@ public class JSSSAWriter {
             print((LambdaInterfaceReferenceExpression) aValue);
         } else if (aValue instanceof LambdaVirtualReferenceExpression) {
             print((LambdaVirtualReferenceExpression) aValue);
+        } else if (aValue instanceof LambdaSpecialReferenceExpression) {
+            print((LambdaSpecialReferenceExpression) aValue);
         } else if (aValue instanceof ResolveCallsiteObjectExpression) {
             print((ResolveCallsiteObjectExpression) aValue);
         } else if (aValue instanceof StackTopExpression) {
@@ -503,6 +505,16 @@ public class JSSSAWriter {
         writer.text(")");
     }
 
+    private void print(final LambdaSpecialReferenceExpression aValue) {
+        writer.text("bytecoder.lambdaSpecialRef(");
+        print(aValue.getType());
+        writer.text(",");
+        print(aValue.getConstructorRef());
+        writer.text(",");
+        print(aValue.getStaticArguments());
+        writer.text(")");
+    }
+
     private void printTypeRef(final BytecodeTypeRef typeRef) {
         if(typeRef.isVoid() || typeRef.isPrimitive() || typeRef.isArray()) {
             writer.text("'");
@@ -553,14 +565,14 @@ public class JSSSAWriter {
 
     private void print(final MethodHandleExpression aValue) {
         final String theMethodName = aValue.getMethodName();
-        final BytecodeMethodSignature theSignature = aValue.getSignature();
+        final BytecodeMethodSignature theImplementationSignature = aValue.getImplementationSignature();
 
-        if (aValue.getReferenceKind() == BytecodeReferenceKind.REF_invokeStatic) {
+        if (aValue.getAdapterAnnotation() == null) {
             // An easy one, we can directly refer to the implementation method here
             writer.text(minifier.toClassName(aValue.getClassName())).text(".")
-                    .text(minifier.toMethodName(theMethodName, theSignature));
+                    .text(minifier.toMethodName(theMethodName, theImplementationSignature));
         } else {
-            // In all other cases, we compile a delegate function
+            // In all other cases, we compile a delegate function with the adapter magic
             writer.text("bytecoder.methodhandles.");
             writer.text(minifier.toSymbol(idResolver.methodHandleDelegateFor(aValue)));
         }

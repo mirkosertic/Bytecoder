@@ -1262,9 +1262,14 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                         final MethodHandleExpression theImplRef = (MethodHandleExpression) theArguments.get(4).incomingDataFlows().get(0);
                         final MethodTypeExpression theDynamicInvocationType = (MethodTypeExpression) theArguments.get(5).incomingDataFlows().get(0);
 
-                        theImplRef.retargetToSignature(theDynamicInvocationType.getSignature());
+                        // We need this annotation to generate an adapter function at compile time here
+                        final MethodHandleExpression.AdapterAnnotation theAdaptertInfo = new MethodHandleExpression.AdapterAnnotation(
+                                theStaticInvocationType.getSignature(),
+                                theDynamicInvocationType.getSignature()
+                        );
+                        theImplRef.setAdapterAnnotation(theAdaptertInfo);
 
-                        System.out.println("lambda " + theLambdaMethodName.getStringValue() + " -> " + theImplRef.getReferenceKind()  + " statictype = " + theStaticInvocationType.getSignature() + ", dynamictype = " + theDynamicInvocationType.getSignature()+ ", implsignature = " + theImplRef.getSignature());
+                        //System.out.println("lambda " + theLambdaMethodName.getStringValue() + " -> " + theImplRef.getReferenceKind()  + " statictype = " + theStaticInvocationType.getSignature() + ", dynamictype = " + theDynamicInvocationType.getSignature()+ ", implsignature = " + theImplRef.getImplementationSignature());
 
                         switch (theImplRef.getReferenceKind()) {
                             case REF_invokeInterface: {
@@ -1301,8 +1306,24 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                                 theInitNode.getExpressions().add(new ReturnValueExpression(aProgram, theInstruction.getOpcodeAddress(), theNewVariable));
                                 break;
                             }
-                            case REF_invokeStatic:
                             case REF_invokeSpecial: {
+                                final NewObjectAndConstructExpression theValue = new NewObjectAndConstructExpression(
+                                        aProgram, theInstruction.getOpcodeAddress(),
+                                        BytecodeObjectTypeRef.fromRuntimeClass(VM.InvokeSpecialCallsite.class),
+                                        new BytecodeMethodSignature(
+                                                BytecodePrimitiveTypeRef.VOID,
+                                                new BytecodeTypeRef[]{
+                                                        BytecodeObjectTypeRef.fromRuntimeClass(MethodType.class),
+                                                        BytecodeObjectTypeRef.fromRuntimeClass(MethodHandle.class)
+                                                }
+                                        ),
+                                        Arrays.asList(theArguments.get(2), theArguments.get(4))
+                                );
+                                final Variable theNewVariable = theInitNode.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theValue);
+                                theInitNode.getExpressions().add(new ReturnValueExpression(aProgram, theInstruction.getOpcodeAddress(), theNewVariable));
+                                break;
+                            }
+                            case REF_invokeStatic: {
                                 final NewObjectAndConstructExpression theValue = new NewObjectAndConstructExpression(
                                         aProgram, theInstruction.getOpcodeAddress(),
                                         BytecodeObjectTypeRef.fromRuntimeClass(VM.LambdaStaticImplCallsite.class),
@@ -1327,8 +1348,9 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                                 final BytecodeMethodSignature theInvocationSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, theConstructorSignature.getArguments());
 
                                 // We need to create a new MethodHandle for the constructor
-                                final Value theConstructorMethodRef = new MethodHandleExpression(aProgram, theInitNode.getStartAddress(),
+                                final MethodHandleExpression theConstructorMethodRef = new MethodHandleExpression(aProgram, theInitNode.getStartAddress(),
                                         theClassToInstantiate, "<init>", theInvocationSignature, BytecodeReferenceKind.REF_newInvokeSpecial);
+                                theConstructorMethodRef.setAdapterAnnotation(theAdaptertInfo);
                                 final Variable theConstructorMethodRefVariable = theInitNode.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theConstructorMethodRef);
 
                                 final NewObjectAndConstructExpression theValue = new NewObjectAndConstructExpression(

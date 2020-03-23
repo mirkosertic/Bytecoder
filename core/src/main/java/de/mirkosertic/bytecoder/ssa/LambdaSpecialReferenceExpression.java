@@ -17,9 +17,9 @@ package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
-public class LambdaVirtualReferenceExpression extends Expression {
+public class LambdaSpecialReferenceExpression extends Expression {
 
-    public LambdaVirtualReferenceExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value type, final Value constructorRef, final Value staticArguments) {
+    public LambdaSpecialReferenceExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value type, final Value constructorRef, final Value staticArguments) {
         super(aProgram, aAddress);
         receivesDataFrom(type);
         receivesDataFrom(constructorRef);

@@ -1033,14 +1033,14 @@ public class WASMSSAASTWriter {
 
     private WASMValue methodRefValue(final MethodHandleExpression aValue) {
         final String theName = aValue.getMethodName();
-        final BytecodeMethodSignature theSignature = aValue.getSignature();
+        final BytecodeMethodSignature theSignature = aValue.getImplementationSignature();
         final BytecodeLinkedClass theClass = linkerContext.resolveClass(aValue.getClassName());
 
         if (aValue.getReferenceKind() == BytecodeReferenceKind.REF_invokeStatic) {
             final String theMethodName = WASMWriterUtils.toMethodName(
                     aValue.getClassName(),
                     aValue.getMethodName(),
-                    aValue.getSignature());
+                    aValue.getImplementationSignature());
 
             return weakFunctionTableReference(theMethodName, aValue);
         }
@@ -1053,7 +1053,7 @@ public class WASMSSAASTWriter {
             final String theMethodName = WASMWriterUtils.toMethodName(
                     aValue.getClassName(),
                     "$newInstance",
-                    aValue.getSignature());
+                    aValue.getImplementationSignature());
 
             return weakFunctionTableReference(theMethodName, aValue);
         }

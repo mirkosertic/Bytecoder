@@ -22,20 +22,37 @@ import de.mirkosertic.bytecoder.core.BytecodeReferenceKind;
 
 public class MethodHandleExpression extends Expression {
 
+    public static class AdapterAnnotation  {
+        private final BytecodeMethodSignature linkageSignature;
+        private final BytecodeMethodSignature captureSignature;
+
+        public AdapterAnnotation(final BytecodeMethodSignature linkageSignature, final BytecodeMethodSignature captureSignature) {
+            this.linkageSignature = linkageSignature;
+            this.captureSignature = captureSignature;
+        }
+
+        public BytecodeMethodSignature getLinkageSignature() {
+            return linkageSignature;
+        }
+
+        public BytecodeMethodSignature getCaptureSignature() {
+            return captureSignature;
+        }
+    }
+
     private final BytecodeObjectTypeRef className;
     private final String methodName;
-    private BytecodeMethodSignature signature;
+    private final BytecodeMethodSignature implementationSignature;
     private final BytecodeReferenceKind referenceKind;
-    private final BytecodeMethodSignature originalSignature;
+    private AdapterAnnotation adapterAnnotation;
 
     public MethodHandleExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef className, final String methodName,
-                                  final BytecodeMethodSignature signature, final BytecodeReferenceKind referenceKind) {
+                                  final BytecodeMethodSignature implementationSignature, final BytecodeReferenceKind referenceKind) {
         super(aProgram, aAddress);
         this.className = className;
         this.methodName = methodName;
-        this.signature = signature;
+        this.implementationSignature = implementationSignature;
         this.referenceKind = referenceKind;
-        this.originalSignature = signature;
     }
 
     public BytecodeReferenceKind getReferenceKind() {
@@ -50,20 +67,16 @@ public class MethodHandleExpression extends Expression {
         return methodName;
     }
 
-    public BytecodeMethodSignature getSignature() {
-        return signature;
+    public BytecodeMethodSignature getImplementationSignature() {
+        return implementationSignature;
     }
 
-    public BytecodeMethodSignature getOriginalSignature() {
-        return originalSignature;
+    public AdapterAnnotation getAdapterAnnotation() {
+        return adapterAnnotation;
     }
 
-    public void retargetToMethodName(final String aNewMethodName) {
-        //methodName = aNewMethodName;
-    }
-
-    public void retargetToSignature(final BytecodeMethodSignature aSignature) {
-        signature = aSignature;
+    public void setAdapterAnnotation(final AdapterAnnotation aAdapterAnnotation) {
+        adapterAnnotation = aAdapterAnnotation;
     }
 
     @Override

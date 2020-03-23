@@ -128,6 +128,14 @@ public class CompileTarget {
                                 BytecodeObjectTypeRef.fromRuntimeClass(MethodHandle.class),
                         }
                 ));
+        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.InvokeSpecialCallsite.class))
+                .resolveConstructorInvocation(new BytecodeMethodSignature(
+                        BytecodePrimitiveTypeRef.VOID,
+                        new BytecodeTypeRef[]{
+                                BytecodeObjectTypeRef.fromRuntimeClass(MethodType.class),
+                                BytecodeObjectTypeRef.fromRuntimeClass(MethodHandle.class),
+                        }
+                ));
 
         // We have to link character set implementations
         // to make them available via reflection API

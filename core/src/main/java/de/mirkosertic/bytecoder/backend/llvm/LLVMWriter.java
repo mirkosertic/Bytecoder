@@ -1639,17 +1639,34 @@ public class LLVMWriter implements AutoCloseable {
 
     private void write(final MethodHandleExpression aValue) {
 
+        if (aValue.getAdapterAnnotation() == null) {
+            // An easy one, we can directly refer to the implementation method here
+            target.print("ptrtoint ");
+            target.print(LLVMWriterUtils.toSignature(aValue.getImplementationSignature()));
+
+            final String theMethodName = LLVMWriterUtils.toMethodName(
+                    aValue.getClassName(),
+                    aValue.getMethodName(),
+                    aValue.getImplementationSignature());
+
+            target.print("* @");
+            target.print(theMethodName);
+            target.print(" to i32");
+
+            return;
+        }
+
         // We compile a delegate function as this is needed to
         // combine static and dynamic arguments for method invocation
         target.print("ptrtoint ");
         if (aValue.getReferenceKind() == BytecodeReferenceKind.REF_newInvokeSpecial) {
             final BytecodeMethodSignature theConstructorSignature = new BytecodeMethodSignature(
                     BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
-                    aValue.getSignature().getArguments()
+                    aValue.getImplementationSignature().getArguments()
             );
             target.print(LLVMWriterUtils.toSignature(theConstructorSignature));
         } else {
-            target.print(LLVMWriterUtils.toSignature(aValue.getSignature()));
+            target.print(LLVMWriterUtils.toSignature(aValue.getImplementationSignature()));
         }
 
         final String theMethodName = symbolResolver.methodHandleDelegateFor(aValue);

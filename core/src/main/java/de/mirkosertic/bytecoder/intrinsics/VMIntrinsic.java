@@ -25,6 +25,7 @@ import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.ssa.ByteValue;
 import de.mirkosertic.bytecoder.ssa.LambdaConstructorReferenceExpression;
 import de.mirkosertic.bytecoder.ssa.LambdaInterfaceReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaSpecialReferenceExpression;
 import de.mirkosertic.bytecoder.ssa.LambdaVirtualReferenceExpression;
 import de.mirkosertic.bytecoder.ssa.LambdaWithStaticImplExpression;
 import de.mirkosertic.bytecoder.ssa.MethodTypeArgumentCheckExpression;
@@ -68,6 +69,12 @@ public class VMIntrinsic extends Intrinsic {
             }
             if ("newLambdaConstructorInvocation".equals(aMethodName)) {
                 final LambdaConstructorReferenceExpression theValue = new LambdaConstructorReferenceExpression(aProgram, aInstruction.getOpcodeAddress(), aArguments.get(0), aArguments.get(1), aArguments.get(2));
+                final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theValue);
+                aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
+                return true;
+            }
+            if ("newLambdaSpecialInvocation".equals(aMethodName)) {
+                final LambdaSpecialReferenceExpression theValue = new LambdaSpecialReferenceExpression(aProgram, aInstruction.getOpcodeAddress(), aArguments.get(0), aArguments.get(1), aArguments.get(2));
                 final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theValue);
                 aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
                 return true;
