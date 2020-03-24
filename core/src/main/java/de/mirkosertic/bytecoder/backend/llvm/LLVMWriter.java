@@ -26,7 +26,6 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeReferenceKind;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
@@ -70,6 +69,7 @@ import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.IsNaNExpression;
 import de.mirkosertic.bytecoder.ssa.LambdaConstructorReferenceExpression;
 import de.mirkosertic.bytecoder.ssa.LambdaInterfaceReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaSpecialReferenceExpression;
 import de.mirkosertic.bytecoder.ssa.LambdaVirtualReferenceExpression;
 import de.mirkosertic.bytecoder.ssa.LambdaWithStaticImplExpression;
 import de.mirkosertic.bytecoder.ssa.LongValue;
@@ -1603,6 +1603,8 @@ public class LLVMWriter implements AutoCloseable {
             write((LambdaVirtualReferenceExpression) aValue);
         } else if (aValue instanceof LambdaInterfaceReferenceExpression) {
             write((LambdaInterfaceReferenceExpression) aValue);
+        } else if (aValue instanceof LambdaSpecialReferenceExpression) {
+            write((LambdaSpecialReferenceExpression) aValue);
         } else if (aValue instanceof EnumConstantsExpression) {
             write((EnumConstantsExpression) aValue);
         } else if (aValue instanceof MethodTypeArgumentCheckExpression) {
@@ -1659,15 +1661,7 @@ public class LLVMWriter implements AutoCloseable {
         // We compile a delegate function as this is needed to
         // combine static and dynamic arguments for method invocation
         target.print("ptrtoint ");
-        if (aValue.getReferenceKind() == BytecodeReferenceKind.REF_newInvokeSpecial) {
-            final BytecodeMethodSignature theConstructorSignature = new BytecodeMethodSignature(
-                    BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
-                    aValue.getImplementationSignature().getArguments()
-            );
-            target.print(LLVMWriterUtils.toSignature(theConstructorSignature));
-        } else {
-            target.print(LLVMWriterUtils.toSignature(aValue.getImplementationSignature()));
-        }
+        target.print(LLVMWriterUtils.toSignature(aValue.getAdapterAnnotation().getCaptureSignature()));
 
         final String theMethodName = symbolResolver.methodHandleDelegateFor(aValue);
 
@@ -1800,6 +1794,16 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final LambdaVirtualReferenceExpression e) {
+        target.print("call i32 @newLambdaWithStaticImpl(i32 ");
+        write(e.getType(), true);
+        target.print(",i32 ");
+        write(e.getConstructorRef(), true);
+        target.print(",i32 ");
+        write(e.getStaticArguments(), true);
+        target.print(")");
+    }
+
+    private void write(final LambdaSpecialReferenceExpression e) {
         target.print("call i32 @newLambdaWithStaticImpl(i32 ");
         write(e.getType(), true);
         target.print(",i32 ");
