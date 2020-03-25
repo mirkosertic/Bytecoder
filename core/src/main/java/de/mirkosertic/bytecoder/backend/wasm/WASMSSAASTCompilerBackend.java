@@ -2077,7 +2077,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     case i32:
                         theAdapter.flow.setLocal(
                                 theLocal,
-                                i32.load(20 + k * 4, getLocal(theStaticData, null), null),
+                                i32.load(20 + k * 4 , getLocal(theStaticData, null), null),
                                 null
                         );
                         break;
@@ -2103,11 +2103,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theSignatureParams.add(toType(TypeRef.toType(theParamType)));
         }
 
-        final WASMType theCalledFunction;
+        final WASMType theCalledFunctionType;
         if (!theEffectiveSignature.getReturnType().isVoid()) {
-            theCalledFunction = aModule.getTypes().typeFor(theSignatureParams, toType(TypeRef.toType(theEffectiveSignature.getReturnType())));
+            theCalledFunctionType = aModule.getTypes().typeFor(theSignatureParams, toType(TypeRef.toType(theEffectiveSignature.getReturnType())));
         } else {
-            theCalledFunction = aModule.getTypes().typeFor(theSignatureParams);
+            theCalledFunctionType = aModule.getTypes().typeFor(theSignatureParams);
         }
 
         final WASMType theResolveType = aModule.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
@@ -2129,9 +2129,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         }
 
         if (theSignature.getReturnType().isVoid()) {
-            theAdapter.flow.voidCallIndirect(theCalledFunction, theArguments, theIndex, null);
+            theAdapter.flow.voidCallIndirect(theCalledFunctionType, theArguments, theIndex, null);
         } else {
-            theAdapter.flow.ret(call(theCalledFunction, theArguments, theIndex, null), null);
+            theAdapter.flow.ret(call(theCalledFunctionType, theArguments, theIndex, null), null);
         }
     }
 
@@ -2141,8 +2141,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         // We compile the list of arguments
         final MethodHandleExpression.AdapterAnnotation theAdapterAnnotation = aMethodHandle.getAdapterAnnotation();
 
-        final ExportableFunction theAdapter;
-
         final List<Param> theArgs = new ArrayList<>();
         theArgs.add(param("lambdaRef", PrimitiveType.i32));
         for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
@@ -2151,11 +2149,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theArgs.add(param(theArgName, theType));
         }
 
-        if (theSignature.getReturnType().isVoid()) {
-            theAdapter = aModule.getFunctions().newFunction(aDelegateMethodName, theArgs).toTable();
-        } else {
-            theAdapter = aModule.getFunctions().newFunction(aDelegateMethodName, theArgs, toType(TypeRef.toType(theSignature.getReturnType()))).toTable();
-        }
+        final ExportableFunction theAdapter = aModule.getFunctions().newFunction(aDelegateMethodName, theArgs, PrimitiveType.i32).toTable();
 
         // Now, we reed to resolve the linkargs
         // Offset 12 == list of static arguments
@@ -2369,10 +2363,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             }
         }
 
-        final List<BytecodeTypeRef> theEffectiveSignatureArguments = new ArrayList<>(Arrays.asList(theAdapterAnnotation.getLinkageSignature().getArguments()));
-        for (int k=1;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
-            theEffectiveSignatureArguments.add(theAdapterAnnotation.getCaptureSignature().getArguments()[k]);
+        final List<BytecodeTypeRef> theEffectiveSignatureArguments = new ArrayList<>();
+        for (int k=1;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
+            theEffectiveSignatureArguments.add(theAdapterAnnotation.getLinkageSignature().getArguments()[k]);
         }
+        theEffectiveSignatureArguments.addAll(Arrays.asList(theAdapterAnnotation.getCaptureSignature().getArguments()));
 
         final BytecodeMethodSignature theEffectiveSignature = new BytecodeMethodSignature(theSignature.getReturnType(), theEffectiveSignatureArguments.toArray(new BytecodeTypeRef[0]));
 
@@ -2394,7 +2389,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
         final WASMType theResolveType = aModule.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
         final List<WASMValue> theResolveArgument = new ArrayList<>();
-        final Local theTarget = theAdapter.localByLabel("captureArg0");
+        final Local theTarget = theAdapter.localByLabel("linkArg0");
         theResolveArgument.add(getLocal(theTarget, null));
         theResolveArgument.add(i32.c(theMethodIdentifier.getIdentifier(), null));
         final WASMValue theIndex = call(theResolveType, theResolveArgument, i32.load(4, getLocal(theTarget, null), null), null);
