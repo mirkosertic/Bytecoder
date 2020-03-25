@@ -2364,10 +2364,10 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         }
 
         final List<BytecodeTypeRef> theEffectiveSignatureArguments = new ArrayList<>();
-        for (int k=1;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
-            theEffectiveSignatureArguments.add(theAdapterAnnotation.getLinkageSignature().getArguments()[k]);
+        theEffectiveSignatureArguments.addAll(Arrays.asList(theAdapterAnnotation.getLinkageSignature().getArguments()));
+        for (int k=1;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
+            theEffectiveSignatureArguments.add(theAdapterAnnotation.getCaptureSignature().getArguments()[k]);
         }
-        theEffectiveSignatureArguments.addAll(Arrays.asList(theAdapterAnnotation.getCaptureSignature().getArguments()));
 
         final BytecodeMethodSignature theEffectiveSignature = new BytecodeMethodSignature(theSignature.getReturnType(), theEffectiveSignatureArguments.toArray(new BytecodeTypeRef[0]));
 
@@ -2389,7 +2389,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
         final WASMType theResolveType = aModule.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
         final List<WASMValue> theResolveArgument = new ArrayList<>();
-        final Local theTarget = theAdapter.localByLabel("linkArg0");
+        final Local theTarget = theAdapter.localByLabel("captureArg0");
         theResolveArgument.add(getLocal(theTarget, null));
         theResolveArgument.add(i32.c(theMethodIdentifier.getIdentifier(), null));
         final WASMValue theIndex = call(theResolveType, theResolveArgument, i32.load(4, getLocal(theTarget, null), null), null);
