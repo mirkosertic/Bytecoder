@@ -1767,7 +1767,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print("call i32 @newLambdaWithStaticImpl(i32 ");
         write(e.getType(), true);
         target.print(",i32 ");
-        write(e.getMethodRef(), true);
+        write(e.getStaticRef(), true);
         target.print(",i32 ");
         write(e.getStaticArguments(), true);
         target.print(")");
@@ -1787,7 +1787,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print("call i32 @newLambdaWithStaticImpl(i32 ");
         write(e.getType(), true);
         target.print(",i32 ");
-        write(e.getConstructorRef(), true);
+        write(e.getInterfaceRef(), true);
         target.print(",i32 ");
         write(e.getStaticArguments(), true);
         target.print(")");
@@ -1797,7 +1797,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print("call i32 @newLambdaWithStaticImpl(i32 ");
         write(e.getType(), true);
         target.print(",i32 ");
-        write(e.getConstructorRef(), true);
+        write(e.getVirtualRef(), true);
         target.print(",i32 ");
         write(e.getStaticArguments(), true);
         target.print(")");
@@ -1807,7 +1807,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print("call i32 @newLambdaWithStaticImpl(i32 ");
         write(e.getType(), true);
         target.print(",i32 ");
-        write(e.getConstructorRef(), true);
+        write(e.getSpecialRef(), true);
         target.print(",i32 ");
         write(e.getStaticArguments(), true);
         target.print(")");

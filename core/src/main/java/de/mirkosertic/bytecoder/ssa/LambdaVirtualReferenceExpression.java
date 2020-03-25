@@ -19,10 +19,10 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class LambdaVirtualReferenceExpression extends Expression {
 
-    public LambdaVirtualReferenceExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value type, final Value constructorRef, final Value staticArguments) {
+    public LambdaVirtualReferenceExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value type, final Value virtualRef, final Value staticArguments) {
         super(aProgram, aAddress);
         receivesDataFrom(type);
-        receivesDataFrom(constructorRef);
+        receivesDataFrom(virtualRef);
         receivesDataFrom(staticArguments);
     }
 
@@ -35,7 +35,7 @@ public class LambdaVirtualReferenceExpression extends Expression {
         return incomingDataFlows().get(0);
     }
 
-    public Value getConstructorRef() {
+    public Value getVirtualRef() {
         return incomingDataFlows().get(1);
     }
 

@@ -19,10 +19,10 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 public class LambdaInterfaceReferenceExpression extends Expression {
 
-    public LambdaInterfaceReferenceExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value type, final Value constructorRef, final Value staticArguments) {
+    public LambdaInterfaceReferenceExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value type, final Value interfaceRef, final Value staticArguments) {
         super(aProgram, aAddress);
         receivesDataFrom(type);
-        receivesDataFrom(constructorRef);
+        receivesDataFrom(interfaceRef);
         receivesDataFrom(staticArguments);
     }
 
@@ -35,7 +35,7 @@ public class LambdaInterfaceReferenceExpression extends Expression {
         return incomingDataFlows().get(0);
     }
 
-    public Value getConstructorRef() {
+    public Value getInterfaceRef() {
         return incomingDataFlows().get(1);
     }
 

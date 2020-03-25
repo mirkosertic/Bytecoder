@@ -2103,6 +2103,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("             newLambdaConstructorInvocationMethodTypeMethodHandleObject: function() {},");
                 theWriter.println("             newLambdaInterfaceInvocationMethodTypeMethodHandleObject: function() {},");
                 theWriter.println("             newLambdaVirtualInvocationMethodTypeMethodHandleObject: function() {},");
+                theWriter.println("             newLambdaSpecialInvocationMethodTypeMethodHandleObject: function() {},");
                 theWriter.println("         },");
                 theWriter.println("         memorymanager: {");
                 theWriter.println("             isUsedAsCallbackINT : function(thisref, ptr) {");
@@ -3180,36 +3181,36 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             aWriter.println("    %staticoffset = add i32 %lambdaRef, 12");
             aWriter.println("    %staticdatalistptr = inttoptr i32 %staticoffset to i32*");
             aWriter.println("    %staticdata = load i32, i32* %staticdatalistptr");
-        }
 
-        // For every link argument, we load it from the static data list
-        for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
-            final String theArgName = "linkArg" + k;
-            final String theType = LLVMWriterUtils.toType(TypeRef.toType(theAdapterAnnotation.getLinkageSignature().getArguments()[k]));
+            // For every link argument, we load it from the static data list
+            for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
+                final String theArgName = "linkArg" + k;
+                final String theType = LLVMWriterUtils.toType(TypeRef.toType(theAdapterAnnotation.getLinkageSignature().getArguments()[k]));
 
-            aWriter.print("    %");
-            aWriter.print(theArgName);
-            aWriter.print("_offset = add i32 %staticdata, ");
-            aWriter.println(20 + k * 4);
+                aWriter.print("    %");
+                aWriter.print(theArgName);
+                aWriter.print("_offset = add i32 %staticdata, ");
+                aWriter.println(20 + k * 4);
 
-            aWriter.print("    %");
-            aWriter.print(theArgName);
-            aWriter.print("_ptr = inttoptr i32 %");
-            aWriter.print(theArgName);
-            aWriter.print("_offset to ");
+                aWriter.print("    %");
+                aWriter.print(theArgName);
+                aWriter.print("_ptr = inttoptr i32 %");
+                aWriter.print(theArgName);
+                aWriter.print("_offset to ");
 
-            aWriter.print(theType);
-            aWriter.println("*");
+                aWriter.print(theType);
+                aWriter.println("*");
 
-            aWriter.print("    %");
-            aWriter.print(theArgName);
-            aWriter.print(" = load ");
-            aWriter.print(theType);
-            aWriter.print(",");
-            aWriter.print(theType);
-            aWriter.print("* %");
-            aWriter.print(theArgName);
-            aWriter.println("_ptr");
+                aWriter.print("    %");
+                aWriter.print(theArgName);
+                aWriter.print(" = load ");
+                aWriter.print(theType);
+                aWriter.print(",");
+                aWriter.print(theType);
+                aWriter.print("* %");
+                aWriter.print(theArgName);
+                aWriter.println("_ptr");
+            }
         }
 
         // captureArg0 is the invocation target

@@ -465,7 +465,7 @@ public class JSSSAWriter {
 
     private void print(final LambdaWithStaticImplExpression aValue) {
         writer.text("bytecoder.lambdaWithStaticImpl(");
-        print(aValue.getMethodRef());
+        print(aValue.getStaticRef());
         writer.text(",");
         print(aValue.getStaticArguments());
         writer.text(",");
@@ -489,7 +489,7 @@ public class JSSSAWriter {
         writer.text("bytecoder.lambdaInterfaceRef(");
         print(aValue.getType());
         writer.text(",");
-        print(aValue.getConstructorRef());
+        print(aValue.getInterfaceRef());
         writer.text(",");
         print(aValue.getStaticArguments());
         writer.text(")");
@@ -499,7 +499,7 @@ public class JSSSAWriter {
         writer.text("bytecoder.lambdaVirtualRef(");
         print(aValue.getType());
         writer.text(",");
-        print(aValue.getConstructorRef());
+        print(aValue.getVirtualRef());
         writer.text(",");
         print(aValue.getStaticArguments());
         writer.text(")");
@@ -509,7 +509,7 @@ public class JSSSAWriter {
         writer.text("bytecoder.lambdaSpecialRef(");
         print(aValue.getType());
         writer.text(",");
-        print(aValue.getConstructorRef());
+        print(aValue.getSpecialRef());
         writer.text(",");
         print(aValue.getStaticArguments());
         writer.text(")");

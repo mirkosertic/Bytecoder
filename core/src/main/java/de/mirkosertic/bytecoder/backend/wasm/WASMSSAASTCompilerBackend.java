@@ -67,6 +67,7 @@ import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.relooper.Relooper;
+import de.mirkosertic.bytecoder.ssa.MethodHandleExpression;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
@@ -99,6 +100,7 @@ import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.current
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.f32;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
 import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
@@ -313,6 +315,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         final ConstantPool theConstantPool = new ConstantPool();
 
         final Map<String, WASMSSAASTCompilerBackend.CallSite> theCallsites = new HashMap<>();
+        final List<MethodHandleExpression> methodHandles = new ArrayList<>();
         final WASMSSAASTWriter.Resolver theResolver = new WASMSSAASTWriter.Resolver() {
 
             @Override
@@ -346,6 +349,13 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     return module.getFunctions().newFunction(theID, PrimitiveType.i32);
                 }
                 return module.functionIndex().firstByLabel(theID);
+            }
+
+            @Override
+            public String methodHandleDelegateFor(final MethodHandleExpression e) {
+                final int pos = methodHandles.size();
+                methodHandles.add(e);
+                return "handle" + pos;
             }
         };
 
@@ -449,7 +459,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         }
 
         final ExportableFunction newLambdaWithStaticImplFunction = module.getFunctions().newFunction("newLambdaWithStaticImpl", Arrays.asList(param("type", PrimitiveType.i32), param("implMethodNumber", PrimitiveType.i32), param("staticArguments", PrimitiveType.i32)), PrimitiveType.i32);
-        final ExportableFunction newLambdaConstructorRefFunction = module.getFunctions().newFunction("newLambdaConstructorReference", Arrays.asList(param("type", PrimitiveType.i32), param("constructorRef", PrimitiveType.i32), param("staticArguments", PrimitiveType.i32)), PrimitiveType.i32);
 
         aLinkerContext.linkedClasses().forEach(aEntry -> {
 
@@ -1139,24 +1148,40 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             newLambdaWithStaticImplFunction.flow.ret(getLocal(newRef, null), null);
         }
 
-        {
-            final String mallocFunctionName = WASMWriterUtils.toClassName(theMemoryManagerClass.getClassName()) + "_INTnewObjectINTINTINT";
-            final Local newRef = newLambdaConstructorRefFunction.newLocal("newRef", PrimitiveType.i32);
-            newLambdaConstructorRefFunction.flow.setLocal(newRef,
-                    call(module.functionIndex().firstByLabel(mallocFunctionName),
-                            Arrays.asList(i32.c(0, null), i32.c(16, null),
-                                    getLocal(newLambdaConstructorRefFunction.localByLabel("type"), null), i32.c(module.getTables().funcTable().indexOf(lambdaConstructorRef), null)), null), null);
-            newLambdaConstructorRefFunction.flow.i32.store(8, getLocal(newRef, null), getLocal(newLambdaConstructorRefFunction.localByLabel("constructorRef"), null), null);
-            newLambdaConstructorRefFunction.flow.i32.store(12, getLocal(newRef, null), getLocal(newLambdaConstructorRefFunction.localByLabel("staticArguments"), null), null);
-            newLambdaConstructorRefFunction.flow.ret(getLocal(newRef, null), null);
-        }
-
         // Main function must be exported
         {
             final ExportableFunction mainFunction = module.functionIndex().firstByLabel(WASMWriterUtils
                     .toMethodName(BytecodeObjectTypeRef.fromRuntimeClass(aEntryPointClass), aEntryPointMethodName,
                             aEntryPointSignatue));
             mainFunction.exportAs("main");
+        }
+
+        // Generate method handle delegate functions here
+        for (int i=0;i<methodHandles.size();i++) {
+
+            final MethodHandleExpression theMethodHandle = methodHandles.get(i);
+
+            final String theDelegateMethodName = "handle" + i;
+
+            switch (theMethodHandle.getReferenceKind()) {
+                case REF_invokeStatic:
+                    writeMethodHandleDelegateInvokeStatic(aLinkerContext, theMethodHandle, theDelegateMethodName, module);
+                    break;
+                case REF_invokeVirtual:
+                    writeMethodHandleDelegateInvokeVirtual(aLinkerContext, theMethodHandle, theDelegateMethodName, module);
+                    break;
+                case REF_invokeInterface:
+                    writeMethodHandleDelegateInvokeInterface(aLinkerContext, theMethodHandle, theDelegateMethodName, module);
+                    break;
+                case REF_invokeSpecial:
+                    writeMethodHandleDelegateInvokeSpecial(aLinkerContext, theMethodHandle, theDelegateMethodName, module);
+                    break;
+                case REF_newInvokeSpecial:
+                    writeMethodHandleDelegateNewInvokeSpecial(aLinkerContext, theMethodHandle, theDelegateMethodName, module);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Not supported refkind for method handle " + theMethodHandle.getReferenceKind());
+            }
         }
 
         // We need to generate the callbacks
@@ -1419,6 +1444,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("         vm: {");
             theWriter.println("             newLambdaWithWithStaticImplStringMethodTypeMethodHandleObject: function() {},");
             theWriter.println("             newLambdaConstructorInvocationMethodTypeMethodHandleObject: function() {},");
+            theWriter.println("             newLambdaInterfaceInvocationMethodTypeMethodHandleObject: function() {},");
+            theWriter.println("             newLambdaVirtualInvocationMethodTypeMethodHandleObject: function() {},");
+            theWriter.println("             newLambdaSpecialInvocationMethodTypeMethodHandleObject: function() {},");
             theWriter.println("         },");
             theWriter.println("         memorymanager: {");
             theWriter.println("             isUsedAsCallbackINT : function(thisref, ptr) {");
@@ -1909,6 +1937,483 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 return "bytecoder.toBytecoderReference";
             }
             throw new IllegalStateException("Type conversion from " + aTypeRef.name() + " is not supported!");
+        }
+    }
+
+    private void writeMethodHandleDelegateInvokeStatic(final BytecodeLinkerContext aLinkerContext, final MethodHandleExpression aMethodHandle, final String aDelegateMethodName, final Module aModule) {
+
+        final BytecodeMethodSignature theSignature = aMethodHandle.getImplementationSignature();
+
+        // We compile the list of arguments
+        final MethodHandleExpression.AdapterAnnotation theAdapterAnnotation = aMethodHandle.getAdapterAnnotation();
+
+        final ExportableFunction theAdapter;
+
+        final List<Param> theArgs = new ArrayList<>();
+        theArgs.add(param("lambdaRef", PrimitiveType.i32));
+        for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
+            final String theArgName = "captureArg" + k;
+            final PrimitiveType theType = toType(TypeRef.toType(theAdapterAnnotation.getCaptureSignature().getArguments()[k]));
+            theArgs.add(param(theArgName, theType));
+        }
+
+        if (theSignature.getReturnType().isVoid()) {
+            theAdapter = aModule.getFunctions().newFunction(aDelegateMethodName, theArgs).toTable();
+        } else {
+            theAdapter = aModule.getFunctions().newFunction(aDelegateMethodName, theArgs, toType(TypeRef.toType(theSignature.getReturnType()))).toTable();
+        }
+
+        // Now, we reed to resolve the linkargs
+        // Offset 12 == list of static arguments
+        if (theAdapterAnnotation.getLinkageSignature().getArguments().length > 0) {
+            final Local theStaticData = theAdapter.newLocal("staticData", PrimitiveType.i32);
+            theAdapter.flow.setLocal(theStaticData, i32.load(12,
+                    getLocal(theAdapter.localByLabel("lambdaRef"), null), null), null);
+
+            // For every link argument, we load it from the static data list
+            for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
+
+                final String theArgName = "linkArg" + k;
+                final PrimitiveType theType = toType(TypeRef.toType(theAdapterAnnotation.getLinkageSignature().getArguments()[k]));
+
+                final Local theLocal = theAdapter.newLocal(theArgName, theType);
+                switch (theType) {
+                    case f32:
+                        theAdapter.flow.setLocal(
+                                theLocal,
+                                f32.load(20 + k * 4, getLocal(theStaticData, null), null),
+                                null
+                        );
+                        break;
+                    case i32:
+                        theAdapter.flow.setLocal(
+                                theLocal,
+                                i32.load(20 + k * 4, getLocal(theStaticData, null), null),
+                                null
+                        );
+                        break;
+                    default:
+                        throw new IllegalStateException("Not supported type for link arg " + theType);
+                }
+            }
+        }
+
+        final List<BytecodeTypeRef> theEffectiveSignatureArguments = new ArrayList<>();
+        theEffectiveSignatureArguments.addAll(Arrays.asList(theAdapterAnnotation.getLinkageSignature().getArguments()));
+        theEffectiveSignatureArguments.addAll(Arrays.asList(theAdapterAnnotation.getCaptureSignature().getArguments()));
+        final BytecodeMethodSignature theEffectiveSignature = new BytecodeMethodSignature(theSignature.getReturnType(), theEffectiveSignatureArguments.toArray(new BytecodeTypeRef[0]));
+
+        final List<WASMValue> theArguments = new ArrayList<>();
+        theArguments.add(i32.c(0, null));
+        for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
+            final String theArgName = "linkArg" + k;
+            theArguments.add(getLocal(theAdapter.localByLabel(theArgName), null));
+        }
+        for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
+            final String theArgName = "captureArg" + k;
+            theArguments.add(getLocal(theAdapter.localByLabel(theArgName), null));
+        }
+
+        final Function theCallee = aModule.functionIndex().firstByLabel(
+                WASMWriterUtils.toMethodName(aMethodHandle.getClassName(), aMethodHandle.getMethodName(), theEffectiveSignature)
+        );
+
+        if (theSignature.getReturnType().isVoid()) {
+            theAdapter.flow.voidCall(
+                theCallee,
+                theArguments,
+                null
+            );
+        } else {
+            theAdapter.flow.ret(call(theCallee, theArguments, null),null);
+        }
+    }
+
+    private void writeMethodHandleDelegateInvokeVirtual(final BytecodeLinkerContext aLinkerContext, final MethodHandleExpression aMethodHandle, final String aDelegateMethodName, final Module aModule) {
+
+        final BytecodeMethodSignature theSignature = aMethodHandle.getImplementationSignature();
+
+        // We compile the list of arguments
+        final MethodHandleExpression.AdapterAnnotation theAdapterAnnotation = aMethodHandle.getAdapterAnnotation();
+
+        final ExportableFunction theAdapter;
+
+        final List<Param> theArgs = new ArrayList<>();
+        theArgs.add(param("lambdaRef", PrimitiveType.i32));
+        for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
+            final String theArgName = "captureArg" + k;
+            final PrimitiveType theType = toType(TypeRef.toType(theAdapterAnnotation.getCaptureSignature().getArguments()[k]));
+            theArgs.add(param(theArgName, theType));
+        }
+
+        if (theSignature.getReturnType().isVoid()) {
+            theAdapter = aModule.getFunctions().newFunction(aDelegateMethodName, theArgs).toTable();
+        } else {
+            theAdapter = aModule.getFunctions().newFunction(aDelegateMethodName, theArgs, toType(TypeRef.toType(theSignature.getReturnType()))).toTable();
+        }
+
+        // Now, we reed to resolve the linkargs
+        // Offset 12 == list of static arguments
+        if (theAdapterAnnotation.getLinkageSignature().getArguments().length > 0) {
+            final Local theStaticData = theAdapter.newLocal("staticData", PrimitiveType.i32);
+            theAdapter.flow.setLocal(theStaticData, i32.load(12,
+                    getLocal(theAdapter.localByLabel("lambdaRef"), null), null), null);
+
+            // For every link argument, we load it from the static data list
+            for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
+
+                final String theArgName = "linkArg" + k;
+                final PrimitiveType theType = toType(TypeRef.toType(theAdapterAnnotation.getLinkageSignature().getArguments()[k]));
+
+                final Local theLocal = theAdapter.newLocal(theArgName, theType);
+                switch (theType) {
+                    case f32:
+                        theAdapter.flow.setLocal(
+                                theLocal,
+                                f32.load(20 + k * 4, getLocal(theStaticData, null), null),
+                                null
+                        );
+                        break;
+                    case i32:
+                        theAdapter.flow.setLocal(
+                                theLocal,
+                                i32.load(20 + k * 4, getLocal(theStaticData, null), null),
+                                null
+                        );
+                        break;
+                    default:
+                        throw new IllegalStateException("Not supported type for link arg " + theType);
+                }
+            }
+        }
+
+        final List<BytecodeTypeRef> theEffectiveSignatureArguments = new ArrayList<>();
+        for (int k=1;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
+            theEffectiveSignatureArguments.add(theAdapterAnnotation.getLinkageSignature().getArguments()[k]);
+        }
+        theEffectiveSignatureArguments.addAll(Arrays.asList(theAdapterAnnotation.getCaptureSignature().getArguments()));
+        final BytecodeMethodSignature theEffectiveSignature = new BytecodeMethodSignature(theSignature.getReturnType(), theEffectiveSignatureArguments.toArray(new BytecodeTypeRef[0]));
+
+        final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(aMethodHandle.getMethodName(), theEffectiveSignature);
+
+        final List<PrimitiveType> theSignatureParams = new ArrayList<>();
+        theSignatureParams.add(PrimitiveType.i32);
+        for (int i = 0; i < theEffectiveSignature.getArguments().length; i++) {
+            final BytecodeTypeRef theParamType = theEffectiveSignature.getArguments()[i];
+            theSignatureParams.add(toType(TypeRef.toType(theParamType)));
+        }
+
+        final WASMType theCalledFunction;
+        if (!theEffectiveSignature.getReturnType().isVoid()) {
+            theCalledFunction = aModule.getTypes().typeFor(theSignatureParams, toType(TypeRef.toType(theEffectiveSignature.getReturnType())));
+        } else {
+            theCalledFunction = aModule.getTypes().typeFor(theSignatureParams);
+        }
+
+        final WASMType theResolveType = aModule.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
+        final List<WASMValue> theResolveArgument = new ArrayList<>();
+        final Local theTarget = theAdapter.localByLabel("linkArg0");
+        theResolveArgument.add(getLocal(theTarget, null));
+        theResolveArgument.add(i32.c(theMethodIdentifier.getIdentifier(), null));
+        final WASMValue theIndex = call(theResolveType, theResolveArgument, i32.load(4, getLocal(theTarget, null), null), null);
+
+        final List<WASMValue> theArguments = new ArrayList<>();
+        theArguments.add(getLocal(theTarget, null));
+        for (int k=1;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
+            final String theArgName = "linkArg" + k;
+            theArguments.add(getLocal(theAdapter.localByLabel(theArgName), null));
+        }
+        for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
+            final String theArgName = "captureArg" + k;
+            theArguments.add(getLocal(theAdapter.localByLabel(theArgName), null));
+        }
+
+        if (theSignature.getReturnType().isVoid()) {
+            theAdapter.flow.voidCallIndirect(theCalledFunction, theArguments, theIndex, null);
+        } else {
+            theAdapter.flow.ret(call(theCalledFunction, theArguments, theIndex, null), null);
+        }
+    }
+
+    private void writeMethodHandleDelegateNewInvokeSpecial(final BytecodeLinkerContext aLinkerContext, final MethodHandleExpression aMethodHandle, final String aDelegateMethodName, final Module aModule) {
+        final BytecodeMethodSignature theSignature = aMethodHandle.getImplementationSignature();
+
+        // We compile the list of arguments
+        final MethodHandleExpression.AdapterAnnotation theAdapterAnnotation = aMethodHandle.getAdapterAnnotation();
+
+        final ExportableFunction theAdapter;
+
+        final List<Param> theArgs = new ArrayList<>();
+        theArgs.add(param("lambdaRef", PrimitiveType.i32));
+        for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
+            final String theArgName = "captureArg" + k;
+            final PrimitiveType theType = toType(TypeRef.toType(theAdapterAnnotation.getCaptureSignature().getArguments()[k]));
+            theArgs.add(param(theArgName, theType));
+        }
+
+        if (theSignature.getReturnType().isVoid()) {
+            theAdapter = aModule.getFunctions().newFunction(aDelegateMethodName, theArgs).toTable();
+        } else {
+            theAdapter = aModule.getFunctions().newFunction(aDelegateMethodName, theArgs, toType(TypeRef.toType(theSignature.getReturnType()))).toTable();
+        }
+
+        // Now, we reed to resolve the linkargs
+        // Offset 12 == list of static arguments
+        if (theAdapterAnnotation.getLinkageSignature().getArguments().length > 0) {
+            final Local theStaticData = theAdapter.newLocal("staticData", PrimitiveType.i32);
+            theAdapter.flow.setLocal(theStaticData, i32.load(12,
+                    getLocal(theAdapter.localByLabel("lambdaRef"), null), null), null);
+
+            // For every link argument, we load it from the static data list
+            for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
+
+                final String theArgName = "linkArg" + k;
+                final PrimitiveType theType = toType(TypeRef.toType(theAdapterAnnotation.getLinkageSignature().getArguments()[k]));
+
+                final Local theLocal = theAdapter.newLocal(theArgName, theType);
+                switch (theType) {
+                    case f32:
+                        theAdapter.flow.setLocal(
+                                theLocal,
+                                f32.load(20 + k * 4, getLocal(theStaticData, null), null),
+                                null
+                        );
+                        break;
+                    case i32:
+                        theAdapter.flow.setLocal(
+                                theLocal,
+                                i32.load(20 + k * 4, getLocal(theStaticData, null), null),
+                                null
+                        );
+                        break;
+                    default:
+                        throw new IllegalStateException("Not supported type for link arg " + theType);
+                }
+            }
+        }
+
+        final List<BytecodeTypeRef> theEffectiveSignatureArguments = new ArrayList<>();
+        theEffectiveSignatureArguments.addAll(Arrays.asList(theAdapterAnnotation.getLinkageSignature().getArguments()));
+        theEffectiveSignatureArguments.addAll(Arrays.asList(theAdapterAnnotation.getCaptureSignature().getArguments()));
+        final BytecodeMethodSignature theEffectiveSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), theEffectiveSignatureArguments.toArray(new BytecodeTypeRef[0]));
+
+        final List<WASMValue> theArguments = new ArrayList<>();
+        theArguments.add(i32.c(0, null));
+        for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
+            final String theArgName = "linkArg" + k;
+            theArguments.add(getLocal(theAdapter.localByLabel(theArgName), null));
+        }
+        for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
+            final String theArgName = "captureArg" + k;
+            theArguments.add(getLocal(theAdapter.localByLabel(theArgName), null));
+        }
+
+        final Function theCallee = aModule.functionIndex().firstByLabel(
+                WASMWriterUtils.toMethodName(aMethodHandle.getClassName(), "$newInstance", new BytecodeMethodSignature(
+                        theSignature.getReturnType(), theEffectiveSignature.getArguments()
+                ))
+        );
+
+        theAdapter.flow.ret(call(theCallee, theArguments, null),null);
+    }
+
+    private void writeMethodHandleDelegateInvokeSpecial(final BytecodeLinkerContext aLinkerContext, final MethodHandleExpression aMethodHandle, final String aDelegateMethodName, final Module aModule) {
+
+        final BytecodeMethodSignature theSignature = aMethodHandle.getImplementationSignature();
+
+        // We compile the list of arguments
+        final MethodHandleExpression.AdapterAnnotation theAdapterAnnotation = aMethodHandle.getAdapterAnnotation();
+
+        final ExportableFunction theAdapter;
+
+        final List<Param> theArgs = new ArrayList<>();
+        theArgs.add(param("lambdaRef", PrimitiveType.i32));
+        for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
+            final String theArgName = "captureArg" + k;
+            final PrimitiveType theType = toType(TypeRef.toType(theAdapterAnnotation.getCaptureSignature().getArguments()[k]));
+            theArgs.add(param(theArgName, theType));
+        }
+
+        if (theSignature.getReturnType().isVoid()) {
+            theAdapter = aModule.getFunctions().newFunction(aDelegateMethodName, theArgs).toTable();
+        } else {
+            theAdapter = aModule.getFunctions().newFunction(aDelegateMethodName, theArgs, toType(TypeRef.toType(theSignature.getReturnType()))).toTable();
+        }
+
+        // Now, we reed to resolve the linkargs
+        // Offset 12 == list of static arguments
+        if (theAdapterAnnotation.getLinkageSignature().getArguments().length > 0) {
+            final Local theStaticData = theAdapter.newLocal("staticData", PrimitiveType.i32);
+            theAdapter.flow.setLocal(theStaticData, i32.load(12,
+                    getLocal(theAdapter.localByLabel("lambdaRef"), null), null), null);
+
+            // For every link argument, we load it from the static data list
+            for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
+
+                final String theArgName = "linkArg" + k;
+                final PrimitiveType theType = toType(TypeRef.toType(theAdapterAnnotation.getLinkageSignature().getArguments()[k]));
+
+                final Local theLocal = theAdapter.newLocal(theArgName, theType);
+                switch (theType) {
+                    case f32:
+                        theAdapter.flow.setLocal(
+                                theLocal,
+                                f32.load(20 + k * 4, getLocal(theStaticData, null), null),
+                                null
+                        );
+                        break;
+                    case i32:
+                        theAdapter.flow.setLocal(
+                                theLocal,
+                                i32.load(20 + k * 4, getLocal(theStaticData, null), null),
+                                null
+                        );
+                        break;
+                    default:
+                        throw new IllegalStateException("Not supported type for link arg " + theType);
+                }
+            }
+        }
+
+        final List<BytecodeTypeRef> theEffectiveSignatureArguments = new ArrayList<>();
+        for (int k=1;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
+            theEffectiveSignatureArguments.add(theAdapterAnnotation.getLinkageSignature().getArguments()[k]);
+        }
+        theEffectiveSignatureArguments.addAll(Arrays.asList(theAdapterAnnotation.getCaptureSignature().getArguments()));
+        final BytecodeMethodSignature theEffectiveSignature = new BytecodeMethodSignature(theSignature.getReturnType(), theEffectiveSignatureArguments.toArray(new BytecodeTypeRef[0]));
+
+        final List<PrimitiveType> theSignatureParams = new ArrayList<>();
+        theSignatureParams.add(PrimitiveType.i32);
+        for (int i = 0; i < theEffectiveSignature.getArguments().length; i++) {
+            final BytecodeTypeRef theParamType = theEffectiveSignature.getArguments()[i];
+            theSignatureParams.add(toType(TypeRef.toType(theParamType)));
+        }
+
+        final Function theFunction = aModule.functionIndex().firstByLabel(
+                WASMWriterUtils.toMethodName(aMethodHandle.getClassName(), aMethodHandle.getMethodName(), theEffectiveSignature)
+        );
+
+        final Local theTarget = theAdapter.localByLabel("linkArg0");
+        final List<WASMValue> theArguments = new ArrayList<>();
+        theArguments.add(getLocal(theTarget, null));
+        for (int k=1;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
+            final String theArgName = "linkArg" + k;
+            theArguments.add(getLocal(theAdapter.localByLabel(theArgName), null));
+        }
+        for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
+            final String theArgName = "captureArg" + k;
+            theArguments.add(getLocal(theAdapter.localByLabel(theArgName), null));
+        }
+
+        if (theSignature.getReturnType().isVoid()) {
+            theAdapter.flow.voidCall(theFunction, theArguments, null);
+        } else {
+            theAdapter.flow.ret(call(theFunction, theArguments,null), null);
+        }
+    }
+
+    private void writeMethodHandleDelegateInvokeInterface(final BytecodeLinkerContext aLinkerContext, final MethodHandleExpression aMethodHandle, final String aDelegateMethodName, final Module aModule) {
+        final BytecodeMethodSignature theSignature = aMethodHandle.getImplementationSignature();
+
+        // We compile the list of arguments
+        final MethodHandleExpression.AdapterAnnotation theAdapterAnnotation = aMethodHandle.getAdapterAnnotation();
+
+        final ExportableFunction theAdapter;
+
+        final List<Param> theArgs = new ArrayList<>();
+        theArgs.add(param("lambdaRef", PrimitiveType.i32));
+        for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
+            final String theArgName = "captureArg" + k;
+            final PrimitiveType theType = toType(TypeRef.toType(theAdapterAnnotation.getCaptureSignature().getArguments()[k]));
+            theArgs.add(param(theArgName, theType));
+        }
+
+        if (theSignature.getReturnType().isVoid()) {
+            theAdapter = aModule.getFunctions().newFunction(aDelegateMethodName, theArgs).toTable();
+        } else {
+            theAdapter = aModule.getFunctions().newFunction(aDelegateMethodName, theArgs, toType(TypeRef.toType(theSignature.getReturnType()))).toTable();
+        }
+
+        // Now, we reed to resolve the linkargs
+        // Offset 12 == list of static arguments
+        if (theAdapterAnnotation.getLinkageSignature().getArguments().length > 0) {
+            final Local theStaticData = theAdapter.newLocal("staticData", PrimitiveType.i32);
+            theAdapter.flow.setLocal(theStaticData, i32.load(12,
+                    getLocal(theAdapter.localByLabel("lambdaRef"), null), null), null);
+
+            // For every link argument, we load it from the static data list
+            for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
+
+                final String theArgName = "linkArg" + k;
+                final PrimitiveType theType = toType(TypeRef.toType(theAdapterAnnotation.getLinkageSignature().getArguments()[k]));
+
+                final Local theLocal = theAdapter.newLocal(theArgName, theType);
+                switch (theType) {
+                    case f32:
+                        theAdapter.flow.setLocal(
+                                theLocal,
+                                f32.load(20 + k * 4, getLocal(theStaticData, null), null),
+                                null
+                        );
+                        break;
+                    case i32:
+                        theAdapter.flow.setLocal(
+                                theLocal,
+                                i32.load(20 + k * 4, getLocal(theStaticData, null), null),
+                                null
+                        );
+                        break;
+                    default:
+                        throw new IllegalStateException("Not supported type for link arg " + theType);
+                }
+            }
+        }
+
+        final List<BytecodeTypeRef> theEffectiveSignatureArguments = new ArrayList<>(Arrays.asList(theAdapterAnnotation.getLinkageSignature().getArguments()));
+        for (int k=1;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
+            theEffectiveSignatureArguments.add(theAdapterAnnotation.getCaptureSignature().getArguments()[k]);
+        }
+
+        final BytecodeMethodSignature theEffectiveSignature = new BytecodeMethodSignature(theSignature.getReturnType(), theEffectiveSignatureArguments.toArray(new BytecodeTypeRef[0]));
+
+        final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(aMethodHandle.getMethodName(), theEffectiveSignature);
+
+        final List<PrimitiveType> theSignatureParams = new ArrayList<>();
+        theSignatureParams.add(PrimitiveType.i32);
+        for (int i = 0; i < theEffectiveSignature.getArguments().length; i++) {
+            final BytecodeTypeRef theParamType = theEffectiveSignature.getArguments()[i];
+            theSignatureParams.add(toType(TypeRef.toType(theParamType)));
+        }
+
+        final WASMType theCalledFunction;
+        if (!theEffectiveSignature.getReturnType().isVoid()) {
+            theCalledFunction = aModule.getTypes().typeFor(theSignatureParams, toType(TypeRef.toType(theEffectiveSignature.getReturnType())));
+        } else {
+            theCalledFunction = aModule.getTypes().typeFor(theSignatureParams);
+        }
+
+        final WASMType theResolveType = aModule.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
+        final List<WASMValue> theResolveArgument = new ArrayList<>();
+        final Local theTarget = theAdapter.localByLabel("captureArg0");
+        theResolveArgument.add(getLocal(theTarget, null));
+        theResolveArgument.add(i32.c(theMethodIdentifier.getIdentifier(), null));
+        final WASMValue theIndex = call(theResolveType, theResolveArgument, i32.load(4, getLocal(theTarget, null), null), null);
+
+        final List<WASMValue> theArguments = new ArrayList<>();
+        theArguments.add(getLocal(theTarget, null));
+        for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
+            final String theArgName = "linkArg" + k;
+            theArguments.add(getLocal(theAdapter.localByLabel(theArgName), null));
+        }
+        for (int k=1;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
+            final String theArgName = "captureArg" + k;
+            theArguments.add(getLocal(theAdapter.localByLabel(theArgName), null));
+        }
+
+        if (theSignature.getReturnType().isVoid()) {
+            theAdapter.flow.voidCallIndirect(theCalledFunction, theArguments, theIndex, null);
+        } else {
+            theAdapter.flow.ret(call(theCalledFunction, theArguments, theIndex, null), null);
         }
     }
 }
