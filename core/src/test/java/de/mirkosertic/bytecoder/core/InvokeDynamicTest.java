@@ -111,4 +111,18 @@ public class InvokeDynamicTest {
         final TestConstructorInvoke<TestConstructorInvoke.TestObject> testConstructorInvoke = new TestConstructorInvoke<>();
         testConstructorInvoke.test(TestConstructorInvoke.TestObject::new);
     }
+
+    interface OrderTest {
+        int compute(int a, float b, int c, int d, float e, float f);
+    }
+
+    public static int compute(final OrderTest x)  {
+        return x.compute(10, 11f, 12, 13,14f, 15f);
+    }
+
+    @Test
+    public void testOrder() {
+        int x = compute((a, b, c, d, e, f) -> a + d);
+        Assert.assertEquals(23, x, 0);
+    }
 }

@@ -1807,6 +1807,13 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                     final String theDelegateMethodName = "handle" + i;
 
+                    pw.println(";; refkind = " + theMethodHandle.getReferenceKind());
+                    pw.println(";; linksignature = " + theMethodHandle.getAdapterAnnotation().getLinkageSignature());
+                    pw.println(";; capturesignature = " + theMethodHandle.getAdapterAnnotation().getCaptureSignature());
+                    pw.println(";; implclass = " + theMethodHandle.getClassName().name());
+                    pw.println(";; implMethod = " + theMethodHandle.getMethodName());
+                    pw.println(";; implSig = " + theMethodHandle.getImplementationSignature());
+
                     switch (theMethodHandle.getReferenceKind()) {
                         case REF_invokeStatic:
                             writeMethodHandleDelegateInvokeStatic(aLinkerContext, theMethodHandle, theDelegateMethodName, pw);
