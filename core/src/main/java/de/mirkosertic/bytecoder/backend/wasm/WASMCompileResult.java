@@ -18,42 +18,14 @@ package de.mirkosertic.bytecoder.backend.wasm;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.util.List;
 
 import de.mirkosertic.bytecoder.backend.CompileResult;
-import de.mirkosertic.bytecoder.backend.NativeMemoryLayouter;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 
 public class WASMCompileResult extends CompileResult<String> {
 
     public abstract static class WASMCompileContent implements CompileResult.Content {
 
-        private final NativeMemoryLayouter memoryLayouter;
-        private final BytecodeLinkerContext linkerContext;
-        private final List<String> generatedFunctions;
-
-        public WASMCompileContent(final NativeMemoryLayouter memoryLayouter, final BytecodeLinkerContext linkerContext,
-                                  final List<String> generatedFunctions) {
-            this.memoryLayouter = memoryLayouter;
-            this.linkerContext = linkerContext;
-            this.generatedFunctions = generatedFunctions;
-        }
-
-        public int getTypeIDFor(final BytecodeObjectTypeRef aObjecType) {
-            return linkerContext.resolveClass(aObjecType).getUniqueId();
-        }
-
-        public int getSizeOf(final BytecodeObjectTypeRef aObjectType) {
-            final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(aObjectType);
-            return theLayout.instanceSize();
-        }
-
-        public int getVTableIndexOf(final BytecodeObjectTypeRef aObjectType) {
-            final String theClassName = WASMWriterUtils.toClassName(aObjectType);
-
-            final String theMethodName = theClassName + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX;
-            return generatedFunctions.indexOf(theMethodName);
+        public WASMCompileContent() {
         }
     }
 
@@ -62,9 +34,7 @@ public class WASMCompileResult extends CompileResult<String> {
         private final String data;
         private final String filenamePrefix;
 
-        public WASMTextualCompileResult(final NativeMemoryLayouter memoryLayouter, final BytecodeLinkerContext linkerContext,
-                                        final List<String> generatedFunctions, final String data, final String afilenamePrefix) {
-            super(memoryLayouter, linkerContext, generatedFunctions);
+        public WASMTextualCompileResult(final String data, final String afilenamePrefix) {
             this.data = data;
             this.filenamePrefix = afilenamePrefix;
         }
@@ -87,9 +57,7 @@ public class WASMCompileResult extends CompileResult<String> {
         private final String data;
         private final String filenamePrefix;
 
-        public WASMTextualJSCompileResult(final NativeMemoryLayouter memoryLayouter, final BytecodeLinkerContext linkerContext,
-                                          final List<String> generatedFunctions, final String data, final String afilenamePrefix) {
-            super(memoryLayouter, linkerContext, generatedFunctions);
+        public WASMTextualJSCompileResult(final String data, final String afilenamePrefix) {
             this.data = data;
             this.filenamePrefix = afilenamePrefix;
         }
@@ -112,9 +80,7 @@ public class WASMCompileResult extends CompileResult<String> {
         private final String data;
         private final String filenamePrefix;
 
-        public WASMSourcemapCompileResult(final NativeMemoryLayouter memoryLayouter, final BytecodeLinkerContext linkerContext,
-                                          final List<String> generatedFunctions, final String data, final String afilenamePrefix) {
-            super(memoryLayouter, linkerContext, generatedFunctions);
+        public WASMSourcemapCompileResult(final String data, final String afilenamePrefix) {
             this.data = data;
             this.filenamePrefix = afilenamePrefix;
         }
@@ -137,9 +103,7 @@ public class WASMCompileResult extends CompileResult<String> {
         private final byte[] data;
         private final String filenamePrefix;
 
-        public WASMBinaryCompileResult(final NativeMemoryLayouter memoryLayouter, final BytecodeLinkerContext linkerContext,
-                                       final List<String> generatedFunctions, final byte[] data, final String filenamePrefix) {
-            super(memoryLayouter, linkerContext, generatedFunctions);
+        public WASMBinaryCompileResult(final byte[] data, final String filenamePrefix) {
             this.data = data;
             this.filenamePrefix = filenamePrefix;
         }

@@ -15,17 +15,8 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.lang.invoke.CallSite;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import de.mirkosertic.bytecoder.classlib.Array;
+import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
 import de.mirkosertic.bytecoder.core.BytecodeBootstrapMethod;
@@ -129,6 +120,7 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeProgram;
 import de.mirkosertic.bytecoder.core.BytecodeReferenceIndex;
+import de.mirkosertic.bytecoder.core.BytecodeReferenceKind;
 import de.mirkosertic.bytecoder.core.BytecodeSourceFileAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
@@ -136,6 +128,19 @@ import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 import de.mirkosertic.bytecoder.graph.Dominators;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.intrinsics.Intrinsics;
+
+import java.lang.invoke.CallSite;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class NaiveProgramGenerator implements ProgramGenerator {
 
@@ -1220,7 +1225,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                             final BytecodeReferenceIndex theReference = theMethodHandle.getReferenceIndex();
                             final BytecodeMethodRefConstant theReferenceConstant = (BytecodeMethodRefConstant) theReference
                                     .getConstant();
-                            theArguments.add(theInitNode.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, new MethodRefExpression(aProgram, theInstruction.getOpcodeAddress(),
+                            theArguments.add(theInitNode.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, new MethodHandleExpression(aProgram, theInstruction.getOpcodeAddress(),
                                     BytecodeObjectTypeRef.fromUtf8Constant(theReferenceConstant.getClassIndex().getClassConstant().getConstant()),
                                     theReferenceConstant.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
                                     theReferenceConstant.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature(),
@@ -1248,13 +1253,136 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                         theArguments.add(theNewVarargsArray);
                     }
 
-                    final InvokeStaticMethodExpression theInvokeStaticValue = new InvokeStaticMethodExpression(aProgram, theInstruction.getOpcodeAddress(),
-                            BytecodeObjectTypeRef.fromUtf8Constant(theBootstrapMethodToInvoke.getClassIndex().getClassConstant().getConstant()),
-                            theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
-                            theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature(),
-                            theArguments);
-                    final Variable theNewVariable = theInitNode.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theInvokeStaticValue);
-                    theInitNode.getExpressions().add(new ReturnValueExpression(aProgram, theInstruction.getOpcodeAddress(), theNewVariable));
+                    // Are we creating a lambda here?
+                    final String theMethodName = theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
+                    if ("metafactory".equals(theMethodName)) {
+                        // We have something here
+                        final StringValue theLambdaMethodName = (StringValue) theArguments.get(1).incomingDataFlows().get(0);
+                        final MethodTypeExpression theStaticInvocationType = (MethodTypeExpression) theArguments.get(2).incomingDataFlows().get(0);
+                        final MethodTypeExpression theSAMMethodType = (MethodTypeExpression) theArguments.get(3).incomingDataFlows().get(0);
+                        final MethodHandleExpression theImplRef = (MethodHandleExpression) theArguments.get(4).incomingDataFlows().get(0);
+                        final MethodTypeExpression theDynamicInvocationType = (MethodTypeExpression) theArguments.get(5).incomingDataFlows().get(0);
+
+                        // We need this annotation to generate an adapter function at compile time here
+                        final MethodHandleExpression.AdapterAnnotation theAdaptertInfo = new MethodHandleExpression.AdapterAnnotation(
+                                theStaticInvocationType.getSignature(),
+                                theDynamicInvocationType.getSignature(),
+                                theSAMMethodType.getSignature()
+                        );
+                        theImplRef.setAdapterAnnotation(theAdaptertInfo);
+
+                        //System.out.println("lambda " + theLambdaMethodName.getStringValue() + " -> " + theImplRef.getReferenceKind()  + " statictype = " + theStaticInvocationType.getSignature() + ", dynamictype = " + theDynamicInvocationType.getSignature()+ ", implsignature = " + theImplRef.getImplementationSignature());
+
+                        switch (theImplRef.getReferenceKind()) {
+                            case REF_invokeInterface: {
+                                final NewObjectAndConstructExpression theValue = new NewObjectAndConstructExpression(
+                                        aProgram, theInstruction.getOpcodeAddress(),
+                                        BytecodeObjectTypeRef.fromRuntimeClass(VM.InvokeInterfaceCallsite.class),
+                                        new BytecodeMethodSignature(
+                                                BytecodePrimitiveTypeRef.VOID,
+                                                new BytecodeTypeRef[]{
+                                                        BytecodeObjectTypeRef.fromRuntimeClass(MethodType.class),
+                                                        BytecodeObjectTypeRef.fromRuntimeClass(MethodHandle.class)
+                                                }
+                                        ),
+                                        Arrays.asList(theArguments.get(2), theArguments.get(4))
+                                );
+                                final Variable theNewVariable = theInitNode.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theValue);
+                                theInitNode.getExpressions().add(new ReturnValueExpression(aProgram, theInstruction.getOpcodeAddress(), theNewVariable));
+                                break;
+                            }
+                            case REF_invokeVirtual: {
+                                final NewObjectAndConstructExpression theValue = new NewObjectAndConstructExpression(
+                                        aProgram, theInstruction.getOpcodeAddress(),
+                                        BytecodeObjectTypeRef.fromRuntimeClass(VM.InvokeVirtualCallsite.class),
+                                        new BytecodeMethodSignature(
+                                                BytecodePrimitiveTypeRef.VOID,
+                                                new BytecodeTypeRef[]{
+                                                        BytecodeObjectTypeRef.fromRuntimeClass(MethodType.class),
+                                                        BytecodeObjectTypeRef.fromRuntimeClass(MethodHandle.class)
+                                                }
+                                        ),
+                                        Arrays.asList(theArguments.get(2), theArguments.get(4))
+                                );
+                                final Variable theNewVariable = theInitNode.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theValue);
+                                theInitNode.getExpressions().add(new ReturnValueExpression(aProgram, theInstruction.getOpcodeAddress(), theNewVariable));
+                                break;
+                            }
+                            case REF_invokeSpecial: {
+                                final NewObjectAndConstructExpression theValue = new NewObjectAndConstructExpression(
+                                        aProgram, theInstruction.getOpcodeAddress(),
+                                        BytecodeObjectTypeRef.fromRuntimeClass(VM.InvokeSpecialCallsite.class),
+                                        new BytecodeMethodSignature(
+                                                BytecodePrimitiveTypeRef.VOID,
+                                                new BytecodeTypeRef[]{
+                                                        BytecodeObjectTypeRef.fromRuntimeClass(MethodType.class),
+                                                        BytecodeObjectTypeRef.fromRuntimeClass(MethodHandle.class)
+                                                }
+                                        ),
+                                        Arrays.asList(theArguments.get(2), theArguments.get(4))
+                                );
+                                final Variable theNewVariable = theInitNode.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theValue);
+                                theInitNode.getExpressions().add(new ReturnValueExpression(aProgram, theInstruction.getOpcodeAddress(), theNewVariable));
+                                break;
+                            }
+                            case REF_invokeStatic: {
+                                final NewObjectAndConstructExpression theValue = new NewObjectAndConstructExpression(
+                                        aProgram, theInstruction.getOpcodeAddress(),
+                                        BytecodeObjectTypeRef.fromRuntimeClass(VM.LambdaStaticImplCallsite.class),
+                                        new BytecodeMethodSignature(
+                                                BytecodePrimitiveTypeRef.VOID,
+                                                new BytecodeTypeRef[]{
+                                                        BytecodeObjectTypeRef.fromRuntimeClass(String.class),
+                                                        BytecodeObjectTypeRef.fromRuntimeClass(MethodType.class),
+                                                        BytecodeObjectTypeRef.fromRuntimeClass(MethodHandle.class)
+                                                }
+                                        ),
+                                        Arrays.asList(theArguments.get(1), theArguments.get(2), theArguments.get(4))
+                                );
+                                final Variable theNewVariable = theInitNode.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theValue);
+                                theInitNode.getExpressions().add(new ReturnValueExpression(aProgram, theInstruction.getOpcodeAddress(), theNewVariable));
+                                break;
+                            }
+                            case REF_newInvokeSpecial: {
+                                final MethodTypeExpression theConstructorType = (MethodTypeExpression) theArguments.get(5).incomingDataFlows().get(0);
+                                final BytecodeMethodSignature theConstructorSignature = theConstructorType.getSignature();
+                                final BytecodeObjectTypeRef theClassToInstantiate = (BytecodeObjectTypeRef) theConstructorSignature.getReturnType();
+                                final BytecodeMethodSignature theInvocationSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, theConstructorSignature.getArguments());
+
+                                // We need to create a new MethodHandle for the constructor
+                                final MethodHandleExpression theConstructorMethodRef = new MethodHandleExpression(aProgram, theInitNode.getStartAddress(),
+                                        theClassToInstantiate, "<init>", theInvocationSignature, BytecodeReferenceKind.REF_newInvokeSpecial);
+                                theConstructorMethodRef.setAdapterAnnotation(theAdaptertInfo);
+                                final Variable theConstructorMethodRefVariable = theInitNode.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theConstructorMethodRef);
+
+                                final NewObjectAndConstructExpression theValue = new NewObjectAndConstructExpression(
+                                        aProgram, theInstruction.getOpcodeAddress(),
+                                        BytecodeObjectTypeRef.fromRuntimeClass(VM.LambdaConstructorRefCallsite.class),
+                                        new BytecodeMethodSignature(
+                                                BytecodePrimitiveTypeRef.VOID,
+                                                new BytecodeTypeRef[]{
+                                                        BytecodeObjectTypeRef.fromRuntimeClass(MethodType.class),
+                                                        BytecodeObjectTypeRef.fromRuntimeClass(MethodHandle.class),
+                                                }
+                                        ),
+                                        Arrays.asList(theArguments.get(2), theConstructorMethodRefVariable)
+                                );
+                                final Variable theNewVariable = theInitNode.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theValue);
+                                theInitNode.getExpressions().add(new ReturnValueExpression(aProgram, theInstruction.getOpcodeAddress(), theNewVariable));
+                                break;
+                            }
+                            default:
+                                throw new IllegalStateException(theImplRef.getReferenceKind() + " not supported for lambda " + theLambdaMethodName.getStringValue() + " -> " + theImplRef.getReferenceKind()  + " statictype = " + theStaticInvocationType.getSignature() + ", dynamictype = " + theDynamicInvocationType.getSignature());
+                        }
+                    } else {
+                        final InvokeStaticMethodExpression theInvokeStaticValue = new InvokeStaticMethodExpression(aProgram, theInstruction.getOpcodeAddress(),
+                                BytecodeObjectTypeRef.fromUtf8Constant(theBootstrapMethodToInvoke.getClassIndex().getClassConstant().getConstant()),
+                                theMethodName,
+                                theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature(),
+                                theArguments);
+                        final Variable theNewVariable = theInitNode.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theInvokeStaticValue);
+                        theInitNode.getExpressions().add(new ReturnValueExpression(aProgram, theInstruction.getOpcodeAddress(), theNewVariable));
+                    }
 
                     // First step, we construct a callsite
                     final ResolveCallsiteObjectExpression theValue = new ResolveCallsiteObjectExpression(theInstruction.getOpcodeAddress(), aOwningClass.getThisInfo().getConstant().stringValue() + "_" + aMethod.getName().stringValue() + "_" + theINS.getOpcodeAddress().getAddress(), aOwningClass, theProgram, theInitNode);

@@ -50,7 +50,6 @@ import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeReferenceKind;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
@@ -92,12 +91,17 @@ import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.IsNaNExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaConstructorReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaInterfaceReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaSpecialReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaVirtualReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaWithStaticImplExpression;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.MaxExpression;
 import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
+import de.mirkosertic.bytecoder.ssa.MethodHandleExpression;
 import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupExpression;
-import de.mirkosertic.bytecoder.ssa.MethodRefExpression;
 import de.mirkosertic.bytecoder.ssa.MethodTypeArgumentCheckExpression;
 import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
 import de.mirkosertic.bytecoder.ssa.MinExpression;
@@ -118,7 +122,6 @@ import de.mirkosertic.bytecoder.ssa.ReinterpretAsNativeExpression;
 import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
-import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeExpression;
 import de.mirkosertic.bytecoder.ssa.SetEnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
@@ -179,9 +182,13 @@ public class WASMSSAASTWriter {
     public static final String NEWINSTANCEHELPER = "NEWINSTANCEHELPER";
 
     public interface Resolver {
-        Global runtimeClassFor(BytecodeObjectTypeRef aObjectType);
-        Global globalForStringFromPool(StringValue aValue);
-        Function resolveCallsiteBootstrapFor(BytecodeClass owningClass, String callsiteId, Program program, RegionNode bootstrapMethod);
+        Global runtimeClassFor(final BytecodeObjectTypeRef aObjectType);
+
+        Global globalForStringFromPool(final StringValue aValue);
+
+        Function resolveCallsiteBootstrapFor(final BytecodeClass owningClass, final String callsiteId, final Program program, final RegionNode bootstrapMethod);
+
+        String methodHandleDelegateFor(final MethodHandleExpression e);
     }
 
     public static PrimitiveType toType(final TypeRef aType) {
@@ -771,11 +778,23 @@ public class WASMSSAASTWriter {
         if (aValue instanceof TypeOfExpression) {
             return typeOfValue((TypeOfExpression) aValue);
         }
-        if (aValue instanceof RuntimeGeneratedTypeExpression) {
-            return runtimeGeneratedTypeValue((RuntimeGeneratedTypeExpression) aValue);
+        if (aValue instanceof LambdaWithStaticImplExpression) {
+            return lambdaWithStaticImplValue((LambdaWithStaticImplExpression) aValue);
         }
-        if (aValue instanceof MethodRefExpression) {
-            return methodRefValue((MethodRefExpression) aValue);
+        if (aValue instanceof LambdaConstructorReferenceExpression) {
+            return lambdaConstructorReferenceValue((LambdaConstructorReferenceExpression) aValue);
+        }
+        if (aValue instanceof LambdaVirtualReferenceExpression) {
+            return lambdaVirtualReferenceValue((LambdaVirtualReferenceExpression) aValue);
+        }
+        if (aValue instanceof LambdaInterfaceReferenceExpression) {
+            return lambdaInterfaceReferenceValue((LambdaInterfaceReferenceExpression) aValue);
+        }
+        if (aValue instanceof LambdaSpecialReferenceExpression) {
+            return lambdaSpecialReferenceValue((LambdaSpecialReferenceExpression) aValue);
+        }
+        if (aValue instanceof MethodHandleExpression) {
+            return methodHandleValue((MethodHandleExpression) aValue);
         }
         if (aValue instanceof NewMultiArrayExpression) {
             return newMultiArrayValue((NewMultiArrayExpression) aValue);
@@ -826,12 +845,12 @@ public class WASMSSAASTWriter {
             return dataEndExpression((DataEndExpression) aValue);
         }
         if (aValue instanceof SystemHasStackExpression) {
-            return systmHasStackExpression((SystemHasStackExpression) aValue);
+            return systemmHasStackExpression((SystemHasStackExpression) aValue);
         }
         throw new IllegalStateException("Not supported : " + aValue);
     }
 
-    private WASMValue systmHasStackExpression(final SystemHasStackExpression aValue) {
+    private WASMValue systemmHasStackExpression(final SystemHasStackExpression aValue) {
         return i32.c(1, aValue);
     }
 
@@ -1027,48 +1046,44 @@ public class WASMSSAASTWriter {
         return call(theFunction, theArguments, aValue);
     }
 
-    private WASMValue methodRefValue(final MethodRefExpression aValue) {
-        final String theName = aValue.getMethodName();
-        final BytecodeMethodSignature theSignature = aValue.getSignature();
-        final BytecodeLinkedClass theClass = linkerContext.resolveClass(aValue.getClassName());
+    private WASMValue methodHandleValue(final MethodHandleExpression aValue) {
 
-        if (aValue.getReferenceKind() == BytecodeReferenceKind.REF_invokeStatic) {
+        if (aValue.getAdapterAnnotation() == null) {
+            // An easy one, we can directly refer to the implementation method here
             final String theMethodName = WASMWriterUtils.toMethodName(
                     aValue.getClassName(),
                     aValue.getMethodName(),
-                    aValue.getSignature());
+                    aValue.getImplementationSignature());
 
             return weakFunctionTableReference(theMethodName, aValue);
         }
 
-        final BytecodeResolvedMethods theMethods = theClass.resolvedMethods();
-        try {
-            final BytecodeResolvedMethods.MethodEntry theMethodEntry = theMethods.implementingClassOf(theName, theSignature);
-            final BytecodeMethod theMethod = theMethodEntry.getValue();
-
-            if (theMethod.isConstructor()) {
-                if (theMethod.getSignature().getArguments().length != 0) {
-                    throw new IllegalStateException("Constructor reference with more than zero arguments is not supported!");
-                }
-
-                final String theMethodName = WASMWriterUtils.toMethodName(theMethodEntry.getProvidingClass().getClassName(), "$newInstance", theSignature);
-                return weakFunctionTableReference(theMethodName, aValue);
-            }
-        } catch (IllegalArgumentException ex) {
-            // Method not found
-        }
-
-        final String theMethodName = WASMWriterUtils.toMethodName(
-                aValue.getClassName(),
-                theName,
-                theSignature);
-
-        return weakFunctionTableReference(theMethodName, aValue);
+        return weakFunctionTableReference(resolver.methodHandleDelegateFor(aValue), aValue);
     }
 
-    private WASMExpression runtimeGeneratedTypeValue(final RuntimeGeneratedTypeExpression aValue) {
-        final Function theNew = module.functionIndex().firstByLabel("newLambda");
-        return call(theNew, Arrays.asList(toValue(aValue.getType()), toValue(aValue.getMethodRef()), toValue(aValue.getStaticArguments())), aValue);
+    private WASMExpression lambdaWithStaticImplValue(final LambdaWithStaticImplExpression aValue) {
+        final Function theNew = module.functionIndex().firstByLabel("newLambdaImpl");
+        return call(theNew, Arrays.asList(toValue(aValue.getType()), toValue(aValue.getStaticRef()), toValue(aValue.getStaticArguments())), aValue);
+    }
+
+    private WASMExpression lambdaConstructorReferenceValue(final LambdaConstructorReferenceExpression aValue) {
+        final Function theNew = module.functionIndex().firstByLabel("newLambdaImpl");
+        return call(theNew, Arrays.asList(toValue(aValue.getType()), toValue(aValue.getConstructorRef()), toValue(aValue.getStaticArguments())), aValue);
+    }
+
+    private WASMExpression lambdaVirtualReferenceValue(final LambdaVirtualReferenceExpression aValue) {
+        final Function theNew = module.functionIndex().firstByLabel("newLambdaImpl");
+        return call(theNew, Arrays.asList(toValue(aValue.getType()), toValue(aValue.getVirtualRef()), toValue(aValue.getStaticArguments())), aValue);
+    }
+
+    private WASMExpression lambdaInterfaceReferenceValue(final LambdaInterfaceReferenceExpression aValue) {
+        final Function theNew = module.functionIndex().firstByLabel("newLambdaImpl");
+        return call(theNew, Arrays.asList(toValue(aValue.getType()), toValue(aValue.getInterfaceRef()), toValue(aValue.getStaticArguments())), aValue);
+    }
+
+    private WASMExpression lambdaSpecialReferenceValue(final LambdaSpecialReferenceExpression aValue) {
+        final Function theNew = module.functionIndex().firstByLabel("newLambdaImpl");
+        return call(theNew, Arrays.asList(toValue(aValue.getType()), toValue(aValue.getSpecialRef()), toValue(aValue.getStaticArguments())), aValue);
     }
 
     private WASMValue typeOfValue(final TypeOfExpression aValue) {

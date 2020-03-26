@@ -98,7 +98,102 @@ public class VM {
         public abstract Object invokeExact(Object... args) throws Throwable;
     }
 
-    public static native Object newRuntimeGeneratedType(String methodName, MethodType aType, MethodHandle aHandle, Object... staticArguments);
+    public static class LambdaStaticImplCallsite extends ImplementingCallsite {
+
+        private final String methodName;
+        private final MethodType constructedType;
+        private final MethodHandle implMethod;
+
+        public LambdaStaticImplCallsite(final String aMethodName, final MethodType aConstructedType, final MethodHandle aImplMethod) {
+            super(null);
+            methodName = aMethodName;
+            constructedType = aConstructedType;
+            implMethod = aImplMethod;
+        }
+
+        @Override
+        public Object invokeExact(final Object... args) {
+            return newLambdaStaticInvocation(methodName, constructedType, implMethod, args);
+        }
+    }
+
+    public static class InvokeInterfaceCallsite extends ImplementingCallsite {
+
+        private final MethodType constructedType;
+        private final MethodHandle delegateMethod;
+
+        public InvokeInterfaceCallsite(final MethodType aConstructedType, final MethodHandle aDelegateMethod) {
+            super(null);
+            constructedType = aConstructedType;
+            delegateMethod = aDelegateMethod;
+        }
+
+        @Override
+        public Object invokeExact(final Object... args) {
+            return newLambdaInterfaceInvocation(constructedType, delegateMethod, args);
+        }
+    }
+
+    public static class InvokeVirtualCallsite extends ImplementingCallsite {
+
+        private final MethodType constructedType;
+        private final MethodHandle delegateMethod;
+
+        public InvokeVirtualCallsite(final MethodType aConstructedType, final MethodHandle aDelegateMethod) {
+            super(null);
+            constructedType = aConstructedType;
+            delegateMethod = aDelegateMethod;
+        }
+
+        @Override
+        public Object invokeExact(final Object... args) {
+            return newLambdaVirtualInvocation(constructedType, delegateMethod, args);
+        }
+    }
+
+    public static class InvokeSpecialCallsite extends ImplementingCallsite {
+
+        private final MethodType constructedType;
+        private final MethodHandle delegateMethod;
+
+        public InvokeSpecialCallsite(final MethodType aConstructedType, final MethodHandle aDelegateMethod) {
+            super(null);
+            constructedType = aConstructedType;
+            delegateMethod = aDelegateMethod;
+        }
+
+        @Override
+        public Object invokeExact(final Object... args) {
+            return newLambdaSpecialInvocation(constructedType, delegateMethod, args);
+        }
+    }
+
+    public static class LambdaConstructorRefCallsite extends ImplementingCallsite {
+
+        private final MethodType constructedType;
+        private final MethodHandle constructorRef;
+
+        public LambdaConstructorRefCallsite(final MethodType aConstructedType, final MethodHandle aConstructorRef) {
+            super(null);
+            constructedType = aConstructedType;
+            constructorRef = aConstructorRef;
+        }
+
+        @Override
+        public Object invokeExact(final Object... args) {
+            return newLambdaConstructorInvocation(constructedType, constructorRef, args);
+        }
+    }
+
+    public static native Object newLambdaStaticInvocation(final String methodName, final MethodType aConstructedType, final MethodHandle aImplMethod, final Object... staticArguments);
+
+    public static native Object newLambdaConstructorInvocation(final MethodType aConstructedType, final MethodHandle aConstructorRef, final Object... staticArguments);
+
+    public static native Object newLambdaInterfaceInvocation(final MethodType aConstructedType, final MethodHandle aDelegateMethod, final Object... staticArguments);
+
+    public static native Object newLambdaVirtualInvocation(final MethodType aConstructedType, final MethodHandle aDelegateMethod, final Object... staticArguments);
+
+    public static native Object newLambdaSpecialInvocation(final MethodType aConstructedType, final MethodHandle aDelegateMethod, final Object... staticArguments);
 
     public static Object newInstanceWithDefaultConstructor(final Class clz) {
         return null;

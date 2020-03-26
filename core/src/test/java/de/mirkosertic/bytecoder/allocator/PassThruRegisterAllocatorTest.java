@@ -172,7 +172,7 @@ public class PassThruRegisterAllocatorTest {
         final StringWriter theWriter = new StringWriter();
         final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
         final ConstantPool thePool = new ConstantPool();
-        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator);
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null);
         theVariablesWriter.printRegisterDeclarations();
 
         final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
@@ -216,7 +216,7 @@ public class PassThruRegisterAllocatorTest {
         final StringWriter theWriter = new StringWriter();
         final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
         final ConstantPool thePool = new ConstantPool();
-        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator);
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null);
         theVariablesWriter.printRegisterDeclarations();
 
         final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
@@ -275,7 +275,7 @@ public class PassThruRegisterAllocatorTest {
         final StringWriter theWriter = new StringWriter();
         final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
         final ConstantPool thePool = new ConstantPool();
-        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator);
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null);
         theVariablesWriter.printRegisterDeclarations();
 
         final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
@@ -312,7 +312,7 @@ public class PassThruRegisterAllocatorTest {
         final StringWriter theWriter = new StringWriter();
         final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
         final ConstantPool thePool = new ConstantPool();
-        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator);
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null);
         theVariablesWriter.printRegisterDeclarations();
 
         final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
@@ -349,7 +349,7 @@ public class PassThruRegisterAllocatorTest {
         final StringWriter theWriter = new StringWriter();
         final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
         final ConstantPool thePool = new ConstantPool();
-        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator);
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null);
         theVariablesWriter.printRegisterDeclarations();
 
         final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
@@ -386,7 +386,7 @@ public class PassThruRegisterAllocatorTest {
         final StringWriter theWriter = new StringWriter();
         final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
         final ConstantPool thePool = new ConstantPool();
-        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator);
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null);
         theVariablesWriter.printRegisterDeclarations();
 
         final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
@@ -424,7 +424,7 @@ public class PassThruRegisterAllocatorTest {
         final StringWriter theWriter = new StringWriter();
         final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
         final ConstantPool thePool = new ConstantPool();
-        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator);
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null);
         theVariablesWriter.printRegisterDeclarations();
 
         final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
@@ -484,7 +484,7 @@ public class PassThruRegisterAllocatorTest {
         final StringWriter theWriter = new StringWriter();
         final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
         final ConstantPool thePool = new ConstantPool();
-        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator);
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null);
         theVariablesWriter.printRegisterDeclarations();
 
         final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
@@ -521,7 +521,7 @@ public class PassThruRegisterAllocatorTest {
         final StringWriter theWriter = new StringWriter();
         final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
         final ConstantPool thePool = new ConstantPool();
-        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator);
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null);
         theVariablesWriter.printRegisterDeclarations();
 
         final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
@@ -560,7 +560,7 @@ public class PassThruRegisterAllocatorTest {
         final StringWriter theWriter = new StringWriter();
         final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
         final ConstantPool thePool = new ConstantPool();
-        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator);
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null);
         theVariablesWriter.printRegisterDeclarations();
 
         final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
