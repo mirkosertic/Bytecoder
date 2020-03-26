@@ -92,7 +92,7 @@ public class LinearRegisterAllocatorTest {
         assertEquals(2, vars.get(4).liveRange().getDefinedAt());
         assertEquals(4, vars.get(4).liveRange().getLastUsedAt());
 
-        final AbstractAllocator theAllocator = Allocator.linear.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.linear.allocate(p, Variable::resolveType, theLinkerContext);
         assertEquals(Collections.singleton(TypeRef.Native.INT), theAllocator.usedRegisterTypes());
         assertEquals(3L, theAllocator.registersOfType(TypeRef.Native.INT).size());
         assertEquals(0L, theAllocator.registerAssignmentFor(vars.get(0)).getNumber());
@@ -122,7 +122,7 @@ public class LinearRegisterAllocatorTest {
 
         assertEquals(8, vars.size());
 
-        final AbstractAllocator theAllocator = Allocator.linear.allocate(p, t -> t.resolveType(), theLinkerContext);
+        final AbstractAllocator theAllocator = Allocator.linear.allocate(p, Variable::resolveType, theLinkerContext);
         for (final Variable v : vars) {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d assigned to register %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt(), theAllocator.registerAssignmentFor(v).getNumber()));
         }
@@ -135,7 +135,7 @@ public class LinearRegisterAllocatorTest {
         final StringWriter theWriter = new StringWriter();
         final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
         final ConstantPool thePool = new ConstantPool();
-        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator);
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null);
         theVariablesWriter.printRegisterDeclarations();
 
         final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());

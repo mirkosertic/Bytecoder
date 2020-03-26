@@ -17,12 +17,12 @@ package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
-public class RuntimeGeneratedTypeExpression extends Expression {
+public class LambdaWithStaticImplExpression extends Expression {
 
-    public RuntimeGeneratedTypeExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value type, final Value methodRef, final Value staticArguments, final Value name) {
+    public LambdaWithStaticImplExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final Value type, final Value staticRef, final Value staticArguments, final Value name) {
         super(aProgram, aAddress);
         receivesDataFrom(type);
-        receivesDataFrom(methodRef);
+        receivesDataFrom(staticRef);
         receivesDataFrom(staticArguments);
         receivesDataFrom(name);
     }
@@ -36,7 +36,7 @@ public class RuntimeGeneratedTypeExpression extends Expression {
         return incomingDataFlows().get(0);
     }
 
-    public Value getMethodRef() {
+    public Value getStaticRef() {
         return incomingDataFlows().get(1);
     }
 

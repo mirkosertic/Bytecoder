@@ -15,10 +15,7 @@
  */
 package de.mirkosertic.bytecoder.backend.llvm;
 
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
-
 import de.mirkosertic.bytecoder.backend.NativeMemoryLayouter;
-import de.mirkosertic.bytecoder.backend.wasm.WASMWriterUtils;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
@@ -29,7 +26,6 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeReferenceKind;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
@@ -71,12 +67,17 @@ import de.mirkosertic.bytecoder.ssa.IntegerValue;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.IsNaNExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaConstructorReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaInterfaceReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaSpecialReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaVirtualReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaWithStaticImplExpression;
 import de.mirkosertic.bytecoder.ssa.LongValue;
 import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.MaxExpression;
 import de.mirkosertic.bytecoder.ssa.MemorySizeExpression;
+import de.mirkosertic.bytecoder.ssa.MethodHandleExpression;
 import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupExpression;
-import de.mirkosertic.bytecoder.ssa.MethodRefExpression;
 import de.mirkosertic.bytecoder.ssa.MethodTypeArgumentCheckExpression;
 import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
 import de.mirkosertic.bytecoder.ssa.MinExpression;
@@ -97,7 +98,6 @@ import de.mirkosertic.bytecoder.ssa.ReinterpretAsNativeExpression;
 import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
-import de.mirkosertic.bytecoder.ssa.RuntimeGeneratedTypeExpression;
 import de.mirkosertic.bytecoder.ssa.SetEnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
@@ -147,6 +147,8 @@ public class LLVMWriter implements AutoCloseable {
         String methodTypeFactoryNameFor(final BytecodeMethodSignature aSignature);
 
         BytecodeVTable vtableFor(final BytecodeLinkedClass aClass);
+
+        String methodHandleDelegateFor(MethodHandleExpression aValue);
     }
 
     private final PrintWriter target;
@@ -1593,8 +1595,16 @@ public class LLVMWriter implements AutoCloseable {
             write((FloatingPointFloorExpression) aValue);
         } else if (aValue instanceof MaxExpression) {
             write((MaxExpression) aValue);
-        } else if (aValue instanceof RuntimeGeneratedTypeExpression) {
-            write((RuntimeGeneratedTypeExpression) aValue);
+        } else if (aValue instanceof LambdaWithStaticImplExpression) {
+            write((LambdaWithStaticImplExpression) aValue);
+        } else if (aValue instanceof LambdaConstructorReferenceExpression) {
+            write((LambdaConstructorReferenceExpression) aValue);
+        } else if (aValue instanceof LambdaVirtualReferenceExpression) {
+            write((LambdaVirtualReferenceExpression) aValue);
+        } else if (aValue instanceof LambdaInterfaceReferenceExpression) {
+            write((LambdaInterfaceReferenceExpression) aValue);
+        } else if (aValue instanceof LambdaSpecialReferenceExpression) {
+            write((LambdaSpecialReferenceExpression) aValue);
         } else if (aValue instanceof EnumConstantsExpression) {
             write((EnumConstantsExpression) aValue);
         } else if (aValue instanceof MethodTypeArgumentCheckExpression) {
@@ -1611,8 +1621,8 @@ public class LLVMWriter implements AutoCloseable {
             write((MethodHandlesGeneratedLookupExpression) aValue);
         } else if (aValue instanceof MethodTypeExpression) {
             write((MethodTypeExpression) aValue);
-        } else if (aValue instanceof MethodRefExpression) {
-            write((MethodRefExpression) aValue);
+        } else if (aValue instanceof MethodHandleExpression) {
+            write((MethodHandleExpression) aValue);
         } else if (aValue instanceof PtrOfExpression) {
             write((PtrOfExpression) aValue);
         } else {
@@ -1629,61 +1639,31 @@ public class LLVMWriter implements AutoCloseable {
         }
     }
 
-    private void write(final MethodRefExpression e) {
+    private void write(final MethodHandleExpression aValue) {
 
-        final String theName = e.getMethodName();
-        final BytecodeMethodSignature theSignature = e.getSignature();
-        final BytecodeLinkedClass theClass = linkerContext.resolveClass(e.getClassName());
-
-        if (e.getReferenceKind() == BytecodeReferenceKind.REF_invokeStatic) {
+        if (aValue.getAdapterAnnotation() == null) {
+            // An easy one, we can directly refer to the implementation method here
             target.print("ptrtoint ");
-            target.print(LLVMWriterUtils.toSignature(e.getSignature()));
+            target.print(LLVMWriterUtils.toSignature(aValue.getImplementationSignature()));
 
             final String theMethodName = LLVMWriterUtils.toMethodName(
-                    e.getClassName(),
-                    e.getMethodName(),
-                    e.getSignature());
+                    aValue.getClassName(),
+                    aValue.getMethodName(),
+                    aValue.getImplementationSignature());
 
             target.print("* @");
             target.print(theMethodName);
             target.print(" to i32");
+
             return;
         }
 
-        final BytecodeResolvedMethods theMethods = theClass.resolvedMethods();
-        try {
-            final BytecodeResolvedMethods.MethodEntry theMethodEntry = theMethods.implementingClassOf(theName, theSignature);
-            final BytecodeMethod theMethod = theMethodEntry.getValue();
-
-            if (theMethod.isConstructor()) {
-                if (theMethod.getSignature().getArguments().length != 0) {
-                    throw new IllegalStateException("Constructor reference with more than zero arguments is not supported!");
-                }
-
-                final String theMethodName = LLVMWriterUtils.toMethodName(theMethodEntry.getProvidingClass().getClassName(), NEWINSTANCE_METHOD_NAME, theMethod.getSignature());
-
-                target.print("ptrtoint ");
-                final BytecodeMethodSignature theNewInstanceSignature = new
-                        BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
-                        theSignature.getArguments());
-                target.print(LLVMWriterUtils.toSignature(theNewInstanceSignature));
-
-                target.print("* @");
-                target.print(theMethodName);
-                target.print(" to i32");
-                return;
-            }
-        } catch (IllegalArgumentException ex) {
-            // Method not found
-        }
-
+        // We compile a delegate function as this is needed to
+        // combine static and dynamic arguments for method invocation
         target.print("ptrtoint ");
-        target.print(LLVMWriterUtils.toSignature(e.getSignature()));
+        target.print(LLVMWriterUtils.toSignature(aValue.getAdapterAnnotation().getCaptureSignature()));
 
-        final String theMethodName = LLVMWriterUtils.toMethodName(
-                e.getClassName(),
-                e.getMethodName(),
-                e.getSignature());
+        final String theMethodName = symbolResolver.methodHandleDelegateFor(aValue);
 
         target.print("* @");
         target.print(theMethodName);
@@ -1783,11 +1763,51 @@ public class LLVMWriter implements AutoCloseable {
         target.print(toTempSymbol(e, "ptr"));
     }
 
-    private void write(final RuntimeGeneratedTypeExpression e) {
-        target.print("call i32 @newlambda(i32 ");
+    private void write(final LambdaWithStaticImplExpression e) {
+        target.print("call i32 @newLambdaImpl(i32 ");
         write(e.getType(), true);
         target.print(",i32 ");
-        write(e.getMethodRef(), true);
+        write(e.getStaticRef(), true);
+        target.print(",i32 ");
+        write(e.getStaticArguments(), true);
+        target.print(")");
+    }
+
+    private void write(final LambdaConstructorReferenceExpression e) {
+        target.print("call i32 @newLambdaImpl(i32 ");
+        write(e.getType(), true);
+        target.print(",i32 ");
+        write(e.getConstructorRef(), true);
+        target.print(",i32 ");
+        write(e.getStaticArguments(), true);
+        target.print(")");
+    }
+
+    private void write(final LambdaInterfaceReferenceExpression e) {
+        target.print("call i32 @newLambdaImpl(i32 ");
+        write(e.getType(), true);
+        target.print(",i32 ");
+        write(e.getInterfaceRef(), true);
+        target.print(",i32 ");
+        write(e.getStaticArguments(), true);
+        target.print(")");
+    }
+
+    private void write(final LambdaVirtualReferenceExpression e) {
+        target.print("call i32 @newLambdaImpl(i32 ");
+        write(e.getType(), true);
+        target.print(",i32 ");
+        write(e.getVirtualRef(), true);
+        target.print(",i32 ");
+        write(e.getStaticArguments(), true);
+        target.print(")");
+    }
+
+    private void write(final LambdaSpecialReferenceExpression e) {
+        target.print("call i32 @newLambdaImpl(i32 ");
+        write(e.getType(), true);
+        target.print(",i32 ");
+        write(e.getSpecialRef(), true);
         target.print(",i32 ");
         write(e.getStaticArguments(), true);
         target.print(")");
