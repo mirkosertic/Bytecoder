@@ -15,9 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -57,7 +55,7 @@ public class BytecodeLinkerContext {
         final BytecodeObjectTypeRef theTypeRef = BytecodeObjectTypeRef.fromUtf8Constant(aConstant);
         final List<BytecodeLinkedClass> theLinkedClass = linkedClasses()
                 .filter(t -> t.targetNode().getClassName().equals(theTypeRef))
-                .map(t -> t.targetNode())
+                .map(Edge::targetNode)
                 .collect(Collectors.toList());
         if (theLinkedClass.size() > 1) {
             throw new IllegalStateException();
@@ -70,7 +68,7 @@ public class BytecodeLinkerContext {
     public BytecodeLinkedClass resolveClass(final BytecodeObjectTypeRef aTypeRef) {
 
         final List<BytecodeLinkedClass> theFoundLinks = linkedClasses()
-                .map(t -> t.targetNode())
+                .map(Edge::targetNode)
                 .filter(t -> t.getClassName().equals(aTypeRef))
                 .collect(Collectors.toList());
 
@@ -156,10 +154,7 @@ public class BytecodeLinkerContext {
     public List<BytecodeLinkedClass> getClassesImplementingVirtualMethod(final BytecodeVirtualMethodIdentifier aIdentifier) {
         return linkedClasses()
                 .map(Edge::targetNode)
-                .filter(t -> !t.getBytecodeClass().getAccessFlags().isInterface())
                 .filter(t -> t.implementsMethod(aIdentifier))
                 .collect(Collectors.toList());
     }
-
-    private final Map<BytecodeVirtualMethodIdentifier, List<BytecodeLinkedClass>> alreadyKnown = new HashMap<>();
 }

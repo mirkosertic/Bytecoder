@@ -112,6 +112,32 @@ public class InvokeDynamicTest {
         testConstructorInvoke.test(TestConstructorInvoke.TestObject::new);
     }
 
+    interface InterfaceA{
+        default String test() {
+            return "InterfaceA";
+        }
+    }
+
+    class ClassA implements InterfaceA {
+
+        @Override
+        public String test(){
+            return "ClassA";
+        }
+    }
+
+    @Test
+    public void testDefaultMethodOverwrite() {
+        final ClassA a = new ClassA();
+        System.out.println(a.test());
+        Assert.assertEquals("ClassA", a.test());
+
+        final InterfaceA b = new InterfaceA() {
+        };
+        System.out.println(b.test());
+        Assert.assertEquals("InterfaceA", b.test());
+    }
+  
     interface OrderTest {
         int compute(int a, float b, int c, int d, float e, float f);
     }
