@@ -784,6 +784,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     final ExportableFunction theCreateFunction = module.getFunctions().newFunction(
                             theMethodName, theParams, PrimitiveType.i32
                     );
+                    theCreateFunction.exportAs(theMethodName);
                     final Local newInstance = theCreateFunction.newLocal("newInstance", PrimitiveType.i32);
 
                     final NativeMemoryLayouter.MemoryLayout theLayout = theMemoryLayout.layoutFor(theLinkedClass.getClassName());
@@ -1899,10 +1900,10 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         }
         return new WASMCompileResult(
                 theMinifier,
-                new WASMCompileResult.WASMTextualCompileResult(theMemoryLayout, aLinkerContext, new ArrayList<>(), theStringWriter.toString(), aOptions.getFilenamePrefix()),
-                new WASMCompileResult.WASMBinaryCompileResult(theMemoryLayout, aLinkerContext, new ArrayList<>(), theBinaryOutput.toByteArray(), aOptions.getFilenamePrefix()),
-                new WASMCompileResult.WASMTextualJSCompileResult(theMemoryLayout, aLinkerContext, new ArrayList<>(), theJSCode.toString(), aOptions.getFilenamePrefix()),
-                new WASMCompileResult.WASMSourcemapCompileResult(theMemoryLayout, aLinkerContext, new ArrayList<>(), theBinarySourceMap.toString(), aOptions.getFilenamePrefix()));
+                new WASMCompileResult.WASMTextualCompileResult(theStringWriter.toString(), aOptions.getFilenamePrefix()),
+                new WASMCompileResult.WASMBinaryCompileResult(theBinaryOutput.toByteArray(), aOptions.getFilenamePrefix()),
+                new WASMCompileResult.WASMTextualJSCompileResult(theJSCode.toString(), aOptions.getFilenamePrefix()),
+                new WASMCompileResult.WASMSourcemapCompileResult(theBinarySourceMap.toString(), aOptions.getFilenamePrefix()));
     }
 
     private String conversionFunctionToJSForOpaqueType(final BytecodeLinkerContext alinkerContext, final BytecodeTypeRef aTypeRef) {
