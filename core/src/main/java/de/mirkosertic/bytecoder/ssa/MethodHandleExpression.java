@@ -25,10 +25,13 @@ public class MethodHandleExpression extends Expression {
     public static class AdapterAnnotation  {
         private final BytecodeMethodSignature linkageSignature;
         private final BytecodeMethodSignature captureSignature;
+        private final BytecodeMethodSignature samMethodType;
 
-        public AdapterAnnotation(final BytecodeMethodSignature linkageSignature, final BytecodeMethodSignature captureSignature) {
+        public AdapterAnnotation(final BytecodeMethodSignature linkageSignature, final BytecodeMethodSignature captureSignature,
+                                 final BytecodeMethodSignature samMethodType) {
             this.linkageSignature = linkageSignature;
             this.captureSignature = captureSignature;
+            this.samMethodType = samMethodType;
         }
 
         public BytecodeMethodSignature getLinkageSignature() {
@@ -37,6 +40,10 @@ public class MethodHandleExpression extends Expression {
 
         public BytecodeMethodSignature getCaptureSignature() {
             return captureSignature;
+        }
+
+        public BytecodeMethodSignature getSamMethodType() {
+            return samMethodType;
         }
     }
 

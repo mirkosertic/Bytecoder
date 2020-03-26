@@ -1259,13 +1259,15 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                         // We have something here
                         final StringValue theLambdaMethodName = (StringValue) theArguments.get(1).incomingDataFlows().get(0);
                         final MethodTypeExpression theStaticInvocationType = (MethodTypeExpression) theArguments.get(2).incomingDataFlows().get(0);
+                        final MethodTypeExpression theSAMMethodType = (MethodTypeExpression) theArguments.get(3).incomingDataFlows().get(0);
                         final MethodHandleExpression theImplRef = (MethodHandleExpression) theArguments.get(4).incomingDataFlows().get(0);
                         final MethodTypeExpression theDynamicInvocationType = (MethodTypeExpression) theArguments.get(5).incomingDataFlows().get(0);
 
                         // We need this annotation to generate an adapter function at compile time here
                         final MethodHandleExpression.AdapterAnnotation theAdaptertInfo = new MethodHandleExpression.AdapterAnnotation(
                                 theStaticInvocationType.getSignature(),
-                                theDynamicInvocationType.getSignature()
+                                theDynamicInvocationType.getSignature(),
+                                theSAMMethodType.getSignature()
                         );
                         theImplRef.setAdapterAnnotation(theAdaptertInfo);
 

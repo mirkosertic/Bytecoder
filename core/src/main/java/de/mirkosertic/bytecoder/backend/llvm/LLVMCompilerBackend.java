@@ -1810,6 +1810,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.println(";; refkind = " + theMethodHandle.getReferenceKind());
                     pw.println(";; linksignature = " + theMethodHandle.getAdapterAnnotation().getLinkageSignature());
                     pw.println(";; capturesignature = " + theMethodHandle.getAdapterAnnotation().getCaptureSignature());
+                    pw.println(";; samsignature = " + theMethodHandle.getAdapterAnnotation().getSamMethodType());
                     pw.println(";; implclass = " + theMethodHandle.getClassName().name());
                     pw.println(";; implMethod = " + theMethodHandle.getMethodName());
                     pw.println(";; implSig = " + theMethodHandle.getImplementationSignature());
@@ -3220,9 +3221,29 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             }
         }
 
-        // captureArg0 is the invocation target
+        String theTarget = null;
+
+        // The first of either the link or capture arguments is the invocation target
+        final List<BytecodeTypeRef> theEffectiveSignatureArguments = new ArrayList<>();
+        for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
+            if (theTarget == null) {
+                theTarget = "linkArg" + k;
+            } else {
+                theEffectiveSignatureArguments.add(theAdapterAnnotation.getLinkageSignature().getArguments()[k]);
+            }
+        }
+        for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
+            if (theTarget == null) {
+                theTarget = "captureArg" + k;
+            } else {
+                theEffectiveSignatureArguments.add(theAdapterAnnotation.getCaptureSignature().getArguments()[k]);
+            }
+        }
+
         // we perform a call over the interface resolver
-        aWriter.println("    %vtable = add i32 %captureArg0, 4");
+        aWriter.print("    %vtable = add i32 %");
+        aWriter.print(theTarget);
+        aWriter.println(", 4");
         aWriter.println("    %vtableptr = inttoptr i32 %vtable to i32*");
         aWriter.println("    %vtableref = load i32, i32* %vtableptr");
         aWriter.println("    %vtableref_offset = add i32 %vtableref, 4");
@@ -3231,12 +3252,10 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
         aWriter.println("    %dispatcher_ptr = inttoptr i32 %dispatcher to i32(i32,i32)*");
 
         // Resolve the index of the virtual identifier
-        aWriter.print("    %resolved = call i32(i32,i32) %dispatcher_ptr(i32 %captureArg0,");
+        aWriter.print("    %resolved = call i32(i32,i32) %dispatcher_ptr(i32 %");
+        aWriter.print(theTarget);
+        aWriter.print(",");
 
-        final List<BytecodeTypeRef> theEffectiveSignatureArguments = new ArrayList<>(Arrays.asList(theAdapterAnnotation.getLinkageSignature().getArguments()));
-        for (int k=1;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
-            theEffectiveSignatureArguments.add(theAdapterAnnotation.getCaptureSignature().getArguments()[k]);
-        }
         final BytecodeMethodSignature theEffectiveSignature = new BytecodeMethodSignature(theSignature.getReturnType(), theEffectiveSignatureArguments.toArray(new BytecodeTypeRef[0]));
 
         final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(aMethodHandle.getMethodName(), theEffectiveSignature);
@@ -3257,22 +3276,27 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
         aWriter.print("call ");
         aWriter.print(LLVMWriterUtils.toSignature(theEffectiveSignature));
-        aWriter.print(" %resolved_ptr (i32 %captureArg0");
+        aWriter.print(" %resolved_ptr (i32 %");
+        aWriter.print(theTarget);
         for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
             final String theArgName = "linkArg" + k;
-            final String theType = LLVMWriterUtils.toType(TypeRef.toType(theAdapterAnnotation.getLinkageSignature().getArguments()[k]));
-            aWriter.print(",");
-            aWriter.print(theType);
-            aWriter.print(" %");
-            aWriter.print(theArgName);
+            if (!theTarget.equals(theArgName)) {
+                final String theType = LLVMWriterUtils.toType(TypeRef.toType(theAdapterAnnotation.getLinkageSignature().getArguments()[k]));
+                aWriter.print(",");
+                aWriter.print(theType);
+                aWriter.print(" %");
+                aWriter.print(theArgName);
+            }
         }
-        for (int k=1;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
+        for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
             final String theArgName = "captureArg" + k;
-            final String theType = LLVMWriterUtils.toType(TypeRef.toType(theAdapterAnnotation.getCaptureSignature().getArguments()[k]));
-            aWriter.print(",");
-            aWriter.print(theType);
-            aWriter.print(" %");
-            aWriter.print(theArgName);
+            if (!theTarget.equals(theArgName)) {
+                final String theType = LLVMWriterUtils.toType(TypeRef.toType(theAdapterAnnotation.getCaptureSignature().getArguments()[k]));
+                aWriter.print(",");
+                aWriter.print(theType);
+                aWriter.print(" %");
+                aWriter.print(theArgName);
+            }
         }
         aWriter.println(")");
 
