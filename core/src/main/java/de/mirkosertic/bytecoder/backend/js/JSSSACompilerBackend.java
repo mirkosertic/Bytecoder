@@ -165,7 +165,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(2).text("return {returntype: ret, arguments:args};").newLine();
         theWriter.tab().text("},").newLine();
 
-        theWriter.tab().text("lambdaWithStaticImpl").colon().text("function(aFunction,staticArguments,name,typeToConstruct)").space().text("{").newLine();
+        theWriter.tab().text("lambdaStaticRef").colon().text("function(aFunction,staticArguments,name,typeToConstruct)").space().text("{").newLine();
         theWriter.tab(2).text("if").space().text("(aFunction.static)").space().text("{").newLine();
         theWriter.tab(3).text("var handler").assign().text("function()").space().text("{").newLine();
         theWriter.tab(4).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();

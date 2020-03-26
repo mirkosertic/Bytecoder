@@ -1062,27 +1062,27 @@ public class WASMSSAASTWriter {
     }
 
     private WASMExpression lambdaWithStaticImplValue(final LambdaWithStaticImplExpression aValue) {
-        final Function theNew = module.functionIndex().firstByLabel("newLambdaWithStaticImpl");
+        final Function theNew = module.functionIndex().firstByLabel("newLambdaImpl");
         return call(theNew, Arrays.asList(toValue(aValue.getType()), toValue(aValue.getStaticRef()), toValue(aValue.getStaticArguments())), aValue);
     }
 
     private WASMExpression lambdaConstructorReferenceValue(final LambdaConstructorReferenceExpression aValue) {
-        final Function theNew = module.functionIndex().firstByLabel("newLambdaWithStaticImpl");
+        final Function theNew = module.functionIndex().firstByLabel("newLambdaImpl");
         return call(theNew, Arrays.asList(toValue(aValue.getType()), toValue(aValue.getConstructorRef()), toValue(aValue.getStaticArguments())), aValue);
     }
 
     private WASMExpression lambdaVirtualReferenceValue(final LambdaVirtualReferenceExpression aValue) {
-        final Function theNew = module.functionIndex().firstByLabel("newLambdaWithStaticImpl");
+        final Function theNew = module.functionIndex().firstByLabel("newLambdaImpl");
         return call(theNew, Arrays.asList(toValue(aValue.getType()), toValue(aValue.getVirtualRef()), toValue(aValue.getStaticArguments())), aValue);
     }
 
     private WASMExpression lambdaInterfaceReferenceValue(final LambdaInterfaceReferenceExpression aValue) {
-        final Function theNew = module.functionIndex().firstByLabel("newLambdaWithStaticImpl");
+        final Function theNew = module.functionIndex().firstByLabel("newLambdaImpl");
         return call(theNew, Arrays.asList(toValue(aValue.getType()), toValue(aValue.getInterfaceRef()), toValue(aValue.getStaticArguments())), aValue);
     }
 
     private WASMExpression lambdaSpecialReferenceValue(final LambdaSpecialReferenceExpression aValue) {
-        final Function theNew = module.functionIndex().firstByLabel("newLambdaWithStaticImpl");
+        final Function theNew = module.functionIndex().firstByLabel("newLambdaImpl");
         return call(theNew, Arrays.asList(toValue(aValue.getType()), toValue(aValue.getSpecialRef()), toValue(aValue.getStaticArguments())), aValue);
     }
 

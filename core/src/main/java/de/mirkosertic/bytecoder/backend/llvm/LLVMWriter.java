@@ -1764,7 +1764,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final LambdaWithStaticImplExpression e) {
-        target.print("call i32 @newLambdaWithStaticImpl(i32 ");
+        target.print("call i32 @newLambdaImpl(i32 ");
         write(e.getType(), true);
         target.print(",i32 ");
         write(e.getStaticRef(), true);
@@ -1774,7 +1774,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final LambdaConstructorReferenceExpression e) {
-        target.print("call i32 @newLambdaWithStaticImpl(i32 ");
+        target.print("call i32 @newLambdaImpl(i32 ");
         write(e.getType(), true);
         target.print(",i32 ");
         write(e.getConstructorRef(), true);
@@ -1784,7 +1784,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final LambdaInterfaceReferenceExpression e) {
-        target.print("call i32 @newLambdaWithStaticImpl(i32 ");
+        target.print("call i32 @newLambdaImpl(i32 ");
         write(e.getType(), true);
         target.print(",i32 ");
         write(e.getInterfaceRef(), true);
@@ -1794,7 +1794,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final LambdaVirtualReferenceExpression e) {
-        target.print("call i32 @newLambdaWithStaticImpl(i32 ");
+        target.print("call i32 @newLambdaImpl(i32 ");
         write(e.getType(), true);
         target.print(",i32 ");
         write(e.getVirtualRef(), true);
@@ -1804,7 +1804,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final LambdaSpecialReferenceExpression e) {
-        target.print("call i32 @newLambdaWithStaticImpl(i32 ");
+        target.print("call i32 @newLambdaImpl(i32 ");
         write(e.getType(), true);
         target.print(",i32 ");
         write(e.getSpecialRef(), true);

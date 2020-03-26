@@ -113,7 +113,7 @@ public class VM {
 
         @Override
         public Object invokeExact(final Object... args) {
-            return newLambdaWithWithStaticImpl(methodName, constructedType, implMethod, args);
+            return newLambdaStaticInvocation(methodName, constructedType, implMethod, args);
         }
     }
 
@@ -185,7 +185,7 @@ public class VM {
         }
     }
 
-    public static native Object newLambdaWithWithStaticImpl(final String methodName, final MethodType aConstructedType, final MethodHandle aImplMethod, final Object... staticArguments);
+    public static native Object newLambdaStaticInvocation(final String methodName, final MethodType aConstructedType, final MethodHandle aImplMethod, final Object... staticArguments);
 
     public static native Object newLambdaConstructorInvocation(final MethodType aConstructedType, final MethodHandle aConstructorRef, final Object... staticArguments);
 

@@ -464,7 +464,7 @@ public class JSSSAWriter {
     }
 
     private void print(final LambdaWithStaticImplExpression aValue) {
-        writer.text("bytecoder.lambdaWithStaticImpl(");
+        writer.text("bytecoder.lambdaStaticRef(");
         print(aValue.getStaticRef());
         writer.text(",");
         print(aValue.getStaticArguments());

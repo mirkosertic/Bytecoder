@@ -589,7 +589,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i32 @newLambdaWithStaticImpl(i32 %methodType, i32 %implementationMethod, i32 %staticArguments) {");
+                pw.println("define internal i32 @newLambdaImpl(i32 %methodType, i32 %implementationMethod, i32 %staticArguments) {");
                 pw.println("entry:");
                 pw.println("    %lambda_interface_dispatch = ptrtoint i32(i32,i32)* @lambda__interfacedispatch to i32");
                 pw.println("    %type_offset = add i32 20, %methodType");
@@ -2107,7 +2107,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("             nanoTime: function() {return Date.now() * 1000000;},");
                 theWriter.println("         },");
                 theWriter.println("         vm: {");
-                theWriter.println("             newLambdaWithWithStaticImplStringMethodTypeMethodHandleObject: function() {},");
+                theWriter.println("             newLambdaStaticInvocationStringMethodTypeMethodHandleObject: function() {},");
                 theWriter.println("             newLambdaConstructorInvocationMethodTypeMethodHandleObject: function() {},");
                 theWriter.println("             newLambdaInterfaceInvocationMethodTypeMethodHandleObject: function() {},");
                 theWriter.println("             newLambdaVirtualInvocationMethodTypeMethodHandleObject: function() {},");
