@@ -196,8 +196,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab().text("lambdaInterfaceRef").colon().text("function(typeToConstruct,methodRef,staticArguments)").space().text("{").newLine();
         theWriter.tab(2).text("var handler").assign().text("function()").space().text("{").newLine();
         theWriter.tab(3).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();
-        theWriter.tab(3).text("var concated").assign().text("staticArguments.data.concat(args.splice(1));").newLine();
-        theWriter.tab(3).text("return methodRef.apply(args[0],concated);").newLine();
+        theWriter.tab(3).text("var concated").assign().text("staticArguments.data.concat(args);").newLine();
+        theWriter.tab(3).text("return methodRef.apply(concated[0],concated.splice(1));").newLine();
         theWriter.tab(2).text("};").newLine();
         theWriter.tab(2).text("return typeToConstruct.returntype.").text(theMinifier.toSymbol("newLambdaInstance")).text("(handler);").newLine();
         theWriter.tab().text("},").newLine();

@@ -2276,13 +2276,6 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         theEffectiveSignatureArguments.addAll(Arrays.asList(theAdapterAnnotation.getCaptureSignature().getArguments()));
         final BytecodeMethodSignature theEffectiveSignature = new BytecodeMethodSignature(theSignature.getReturnType(), theEffectiveSignatureArguments.toArray(new BytecodeTypeRef[0]));
 
-        final List<PrimitiveType> theSignatureParams = new ArrayList<>();
-        theSignatureParams.add(PrimitiveType.i32);
-        for (int i = 0; i < theEffectiveSignature.getArguments().length; i++) {
-            final BytecodeTypeRef theParamType = theEffectiveSignature.getArguments()[i];
-            theSignatureParams.add(toType(TypeRef.toType(theParamType)));
-        }
-
         final Function theFunction = aModule.functionIndex().firstByLabel(
                 WASMWriterUtils.toMethodName(aMethodHandle.getClassName(), aMethodHandle.getMethodName(), theEffectiveSignature)
         );
@@ -2363,10 +2356,23 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             }
         }
 
+        String theTargetName = null;
+
+        // The first of either the link or capture arguments is the invocation target
         final List<BytecodeTypeRef> theEffectiveSignatureArguments = new ArrayList<>();
-        theEffectiveSignatureArguments.addAll(Arrays.asList(theAdapterAnnotation.getLinkageSignature().getArguments()));
-        for (int k=1;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
-            theEffectiveSignatureArguments.add(theAdapterAnnotation.getCaptureSignature().getArguments()[k]);
+        for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
+            if (theTargetName == null) {
+                theTargetName = "linkArg" + k;
+            } else {
+                theEffectiveSignatureArguments.add(theAdapterAnnotation.getLinkageSignature().getArguments()[k]);
+            }
+        }
+        for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
+            if (theTargetName == null) {
+                theTargetName = "captureArg" + k;
+            } else {
+                theEffectiveSignatureArguments.add(theAdapterAnnotation.getCaptureSignature().getArguments()[k]);
+            }
         }
 
         final BytecodeMethodSignature theEffectiveSignature = new BytecodeMethodSignature(theSignature.getReturnType(), theEffectiveSignatureArguments.toArray(new BytecodeTypeRef[0]));
@@ -2389,7 +2395,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
         final WASMType theResolveType = aModule.getTypes().typeFor(Arrays.asList(PrimitiveType.i32, PrimitiveType.i32), PrimitiveType.i32);
         final List<WASMValue> theResolveArgument = new ArrayList<>();
-        final Local theTarget = theAdapter.localByLabel("captureArg0");
+        final Local theTarget = theAdapter.localByLabel(theTargetName);
         theResolveArgument.add(getLocal(theTarget, null));
         theResolveArgument.add(i32.c(theMethodIdentifier.getIdentifier(), null));
         final WASMValue theIndex = call(theResolveType, theResolveArgument, i32.load(4, getLocal(theTarget, null), null), null);
@@ -2398,11 +2404,15 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         theArguments.add(getLocal(theTarget, null));
         for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
             final String theArgName = "linkArg" + k;
-            theArguments.add(getLocal(theAdapter.localByLabel(theArgName), null));
+            if (!theArgName.equals(theTargetName)) {
+                theArguments.add(getLocal(theAdapter.localByLabel(theArgName), null));
+            }
         }
-        for (int k=1;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
+        for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
             final String theArgName = "captureArg" + k;
-            theArguments.add(getLocal(theAdapter.localByLabel(theArgName), null));
+            if (!theArgName.equals(theTargetName)) {
+                theArguments.add(getLocal(theAdapter.localByLabel(theArgName), null));
+            }
         }
 
         if (theSignature.getReturnType().isVoid()) {
