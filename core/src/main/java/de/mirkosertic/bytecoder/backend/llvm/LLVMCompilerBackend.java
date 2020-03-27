@@ -2573,7 +2573,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             }
             final String theObjectFileName = theLLFile.getName() + ".o";
             theLLCommand.add("llc-10");
-            theLLCommand.add("-O3");
+            theLLCommand.add("-O2");
             //theLLCommand.add("--stats");
             //theLLCommand.add("--time-passes");
             theLLCommand.add("-filetype=obj");
@@ -2617,7 +2617,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             theLinkerCommand.add(theWASMFileName);
             theLinkerCommand.add("-export-dynamic");
             theLinkerCommand.add("-allow-undefined");
-            theLinkerCommand.add("--lto-O3");
+            theLinkerCommand.add("--lto-O2");
             theLinkerCommand.add("--no-entry");
             if (aOptions.isDebugOutput()) {
                 theLinkerCommand.add("--demangle");
