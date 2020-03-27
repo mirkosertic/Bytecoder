@@ -166,23 +166,13 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab().text("},").newLine();
 
         theWriter.tab().text("lambdaStaticRef").colon().text("function(aFunction,staticArguments,name,typeToConstruct)").space().text("{").newLine();
-        theWriter.tab(2).text("if").space().text("(aFunction.static)").space().text("{").newLine();
-        theWriter.tab(3).text("var handler").assign().text("function()").space().text("{").newLine();
-        theWriter.tab(4).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();
-        theWriter.tab(5).text("var concated").assign().text("staticArguments.data.concat(args);").newLine();
-        theWriter.tab(5).text("return aFunction.apply(this,concated);").newLine();
-        theWriter.tab(3).text("};").newLine();
-        theWriter.tab(3).text("return typeToConstruct.returntype.").text(theMinifier.toSymbol("newLambdaInstance")).text("(handler);").newLine();
-
-        theWriter.tab(2).text("}").newLine();
-
         theWriter.tab(2).text("var handler").assign().text("function()").space().text("{").newLine();
         theWriter.tab(3).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();
-        theWriter.tab(3).text("var concated").assign().text("staticArguments.data.splice(1).concat(args);").newLine();
-        theWriter.tab(3).text("return aFunction.apply(staticArguments.data[0],concated);").newLine();
+        theWriter.tab(3).text("var concated").assign().text("staticArguments.data.concat(args);").newLine();
+        theWriter.tab(3).text("return aFunction.apply(this,concated);").newLine();
         theWriter.tab(2).text("};").newLine();
         theWriter.tab(2).text("return typeToConstruct.returntype.").text(theMinifier.toSymbol("newLambdaInstance")).text("(handler);").newLine();
-        theWriter.tab().text("},").newLine();
+       theWriter.tab().text("},").newLine();
 
         theWriter.tab().text("lambdaConstructorRef").colon().text("function(typeToConstruct,constructorRef,staticArguments)").space().text("{").newLine();
         theWriter.tab(2).text("var handler").assign().text("function()").space().text("{").newLine();
@@ -1140,8 +1130,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                         theWriter.tab(2).text("throw new Error();").newLine();
                         theWriter.tab().text("};").newLine();
-
-                        theWriter.tab().text("C.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(".static").assign().text("true;").newLine();
                     }
 
                     return;
@@ -1277,9 +1265,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.tab().text("};").newLine();
 
                 if (theMethod.isConstructor() || theMethod.getAccessFlags().isStatic()) {
-                    if (theMethod.getAccessFlags().isStatic()) {
-                        theWriter.tab().text("C.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(".static").assign().text("true;").newLine();
-                    }
+                    // Do nothing here
                 } else {
                     theWriter.tab().text("C.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature))
                         .assign().text("C.prototype.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(";").newLine();
