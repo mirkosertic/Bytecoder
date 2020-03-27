@@ -124,26 +124,31 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
         return uniqueId;
     }
 
+    private final Map<String, Set<BytecodeLinkedClass>> implementingTypesCache = new HashMap<>();
+
     public Set<BytecodeLinkedClass> getImplementingTypes() {
         return getImplementingTypes(true, true);
     }
 
     public Set<BytecodeLinkedClass> getImplementingTypes(final boolean aIncludeSuperClass, final boolean aIncludeSelf) {
-        final Set<BytecodeLinkedClass> theResult = new HashSet<>();
-        if (aIncludeSelf) {
-            theResult.add(this);
-        }
-        outgoingEdges(BytecodeImplementsEdgeType.filter()).forEach(edge -> {
-            final BytecodeLinkedClass theLinkedClass = (BytecodeLinkedClass) edge.targetNode();
-            theResult.addAll(theLinkedClass.getImplementingTypes());
-        });
-        if (aIncludeSuperClass) {
-            final BytecodeLinkedClass theSuperClass = getSuperClass();
-            if (theSuperClass != null) {
-                theResult.addAll(theSuperClass.getImplementingTypes());
+        final String key = aIncludeSuperClass + "_" + aIncludeSelf;
+        return implementingTypesCache.computeIfAbsent(key, aKey -> {
+            final Set<BytecodeLinkedClass> theTempResult = new HashSet<>();
+            if (aIncludeSelf) {
+                theTempResult.add(BytecodeLinkedClass.this);
             }
-        }
-        return theResult;
+            outgoingEdges(BytecodeImplementsEdgeType.filter()).forEach(edge -> {
+                final BytecodeLinkedClass theLinkedClass = (BytecodeLinkedClass) edge.targetNode();
+                theTempResult.addAll(theLinkedClass.getImplementingTypes());
+            });
+            if (aIncludeSuperClass) {
+                final BytecodeLinkedClass theSuperClass = getSuperClass();
+                if (theSuperClass != null) {
+                    theTempResult.addAll(theSuperClass.getImplementingTypes());
+                }
+            }
+            return theTempResult;
+        });
     }
 
     public BytecodeLinkedClass getSuperClass() {
