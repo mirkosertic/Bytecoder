@@ -19,6 +19,7 @@ import de.mirkosertic.bytecoder.allocator.Allocator;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.backend.CompileTarget;
+import de.mirkosertic.bytecoder.backend.LLVMOptimizationLevel;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
@@ -85,10 +86,14 @@ public class BytecoderCLI {
         protected String registerAllocator = "linear";
 
         @Option(names = "-additionalClassesToLink", required = false, description = "List of full qualified class names to be linked beside the statically referenced ones.")
-        protected String additionalClassesToLink[] = new String[0];
+        protected String[] additionalClassesToLink = new String[0];
 
         @Option(names = "-additionalResources", required = false, description = "A list of classpath resources to be included into the build.")
-        protected String additionalResources[] = new String[0];
+        protected String[] additionalResources = new String[0];
+
+        @Option(names = "-llvmOptimizationLevel", required = false, description = "Optimization level for the LLVM backend as described here : https://clang.llvm.org/docs/CommandGuide/clang.html.")
+        protected String llvmOptimizationLevel = LLVMOptimizationLevel.Oz.name();
+
     }
 
     public static void main(final String[] args) throws IOException, ClassNotFoundException {
@@ -120,7 +125,7 @@ public class BytecoderCLI {
         final BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                 new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1) });
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), theCLIOptions.debugOutput, KnownOptimizer.valueOf(theCLIOptions.optimizationLevel), theCLIOptions.enableExceptionHandling, theCLIOptions.filenamePrefix, theCLIOptions.wasmInitialPages, theCLIOptions.wasmMaximumPages, theCLIOptions.minifyCompileResult, theCLIOptions.preferStackifier, Allocator.valueOf(theCLIOptions.registerAllocator), theCLIOptions.additionalClassesToLink, theCLIOptions.additionalResources);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), theCLIOptions.debugOutput, KnownOptimizer.valueOf(theCLIOptions.optimizationLevel), theCLIOptions.enableExceptionHandling, theCLIOptions.filenamePrefix, theCLIOptions.wasmInitialPages, theCLIOptions.wasmMaximumPages, theCLIOptions.minifyCompileResult, theCLIOptions.preferStackifier, Allocator.valueOf(theCLIOptions.registerAllocator), theCLIOptions.additionalClassesToLink, theCLIOptions.additionalResources, LLVMOptimizationLevel.valueOf(theCLIOptions.llvmOptimizationLevel));
         final CompileResult theCode = theCompileTarget.compile(theOptions, theTargetClass, "main", theSignature);
         for (final CompileResult.Content content : theCode.getContent()) {
             final File theBytecoderFileName = new File(theBytecoderDirectory, content.getFileName());

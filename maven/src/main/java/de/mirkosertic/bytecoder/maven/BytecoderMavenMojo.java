@@ -19,6 +19,7 @@ import de.mirkosertic.bytecoder.allocator.Allocator;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.backend.CompileTarget;
+import de.mirkosertic.bytecoder.backend.LLVMOptimizationLevel;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
@@ -140,6 +141,11 @@ public class BytecoderMavenMojo extends AbstractMojo {
     @Parameter(required = false)
     protected String[] additionalResources = new String[0];
 
+    /**
+     * Optimization level for the LLVM backend as described here : https://clang.llvm.org/docs/CommandGuide/clang.html
+     */
+    protected String llvmOptimizationLevel = LLVMOptimizationLevel.Oz.name();
+
     @Override
     public void execute() throws MojoExecutionException {
         final File theBaseDirectory = new File(buildDirectory);
@@ -155,7 +161,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
             final BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                     new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1) });
 
-            final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.valueOf(optimizationLevel), enableExceptionHandling, filenamePrefix, wasmInitialPages, wasmMaximumPages, minifyCompileResult, preferStackifier, Allocator.valueOf(registerAllocator), additionalClassesToLink, additionalResources);
+            final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.valueOf(optimizationLevel), enableExceptionHandling, filenamePrefix, wasmInitialPages, wasmMaximumPages, minifyCompileResult, preferStackifier, Allocator.valueOf(registerAllocator), additionalClassesToLink, additionalResources, LLVMOptimizationLevel.valueOf(llvmOptimizationLevel));
             final CompileResult theCode = theCompileTarget.compile(theOptions, theTargetClass, "main", theSignature);
             for (final CompileResult.Content content : theCode.getContent()) {
                 final File theBytecoderFileName = new File(theBytecoderDirectory, content.getFileName());
