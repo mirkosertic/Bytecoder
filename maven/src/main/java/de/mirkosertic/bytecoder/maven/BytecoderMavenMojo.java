@@ -144,7 +144,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
     /**
      * Optimization level for the LLVM backend as described here : https://clang.llvm.org/docs/CommandGuide/clang.html
      */
-    protected String llvmOptimizationLevel = LLVMOptimizationLevel.Oz.name();
+    protected String llvmOptimizationLevel = LLVMOptimizationLevel.defaultValue().name();
 
     @Override
     public void execute() throws MojoExecutionException {

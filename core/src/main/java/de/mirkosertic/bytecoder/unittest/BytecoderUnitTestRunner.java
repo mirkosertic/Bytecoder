@@ -555,7 +555,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 final BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
                 final BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 
-                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, false, "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear, additionalClassesToLink, additionalResources, LLVMOptimizationLevel.Oz);
+                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, false, "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear, additionalClassesToLink, additionalResources, LLVMOptimizationLevel.defaultValue());
                 final LLVMCompileResult theResult = (LLVMCompileResult) theCompileTarget.compile(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
                 final CompileResult.StringContent textualContent = (CompileResult.StringContent) theResult.getContent()[0];
                 final CompileResult.StringContent jsContent = (CompileResult.StringContent)theResult.getContent()[1];

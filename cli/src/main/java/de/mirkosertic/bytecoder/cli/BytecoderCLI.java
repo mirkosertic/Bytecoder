@@ -92,7 +92,7 @@ public class BytecoderCLI {
         protected String[] additionalResources = new String[0];
 
         @Option(names = "-llvmOptimizationLevel", required = false, description = "Optimization level for the LLVM backend as described here : https://clang.llvm.org/docs/CommandGuide/clang.html.")
-        protected String llvmOptimizationLevel = LLVMOptimizationLevel.Oz.name();
+        protected String llvmOptimizationLevel = LLVMOptimizationLevel.defaultValue().name();
 
     }
 

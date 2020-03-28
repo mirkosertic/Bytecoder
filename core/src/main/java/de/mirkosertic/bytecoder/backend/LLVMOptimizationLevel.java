@@ -16,5 +16,9 @@
 package de.mirkosertic.bytecoder.backend;
 
 public enum LLVMOptimizationLevel {
-    O0, O1, O2, O3, Ofast, Os, Oz, Og, O, O4
+    O0, O1, O2, O3;
+
+    public static LLVMOptimizationLevel defaultValue() {
+        return O2;
+    }
 }
