@@ -142,7 +142,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
     protected String[] additionalResources = new String[0];
 
     /**
-     * Optimization level for the LLVM backend as described here : https://clang.llvm.org/docs/CommandGuide/clang.html
+     * Optimization level for the LLVM backend. Generate code at different optimization levels. These correspond to the -O0, -O1, -O2, and -O3 optimization levels used by clang.
      */
     protected String llvmOptimizationLevel = LLVMOptimizationLevel.defaultValue().name();
 
