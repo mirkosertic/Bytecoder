@@ -33,6 +33,7 @@ public class CompileOptions {
     private final Allocator allocator;
     private final String[] additionalClassesToLink;
     private final String[] additionalResources;
+    private final LLVMOptimizationLevel llvmOptimizationLevel;
 
     public CompileOptions(final Logger aLogger, final boolean aDebugOutput, final Optimizer aOptimizer, final boolean aEnableExceptions,
                           final String aFilenamePrefix, final int aWasmMinimumPageSize, final int aWasmMaximumPageSize,
@@ -40,7 +41,8 @@ public class CompileOptions {
                           final boolean aPreferStackifier,
                           final Allocator aAllocator,
                           final String[] aAdditionalClassesToLink,
-                          final String[] aAdditionalResources) {
+                          final String[] aAdditionalResources,
+                          final LLVMOptimizationLevel aLlvmOptimizationLevel) {
         logger = aLogger;
         debugOutput = aDebugOutput;
         optimizer = aOptimizer;
@@ -53,6 +55,7 @@ public class CompileOptions {
         allocator = aAllocator;
         additionalClassesToLink = aAdditionalClassesToLink;
         additionalResources = aAdditionalResources;
+        llvmOptimizationLevel = aLlvmOptimizationLevel;
     }
 
     public Logger getLogger() {
@@ -101,5 +104,9 @@ public class CompileOptions {
 
     public String[] getAdditionalResources() {
         return additionalResources;
+    }
+
+    public LLVMOptimizationLevel getLlvmOptimizationLevel() {
+        return llvmOptimizationLevel;
     }
 }

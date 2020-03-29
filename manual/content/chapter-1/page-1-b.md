@@ -41,6 +41,9 @@ The following configuration options are available:
 
 * `additionalClassesToLink`: List of full qualified class names to be linked beside the statically referenced ones to make them available by reflection API. Optional
 
+* `llvmOptimizationLevel`: Optimization level for the LLVM backend. Generate code at different optimization levels. These correspond to the -O0, -O1, -O2, and -O3 optimization levels used by clang. Defaults to O2.
+
+
 ### Compiling to JavaScript
 
 ```
