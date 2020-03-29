@@ -38,7 +38,7 @@
     </tr>
 </table>
 <a href="https://github.com/mirkosertic/Bytecoder">Go to Bytecoder @ Github</a>
-<script src="bytecoder-kotlin_wasmbindings.js"></script>
+<script src="jbox2d_wasm_kotlin.js"></script>
 <script type="text/javascript">
 
     function sortNumber(a,b) {
@@ -121,12 +121,12 @@
     };
 
     // Try to load the WASM file
-    WebAssembly.instantiateStreaming(fetch('bytecoder-kotlin.wasm'), bytecoder.imports)
+    WebAssembly.instantiateStreaming(fetch('jbox2d_wasm_kotlin.wasm'), bytecoder.imports)
         .then(instantiated)
         .catch(function(error) {
             console.log("Using fallback method to load WebAssembly! Check if mime types for WebAssembly are configured correctly!");
             var request = new XMLHttpRequest();
-            request.open('GET', 'bytecoder-kotlin.wasm');
+            request.open('GET', 'jbox2d_wasm_kotlin.wasm');
             request.responseType = 'arraybuffer';
             request.send();
 

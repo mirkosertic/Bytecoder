@@ -63,7 +63,7 @@ public class VueDemo {
 </script>
 <a href="https://github.com/mirkosertic/Bytecoder">Go to Bytecoder @ Github</a>
 <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-<script src="vuedemo_wasmbindings.js"></script>
+<script src="vue_wasm.js"></script>
 <script type="text/javascript">
 
     bytecoder.imports.vue = {
@@ -134,12 +134,12 @@ public class VueDemo {
     };
 
     // Try to load the WASM file
-    WebAssembly.instantiateStreaming(fetch('vuedemo.wasm'), bytecoder.imports)
+    WebAssembly.instantiateStreaming(fetch('vue_wasm.wasm'), bytecoder.imports)
         .then(instantiated)
         .catch(function(error) {
             console.log("Using fallback method to load WebAssembly! Check if mime types for WebAssembly are configured correctly!");
             var request = new XMLHttpRequest();
-            request.open('GET', 'vuedemo.wasm');
+            request.open('GET', 'vue_wasm.wasm');
             request.responseType = 'arraybuffer';
             request.send();
 

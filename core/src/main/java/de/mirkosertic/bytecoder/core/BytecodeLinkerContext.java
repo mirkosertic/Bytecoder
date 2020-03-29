@@ -112,7 +112,7 @@ public class BytecodeLinkerContext {
                 theLinkedClass.resolveClassInitializer(theMethod);
             }
 
-            logger.info("Linked  {}" ,theLinkedClass.getClassName().name());
+            logger.info("Linked {}" ,theLinkedClass.getClassName().name());
 
             return theLinkedClass;
         } catch (final Exception e) {
