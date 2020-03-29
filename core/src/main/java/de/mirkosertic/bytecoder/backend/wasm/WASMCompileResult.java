@@ -64,7 +64,7 @@ public class WASMCompileResult extends CompileResult<String> {
 
         @Override
         public String getFileName() {
-            return filenamePrefix + "_wasmbindings.js";
+            return filenamePrefix + ".js";
         }
 
         @Override

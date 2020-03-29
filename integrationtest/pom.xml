@@ -136,6 +136,7 @@
                             <backend>js</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <minifyCompileResult>true</minifyCompileResult>
+                            <filenamePrefix>jbox2d_js</filenamePrefix>
                         </configuration>
                     </execution>
                     <execution>
@@ -149,7 +150,7 @@
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <preferStackifier>true</preferStackifier>
                             <minifyCompileResult>true</minifyCompileResult>
-                            <filenamePrefix>bytecoder-stackified</filenamePrefix>
+                            <filenamePrefix>jbox2d_js_stackified</filenamePrefix>
                         </configuration>
                     </execution>
                     <execution>
@@ -161,8 +162,8 @@
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulationKotlin</mainClass>
                             <backend>js</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
-                            <filenamePrefix>bytecoder-kotlin</filenamePrefix>
                             <minifyCompileResult>true</minifyCompileResult>
+                            <filenamePrefix>jbox2d_kotlin_js</filenamePrefix>
                         </configuration>
                     </execution>
                     <execution>
@@ -174,6 +175,7 @@
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
                             <backend>wasm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
+                            <filenamePrefix>jbox2d_wasm</filenamePrefix>
                         </configuration>
                     </execution>
                     <execution>
@@ -186,7 +188,7 @@
                             <backend>wasm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <preferStackifier>true</preferStackifier>
-                            <filenamePrefix>bytecoder-stackified</filenamePrefix>
+                            <filenamePrefix>jbox2d_wasm_stackified</filenamePrefix>
                         </configuration>
                     </execution>
                     <execution>
@@ -198,7 +200,7 @@
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
                             <backend>wasm_llvm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
-                            <filenamePrefix>bytecoder-llvm</filenamePrefix>
+                            <filenamePrefix>jbox2d_wasmllvm</filenamePrefix>
                         </configuration>
                     </execution>
                     <execution>
@@ -210,7 +212,7 @@
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulationKotlin</mainClass>
                             <backend>wasm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
-                            <filenamePrefix>bytecoder-kotlin</filenamePrefix>
+                            <filenamePrefix>jbox2d_wasm_kotlin</filenamePrefix>
                         </configuration>
                     </execution>
                     <execution>
@@ -222,7 +224,7 @@
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.VueDemo</mainClass>
                             <backend>wasm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
-                            <filenamePrefix>vuedemo</filenamePrefix>
+                            <filenamePrefix>vue_wasm</filenamePrefix>
                         </configuration>
                     </execution>
                     <execution>
@@ -234,7 +236,7 @@
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.VueDemo</mainClass>
                             <backend>wasm_llvm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
-                            <filenamePrefix>vuedemollvm</filenamePrefix>
+                            <filenamePrefix>vue_wasmllvm</filenamePrefix>
                         </configuration>
                     </execution>
                     <execution>
@@ -246,8 +248,8 @@
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.LuaDemo</mainClass>
                             <backend>js</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
-                            <filenamePrefix>bytecoder-luademojs</filenamePrefix>
                             <minifyCompileResult>true</minifyCompileResult>
+                            <filenamePrefix>lua_js</filenamePrefix>
                         </configuration>
                     </execution>
                     <execution>
@@ -259,7 +261,7 @@
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.LuaDemo</mainClass>
                             <backend>wasm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
-                            <filenamePrefix>bytecoder-luademowasm</filenamePrefix>
+                            <filenamePrefix>lua_wasm</filenamePrefix>
                         </configuration>
                     </execution>
                     <execution>
@@ -271,7 +273,7 @@
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.LuaDemo</mainClass>
                             <backend>wasm_llvm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
-                            <filenamePrefix>bytecoder-luademowasmllvm</filenamePrefix>
+                            <filenamePrefix>lua_wasmllvm</filenamePrefix>
                         </configuration>
                     </execution>
                 </executions>

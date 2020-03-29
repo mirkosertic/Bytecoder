@@ -38,7 +38,7 @@ Run Lua to see the output!
             }
         </style>
         <button id="runlua" value="Run Lua!" style="display: none">Run Lua!</button>
-        <script type="text/javascript" src="bytecoder-luademowasm_wasmbindings.js"></script>
+        <script type="text/javascript" src="lua_wasm.js"></script>
         <script type="text/javascript">
             // dynamic linking
 
@@ -75,12 +75,12 @@ Run Lua to see the output!
             };
 
             // Try to load the WASM file
-            WebAssembly.instantiateStreaming(fetch('bytecoder-luademowasm.wasm'), bytecoder.imports)
+            WebAssembly.instantiateStreaming(fetch('lua_wasm.wasm'), bytecoder.imports)
                 .then(instantiated)
                 .catch(function(error) {
                     console.log("Using fallback method to load WebAssembly! Check if mime types for WebAssembly are configured correctly!");
                     var request = new XMLHttpRequest();
-                    request.open('GET', 'bytecoder-luademowasm.wasm');
+                    request.open('GET', 'lua_wasm.wasm');
                     request.responseType = 'arraybuffer';
                     request.send();
 

@@ -89,7 +89,7 @@ HTML embedding, which is shown here:
 ```
 <html>
     <meta charset="UTF-8">
-    <script src="bytecoder_wasmbindings.js"></script>
+    <script src="bytecoder.js"></script>
     <script>
         var bytecoderWasmFile = 'bytecoder.wasm';
         var instantiated = function(result) {
