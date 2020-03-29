@@ -20,6 +20,7 @@ import de.mirkosertic.bytecoder.allocator.Allocator;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.backend.CompileTarget;
+import de.mirkosertic.bytecoder.backend.LLVMOptimizationLevel;
 import de.mirkosertic.bytecoder.backend.js.JSCompileResult;
 import de.mirkosertic.bytecoder.backend.llvm.LLVMCompileResult;
 import de.mirkosertic.bytecoder.backend.llvm.LLVMWriterUtils;
@@ -272,7 +273,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 final StringWriter theStrWriter = new StringWriter();
                 final PrintWriter theCodeWriter = new PrintWriter(theStrWriter);
 
-                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, aTestOption.isExceptionsEnabled(), "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear, additionalClassesToLink, additionalResources);
+                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, aTestOption.isExceptionsEnabled(), "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear, additionalClassesToLink, additionalResources, null);
                 final JSCompileResult result = (JSCompileResult) theCompileTarget.compile(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
                 final CompileResult.StringContent content = (CompileResult.StringContent) result.getContent()[0];
 
@@ -371,7 +372,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 final BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
                 final BytecodeObjectTypeRef theTestClassType = new BytecodeObjectTypeRef(testClass.getName());
 
-                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, false, "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear, additionalClassesToLink, additionalResources);
+                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, false, "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear, additionalClassesToLink, additionalResources, null);
                 final WASMCompileResult theResult = (WASMCompileResult) theCompileTarget.compile(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
                 final WASMCompileResult.WASMCompileContent textualContent = (WASMCompileResult.WASMCompileContent) theResult.getContent()[0];
                 final WASMCompileResult.WASMCompileContent binaryContent = (WASMCompileResult.WASMCompileContent)theResult.getContent()[1];
@@ -554,7 +555,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 final BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
                 final BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 
-                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, false, "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear, additionalClassesToLink, additionalResources);
+                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, false, "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear, additionalClassesToLink, additionalResources, LLVMOptimizationLevel.defaultValue());
                 final LLVMCompileResult theResult = (LLVMCompileResult) theCompileTarget.compile(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
                 final CompileResult.StringContent textualContent = (CompileResult.StringContent) theResult.getContent()[0];
                 final CompileResult.StringContent jsContent = (CompileResult.StringContent)theResult.getContent()[1];
