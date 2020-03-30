@@ -131,7 +131,7 @@ bytecoder.imports.math = {
 At startup, the following code must be provided:
 
 ```
-bytecoder.imports.math = {
+bytecoder.imports.tmath = {
     sqrtDOUBLE: function(thisref, p1) {
         return Math.sqrt(p1);
     },
