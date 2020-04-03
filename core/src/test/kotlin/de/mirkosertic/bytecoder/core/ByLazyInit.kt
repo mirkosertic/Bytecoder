@@ -31,11 +31,18 @@ class ByLazyInit {
             println("new entry kotlin")
             //val nada = Class.forName("")
         }
+
+        companion object {
+            @JvmStatic
+            fun main(args: Array<String>?) {
+                var x = EntryKotlin()
+                println(x.me);
+            }
+        }
     }
 
     @Test
     fun byLazyInit() {
-        val x = EntryKotlin()
-        println(x.me);
+        EntryKotlin.main(null)
     }
 }
