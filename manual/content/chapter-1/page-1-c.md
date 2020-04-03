@@ -63,6 +63,20 @@ Java.base contains the `java.base` JPMS Module.
 </dependency>
 ```
 
+### java.logging
+
+Java.base contains the `java.logging` JPMS Module.
+
+```
+<dependencies>
+    <dependency>
+        <groupId>de.mirkosertic.bytecoder</groupId>
+        <artifactId>java.logging</artifactId>
+        <version>{{% siteparam "bytecoderversion" %}}</version>
+    </dependency>
+</dependency>
+```
+
 ### java.xml
 
 Java.xml contains the `java.xml` JPMS Module.
