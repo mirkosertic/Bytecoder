@@ -197,7 +197,14 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             if (theDebugInfos != null) {
                 final BytecodeLocalVariableTableEntry theEntry = theDebugInfos.matchingEntryFor(BytecodeOpcodeAddress.START_AT_ZERO, theCurrentIndex);
                 if (theEntry != null) {
-                    final String theVariableName = "_" + theDebugInfos.resolveVariableName(theEntry);
+                    // Strip out potentially corrupt data as seen from Kotlin
+                    final String theVariableName = "_" + theDebugInfos.resolveVariableName(theEntry)
+                            .replace('<','_')
+                            .replace('-','_')
+                            .replace('?','_')
+                            .replace('*','_')
+                            .replace('>','_');
+
                     theProgram.addArgument(Variable.createMethodParameter(i + 1, theVariableName, theType));
                 } else {
                     theProgram.addArgument(Variable.createMethodParameter(i + 1, theType));
