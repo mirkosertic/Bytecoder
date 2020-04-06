@@ -45,9 +45,6 @@ public class TLevel {
     private final String resourceBundleName;
 
     private TLevel(final String name, final int value, final String resourceBundleName) {
-        if (name == null) {
-            throw new NullPointerException();
-        }
         this.name = name;
         this.value = value;
         this.resourceBundleName = resourceBundleName;

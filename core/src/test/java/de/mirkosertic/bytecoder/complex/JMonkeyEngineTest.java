@@ -36,7 +36,7 @@ public class JMonkeyEngineTest {
     @Test
     public void testLogger() {
         final Logger logger = Logger.getLogger("Testlogger");
-        logger.setLevel(Level.OFF);
+        logger.setLevel(Level.INFO);
         logger.config("config");
         logger.fine("fine");
         logger.finer("finer");

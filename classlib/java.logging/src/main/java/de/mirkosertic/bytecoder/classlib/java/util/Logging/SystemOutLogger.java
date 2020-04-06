@@ -16,70 +16,12 @@
 package de.mirkosertic.bytecoder.classlib.java.util.Logging;
 
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
-public class SystemOutLogger {
-
-    private final String name;
-    private Level level;
-    private final int offValue;
+public class SystemOutLogger extends Logger {
 
     SystemOutLogger(final String name, final Level level) {
-        this.name = name;
-        this.level = level;
-        this.offValue = Integer.MAX_VALUE;
+        super(name, null);
+        setLevel(level);
     }
-
-    public void setLevel(final Level level) {
-        this.level = level;
-    }
-
-    public boolean isLoggable(final Level level) {
-        final int levelValue = this.level.intValue();
-        if (level.intValue() < levelValue || levelValue == offValue) {
-            return false;
-        }
-        return true;
-    }
-
-
-    public void config(final String message) {
-        log(Level.CONFIG, message);
-    }
-
-    public void fine(final String message) {
-        log(Level.FINE, message);
-    }
-
-    public void finer(final String message) {
-        log(Level.FINER, message);
-    }
-
-    public void finest(final String message) {
-        log(Level.FINEST, message);
-    }
-
-    public void info(final String message) {
-        log(Level.INFO, message);
-    }
-
-    public void severe(final String message) {
-        log(Level.SEVERE, message);
-    }
-
-    public void warning(final String message) {
-        log(Level.WARNING, message);
-    }
-
-    public void log(final Level level, final String msg) {
-        if (!isLoggable(level)) {
-            return;
-        }
-        System.out.print("[");
-        System.out.print(name);
-        System.out.print("] [");
-        System.out.print(level.getName());
-        System.out.print("] : ");
-        System.out.println(msg);
-    }
-
 }

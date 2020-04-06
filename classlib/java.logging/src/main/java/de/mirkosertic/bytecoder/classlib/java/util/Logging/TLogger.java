@@ -26,4 +26,66 @@ public class TLogger {
     public static AnyTypeMatches getLogger(final String name) {
         return (AnyTypeMatches) new SystemOutLogger(name, Level.INFO);
     }
+
+    private final String name;
+    private Level level;
+    private int offValue;
+
+    TLogger(String name, String resourceBundleName) {
+        this.name = name;
+        this.offValue = Integer.MAX_VALUE;
+        this.level = Level.INFO;
+    }
+
+    public void setLevel(final Level level) {
+        this.level = level;
+    }
+
+    public boolean isLoggable(final Level level) {
+        final int levelValue = level.intValue();
+        if (this.level.intValue() < levelValue || levelValue == offValue) {
+            return false;
+        }
+        return true;
+    }
+
+    public void config(final String message) {
+        log(Level.CONFIG, message);
+    }
+
+    public void fine(final String message) {
+        log(Level.FINE, message);
+    }
+
+    public void finer(final String message) {
+        log(Level.FINER, message);
+    }
+
+    public void finest(final String message) {
+        log(Level.FINEST, message);
+    }
+
+    public void info(final String message) {
+        log(Level.INFO, message);
+    }
+
+    public void severe(final String message) {
+        log(Level.SEVERE, message);
+    }
+
+    public void warning(final String message) {
+        log(Level.WARNING, message);
+    }
+
+    public void log(final Level level, final String msg) {
+        /*if (!isLoggable(level)) {
+            return;
+        }*/
+        System.out.print("[");
+        System.out.print(name);
+        System.out.print("] [");
+        //System.out.print(this.level.getName());
+        System.out.print("] : ");
+        System.out.println(msg);
+    }
 }
