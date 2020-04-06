@@ -13,6 +13,16 @@
     <name>Bytecoder Core</name>
     <description>Bytecoder Core System with IR and Compiler Infrastructore</description>
 
+    <repositories>
+        <repository>
+            <id>jme</id>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <url>https://jcenter.bintray.com/</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -85,6 +95,12 @@
             <groupId>org.luaj</groupId>
             <artifactId>luaj-jse</artifactId>
             <version>3.0.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jmonkeyengine</groupId>
+            <artifactId>jme3-core</artifactId>
+            <version>3.2.2-stable</version>
             <scope>test</scope>
         </dependency>
         <dependency>
