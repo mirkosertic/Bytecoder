@@ -20,29 +20,31 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(BytecoderUnitTestRunner::class)
-class ByLazyInit {
+class StangeNameTest {
 
     class EntryKotlin {
-        val me: String by lazy {
-            "Hola"
-        }
+        private data class DemoTile(var fps: Int)
+
+        private val t1 = DemoTile(3)
 
         init {
-            println("new entry kotlin")
-            //val nada = Class.forName("")
+            println("EntryKotlin:init")
+            t1.fps++
+            println("${t1.fps}")
         }
 
         companion object {
             @JvmStatic
             fun main(args: Array<String>?) {
-                var x = EntryKotlin()
-                println(x.me);
+                EntryKotlin()
+                println("hello world")
             }
+
         }
     }
 
     @Test
-    fun byLazyInit() {
+    fun strangeNameTest() {
         EntryKotlin.main(null)
     }
 }
