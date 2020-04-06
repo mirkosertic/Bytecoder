@@ -16,29 +16,36 @@
 package de.mirkosertic.bytecoder.classlib.java.util.Logging;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.VM;
 
 import java.util.logging.Level;
 
 @SubstitutesInClass(completeReplace = true)
 public class TLevel {
 
-    public static final Level OFF = (Level)(Object) new TLevel("OFF",Integer.MAX_VALUE, null);
+    public static Level SEVERE;
 
-    public static final Level SEVERE = (Level)(Object) new TLevel("SEVERE",1000, null);
+    public static Level WARNING;
 
-    public static final Level WARNING = (Level)(Object) new TLevel("WARNING", 900, null);
+    public static Level INFO;
 
-    public static final Level INFO = (Level)(Object) new TLevel("INFO", 800, null);
+    public static Level CONFIG;
 
-    public static final Level CONFIG = (Level)(Object) new TLevel("CONFIG", 700, null);
+    public static Level FINE;
 
-    public static final Level FINE = (Level)(Object) new TLevel("FINE", 500, null);
+    public static Level FINER;
 
-    public static final Level FINER = (Level)(Object) new TLevel("FINER", 400, null);
+    public static Level FINEST;
 
-    public static final Level FINEST = (Level)(Object) new TLevel("FINEST", 300, null);
-
-    public static final Level ALL = (Level)(Object) new TLevel("ALL", Integer.MIN_VALUE, null);
+    static {
+        VM.setClassMemnber(Level.class, "SEVERE", new TLevel("SEVERE",1000, null));
+        VM.setClassMemnber(Level.class, "WARNING", new TLevel("WARNING", 900, null));
+        VM.setClassMemnber(Level.class, "INFO", new TLevel("INFO", 800, null));
+        VM.setClassMemnber(Level.class, "CONFIG", new TLevel("CONFIG", 700, null));
+        VM.setClassMemnber(Level.class, "FINE", new TLevel("FINE", 500, null));
+        VM.setClassMemnber(Level.class, "FINER", new TLevel("FINER", 400, null));
+        VM.setClassMemnber(Level.class, "FINEST", new TLevel("FINEST", 300, null));
+    }
 
     private final String name;
     private final int value;

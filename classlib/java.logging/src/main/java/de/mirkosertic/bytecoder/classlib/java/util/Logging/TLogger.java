@@ -29,9 +29,9 @@ public class TLogger {
 
     private final String name;
     private Level level;
-    private int offValue;
+    private final int offValue;
 
-    TLogger(String name, String resourceBundleName) {
+    TLogger(final String name, final String resourceBundleName) {
         this.name = name;
         this.offValue = Integer.MAX_VALUE;
         this.level = Level.INFO;
@@ -42,10 +42,6 @@ public class TLogger {
     }
 
     public boolean isLoggable(final Level level) {
-        final int levelValue = level.intValue();
-        if (this.level.intValue() < levelValue || levelValue == offValue) {
-            return false;
-        }
         return true;
     }
 
@@ -78,13 +74,11 @@ public class TLogger {
     }
 
     public void log(final Level level, final String msg) {
-        /*if (!isLoggable(level)) {
+        if (!isLoggable(level)) {
             return;
-        }*/
+        }
         System.out.print("[");
         System.out.print(name);
-        System.out.print("] [");
-        //System.out.print(this.level.getName());
         System.out.print("] : ");
         System.out.println(msg);
     }
