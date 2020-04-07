@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.classlib.java.util.Logging;
 
 import de.mirkosertic.bytecoder.api.AnyTypeMatches;
+import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 import java.util.logging.Level;
@@ -41,7 +42,11 @@ public class TLogger {
         this.level = level;
     }
 
-    public boolean isLoggable(final Level level) {
+    public boolean isLoggable(final Level aLogLevel) {
+//        final int levelValue = level.intValue();
+//        if (aLogLevel.intValue() < levelValue || levelValue == offValue) {
+//            return false;
+//        }
         return true;
     }
 
@@ -77,8 +82,11 @@ public class TLogger {
         if (!isLoggable(level)) {
             return;
         }
+//        System.out.print("[");
+//        System.out.print(name);
+//        System.out.print("] : ");
         System.out.print("[");
-        System.out.print(name);
+        System.out.print(level.getName());
         System.out.print("] : ");
         System.out.println(msg);
     }
