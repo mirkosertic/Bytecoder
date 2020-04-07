@@ -13,15 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.util.Logging;
+package de.mirkosertic.bytecoder.classlib.java.util.logging;
+
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
-public class SystemOutLogger extends Logger {
+public class TLevel {
 
-    SystemOutLogger(final String name, final Level level) {
-        super(name, null);
-        setLevel(level);
+    @SubstitutesInClass(completeReplace = true)
+    static final class KnownLevel {
+
+        public static void add(final Level level) {
+        }
     }
 }
