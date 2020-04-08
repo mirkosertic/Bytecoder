@@ -917,7 +917,7 @@ public class WASMSSAASTWriter {
 
         final WASMValue thePtr = i32.add(toValue(theMethodType), i32.mul(toValue(theIndex), i32.c(4, aExpression), aExpression), aExpression);
         final WASMValue theExpectedValue = i32.c(- theExpectedType.ordinal(), null);
-        final WASMValue theRead = i32.load(20, thePtr, aExpression);
+        final WASMValue theRead = i32.load(24, thePtr, aExpression);
         return i32.eq(theExpectedValue, theRead, aExpression);
     }
 
