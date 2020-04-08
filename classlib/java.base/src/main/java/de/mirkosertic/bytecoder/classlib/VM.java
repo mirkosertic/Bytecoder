@@ -199,6 +199,9 @@ public class VM {
         return null;
     }
 
+    public static void setClassMemnber(final Class clz, final String name, final Object value) {
+    }
+
     public static final char NEWLINE = '\n';
 
     public static Comparator DEFAULT = (o1, o2) -> ((Comparable) o1).compareTo(o2);

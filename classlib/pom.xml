@@ -19,6 +19,7 @@
         <module>java.datatransfer</module>
         <module>java.xml</module>
         <module>java.desktop</module>
+        <module>java.logging</module>
         <module>bytecoder.opencl</module>
         <module>bytecoder.web</module>
         <module>bytecoder.vue</module>
