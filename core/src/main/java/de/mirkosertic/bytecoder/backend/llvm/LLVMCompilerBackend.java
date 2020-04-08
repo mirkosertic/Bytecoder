@@ -567,8 +567,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("define internal i32 @checkmethodtype(i32 %methodType, i32 %index, i32 %expectedType) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %offset = mul i32 %index, 4");
-                pw.println("    %ptr1 = add i32 %index, 20");
-                pw.println("    %ptr2 = add i32 %index, %methodType");
+                pw.println("    %ptr1 = add i32 %offset, 24");
+                pw.println("    %ptr2 = add i32 %ptr1, %methodType");
                 pw.println("    %ptr = inttoptr i32 %ptr2 to i32*");
                 pw.println("    %type = load i32, i32* %ptr");
                 pw.println("    %cmp = icmp eq i32 %type, %expectedType");
