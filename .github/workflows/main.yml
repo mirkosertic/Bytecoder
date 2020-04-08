@@ -15,7 +15,7 @@ jobs:
       - uses: actions/setup-java@v1
         with:
           java-version: ${{ matrix.java }}
-      - run: sudo apt-get install ocl-icd-opencl-dev
+      - run: sudo apt-get install -y ocl-icd-opencl-dev
       - run: mvn verify -P jvmtestsonly
   build_js_backend:
     runs-on: 'ubuntu-latest'
@@ -27,7 +27,7 @@ jobs:
      - uses: actions/setup-java@v1
        with:
            java-version: ${{ matrix.java }}
-     - run: sudo apt-get install ocl-icd-opencl-dev
+     - run: sudo apt-get install -y ocl-icd-opencl-dev
      - run: mvn verify -P jstestsonly
   build_wasm_stackify_backend:
     runs-on: 'ubuntu-latest'
@@ -39,7 +39,7 @@ jobs:
       - uses: actions/setup-java@v1
         with:
           java-version: ${{ matrix.java }}
-      - run: sudo apt-get install ocl-icd-opencl-dev
+      - run: sudo apt-get install -y ocl-icd-opencl-dev
       - run: mvn verify -P wasmtestsonly_stackify
   build_wasm_reloop_backend:
     runs-on: 'ubuntu-latest'
@@ -51,7 +51,7 @@ jobs:
       - uses: actions/setup-java@v1
         with:
           java-version: ${{ matrix.java }}
-      - run: sudo apt-get install ocl-icd-opencl-dev
+      - run: sudo apt-get install -y ocl-icd-opencl-dev
       - run: mvn verify -P wasmtestsonly_reloop
   build_wasmllvm_backend:
     runs-on: 'ubuntu-latest'
@@ -66,5 +66,5 @@ jobs:
       - run: wget https://apt.llvm.org/llvm.sh
       - run: chmod +x llvm.sh
       - run: sudo ./llvm.sh 10
-      - run: sudo apt-get install ocl-icd-opencl-dev
+      - run: sudo apt-get install -y ocl-icd-opencl-dev clang-10 lldb-10 lld-10 clangd-10
       - run: mvn verify -P wasmllvmtestsonly
