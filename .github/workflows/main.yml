@@ -15,9 +15,7 @@ jobs:
      - uses: actions/setup-java@v1
        with:
            java-version: ${{ matrix.java }}
-     - run: sudo wget https://apt.llvm.org/llvm-snapshot.gpg.key
-     - run: sudo apt-key add llvm-snapshot.gpg.key
-     - run: sudo add-apt-repository -y "deb http://apt.llvm.org/xenial/   llvm-toolchain-xenial-10  main"
-     - run: sudo apt-get -q update
-     - run: sudo apt-get install -y clang-10 lldb-10 lld-10 clangd-10
+     - run: wget https://apt.llvm.org/llvm.sh
+     - run: chmod +x llvm.sh
+     - run: sudo ./llvm.sh 10
      - run: mvn verify -P jstestsonly
