@@ -67,6 +67,6 @@ jobs:
       - run: chmod +x llvm.sh
       - run: sudo ./llvm.sh 10
       - run: sudo apt-get install -y ocl-icd-opencl-dev clang-10 lldb-10 lld-10 clangd-10
-      . run: sudo ln -s /usr/lib/llvm-10/bin/llc /usr/bin/llc-10
-      . run: sudo ln -s /usr/lib/llvm-10/bin/wasm-ld /usr/bin/wasm-ld-10
+      - run: sudo ln -s /usr/lib/llvm-10/bin/llc /usr/bin/llc-10
+      - run: sudo ln -s /usr/lib/llvm-10/bin/wasm-ld /usr/bin/wasm-ld-10
       - run: mvn verify -P wasmllvmtestsonly
