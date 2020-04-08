@@ -24,7 +24,7 @@ jobs:
     runs-on: 'ubuntu-latest'
     strategy:
       matrix:
-        java: [8]
+        java: [8,14]
     steps:
      - uses: actions/checkout@v1
      - uses: joschi/setup-jdk@v1
@@ -39,7 +39,7 @@ jobs:
     runs-on: 'ubuntu-latest'
     strategy:
       matrix:
-        java: [8]
+        java: [8,14]
     steps:
       - uses: actions/checkout@v1
       - uses: joschi/setup-jdk@v1
@@ -54,7 +54,7 @@ jobs:
     runs-on: 'ubuntu-latest'
     strategy:
       matrix:
-        java: [8]
+        java: [8,14]
     steps:
       - uses: actions/checkout@v1
       - uses: joschi/setup-jdk@v1
@@ -69,7 +69,7 @@ jobs:
     runs-on: 'ubuntu-latest'
     strategy:
       matrix:
-        java: [8]
+        java: [8,14]
     steps:
       - uses: actions/checkout@v1
       - uses: joschi/setup-jdk@v1
