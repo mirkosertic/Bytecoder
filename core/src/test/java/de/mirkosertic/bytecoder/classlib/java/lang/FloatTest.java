@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -57,6 +58,7 @@ public class FloatTest {
     }
 
     @Test
+    @Ignore
     public void testHashCode() throws Exception {
         assertEquals(new Float((int) 10), new Float((int) 10));
     }
