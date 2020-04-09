@@ -100,7 +100,7 @@
         <dependency>
             <groupId>org.jmonkeyengine</groupId>
             <artifactId>jme3-core</artifactId>
-            <version>3.2.2-stable</version>
+            <version>3.3.0-stable</version>
             <scope>test</scope>
         </dependency>
         <dependency>
