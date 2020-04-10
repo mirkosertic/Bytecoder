@@ -21,6 +21,8 @@ import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
+import de.mirkosertic.bytecoder.core.Statistics;
+import de.mirkosertic.bytecoder.ssa.ClassHierarchyAnalysis;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
@@ -76,13 +78,18 @@ public class InvokeVirtualOptimizerStage implements OptimizerStage {
             return Optional.empty();
         }
 
+        final Statistics.Context context = aLinkerContext.getStatistics().context("InvokeVirtualOptimizer");
+
+        context.counter("Total number of invocations").increment();
+
         final String theMethodName = aExpression.getMethodName();
         final BytecodeMethodSignature theSignature = aExpression.getSignature();
 
-        final BytecodeVirtualMethodIdentifier theIdentifier = aLinkerContext.getMethodCollection().toIdentifier(theMethodName, theSignature);
-        final List<BytecodeLinkedClass> theLinkedClasses = aLinkerContext.getClassesImplementingVirtualMethod(theIdentifier);
+        final ClassHierarchyAnalysis theAnalysis = new ClassHierarchyAnalysis(aLinkerContext);
+        final List<BytecodeLinkedClass> theLinkedClasses = theAnalysis.classesProvidingMethod(theMethodName, theSignature, aExpression.getInvokedClass());
+
         if (theLinkedClasses.size() == 1) {
-            // There is only one class implementing this method, so we can make a direct call
+            // There is only one class implementing this method and reachable in the hierarchy, so we can make a direct call
             final BytecodeLinkedClass theLinked = theLinkedClasses.get(0);
             if (!theLinked.emulatedByRuntime() && !theLinked.getClassName().equals(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))) {
 
@@ -93,6 +100,8 @@ public class InvokeVirtualOptimizerStage implements OptimizerStage {
                     final DirectInvokeMethodExpression theNewExpression = new DirectInvokeMethodExpression(aExpression.getProgram(), aExpression.getAddress(), theClazz, theMethodName,
                             theSignature);
                     aExpression.routeIncomingDataFlowsTo(theNewExpression);
+
+                    context.counter("Optimized invocations").increment();
 
                     return Optional.of(theNewExpression);
                 }

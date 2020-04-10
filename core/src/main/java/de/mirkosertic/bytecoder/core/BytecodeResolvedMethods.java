@@ -96,7 +96,8 @@ public class BytecodeResolvedMethods {
     }
 
     public MethodEntry implementingClassOf(final String aMethodName, final BytecodeMethodSignature aSignature) {
-        for (final MethodEntry theEntry : entries) {
+        for (int i = entries.size() - 1; i >= 0; i--) {
+            final MethodEntry theEntry = entries.get(i);
             final BytecodeMethod theMethod = theEntry.getValue();
             if (theMethod.getName().stringValue().equals(aMethodName) && !theMethod.getAccessFlags().isAbstract() &&
              theMethod.getSignature().matchesExactlyTo(aSignature)) {
