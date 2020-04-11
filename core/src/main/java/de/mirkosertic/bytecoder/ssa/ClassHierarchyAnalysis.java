@@ -18,13 +18,15 @@ package de.mirkosertic.bytecoder.ssa;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
+import de.mirkosertic.bytecoder.graph.Edge;
 
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class ClassHierarchyAnalysis {
@@ -35,7 +37,11 @@ public class ClassHierarchyAnalysis {
         this.linkerContext = linkerContext;
     }
 
-    public List<BytecodeLinkedClass> classesProvidingMethod(final String aMethodName, final BytecodeMethodSignature aSignature, final BytecodeTypeRef aInvocationTarget) {
+    public List<BytecodeLinkedClass> classesProvidingInvocableMethod(final String aMethodName,
+                                                                     final BytecodeMethodSignature aSignature,
+                                                                     final BytecodeTypeRef aInvocationTarget,
+                                                                     final Predicate<BytecodeLinkedClass> aClassFilter,
+                                                                     final Predicate<BytecodeMethod> aMethodFilter) {
         final BytecodeLinkedClass theInvocationTarget;
         if (aInvocationTarget.isArray()) {
             theInvocationTarget = linkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
@@ -43,14 +49,17 @@ public class ClassHierarchyAnalysis {
             theInvocationTarget = linkerContext.resolveClass((BytecodeObjectTypeRef) aInvocationTarget);
         }
 
-        final BytecodeVirtualMethodIdentifier theIdentifier = linkerContext.getMethodCollection().toIdentifier(aMethodName, aSignature);
-
-        return linkerContext.getClassesImplementingVirtualMethod(theIdentifier)
-            .stream()
-            .filter(t -> {
-                final Set<BytecodeLinkedClass> theImplementingTypes = t.getImplementingTypes();
-                return theImplementingTypes.contains(theInvocationTarget);
-            })
-            .collect(Collectors.toList());
+        return linkerContext.linkedClasses()
+                .map(Edge::targetNode)
+                .filter(aClassFilter)
+                .filter(t -> {
+                    final Set<BytecodeLinkedClass> theImplementingTypes = t.getImplementingTypes();
+                    return theImplementingTypes.contains(theInvocationTarget);
+                })
+                .filter(t -> {
+                    final BytecodeMethod m = t.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
+                    return m != null && aMethodFilter.test(m);
+                })
+                .collect(Collectors.toList());
     }
 }

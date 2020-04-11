@@ -17,10 +17,8 @@ package de.mirkosertic.bytecoder.optimizer;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.core.Statistics;
 import de.mirkosertic.bytecoder.ssa.ClassHierarchyAnalysis;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
@@ -86,26 +84,22 @@ public class InvokeVirtualOptimizerStage implements OptimizerStage {
         final BytecodeMethodSignature theSignature = aExpression.getSignature();
 
         final ClassHierarchyAnalysis theAnalysis = new ClassHierarchyAnalysis(aLinkerContext);
-        final List<BytecodeLinkedClass> theLinkedClasses = theAnalysis.classesProvidingMethod(theMethodName, theSignature, aExpression.getInvokedClass());
+        final List<BytecodeLinkedClass> theLinkedClasses = theAnalysis.classesProvidingInvocableMethod(theMethodName, theSignature, aExpression.getInvokedClass(),
+                aClass -> !aClass.emulatedByRuntime() && !aClass.getClassName().equals(BytecodeObjectTypeRef.fromRuntimeClass(Class.class)),
+                aMethod -> !aMethod.getAccessFlags().isAbstract());
 
         if (theLinkedClasses.size() == 1) {
             // There is only one class implementing this method and reachable in the hierarchy, so we can make a direct call
             final BytecodeLinkedClass theLinked = theLinkedClasses.get(0);
-            if (!theLinked.emulatedByRuntime() && !theLinked.getClassName().equals(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))) {
+            final BytecodeObjectTypeRef theClazz = theLinked.getClassName();
 
-                final BytecodeMethod theMethod = theLinked.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
-                if (!theMethod.getAccessFlags().isAbstract()) {
-                    final BytecodeObjectTypeRef theClazz = theLinked.getClassName();
+            final DirectInvokeMethodExpression theNewExpression = new DirectInvokeMethodExpression(aExpression.getProgram(), aExpression.getAddress(), theClazz, theMethodName,
+                    theSignature);
+            aExpression.routeIncomingDataFlowsTo(theNewExpression);
 
-                    final DirectInvokeMethodExpression theNewExpression = new DirectInvokeMethodExpression(aExpression.getProgram(), aExpression.getAddress(), theClazz, theMethodName,
-                            theSignature);
-                    aExpression.routeIncomingDataFlowsTo(theNewExpression);
+            context.counter("Optimized invocations").increment();
 
-                    context.counter("Optimized invocations").increment();
-
-                    return Optional.of(theNewExpression);
-                }
-            }
+            return Optional.of(theNewExpression);
         }
         return Optional.empty();
     }

@@ -158,11 +158,4 @@ public class BytecodeLinkerContext {
             resolveAbstractMethodsInSubclasses();
         }
     }
-
-    public List<BytecodeLinkedClass> getClassesImplementingVirtualMethod(final BytecodeVirtualMethodIdentifier aIdentifier) {
-        return linkedClasses()
-                .map(Edge::targetNode)
-                .filter(t -> t.implementsMethod(aIdentifier))
-                .collect(Collectors.toList());
-    }
 }
