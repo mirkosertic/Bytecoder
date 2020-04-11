@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.optimizer;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.Statistics;
@@ -86,14 +87,20 @@ public class InvokeVirtualOptimizerStage implements OptimizerStage {
         final ClassHierarchyAnalysis theAnalysis = new ClassHierarchyAnalysis(aLinkerContext);
         final List<BytecodeLinkedClass> theLinkedClasses = theAnalysis.classesProvidingInvocableMethod(theMethodName, theSignature, aExpression.getInvokedClass(),
                 aClass -> !aClass.emulatedByRuntime() && !aClass.getClassName().equals(BytecodeObjectTypeRef.fromRuntimeClass(Class.class)),
-                aMethod -> !aMethod.getAccessFlags().isAbstract());
+                aMethod -> !aMethod.getAccessFlags().isAbstract() && !aMethod.getAccessFlags().isStatic());
 
         if (theLinkedClasses.size() == 1) {
+
             // There is only one class implementing this method and reachable in the hierarchy, so we can make a direct call
             final BytecodeLinkedClass theLinked = theLinkedClasses.get(0);
             final BytecodeObjectTypeRef theClazz = theLinked.getClassName();
 
-            final DirectInvokeMethodExpression theNewExpression = new DirectInvokeMethodExpression(aExpression.getProgram(), aExpression.getAddress(), theClazz, theMethodName,
+            // Due to method substitution in the JDK emulation layer we might get another method implementation
+            // as seen by the wait vs. waitInternal thing in TObject. This is strange, but has to be this way
+            // as wait is final and cannot be overwritten anyhow.
+            final BytecodeMethod theMethodToInvoke = theLinked.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
+
+            final DirectInvokeMethodExpression theNewExpression = new DirectInvokeMethodExpression(aExpression.getProgram(), aExpression.getAddress(), theClazz, theMethodToInvoke.getName().stringValue(),
                     theSignature);
             aExpression.routeIncomingDataFlowsTo(theNewExpression);
 
