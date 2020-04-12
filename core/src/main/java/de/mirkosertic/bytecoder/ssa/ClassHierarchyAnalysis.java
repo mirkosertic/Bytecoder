@@ -24,10 +24,11 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.graph.Edge;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 public class ClassHierarchyAnalysis {
 
@@ -49,17 +50,26 @@ public class ClassHierarchyAnalysis {
             theInvocationTarget = linkerContext.resolveClass((BytecodeObjectTypeRef) aInvocationTarget);
         }
 
-        return linkerContext.linkedClasses()
+        final Set<BytecodeLinkedClass> theResult = new HashSet<>();
+        linkerContext.linkedClasses()
                 .map(Edge::targetNode)
                 .filter(aClassFilter)
                 .filter(t -> {
                     final Set<BytecodeLinkedClass> theImplementingTypes = t.getImplementingTypes();
                     return theImplementingTypes.contains(theInvocationTarget);
                 })
-                .filter(t -> {
-                    final BytecodeMethod m = t.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
-                    return m != null && aMethodFilter.test(m);
-                })
-                .collect(Collectors.toList());
+                .forEach(clz -> {
+                    BytecodeLinkedClass theCurrent = clz;
+                    test: while(theCurrent != null) {
+                        final BytecodeMethod m = theCurrent.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
+                        if (m != null && aMethodFilter.test(m)) {
+                            theResult.add(theCurrent);
+                            break test;
+                        }
+                        theCurrent = theCurrent.getSuperClass();
+                    }
+                });
+
+        return new ArrayList<>(theResult);
     }
 }
