@@ -86,7 +86,7 @@ public class InvokeVirtualOptimizerStage implements OptimizerStage {
 
         final ClassHierarchyAnalysis theAnalysis = new ClassHierarchyAnalysis(aLinkerContext);
         final List<BytecodeLinkedClass> theLinkedClasses = theAnalysis.classesProvidingInvocableMethod(theMethodName, theSignature, aExpression.getInvokedClass(),
-                aClass -> !aClass.emulatedByRuntime(),
+                aClass -> !aClass.emulatedByRuntime() && !aClass.getClassName().name().equals(Class.class.getName()),
                 aMethod -> !aMethod.getAccessFlags().isAbstract() && !aMethod.getAccessFlags().isStatic());
 
         if (theLinkedClasses.size() == 1) {
