@@ -31,7 +31,6 @@ import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 
-import java.util.List;
 import java.util.Optional;
 
 public class InvokeVirtualOptimizerStage implements OptimizerStage {
@@ -85,14 +84,15 @@ public class InvokeVirtualOptimizerStage implements OptimizerStage {
         final BytecodeMethodSignature theSignature = aExpression.getSignature();
 
         final ClassHierarchyAnalysis theAnalysis = new ClassHierarchyAnalysis(aLinkerContext);
-        final List<BytecodeLinkedClass> theLinkedClasses = theAnalysis.classesProvidingInvocableMethod(theMethodName, theSignature, aExpression.getInvokedClass(),
+        final Optional<BytecodeLinkedClass> theClassToInvoke = theAnalysis.classProvidingInvokableMethod(theMethodName, theSignature, aExpression.getInvokedClass(),
+                aExpression.incomingDataFlows().get(0),
                 aClass -> !aClass.emulatedByRuntime() && !aClass.getClassName().name().equals(Class.class.getName()),
                 aMethod -> !aMethod.getAccessFlags().isAbstract() && !aMethod.getAccessFlags().isStatic());
 
-        if (theLinkedClasses.size() == 1) {
+        if (theClassToInvoke.isPresent()) {
 
             // There is only one class implementing this method and reachable in the hierarchy, so we can make a direct call
-            final BytecodeLinkedClass theLinked = theLinkedClasses.get(0);
+            final BytecodeLinkedClass theLinked = theClassToInvoke.get();
             final BytecodeObjectTypeRef theClazz = theLinked.getClassName();
 
             // Due to method substitution in the JDK emulation layer we might get another method implementation
