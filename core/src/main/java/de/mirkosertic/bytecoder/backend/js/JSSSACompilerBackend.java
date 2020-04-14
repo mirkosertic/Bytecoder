@@ -1132,6 +1132,20 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                         theWriter.tab().text("};").newLine();
                     }
 
+                    if (aEntry.getProvidingClass().getClassName().equals(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))
+                            && theMethod.getName().stringValue().equals("getClassLoader")
+                            && theMethod.getSignature().matchesExactlyTo(BytecodeLinkedClass.GET_CLASSLOADER_SIGNATURE)) {
+
+                        // Special method: we resolve a runtime class by name here
+                        theWriter.tab().text("C.");
+
+                        final String theJSMethodName = theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature);
+
+                        theWriter.text(theJSMethodName).assign().text("function()").space().text("{").newLine();
+                        theWriter.tab(2).text("return null;").newLine();
+                        theWriter.tab().text("};").newLine();
+                    }
+
                     return;
                 }
 

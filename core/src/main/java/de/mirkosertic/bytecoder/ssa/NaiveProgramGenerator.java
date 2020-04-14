@@ -164,8 +164,8 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             final String theClassName = aOwningClass.getThisInfo().getConstant().stringValue();
             final int p = theClassName.lastIndexOf("/");
             final String thePackageName = theClassName.substring(0, p);
-            final String theOriginaFileName = thePackageName.replace(".","/") + "/" + theSourceFileName;
-            return DebugInformation.jvm(theOriginaFileName, theLineInfoAttribute);
+            final String theOriginalFileName = thePackageName.replace(".","/") + "/" + theSourceFileName;
+            return DebugInformation.jvm(theOriginalFileName, theLineInfoAttribute);
         }
         return DebugInformation.empty();
     }
@@ -176,7 +176,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
         final BytecodeCodeAttributeInfo theCode = aMethod.getCode(aOwningClass);
         final Program theProgram;
 
-        // Initialize programm arguments
+        // Initialize program arguments
         BytecodeLocalVariableTableAttributeInfo theDebugInfos = null;
         if (theCode != null) {
             theDebugInfos = theCode.attributeByType(BytecodeLocalVariableTableAttributeInfo.class);
@@ -187,7 +187,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
         int theCurrentIndex = 0;
         if (!aMethod.getAccessFlags().isStatic()) {
-            theProgram.addArgument(Variable.createThisRef());
+            theProgram.addArgument(Variable.createThisRef(TypeRef.toType(BytecodeObjectTypeRef.fromUtf8Constant(aOwningClass.getThisInfo().getConstant()))));
             theCurrentIndex++;
         }
         final BytecodeTypeRef[] theTypes = aMethod.getSignature().getArguments();
@@ -368,7 +368,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             if (!aMethod.getAccessFlags().isStatic()) {
                 final TypeRef theClass = TypeRef.toType(BytecodeObjectTypeRef.fromUtf8Constant(aOwningClass.getThisInfo().getConstant()));
                 theParsingState.setLocalVariable(aCurrentBlock.getStartAddress(), theParsingState.numberOfLocalVariables(),
-                        theClass, Variable.createThisRef());
+                        theClass, Variable.createThisRef(theClass));
             }
             theParsingState.push(aCurrentBlock.getStartAddress(), new CurrentExceptionExpression(aProgram, null));
         } else if (aCurrentBlock == aProgram.getControlFlowGraph().startNode()) {

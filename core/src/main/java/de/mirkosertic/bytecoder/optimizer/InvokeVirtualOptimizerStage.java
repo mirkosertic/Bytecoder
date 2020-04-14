@@ -20,7 +20,8 @@ import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
+import de.mirkosertic.bytecoder.core.Statistics;
+import de.mirkosertic.bytecoder.ssa.ClassHierarchyAnalysis;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
@@ -30,7 +31,6 @@ import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 
-import java.util.List;
 import java.util.Optional;
 
 public class InvokeVirtualOptimizerStage implements OptimizerStage {
@@ -76,27 +76,37 @@ public class InvokeVirtualOptimizerStage implements OptimizerStage {
             return Optional.empty();
         }
 
+        final Statistics.Context context = aLinkerContext.getStatistics().context("InvokeVirtualOptimizer");
+
+        context.counter("Total number of invocations").increment();
+
         final String theMethodName = aExpression.getMethodName();
         final BytecodeMethodSignature theSignature = aExpression.getSignature();
 
-        final BytecodeVirtualMethodIdentifier theIdentifier = aLinkerContext.getMethodCollection().toIdentifier(theMethodName, theSignature);
-        final List<BytecodeLinkedClass> theLinkedClasses = aLinkerContext.getClassesImplementingVirtualMethod(theIdentifier);
-        if (theLinkedClasses.size() == 1) {
-            // There is only one class implementing this method, so we can make a direct call
-            final BytecodeLinkedClass theLinked = theLinkedClasses.get(0);
-            if (!theLinked.emulatedByRuntime() && !theLinked.getClassName().equals(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))) {
+        final ClassHierarchyAnalysis theAnalysis = new ClassHierarchyAnalysis(aLinkerContext);
+        final Optional<BytecodeLinkedClass> theClassToInvoke = theAnalysis.classProvidingInvokableMethod(theMethodName, theSignature, aExpression.getInvokedClass(),
+                aExpression.incomingDataFlows().get(0),
+                aClass -> !aClass.emulatedByRuntime() && !aClass.getClassName().name().equals(Class.class.getName()),
+                aMethod -> !aMethod.getAccessFlags().isAbstract() && !aMethod.getAccessFlags().isStatic());
 
-                final BytecodeMethod theMethod = theLinked.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
-                if (!theMethod.getAccessFlags().isAbstract()) {
-                    final BytecodeObjectTypeRef theClazz = theLinked.getClassName();
+        if (theClassToInvoke.isPresent()) {
 
-                    final DirectInvokeMethodExpression theNewExpression = new DirectInvokeMethodExpression(aExpression.getProgram(), aExpression.getAddress(), theClazz, theMethodName,
-                            theSignature);
-                    aExpression.routeIncomingDataFlowsTo(theNewExpression);
+            // There is only one class implementing this method and reachable in the hierarchy, so we can make a direct call
+            final BytecodeLinkedClass theLinked = theClassToInvoke.get();
+            final BytecodeObjectTypeRef theClazz = theLinked.getClassName();
 
-                    return Optional.of(theNewExpression);
-                }
-            }
+            // Due to method substitution in the JDK emulation layer we might get another method implementation
+            // as seen by the wait vs. waitInternal thing in TObject. This is strange, but has to be this way
+            // as wait is final and cannot be overwritten anyhow.
+            final BytecodeMethod theMethodToInvoke = theLinked.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
+
+            final DirectInvokeMethodExpression theNewExpression = new DirectInvokeMethodExpression(aExpression.getProgram(), aExpression.getAddress(), theClazz, theMethodToInvoke.getName().stringValue(),
+                    theSignature);
+            aExpression.routeIncomingDataFlowsTo(theNewExpression);
+
+            context.counter("Optimized invocations").increment();
+
+            return Optional.of(theNewExpression);
         }
         return Optional.empty();
     }
