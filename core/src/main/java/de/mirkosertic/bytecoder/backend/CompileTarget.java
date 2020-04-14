@@ -209,6 +209,9 @@ public class CompileTarget {
 
         final CompileResult theResult = backend.generateCodeFor(aOptions, theLinkerContext, aClass, aMethodName, aSignature);
 
+        // Write some statistics
+        theLinkerContext.getStatistics().writeTo(aOptions.getLogger());
+
         // Include all required resources from included modules
         final List<String> resourcesToInclude = new ArrayList<>();
         for (final ClassLibProvider provider : ClassLibProvider.availableProviders()) {

@@ -30,6 +30,7 @@ public class BytecodeLinkerContext {
     private final BytecodeMethodCollection methodCollection;
     private final Logger logger;
     private int classIdCounter;
+    private final Statistics statistics;
 
     public BytecodeLinkerContext(final BytecodeLoader aLoader, final Logger aLogger) {
         rootNode = new RootNode();
@@ -37,6 +38,11 @@ public class BytecodeLinkerContext {
         methodCollection = new BytecodeMethodCollection();
         logger = aLogger;
         classIdCounter = 0;
+        statistics = new Statistics();
+    }
+
+    public Statistics getStatistics() {
+        return statistics;
     }
 
     public Logger getLogger() {
@@ -114,6 +120,8 @@ public class BytecodeLinkerContext {
 
             logger.info("Linked {}" ,theLinkedClass.getClassName().name());
 
+            statistics.context("Linker context").counter("Loaded classes").increment();
+
             return theLinkedClass;
         } catch (final Exception e) {
             throw new RuntimeException("Error linking class " + aTypeRef.name(), e);
@@ -149,12 +157,5 @@ public class BytecodeLinkerContext {
             // New classes were added, we maybe have to resolve them as well
             resolveAbstractMethodsInSubclasses();
         }
-    }
-
-    public List<BytecodeLinkedClass> getClassesImplementingVirtualMethod(final BytecodeVirtualMethodIdentifier aIdentifier) {
-        return linkedClasses()
-                .map(Edge::targetNode)
-                .filter(t -> t.implementsMethod(aIdentifier))
-                .collect(Collectors.toList());
     }
 }

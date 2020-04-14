@@ -19,8 +19,8 @@ public class Variable extends Value {
 
     public static final String THISREF_NAME = "__tr";
 
-    public static Variable createThisRef() {
-        final Variable theVariable = new Variable(TypeRef.Native.REFERENCE, THISREF_NAME, true, 0);
+    public static Variable createThisRef(final TypeRef aThisType) {
+        final Variable theVariable = new Variable(aThisType, THISREF_NAME, true, 0);
         theVariable.initializeWith(new SelfReferenceParameterValue(), 0);
         return theVariable;
     }
@@ -58,7 +58,7 @@ public class Variable extends Value {
     }
 
     public void initializeWith(final Value aValue, final long analysisTime) {
-        // Test there is a videst type available
+        // Test there is a widest type available
         type.resolve().eventuallyPromoteTo(aValue.resolveType().resolve());
         aValue.addEdgeTo(DataFlowEdgeType.instance, this);
         liveRange.usedAt(analysisTime);
