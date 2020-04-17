@@ -31,6 +31,7 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -74,6 +75,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
     private final List<TestOption> testOptions;
     private final String[] additionalClassesToLink;
     private final String[] additionalResources;
+    private boolean skipDockerTests = false;
 
     private static HttpServer TESTSERVER;
     private static BrowserWebDriverContainer SELENIUMCONTAINER;
@@ -103,6 +105,13 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
             }
             additionalClassesToLink = declaredOptions.additionalClassesToLink();
             additionalResources = declaredOptions.additionalResources();
+            if (declaredOptions.skipDockerTestsWhenDockerNotPresent()) {
+                try {
+                    new ProcessBuilder().command("docker", "help").start().waitFor(1, TimeUnit.SECONDS);
+                } catch (IOException | InterruptedException exception) {
+                    skipDockerTests = true;
+                }
+            }
         } else {
             testOptions.add(new TestOption(null, false, false, false));
             testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, false));
