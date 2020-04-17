@@ -727,6 +727,14 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
         if (o.getBackendType() == null) {
             testJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
         } else {
+            if (skipDockerTests) {
+                aRunNotifier.fireTestIgnored(
+                    Description.createTestDescription(
+                        getTestClass().getJavaClass(),
+                        aFrameworkMethod.getName() + " " + aFrameworkMethod.getTestOption().toDescription()
+                    )
+                );
+            }
             switch (o.getBackendType()) {
                 case js:
                     testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, o);
