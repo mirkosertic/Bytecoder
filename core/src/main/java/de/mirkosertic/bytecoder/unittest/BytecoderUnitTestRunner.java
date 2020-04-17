@@ -716,6 +716,17 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
 
     @Override
     protected void runChild(final FrameworkMethodWithTestOption aFrameworkMethod, final RunNotifier aRunNotifier) {
+        // do not execute ignored tests, only report them
+        if (aFrameworkMethod.getMethod().isAnnotationPresent(Ignore.class)) {
+            aRunNotifier.fireTestIgnored(
+                Description.createTestDescription(
+                    getTestClass().getJavaClass(),
+                    aFrameworkMethod.getName()
+                )
+            );
+            return;
+        }
+
         final TestOption o = aFrameworkMethod.getTestOption();
         if (o.getBackendType() == null) {
             testJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
