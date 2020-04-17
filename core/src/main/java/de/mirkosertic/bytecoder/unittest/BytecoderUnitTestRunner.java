@@ -285,6 +285,12 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
 
                 theCodeWriter.println("console.log(\"Starting test\");");
                 theCodeWriter.println("bytecoder.bootstrap();");
+
+                if (aFrameworkMethod.getMethod().isAnnotationPresent(ExecuteJavaScriptBeforeTest.class)) {
+                    theCodeWriter.println(aFrameworkMethod.getMethod().getAnnotation(ExecuteJavaScriptBeforeTest.class).value());
+                    theCodeWriter.println("");
+                }
+
                 theCodeWriter.println("var theTestInstance = " + result.getMinifier().toClassName(theTestClass) + "." +  result.getMinifier().toSymbol("__runtimeclass") + "." + result.getMinifier().toMethodName("$newInstance", theTestClassConstructorSignature) + "();");
                 theCodeWriter.println("try {");
                 theCodeWriter.println("     theTestInstance." + result.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "();");
@@ -403,6 +409,11 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 theWriter.println("        <script>");
 
                 theWriter.println(jsContent.asString());
+
+                if (aFrameworkMethod.getMethod().isAnnotationPresent(ExecuteJavaScriptBeforeTest.class)) {
+                    theWriter.println(aFrameworkMethod.getMethod().getAnnotation(ExecuteJavaScriptBeforeTest.class).value());
+                    theWriter.println("");
+                }
 
                 theWriter.println("            function compile() {");
                 theWriter.println("                console.log('Test started');");
@@ -585,6 +596,11 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 theWriter.println("        <script>");
 
                 theWriter.println(jsContent.asString());
+
+                if (aFrameworkMethod.getMethod().isAnnotationPresent(ExecuteJavaScriptBeforeTest.class)) {
+                    theWriter.println(aFrameworkMethod.getMethod().getAnnotation(ExecuteJavaScriptBeforeTest.class).value());
+                    theWriter.println("");
+                }
 
                 theWriter.println("            function compile() {");
                 theWriter.println("                console.log('Test started');");
