@@ -139,10 +139,12 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                     || Modifier.isAbstract(modifiers)) {
                 continue;
             }
-            if (!classMethod.isAnnotationPresent(Ignore.class)) {
-                final String methodName = classMethod.getName();
-                if (methodName.toUpperCase().startsWith("TEST")
-                        || null != classMethod.getAnnotation(Test.class)) {
+            final String methodName = classMethod.getName();
+            if (methodName.toUpperCase().startsWith("TEST")
+                    || null != classMethod.getAnnotation(Test.class)) {
+                if (classMethod.isAnnotationPresent(Ignore.class)) {
+                    testMethods.add(new FrameworkMethodWithTestOption(classMethod, testOptions.get(0)));
+                } else {
                     for (final TestOption o : testOptions) {
                         testMethods.add(new FrameworkMethodWithTestOption(classMethod, o));
                     }
