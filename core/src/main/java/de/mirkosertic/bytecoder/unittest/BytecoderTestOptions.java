@@ -33,4 +33,6 @@ public @interface BytecoderTestOptions {
     String[] additionalClassesToLink() default {};
 
     String[] additionalResources() default {};
+
+    boolean skipDockerTestsWhenDockerNotPresent() default false;
 }
