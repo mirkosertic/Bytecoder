@@ -139,10 +139,12 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                     || Modifier.isAbstract(modifiers)) {
                 continue;
             }
-            if (!classMethod.isAnnotationPresent(Ignore.class)) {
-                final String methodName = classMethod.getName();
-                if (methodName.toUpperCase().startsWith("TEST")
-                        || null != classMethod.getAnnotation(Test.class)) {
+            final String methodName = classMethod.getName();
+            if (methodName.toUpperCase().startsWith("TEST")
+                    || null != classMethod.getAnnotation(Test.class)) {
+                if (classMethod.isAnnotationPresent(Ignore.class)) {
+                    testMethods.add(new FrameworkMethodWithTestOption(classMethod, testOptions.get(0)));
+                } else {
                     for (final TestOption o : testOptions) {
                         testMethods.add(new FrameworkMethodWithTestOption(classMethod, o));
                     }
@@ -714,6 +716,17 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
 
     @Override
     protected void runChild(final FrameworkMethodWithTestOption aFrameworkMethod, final RunNotifier aRunNotifier) {
+        // do not execute ignored tests, only report them
+        if (aFrameworkMethod.getMethod().isAnnotationPresent(Ignore.class)) {
+            aRunNotifier.fireTestIgnored(
+                Description.createTestDescription(
+                    getTestClass().getJavaClass(),
+                    aFrameworkMethod.getName()
+                )
+            );
+            return;
+        }
+
         final TestOption o = aFrameworkMethod.getTestOption();
         if (o.getBackendType() == null) {
             testJVMBackendFrameworkMethod(aFrameworkMethod, aRunNotifier);
