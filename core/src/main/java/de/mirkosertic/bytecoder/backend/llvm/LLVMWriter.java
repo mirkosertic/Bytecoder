@@ -235,12 +235,14 @@ public class LLVMWriter implements AutoCloseable {
         final StaticDependencies staticDependencies = new StaticDependencies(aProgram);
         // And we call the class initializers
         for (final BytecodeLinkedClass theClass : staticDependencies.list()) {
-            target.print("    %");
-            target.print(LLVMWriterUtils.runtimeClassVariableName(theClass.getClassName()));
-            target.print(" = call i32 @");
-            target.print(LLVMWriterUtils.toClassName(theClass.getClassName()));
-            target.print(LLVMWriter.CLASSINITSUFFIX);
-            target.println("()");
+            if (!theClass.getClassName().name().equals(MemoryManager.class.getName())) {
+                target.print("    %");
+                target.print(LLVMWriterUtils.runtimeClassVariableName(theClass.getClassName()));
+                target.print(" = call i32 @");
+                target.print(LLVMWriterUtils.toClassName(theClass.getClassName()));
+                target.print(LLVMWriter.CLASSINITSUFFIX);
+                target.println("()");
+            }
         }
 
         target.println("    br label %block0");
@@ -2337,8 +2339,13 @@ public class LLVMWriter implements AutoCloseable {
         target.print(LLVMWriterUtils.toSignature(aValue.getSignature()));
         target.print(" @");
         target.print(LLVMWriterUtils.toMethodName(aValue.getClassName(), aValue.getMethodName(), aValue.getSignature()));
-        target.print("(i32 %");
-        target.print(LLVMWriterUtils.runtimeClassVariableName(aValue.getClassName()));
+
+        if (aValue.getClassName().name().equals(MemoryManager.class.getName())) {
+            target.print("(i32 0");
+        } else {
+            target.print("(i32 %");
+            target.print(LLVMWriterUtils.runtimeClassVariableName(aValue.getClassName()));
+        }
         final List<Value> args = aValue.incomingDataFlows();
         for (int i=0;i<args.size();i++) {
             target.print(",");
