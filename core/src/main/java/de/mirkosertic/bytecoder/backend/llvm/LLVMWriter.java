@@ -103,6 +103,7 @@ import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
 import de.mirkosertic.bytecoder.ssa.SqrtExpression;
 import de.mirkosertic.bytecoder.ssa.StackTopExpression;
+import de.mirkosertic.bytecoder.ssa.StaticDependencies;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.SuperTypeOfExpression;
 import de.mirkosertic.bytecoder.ssa.SystemHasStackExpression;
@@ -229,6 +230,11 @@ public class LLVMWriter implements AutoCloseable {
         final Set<String> theAlreadySeenPHIs = new HashSet<>();
         currentSubProgram = aSubProgram;
         target.println("entry:");
+
+        // We calculate the static dependencies that should only be initialized once for this method
+        final StaticDependencies staticDependencies = new StaticDependencies(aProgram);
+        // TODO: Call initialization here
+
         target.println("    br label %block0");
         for (final RegionNode theBlock : theRegularFlow) {
             currentNode = theBlock;
