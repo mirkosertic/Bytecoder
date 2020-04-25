@@ -1107,6 +1107,11 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             attributeCounter.incrementAndGet();
                             pw.println(" {");
                             pw.println("entry:");
+                            pw.print("    %class = call i32 @");
+                            pw.print(theClassName);
+                            pw.print(LLVMWriter.CLASSINITSUFFIX);
+                            pw.println("()");
+
                             pw.print("    %vtableptr = ptrtoint %");
                             pw.print(theClassName);
                             pw.print(LLVMWriter.VTABLETYPESUFFIX);
@@ -1124,7 +1129,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.print("i32 ");
                             pw.print(theLayout.instanceSize());
                             pw.print(",");
-                            pw.println("i32 %thisRef ,i32 %vtableptr)");
+                            pw.println("i32 %class ,i32 %vtableptr)");
 
                             pw.print("    call ");
                             pw.print(LLVMWriterUtils.toSignature(theMethod.getSignature()));
@@ -1269,13 +1274,6 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.print(theAttribute);
                             pw.println(" {");
                             pw.println("entry:");
-
-                            pw.print("    %clazz");
-                            pw.print(" = call i32 @");
-                            pw.print(LLVMWriterUtils.toClassName(theLinkedClass.getClassName()));
-                            pw.print(LLVMWriter.CLASSINITSUFFIX);
-                            pw.println("()");
-
                             if (theMethod.getSignature().getReturnType().isVoid()) {
                                 pw.print("    call ");
                             } else {
@@ -1289,7 +1287,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             if (theMethod.getAccessFlags().isStatic()) {
                                 pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
                                 pw.print(" ");
-                                pw.print("%clazz");
+                                pw.print("%runtimeClass");
                             }
                             for (int i = 0; i < theArguments.size(); i++) {
                                 final Variable theArgument = theArguments.get(i);
