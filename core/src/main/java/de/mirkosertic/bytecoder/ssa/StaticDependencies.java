@@ -67,10 +67,16 @@ public class StaticDependencies {
             final NewObjectAndConstructExpression n = (NewObjectAndConstructExpression) e;
             dependencies.add(aProgram.getLinkerContext().resolveClass(n.getClazz()));
         */} else {
-            for (final Value v : e.incomingDataFlows()) {
-                if (v instanceof Expression) {
-                    searchDependencies(aProgram, (Expression) v);
-                }
+            searchDeeper(aProgram, e);
+        }
+    }
+
+    private void searchDeeper(final Program aProgram, final Value source) {
+        for (final Value v : source.incomingDataFlows()) {
+            if (v instanceof Expression) {
+                searchDependencies(aProgram, (Expression) v);
+            } else if (v instanceof Value) {
+                searchDeeper(aProgram, v);
             }
         }
     }
