@@ -1639,7 +1639,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.print(j);
                             pw.println("_00");
 
-                            // Secong position is interface dispatch
+                            // Second position is interface dispatch
 
                             for (final BytecodeVTable.Slot sl : theSlots) {
                                 final BytecodeVTable.VPtr ptr = theTable.slot(sl);
