@@ -66,9 +66,9 @@ public class StaticDependencies {
 /*        } else if (e instanceof NewObjectAndConstructExpression) {
             final NewObjectAndConstructExpression n = (NewObjectAndConstructExpression) e;
             dependencies.add(aProgram.getLinkerContext().resolveClass(n.getClazz()));
-        */} else {
-            searchDeeper(aProgram, e);
+        */
         }
+        searchDeeper(aProgram, e);
     }
 
     private void searchDeeper(final Program aProgram, final Value source) {
