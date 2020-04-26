@@ -2041,7 +2041,8 @@ public class LLVMWriter implements AutoCloseable {
         }
         target.print(") @");
         target.print(LLVMWriterUtils.toMethodName(e.getClazz(), LLVMWriter.NEWINSTANCE_METHOD_NAME, e.getSignature()));
-        target.print("(i32 0");
+        target.print("(i32 %");
+        target.print(LLVMWriterUtils.runtimeClassVariableName(e.getClazz()));
         for (int i=0;i<e.incomingDataFlows().size();i++) {
             target.print(",");
             target.print(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
