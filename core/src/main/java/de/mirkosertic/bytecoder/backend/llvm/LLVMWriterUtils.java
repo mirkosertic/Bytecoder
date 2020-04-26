@@ -120,4 +120,8 @@ public class LLVMWriterUtils {
         }*/
         return true;
     }
+
+    public static String runtimeClassVariableName(final BytecodeObjectTypeRef aType) {
+        return "runtimeclass_" + aType.name().replace('.', '_').replace('$','_');
+    }
 }
