@@ -865,10 +865,27 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     }
 
                     if (!Objects.equals(theLinkedClass.getClassName(), BytecodeObjectTypeRef.fromRuntimeClass(Address.class))) {
-                        pw.print("define internal i32 @");
+
+                        if (theLinkedClass.getClassName().name().equals(aEntryPointClass.getName())) {
+                            pw.print("attributes #");
+                            pw.print(attributeCounter.get());
+                            pw.print(" = {");
+                            pw.print("\"wasm-export-name\"");
+                            pw.print("=");
+                            pw.print("\"");
+                            pw.print(theClassName);
+                            pw.print(LLVMWriter.CLASSINITSUFFIX);
+                            pw.println("\"}");
+                            attributeCounter.incrementAndGet();
+
+                            pw.print("define i32 @");
+                        } else {
+                            pw.print("define internal i32 @");
+                        }
+
                         pw.print(theClassName);
                         pw.print(LLVMWriter.CLASSINITSUFFIX);
-                        pw.println("() inlinehint {");
+                        pw.println("() {");
                         pw.println("entry:");
                         pw.print("    %class = load i32, i32* @");
                         pw.print(theClassName);
@@ -1083,19 +1100,23 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         // We need to create a newInstance function in case this is a constructor
                         if (theMethod.isConstructor() && !theLinkedClass.getBytecodeClass().getAccessFlags().isAbstract() && !theLinkedClass.getBytecodeClass().getAccessFlags().isInterface()) {
 
-                            pw.print("attributes #");
-                            pw.print(attributeCounter.get());
-                            pw.print(" = {");
-                            pw.print("\"wasm-export-name\"");
-                            pw.print("=");
-                            pw.print("\"");
-                            pw.print(LLVMWriterUtils.toMethodName(theLinkedClass.getClassName(), LLVMWriter.NEWINSTANCE_METHOD_NAME, theMethod.getSignature()));
-                            pw.println("\"}");
-                            attributeCounter.incrementAndGet();
+                            if (theLinkedClass.getClassName().name().equals(aEntryPointClass.getName())) {
+                                pw.print("attributes #");
+                                pw.print(attributeCounter.get());
+                                pw.print(" = {");
+                                pw.print("\"wasm-export-name\"");
+                                pw.print("=");
+                                pw.print("\"");
+                                pw.print(LLVMWriterUtils.toMethodName(theLinkedClass.getClassName(), LLVMWriter.NEWINSTANCE_METHOD_NAME, theMethod.getSignature()));
+                                pw.println("\"}");
+                                attributeCounter.incrementAndGet();
+                                pw.print("define i32 @");
+                            } else {
+                                pw.print("define internal i32 @");
+                            }
 
-                            pw.print("define i32 @");
                             pw.print(LLVMWriterUtils.toMethodName(theLinkedClass.getClassName(), LLVMWriter.NEWINSTANCE_METHOD_NAME, theMethod.getSignature()));
-                            pw.print("(i32 %thisRef");
+                            pw.print("(i32 %class");
                             for (int i = 0; i < theMethod.getSignature().getArguments().length; i++) {
                                 pw.print(",");
                                 pw.print(LLVMWriterUtils.toType(TypeRef.toType(theMethod.getSignature().getArguments()[i])));
@@ -1107,11 +1128,6 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             attributeCounter.incrementAndGet();
                             pw.println(" {");
                             pw.println("entry:");
-                            pw.print("    %class = call i32 @");
-                            pw.print(theClassName);
-                            pw.print(LLVMWriter.CLASSINITSUFFIX);
-                            pw.println("()");
-
                             pw.print("    %vtableptr = ptrtoint %");
                             pw.print(theClassName);
                             pw.print(LLVMWriter.VTABLETYPESUFFIX);
@@ -1417,11 +1433,20 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.print(search.getUniqueId());
                             pw.println(":");
 
+                            pw.print("    %");
+                            pw.print(LLVMWriterUtils.runtimeClassVariableName(search.getClassName()));
+                            pw.print(" = call i32 @");
+                            pw.print(LLVMWriterUtils.toClassName(search.getClassName()));
+                            pw.print(LLVMWriter.CLASSINITSUFFIX);
+                            pw.println("()");
+
                             pw.print("    %newinstance_");
                             pw.print(search.getUniqueId());
                             pw.print(" = call i32 @");
                             pw.print(LLVMWriterUtils.toMethodName(search.getClassName(), "$newInstance", m.getSignature()));
-                            pw.println("(i32 0)");
+                            pw.print("(i32 %");
+                            pw.print(LLVMWriterUtils.runtimeClassVariableName(search.getClassName()));
+                            pw.println(")");
 
                             pw.print("    ret i32 %newinstance_");
                             pw.println(search.getUniqueId());
@@ -1504,6 +1529,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                 pw.println("    %arrayvtableptr = ptrtoint %dmbcArray__vtable__type* @dmbcArray__vtable to i32");
                 pw.println("    %arrayclassinit = call i32 @dmbcArray__init()");
+                pw.println("    %stringclassinit = call i32 @jlString__init()");
 
                 // We create the string pool now
                 for (int i = 0; i < stringPool.size(); i++) {
@@ -1541,7 +1567,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                     pw.print("    %string_");
                     pw.print(i);
-                    pw.print(" = call i32 @jlString_VOID$newInstanceA1BYTEBYTE(i32 0,i32 ");
+                    pw.print(" = call i32 @jlString_VOID$newInstanceA1BYTEBYTE(i32 %stringclassinit,i32 ");
                     pw.print("%allocated_");
                     pw.print(i);
                     pw.println(", i32 0)");
@@ -1639,7 +1665,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.print(j);
                             pw.println("_00");
 
-                            // Secong position is interface dispatch
+                            // Second position is interface dispatch
 
                             for (final BytecodeVTable.Slot sl : theSlots) {
                                 final BytecodeVTable.VPtr ptr = theTable.slot(sl);
@@ -3010,9 +3036,17 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
         theEffectiveSignatureArguments.addAll(Arrays.asList(theAdapterAnnotation.getCaptureSignature().getArguments()));
         final BytecodeMethodSignature theEffectiveSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, theEffectiveSignatureArguments.toArray(new BytecodeTypeRef[0]));
 
+        aWriter.print("    %");
+        aWriter.print(LLVMWriterUtils.runtimeClassVariableName(aMethodHandle.getClassName()));
+        aWriter.print(" = call i32 @");
+        aWriter.print(LLVMWriterUtils.toClassName(aMethodHandle.getClassName()));
+        aWriter.print(LLVMWriter.CLASSINITSUFFIX);
+        aWriter.println("()");
+
         aWriter.print("    %ret = call i32 @");
         aWriter.print(LLVMWriterUtils.toMethodName(aMethodHandle.getClassName(), "$newInstance", theEffectiveSignature));
-        aWriter.print("(i32 undef");
+        aWriter.print("(i32 %");
+        aWriter.print(LLVMWriterUtils.runtimeClassVariableName(aMethodHandle.getClassName()));
         for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
             final String theArgName = "linkArg" + k;
             final String theType = LLVMWriterUtils.toType(TypeRef.toType(theAdapterAnnotation.getLinkageSignature().getArguments()[k]));

@@ -103,6 +103,7 @@ import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
 import de.mirkosertic.bytecoder.ssa.SqrtExpression;
 import de.mirkosertic.bytecoder.ssa.StackTopExpression;
+import de.mirkosertic.bytecoder.ssa.StaticDependencies;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.SuperTypeOfExpression;
 import de.mirkosertic.bytecoder.ssa.SystemHasStackExpression;
@@ -229,6 +230,21 @@ public class LLVMWriter implements AutoCloseable {
         final Set<String> theAlreadySeenPHIs = new HashSet<>();
         currentSubProgram = aSubProgram;
         target.println("entry:");
+
+        // We calculate the static dependencies that should only be initialized once for this method
+        final StaticDependencies staticDependencies = new StaticDependencies(aProgram);
+        // And we call the class initializers
+        for (final BytecodeLinkedClass theClass : staticDependencies.list()) {
+            if (!theClass.getClassName().name().equals(MemoryManager.class.getName())) {
+                target.print("    %");
+                target.print(LLVMWriterUtils.runtimeClassVariableName(theClass.getClassName()));
+                target.print(" = call i32 @");
+                target.print(LLVMWriterUtils.toClassName(theClass.getClassName()));
+                target.print(LLVMWriter.CLASSINITSUFFIX);
+                target.println("()");
+            }
+        }
+
         target.println("    br label %block0");
         for (final RegionNode theBlock : theRegularFlow) {
             currentNode = theBlock;
@@ -309,21 +325,6 @@ public class LLVMWriter implements AutoCloseable {
     private void write(final RegionNode block) {
         write(block.getExpressions());
     }
-
-    private void tempify(final InvokeStaticMethodExpression e) {
-        final BytecodeObjectTypeRef theClass = e.getClassName();
-        final String theClassName = LLVMWriterUtils.toClassName(theClass);
-
-        target.print("    %");
-        target.print(toTempSymbol(e, "runtimeclass"));
-        target.print(" = call i32 @");
-        target.print(theClassName);
-        target.print(CLASSINITSUFFIX);
-
-        target.print("()");
-        currentSubProgram.writeDebugSuffixFor(e, target);
-        target.println();
-   }
 
     private void tempify(final InvokeVirtualMethodExpression e) {
 
@@ -514,31 +515,12 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void tempify(final NewArrayExpression e) {
-        final String theClassName = LLVMWriterUtils.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
-        target.print("    %");
-        target.print(toTempSymbol(e, "classinit"));
-        target.print(" = call i32 @");
-        target.print(theClassName);
-        target.print(CLASSINITSUFFIX);
-        target.print("()");
-        currentSubProgram.writeDebugSuffixFor(e, target);
-        target.println();
         target.print("    %");
         target.print(toTempSymbol(e, "vtable"));
         target.println(" = ptrtoint %dmbcArray__vtable__type* @dmbcArray__vtable to i32");
     }
 
     private void tempify(final NewMultiArrayExpression e) {
-        final String theClassName = LLVMWriterUtils.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
-        target.print("    %");
-        target.print(toTempSymbol(e, "classinit"));
-        target.print(" = call i32 @");
-        target.print(theClassName);
-        target.print(CLASSINITSUFFIX);
-        target.print("()");
-        currentSubProgram.writeDebugSuffixFor(e, target);
-        target.println();
-
         target.print("    %");
         target.print(toTempSymbol(e, "vtable"));
         target.println(" = ptrtoint %dmbcArray__vtable__type* @dmbcArray__vtable to i32");
@@ -575,15 +557,6 @@ public class LLVMWriter implements AutoCloseable {
 
     private void tempify(final NewObjectExpression e) {
         final String theClassName = LLVMWriterUtils.toClassName(BytecodeObjectTypeRef.fromUtf8Constant(e.getType().getConstant()));
-        target.print("    %");
-        target.print(toTempSymbol(e, "classinit"));
-        target.print(" = call i32 @");
-        target.print(theClassName);
-        target.print(CLASSINITSUFFIX);
-        target.print("()");
-        currentSubProgram.writeDebugSuffixFor(e, target);
-        target.println();
-
         target.print("    %");
         target.print(toTempSymbol(e, "vtable"));
         target.print(" = ptrtoint %");
@@ -685,19 +658,11 @@ public class LLVMWriter implements AutoCloseable {
         final BytecodeObjectTypeRef theClass = theEntry.getProvidingClass().getClassName();
         final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theClass);
         final int theStaticOffset = theLayout.offsetForClassMember(theEntry.getValue().getName().stringValue());
-        final String theClassName = LLVMWriterUtils.toClassName(theClass);
-
-        target.print("    %");
-        target.print(toTempSymbol(e, "runtimeclass"));
-        target.print(" = call i32 @");
-        target.print(theClassName);
-        target.print(CLASSINITSUFFIX);
-        target.println("()");
 
         target.print("    %");
         target.print(toTempSymbol(e, "offset"));
         target.print(" = add i32 %");
-        target.print(toTempSymbol(e, "runtimeclass"));
+        target.print(LLVMWriterUtils.runtimeClassVariableName(theClass));
         target.print(",");
         target.println(theStaticOffset);
 
@@ -866,10 +831,6 @@ public class LLVMWriter implements AutoCloseable {
 
             tempify((InvokeVirtualMethodExpression) v);
 
-        } else if (v instanceof InvokeStaticMethodExpression) {
-
-            tempify((InvokeStaticMethodExpression) v);
-
         } else if (v instanceof MemorySizeExpression) {
 
             tempify((MemorySizeExpression) v);
@@ -902,9 +863,6 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void tempify(final Expression e) {
-        if (e instanceof InvokeStaticMethodExpression) {
-            tempify((InvokeStaticMethodExpression) e);
-        }
         if (e instanceof InvokeVirtualMethodExpression) {
             tempify((InvokeVirtualMethodExpression) e);
         }
@@ -1133,7 +1091,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print("(i32 0,i32 ");
         writeResolved(e.incomingDataFlows().get(0));
         target.print(",i32 %");
-        target.print(toTempSymbol(e, "classinit"));
+        target.print(LLVMWriterUtils.runtimeClassVariableName(BytecodeObjectTypeRef.fromRuntimeClass(Array.class)));
         target.print(",i32 %");
         target.print(toTempSymbol(e, "vtable"));
         target.print(")");
@@ -1153,14 +1111,6 @@ public class LLVMWriter implements AutoCloseable {
         final BytecodeObjectTypeRef theClass = theEntry.getProvidingClass().getClassName();
         final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theClass);
         final int theStaticOffset = theLayout.offsetForClassMember(theEntry.getValue().getName().stringValue());
-        final String theClassName = LLVMWriterUtils.toClassName(theClass);
-
-        target.print("    %");
-        target.print(toTempSymbol(e, "runtimeclass"));
-        target.print(" = call i32 @");
-        target.print(theClassName);
-        target.print(CLASSINITSUFFIX);
-        target.println("()");
 
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(theClass);
         final BytecodeResolvedFields theStaticFields = theLinkedClass.resolvedFields();
@@ -1169,7 +1119,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print("    %");
         target.print(toTempSymbol(e, "offset"));
         target.print(" = add i32 %");
-        target.print(toTempSymbol(e, "runtimeclass"));
+        target.print(LLVMWriterUtils.runtimeClassVariableName(theLinkedClass.getClassName()));
         target.print(",");
         target.println(theStaticOffset);
 
@@ -1716,7 +1666,7 @@ public class LLVMWriter implements AutoCloseable {
             write(theDimension, true);
         }
         target.write(",i32 %");
-        target.write(toTempSymbol(e, "classinit"));
+        target.print(LLVMWriterUtils.runtimeClassVariableName(BytecodeObjectTypeRef.fromRuntimeClass(Array.class)));
         target.write(",i32 %");
         target.write(toTempSymbol(e, "vtable"));
         target.write(")");
@@ -1976,7 +1926,7 @@ public class LLVMWriter implements AutoCloseable {
         final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(e.getType().getConstant()));
         target.print(theLayout.instanceSize());
         target.print(",i32 %");
-        target.print(toTempSymbol(e, "classinit"));
+        target.print(LLVMWriterUtils.runtimeClassVariableName(BytecodeObjectTypeRef.fromUtf8Constant(e.getType().getConstant())));
         target.print(",i32 %");
         target.print(toTempSymbol(e, "vtable"));
         target.print(")");
@@ -2039,10 +1989,9 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final ClassReferenceValue e) {
-        target.print("call i32 @");
-        target.print(LLVMWriterUtils.toClassName(e.getType()));
-        target.print(LLVMWriter.CLASSINITSUFFIX);
-        target.print("()");
+        target.print("add i32 %");
+        target.print(LLVMWriterUtils.runtimeClassVariableName(e.getType()));
+        target.print(", 0");
     }
 
     private void write(final StringValue e) {
@@ -2092,7 +2041,8 @@ public class LLVMWriter implements AutoCloseable {
         }
         target.print(") @");
         target.print(LLVMWriterUtils.toMethodName(e.getClazz(), LLVMWriter.NEWINSTANCE_METHOD_NAME, e.getSignature()));
-        target.print("(i32 0");
+        target.print("(i32 %");
+        target.print(LLVMWriterUtils.runtimeClassVariableName(e.getClazz()));
         for (int i=0;i<e.incomingDataFlows().size();i++) {
             target.print(",");
             target.print(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
@@ -2387,8 +2337,13 @@ public class LLVMWriter implements AutoCloseable {
         target.print(LLVMWriterUtils.toSignature(aValue.getSignature()));
         target.print(" @");
         target.print(LLVMWriterUtils.toMethodName(aValue.getClassName(), aValue.getMethodName(), aValue.getSignature()));
-        target.print("(i32 %");
-        target.print(toTempSymbol(aValue, "runtimeclass"));
+
+        if (aValue.getClassName().name().equals(MemoryManager.class.getName())) {
+            target.print("(i32 0");
+        } else {
+            target.print("(i32 %");
+            target.print(LLVMWriterUtils.runtimeClassVariableName(aValue.getClassName()));
+        }
         final List<Value> args = aValue.incomingDataFlows();
         for (int i=0;i<args.size();i++) {
             target.print(",");

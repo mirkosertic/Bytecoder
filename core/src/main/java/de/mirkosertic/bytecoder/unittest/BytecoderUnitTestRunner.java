@@ -625,9 +625,13 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 theWriter.println("                             console.log(\"Free memory after bootstrap in bytes \" + bytecoder.exports.freeMem());");
                 theWriter.println("                             console.log(\"Creating test instance\")");
 
+                theWriter.print("                             var theClass = bytecoder.exports.");
+                theWriter.print(LLVMWriterUtils.toClassName(theTypeRef));
+                theWriter.println("__init();");
+
                 theWriter.print("                             var theTest = bytecoder.exports.");
                 theWriter.print(LLVMWriterUtils.toClassName(theTypeRef));
-                theWriter.println("_VOID$newInstance(0);");
+                theWriter.println("_VOID$newInstance(theClass);");
                 theWriter.println("                             console.log(\"Bootstrapped\")");
                 theWriter.println("                             try {");
                 theWriter.println("                                 console.log(\"Starting main method\");");
