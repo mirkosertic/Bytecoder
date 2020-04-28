@@ -1006,7 +1006,7 @@ public class JSSSAWriter {
 
     private void print(final DirectInvokeMethodExpression aValue) {
 
-        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(aValue.getClazz());
+        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(aValue.getClassName());
         final String theMethodName = aValue.getMethodName();
         final BytecodeMethodSignature theSignature = aValue.getSignature();
 

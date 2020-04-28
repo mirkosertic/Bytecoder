@@ -103,7 +103,7 @@ import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
 import de.mirkosertic.bytecoder.ssa.SqrtExpression;
 import de.mirkosertic.bytecoder.ssa.StackTopExpression;
-import de.mirkosertic.bytecoder.ssa.StaticDependencies;
+import de.mirkosertic.bytecoder.ssa.DependencyAnalysis;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.SuperTypeOfExpression;
 import de.mirkosertic.bytecoder.ssa.SystemHasStackExpression;
@@ -120,6 +120,7 @@ import de.mirkosertic.bytecoder.ssa.VariableDescription;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -198,7 +199,7 @@ public class LLVMWriter implements AutoCloseable {
                 final Value theOut = thePredecessor.liveOut().getPorts().get(aPHI.getDescription());
                 theResult.add(new PHIValuePair("block" + thePredecessor.getStartAddress().getAddress(), theOut));
 
-                // Special case for table switch expressions, as the introduce artificial blocks
+                // Special case for table switch expressions, as they introduce artificial blocks
                 for (final Expression e : thePredecessor.getExpressions().toList()) {
                     if (e instanceof TableSwitchExpression) {
                         final TableSwitchExpression ts = (TableSwitchExpression) e;
@@ -232,12 +233,36 @@ public class LLVMWriter implements AutoCloseable {
         target.println("entry:");
 
         // We calculate the static dependencies that should only be initialized once for this method
-        final StaticDependencies staticDependencies = new StaticDependencies(aProgram);
+        final Set<BytecodeLinkedClass> theClassesToInit = new HashSet<>();
+        new DependencyAnalysis(aProgram, new DependencyAnalysis.DependencyVisitor() {
+
+            @Override
+            public void staticInvocation(final BytecodeLinkedClass aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
+                theClassesToInit.add(aClass);
+            }
+
+            @Override
+            public void staticFieldAccess(final BytecodeLinkedClass aClass, final String aFieldName, final BytecodeTypeRef aFieldType) {
+                theClassesToInit.add(aClass);
+            }
+
+            @Override
+            public void classReference(final BytecodeLinkedClass aClass) {
+                theClassesToInit.add(aClass);
+            }
+        });
         // And we call the class initializers
-        for (final BytecodeLinkedClass theClass : staticDependencies.list()) {
+        for (final BytecodeLinkedClass theClass : theClassesToInit.stream().sorted(Comparator.comparing(o -> o.getClassName().name())).collect(Collectors.toList())) {
             if (!theClass.getClassName().name().equals(MemoryManager.class.getName())) {
                 target.print("    %");
                 target.print(LLVMWriterUtils.runtimeClassVariableName(theClass.getClassName()));
+
+                // TODO
+                //target.print(" = load i32, i32* @");
+                //target.print(LLVMWriterUtils.toClassName(theClass.getClassName()));
+                //target.print(LLVMWriter.RUNTIMECLASSSUFFIX);
+                //target.println();
+
                 target.print(" = call i32 @");
                 target.print(LLVMWriterUtils.toClassName(theClass.getClassName()));
                 target.print(LLVMWriter.CLASSINITSUFFIX);
@@ -1204,7 +1229,7 @@ public class LLVMWriter implements AutoCloseable {
 
     private void write(final DirectInvokeMethodExpression e) {
 
-        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(e.getClazz());
+        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(e.getClassName());
         final String theMethodName = e.getMethodName();
         final BytecodeMethodSignature theSignature = e.getSignature();
 
@@ -1240,7 +1265,7 @@ public class LLVMWriter implements AutoCloseable {
 
             target.print(LLVMWriterUtils.toMethodName(theEntry.getProvidingClass().getClassName(), theMethodName, theSignature));
         } else {
-            target.print(LLVMWriterUtils.toMethodName(e.getClazz(), theMethodName, theSignature));
+            target.print(LLVMWriterUtils.toMethodName(e.getClassName(), theMethodName, theSignature));
         }
         target.print("(");
         final List<Value> theValues = e.incomingDataFlows();

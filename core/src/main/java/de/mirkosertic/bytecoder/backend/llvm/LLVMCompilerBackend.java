@@ -44,6 +44,7 @@ import de.mirkosertic.bytecoder.core.BytecodeVTable;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
+import de.mirkosertic.bytecoder.ssa.ClassInitializationOrder;
 import de.mirkosertic.bytecoder.ssa.MethodHandleExpression;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
@@ -132,6 +133,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
         final LLVMCompileResult theCompileResult = new LLVMCompileResult();
         final List<OpaqueReferenceMethod> opaqueReferenceMethods = new ArrayList<>();
+        final ClassInitializationOrder classInitializationOrder = new ClassInitializationOrder();
 
         try {
             final List<String> stringPool = new ArrayList<>();
@@ -907,6 +909,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                 pw.print(theSuperWASMName);
                                 pw.print(LLVMWriter.CLASSINITSUFFIX);
                                 pw.println("()");
+
+                                classInitializationOrder.usedBy(theLinkedClass, theSuper);
                             }
                         }
 
@@ -1243,6 +1247,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                         try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter, aLinkerContext, theSymbolResolver)) {
                             theWriter.write(theSSAProgram, subProgram);
+                            classInitializationOrder.registerCodeForDependencyAnalysis(theLinkedClass, theMethod, theSSAProgram);
                         }
 
                         pw.println("}");
@@ -1528,6 +1533,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 });
 
                 pw.println("    %arrayvtableptr = ptrtoint %dmbcArray__vtable__type* @dmbcArray__vtable to i32");
+
                 pw.println("    %arrayclassinit = call i32 @dmbcArray__init()");
                 pw.println("    %stringclassinit = call i32 @jlString__init()");
 
@@ -1577,6 +1583,19 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.print(", i32* @");
                     pw.print("strpool_");
                     pw.println(i);
+                }
+
+                // Call class initializers
+                for (final BytecodeLinkedClass theClass : classInitializationOrder.computeInitializationOrder()) {
+                    if (!theClass.getClassName().name().equals(MemoryManager.class.getName())) {
+                        // TODO
+                        pw.print("    ;; %");
+                        pw.print(LLVMWriterUtils.runtimeClassVariableName(theClass.getClassName()));
+                        pw.print(" = call i32 @");
+                        pw.print(LLVMWriterUtils.toClassName(theClass.getClassName()));
+                        pw.print(LLVMWriter.CLASSINITSUFFIX);
+                        pw.println("()");
+                    }
                 }
 
                 pw.println("    ret void");

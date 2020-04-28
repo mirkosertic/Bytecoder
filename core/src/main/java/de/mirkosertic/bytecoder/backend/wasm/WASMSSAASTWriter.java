@@ -1454,7 +1454,7 @@ public class WASMSSAASTWriter {
 
     private WASMExpression directMethodInvokeValue(final DirectInvokeMethodExpression aValue) {
 
-        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(aValue.getClazz());
+        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(aValue.getClassName());
         final String theMethodName = aValue.getMethodName();
         final BytecodeMethodSignature theSignature = aValue.getSignature();
 
@@ -1463,7 +1463,7 @@ public class WASMSSAASTWriter {
         final List<Value> theArguments = theIncomingData.subList(1, theIncomingData.size());
 
         if (theTargetClass.isOpaqueType() && !theMethodName.equals("<init>")) {
-            final Function function = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(aValue.getClazz(), aValue.getMethodName(), aValue.getSignature()));
+            final Function function = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(aValue.getClassName(), aValue.getMethodName(), aValue.getSignature()));
 
             final List<WASMValue> arguments = new ArrayList<>();
             arguments.add(toValue(theTarget));
@@ -1476,7 +1476,7 @@ public class WASMSSAASTWriter {
 
         if (theMethodName.equals("<init>")) {
 
-            final Function function = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(aValue.getClazz(), aValue.getMethodName(), aValue.getSignature()));
+            final Function function = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(aValue.getClassName(), aValue.getMethodName(), aValue.getSignature()));
 
             final List<WASMValue> arguments = new ArrayList<>();
             arguments.add(toValue(theTarget));

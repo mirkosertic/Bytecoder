@@ -28,8 +28,6 @@ import java.util.Locale;
 
 public class VM {
 
-    public static final DecimalFormatSymbols FORMAT_SYMBOLS = DecimalFormatSymbols.getInstance();
-
     public static final ClassLoader SYSTEM_LOADER = new ClassLoader() {
     };
 
@@ -48,10 +46,12 @@ public class VM {
         final StringBuilder theTemp = new StringBuilder();
         theTemp.append(theB);
 
+        final DecimalFormatSymbols formatSymbols = DecimalFormatSymbols.getInstance();
+
         for (int i=theTemp.length()-1;i>=0;i--) {
             final char theChar = theTemp.charAt(i);
             if (theChar != '0') {
-                sb.append(VM.FORMAT_SYMBOLS.getDecimalSeparator());
+                sb.append(formatSymbols.getDecimalSeparator());
                 for (int j=0;j<=i;j++) {
                     sb.append(theTemp.charAt(j));
                 }
@@ -59,7 +59,7 @@ public class VM {
             }
         }
 
-        sb.append(VM.FORMAT_SYMBOLS.getDecimalSeparator());
+        sb.append(formatSymbols.getDecimalSeparator());
         sb.append('0');
     }
 
@@ -199,7 +199,7 @@ public class VM {
         return null;
     }
 
-    public static void setClassMemnber(final Class clz, final String name, final Object value) {
+    public static void setClassMember(final Class clz, final String name, final Object value) {
     }
 
     public static final char NEWLINE = '\n';

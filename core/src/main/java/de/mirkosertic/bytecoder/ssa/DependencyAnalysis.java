@@ -18,43 +18,38 @@ package de.mirkosertic.bytecoder.ssa;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
+import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+public class DependencyAnalysis {
 
-public class StaticDependencies {
-
-    private final Set<BytecodeLinkedClass> dependencies;
-
-    public StaticDependencies(final Program aProgram) {
-        dependencies = new HashSet<>();
-        searchDependencies(aProgram);
+    public interface DependencyVisitor {
+        void staticInvocation(BytecodeLinkedClass aClass, String aMethodName, BytecodeMethodSignature aSignature);
+        void staticFieldAccess(BytecodeLinkedClass aClass, String aFieldName, BytecodeTypeRef aFieldType);
+        void classReference(BytecodeLinkedClass aClass);
     }
 
-    public List<BytecodeLinkedClass> list() {
-        return dependencies.stream().sorted(Comparator.comparing(o -> o.getClassName().name())).collect(Collectors.toList());
+    public DependencyAnalysis(final Program aProgram, final DependencyVisitor aVisitor) {
+        searchDependencies(aProgram, aVisitor);
     }
 
-    private void searchDependencies(final Program aProgram) {
+    private void searchDependencies(final Program aProgram, final DependencyVisitor aVisitor) {
         for (final RegionNode theNode : aProgram.getControlFlowGraph().dominators().getPreOrder()) {
-            searchDependencies(aProgram, theNode.getExpressions());
+            searchDependencies(aProgram, theNode.getExpressions(), aVisitor);
         }
     }
 
-    private void searchDependencies(final Program aProgram, final ExpressionList aList) {
+    private void searchDependencies(final Program aProgram, final ExpressionList aList, final DependencyVisitor aVisitor) {
         for (final Expression e : aList.toList()) {
             if (e instanceof ExpressionListContainer) {
                 final ExpressionListContainer c = (ExpressionListContainer) e;
                 for (final ExpressionList l : c.getExpressionLists()) {
-                    searchDependencies(aProgram, l);
+                    searchDependencies(aProgram, l, aVisitor);
                 }
             }
-            searchDependencies(aProgram, e);
+            searchDependencies(aProgram, e, aVisitor);
         }
     }
 
@@ -64,41 +59,41 @@ public class StaticDependencies {
         return theFields.fieldByName(aFieldName);
     }
 
-    private void searchDependencies(final Program aProgram, final Value e) {
+    private void searchDependencies(final Program aProgram, final Value e, final DependencyVisitor aVisitor) {
         if (e instanceof InvokeStaticMethodExpression) {
             final InvokeStaticMethodExpression inv = (InvokeStaticMethodExpression) e;
-            dependencies.add(aProgram.getLinkerContext().resolveClass(inv.getClassName()));
+            aVisitor.staticInvocation(aProgram.getLinkerContext().resolveClass(inv.getClassName()), inv.getMethodName(), inv.getSignature());
         } else if (e instanceof PutStaticExpression) {
             final PutStaticExpression put = (PutStaticExpression) e;
             final BytecodeResolvedFields.FieldEntry theEntry = implementingClassForStaticField(aProgram.getLinkerContext(), BytecodeObjectTypeRef.fromUtf8Constant(put.getField().getClassIndex().getClassConstant().getConstant()),
                     put.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
             final BytecodeObjectTypeRef theClass = theEntry.getProvidingClass().getClassName();
-            dependencies.add(aProgram.getLinkerContext().resolveClass(theClass));
+            aVisitor.staticFieldAccess(aProgram.getLinkerContext().resolveClass(theClass), theEntry.getValue().getName().stringValue(), theEntry.getValue().getTypeRef());
         } else if (e instanceof GetStaticExpression) {
             final GetStaticExpression get = (GetStaticExpression) e;
             final BytecodeResolvedFields.FieldEntry theEntry = implementingClassForStaticField(aProgram.getLinkerContext(), BytecodeObjectTypeRef.fromUtf8Constant(get.getField().getClassIndex().getClassConstant().getConstant()),
                     get.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
             final BytecodeObjectTypeRef theClass = theEntry.getProvidingClass().getClassName();
-            dependencies.add(aProgram.getLinkerContext().resolveClass(theClass));
+            aVisitor.staticFieldAccess(aProgram.getLinkerContext().resolveClass(theClass), theEntry.getValue().getName().stringValue(), theEntry.getValue().getTypeRef());
         } else if (e instanceof NewArrayExpression) {
-            dependencies.add(aProgram.getLinkerContext().resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class)));
+            aVisitor.classReference(aProgram.getLinkerContext().resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class)));
         } else if (e instanceof NewMultiArrayExpression) {
-            dependencies.add(aProgram.getLinkerContext().resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class)));
+            aVisitor.classReference(aProgram.getLinkerContext().resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class)));
         } else if (e instanceof ClassReferenceValue) {
             final ClassReferenceValue r = (ClassReferenceValue) e;
-            dependencies.add(aProgram.getLinkerContext().resolveClass(r.getType()));
+            aVisitor.classReference(aProgram.getLinkerContext().resolveClass(r.getType()));
         } else if (e instanceof NewObjectExpression) {
             final NewObjectExpression n = (NewObjectExpression) e;
-            dependencies.add(aProgram.getLinkerContext().resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(n.getType().getConstant())));
+            aVisitor.classReference(aProgram.getLinkerContext().resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(n.getType().getConstant())));
         } else if (e instanceof NewObjectAndConstructExpression) {
             final NewObjectAndConstructExpression n = (NewObjectAndConstructExpression) e;
-            dependencies.add(aProgram.getLinkerContext().resolveClass(n.getClazz()));
+            aVisitor.classReference(aProgram.getLinkerContext().resolveClass(n.getClazz()));
         }
 
         for (final Value v : e.incomingDataFlows()) {
-            searchDependencies(aProgram, v);
+            searchDependencies(aProgram, v, aVisitor);
         }
     }
 }

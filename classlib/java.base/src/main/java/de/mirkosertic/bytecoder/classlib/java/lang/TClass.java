@@ -125,6 +125,9 @@ public class TClass {
         if ("boolean".equals(aName)) {
             return Boolean.class;
         }
+        if ("void".equals(aName)) {
+            return Void.class;
+        }
         throw new RuntimeException(aName);
     }
 
