@@ -113,7 +113,7 @@ public class VMIntrinsic extends Intrinsic {
                 aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
                 return true;
             }
-            if ("setClassMemnber".equalsIgnoreCase(aMethodName)) {
+            if ("setClassMember".equalsIgnoreCase(aMethodName)) {
                 final Value v1 = aArguments.get(0);
                 ClassReferenceValue theClassReference = null;
                 StringValue theName = null;

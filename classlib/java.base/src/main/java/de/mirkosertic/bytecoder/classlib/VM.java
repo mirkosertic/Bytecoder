@@ -199,7 +199,7 @@ public class VM {
         return null;
     }
 
-    public static void setClassMemnber(final Class clz, final String name, final Object value) {
+    public static void setClassMember(final Class clz, final String name, final Object value) {
     }
 
     public static final char NEWLINE = '\n';
