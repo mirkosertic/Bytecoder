@@ -68,7 +68,7 @@ public class ClassInitializationOrder {
         final ClassNode usedClassNode = nodeFor(aUsedClass);
         if (userClassNode != usedClassNode) {
             if (usedClassNode.incomingEdges().noneMatch(t -> t.targetNode() == userClassNode)) {
-                System.out.println(" -- edge from " + usedClassNode.clazz.getClassName().name() + " to " + userClassNode.clazz.getClassName().name());
+                //System.out.println(" -- edge from " + usedClassNode.clazz.getClassName().name() + " to " + userClassNode.clazz.getClassName().name());
                 usedClassNode.addEdgeTo(EdgeTypes.usedBy, userClassNode);
             }
         }
@@ -98,20 +98,20 @@ public class ClassInitializationOrder {
         new DependencyAnalysis(aProgram, new DependencyAnalysis.DependencyVisitor() {
             @Override
             public void staticInvocation(final BytecodeLinkedClass aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
-                System.out.println(aOwner.getClassName().name() +" depends on static invocation to " + aClass.getClassName().name());
+                //System.out.println(aOwner.getClassName().name() +" depends on static invocation to " + aClass.getClassName().name());
                 usedBy(aOwner, aClass);
                 analyzeMethod(nodeFor(aClass), aMethodName, aSignature);
             }
 
             @Override
             public void staticFieldAccess(final BytecodeLinkedClass aClass, final String aFieldName, final BytecodeTypeRef aFieldType) {
-                System.out.println(aOwner.getClassName().name() +" depends on static field access to " + aClass.getClassName().name());
+                //System.out.println(aOwner.getClassName().name() +" depends on static field access to " + aClass.getClassName().name());
                 usedBy(aOwner, aClass);
             }
 
             @Override
             public void classReference(final BytecodeLinkedClass aClass) {
-                System.out.println(aOwner.getClassName().name() +" depends on class reference to " + aClass.getClassName().name());
+                //System.out.println(aOwner.getClassName().name() +" depends on class reference to " + aClass.getClassName().name());
                 usedBy(aOwner, aClass);
             }
         });
