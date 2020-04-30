@@ -239,10 +239,20 @@ public class LLVMWriter implements AutoCloseable {
             if (!theClass.getClassName().name().equals(MemoryManager.class.getName())) {
                 target.print("    %");
                 target.print(LLVMWriterUtils.runtimeClassVariableName(theClass.getClassName()));
-                target.print(" = call i32 @");
-                target.print(LLVMWriterUtils.toClassName(theClass.getClassName()));
-                target.print(LLVMWriter.CLASSINITSUFFIX);
-                target.println("()");
+                // We know the following JVM classes were initialized by the bootstrap, so
+                // we can safely access them without init invocation
+                if (theClass.getClassName().name().equals(String.class.getName()) ||
+                    theClass.getClassName().name().equals(Array.class.getName())) {
+
+                    target.print(" = load i32, i32* @");
+                    target.print(LLVMWriterUtils.toClassName(theClass.getClassName()));
+                    target.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+                } else {
+                    target.print(" = call i32 @");
+                    target.print(LLVMWriterUtils.toClassName(theClass.getClassName()));
+                    target.print(LLVMWriter.CLASSINITSUFFIX);
+                    target.println("()");
+                }
             }
         }
 
