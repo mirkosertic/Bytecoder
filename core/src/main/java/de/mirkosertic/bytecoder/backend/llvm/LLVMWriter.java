@@ -18,7 +18,8 @@ package de.mirkosertic.bytecoder.backend.llvm;
 import de.mirkosertic.bytecoder.backend.NativeMemoryLayouter;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
-import de.mirkosertic.bytecoder.core.BytecodeClass;
+import de.mirkosertic.bytecoder.classlib.VM;
+import de.mirkosertic.bytecoder.classlib.java.util.Quicksort;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
@@ -242,7 +243,9 @@ public class LLVMWriter implements AutoCloseable {
                 // We know the following JVM classes were initialized by the bootstrap,
                 // so we can safely access them without init invocation
                 if (theClass.getClassName().name().equals(String.class.getName()) ||
-                    theClass.getClassName().name().equals(Array.class.getName())) {
+                    theClass.getClassName().name().equals(Array.class.getName()) ||
+                    theClass.getClassName().name().equals(VM.class.getName()) ||
+                    theClass.getClassName().name().equals(Quicksort.class.getName())) {
 
                     aProgram.getLinkerContext().getStatistics().context("ClassInitialization")
                             .counter("Avoided initializations").increment();

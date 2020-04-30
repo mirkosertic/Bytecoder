@@ -28,8 +28,9 @@ import de.mirkosertic.bytecoder.backend.NativeMemoryLayouter;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
+import de.mirkosertic.bytecoder.classlib.VM;
+import de.mirkosertic.bytecoder.classlib.java.util.Quicksort;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
-import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeImportedLink;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
@@ -1588,6 +1589,24 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.print("strpool_");
                     pw.println(i);
                 }
+
+                // Some initialization logic
+                aLinkerContext.linkedClasses()
+                    .map(t -> t.targetNode())
+                    .filter(t -> {
+                        if (t.getClassName().name().equals(VM.class.getName()) ||
+                            t.getClassName().name().equals(Quicksort.class.getName())) {
+                            return true;
+                        }
+                        return false;
+                    }).forEach(theClass -> {
+                        pw.print("    %");
+                        pw.print(LLVMWriterUtils.runtimeClassVariableName(theClass.getClassName()));
+                        pw.print(" = call i32 @");
+                        pw.print(LLVMWriterUtils.toClassName(theClass.getClassName()));
+                        pw.print(LLVMWriter.CLASSINITSUFFIX);
+                        pw.println("()");
+                    });
 
                 pw.println("    ret void");
                 pw.println("}");
