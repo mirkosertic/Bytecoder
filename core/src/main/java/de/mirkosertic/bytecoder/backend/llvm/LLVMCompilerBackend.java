@@ -77,10 +77,12 @@ import java.util.stream.Collectors;
 public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
     private static class CallSite {
+        private final BytecodeLinkedClass owningClass;
         private final Program program;
         private final RegionNode bootstrapMethod;
 
-        private CallSite(final Program aProgram, final RegionNode aBootstrapMethod) {
+        private CallSite(final BytecodeLinkedClass aOwningClass, final Program aProgram, final RegionNode aBootstrapMethod) {
+            this.owningClass = aOwningClass;
             this.program = aProgram;
             this.bootstrapMethod = aBootstrapMethod;
         }
@@ -150,10 +152,10 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 }
 
                 @Override
-                public String resolveCallsiteBootstrapFor(final BytecodeClass owningClass, final String callsiteId, final Program program, final RegionNode bootstrapMethod) {
+                public String resolveCallsiteBootstrapFor(final BytecodeLinkedClass owningClass, final String callsiteId, final Program program, final RegionNode bootstrapMethod) {
                     CallSite callSite = callsites.get(callsiteId);
                     if (callSite == null) {
-                        callSite = new CallSite(program, bootstrapMethod);
+                        callSite = new CallSite(owningClass, program, bootstrapMethod);
                         callsites.put(callsiteId, callSite);
                     }
                     return "resolvecallsite" + System.identityHashCode(callSite);
@@ -1250,7 +1252,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         }
 
                         try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter, aLinkerContext, theSymbolResolver)) {
-                            theWriter.write(theSSAProgram, subProgram);
+                            theWriter.write(theLinkedClass, theSSAProgram, subProgram);
                         }
 
                         pw.println("}");
@@ -1359,7 +1361,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     final LLVMDebugInformation.SubProgram subProgram = compileUnit.subProgram(theSSAProgram, "/resolvecallsite" + callsite, new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
 
                     // Run optimizer
-                    // We use a special LLVM optimizer, which does only stuff LLVM CANNOT do, such
+                    // We use a special optimizer, which does only stuff LLVM CANNOT do, such
                     // as virtual method invocation optimization. All other optimization work
                     // is done by LLVM!
                     KnownOptimizer.LLVM.optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
@@ -1391,7 +1393,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.println(" {");
 
                     try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter, aLinkerContext, theSymbolResolver)) {
-                        theWriter.write(theEntry.getValue().program, subProgram);
+                        theWriter.write(theEntry.getValue().owningClass, theEntry.getValue().program, subProgram);
                     }
 
                     pw.println("}");

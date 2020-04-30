@@ -144,7 +144,7 @@ public class LLVMWriter implements AutoCloseable {
 
         String globalFromStringPool(final String aValue);
 
-        String resolveCallsiteBootstrapFor(BytecodeClass owningClass, String callsiteId, Program program, RegionNode bootstrapMethod);
+        String resolveCallsiteBootstrapFor(BytecodeLinkedClass owningClass, String callsiteId, Program program, RegionNode bootstrapMethod);
 
         String methodTypeFactoryNameFor(final BytecodeMethodSignature aSignature);
 
@@ -221,7 +221,7 @@ public class LLVMWriter implements AutoCloseable {
         return theResult;
     }
 
-    public void write(final Program aProgram, final LLVMDebugInformation.SubProgram aSubProgram) {
+    public void write(final BytecodeLinkedClass aOwningClass, final Program aProgram, final LLVMDebugInformation.SubProgram aSubProgram) {
         final ControlFlowGraph theGraph = aProgram.getControlFlowGraph();
         final RegionNode theStart = theGraph.startNode();
         final GraphDFSOrder<RegionNode> order = new GraphDFSOrder(theStart,
@@ -239,10 +239,13 @@ public class LLVMWriter implements AutoCloseable {
             if (!theClass.getClassName().name().equals(MemoryManager.class.getName())) {
                 target.print("    %");
                 target.print(LLVMWriterUtils.runtimeClassVariableName(theClass.getClassName()));
-                // We know the following JVM classes were initialized by the bootstrap, so
-                // we can safely access them without init invocation
+                // We know the following JVM classes were initialized by the bootstrap,
+                // so we can safely access them without init invocation
                 if (theClass.getClassName().name().equals(String.class.getName()) ||
                     theClass.getClassName().name().equals(Array.class.getName())) {
+
+                    aProgram.getLinkerContext().getStatistics().context("ClassInitialization")
+                            .counter("Avoided initializations").increment();
 
                     target.print(" = load i32, i32* @");
                     target.print(LLVMWriterUtils.toClassName(theClass.getClassName()));
@@ -1811,8 +1814,9 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final ResolveCallsiteObjectExpression e) {
+        final BytecodeLinkedClass theOwningClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(e.getOwningClass().getThisInfo().getConstant()));
         target.print("call i32 @");
-        target.print(symbolResolver.resolveCallsiteBootstrapFor(e.getOwningClass(),
+        target.print(symbolResolver.resolveCallsiteBootstrapFor(theOwningClass,
                 e.getCallsiteId(),
                 e.getProgram(),
                 e.getBootstrapMethod()
