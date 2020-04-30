@@ -796,6 +796,12 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.println(" = private global i32 0");
                     pw.println();
 
+                    pw.print("@");
+                    pw.print(theClassName);
+                    pw.print(LLVMWriter.RUNTIMECLASSINITSTATUSSUFFIX);
+                    pw.println(" = private global i32 0");
+                    pw.println();
+
                     if (theLinkedClass != theClassLinkedCass) {
                         final BytecodeVTable theVtable = theSymbolResolver.vtableFor(theLinkedClass);
                         final List<BytecodeVTable.Slot> theSlots = theVtable.sortedSlots();
@@ -890,13 +896,15 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.print("    %class = load i32, i32* @");
                         pw.print(theClassName);
                         pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
-                        pw.println("    %status = add i32 %class, 8");
-                        pw.println("    %statusptr = inttoptr i32 %status to i32*");
-                        pw.println("    %value = load i32, i32* %statusptr");
+                        pw.print("    %value = load i32, i32* @");
+                        pw.print(theClassName);
+                        pw.println(LLVMWriter.RUNTIMECLASSINITSTATUSSUFFIX);
                         pw.println("    %initialized_compare = icmp eq i32 %value, 1");
                         pw.println("    br i1 %initialized_compare, label %done, label %unitialized");
                         pw.println("unitialized:");
-                        pw.println("    store i32 1,i32* %statusptr");
+                        pw.print("    store i32 1,i32* @");
+                        pw.print(theClassName);
+                        pw.println(LLVMWriter.RUNTIMECLASSINITSTATUSSUFFIX);
 
                         // Call superclass init
                         if (!theLinkedClass.getClassName().name().equals(Object.class.getName())) {
