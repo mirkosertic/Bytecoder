@@ -17,13 +17,11 @@ package de.mirkosertic.bytecoder.classlib;
 
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
-import de.mirkosertic.bytecoder.api.Import;
 
 import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.text.DecimalFormatSymbols;
-import java.util.Comparator;
 import java.util.Locale;
 
 public class VM {
@@ -204,8 +202,6 @@ public class VM {
 
     public static final char NEWLINE = '\n';
 
-    public static Comparator DEFAULT = (o1, o2) -> ((Comparable) o1).compareTo(o2);
-
     public static long stringToLong(final String aString) {
         long theResult = 0;
         int theMultiplier = 1;
@@ -294,7 +290,4 @@ public class VM {
 
     @EmulatedByRuntime
     public static native boolean reinterpretAsBoolean(final Object o);
-
-    @Import(module = "env", name = "debug")
-    public static native void debug(int aValue);
 }
