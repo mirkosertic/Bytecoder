@@ -40,6 +40,7 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
+import de.mirkosertic.bytecoder.core.BytecodeSignatureParser;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVTable;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
@@ -292,29 +293,92 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.print(theLink.getLinkName());
                             pw.println("\"}");
 
-                            pw.print("declare ");
-                            pw.print(LLVMWriterUtils.toType(TypeRef.toType(t.getSignature().getReturnType())));
-                            pw.print(" @");
-                            pw.print(methodName);
-                            pw.print("(");
+                            if (t.getSignature().getReturnType() == BytecodePrimitiveTypeRef.LONG) {
+                                // In this case, we expect a double as a return from JS
+                                // side and convert it into i64
+                                pw.print("declare double");
+                                pw.print(" @");
+                                pw.print(methodName);
+                                pw.print("_adapter(");
 
-                            pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
-                            pw.print(" ");
-                            pw.print("%thisRef");
-                            for (int i = 0; i < theSignature.getArguments().length; i++) {
-                                final BytecodeTypeRef theParamType = theSignature.getArguments()[i];
-                                pw.print(",");
-                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(theParamType)));
+                                pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
                                 pw.print(" ");
-                                pw.print("%p");
-                                pw.print(i + 1);
-                            }
+                                pw.print("%thisRef");
+                                for (int i = 0; i < theSignature.getArguments().length; i++) {
+                                    final BytecodeTypeRef theParamType = theSignature.getArguments()[i];
+                                    pw.print(",");
+                                    pw.print(LLVMWriterUtils.toType(TypeRef.toType(theParamType)));
+                                    pw.print(" ");
+                                    pw.print("%p");
+                                    pw.print(i + 1);
+                                }
 
-                            pw.print(")");
-                            pw.print(" #");
-                            pw.print(attributeCounter);
-                            pw.println();
-                            pw.println();
+                                pw.print(")");
+                                pw.print(" #");
+                                pw.print(attributeCounter);
+                                pw.println();
+                                pw.println();
+
+                                pw.print("define internal i64 @");
+                                pw.print(methodName);
+                                pw.print("(");
+
+                                pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
+                                pw.print(" ");
+                                pw.print("%thisRef");
+                                for (int i = 0; i < theSignature.getArguments().length; i++) {
+                                    final BytecodeTypeRef theParamType = theSignature.getArguments()[i];
+                                    pw.print(",");
+                                    pw.print(LLVMWriterUtils.toType(TypeRef.toType(theParamType)));
+                                    pw.print(" ");
+                                    pw.print("%p");
+                                    pw.print(i + 1);
+                                }
+
+                                pw.println(") inlinehint {");
+
+                                pw.print("    %temp = call double @");
+                                pw.print(methodName);
+                                pw.print("_adapter(i32 %thisRef");
+                                for (int i = 0; i < theSignature.getArguments().length; i++) {
+                                    final BytecodeTypeRef theParamType = theSignature.getArguments()[i];
+                                    pw.print(",");
+                                    pw.print(LLVMWriterUtils.toType(TypeRef.toType(theParamType)));
+                                    pw.print(" ");
+                                    pw.print("%p");
+                                    pw.print(i + 1);
+                                }
+                                pw.println(")");
+                                pw.println("    %conv = fptosi double %temp to i64");
+                                pw.println("    ret i64 %conv");
+                                pw.println("}");
+                                pw.println();
+                            } else {
+                                // No adapter code
+                                pw.print("declare ");
+                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(t.getSignature().getReturnType())));
+                                pw.print(" @");
+                                pw.print(methodName);
+                                pw.print("(");
+
+                                pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
+                                pw.print(" ");
+                                pw.print("%thisRef");
+                                for (int i = 0; i < theSignature.getArguments().length; i++) {
+                                    final BytecodeTypeRef theParamType = theSignature.getArguments()[i];
+                                    pw.print(",");
+                                    pw.print(LLVMWriterUtils.toType(TypeRef.toType(theParamType)));
+                                    pw.print(" ");
+                                    pw.print("%p");
+                                    pw.print(i + 1);
+                                }
+
+                                pw.print(")");
+                                pw.print(" #");
+                                pw.print(attributeCounter);
+                                pw.println();
+                                pw.println();
+                            }
 
                             attributeCounter.incrementAndGet();
                         }
