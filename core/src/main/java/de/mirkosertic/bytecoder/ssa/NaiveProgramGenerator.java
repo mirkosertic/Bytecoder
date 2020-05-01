@@ -739,7 +739,6 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theINS.getType()), new FloorExpression(aProgram, theInstruction.getOpcodeAddress(), theDivValue, TypeRef.toType(theINS.getType())));
                     break;
                 }
-
                 aHelper.push(theINS.getOpcodeAddress(), theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericMUL) {
                 final BytecodeInstructionGenericMUL theINS = (BytecodeInstructionGenericMUL) theInstruction;
