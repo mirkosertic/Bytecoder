@@ -213,10 +213,15 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("declare i32 @llvm.wasm.memory.size.i32(i32) nounwind readonly");
                 pw.println("declare void @llvm.trap() cold noreturn nounwind");
                 pw.println("declare float @llvm.minimum.f32(float %Val0, float %Val1)");
+                pw.println("declare double @llvm.minimum.f64(double %Val0, double %Val1)");
                 pw.println("declare float @llvm.maximum.f32(float %Val0, float %Val1)");
-                pw.println("declare float @llvm.floor.f32(float  %Val)");
-                pw.println("declare float @llvm.ceil.f32(float  %Val)");
+                pw.println("declare double @llvm.maximum.f64(double %Val0, double %Val1)");
+                pw.println("declare float @llvm.floor.f32(float %Val)");
+                pw.println("declare double @llvm.floor.f64(double %Val)");
+                pw.println("declare float @llvm.ceil.f32(float %Val)");
+                pw.println("declare double @llvm.ceil.f64(double %Val)");
                 pw.println("declare float @llvm.sqrt.f32(float %Val)");
+                pw.println("declare double @llvm.sqrt.f64(double %Val)");
                 pw.println();
 
                 final AtomicInteger attributeCounter = new AtomicInteger();
@@ -486,6 +491,17 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
+                pw.println("define internal i32 @isnanDouble(double %value) inlinehint {");
+                pw.println("entry:");
+                pw.println("    %test = fcmp oeq double %value, %value");
+                pw.println("    br i1 %test, label %iseq, label %isnoteq");
+                pw.println("iseq:");
+                pw.println("    ret i32 0");
+                pw.println("isnoteq:");
+                pw.println("    ret i32 1");
+                pw.println("}");
+                pw.println();
+
                 pw.println("define internal i32 @toi32(float %value) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %test = fcmp oeq float %value, %value");
@@ -495,6 +511,42 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("    ret i32 %converted");
                 pw.println("isnoteq:");
                 pw.println("    ret i32 0");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal i64 @toi64(float %value) inlinehint {");
+                pw.println("entry:");
+                pw.println("    %test = fcmp oeq float %value, %value");
+                pw.println("    br i1 %test, label %iseq, label %isnoteq");
+                pw.println("iseq:");
+                pw.println("    %converted = fptosi float %value to i64");
+                pw.println("    ret i64 %converted");
+                pw.println("isnoteq:");
+                pw.println("    ret i64 0");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal i32 @doubleToi32(double %value) inlinehint {");
+                pw.println("entry:");
+                pw.println("    %test = fcmp oeq double %value, %value");
+                pw.println("    br i1 %test, label %iseq, label %isnoteq");
+                pw.println("iseq:");
+                pw.println("    %converted = fptosi double %value to i32");
+                pw.println("    ret i32 %converted");
+                pw.println("isnoteq:");
+                pw.println("    ret i32 0");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal i64 @doubleToi64(double %value) inlinehint {");
+                pw.println("entry:");
+                pw.println("    %test = fcmp oeq double %value, %value");
+                pw.println("    br i1 %test, label %iseq, label %isnoteq");
+                pw.println("iseq:");
+                pw.println("    %converted = fptosi double %value to i64");
+                pw.println("    ret i64 %converted");
+                pw.println("isnoteq:");
+                pw.println("    ret i64 0");
                 pw.println("}");
                 pw.println();
 
@@ -1592,7 +1644,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                 // Some initialization logic
                 aLinkerContext.linkedClasses()
-                    .map(t -> t.targetNode())
+                    .map(Edge::targetNode)
                     .filter(t -> {
                         if (t.getClassName().name().equals(VM.class.getName()) ||
                             t.getClassName().name().equals(Quicksort.class.getName())) {
@@ -1995,7 +2047,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("                for (var i=0, strLen=responsetext.length; i<strLen; i++) {");
                 theWriter.println("                    bufView[i] = responsetext.charCodeAt(i) & 0xff;");
                 theWriter.println("                }");
-                theWriter.println("                var handle = bytecoder.filehandles.length;");
+                theWriter.println("                var handle = BigInt(bytecoder.filehandles.length);");
                 theWriter.println("                bytecoder.filehandles[handle] = {");
                 theWriter.println("                    currentpos: 0,");
                 theWriter.println("                    data: bufView,");
@@ -2004,7 +2056,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("                        var remaining = this.size - this.currentpos;");
                 theWriter.println("                        var possible = Math.min(remaining, amount);");
                 theWriter.println("                        this.currentpos+=possible;");
-                theWriter.println("                        return possible;");
+                theWriter.println("                        return BigInt(possible);");
                 theWriter.println("                    },");
                 theWriter.println("                    available0LONG: function(handle) {");
                 theWriter.println("                        return this.size - this.currentpos;");
@@ -2030,9 +2082,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("                };");
                 theWriter.println("                return handle;");
                 theWriter.println("            }");
-                theWriter.println("            return -1;");
+                theWriter.println("            return BigInt(-1);");
                 theWriter.println("         } catch(e) {");
-                theWriter.println("             return -1;");
+                theWriter.println("             return BigInt(-1);");
                 theWriter.println("         }");
                 theWriter.println("     },");
                 theWriter.println();
@@ -2081,10 +2133,10 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("                 }");
                 theWriter.println("             }");
                 theWriter.println("         };");
-                theWriter.println("         bytecoder.filehandles[0] = stddin;");
-                theWriter.println("         bytecoder.filehandles[1] = stdout;");
-                theWriter.println("         bytecoder.filehandles[2] = stdout;");
-                theWriter.println("         bytecoder.exports.initDefaultFileHandles(-1,0,1,2);");
+                theWriter.println("         bytecoder.filehandles[BigInt(0)] = stddin;");
+                theWriter.println("         bytecoder.filehandles[BigInt(1)] = stdout;");
+                theWriter.println("         bytecoder.filehandles[BigInt(2)] = stdout;");
+                theWriter.println("         bytecoder.exports.initDefaultFileHandles(BigInt(-1),BigInt(0),BigInt(1),BigInt(2));");
                 theWriter.println("     },");
                 theWriter.println();
 
@@ -2155,6 +2207,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("         },");
                 theWriter.println("         env: {");
                 theWriter.println("             fmodf: function(f1,f2) {return f1 % f2;},");
+                theWriter.println("             fmod: function(f1,f2) {return f1 % f2;},");
                 theWriter.println("             debug: function(thisref, f1) {console.log(f1);}");
                 theWriter.println("         },");
                 theWriter.println("         system: {");

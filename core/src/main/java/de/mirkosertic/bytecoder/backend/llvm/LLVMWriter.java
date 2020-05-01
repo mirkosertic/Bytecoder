@@ -777,10 +777,24 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void tempify(final BinaryExpression e) {
+        final Value v1 = e.incomingDataFlows().get(0);
+        final Value v2 = e.incomingDataFlows().get(1);
+
+        if (e.getOperator() == BinaryExpression.Operator.BINARYSHIFTLEFT ||
+            e.getOperator() == BinaryExpression.Operator.BINARYSHIFTRIGHT ||
+            e.getOperator() == BinaryExpression.Operator.BINARYUNSIGNEDSHIFTRIGHT) {
+            if (v1.resolveType().resolve() == TypeRef.Native.LONG) {
+                // We need to convert the second operand from int to long
+                target.print("    %");
+                target.print(toTempSymbol(e, "v2_ext"));
+                target.print(" = sext i32 ");
+                writeResolved(v2);
+                target.println(" to i64");
+                return;
+            }
+        }
         if (e.getOperator() == BinaryExpression.Operator.DIV) {
             target.println(";; division with target type " + e.resolveType().resolve());
-            final Value v1 = e.incomingDataFlows().get(0);
-            final Value v2 = e.incomingDataFlows().get(1);
             switch (v1.resolveType().resolve()) {
                 case FLOAT:
                 case DOUBLE:
@@ -1725,19 +1739,34 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final SqrtExpression e) {
-        target.print("call float @llvm.sqrt.f32(float ");
-        write(e.incomingDataFlows().get(0), true);
-        target.print(")");
+        if (e.resolveType().resolve() == TypeRef.Native.DOUBLE) {
+            target.print("call float @llvm.sqrt.f64(double ");
+            write(e.incomingDataFlows().get(0), true);
+            target.print(")");
+        } else {
+            target.print("call float @llvm.sqrt.f32(float ");
+            write(e.incomingDataFlows().get(0), true);
+            target.print(")");
+        }
     }
 
     private void write(final ReinterpretAsNativeExpression e) {
         final Value theValue = e.incomingDataFlows().get(0);
         switch (e.getExpectedType()) {
-            case FLOAT:
             case DOUBLE:
                 target.print("sitofp i32 ");
                 write(theValue, true);
+                target.print(" to double");
+                break;
+            case FLOAT:
+                target.print("sitofp i32 ");
+                write(theValue, true);
                 target.print(" to float");
+                break;
+            case LONG:
+                target.write("sext i32 ");
+                write(theValue, true);
+                target.write(" to i64");
                 break;
             default:
                 writeSameAssignmentHack(theValue.resolveType(), theValue);
@@ -1819,8 +1848,10 @@ public class LLVMWriter implements AutoCloseable {
         target.print(LLVMWriterUtils.toType(e.resolveType()));
 
         switch (e.resolveType().resolve()) {
-            case FLOAT:
             case DOUBLE:
+                target.print(" @llvm.maximum.f64");
+                break;
+            case FLOAT:
                 target.print(" @llvm.maximum.f32");
                 break;
             default:
@@ -1839,15 +1870,27 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final FloatingPointFloorExpression e) {
-        target.print("call float @llvm.floor.f32(float ");
-        writeResolved(e.incomingDataFlows().get(0));
-        target.print(")");
+        if (e.resolveType().resolve() == TypeRef.Native.DOUBLE) {
+            target.print("call double @llvm.floor.f64(double ");
+            writeResolved(e.incomingDataFlows().get(0));
+            target.print(")");
+        } else {
+            target.print("call float @llvm.floor.f32(float ");
+            writeResolved(e.incomingDataFlows().get(0));
+            target.print(")");
+        }
     }
 
     private void write(final FloatingPointCeilExpression e) {
-        target.print("call float @llvm.ceil.f32(float ");
-        writeResolved(e.incomingDataFlows().get(0));
-        target.print(")");
+        if (e.resolveType().resolve() == TypeRef.Native.DOUBLE) {
+            target.print("call double @llvm.ceil.f64(double ");
+            writeResolved(e.incomingDataFlows().get(0));
+            target.print(")");
+        } else {
+            target.print("call float @llvm.ceil.f32(float ");
+            writeResolved(e.incomingDataFlows().get(0));
+            target.print(")");
+        }
     }
 
     private void write(final ResolveCallsiteObjectExpression e) {
@@ -1877,11 +1920,19 @@ public class LLVMWriter implements AutoCloseable {
 
     private void write(final IsNaNExpression e) {
         final Value theValue = e.incomingDataFlows().get(0);
-        target.print("call i32 @isnan(");
-        target.print(LLVMWriterUtils.toType(theValue.resolveType()));
-        target.print(" ");
-        writeResolved(theValue);
-        target.print(")");
+        if (theValue.resolveType().resolve() == TypeRef.Native.DOUBLE) {
+            target.print("call i32 @isnanDouble(");
+            target.print(LLVMWriterUtils.toType(theValue.resolveType()));
+            target.print(" ");
+            writeResolved(theValue);
+            target.print(")");
+        } else {
+            target.print("call i32 @isnan(");
+            target.print(LLVMWriterUtils.toType(theValue.resolveType()));
+            target.print(" ");
+            writeResolved(theValue);
+            target.print(")");
+        }
     }
 
     private void write(final TypeOfExpression e) {
@@ -1893,8 +1944,10 @@ public class LLVMWriter implements AutoCloseable {
         target.print("call ");
         target.print(LLVMWriterUtils.toType(e.resolveType()));
         switch (e.resolveType().resolve()) {
-            case FLOAT:
             case DOUBLE:
+                target.print(" @llvm.minimum.f64");
+                break;
+            case FLOAT:
                 target.print(" @llvm.minimum.f32");
                 break;
             default:
@@ -2577,10 +2630,27 @@ public class LLVMWriter implements AutoCloseable {
         target.print(" ");
         final List<Value> v = aValue.incomingDataFlows();
         for (int i=0;i<v.size();i++) {
+            final Value value = v.get(i);
             if (i>0) {
                 target.print(",");
+                switch (aValue.getOperator()) {
+                    case BINARYSHIFTLEFT:
+                    case BINARYSHIFTRIGHT:
+                    case BINARYUNSIGNEDSHIFTRIGHT:
+                        if (v.get(0).resolveType().resolve() == TypeRef.Native.LONG) {
+                            target.print("%");
+                            target.print(toTempSymbol(aValue, "v2_ext"));
+                        } else {
+                            writeResolved(value);
+                        }
+                        break;
+                    default:
+                        writeResolved(value);
+                        break;
+                }
+            } else {
+                writeResolved(value);
             }
-            writeResolved(v.get(i));
         }
     }
 
