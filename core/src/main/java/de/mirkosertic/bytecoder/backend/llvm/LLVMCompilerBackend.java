@@ -264,19 +264,13 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             if (!t.getAccessFlags().isNative() && theProvidingClass.isOpaqueType()) {
                                 // For all the other methods we generate
                                 // the JS wrapper implementation later by this compiler
-
-                                if (t.getSignature().getReturnType() == BytecodePrimitiveTypeRef.LONG ||
-                                    t.getSignature().getReturnType() == BytecodePrimitiveTypeRef.DOUBLE) {
-                                    throw new IllegalArgumentException("Cannot link opaque reference method " + t.getName().stringValue() + " in class " + theProvidingClass.getClassName().name() + " with signature " + t.getSignature() + " : return type must not be Long or Double");
-                                }
-                                for (final BytecodeTypeRef theTypeRef : t.getSignature().getArguments()) {
-                                    if (theTypeRef == BytecodePrimitiveTypeRef.LONG ||
-                                        theTypeRef == BytecodePrimitiveTypeRef.DOUBLE) {
-                                        throw new IllegalArgumentException("Cannot link opaque reference method " + t.getName().stringValue() + " in class " + theProvidingClass.getClassName().name() + " with signature " + t.getSignature() + " : argument must not be Long or Double");
-                                    }
-                                }
-
                                 opaqueReferenceMethods.add(new OpaqueReferenceMethod(theProvidingClass, t));
+                            }
+
+                            for (final BytecodeTypeRef theTypeRef : t.getSignature().getArguments()) {
+                                if (theTypeRef == BytecodePrimitiveTypeRef.LONG) {
+                                    throw new IllegalArgumentException("Cannot link native method " + t.getName().stringValue() + " in class " + theProvidingClass.getClassName().name() + " with signature " + t.getSignature() + " : argument must not be Long");
+                                }
                             }
 
                             final BytecodeImportedLink theLink = theProvidingClass.linkFor(t);
@@ -1281,14 +1275,12 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         final BytecodeAnnotation theExport = theMethod.getAttributes().getAnnotationByType(Export.class.getName());
                         if (theExport != null) {
 
-                            if (theMethod.getSignature().getReturnType() == BytecodePrimitiveTypeRef.LONG ||
-                                theMethod.getSignature().getReturnType() == BytecodePrimitiveTypeRef.DOUBLE) {
-                                throw new IllegalArgumentException("Cannot export method " + theMethod.getName().stringValue() + " in class " + theLinkedClass.getClassName().name() + " with signature " + theMethod.getSignature() + " : return type must not be Long or Double");
+                            if (theMethod.getSignature().getReturnType() == BytecodePrimitiveTypeRef.LONG) {
+                                throw new IllegalArgumentException("Cannot export method " + theMethod.getName().stringValue() + " in class " + theLinkedClass.getClassName().name() + " with signature " + theMethod.getSignature() + " : return type must not be Long");
                             }
                             for (final BytecodeTypeRef theTypeRef : theMethod.getSignature().getArguments()) {
-                                if (theTypeRef == BytecodePrimitiveTypeRef.LONG ||
-                                    theTypeRef == BytecodePrimitiveTypeRef.DOUBLE) {
-                                    throw new IllegalArgumentException("Cannot export method " + theMethod.getName().stringValue() + " in class " + theLinkedClass.getClassName().name() + " with signature " + theMethod.getSignature() + " : argument must not be Long or Double");
+                                if (theTypeRef == BytecodePrimitiveTypeRef.LONG) {
+                                    throw new IllegalArgumentException("Cannot export method " + theMethod.getName().stringValue() + " in class " + theLinkedClass.getClassName().name() + " with signature " + theMethod.getSignature() + " : argument must not be Long");
                                 }
                             }
 
@@ -2098,19 +2090,19 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("                    currentpos: 0,");
                 theWriter.println("                    data: bufView,");
                 theWriter.println("                    size: length,");
-                theWriter.println("                    skip0LONGLONG: function(handle,amount) {");
+                theWriter.println("                    skip0INTINT: function(handle,amount) {");
                 theWriter.println("                        var remaining = this.size - this.currentpos;");
                 theWriter.println("                        var possible = Math.min(remaining, amount);");
                 theWriter.println("                        this.currentpos+=possible;");
                 theWriter.println("                        return possible;");
                 theWriter.println("                    },");
-                theWriter.println("                    available0LONG: function(handle) {");
+                theWriter.println("                    available0INT: function(handle) {");
                 theWriter.println("                        return this.size - this.currentpos;");
                 theWriter.println("                    },");
-                theWriter.println("                    read0LONG: function(handle) {");
+                theWriter.println("                    read0INT: function(handle) {");
                 theWriter.println("                        return this.data[this.currentpos++];");
                 theWriter.println("                    },");
-                theWriter.println("                    readBytesLONGL1BYTEINTINT: function(handle,target,offset,length) {");
+                theWriter.println("                    readBytesINTL1BYTEINTINT: function(handle,target,offset,length) {");
                 theWriter.println("                        if (length === 0) {");
                 theWriter.println("                            return 0;");
                 theWriter.println("                        }");
@@ -2147,7 +2139,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("         };");
                 theWriter.println("         var stdout = {");
                 theWriter.println("             buffer: \"\",");
-                theWriter.println("             writeBytesLONGL1BYTEINTINT: function(handle, data, offset, length) {");
+                theWriter.println("             writeBytesINTL1BYTEINTINT: function(handle, data, offset, length) {");
                 theWriter.println("                 if (length > 0) {");
                 theWriter.println("                     var array = new Uint8Array(length);");
                 theWriter.println("                     data+=20;");
@@ -2167,9 +2159,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("                     }");
                 theWriter.println("                 }");
                 theWriter.println("             },");
-                theWriter.println("             close0LONG: function(handle) {");
+                theWriter.println("             close0INT: function(handle) {");
                 theWriter.println("             },");
-                theWriter.println("             writeIntLONGINT: function(handle,value) {");
+                theWriter.println("             writeIntINTINT: function(handle,value) {");
                 theWriter.println("                 var c = String.fromCharCode(value);");
                 theWriter.println("                 if (c == '\\n') {");
                 theWriter.println("                     console.log(stdout.buffer);");
@@ -2403,14 +2395,14 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("         },");
 
                 theWriter.println("         fileoutputstream : {");
-                theWriter.println("             writeBytesLONGL1BYTEINTINT : function(thisref, handle, data, offset, length) {");
-                theWriter.println("                 bytecoder.filehandles[handle].writeBytesLONGL1BYTEINTINT(handle,data,offset,length);");
+                theWriter.println("             writeBytesINTL1BYTEINTINT : function(thisref, handle, data, offset, length) {");
+                theWriter.println("                 bytecoder.filehandles[handle].writeBytesINTL1BYTEINTINT(handle,data,offset,length);");
                 theWriter.println("             },");
-                theWriter.println("             writeIntLONGINT : function(thisref, handle, intvalue) {");
-                theWriter.println("                 bytecoder.filehandles[handle].writeIntLONGINT(handle,intvalue);");
+                theWriter.println("             writeIntINTINT : function(thisref, handle, intvalue) {");
+                theWriter.println("                 bytecoder.filehandles[handle].writeIntINTINT(handle,intvalue);");
                 theWriter.println("             },");
-                theWriter.println("             close0LONG : function(thisref,handle) {");
-                theWriter.println("                 bytecoder.filehandles[handle].close0LONG(handle);");
+                theWriter.println("             close0INT : function(thisref,handle) {");
+                theWriter.println("                 bytecoder.filehandles[handle].close0INT(handle);");
                 theWriter.println("             },");
                 theWriter.println("         },");
 
@@ -2418,20 +2410,20 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("             open0String : function(thisref,name) {");
                 theWriter.println("                 return bytecoder.openForRead(bytecoder.toJSString(name));");
                 theWriter.println("             },");
-                theWriter.println("             read0LONG : function(thisref,handle) {");
-                theWriter.println("                 return bytecoder.filehandles[handle].read0LONG(handle);");
+                theWriter.println("             read0INT : function(thisref,handle) {");
+                theWriter.println("                 return bytecoder.filehandles[handle].read0INT(handle);");
                 theWriter.println("             },");
-                theWriter.println("             readBytesLONGL1BYTEINTINT : function(thisref,handle,data,offset,length) {");
-                theWriter.println("                 return bytecoder.filehandles[handle].readBytesLONGL1BYTEINTINT(handle,data,offset,length);");
+                theWriter.println("             readBytesINTL1BYTEINTINT : function(thisref,handle,data,offset,length) {");
+                theWriter.println("                 return bytecoder.filehandles[handle].readBytesINTL1BYTEINTINT(handle,data,offset,length);");
                 theWriter.println("             },");
-                theWriter.println("             skip0LONGLONG : function(thisref,handle,amount) {");
-                theWriter.println("                 return bytecoder.filehandles[handle].skip0LONGLONG(handle,amount);");
+                theWriter.println("             skip0INTINT : function(thisref,handle,amount) {");
+                theWriter.println("                 return bytecoder.filehandles[handle].skip0INTINT(handle,amount);");
                 theWriter.println("             },");
-                theWriter.println("             available0LONG : function(thisref,handle) {");
-                theWriter.println("                 return bytecoder.filehandles[handle].available0LONG(handle);");
+                theWriter.println("             available0INT : function(thisref,handle) {");
+                theWriter.println("                 return bytecoder.filehandles[handle].available0INT(handle);");
                 theWriter.println("             },");
-                theWriter.println("             close0LONG : function(thisref,handle) {");
-                theWriter.println("                 bytecoder.filehandles[handle].close0LONG(handle);");
+                theWriter.println("             close0INT : function(thisref,handle) {");
+                theWriter.println("                 bytecoder.filehandles[handle].close0INT(handle);");
                 theWriter.println("             },");
                 theWriter.println("         },");
 
