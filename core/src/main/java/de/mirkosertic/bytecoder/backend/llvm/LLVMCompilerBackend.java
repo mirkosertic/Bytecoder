@@ -264,6 +264,18 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             if (!t.getAccessFlags().isNative() && theProvidingClass.isOpaqueType()) {
                                 // For all the other methods we generate
                                 // the JS wrapper implementation later by this compiler
+
+                                if (t.getSignature().getReturnType() == BytecodePrimitiveTypeRef.LONG ||
+                                    t.getSignature().getReturnType() == BytecodePrimitiveTypeRef.DOUBLE) {
+                                    throw new IllegalArgumentException("Cannot link opaque reference method " + t.getName().stringValue() + " in class " + theProvidingClass.getClassName().name() + " with signature " + t.getSignature() + " : return type must not be Long or Double");
+                                }
+                                for (final BytecodeTypeRef theTypeRef : t.getSignature().getArguments()) {
+                                    if (theTypeRef == BytecodePrimitiveTypeRef.LONG ||
+                                        theTypeRef == BytecodePrimitiveTypeRef.DOUBLE) {
+                                        throw new IllegalArgumentException("Cannot link opaque reference method " + t.getName().stringValue() + " in class " + theProvidingClass.getClassName().name() + " with signature " + t.getSignature() + " : argument must not be Long or Double");
+                                    }
+                                }
+
                                 opaqueReferenceMethods.add(new OpaqueReferenceMethod(theProvidingClass, t));
                             }
 
@@ -2081,7 +2093,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("                for (var i=0, strLen=responsetext.length; i<strLen; i++) {");
                 theWriter.println("                    bufView[i] = responsetext.charCodeAt(i) & 0xff;");
                 theWriter.println("                }");
-                theWriter.println("                var handle = BigInt(bytecoder.filehandles.length);");
+                theWriter.println("                var handle = bytecoder.filehandles.length;");
                 theWriter.println("                bytecoder.filehandles[handle] = {");
                 theWriter.println("                    currentpos: 0,");
                 theWriter.println("                    data: bufView,");
@@ -2090,7 +2102,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("                        var remaining = this.size - this.currentpos;");
                 theWriter.println("                        var possible = Math.min(remaining, amount);");
                 theWriter.println("                        this.currentpos+=possible;");
-                theWriter.println("                        return BigInt(possible);");
+                theWriter.println("                        return possible;");
                 theWriter.println("                    },");
                 theWriter.println("                    available0LONG: function(handle) {");
                 theWriter.println("                        return this.size - this.currentpos;");
@@ -2116,9 +2128,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("                };");
                 theWriter.println("                return handle;");
                 theWriter.println("            }");
-                theWriter.println("            return BigInt(-1);");
+                theWriter.println("            return -1;");
                 theWriter.println("         } catch(e) {");
-                theWriter.println("             return BigInt(-1);");
+                theWriter.println("             return -1;");
                 theWriter.println("         }");
                 theWriter.println("     },");
                 theWriter.println();
@@ -2167,10 +2179,10 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("                 }");
                 theWriter.println("             }");
                 theWriter.println("         };");
-                theWriter.println("         bytecoder.filehandles[BigInt(0)] = stddin;");
-                theWriter.println("         bytecoder.filehandles[BigInt(1)] = stdout;");
-                theWriter.println("         bytecoder.filehandles[BigInt(2)] = stdout;");
-                theWriter.println("         bytecoder.exports.initDefaultFileHandles(-1, BigInt(0),BigInt(1),BigInt(2));");
+                theWriter.println("         bytecoder.filehandles[0] = stddin;");
+                theWriter.println("         bytecoder.filehandles[1] = stdout;");
+                theWriter.println("         bytecoder.filehandles[2] = stdout;");
+                theWriter.println("         bytecoder.exports.initDefaultFileHandles(-1, 0,1,2);");
                 theWriter.println("     },");
                 theWriter.println();
 
