@@ -39,10 +39,37 @@ public class Quicksort {
         return counter;
     }
 
+    static <T> int partitionComparable(final T[] array, final int begin, final int end) {
+        final int pivot = end;
+
+        int counter = begin;
+        for (int i = begin; i < end; i++) {
+            if (((Comparable) array[i]).compareTo(array[pivot]) < 0) {
+                final T temp = array[counter];
+                array[counter] = array[i];
+                array[i] = temp;
+                counter++;
+            }
+        }
+        final T temp = array[pivot];
+        array[pivot] = array[counter];
+        array[counter] = temp;
+
+        return counter;
+    }
+
     public static <T> void quickSort(final T[] array, final int begin, final int end, final Comparator<T> comparator) {
         if (end <= begin) return;
         final int pivot = partition(array, begin, end, comparator);
         quickSort(array, begin, pivot-1, comparator);
         quickSort(array, pivot+1, end, comparator);
     }
+
+    public static <T> void quickSortComparable(final T[] array, final int begin, final int end) {
+        if (end <= begin) return;
+        final int pivot = partitionComparable(array, begin, end);
+        quickSortComparable(array, begin, pivot-1);
+        quickSortComparable(array, pivot+1, end);
+    }
+
 }
