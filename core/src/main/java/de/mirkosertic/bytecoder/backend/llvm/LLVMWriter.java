@@ -18,7 +18,8 @@ package de.mirkosertic.bytecoder.backend.llvm;
 import de.mirkosertic.bytecoder.backend.NativeMemoryLayouter;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
-import de.mirkosertic.bytecoder.core.BytecodeClass;
+import de.mirkosertic.bytecoder.classlib.VM;
+import de.mirkosertic.bytecoder.classlib.java.util.Quicksort;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
@@ -132,6 +133,7 @@ public class LLVMWriter implements AutoCloseable {
 
     public static final String INSTANCEOFSUFFIX = "__instanceof";
     public static final String RUNTIMECLASSSUFFIX = "__runtimeclass";
+    public static final String RUNTIMECLASSINITSTATUSSUFFIX = "__runtimeclassinitstatus";
     public static final String NEWINSTANCE_METHOD_NAME = "$newInstance";
     public static final String CLASSINITSUFFIX = "__init";
     public static final String VTABLESUFFIX = "__vtable";
@@ -143,7 +145,7 @@ public class LLVMWriter implements AutoCloseable {
 
         String globalFromStringPool(final String aValue);
 
-        String resolveCallsiteBootstrapFor(BytecodeClass owningClass, String callsiteId, Program program, RegionNode bootstrapMethod);
+        String resolveCallsiteBootstrapFor(BytecodeLinkedClass owningClass, String callsiteId, Program program, RegionNode bootstrapMethod);
 
         String methodTypeFactoryNameFor(final BytecodeMethodSignature aSignature);
 
@@ -220,7 +222,7 @@ public class LLVMWriter implements AutoCloseable {
         return theResult;
     }
 
-    public void write(final Program aProgram, final LLVMDebugInformation.SubProgram aSubProgram) {
+    public void write(final BytecodeLinkedClass aOwningClass, final Program aProgram, final LLVMDebugInformation.SubProgram aSubProgram) {
         final ControlFlowGraph theGraph = aProgram.getControlFlowGraph();
         final RegionNode theStart = theGraph.startNode();
         final GraphDFSOrder<RegionNode> order = new GraphDFSOrder(theStart,
@@ -238,10 +240,25 @@ public class LLVMWriter implements AutoCloseable {
             if (!theClass.getClassName().name().equals(MemoryManager.class.getName())) {
                 target.print("    %");
                 target.print(LLVMWriterUtils.runtimeClassVariableName(theClass.getClassName()));
-                target.print(" = call i32 @");
-                target.print(LLVMWriterUtils.toClassName(theClass.getClassName()));
-                target.print(LLVMWriter.CLASSINITSUFFIX);
-                target.println("()");
+                // We know the following JVM classes were initialized by the bootstrap,
+                // so we can safely access them without init invocation
+                if (theClass.getClassName().name().equals(String.class.getName()) ||
+                    theClass.getClassName().name().equals(Array.class.getName()) ||
+                    theClass.getClassName().name().equals(VM.class.getName()) ||
+                    theClass.getClassName().name().equals(Quicksort.class.getName())) {
+
+                    aProgram.getLinkerContext().getStatistics().context("ClassInitialization")
+                            .counter("Avoided initializations").increment();
+
+                    target.print(" = load i32, i32* @");
+                    target.print(LLVMWriterUtils.toClassName(theClass.getClassName()));
+                    target.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+                } else {
+                    target.print(" = call i32 @");
+                    target.print(LLVMWriterUtils.toClassName(theClass.getClassName()));
+                    target.print(LLVMWriter.CLASSINITSUFFIX);
+                    target.println("()");
+                }
             }
         }
 
@@ -1800,8 +1817,9 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final ResolveCallsiteObjectExpression e) {
+        final BytecodeLinkedClass theOwningClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(e.getOwningClass().getThisInfo().getConstant()));
         target.print("call i32 @");
-        target.print(symbolResolver.resolveCallsiteBootstrapFor(e.getOwningClass(),
+        target.print(symbolResolver.resolveCallsiteBootstrapFor(theOwningClass,
                 e.getCallsiteId(),
                 e.getProgram(),
                 e.getBootstrapMethod()

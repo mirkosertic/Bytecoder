@@ -27,7 +27,7 @@ import java.util.Objects;
 public class TArrays {
 
     public static <T> void sort(final T[] aData, final int aStart, final int aEnd) {
-        Quicksort.quickSort(aData, aStart, aEnd, VM.DEFAULT);
+        Quicksort.quickSortComparable(aData, aStart, aEnd);
     }
 
     public static <T> void sort(final T[] aData, final int aStart, final int aEnd, final Comparator<T> c) {
@@ -39,7 +39,7 @@ public class TArrays {
     }
 
     public static <T> void sort(final T[] aData) {
-        Quicksort.quickSort(aData, 0, aData.length - 1, VM.DEFAULT);
+        Quicksort.quickSortComparable(aData, 0, aData.length - 1);
     }
 
     public static <T> List<T> asList(final T... aValues) {

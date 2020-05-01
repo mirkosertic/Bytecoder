@@ -28,8 +28,9 @@ import de.mirkosertic.bytecoder.backend.NativeMemoryLayouter;
 import de.mirkosertic.bytecoder.classlib.Address;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
+import de.mirkosertic.bytecoder.classlib.VM;
+import de.mirkosertic.bytecoder.classlib.java.util.Quicksort;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
-import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeImportedLink;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
@@ -77,10 +78,12 @@ import java.util.stream.Collectors;
 public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
     private static class CallSite {
+        private final BytecodeLinkedClass owningClass;
         private final Program program;
         private final RegionNode bootstrapMethod;
 
-        private CallSite(final Program aProgram, final RegionNode aBootstrapMethod) {
+        private CallSite(final BytecodeLinkedClass aOwningClass, final Program aProgram, final RegionNode aBootstrapMethod) {
+            this.owningClass = aOwningClass;
             this.program = aProgram;
             this.bootstrapMethod = aBootstrapMethod;
         }
@@ -150,10 +153,10 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 }
 
                 @Override
-                public String resolveCallsiteBootstrapFor(final BytecodeClass owningClass, final String callsiteId, final Program program, final RegionNode bootstrapMethod) {
+                public String resolveCallsiteBootstrapFor(final BytecodeLinkedClass owningClass, final String callsiteId, final Program program, final RegionNode bootstrapMethod) {
                     CallSite callSite = callsites.get(callsiteId);
                     if (callSite == null) {
-                        callSite = new CallSite(program, bootstrapMethod);
+                        callSite = new CallSite(owningClass, program, bootstrapMethod);
                         callsites.put(callsiteId, callSite);
                     }
                     return "resolvecallsite" + System.identityHashCode(callSite);
@@ -796,6 +799,12 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.println(" = private global i32 0");
                     pw.println();
 
+                    pw.print("@");
+                    pw.print(theClassName);
+                    pw.print(LLVMWriter.RUNTIMECLASSINITSTATUSSUFFIX);
+                    pw.println(" = private global i32 0");
+                    pw.println();
+
                     if (theLinkedClass != theClassLinkedCass) {
                         final BytecodeVTable theVtable = theSymbolResolver.vtableFor(theLinkedClass);
                         final List<BytecodeVTable.Slot> theSlots = theVtable.sortedSlots();
@@ -890,13 +899,15 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.print("    %class = load i32, i32* @");
                         pw.print(theClassName);
                         pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
-                        pw.println("    %status = add i32 %class, 8");
-                        pw.println("    %statusptr = inttoptr i32 %status to i32*");
-                        pw.println("    %value = load i32, i32* %statusptr");
+                        pw.print("    %value = load i32, i32* @");
+                        pw.print(theClassName);
+                        pw.println(LLVMWriter.RUNTIMECLASSINITSTATUSSUFFIX);
                         pw.println("    %initialized_compare = icmp eq i32 %value, 1");
                         pw.println("    br i1 %initialized_compare, label %done, label %unitialized");
                         pw.println("unitialized:");
-                        pw.println("    store i32 1,i32* %statusptr");
+                        pw.print("    store i32 1,i32* @");
+                        pw.print(theClassName);
+                        pw.println(LLVMWriter.RUNTIMECLASSINITSTATUSSUFFIX);
 
                         // Call superclass init
                         if (!theLinkedClass.getClassName().name().equals(Object.class.getName())) {
@@ -1242,7 +1253,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         }
 
                         try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter, aLinkerContext, theSymbolResolver)) {
-                            theWriter.write(theSSAProgram, subProgram);
+                            theWriter.write(theLinkedClass, theSSAProgram, subProgram);
                         }
 
                         pw.println("}");
@@ -1351,7 +1362,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     final LLVMDebugInformation.SubProgram subProgram = compileUnit.subProgram(theSSAProgram, "/resolvecallsite" + callsite, new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
 
                     // Run optimizer
-                    // We use a special LLVM optimizer, which does only stuff LLVM CANNOT do, such
+                    // We use a special optimizer, which does only stuff LLVM CANNOT do, such
                     // as virtual method invocation optimization. All other optimization work
                     // is done by LLVM!
                     KnownOptimizer.LLVM.optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
@@ -1383,7 +1394,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.println(" {");
 
                     try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter, aLinkerContext, theSymbolResolver)) {
-                        theWriter.write(theEntry.getValue().program, subProgram);
+                        theWriter.write(theEntry.getValue().owningClass, theEntry.getValue().program, subProgram);
                     }
 
                     pw.println("}");
@@ -1578,6 +1589,24 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.print("strpool_");
                     pw.println(i);
                 }
+
+                // Some initialization logic
+                aLinkerContext.linkedClasses()
+                    .map(t -> t.targetNode())
+                    .filter(t -> {
+                        if (t.getClassName().name().equals(VM.class.getName()) ||
+                            t.getClassName().name().equals(Quicksort.class.getName())) {
+                            return true;
+                        }
+                        return false;
+                    }).forEach(theClass -> {
+                        pw.print("    %");
+                        pw.print(LLVMWriterUtils.runtimeClassVariableName(theClass.getClassName()));
+                        pw.print(" = call i32 @");
+                        pw.print(LLVMWriterUtils.toClassName(theClass.getClassName()));
+                        pw.print(LLVMWriter.CLASSINITSUFFIX);
+                        pw.println("()");
+                    });
 
                 pw.println("    ret void");
                 pw.println("}");
