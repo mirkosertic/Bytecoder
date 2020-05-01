@@ -193,7 +193,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 }
             };
             final LLVMDebugInformation debugInformation = new LLVMDebugInformation();
-            final NativeMemoryLayouter memoryLayouter = new NativeMemoryLayouter(aLinkerContext);
+            final NativeMemoryLayouter memoryLayouter = new NativeMemoryLayouter(aLinkerContext, 8);
 
             final File theLLFile = File.createTempFile("llvm", ".ll");
             theLLFile.deleteOnExit();
@@ -2136,7 +2136,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("         bytecoder.filehandles[BigInt(0)] = stddin;");
                 theWriter.println("         bytecoder.filehandles[BigInt(1)] = stdout;");
                 theWriter.println("         bytecoder.filehandles[BigInt(2)] = stdout;");
-                theWriter.println("         bytecoder.exports.initDefaultFileHandles(BigInt(-1),BigInt(0),BigInt(1),BigInt(2));");
+                theWriter.println("         bytecoder.exports.initDefaultFileHandles(-1, BigInt(0),BigInt(1),BigInt(2));");
                 theWriter.println("     },");
                 theWriter.println();
 

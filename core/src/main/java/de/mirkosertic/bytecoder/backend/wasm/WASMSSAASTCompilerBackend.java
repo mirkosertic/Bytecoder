@@ -564,7 +564,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         });
 
         // Initialize memory layout for classes and instances
-        final NativeMemoryLayouter theMemoryLayout = new NativeMemoryLayouter(aLinkerContext);
+        final NativeMemoryLayouter theMemoryLayout = new NativeMemoryLayouter(aLinkerContext, 4);
 
         // Now everything else
         aLinkerContext.linkedClasses().forEach(aEntry -> {
