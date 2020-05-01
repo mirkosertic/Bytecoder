@@ -607,6 +607,17 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
+                pw.println("define internal i64 @maximum.i64(i64 %a, i64 %b) inlinehint {");
+                pw.println("entry:");
+                pw.println("   %test = icmp sgt i64 %a, %b");
+                pw.println("   br i1 %test, label %aisgreater, label %notgreater");
+                pw.println("aisgreater:");
+                pw.println("   ret i64 %a");
+                pw.println("notgreater:");
+                pw.println("   ret i64 %b");
+                pw.println("}");
+                pw.println();
+
                 pw.println("define internal i32 @minimum(i32 %a, i32 %b) inlinehint {");
                 pw.println("entry:");
                 pw.println("   %test = icmp slt i32 %a, %b");
@@ -615,6 +626,17 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("   ret i32 %a");
                 pw.println("notsmaller:");
                 pw.println("   ret i32 %b");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal i64 @minimum.i64(i64 %a, i64 %b) inlinehint {");
+                pw.println("entry:");
+                pw.println("   %test = icmp slt i64 %a, %b");
+                pw.println("   br i1 %test, label %aissmaller, label %notsmaller");
+                pw.println("aissmaller:");
+                pw.println("   ret i64 %a");
+                pw.println("notsmaller:");
+                pw.println("   ret i64 %b");
                 pw.println("}");
                 pw.println();
 
@@ -1246,6 +1268,18 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         final List<String> attributes = new ArrayList<>();
                         final BytecodeAnnotation theExport = theMethod.getAttributes().getAnnotationByType(Export.class.getName());
                         if (theExport != null) {
+
+                            if (theMethod.getSignature().getReturnType() == BytecodePrimitiveTypeRef.LONG ||
+                                theMethod.getSignature().getReturnType() == BytecodePrimitiveTypeRef.DOUBLE) {
+                                throw new IllegalArgumentException("Cannot export method " + theMethod.getName().stringValue() + " in class " + theLinkedClass.getClassName().name() + " with signature " + theMethod.getSignature() + " : return type must not be Long or Double");
+                            }
+                            for (final BytecodeTypeRef theTypeRef : theMethod.getSignature().getArguments()) {
+                                if (theTypeRef == BytecodePrimitiveTypeRef.LONG ||
+                                    theTypeRef == BytecodePrimitiveTypeRef.DOUBLE) {
+                                    throw new IllegalArgumentException("Cannot export method " + theMethod.getName().stringValue() + " in class " + theLinkedClass.getClassName().name() + " with signature " + theMethod.getSignature() + " : argument must not be Long or Double");
+                                }
+                            }
+
                             pw.print("attributes #");
                             pw.print(attributeCounter.get());
                             pw.print(" = {");

@@ -61,8 +61,8 @@ public class MemoryManager {
     }
 
     @Export("freeMem")
-    public static long freeMem() {
-        long theResult = 0;
+    public static int freeMem() {
+        int theResult = 0;
 
         final int heapBase = Address.getHeapBase();
 
@@ -77,8 +77,8 @@ public class MemoryManager {
     }
 
     @Export("usedMem")
-    public static long usedMem() {
-        long theResult = 0;
+    public static int usedMem() {
+        int theResult = 0;
 
         final int heapBase = Address.getHeapBase();
 

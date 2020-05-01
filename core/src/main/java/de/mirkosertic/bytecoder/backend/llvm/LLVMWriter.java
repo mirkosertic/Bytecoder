@@ -1313,17 +1313,16 @@ public class LLVMWriter implements AutoCloseable {
         final Value object = expression.incomingDataFlows().get(0);
         final Value value = expression.incomingDataFlows().get(1);
 
-        target.print("    %");
-        target.print(toTempSymbol(expression, "offset"));
-        target.print(" = add i32 ");
-        writeResolved(object);
-        target.print(",");
-
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(expression.getField().getClassIndex().getClassConstant().getConstant()));
         final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theLinkedClass.getClassName());
         final BytecodeResolvedFields theInstanceFields = theLinkedClass.resolvedFields();
         final BytecodeResolvedFields.FieldEntry theField = theInstanceFields.fieldByName(expression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
+        target.print("    %");
+        target.print(toTempSymbol(expression, "offset"));
+        target.print(" = add i32 ");
+        writeResolved(object);
+        target.print(",");
         target.print(theLayout.offsetForInstanceMember(theField.getValue().getName().stringValue()));
         target.println();
 
@@ -1740,7 +1739,7 @@ public class LLVMWriter implements AutoCloseable {
 
     private void write(final SqrtExpression e) {
         if (e.resolveType().resolve() == TypeRef.Native.DOUBLE) {
-            target.print("call float @llvm.sqrt.f64(double ");
+            target.print("call double @llvm.sqrt.f64(double ");
             write(e.incomingDataFlows().get(0), true);
             target.print(")");
         } else {
@@ -1854,6 +1853,9 @@ public class LLVMWriter implements AutoCloseable {
             case FLOAT:
                 target.print(" @llvm.maximum.f32");
                 break;
+            case LONG:
+                target.print(" @maximum.i64");
+                break;
             default:
                 target.print(" @maximum");
                 break;
@@ -1949,6 +1951,9 @@ public class LLVMWriter implements AutoCloseable {
                 break;
             case FLOAT:
                 target.print(" @llvm.minimum.f32");
+                break;
+            case LONG:
+                target.print(" @minimum.i64");
                 break;
             default:
                 target.print(" @minimum");

@@ -468,7 +468,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
                     aHelper.push(theINS.getOpcodeAddress(), theValue1);
                     aHelper.push(theINS.getOpcodeAddress(), theValue2);
-                    aHelper.push(theINS.getOpcodeAddress(), theValue2);
+                    aHelper.push(theINS.getOpcodeAddress(), theValue1);
                 } else {
                     final Value theValue2 = aHelper.pop();
                     final Value theValue3 = aHelper.pop();
