@@ -546,7 +546,7 @@ public class LLVMWriter implements AutoCloseable {
     private void tempify(final ArrayEntryExpression e) {
         target.print("    %");
         target.print(toTempSymbol(e, "index"));
-        target.print(" = mul i32 4,");
+        target.print(" = mul i32 8,");
         write(e.incomingDataFlows().get(1), true);
         target.println();
 
@@ -1090,7 +1090,7 @@ public class LLVMWriter implements AutoCloseable {
     private void write(final ArrayStoreExpression e) {
         target.print("    %");
         target.print(toTempSymbol(e, "index"));
-        target.print(" = mul i32 4,");
+        target.print(" = mul i32 8,");
         writeResolved(e.incomingDataFlows().get(1));
         target.println();
 

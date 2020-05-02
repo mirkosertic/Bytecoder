@@ -1778,7 +1778,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.print(" = add i32 %allocated_");
                         pw.print(i);
                         pw.print(", ");
-                        pw.println(20 + j * 4);
+                        pw.println(20 + j * 8);
 
                         pw.print("    %offset_" + i + "_" + j + "_ptr");
                         pw.print(" = inttoptr i32 ");
@@ -1808,10 +1808,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 // Some initialization logic
                 aLinkerContext.linkedClasses()
                     .map(Edge::targetNode)
-                    .filter(t -> {
-                        return t.getClassName().name().equals(VM.class.getName()) ||
-                                t.getClassName().name().equals(Quicksort.class.getName());
-                    }).forEach(theClass -> {
+                    .filter(t -> t.getClassName().name().equals(VM.class.getName()) ||
+                            t.getClassName().name().equals(Quicksort.class.getName())).forEach(theClass -> {
                         pw.print("    %");
                         pw.print(LLVMWriterUtils.runtimeClassVariableName(theClass.getClassName()));
                         pw.print(" = call i32 @");
@@ -2234,7 +2232,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("                            return -1;");
                 theWriter.println("                        }");
                 theWriter.println("                        for (var j=0;j<possible;j++) {");
-                theWriter.println("                            bytecoder.runningInstanceMemory[target + 20 + offset * 4]=this.data[this.currentpos++];");
+                theWriter.println("                            bytecoder.runningInstanceMemory[target + 20 + offset * 8]=this.data[this.currentpos++];");
                 theWriter.println("                            offset++;");
                 theWriter.println("                        }");
                 theWriter.println("                        return possible;");
@@ -2267,7 +2265,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("                     data+=20;");
                 theWriter.println("                     for (var i = 0; i < length; i++) {");
                 theWriter.println("                         array[i] = bytecoder.intInMemory(data);");
-                theWriter.println("                         data+=4;");
+                theWriter.println("                         data+=8;");
                 theWriter.println("                     }");
                 theWriter.println("                     var asstring = String.fromCharCode.apply(null, array);");
                 theWriter.println("                     for (var i=0;i<asstring.length;i++) {");
@@ -2324,7 +2322,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("         value = value + 20;");
                 theWriter.println("         for (var i=0;i<theLength;i++) {");
                 theWriter.println("             var theCharCode = bytecoder.intInMemory(value);");
-                theWriter.println("             value = value + 4;");
+                theWriter.println("             value = value + 8;");
                 theWriter.println("             theData+= String.fromCharCode(theCharCode);");
                 theWriter.println("         }");
                 theWriter.println("         return theData;");
@@ -3008,7 +3006,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 aWriter.print("    %");
                 aWriter.print(theArgName);
                 aWriter.print("_offset = add i32 %staticdata, ");
-                aWriter.println(20 + k * 4);
+                aWriter.println(20 + k * 8);
 
                 aWriter.print("    %");
                 aWriter.print(theArgName);
@@ -3122,7 +3120,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 aWriter.print("    %");
                 aWriter.print(theArgName);
                 aWriter.print("_offset = add i32 %staticdata, ");
-                aWriter.println(20 + k * 4);
+                aWriter.println(20 + k * 8);
 
                 aWriter.print("    %");
                 aWriter.print(theArgName);
@@ -3250,7 +3248,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 aWriter.print("    %");
                 aWriter.print(theArgName);
                 aWriter.print("_offset = add i32 %staticdata, ");
-                aWriter.println(20 + k * 4);
+                aWriter.println(20 + k * 8);
 
                 aWriter.print("    %");
                 aWriter.print(theArgName);
@@ -3358,7 +3356,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 aWriter.print("    %");
                 aWriter.print(theArgName);
                 aWriter.print("_offset = add i32 %staticdata, ");
-                aWriter.println(20 + k * 4);
+                aWriter.println(20 + k * 8);
 
                 aWriter.print("    %");
                 aWriter.print(theArgName);
@@ -3474,7 +3472,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 aWriter.print("    %");
                 aWriter.print(theArgName);
                 aWriter.print("_offset = add i32 %staticdata, ");
-                aWriter.println(20 + k * 4);
+                aWriter.println(20 + k * 8);
 
                 aWriter.print("    %");
                 aWriter.print(theArgName);

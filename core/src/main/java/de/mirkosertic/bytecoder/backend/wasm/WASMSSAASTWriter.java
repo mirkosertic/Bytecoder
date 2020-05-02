@@ -506,7 +506,7 @@ public class WASMSSAASTWriter {
 
         // If the index is a constant, we can precompute the offset.
         if (theIndex instanceof IntegerValue) {
-            final int offset = 20 + ((IntegerValue)theIndex).getIntValue() * 4;
+            final int offset = 20 + ((IntegerValue)theIndex).getIntValue() * 8;
 
             switch (aExpression.getArrayType().resolve()) {
                 case DOUBLE:
@@ -522,7 +522,7 @@ public class WASMSSAASTWriter {
             return;
         }
 
-        final WASMValue thePtr = i32.add(toValue(theArray), i32.mul(toValue(theIndex), i32.c(4, aExpression), aExpression), aExpression);
+        final WASMValue thePtr = i32.add(toValue(theArray), i32.mul(toValue(theIndex), i32.c(8, aExpression), aExpression), aExpression);
 
         switch (aExpression.getArrayType().resolve()) {
             case DOUBLE:
@@ -1163,7 +1163,7 @@ public class WASMSSAASTWriter {
     private WASMValue arrayEntryValue(final ArrayEntryExpression aValue) {
 
         final List<Value> theIncomingFlows = aValue.incomingDataFlows();
-        final WASMValue thePtr = i32.add(toValue(theIncomingFlows.get(0)), i32.mul(toValue(theIncomingFlows.get(1)), i32.c(4, aValue), aValue), aValue);
+        final WASMValue thePtr = i32.add(toValue(theIncomingFlows.get(0)), i32.mul(toValue(theIncomingFlows.get(1)), i32.c(8, aValue), aValue), aValue);
 
         switch (aValue.resolveType().resolve()) {
             case DOUBLE:
