@@ -40,7 +40,6 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
-import de.mirkosertic.bytecoder.core.BytecodeSignatureParser;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeVTable;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
@@ -268,9 +267,14 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                 opaqueReferenceMethods.add(new OpaqueReferenceMethod(theProvidingClass, t));
                             }
 
+                            boolean needsAdapterMethod = false;
+                            if (theSignature.getReturnType() == BytecodePrimitiveTypeRef.LONG) {
+                                needsAdapterMethod = true;
+                            }
                             for (final BytecodeTypeRef theTypeRef : t.getSignature().getArguments()) {
                                 if (theTypeRef == BytecodePrimitiveTypeRef.LONG) {
-                                    throw new IllegalArgumentException("Cannot link native method " + t.getName().stringValue() + " in class " + theProvidingClass.getClassName().name() + " with signature " + t.getSignature() + " : argument must not be Long");
+                                    needsAdapterMethod = true;
+                                    aLinkerContext.getLogger().warn("Possible pecision impact on Long datatype when calling imported method {}.{} with signature {}", theProvidingClass.getClassName().name(), t.getName().stringValue(), t.getSignature());
                                 }
                             }
 
@@ -293,10 +297,17 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.print(theLink.getLinkName());
                             pw.println("\"}");
 
-                            if (t.getSignature().getReturnType() == BytecodePrimitiveTypeRef.LONG) {
+                            final String returnType = LLVMWriterUtils.toType(TypeRef.toType(t.getSignature().getReturnType()));
+
+                            if (needsAdapterMethod) {
                                 // In this case, we expect a double as a return from JS
                                 // side and convert it into i64
-                                pw.print("declare double");
+                                pw.print("declare ");
+                                if (t.getSignature().getReturnType() == BytecodePrimitiveTypeRef.LONG) {
+                                    pw.print("double");
+                                } else {
+                                    pw.print(returnType);
+                                }
                                 pw.print(" @");
                                 pw.print(methodName);
                                 pw.print("_adapter(");
@@ -304,13 +315,19 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                 pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
                                 pw.print(" ");
                                 pw.print("%thisRef");
+
                                 for (int i = 0; i < theSignature.getArguments().length; i++) {
                                     final BytecodeTypeRef theParamType = theSignature.getArguments()[i];
-                                    pw.print(",");
-                                    pw.print(LLVMWriterUtils.toType(TypeRef.toType(theParamType)));
-                                    pw.print(" ");
-                                    pw.print("%p");
-                                    pw.print(i + 1);
+                                    if (theParamType == BytecodePrimitiveTypeRef.LONG) {
+                                        pw.print(",double %p");
+                                        pw.print(i + 1);
+                                    } else {
+                                        final String theTypeAsString = LLVMWriterUtils.toType(TypeRef.toType(theParamType));
+                                        pw.print(",");
+                                        pw.print(theTypeAsString);
+                                        pw.print(" %p");
+                                        pw.print(i + 1);
+                                    }
                                 }
 
                                 pw.print(")");
@@ -319,13 +336,16 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                 pw.println();
                                 pw.println();
 
-                                pw.print("define internal i64 @");
+                                pw.print("define internal ");
+                                pw.print(returnType);
+                                pw.print(" @");
                                 pw.print(methodName);
                                 pw.print("(");
 
                                 pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
                                 pw.print(" ");
                                 pw.print("%thisRef");
+
                                 for (int i = 0; i < theSignature.getArguments().length; i++) {
                                     final BytecodeTypeRef theParamType = theSignature.getArguments()[i];
                                     pw.print(",");
@@ -337,26 +357,67 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                                 pw.println(") inlinehint {");
 
-                                pw.print("    %temp = call double @");
-                                pw.print(methodName);
-                                pw.print("_adapter(i32 %thisRef");
+                                final StringBuilder theArguments = new StringBuilder("i32 %thisRef");
                                 for (int i = 0; i < theSignature.getArguments().length; i++) {
-                                    final BytecodeTypeRef theParamType = theSignature.getArguments()[i];
-                                    pw.print(",");
-                                    pw.print(LLVMWriterUtils.toType(TypeRef.toType(theParamType)));
-                                    pw.print(" ");
-                                    pw.print("%p");
-                                    pw.print(i + 1);
+                                    if (theSignature.getArguments()[i] == BytecodePrimitiveTypeRef.LONG) {
+                                        pw.print("    %p");
+                                        pw.print(i + 1);
+                                        pw.print("_converted = sitofp i64 %p");
+                                        pw.print(i + 1);
+                                        pw.println(" to double");
+
+                                        theArguments.append(",double %p");
+                                        theArguments.append(i + 1);
+                                        theArguments.append("_converted");
+                                    } else {
+                                        theArguments.append(",");
+                                        theArguments.append(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getArguments()[i])));
+                                        theArguments.append(" %p");
+                                        theArguments.append(i + 1);
+                                    }
                                 }
+
+                                if (theSignature.getReturnType() != BytecodePrimitiveTypeRef.VOID) {
+                                    pw.print("    %temp = call ");
+                                    if (theSignature.getReturnType() == BytecodePrimitiveTypeRef.LONG) {
+                                        pw.print("double");
+                                    } else {
+                                        pw.print(returnType);
+                                    }
+                                    pw.print(" @");
+                                    pw.print(methodName);
+                                } else {
+                                    pw.print("    call void @");
+                                    pw.print(methodName);
+                                }
+                                pw.print("_adapter(");
+                                pw.print(theArguments);
                                 pw.println(")");
-                                pw.println("    %conv = fptosi double %temp to i64");
-                                pw.println("    ret i64 %conv");
+
+                                if (theSignature.getReturnType() != BytecodePrimitiveTypeRef.VOID) {
+                                    if (theSignature.getReturnType() == BytecodePrimitiveTypeRef.LONG) {
+                                        pw.print("    %conv = fptosi double %temp to ");
+                                        pw.println(returnType);
+
+                                        pw.print("    ret ");
+                                        pw.print(returnType);
+                                        pw.println(" %conv");
+
+                                    } else {
+                                        pw.print("    ret ");
+                                        pw.print(returnType);
+                                        pw.println(" %temp");
+                                    }
+                                } else {
+                                    pw.println("    ret void");
+                                }
+
                                 pw.println("}");
                                 pw.println();
                             } else {
                                 // No adapter code
                                 pw.print("declare ");
-                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(t.getSignature().getReturnType())));
+                                pw.print(returnType);
                                 pw.print(" @");
                                 pw.print(methodName);
                                 pw.print("(");
@@ -1748,11 +1809,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 aLinkerContext.linkedClasses()
                     .map(Edge::targetNode)
                     .filter(t -> {
-                        if (t.getClassName().name().equals(VM.class.getName()) ||
-                            t.getClassName().name().equals(Quicksort.class.getName())) {
-                            return true;
-                        }
-                        return false;
+                        return t.getClassName().name().equals(VM.class.getName()) ||
+                                t.getClassName().name().equals(Quicksort.class.getName());
                     }).forEach(theClass -> {
                         pw.print("    %");
                         pw.print(LLVMWriterUtils.runtimeClassVariableName(theClass.getClassName()));
