@@ -274,20 +274,32 @@ public class VM {
     public static native boolean isLong(final MethodType aType, final int aParamIndex);
 
     @EmulatedByRuntime
-    public static native int reinterpretAsInt(final Object o);
+    public static native boolean isShort(final MethodType aType, final int aParamIndex);
 
     @EmulatedByRuntime
-    public static native long reinterpretAsLong(final Object o);
+    public static native boolean isByte(final MethodType aType, final int aParamIndex);
 
     @EmulatedByRuntime
-    public static native float reinterpretAsFloat(final Object o);
+    public static native long arrayEntryAsLong(final Object[] aObject, final int index);
 
     @EmulatedByRuntime
-    public static native double reinterpretAsDouble(final Object o);
+    public static native int arrayEntryAsInt(final Object[] aObject, final int index);
 
     @EmulatedByRuntime
-    public static native char reinterpretAsChar(final Object o);
+    public static native float arrayEntryAsFloat(final Object[] aObject, final int index);
 
     @EmulatedByRuntime
-    public static native boolean reinterpretAsBoolean(final Object o);
+    public static native double arrayEntryAsDouble(final Object[] aObject, final int index);
+
+    @EmulatedByRuntime
+    public static native char arrayEntryAsChar(final Object[] aObject, final int index);
+
+    @EmulatedByRuntime
+    public static native char arrayEntryAsBoolean(final Object[] aObject, final int index);
+
+    @EmulatedByRuntime
+    public static native short arrayEntryAsShort(final Object[] aObject, final int index);
+
+    @EmulatedByRuntime
+    public static native byte arrayEntryAsByte(final Object[] aObject, final int index);
 }

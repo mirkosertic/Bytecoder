@@ -118,7 +118,6 @@ import de.mirkosertic.bytecoder.ssa.PtrOfExpression;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
-import de.mirkosertic.bytecoder.ssa.ReinterpretAsNativeExpression;
 import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
@@ -832,9 +831,6 @@ public class WASMSSAASTWriter {
         if (aValue instanceof MethodTypeArgumentCheckExpression) {
             return methodTypeArgumentCheckExpression((MethodTypeArgumentCheckExpression) aValue);
         }
-        if (aValue instanceof ReinterpretAsNativeExpression) {
-            return reinterpretAsNativeExpression((ReinterpretAsNativeExpression) aValue);
-        }
         if (aValue instanceof SuperTypeOfExpression) {
             return superTypeOfExpression((SuperTypeOfExpression) aValue);
         }
@@ -919,17 +915,6 @@ public class WASMSSAASTWriter {
         final WASMValue theExpectedValue = i32.c(- theExpectedType.ordinal(), null);
         final WASMValue theRead = i32.load(24, thePtr, aExpression);
         return i32.eq(theExpectedValue, theRead, aExpression);
-    }
-
-    private WASMValue reinterpretAsNativeExpression(final ReinterpretAsNativeExpression aExpression) {
-        final Value theValue = aExpression.incomingDataFlows().get(0);
-        switch (aExpression.getExpectedType()) {
-            case FLOAT:
-            case DOUBLE:
-                return f32.convert_sI32(toValue(theValue), aExpression);
-            default:
-                return toValue(theValue);
-        }
     }
 
     private WASMValue ptrOfExpression(final PtrOfExpression aValue) {

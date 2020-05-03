@@ -74,6 +74,7 @@ public class StringConcatFactoryTest {
         final double h = 5;
         final boolean i = true;
         final String theResult = getPrefix() + b + c + d + e + f + g + h + i;
+        System.out.println(theResult);
         Assert.assertEquals("0a123.045.0true", theResult);
 
     }

@@ -95,7 +95,6 @@ import de.mirkosertic.bytecoder.ssa.PtrOfExpression;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
-import de.mirkosertic.bytecoder.ssa.ReinterpretAsNativeExpression;
 import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
@@ -1623,8 +1622,6 @@ public class LLVMWriter implements AutoCloseable {
             write((EnumConstantsExpression) aValue);
         } else if (aValue instanceof MethodTypeArgumentCheckExpression) {
             write((MethodTypeArgumentCheckExpression) aValue);
-        } else if (aValue instanceof ReinterpretAsNativeExpression) {
-            write((ReinterpretAsNativeExpression) aValue);
         } else if (aValue instanceof SqrtExpression) {
             write((SqrtExpression) aValue);
         } else if (aValue instanceof NewMultiArrayExpression) {
@@ -1746,30 +1743,6 @@ public class LLVMWriter implements AutoCloseable {
             target.print("call float @llvm.sqrt.f32(float ");
             write(e.incomingDataFlows().get(0), true);
             target.print(")");
-        }
-    }
-
-    private void write(final ReinterpretAsNativeExpression e) {
-        final Value theValue = e.incomingDataFlows().get(0);
-        switch (e.getExpectedType()) {
-            case DOUBLE:
-                target.print("sitofp i32 ");
-                write(theValue, true);
-                target.print(" to double");
-                break;
-            case FLOAT:
-                target.print("sitofp i32 ");
-                write(theValue, true);
-                target.print(" to float");
-                break;
-            case LONG:
-                target.write("sext i32 ");
-                write(theValue, true);
-                target.write(" to i64");
-                break;
-            default:
-                writeSameAssignmentHack(theValue.resolveType(), theValue);
-                break;
         }
     }
 
