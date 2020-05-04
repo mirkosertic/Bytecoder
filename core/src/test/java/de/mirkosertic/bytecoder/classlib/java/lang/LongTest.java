@@ -113,20 +113,6 @@ public class LongTest {
         System.out.println(l);
     }
 
-    /*
-    @Test
-    public void testBitCount() {
-        final int count = Long.bitCount(1234L);
-        Assert.assertEquals(5, count, 0);
-    }
-
-    @Test
-    public void testNumberOfTrailingZeros() {
-        final int count = Long.numberOfTrailingZeros(1234L);
-        Assert.assertEquals(1, count, 0);
-    }
-    */
-
     @Test
     public void testNumberOfLeadingZeros() {
         final int count = Long.numberOfLeadingZeros(1234L);
