@@ -153,8 +153,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
         final BytecodeLinkedClass theMemoryManagerClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class));
 
-        theMemoryManagerClass.resolveStaticMethod("freeMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.LONG, new BytecodeTypeRef[0]));
-        theMemoryManagerClass.resolveStaticMethod("usedMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.LONG, new BytecodeTypeRef[0]));
+        theMemoryManagerClass.resolveStaticMethod("freeMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
+        theMemoryManagerClass.resolveStaticMethod("usedMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
 
         theMemoryManagerClass.resolveStaticMethod("free", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
         theMemoryManagerClass.resolveStaticMethod("malloc", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
@@ -564,7 +564,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         });
 
         // Initialize memory layout for classes and instances
-        final NativeMemoryLayouter theMemoryLayout = new NativeMemoryLayouter(aLinkerContext);
+        final NativeMemoryLayouter theMemoryLayout = new NativeMemoryLayouter(aLinkerContext, 4);
 
         // Now everything else
         aLinkerContext.linkedClasses().forEach(aEntry -> {
@@ -1069,7 +1069,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 // Set array value
                 for (int j=0; j< theDataCharacters.length;j++) {
                     //
-                    final int offset = 20 + j * 4;
+                    final int offset = 20 + j * 8;
                     bootstrap.flow.i32.store(offset, getGlobal(theStringPoolData, null), i32.c(theDataCharacters[j], null), null);
                 }
 
@@ -1286,19 +1286,19 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("                    currentpos: 0,");
             theWriter.println("                    data: bufView,");
             theWriter.println("                    size: length,");
-            theWriter.println("                    skip0LONGLONG: function(handle,amount) {");
+            theWriter.println("                    skip0INTINT: function(handle,amount) {");
             theWriter.println("                        var remaining = this.size - this.currentpos;");
             theWriter.println("                        var possible = Math.min(remaining, amount);");
             theWriter.println("                        this.currentpos+=possible;");
             theWriter.println("                        return possible;");
             theWriter.println("                    },");
-            theWriter.println("                    available0LONG: function(handle) {");
+            theWriter.println("                    available0INT: function(handle) {");
             theWriter.println("                        return this.size - this.currentpos;");
             theWriter.println("                    },");
-            theWriter.println("                    read0LONG: function(handle) {");
+            theWriter.println("                    read0INT: function(handle) {");
             theWriter.println("                        return this.data[this.currentpos++];");
             theWriter.println("                    },");
-            theWriter.println("                    readBytesLONGL1BYTEINTINT: function(handle,target,offset,length) {");
+            theWriter.println("                    readBytesINTL1BYTEINTINT: function(handle,target,offset,length) {");
             theWriter.println("                        if (length === 0) {");
             theWriter.println("                            return 0;");
             theWriter.println("                        }");
@@ -1308,7 +1308,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("                            return -1;");
             theWriter.println("                        }");
             theWriter.println("                        for (var j=0;j<possible;j++) {");
-            theWriter.println("                            bytecoder.runningInstanceMemory[target + 20 + offset * 4]=this.data[this.currentpos++];");
+            theWriter.println("                            bytecoder.runningInstanceMemory[target + 20 + offset * 8]=this.data[this.currentpos++];");
             theWriter.println("                            offset++;");
             theWriter.println("                        }");
             theWriter.println("                        return possible;");
@@ -1335,13 +1335,13 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("         };");
             theWriter.println("         var stdout = {");
             theWriter.println("             buffer: \"\",");
-            theWriter.println("             writeBytesLONGL1BYTEINTINT: function(handle, data, offset, length) {");
+            theWriter.println("             writeBytesINTL1BYTEINTINT: function(handle, data, offset, length) {");
             theWriter.println("                 if (length > 0) {");
             theWriter.println("                     var array = new Uint8Array(length);");
             theWriter.println("                     data+=20;");
             theWriter.println("                     for (var i = 0; i < length; i++) {");
             theWriter.println("                         array[i] = bytecoder.intInMemory(data);");
-            theWriter.println("                         data+=4;");
+            theWriter.println("                         data+=8;");
             theWriter.println("                     }");
             theWriter.println("                     var asstring = String.fromCharCode.apply(null, array);");
             theWriter.println("                     for (var i=0;i<asstring.length;i++) {");
@@ -1355,9 +1355,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("                     }");
             theWriter.println("                 }");
             theWriter.println("             },");
-            theWriter.println("             close0LONG: function(handle) {");
+            theWriter.println("             close0INT: function(handle) {");
             theWriter.println("             },");
-            theWriter.println("             writeIntLONGINT: function(handle,value) {");
+            theWriter.println("             writeIntINTINT: function(handle,value) {");
             theWriter.println("                 var c = String.fromCharCode(value);");
             theWriter.println("                 if (c == '\\n') {");
             theWriter.println("                     console.log(stdout.buffer);");
@@ -1397,7 +1397,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("         value = value + 20;");
             theWriter.println("         for (var i=0;i<theLength;i++) {");
             theWriter.println("             var theCharCode = bytecoder.intInMemory(value);");
-            theWriter.println("             value = value + 4;");
+            theWriter.println("             value = value + 8;");
             theWriter.println("             theData+= String.fromCharCode(theCharCode);");
             theWriter.println("         }");
             theWriter.println("         return theData;");
@@ -1585,14 +1585,14 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("         },");
 
             theWriter.println("         fileoutputstream : {");
-            theWriter.println("             writeBytesLONGL1BYTEINTINT : function(thisref, handle, data, offset, length) {");
-            theWriter.println("                 bytecoder.filehandles[handle].writeBytesLONGL1BYTEINTINT(handle,data,offset,length);");
+            theWriter.println("             writeBytesINTL1BYTEINTINT : function(thisref, handle, data, offset, length) {");
+            theWriter.println("                 bytecoder.filehandles[handle].writeBytesINTL1BYTEINTINT(handle,data,offset,length);");
             theWriter.println("             },");
-            theWriter.println("             writeIntLONGINT : function(thisref, handle, intvalue) {");
-            theWriter.println("                 bytecoder.filehandles[handle].writeIntLONGINT(handle,intvalue);");
+            theWriter.println("             writeIntINTINT : function(thisref, handle, intvalue) {");
+            theWriter.println("                 bytecoder.filehandles[handle].writeIntINTINT(handle,intvalue);");
             theWriter.println("             },");
-            theWriter.println("             close0LONG : function(thisref,handle) {");
-            theWriter.println("                 bytecoder.filehandles[handle].close0LONG(handle);");
+            theWriter.println("             close0INT : function(thisref,handle) {");
+            theWriter.println("                 bytecoder.filehandles[handle].close0INT(handle);");
             theWriter.println("             },");
             theWriter.println("         },");
 
@@ -1600,20 +1600,20 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             open0String : function(thisref,name) {");
             theWriter.println("                 return bytecoder.openForRead(bytecoder.toJSString(name));");
             theWriter.println("             },");
-            theWriter.println("             read0LONG : function(thisref,handle) {");
-            theWriter.println("                 return bytecoder.filehandles[handle].read0LONG(handle);");
+            theWriter.println("             read0INT : function(thisref,handle) {");
+            theWriter.println("                 return bytecoder.filehandles[handle].read0INT(handle);");
             theWriter.println("             },");
-            theWriter.println("             readBytesLONGL1BYTEINTINT : function(thisref,handle,data,offset,length) {");
-            theWriter.println("                 return bytecoder.filehandles[handle].readBytesLONGL1BYTEINTINT(handle,data,offset,length);");
+            theWriter.println("             readBytesINTL1BYTEINTINT : function(thisref,handle,data,offset,length) {");
+            theWriter.println("                 return bytecoder.filehandles[handle].readBytesINTL1BYTEINTINT(handle,data,offset,length);");
             theWriter.println("             },");
-            theWriter.println("             skip0LONGLONG : function(thisref,handle,amount) {");
-            theWriter.println("                 return bytecoder.filehandles[handle].skip0LONGLONG(handle,amount);");
+            theWriter.println("             skip0INTINT : function(thisref,handle,amount) {");
+            theWriter.println("                 return bytecoder.filehandles[handle].skip0INTINT(handle,amount);");
             theWriter.println("             },");
-            theWriter.println("             available0LONG : function(thisref,handle) {");
-            theWriter.println("                 return bytecoder.filehandles[handle].available0LONG(handle);");
+            theWriter.println("             available0INT : function(thisref,handle) {");
+            theWriter.println("                 return bytecoder.filehandles[handle].available0INT(handle);");
             theWriter.println("             },");
-            theWriter.println("             close0LONG : function(thisref,handle) {");
-            theWriter.println("                 bytecoder.filehandles[handle].close0LONG(handle);");
+            theWriter.println("             close0INT : function(thisref,handle) {");
+            theWriter.println("                 bytecoder.filehandles[handle].close0INT(handle);");
             theWriter.println("             },");
             theWriter.println("         },");
 
@@ -1982,14 +1982,14 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     case f32:
                         theAdapter.flow.setLocal(
                                 theLocal,
-                                f32.load(20 + k * 4, getLocal(theStaticData, null), null),
+                                f32.load(20 + k * 8, getLocal(theStaticData, null), null),
                                 null
                         );
                         break;
                     case i32:
                         theAdapter.flow.setLocal(
                                 theLocal,
-                                i32.load(20 + k * 4, getLocal(theStaticData, null), null),
+                                i32.load(20 + k * 8, getLocal(theStaticData, null), null),
                                 null
                         );
                         break;
@@ -2071,14 +2071,14 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     case f32:
                         theAdapter.flow.setLocal(
                                 theLocal,
-                                f32.load(20 + k * 4, getLocal(theStaticData, null), null),
+                                f32.load(20 + k * 8, getLocal(theStaticData, null), null),
                                 null
                         );
                         break;
                     case i32:
                         theAdapter.flow.setLocal(
                                 theLocal,
-                                i32.load(20 + k * 4 , getLocal(theStaticData, null), null),
+                                i32.load(20 + k * 8 , getLocal(theStaticData, null), null),
                                 null
                         );
                         break;
@@ -2170,14 +2170,14 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     case f32:
                         theAdapter.flow.setLocal(
                                 theLocal,
-                                f32.load(20 + k * 4, getLocal(theStaticData, null), null),
+                                f32.load(20 + k * 8, getLocal(theStaticData, null), null),
                                 null
                         );
                         break;
                     case i32:
                         theAdapter.flow.setLocal(
                                 theLocal,
-                                i32.load(20 + k * 4, getLocal(theStaticData, null), null),
+                                i32.load(20 + k * 8, getLocal(theStaticData, null), null),
                                 null
                         );
                         break;
@@ -2253,14 +2253,14 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     case f32:
                         theAdapter.flow.setLocal(
                                 theLocal,
-                                f32.load(20 + k * 4, getLocal(theStaticData, null), null),
+                                f32.load(20 + k * 8, getLocal(theStaticData, null), null),
                                 null
                         );
                         break;
                     case i32:
                         theAdapter.flow.setLocal(
                                 theLocal,
-                                i32.load(20 + k * 4, getLocal(theStaticData, null), null),
+                                i32.load(20 + k * 8, getLocal(theStaticData, null), null),
                                 null
                         );
                         break;
@@ -2340,14 +2340,14 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     case f32:
                         theAdapter.flow.setLocal(
                                 theLocal,
-                                f32.load(20 + k * 4, getLocal(theStaticData, null), null),
+                                f32.load(20 + k * 8, getLocal(theStaticData, null), null),
                                 null
                         );
                         break;
                     case i32:
                         theAdapter.flow.setLocal(
                                 theLocal,
-                                i32.load(20 + k * 4, getLocal(theStaticData, null), null),
+                                i32.load(20 + k * 8, getLocal(theStaticData, null), null),
                                 null
                         );
                         break;

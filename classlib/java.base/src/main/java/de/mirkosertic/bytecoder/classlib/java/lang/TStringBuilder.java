@@ -39,8 +39,9 @@ public class TStringBuilder {
         }
         final char[] theCharacters = new char[20];
         int theOffset = 0;
+
         do {
-            final int theRemainder = (int) aValue % 10;
+            final int theRemainder = (int) (aValue % 10);
             theCharacters[theOffset++] = Character.forDigit(theRemainder, 10);
             aValue = aValue / 10;
         } while (aValue > 0);

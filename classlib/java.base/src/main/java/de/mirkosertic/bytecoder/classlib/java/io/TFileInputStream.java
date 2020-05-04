@@ -63,7 +63,7 @@ public class TFileInputStream extends InputStream {
      * Opens the specified file for reading.
      * @param name the name of the file
      */
-    private native long open0(String name) throws FileNotFoundException;
+    private native int open0(String name) throws FileNotFoundException;
 
     // wrap native call to allow instrumentation
     /**
@@ -79,37 +79,37 @@ public class TFileInputStream extends InputStream {
     }
 
     public int read() throws IOException {
-        final long handle = ((TFileDescriptor) (Object) fd).getHandle();
+        final int handle = (int) ((TFileDescriptor) (Object) fd).getHandle();
         return read0(handle);
     }
 
-    private native int read0(long handle) throws IOException;
+    private native int read0(int handle) throws IOException;
 
-    private native int readBytes(long handle, byte b[], int off, int len) throws IOException;
+    private native int readBytes(int handle, byte b[], int off, int len) throws IOException;
 
     public int read(final byte[] b) throws IOException {
-        final long handle = ((TFileDescriptor) (Object) fd).getHandle();
+        final int handle = (int) ((TFileDescriptor) (Object) fd).getHandle();
         return readBytes(handle, b, 0, b.length);
     }
 
     public int read(final byte[] b, final int off, final int len) throws IOException {
-        final long handle = ((TFileDescriptor) (Object) fd).getHandle();
+        final int handle = (int) ((TFileDescriptor) (Object) fd).getHandle();
         return readBytes(handle, b, off, len);
     }
 
     public long skip(final long n) throws IOException {
-        final long handle = ((TFileDescriptor) (Object) fd).getHandle();
-        return skip0(handle, n);
+        final int handle = (int) ((TFileDescriptor) (Object) fd).getHandle();
+        return skip0(handle, (int) n);
     }
 
-    private native long skip0(long handle, long n) throws IOException;
+    private native long skip0(int handle, int n) throws IOException;
 
     public int available() throws IOException {
-        final long handle = ((TFileDescriptor) (Object) fd).getHandle();
+        final int handle = (int) ((TFileDescriptor) (Object) fd).getHandle();
         return available0(handle);
     }
 
-    private native int available0(long handle) throws IOException;
+    private native int available0(int handle) throws IOException;
 
     public void close() {
         if (closed) {

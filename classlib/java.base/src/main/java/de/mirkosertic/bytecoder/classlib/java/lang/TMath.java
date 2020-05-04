@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
@@ -52,12 +53,15 @@ public class TMath {
         return a;
     }
 
+    @EmulatedByRuntime
     public static native double sqrt(double aValue);
 
     public static native double cbrt(double aValue);
 
+    @EmulatedByRuntime
     public static native double ceil(double aValue);
 
+    @EmulatedByRuntime
     public static native double floor(double aValue);
 
     public static native double sin(double aValue);
@@ -72,20 +76,28 @@ public class TMath {
 
     public static native double tan(double aValue);
 
+    @EmulatedByRuntime
     public static native long max(long aValue1, long aValue2);
 
+    @EmulatedByRuntime
     public static native int max(int aValue1, int aValue2);
 
+    @EmulatedByRuntime
     public static native float max(float aValue1, float aValue2);
 
+    @EmulatedByRuntime
     public static native double max(double aValue1, double aValue2);
 
+    @EmulatedByRuntime
     public static native int min(int aValue1, int aValue2);
 
+    @EmulatedByRuntime
     public static native long min(long aValue1, long aValue2);
 
+    @EmulatedByRuntime
     public static native float min(float aValue1, float aValue2);
 
+    @EmulatedByRuntime
     public static native double min(double aValue1, double aValue2);
 
     public static int getExponent(float f) {

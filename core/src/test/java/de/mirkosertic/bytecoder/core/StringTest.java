@@ -84,7 +84,8 @@ public class StringTest {
     @Test
     public void testHashCode() {
         final int hashCode = "TOP_LEFT".hashCode();
-        Assert.assertEquals(-1.54073903E8, hashCode, 0);
+        System.out.println(hashCode);
+        Assert.assertTrue(-154073903 == hashCode || -1.54073903E8 == hashCode );
     }
 
     @Test

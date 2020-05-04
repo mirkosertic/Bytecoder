@@ -30,7 +30,6 @@ public class NativeMemoryLayouter {
 
     public static final int CLASS_HEADER_SIZE = 24; // Object header plus initialization status + enum values offset + classname + typeid
     public static final int OBJECT_HEADER_SIZE = 8;
-    public static final int OBJECT_FIELDSIZE = 4;
 
     public interface MemoryLayout {
 
@@ -44,9 +43,11 @@ public class NativeMemoryLayouter {
     }
 
     private final Map<BytecodeObjectTypeRef, BytecodeResolvedFields> fields;
+    private final int fieldSize;
 
-    public NativeMemoryLayouter(final BytecodeLinkerContext aLinkerContext) {
+    public NativeMemoryLayouter(final BytecodeLinkerContext aLinkerContext, final int aFieldSize) {
         fields = new HashMap<>();
+        fieldSize = aFieldSize;
         aLinkerContext.linkedClasses().forEach(aEntry -> registerClass(aEntry.targetNode()));
     }
 
@@ -62,13 +63,13 @@ public class NativeMemoryLayouter {
             @Override
             public int instanceSize() {
                 final BytecodeResolvedFields theInstanceFields = fields.get(aType);
-                return OBJECT_HEADER_SIZE + OBJECT_FIELDSIZE * (int) theInstanceFields.streamForInstanceFields().count();
+                return OBJECT_HEADER_SIZE + fieldSize * (int) theInstanceFields.streamForInstanceFields().count();
             }
 
             @Override
             public int classSize() {
                 final BytecodeResolvedFields theClassFields = fields.get(aType);
-                return CLASS_HEADER_SIZE + OBJECT_FIELDSIZE * (int) theClassFields.streamForStaticFields().count();
+                return CLASS_HEADER_SIZE + fieldSize * (int) theClassFields.streamForStaticFields().count();
             }
 
             @Override
@@ -80,7 +81,7 @@ public class NativeMemoryLayouter {
                     if (Objects.equals(aName, theField.getValue().getName().stringValue())) {
                         return theOffset;
                     }
-                    theOffset+= OBJECT_FIELDSIZE;
+                    theOffset+= fieldSize;
                 }
                 throw new IllegalArgumentException("Member field " + aName + " not found for type " + aType.name());
             }
@@ -94,7 +95,7 @@ public class NativeMemoryLayouter {
                     if (Objects.equals(aName, theField.getValue().getName().stringValue())) {
                         return theOffset;
                     }
-                    theOffset+= OBJECT_FIELDSIZE;
+                    theOffset+= fieldSize;
                 }
                 throw new IllegalArgumentException("Static field " + aName + " not found for type " + aType.name());
             }

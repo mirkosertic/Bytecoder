@@ -124,8 +124,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
         // We need to link the memory manager
         final BytecodeLinkedClass theMemoryManagerClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class));
 
-        theMemoryManagerClass.resolveStaticMethod("freeMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.LONG, new BytecodeTypeRef[0]));
-        theMemoryManagerClass.resolveStaticMethod("usedMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.LONG, new BytecodeTypeRef[0]));
+        theMemoryManagerClass.resolveStaticMethod("freeMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
+        theMemoryManagerClass.resolveStaticMethod("usedMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
 
         theMemoryManagerClass.resolveStaticMethod("free", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
         theMemoryManagerClass.resolveStaticMethod("malloc", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
@@ -193,7 +193,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 }
             };
             final LLVMDebugInformation debugInformation = new LLVMDebugInformation();
-            final NativeMemoryLayouter memoryLayouter = new NativeMemoryLayouter(aLinkerContext);
+            final NativeMemoryLayouter memoryLayouter = new NativeMemoryLayouter(aLinkerContext, 8);
 
             final File theLLFile = File.createTempFile("llvm", ".ll");
             theLLFile.deleteOnExit();
@@ -213,10 +213,15 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("declare i32 @llvm.wasm.memory.size.i32(i32) nounwind readonly");
                 pw.println("declare void @llvm.trap() cold noreturn nounwind");
                 pw.println("declare float @llvm.minimum.f32(float %Val0, float %Val1)");
+                pw.println("declare double @llvm.minimum.f64(double %Val0, double %Val1)");
                 pw.println("declare float @llvm.maximum.f32(float %Val0, float %Val1)");
-                pw.println("declare float @llvm.floor.f32(float  %Val)");
-                pw.println("declare float @llvm.ceil.f32(float  %Val)");
+                pw.println("declare double @llvm.maximum.f64(double %Val0, double %Val1)");
+                pw.println("declare float @llvm.floor.f32(float %Val)");
+                pw.println("declare double @llvm.floor.f64(double %Val)");
+                pw.println("declare float @llvm.ceil.f32(float %Val)");
+                pw.println("declare double @llvm.ceil.f64(double %Val)");
                 pw.println("declare float @llvm.sqrt.f32(float %Val)");
+                pw.println("declare double @llvm.sqrt.f64(double %Val)");
                 pw.println();
 
                 final AtomicInteger attributeCounter = new AtomicInteger();
@@ -262,6 +267,17 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                 opaqueReferenceMethods.add(new OpaqueReferenceMethod(theProvidingClass, t));
                             }
 
+                            boolean needsAdapterMethod = false;
+                            if (theSignature.getReturnType() == BytecodePrimitiveTypeRef.LONG) {
+                                needsAdapterMethod = true;
+                            }
+                            for (final BytecodeTypeRef theTypeRef : t.getSignature().getArguments()) {
+                                if (theTypeRef == BytecodePrimitiveTypeRef.LONG) {
+                                    needsAdapterMethod = true;
+                                    aLinkerContext.getLogger().warn("Possible pecision impact on Long datatype when calling imported method {}.{} with signature {}", theProvidingClass.getClassName().name(), t.getName().stringValue(), t.getSignature());
+                                }
+                            }
+
                             final BytecodeImportedLink theLink = theProvidingClass.linkFor(t);
 
                             final String methodName = LLVMWriterUtils
@@ -281,29 +297,149 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.print(theLink.getLinkName());
                             pw.println("\"}");
 
-                            pw.print("declare ");
-                            pw.print(LLVMWriterUtils.toType(TypeRef.toType(t.getSignature().getReturnType())));
-                            pw.print(" @");
-                            pw.print(methodName);
-                            pw.print("(");
+                            final String returnType = LLVMWriterUtils.toType(TypeRef.toType(t.getSignature().getReturnType()));
 
-                            pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
-                            pw.print(" ");
-                            pw.print("%thisRef");
-                            for (int i = 0; i < theSignature.getArguments().length; i++) {
-                                final BytecodeTypeRef theParamType = theSignature.getArguments()[i];
-                                pw.print(",");
-                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(theParamType)));
+                            if (needsAdapterMethod) {
+                                // In this case, we expect a double as a return from JS
+                                // side and convert it into i64
+                                pw.print("declare ");
+                                if (t.getSignature().getReturnType() == BytecodePrimitiveTypeRef.LONG) {
+                                    pw.print("double");
+                                } else {
+                                    pw.print(returnType);
+                                }
+                                pw.print(" @");
+                                pw.print(methodName);
+                                pw.print("_adapter(");
+
+                                pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
                                 pw.print(" ");
-                                pw.print("%p");
-                                pw.print(i + 1);
-                            }
+                                pw.print("%thisRef");
 
-                            pw.print(")");
-                            pw.print(" #");
-                            pw.print(attributeCounter);
-                            pw.println();
-                            pw.println();
+                                for (int i = 0; i < theSignature.getArguments().length; i++) {
+                                    final BytecodeTypeRef theParamType = theSignature.getArguments()[i];
+                                    if (theParamType == BytecodePrimitiveTypeRef.LONG) {
+                                        pw.print(",double %p");
+                                        pw.print(i + 1);
+                                    } else {
+                                        final String theTypeAsString = LLVMWriterUtils.toType(TypeRef.toType(theParamType));
+                                        pw.print(",");
+                                        pw.print(theTypeAsString);
+                                        pw.print(" %p");
+                                        pw.print(i + 1);
+                                    }
+                                }
+
+                                pw.print(")");
+                                pw.print(" #");
+                                pw.print(attributeCounter);
+                                pw.println();
+                                pw.println();
+
+                                pw.print("define internal ");
+                                pw.print(returnType);
+                                pw.print(" @");
+                                pw.print(methodName);
+                                pw.print("(");
+
+                                pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
+                                pw.print(" ");
+                                pw.print("%thisRef");
+
+                                for (int i = 0; i < theSignature.getArguments().length; i++) {
+                                    final BytecodeTypeRef theParamType = theSignature.getArguments()[i];
+                                    pw.print(",");
+                                    pw.print(LLVMWriterUtils.toType(TypeRef.toType(theParamType)));
+                                    pw.print(" ");
+                                    pw.print("%p");
+                                    pw.print(i + 1);
+                                }
+
+                                pw.println(") inlinehint {");
+
+                                final StringBuilder theArguments = new StringBuilder("i32 %thisRef");
+                                for (int i = 0; i < theSignature.getArguments().length; i++) {
+                                    if (theSignature.getArguments()[i] == BytecodePrimitiveTypeRef.LONG) {
+                                        pw.print("    %p");
+                                        pw.print(i + 1);
+                                        pw.print("_converted = sitofp i64 %p");
+                                        pw.print(i + 1);
+                                        pw.println(" to double");
+
+                                        theArguments.append(",double %p");
+                                        theArguments.append(i + 1);
+                                        theArguments.append("_converted");
+                                    } else {
+                                        theArguments.append(",");
+                                        theArguments.append(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getArguments()[i])));
+                                        theArguments.append(" %p");
+                                        theArguments.append(i + 1);
+                                    }
+                                }
+
+                                if (theSignature.getReturnType() != BytecodePrimitiveTypeRef.VOID) {
+                                    pw.print("    %temp = call ");
+                                    if (theSignature.getReturnType() == BytecodePrimitiveTypeRef.LONG) {
+                                        pw.print("double");
+                                    } else {
+                                        pw.print(returnType);
+                                    }
+                                    pw.print(" @");
+                                    pw.print(methodName);
+                                } else {
+                                    pw.print("    call void @");
+                                    pw.print(methodName);
+                                }
+                                pw.print("_adapter(");
+                                pw.print(theArguments);
+                                pw.println(")");
+
+                                if (theSignature.getReturnType() != BytecodePrimitiveTypeRef.VOID) {
+                                    if (theSignature.getReturnType() == BytecodePrimitiveTypeRef.LONG) {
+                                        pw.print("    %conv = fptosi double %temp to ");
+                                        pw.println(returnType);
+
+                                        pw.print("    ret ");
+                                        pw.print(returnType);
+                                        pw.println(" %conv");
+
+                                    } else {
+                                        pw.print("    ret ");
+                                        pw.print(returnType);
+                                        pw.println(" %temp");
+                                    }
+                                } else {
+                                    pw.println("    ret void");
+                                }
+
+                                pw.println("}");
+                                pw.println();
+                            } else {
+                                // No adapter code
+                                pw.print("declare ");
+                                pw.print(returnType);
+                                pw.print(" @");
+                                pw.print(methodName);
+                                pw.print("(");
+
+                                pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
+                                pw.print(" ");
+                                pw.print("%thisRef");
+                                for (int i = 0; i < theSignature.getArguments().length; i++) {
+                                    final BytecodeTypeRef theParamType = theSignature.getArguments()[i];
+                                    pw.print(",");
+                                    pw.print(LLVMWriterUtils.toType(TypeRef.toType(theParamType)));
+                                    pw.print(" ");
+                                    pw.print("%p");
+                                    pw.print(i + 1);
+                                }
+
+                                pw.print(")");
+                                pw.print(" #");
+                                pw.print(attributeCounter);
+                                pw.println();
+                                pw.println();
+                            }
 
                             attributeCounter.incrementAndGet();
                         }
@@ -486,6 +622,17 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
+                pw.println("define internal i32 @isnanDouble(double %value) inlinehint {");
+                pw.println("entry:");
+                pw.println("    %test = fcmp oeq double %value, %value");
+                pw.println("    br i1 %test, label %iseq, label %isnoteq");
+                pw.println("iseq:");
+                pw.println("    ret i32 0");
+                pw.println("isnoteq:");
+                pw.println("    ret i32 1");
+                pw.println("}");
+                pw.println();
+
                 pw.println("define internal i32 @toi32(float %value) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %test = fcmp oeq float %value, %value");
@@ -495,6 +642,42 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("    ret i32 %converted");
                 pw.println("isnoteq:");
                 pw.println("    ret i32 0");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal i64 @toi64(float %value) inlinehint {");
+                pw.println("entry:");
+                pw.println("    %test = fcmp oeq float %value, %value");
+                pw.println("    br i1 %test, label %iseq, label %isnoteq");
+                pw.println("iseq:");
+                pw.println("    %converted = fptosi float %value to i64");
+                pw.println("    ret i64 %converted");
+                pw.println("isnoteq:");
+                pw.println("    ret i64 0");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal i32 @doubleToi32(double %value) inlinehint {");
+                pw.println("entry:");
+                pw.println("    %test = fcmp oeq double %value, %value");
+                pw.println("    br i1 %test, label %iseq, label %isnoteq");
+                pw.println("iseq:");
+                pw.println("    %converted = fptosi double %value to i32");
+                pw.println("    ret i32 %converted");
+                pw.println("isnoteq:");
+                pw.println("    ret i32 0");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal i64 @doubleToi64(double %value) inlinehint {");
+                pw.println("entry:");
+                pw.println("    %test = fcmp oeq double %value, %value");
+                pw.println("    br i1 %test, label %iseq, label %isnoteq");
+                pw.println("iseq:");
+                pw.println("    %converted = fptosi double %value to i64");
+                pw.println("    ret i64 %converted");
+                pw.println("isnoteq:");
+                pw.println("    ret i64 0");
                 pw.println("}");
                 pw.println();
 
@@ -555,6 +738,17 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
+                pw.println("define internal i64 @maximum.i64(i64 %a, i64 %b) inlinehint {");
+                pw.println("entry:");
+                pw.println("   %test = icmp sgt i64 %a, %b");
+                pw.println("   br i1 %test, label %aisgreater, label %notgreater");
+                pw.println("aisgreater:");
+                pw.println("   ret i64 %a");
+                pw.println("notgreater:");
+                pw.println("   ret i64 %b");
+                pw.println("}");
+                pw.println();
+
                 pw.println("define internal i32 @minimum(i32 %a, i32 %b) inlinehint {");
                 pw.println("entry:");
                 pw.println("   %test = icmp slt i32 %a, %b");
@@ -563,6 +757,17 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("   ret i32 %a");
                 pw.println("notsmaller:");
                 pw.println("   ret i32 %b");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal i64 @minimum.i64(i64 %a, i64 %b) inlinehint {");
+                pw.println("entry:");
+                pw.println("   %test = icmp slt i64 %a, %b");
+                pw.println("   br i1 %test, label %aissmaller, label %notsmaller");
+                pw.println("aissmaller:");
+                pw.println("   ret i64 %a");
+                pw.println("notsmaller:");
+                pw.println("   ret i64 %b");
                 pw.println("}");
                 pw.println();
 
@@ -1194,6 +1399,16 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         final List<String> attributes = new ArrayList<>();
                         final BytecodeAnnotation theExport = theMethod.getAttributes().getAnnotationByType(Export.class.getName());
                         if (theExport != null) {
+
+                            if (theMethod.getSignature().getReturnType() == BytecodePrimitiveTypeRef.LONG) {
+                                throw new IllegalArgumentException("Cannot export method " + theMethod.getName().stringValue() + " in class " + theLinkedClass.getClassName().name() + " with signature " + theMethod.getSignature() + " : return type must not be Long");
+                            }
+                            for (final BytecodeTypeRef theTypeRef : theMethod.getSignature().getArguments()) {
+                                if (theTypeRef == BytecodePrimitiveTypeRef.LONG) {
+                                    throw new IllegalArgumentException("Cannot export method " + theMethod.getName().stringValue() + " in class " + theLinkedClass.getClassName().name() + " with signature " + theMethod.getSignature() + " : argument must not be Long");
+                                }
+                            }
+
                             pw.print("attributes #");
                             pw.print(attributeCounter.get());
                             pw.print(" = {");
@@ -1563,7 +1778,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.print(" = add i32 %allocated_");
                         pw.print(i);
                         pw.print(", ");
-                        pw.println(20 + j * 4);
+                        pw.println(20 + j * 8);
 
                         pw.print("    %offset_" + i + "_" + j + "_ptr");
                         pw.print(" = inttoptr i32 ");
@@ -1592,14 +1807,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                 // Some initialization logic
                 aLinkerContext.linkedClasses()
-                    .map(t -> t.targetNode())
-                    .filter(t -> {
-                        if (t.getClassName().name().equals(VM.class.getName()) ||
-                            t.getClassName().name().equals(Quicksort.class.getName())) {
-                            return true;
-                        }
-                        return false;
-                    }).forEach(theClass -> {
+                    .map(Edge::targetNode)
+                    .filter(t -> t.getClassName().name().equals(VM.class.getName()) ||
+                            t.getClassName().name().equals(Quicksort.class.getName())).forEach(theClass -> {
                         pw.print("    %");
                         pw.print(LLVMWriterUtils.runtimeClassVariableName(theClass.getClassName()));
                         pw.print(" = call i32 @");
@@ -2000,19 +2210,19 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("                    currentpos: 0,");
                 theWriter.println("                    data: bufView,");
                 theWriter.println("                    size: length,");
-                theWriter.println("                    skip0LONGLONG: function(handle,amount) {");
+                theWriter.println("                    skip0INTINT: function(handle,amount) {");
                 theWriter.println("                        var remaining = this.size - this.currentpos;");
                 theWriter.println("                        var possible = Math.min(remaining, amount);");
                 theWriter.println("                        this.currentpos+=possible;");
                 theWriter.println("                        return possible;");
                 theWriter.println("                    },");
-                theWriter.println("                    available0LONG: function(handle) {");
+                theWriter.println("                    available0INT: function(handle) {");
                 theWriter.println("                        return this.size - this.currentpos;");
                 theWriter.println("                    },");
-                theWriter.println("                    read0LONG: function(handle) {");
+                theWriter.println("                    read0INT: function(handle) {");
                 theWriter.println("                        return this.data[this.currentpos++];");
                 theWriter.println("                    },");
-                theWriter.println("                    readBytesLONGL1BYTEINTINT: function(handle,target,offset,length) {");
+                theWriter.println("                    readBytesINTL1BYTEINTINT: function(handle,target,offset,length) {");
                 theWriter.println("                        if (length === 0) {");
                 theWriter.println("                            return 0;");
                 theWriter.println("                        }");
@@ -2022,7 +2232,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("                            return -1;");
                 theWriter.println("                        }");
                 theWriter.println("                        for (var j=0;j<possible;j++) {");
-                theWriter.println("                            bytecoder.runningInstanceMemory[target + 20 + offset * 4]=this.data[this.currentpos++];");
+                theWriter.println("                            bytecoder.runningInstanceMemory[target + 20 + offset * 8]=this.data[this.currentpos++];");
                 theWriter.println("                            offset++;");
                 theWriter.println("                        }");
                 theWriter.println("                        return possible;");
@@ -2049,13 +2259,13 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("         };");
                 theWriter.println("         var stdout = {");
                 theWriter.println("             buffer: \"\",");
-                theWriter.println("             writeBytesLONGL1BYTEINTINT: function(handle, data, offset, length) {");
+                theWriter.println("             writeBytesINTL1BYTEINTINT: function(handle, data, offset, length) {");
                 theWriter.println("                 if (length > 0) {");
                 theWriter.println("                     var array = new Uint8Array(length);");
                 theWriter.println("                     data+=20;");
                 theWriter.println("                     for (var i = 0; i < length; i++) {");
                 theWriter.println("                         array[i] = bytecoder.intInMemory(data);");
-                theWriter.println("                         data+=4;");
+                theWriter.println("                         data+=8;");
                 theWriter.println("                     }");
                 theWriter.println("                     var asstring = String.fromCharCode.apply(null, array);");
                 theWriter.println("                     for (var i=0;i<asstring.length;i++) {");
@@ -2069,9 +2279,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("                     }");
                 theWriter.println("                 }");
                 theWriter.println("             },");
-                theWriter.println("             close0LONG: function(handle) {");
+                theWriter.println("             close0INT: function(handle) {");
                 theWriter.println("             },");
-                theWriter.println("             writeIntLONGINT: function(handle,value) {");
+                theWriter.println("             writeIntINTINT: function(handle,value) {");
                 theWriter.println("                 var c = String.fromCharCode(value);");
                 theWriter.println("                 if (c == '\\n') {");
                 theWriter.println("                     console.log(stdout.buffer);");
@@ -2084,7 +2294,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("         bytecoder.filehandles[0] = stddin;");
                 theWriter.println("         bytecoder.filehandles[1] = stdout;");
                 theWriter.println("         bytecoder.filehandles[2] = stdout;");
-                theWriter.println("         bytecoder.exports.initDefaultFileHandles(-1,0,1,2);");
+                theWriter.println("         bytecoder.exports.initDefaultFileHandles(-1, 0,1,2);");
                 theWriter.println("     },");
                 theWriter.println();
 
@@ -2112,7 +2322,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("         value = value + 20;");
                 theWriter.println("         for (var i=0;i<theLength;i++) {");
                 theWriter.println("             var theCharCode = bytecoder.intInMemory(value);");
-                theWriter.println("             value = value + 4;");
+                theWriter.println("             value = value + 8;");
                 theWriter.println("             theData+= String.fromCharCode(theCharCode);");
                 theWriter.println("         }");
                 theWriter.println("         return theData;");
@@ -2155,6 +2365,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("         },");
                 theWriter.println("         env: {");
                 theWriter.println("             fmodf: function(f1,f2) {return f1 % f2;},");
+                theWriter.println("             fmod: function(f1,f2) {return f1 % f2;},");
                 theWriter.println("             debug: function(thisref, f1) {console.log(f1);}");
                 theWriter.println("         },");
                 theWriter.println("         system: {");
@@ -2304,14 +2515,14 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("         },");
 
                 theWriter.println("         fileoutputstream : {");
-                theWriter.println("             writeBytesLONGL1BYTEINTINT : function(thisref, handle, data, offset, length) {");
-                theWriter.println("                 bytecoder.filehandles[handle].writeBytesLONGL1BYTEINTINT(handle,data,offset,length);");
+                theWriter.println("             writeBytesINTL1BYTEINTINT : function(thisref, handle, data, offset, length) {");
+                theWriter.println("                 bytecoder.filehandles[handle].writeBytesINTL1BYTEINTINT(handle,data,offset,length);");
                 theWriter.println("             },");
-                theWriter.println("             writeIntLONGINT : function(thisref, handle, intvalue) {");
-                theWriter.println("                 bytecoder.filehandles[handle].writeIntLONGINT(handle,intvalue);");
+                theWriter.println("             writeIntINTINT : function(thisref, handle, intvalue) {");
+                theWriter.println("                 bytecoder.filehandles[handle].writeIntINTINT(handle,intvalue);");
                 theWriter.println("             },");
-                theWriter.println("             close0LONG : function(thisref,handle) {");
-                theWriter.println("                 bytecoder.filehandles[handle].close0LONG(handle);");
+                theWriter.println("             close0INT : function(thisref,handle) {");
+                theWriter.println("                 bytecoder.filehandles[handle].close0INT(handle);");
                 theWriter.println("             },");
                 theWriter.println("         },");
 
@@ -2319,20 +2530,20 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("             open0String : function(thisref,name) {");
                 theWriter.println("                 return bytecoder.openForRead(bytecoder.toJSString(name));");
                 theWriter.println("             },");
-                theWriter.println("             read0LONG : function(thisref,handle) {");
-                theWriter.println("                 return bytecoder.filehandles[handle].read0LONG(handle);");
+                theWriter.println("             read0INT : function(thisref,handle) {");
+                theWriter.println("                 return bytecoder.filehandles[handle].read0INT(handle);");
                 theWriter.println("             },");
-                theWriter.println("             readBytesLONGL1BYTEINTINT : function(thisref,handle,data,offset,length) {");
-                theWriter.println("                 return bytecoder.filehandles[handle].readBytesLONGL1BYTEINTINT(handle,data,offset,length);");
+                theWriter.println("             readBytesINTL1BYTEINTINT : function(thisref,handle,data,offset,length) {");
+                theWriter.println("                 return bytecoder.filehandles[handle].readBytesINTL1BYTEINTINT(handle,data,offset,length);");
                 theWriter.println("             },");
-                theWriter.println("             skip0LONGLONG : function(thisref,handle,amount) {");
-                theWriter.println("                 return bytecoder.filehandles[handle].skip0LONGLONG(handle,amount);");
+                theWriter.println("             skip0INTINT : function(thisref,handle,amount) {");
+                theWriter.println("                 return bytecoder.filehandles[handle].skip0INTINT(handle,amount);");
                 theWriter.println("             },");
-                theWriter.println("             available0LONG : function(thisref,handle) {");
-                theWriter.println("                 return bytecoder.filehandles[handle].available0LONG(handle);");
+                theWriter.println("             available0INT : function(thisref,handle) {");
+                theWriter.println("                 return bytecoder.filehandles[handle].available0INT(handle);");
                 theWriter.println("             },");
-                theWriter.println("             close0LONG : function(thisref,handle) {");
-                theWriter.println("                 bytecoder.filehandles[handle].close0LONG(handle);");
+                theWriter.println("             close0INT : function(thisref,handle) {");
+                theWriter.println("                 bytecoder.filehandles[handle].close0INT(handle);");
                 theWriter.println("             },");
                 theWriter.println("         },");
 
@@ -2795,7 +3006,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 aWriter.print("    %");
                 aWriter.print(theArgName);
                 aWriter.print("_offset = add i32 %staticdata, ");
-                aWriter.println(20 + k * 4);
+                aWriter.println(20 + k * 8);
 
                 aWriter.print("    %");
                 aWriter.print(theArgName);
@@ -2909,7 +3120,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 aWriter.print("    %");
                 aWriter.print(theArgName);
                 aWriter.print("_offset = add i32 %staticdata, ");
-                aWriter.println(20 + k * 4);
+                aWriter.println(20 + k * 8);
 
                 aWriter.print("    %");
                 aWriter.print(theArgName);
@@ -3037,7 +3248,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 aWriter.print("    %");
                 aWriter.print(theArgName);
                 aWriter.print("_offset = add i32 %staticdata, ");
-                aWriter.println(20 + k * 4);
+                aWriter.println(20 + k * 8);
 
                 aWriter.print("    %");
                 aWriter.print(theArgName);
@@ -3145,7 +3356,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 aWriter.print("    %");
                 aWriter.print(theArgName);
                 aWriter.print("_offset = add i32 %staticdata, ");
-                aWriter.println(20 + k * 4);
+                aWriter.println(20 + k * 8);
 
                 aWriter.print("    %");
                 aWriter.print(theArgName);
@@ -3261,7 +3472,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 aWriter.print("    %");
                 aWriter.print(theArgName);
                 aWriter.print("_offset = add i32 %staticdata, ");
-                aWriter.println(20 + k * 4);
+                aWriter.println(20 + k * 8);
 
                 aWriter.print("    %");
                 aWriter.print(theArgName);

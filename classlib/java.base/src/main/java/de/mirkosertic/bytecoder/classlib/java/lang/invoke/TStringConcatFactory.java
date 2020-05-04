@@ -33,7 +33,7 @@ public class TStringConcatFactory {
                 final StringBuilder theResult = new StringBuilder();
                 if (args != null) {
                     for (int i=0;i<args.length;i++) {
-                        appendTo(theResult, args[i], aConcatType, i);
+                        appendTo(theResult, args, i, aConcatType, i);
                     }
                 }
                 return theResult.toString();
@@ -41,21 +41,25 @@ public class TStringConcatFactory {
         };
     }
 
-    private static void appendTo(final StringBuilder aTarget, final Object aValue, final MethodType aType, final int aIndex) {
+    private static void appendTo(final StringBuilder aTarget, final Object[] aArray, final int aArrayIndex,  final MethodType aType, final int aIndex) {
         if (VM.isInteger(aType, aIndex)) {
-            aTarget.append(VM.reinterpretAsInt(aValue));
+            aTarget.append(VM.arrayEntryAsInt(aArray, aArrayIndex));
         } else if (VM.isLong(aType, aIndex)) {
-            aTarget.append(VM.reinterpretAsLong(aValue));
+            aTarget.append(VM.arrayEntryAsLong(aArray, aArrayIndex));
         } else if (VM.isFloat(aType, aIndex)) {
-            aTarget.append(VM.reinterpretAsFloat(aValue));
+            aTarget.append(VM.arrayEntryAsFloat(aArray, aArrayIndex));
         } else if (VM.isDouble(aType, aIndex)) {
-            aTarget.append(VM.reinterpretAsDouble(aValue));
+            aTarget.append(VM.arrayEntryAsDouble(aArray, aArrayIndex));
         } else if (VM.isBoolean(aType, aIndex)) {
-            aTarget.append(VM.reinterpretAsBoolean(aValue));
+            aTarget.append(VM.arrayEntryAsBoolean(aArray, aArrayIndex));
         } else if (VM.isChar(aType, aIndex)) {
-            aTarget.append(VM.reinterpretAsChar(aValue));
+            aTarget.append(VM.arrayEntryAsChar(aArray, aArrayIndex));
+        } else if (VM.isShort(aType, aIndex)) {
+            aTarget.append(VM.arrayEntryAsShort(aArray, aArrayIndex));
+        } else if (VM.isByte(aType, aIndex)) {
+            aTarget.append(VM.arrayEntryAsByte(aArray, aArrayIndex));
         } else {
-            aTarget.append(aValue);
+            aTarget.append(aArray[aArrayIndex]);
         }
     }
 
@@ -71,9 +75,9 @@ public class TStringConcatFactory {
                 for (int i=0;i<aRecipe.length();i++) {
                     final char theChar = aRecipe.charAt(i);
                     if (theChar == 1) {
-                        appendTo(theResult, args[theDynIndex++], aConcatType, totalIndex++);
+                        appendTo(theResult, args, theDynIndex++, aConcatType, totalIndex++);
                     } else if (theChar == 2) {
-                        appendTo(theResult, aConstants[theConstIndex++], aConcatType, totalIndex++);
+                        appendTo(theResult, aConstants, theConstIndex++, aConcatType, totalIndex++);
                     } else {
                         theResult.append(theChar);
                     }
