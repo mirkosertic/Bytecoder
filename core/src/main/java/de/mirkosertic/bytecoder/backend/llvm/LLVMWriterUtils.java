@@ -87,11 +87,13 @@ public class LLVMWriterUtils {
     public static String toType(final TypeRef aType) {
         switch (aType.resolve()) {
         case DOUBLE:
-            return "float";
+            return "double";
         case FLOAT:
             return "float";
         case VOID:
             return "void";
+        case LONG:
+            return "i64";
         default:
             return "i32";
         }

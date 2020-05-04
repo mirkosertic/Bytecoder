@@ -68,6 +68,8 @@ public class ArrayTest {
     private static final boolean[] booleans = new boolean[10];
     private static final float[] floats = new float[10];
     private static final Entry[] entries = new Entry[10];
+    private static final long[] longs = new long[10];
+    private static final double[] doubles = new double[10];
 
     @Test
     public void testLength() {
@@ -174,4 +176,25 @@ public class ArrayTest {
         final MemberWithArray theInstance = new MemberWithArray();
         theInstance.testGetAndPut();
     }
+
+    @Test
+    public void testLongs() {
+        System.out.println("Starting test");
+        longs[0] = 10L;
+        longs[1] = 20L;
+        System.out.println((int) longs[0]);
+        System.out.println((int) longs[1]);
+        Assert.assertEquals(10L, longs[0]);
+        Assert.assertEquals(20L, longs[1]);
+    }
+
+    @Test
+    public void testDoubles() {
+        System.out.println("Starting test");
+        doubles[0] = 10.5d;
+        doubles[1] = 20.5d;
+        Assert.assertEquals(10.5f, doubles[0], 0);
+        Assert.assertEquals(20.5d, doubles[1], 0);
+    }
+
 }

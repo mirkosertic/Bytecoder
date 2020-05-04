@@ -134,7 +134,7 @@ HTML embedding, which is shown here:
 ```
 
 {{% notice warning %}}
-The WebAssembly backend includes a very simple incremental mark and sweep garbage collector.
+The WebAssembly backends include a very simple incremental mark and sweep garbage collector.
 When GC runs, the application halts ( stop the world ) and memory is scanned and
 freed. However, this is a **very** expensive process, so you maybe want to configure
 the garbage collector intervals and parameters by hand depending an your use case.

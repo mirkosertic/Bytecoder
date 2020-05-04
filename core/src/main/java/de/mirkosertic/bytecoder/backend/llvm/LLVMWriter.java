@@ -95,7 +95,6 @@ import de.mirkosertic.bytecoder.ssa.PtrOfExpression;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
-import de.mirkosertic.bytecoder.ssa.ReinterpretAsNativeExpression;
 import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
@@ -546,7 +545,7 @@ public class LLVMWriter implements AutoCloseable {
     private void tempify(final ArrayEntryExpression e) {
         target.print("    %");
         target.print(toTempSymbol(e, "index"));
-        target.print(" = mul i32 4,");
+        target.print(" = mul i32 8,");
         write(e.incomingDataFlows().get(1), true);
         target.println();
 
@@ -694,6 +693,8 @@ public class LLVMWriter implements AutoCloseable {
 
     private void tempify(final FloorExpression e) {
         final Value value = e.incomingDataFlows().get(0);
+        target.println(";; flooring to " + e.resolveType().resolve() + " from type " + value.resolveType().resolve());
+
         if (value instanceof BinaryExpression)  {
             tempify((BinaryExpression) value);
         }
@@ -775,12 +776,41 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void tempify(final BinaryExpression e) {
+        final Value v1 = e.incomingDataFlows().get(0);
+        final Value v2 = e.incomingDataFlows().get(1);
+
+        if (e.getOperator() == BinaryExpression.Operator.BINARYSHIFTLEFT ||
+            e.getOperator() == BinaryExpression.Operator.BINARYSHIFTRIGHT ||
+            e.getOperator() == BinaryExpression.Operator.BINARYUNSIGNEDSHIFTRIGHT) {
+            if (v1.resolveType().resolve() == TypeRef.Native.LONG) {
+                // We need to convert the second operand from int to long
+                target.print("    %");
+                target.print(toTempSymbol(e, "v2_ext"));
+                target.print(" = sext i32 ");
+                writeResolved(v2);
+                target.println(" to i64");
+                return;
+            }
+        }
         if (e.getOperator() == BinaryExpression.Operator.DIV) {
-            final Value v1 = e.incomingDataFlows().get(0);
-            final Value v2 = e.incomingDataFlows().get(1);
+            target.println(";; division with target type " + e.resolveType().resolve());
             switch (v1.resolveType().resolve()) {
                 case FLOAT:
                 case DOUBLE:
+                    return;
+                case LONG:
+                    // We need a conversion
+                    target.print("    %");
+                    target.print(toTempSymbol(e, "v1"));
+                    target.print(" = sitofp i64 ");
+                    write(v1, true);
+                    target.println(" to double");
+
+                    target.print("    %");
+                    target.print(toTempSymbol(e, "v2"));
+                    target.print(" = sitofp i64 ");
+                    write(v2, true);
+                    target.println(" to double");
                     return;
                 default:
                     // We need a conversion
@@ -1059,7 +1089,7 @@ public class LLVMWriter implements AutoCloseable {
     private void write(final ArrayStoreExpression e) {
         target.print("    %");
         target.print(toTempSymbol(e, "index"));
-        target.print(" = mul i32 4,");
+        target.print(" = mul i32 8,");
         writeResolved(e.incomingDataFlows().get(1));
         target.println();
 
@@ -1282,17 +1312,16 @@ public class LLVMWriter implements AutoCloseable {
         final Value object = expression.incomingDataFlows().get(0);
         final Value value = expression.incomingDataFlows().get(1);
 
-        target.print("    %");
-        target.print(toTempSymbol(expression, "offset"));
-        target.print(" = add i32 ");
-        writeResolved(object);
-        target.print(",");
-
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(expression.getField().getClassIndex().getClassConstant().getConstant()));
         final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theLinkedClass.getClassName());
         final BytecodeResolvedFields theInstanceFields = theLinkedClass.resolvedFields();
         final BytecodeResolvedFields.FieldEntry theField = theInstanceFields.fieldByName(expression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
+        target.print("    %");
+        target.print(toTempSymbol(expression, "offset"));
+        target.print(" = add i32 ");
+        writeResolved(object);
+        target.print(",");
         target.print(theLayout.offsetForInstanceMember(theField.getValue().getName().stringValue()));
         target.println();
 
@@ -1399,17 +1428,29 @@ public class LLVMWriter implements AutoCloseable {
 
     private void write(final VariableAssignmentExpression expression) {
         final Value value = expression.incomingDataFlows().get(0);
+        if (value instanceof TypeConversionExpression) {
+            target.println("    ; converting from " + value.incomingDataFlows().get(0).resolveType().resolve() + " to " + expression.getVariable().resolveType().resolve());
+        }
         target.print("    ");
         target.print("%");
         target.print(expression.getVariable().getName());
         target.print("_ = ");
         if (value instanceof Variable) {
             switch (value.resolveType().resolve()) {
-                case FLOAT:
                 case DOUBLE:
+                    target.print("fadd double %");
+                    target.print(((Variable) value).getName());
+                    target.print("_, 0.0");
+                    break;
+                case FLOAT:
                     target.print("fadd float %");
                     target.print(((Variable) value).getName());
                     target.print("_, 0.0");
+                    break;
+                case LONG:
+                    target.print("add i64 %");
+                    target.print(((Variable) value).getName());
+                    target.print("_, 0");
                     break;
                 default:
                     target.print("add i32 %");
@@ -1419,7 +1460,7 @@ public class LLVMWriter implements AutoCloseable {
             }
         } else {
             if (value instanceof DoubleValue) {
-                target.print("fadd float 0.0,");
+                target.print("fadd double 0.0,");
             }
             if (value instanceof FloatValue) {
                 target.print("fadd float 0.0,");
@@ -1434,13 +1475,18 @@ public class LLVMWriter implements AutoCloseable {
                 target.print("add i32 0,");
             }
             if (value instanceof LongValue) {
-                target.print("add i32 0,");
+                target.print("add i64 0,");
             }
             if (value instanceof PHIValue) {
                 switch (value.resolveType().resolve()) {
-                    case FLOAT:
                     case DOUBLE:
+                        target.print("fadd double 0.0,");
+                        break;
+                    case FLOAT:
                         target.print("fadd float 0.0,");
+                        break;
+                    case LONG:
+                        target.print("add i64 0,");
                         break;
                     default:
                         target.print("add i32 0,");
@@ -1576,8 +1622,6 @@ public class LLVMWriter implements AutoCloseable {
             write((EnumConstantsExpression) aValue);
         } else if (aValue instanceof MethodTypeArgumentCheckExpression) {
             write((MethodTypeArgumentCheckExpression) aValue);
-        } else if (aValue instanceof ReinterpretAsNativeExpression) {
-            write((ReinterpretAsNativeExpression) aValue);
         } else if (aValue instanceof SqrtExpression) {
             write((SqrtExpression) aValue);
         } else if (aValue instanceof NewMultiArrayExpression) {
@@ -1691,23 +1735,14 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final SqrtExpression e) {
-        target.print("call float @llvm.sqrt.f32(float ");
-        write(e.incomingDataFlows().get(0), true);
-        target.print(")");
-    }
-
-    private void write(final ReinterpretAsNativeExpression e) {
-        final Value theValue = e.incomingDataFlows().get(0);
-        switch (e.getExpectedType()) {
-            case FLOAT:
-            case DOUBLE:
-                target.print("sitofp i32 ");
-                write(theValue, true);
-                target.print(" to float");
-                break;
-            default:
-                writeSameAssignmentHack(theValue.resolveType(), theValue);
-                break;
+        if (e.resolveType().resolve() == TypeRef.Native.DOUBLE) {
+            target.print("call double @llvm.sqrt.f64(double ");
+            write(e.incomingDataFlows().get(0), true);
+            target.print(")");
+        } else {
+            target.print("call float @llvm.sqrt.f32(float ");
+            write(e.incomingDataFlows().get(0), true);
+            target.print(")");
         }
     }
 
@@ -1785,9 +1820,14 @@ public class LLVMWriter implements AutoCloseable {
         target.print(LLVMWriterUtils.toType(e.resolveType()));
 
         switch (e.resolveType().resolve()) {
-            case FLOAT:
             case DOUBLE:
+                target.print(" @llvm.maximum.f64");
+                break;
+            case FLOAT:
                 target.print(" @llvm.maximum.f32");
+                break;
+            case LONG:
+                target.print(" @maximum.i64");
                 break;
             default:
                 target.print(" @maximum");
@@ -1805,15 +1845,27 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final FloatingPointFloorExpression e) {
-        target.print("call float @llvm.floor.f32(float ");
-        writeResolved(e.incomingDataFlows().get(0));
-        target.print(")");
+        if (e.resolveType().resolve() == TypeRef.Native.DOUBLE) {
+            target.print("call double @llvm.floor.f64(double ");
+            writeResolved(e.incomingDataFlows().get(0));
+            target.print(")");
+        } else {
+            target.print("call float @llvm.floor.f32(float ");
+            writeResolved(e.incomingDataFlows().get(0));
+            target.print(")");
+        }
     }
 
     private void write(final FloatingPointCeilExpression e) {
-        target.print("call float @llvm.ceil.f32(float ");
-        writeResolved(e.incomingDataFlows().get(0));
-        target.print(")");
+        if (e.resolveType().resolve() == TypeRef.Native.DOUBLE) {
+            target.print("call double @llvm.ceil.f64(double ");
+            writeResolved(e.incomingDataFlows().get(0));
+            target.print(")");
+        } else {
+            target.print("call float @llvm.ceil.f32(float ");
+            writeResolved(e.incomingDataFlows().get(0));
+            target.print(")");
+        }
     }
 
     private void write(final ResolveCallsiteObjectExpression e) {
@@ -1843,11 +1895,19 @@ public class LLVMWriter implements AutoCloseable {
 
     private void write(final IsNaNExpression e) {
         final Value theValue = e.incomingDataFlows().get(0);
-        target.print("call i32 @isnan(");
-        target.print(LLVMWriterUtils.toType(theValue.resolveType()));
-        target.print(" ");
-        writeResolved(theValue);
-        target.print(")");
+        if (theValue.resolveType().resolve() == TypeRef.Native.DOUBLE) {
+            target.print("call i32 @isnanDouble(");
+            target.print(LLVMWriterUtils.toType(theValue.resolveType()));
+            target.print(" ");
+            writeResolved(theValue);
+            target.print(")");
+        } else {
+            target.print("call i32 @isnan(");
+            target.print(LLVMWriterUtils.toType(theValue.resolveType()));
+            target.print(" ");
+            writeResolved(theValue);
+            target.print(")");
+        }
     }
 
     private void write(final TypeOfExpression e) {
@@ -1859,9 +1919,14 @@ public class LLVMWriter implements AutoCloseable {
         target.print("call ");
         target.print(LLVMWriterUtils.toType(e.resolveType()));
         switch (e.resolveType().resolve()) {
-            case FLOAT:
             case DOUBLE:
+                target.print(" @llvm.minimum.f64");
+                break;
+            case FLOAT:
                 target.print(" @llvm.minimum.f32");
+                break;
+            case LONG:
+                target.print(" @minimum.i64");
                 break;
             default:
                 target.print(" @minimum");
@@ -1879,9 +1944,44 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final FloorExpression e) {
-        target.print("fptosi float ");
-        writeResolved(e.incomingDataFlows().get(0));
-        target.print(" to i32");
+        switch (e.incomingDataFlows().get(0).resolveType().resolve()) {
+            case DOUBLE:
+                target.print("fptosi double ");
+                writeResolved(e.incomingDataFlows().get(0));
+                switch (e.resolveType().resolve()) {
+                    case LONG:
+                        target.print(" to i64");
+                        break;
+                    default:
+                        target.print(" to i32");
+                        break;
+                }
+                break;
+            case LONG:
+                target.print("fptosi double ");
+                writeResolved(e.incomingDataFlows().get(0));
+                switch (e.resolveType().resolve()) {
+                    case LONG:
+                        target.print(" to i64");
+                        break;
+                    default:
+                        target.print(" to i32");
+                        break;
+                }
+                break;
+            default:
+                target.print("fptosi float ");
+                writeResolved(e.incomingDataFlows().get(0));
+                switch (e.resolveType().resolve()) {
+                    case LONG:
+                        target.print(" to i64");
+                        break;
+                    default:
+                        target.print(" to i32");
+                        break;
+                }
+                break;
+        }
     }
 
     private void write(final NegatedExpression e) {
@@ -2077,8 +2177,13 @@ public class LLVMWriter implements AutoCloseable {
     private void writeSameAssignmentHack(final TypeRef theType, final Value aValue) {
         switch (theType.resolve()) {
             case FLOAT:
-            case DOUBLE:
                 target.print("fadd float 0.0,");
+                break;
+            case DOUBLE:
+                target.print("fadd double 0.0,");
+                break;
+            case LONG:
+                target.print("add i64 0,");
                 break;
             default:
                 target.print("add i32 0,");
@@ -2096,22 +2201,72 @@ public class LLVMWriter implements AutoCloseable {
             return;
         }
         switch (theSource.resolveType().resolve()) {
-            case DOUBLE:
-            case FLOAT: {
+            case DOUBLE: {
                 // Convert floating point to something else
                 switch (e.resolveType().resolve()) {
-                    case DOUBLE:
-                    case FLOAT: {
+                    case DOUBLE: {
                         // No conversion needed
                         writeSameAssignmentHack(theTargetType, theSource);
+                        return;
+                    }
+                    case FLOAT: {
+                        // Reduce double to float
+                        target.print("fptrunc double ");
+                        writeResolved(theSource);
+                        target.print(" to float");
+                        return;
+                    }
+                    case LONG: {
+                        // Convert double to i64
+                        // NaN == 0
+                        target.print("call i64 @doubleToi64(double ");
+                        writeResolved(theSource);
+                        target.print(")");
                         return;
                     }
                     case INT:
                     case SHORT:
                     case BYTE:
-                    case LONG:
                     case CHAR: {
-                        // Convert f32 to i32
+                        // Convert doule to i32
+                        // NaN == 0
+                        target.print("call i32 @doubleToi32(double ");
+                        writeResolved(theSource);
+                        target.print(")");
+                        return;
+                    }
+                    default:
+                        throw new IllegalStateException("Coversion to " + e.resolveType() + " not supported!");
+                }
+            }
+            case FLOAT: {
+                // Convert floating point to something else
+                switch (e.resolveType().resolve()) {
+                    case DOUBLE: {
+                        // Widening to double
+                        target.print("fpext float ");
+                        writeResolved(theSource);
+                        target.print(" to double");
+                        return;
+                    }
+                    case FLOAT: {
+                        // No conversion needed
+                        writeSameAssignmentHack(theTargetType, theSource);
+                        return;
+                    }
+                    case LONG: {
+                        // Convert float to i64
+                        // NaN == 0
+                        target.print("call i64 @toi64(float ");
+                        writeResolved(theSource);
+                        target.print(")");
+                        return;
+                    }
+                    case INT:
+                    case SHORT:
+                    case BYTE:
+                    case CHAR: {
+                        // Convert float to i32
                         // NaN == 0
                         target.print("call i32 @toi32(float ");
                         writeResolved(theSource);
@@ -2122,26 +2277,70 @@ public class LLVMWriter implements AutoCloseable {
                         throw new IllegalStateException("Coversion to " + e.resolveType() + " not supported!");
                 }
             }
+            case LONG: {
+                // Convert long to something else
+                switch (e.resolveType().resolve()) {
+                    case DOUBLE: {
+                        // Widening to double
+                        target.print("sitofp i64 ");
+                        writeResolved(theSource);
+                        target.print(" to double");
+                        return;
+                    }
+                    case FLOAT: {
+                        target.print("sitofp i64 ");
+                        writeResolved(theSource);
+                        target.print(" to float");
+                        return;
+                    }
+                    case LONG: {
+                        // No conversion needed
+                        writeSameAssignmentHack(theTargetType, theSource);
+                        return;
+                    }
+                    case INT:
+                    case SHORT:
+                    case BYTE:
+                    case CHAR: {
+                        target.print("trunc i64 ");
+                        writeResolved(theSource);
+                        target.print(" to i32");
+                        return;
+                    }
+                    default:
+                        throw new IllegalStateException("Coversion to " + e.resolveType() + " not supported!");
+                }
+            }
             case INT:
-            case LONG:
             case BYTE:
             case SHORT:
             case CHAR: {
                 // Convert integer type to something else
                 // Convert floating point to something else
                 switch (e.resolveType().resolve()) {
-                    case DOUBLE:
+                    case DOUBLE: {
+                        // Convert i32 to double
+                        target.write("sitofp i32 ");
+                        writeResolved(theSource);
+                        target.write(" to double");
+                        return;
+                    }
                     case FLOAT: {
-                        // Convert i32 to f32
+                        // Convert i32 to float
                         target.write("sitofp i32 ");
                         writeResolved(theSource);
                         target.write(" to float");
                         return;
                     }
+                    case LONG: {
+                        target.write("sext i32 ");
+                        writeResolved(theSource);
+                        target.write(" to i64");
+                        return;
+                    }
                     case INT:
                     case SHORT:
                     case BYTE:
-                    case LONG:
                     case CHAR: {
                         // No conversion needed
                         writeSameAssignmentHack(theTargetType, theSource);
@@ -2182,9 +2381,14 @@ public class LLVMWriter implements AutoCloseable {
         switch (aValue.getOperator()) {
             case ADD:
                 switch (theValue1.resolveType().resolve()) {
-                    case FLOAT:
                     case DOUBLE:
+                        target.print("fadd double");
+                        break;
+                    case FLOAT:
                         target.print("fadd float");
+                        break;
+                    case LONG:
+                        target.print("add i64");
                         break;
                     default:
                         target.print("add i32");
@@ -2193,9 +2397,14 @@ public class LLVMWriter implements AutoCloseable {
                 break;
             case SUB:
                 switch (theValue1.resolveType().resolve()) {
-                    case FLOAT:
                     case DOUBLE:
+                        target.print("fsub double");
+                        break;
+                    case FLOAT:
                         target.print("fsub float");
+                        break;
+                    case LONG:
+                        target.print("sub i64");
                         break;
                     default:
                         target.print("sub i32");
@@ -2204,9 +2413,14 @@ public class LLVMWriter implements AutoCloseable {
                 break;
             case MUL:
                 switch (theValue1.resolveType().resolve()) {
-                    case FLOAT:
                     case DOUBLE:
+                        target.print("fmul double");
+                        break;
+                    case FLOAT:
                         target.print("fmul float");
+                        break;
+                    case LONG:
+                        target.print("mul i64");
                         break;
                     default:
                         target.print("mul i32");
@@ -2215,9 +2429,14 @@ public class LLVMWriter implements AutoCloseable {
                 break;
             case REMAINDER:
                 switch (theValue1.resolveType().resolve()) {
-                    case FLOAT:
                     case DOUBLE:
+                        target.print("frem double");
+                        break;
+                    case FLOAT:
                         target.print("frem float");
+                        break;
+                    case LONG:
+                        target.print("srem i64");
                         break;
                     default:
                         target.print("srem i32");
@@ -2226,9 +2445,14 @@ public class LLVMWriter implements AutoCloseable {
                 break;
             case GREATERTHAN:
                 switch (theValue1.resolveType().resolve()) {
-                    case FLOAT:
                     case DOUBLE:
+                        target.print("fcmp ogt double");
+                        break;
+                    case FLOAT:
                         target.print("fcmp ogt float");
+                        break;
+                    case LONG:
+                        target.print("icmp sgt i64");
                         break;
                     default:
                         target.print("icmp sgt i32");
@@ -2237,9 +2461,14 @@ public class LLVMWriter implements AutoCloseable {
                 break;
             case GREATEROREQUALS:
                 switch (theValue1.resolveType().resolve()) {
-                    case FLOAT:
                     case DOUBLE:
+                        target.print("fcmp oge double");
+                        break;
+                    case FLOAT:
                         target.print("fcmp oge float");
+                        break;
+                    case LONG:
+                        target.print("icmp sge i64");
                         break;
                     default:
                         target.print("icmp sge i32");
@@ -2248,9 +2477,14 @@ public class LLVMWriter implements AutoCloseable {
                 break;
             case LESSTHAN:
                 switch (theValue1.resolveType().resolve()) {
-                    case FLOAT:
                     case DOUBLE:
+                        target.print("fcmp olt double");
+                        break;
+                    case FLOAT:
                         target.print("fcmp olt float");
+                        break;
+                    case LONG:
+                        target.print("icmp slt i64");
                         break;
                     default:
                         target.print("icmp slt i32");
@@ -2259,9 +2493,14 @@ public class LLVMWriter implements AutoCloseable {
                 break;
             case LESSTHANOREQUALS:
                 switch (theValue1.resolveType().resolve()) {
-                    case FLOAT:
                     case DOUBLE:
+                        target.print("fcmp ole double");
+                        break;
+                    case FLOAT:
                         target.print("fcmp ole float");
+                        break;
+                    case LONG:
+                        target.print("icmp sle i64");
                         break;
                     default:
                         target.print("icmp sle i32");
@@ -2270,9 +2509,14 @@ public class LLVMWriter implements AutoCloseable {
                 break;
             case EQUALS:
                 switch (theValue1.resolveType().resolve()) {
-                    case FLOAT:
                     case DOUBLE:
+                        target.print("fcmp oeq double");
+                        break;
+                    case FLOAT:
                         target.print("fcmp oeq float");
+                        break;
+                    case LONG:
+                        target.print("icmp eq i64");
                         break;
                     default:
                         target.print("icmp eq i32");
@@ -2281,9 +2525,14 @@ public class LLVMWriter implements AutoCloseable {
                 break;
             case NOTEQUALS:
                 switch (theValue1.resolveType().resolve()) {
-                    case FLOAT:
                     case DOUBLE:
+                        target.print("fcmp one double");
+                        break;
+                    case FLOAT:
                         target.print("fcmp one float");
+                        break;
+                    case LONG:
+                        target.print("icmp ne i64");
                         break;
                     default:
                         target.print("icmp ne i32");
@@ -2291,22 +2540,64 @@ public class LLVMWriter implements AutoCloseable {
                 }
                 break;
             case BINARYSHIFTLEFT:
-                target.print("shl i32");
+                switch (theValue1.resolveType().resolve()) {
+                    case LONG:
+                        target.print("shl i64");
+                        break;
+                    default:
+                        target.print("shl i32");
+                        break;
+                }
                 break;
             case BINARYSHIFTRIGHT:
-                target.print("ashr i32");
+                switch (theValue1.resolveType().resolve()) {
+                    case LONG:
+                        target.print("ashr i64");
+                        break;
+                    default:
+                        target.print("ashr i32");
+                        break;
+                }
                 break;
             case BINARYUNSIGNEDSHIFTRIGHT:
-                target.print("lshr i32");
+                switch (theValue1.resolveType().resolve()) {
+                    case LONG:
+                        target.print("lshr i64");
+                        break;
+                    default:
+                        target.print("lshr i32");
+                        break;
+                }
                 break;
             case BINARYOR:
-                target.print("or i32");
+                switch (theValue1.resolveType().resolve()) {
+                    case LONG:
+                        target.print("or i64");
+                        break;
+                    default:
+                        target.print("or i32");
+                        break;
+                }
                 break;
             case BINARYXOR:
-                target.print("xor i32");
+                switch (theValue1.resolveType().resolve()) {
+                    case LONG:
+                        target.print("xor i64");
+                        break;
+                    default:
+                        target.print("xor i32");
+                        break;
+                }
                 break;
             case BINARYAND:
-                target.print("and i32");
+                switch (theValue1.resolveType().resolve()) {
+                    case LONG:
+                        target.print("and i64");
+                        break;
+                    default:
+                        target.print("and i32");
+                        break;
+                }
                 break;
             case DIV:
                 writeDivExpression(aValue);
@@ -2317,10 +2608,27 @@ public class LLVMWriter implements AutoCloseable {
         target.print(" ");
         final List<Value> v = aValue.incomingDataFlows();
         for (int i=0;i<v.size();i++) {
+            final Value value = v.get(i);
             if (i>0) {
                 target.print(",");
+                switch (aValue.getOperator()) {
+                    case BINARYSHIFTLEFT:
+                    case BINARYSHIFTRIGHT:
+                    case BINARYUNSIGNEDSHIFTRIGHT:
+                        if (v.get(0).resolveType().resolve() == TypeRef.Native.LONG) {
+                            target.print("%");
+                            target.print(toTempSymbol(aValue, "v2_ext"));
+                        } else {
+                            writeResolved(value);
+                        }
+                        break;
+                    default:
+                        writeResolved(value);
+                        break;
+                }
+            } else {
+                writeResolved(value);
             }
-            writeResolved(v.get(i));
         }
     }
 
@@ -2328,18 +2636,31 @@ public class LLVMWriter implements AutoCloseable {
         final Value left = e.incomingDataFlows().get(0);
         final Value right = e.incomingDataFlows().get(1);
         switch (left.resolveType().resolve()) {
-            case FLOAT:
             case DOUBLE:
+                target.print("fdiv double ");
+                writeResolved(left);
+                target.print(", ");
+                writeResolved(right);
+                return;
+            case FLOAT:
                 target.print("fdiv float ");
                 writeResolved(left);
                 target.print(", ");
                 writeResolved(right);
                 return;
+            case LONG:
+                target.print("fdiv double %");
+                target.print(toTempSymbol(e, "v1"));
+                target.print(", %" );
+                target.print(toTempSymbol(e, "v2"));
+                break;
+            default:
+                target.print("fdiv float %");
+                target.print(toTempSymbol(e, "v1"));
+                target.print(", %" );
+                target.print(toTempSymbol(e, "v2"));
+                break;
         }
-        target.print("fdiv float %");
-        target.print(toTempSymbol(e, "v1"));
-        target.print(", %" );
-        target.print(toTempSymbol(e, "v2"));
     }
 
     private void write(final IntegerValue aValue) {

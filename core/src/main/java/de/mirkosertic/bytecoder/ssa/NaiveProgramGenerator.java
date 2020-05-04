@@ -468,7 +468,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
                     aHelper.push(theINS.getOpcodeAddress(), theValue1);
                     aHelper.push(theINS.getOpcodeAddress(), theValue2);
-                    aHelper.push(theINS.getOpcodeAddress(), theValue2);
+                    aHelper.push(theINS.getOpcodeAddress(), theValue1);
                 } else {
                     final Value theValue2 = aHelper.pop();
                     final Value theValue3 = aHelper.pop();
@@ -739,7 +739,6 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theINS.getType()), new FloorExpression(aProgram, theInstruction.getOpcodeAddress(), theDivValue, TypeRef.toType(theINS.getType())));
                     break;
                 }
-
                 aHelper.push(theINS.getOpcodeAddress(), theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionGenericMUL) {
                 final BytecodeInstructionGenericMUL theINS = (BytecodeInstructionGenericMUL) theInstruction;
@@ -1255,7 +1254,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                         for (int i = theSignatureLength - 1; i < theArgumentsLength; i++) {
                             final Value theVariable = theArguments.get(theSignatureLength - 1);
                             theArguments.remove(theVariable);
-                            theInitNode.getExpressions().add(new ArrayStoreExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theNewVarargsArray, new IntegerValue(i - theSignatureLength + 1), theVariable));
+                            theInitNode.getExpressions().add(new ArrayStoreExpression(aProgram, theInstruction.getOpcodeAddress(), theVariable.resolveType(), theNewVarargsArray, new IntegerValue(i - theSignatureLength + 1), theVariable));
                         }
                         theArguments.add(theNewVarargsArray);
                     }
@@ -1403,7 +1402,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     for (int i=theInitSignature.getArguments().length-1;i>=0;i--) {
                         final Value theIndex = new IntegerValue(i);
                         final Value theStoredValue = aHelper.pop();
-                        aTargetBlock.getExpressions().add(new ArrayStoreExpression(aProgram, theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theArray, theIndex, theStoredValue));
+                        aTargetBlock.getExpressions().add(new ArrayStoreExpression(aProgram, theInstruction.getOpcodeAddress(), theStoredValue.resolveType(), theArray, theIndex, theStoredValue));
                     }
 
                     theInvokeArguments.add(theArray);

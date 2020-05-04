@@ -101,7 +101,6 @@ import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
-import de.mirkosertic.bytecoder.ssa.ReinterpretAsNativeExpression;
 import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
@@ -296,8 +295,6 @@ public class JSSSAWriter {
             print((NewInstanceFromDefaultConstructorExpression) aValue);
         } else if (aValue instanceof MethodTypeArgumentCheckExpression) {
             print((MethodTypeArgumentCheckExpression) aValue);
-        } else if (aValue instanceof ReinterpretAsNativeExpression) {
-            print((ReinterpretAsNativeExpression) aValue);
         } else if (aValue instanceof SuperTypeOfExpression) {
             print((SuperTypeOfExpression) aValue);
         } else if (aValue instanceof HeapBaseExpression) {
@@ -327,11 +324,6 @@ public class JSSSAWriter {
         final Value theValue = aExpression.incomingDataFlows().get(0);
         print(theValue);
         writer.text(".").text("superClass");
-    }
-
-    private void print(final ReinterpretAsNativeExpression aExpression) {
-        final Value theValue = aExpression.incomingDataFlows().get(0);
-        print(theValue);
     }
 
     private void print(final MethodTypeArgumentCheckExpression aExpression) {

@@ -69,7 +69,7 @@ public class TFileDescriptor {
     }
 
     @Export("initDefaultFileHandles")
-    public static void initDefaultFileHandles(final long stdIn, final long stdOut, final long stdErr) {
+    public static void initDefaultFileHandles(final int stdIn, final int stdOut, final int stdErr) {
         ((TFileDescriptor) (Object) FileDescriptor.in).setHandle(stdIn);
         ((TFileDescriptor) (Object) FileDescriptor.out).setHandle(stdOut);
         ((TFileDescriptor) (Object) FileDescriptor.err).setHandle(stdErr);

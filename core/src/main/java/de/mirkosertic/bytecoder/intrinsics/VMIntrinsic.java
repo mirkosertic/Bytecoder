@@ -32,6 +32,7 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+import de.mirkosertic.bytecoder.ssa.ArrayEntryExpression;
 import de.mirkosertic.bytecoder.ssa.ByteValue;
 import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
 import de.mirkosertic.bytecoder.ssa.LambdaConstructorReferenceExpression;
@@ -46,7 +47,6 @@ import de.mirkosertic.bytecoder.ssa.ParsingHelper;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
-import de.mirkosertic.bytecoder.ssa.ReinterpretAsNativeExpression;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Value;
@@ -216,28 +216,61 @@ public class VMIntrinsic extends Intrinsic {
                 aHelper.push(aInstruction.getOpcodeAddress(), new MethodTypeArgumentCheckExpression(aProgram, aInstruction.getOpcodeAddress(), aArguments.get(0), aArguments.get(1), TypeRef.Native.LONG));
                 return true;
             }
-            if ("reinterpretAsInt".equals(aMethodName)) {
-                aHelper.push(aInstruction.getOpcodeAddress(), new ReinterpretAsNativeExpression(aProgram, aInstruction.getOpcodeAddress(), aArguments.get(0), TypeRef.Native.INT));
+            if ("isShort".equals(aMethodName)) {
+                aHelper.push(aInstruction.getOpcodeAddress(), new MethodTypeArgumentCheckExpression(aProgram, aInstruction.getOpcodeAddress(), aArguments.get(0), aArguments.get(1), TypeRef.Native.SHORT));
                 return true;
             }
-            if ("reinterpretAsLong".equals(aMethodName)) {
-                aHelper.push(aInstruction.getOpcodeAddress(), new ReinterpretAsNativeExpression(aProgram, aInstruction.getOpcodeAddress(), aArguments.get(0), TypeRef.Native.LONG));
+            if ("isByte".equals(aMethodName)) {
+                aHelper.push(aInstruction.getOpcodeAddress(), new MethodTypeArgumentCheckExpression(aProgram, aInstruction.getOpcodeAddress(), aArguments.get(0), aArguments.get(1), TypeRef.Native.BYTE));
                 return true;
             }
-            if ("reinterpretAsFloat".equals(aMethodName)) {
-                aHelper.push(aInstruction.getOpcodeAddress(), new ReinterpretAsNativeExpression(aProgram, aInstruction.getOpcodeAddress(), aArguments.get(0), TypeRef.Native.FLOAT));
+
+            if ("arrayEntryAsLong".equals(aMethodName)) {
+                final ArrayEntryExpression theExpression = new ArrayEntryExpression(aProgram, aInstruction.getOpcodeAddress(),
+                        TypeRef.Native.LONG, aArguments.get(0), aArguments.get(1));
+                aHelper.push(aInstruction.getOpcodeAddress(), theExpression);
                 return true;
             }
-            if ("reinterpretAsDouble".equals(aMethodName)) {
-                aHelper.push(aInstruction.getOpcodeAddress(), new ReinterpretAsNativeExpression(aProgram, aInstruction.getOpcodeAddress(), aArguments.get(0), TypeRef.Native.DOUBLE));
+            if ("arrayEntryAsInt".equals(aMethodName)) {
+                final ArrayEntryExpression theExpression = new ArrayEntryExpression(aProgram, aInstruction.getOpcodeAddress(),
+                        TypeRef.Native.INT, aArguments.get(0), aArguments.get(1));
+                aHelper.push(aInstruction.getOpcodeAddress(), theExpression);
                 return true;
             }
-            if ("reinterpretAsChar".equals(aMethodName)) {
-                aHelper.push(aInstruction.getOpcodeAddress(), new ReinterpretAsNativeExpression(aProgram, aInstruction.getOpcodeAddress(), aArguments.get(0), TypeRef.Native.CHAR));
+            if ("arrayEntryAsFloat".equals(aMethodName)) {
+                final ArrayEntryExpression theExpression = new ArrayEntryExpression(aProgram, aInstruction.getOpcodeAddress(),
+                        TypeRef.Native.FLOAT, aArguments.get(0), aArguments.get(1));
+                aHelper.push(aInstruction.getOpcodeAddress(), theExpression);
                 return true;
             }
-            if ("reinterpretAsBoolean".equals(aMethodName)) {
-                aHelper.push(aInstruction.getOpcodeAddress(), new ReinterpretAsNativeExpression(aProgram, aInstruction.getOpcodeAddress(), aArguments.get(0), TypeRef.Native.BOOLEAN));
+            if ("arrayEntryAsDouble".equals(aMethodName)) {
+                final ArrayEntryExpression theExpression = new ArrayEntryExpression(aProgram, aInstruction.getOpcodeAddress(),
+                        TypeRef.Native.DOUBLE, aArguments.get(0), aArguments.get(1));
+                aHelper.push(aInstruction.getOpcodeAddress(), theExpression);
+                return true;
+            }
+            if ("arrayEntryAsChar".equals(aMethodName)) {
+                final ArrayEntryExpression theExpression = new ArrayEntryExpression(aProgram, aInstruction.getOpcodeAddress(),
+                        TypeRef.Native.CHAR, aArguments.get(0), aArguments.get(1));
+                aHelper.push(aInstruction.getOpcodeAddress(), theExpression);
+                return true;
+            }
+            if ("arrayEntryAsBoolean".equals(aMethodName)) {
+                final ArrayEntryExpression theExpression = new ArrayEntryExpression(aProgram, aInstruction.getOpcodeAddress(),
+                        TypeRef.Native.BOOLEAN, aArguments.get(0), aArguments.get(1));
+                aHelper.push(aInstruction.getOpcodeAddress(), theExpression);
+                return true;
+            }
+            if ("arrayEntryAsShort".equals(aMethodName)) {
+                final ArrayEntryExpression theExpression = new ArrayEntryExpression(aProgram, aInstruction.getOpcodeAddress(),
+                        TypeRef.Native.SHORT, aArguments.get(0), aArguments.get(1));
+                aHelper.push(aInstruction.getOpcodeAddress(), theExpression);
+                return true;
+            }
+            if ("arrayEntryAsByte".equals(aMethodName)) {
+                final ArrayEntryExpression theExpression = new ArrayEntryExpression(aProgram, aInstruction.getOpcodeAddress(),
+                        TypeRef.Native.BYTE, aArguments.get(0), aArguments.get(1));
+                aHelper.push(aInstruction.getOpcodeAddress(), theExpression);
                 return true;
             }
         }

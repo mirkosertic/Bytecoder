@@ -15,11 +15,13 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
 public class TStrictMath {
 
+    @EmulatedByRuntime
     public static native double sqrt(double aValue);
 
     public static native double sin(double aValue);

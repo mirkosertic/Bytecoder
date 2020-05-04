@@ -61,8 +61,8 @@ public class MemoryManager {
     }
 
     @Export("freeMem")
-    public static long freeMem() {
-        long theResult = 0;
+    public static int freeMem() {
+        int theResult = 0;
 
         final int heapBase = Address.getHeapBase();
 
@@ -77,8 +77,8 @@ public class MemoryManager {
     }
 
     @Export("usedMem")
-    public static long usedMem() {
-        long theResult = 0;
+    public static int usedMem() {
+        int theResult = 0;
 
         final int heapBase = Address.getHeapBase();
 
@@ -337,7 +337,7 @@ public class MemoryManager {
     public static int newArray(final int aSize, final int aType, final int aVTableIndex) {
 
         // Arrays are normal objects. Their data are a length field plus n * data
-        final int theObject = newObject(16 + 4 + 4 * aSize, aType, aVTableIndex);
+        final int theObject = newObject(16 + 4 + 8 * aSize, aType, aVTableIndex);
 
         Address.setIntValue(theObject, 16, aSize);
         return theObject;
@@ -347,7 +347,7 @@ public class MemoryManager {
     public static int newArray(final int aSize1, final int aSize2, final int aType, final int aVTableIndex) {
         final int theResult = newArray(aSize1, aType, aVTableIndex);
         for (int i=0;i<aSize1;i++) {
-            final int theOffset = 16 + 4 + 4 * i;
+            final int theOffset = 16 + 4 + 8 * i;
             final int theSubArray = newArray(aSize2, aType, aVTableIndex);
             Address.setIntValue(theResult, theOffset, theSubArray);
         }
