@@ -37,15 +37,17 @@ import de.mirkosertic.bytecoder.ssa.ValueWithEscapeCheck;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public class EscapeAnalysisOptimizerStageTest {
 
-    public static class TestInstance  {
+    public static class TestInstance extends RuntimeException  {
 
         private final int aValue;
 
@@ -128,6 +130,21 @@ public class EscapeAnalysisOptimizerStageTest {
             o = new TestInstance(10);
         }
         return o;
+    }
+
+    public static Object isEscapingByPHIFromLoop() {
+        TestInstance o = null;
+        for (int i=0;i<10;i++) {
+            if (o == null) {
+                o = new TestInstance(i);
+            }
+        }
+        return o;
+    }
+
+    public static Object isEscapingByThrow() {
+        final TestInstance o = new TestInstance(10);
+        throw o;
     }
 
     private Set<Value> escapingAssignments(final Program p) {
@@ -247,9 +264,28 @@ public class EscapeAnalysisOptimizerStageTest {
     }
 
     @Test
-    @Ignore
     public void testIsEscapingByPHI() {
         final Program p = programFor("isEscapingByPHI", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{}));
+
+        final Set<Value> theEscapingValues = escapingAssignments(p);
+        Assert.assertEquals(2, theEscapingValues.size());
+        final List<Value> theValues = StreamSupport.stream(theEscapingValues.spliterator(), false).collect(Collectors.toList());
+        Assert.assertTrue(theValues.get(0) instanceof NewObjectAndConstructExpression);
+        Assert.assertTrue(theValues.get(1) instanceof NewObjectAndConstructExpression);
+    }
+
+    @Test
+    public void testIsEscapingByPHIFromLoop() {
+        final Program p = programFor("isEscapingByPHIFromLoop", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{}));
+
+        final Set<Value> theEscapingValues = escapingAssignments(p);
+        Assert.assertEquals(1, theEscapingValues.size());
+        Assert.assertTrue(theEscapingValues.iterator().next() instanceof NewObjectAndConstructExpression);
+    }
+
+    @Test
+    public void testIsEscapingByThrow() {
+        final Program p = programFor("isEscapingByThrow", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{}));
 
         final Set<Value> theEscapingValues = escapingAssignments(p);
         Assert.assertEquals(1, theEscapingValues.size());

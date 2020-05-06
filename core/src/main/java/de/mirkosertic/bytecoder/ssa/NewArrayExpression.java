@@ -18,9 +18,10 @@ package de.mirkosertic.bytecoder.ssa;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
-public class NewArrayExpression extends Expression {
+public class NewArrayExpression extends Expression implements ValueWithEscapeCheck {
 
     private final BytecodeTypeRef type;
+    private boolean escaping;
 
     public NewArrayExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeTypeRef aType, final Value aLength) {
         super(aProgram, aAddress);
@@ -35,5 +36,15 @@ public class NewArrayExpression extends Expression {
     @Override
     public TypeRef resolveType() {
         return TypeRef.Native.REFERENCE;
+    }
+
+    @Override
+    public void markAsEscaped() {
+        escaping = true;
+    }
+
+    @Override
+    public boolean isEscaping() {
+        return escaping;
     }
 }

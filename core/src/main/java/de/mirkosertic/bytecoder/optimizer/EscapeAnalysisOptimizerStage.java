@@ -24,10 +24,12 @@ import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
+import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
+import de.mirkosertic.bytecoder.ssa.ThrowExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.ValueWithEscapeCheck;
 import de.mirkosertic.bytecoder.ssa.Variable;
@@ -43,13 +45,20 @@ public class EscapeAnalysisOptimizerStage implements OptimizerStage {
             final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) aExpression;
             final Value theAssignedValue = theAssignment.incomingDataFlows().get(0);
             if (theAssignedValue instanceof ValueWithEscapeCheck) {
-                performEscapeAnalysisFor((ValueWithEscapeCheck) theAssignedValue, theAssignment.getVariable(), theAssignment.getVariable(), aCurrentNode);
+                performEscapeAnalysisFor((ValueWithEscapeCheck) theAssignedValue, theAssignment.getVariable(), theAssignment.getVariable());
             }
         }
         return aExpression;
     }
 
-    private void performEscapeAnalysisFor(final ValueWithEscapeCheck aValueToCheckEscaping, final Value aPreviousValue, final Value aCurrentValue, final RegionNode aNode) {
+    private void performEscapeAnalysisFor(final ValueWithEscapeCheck aValueToCheckEscaping, final Value aPreviousValue, final Value aCurrentValue) {
+
+        // used in a PHIValue
+        // To prevent complex analysis, we give up here and mark the value as escaping
+        if (aCurrentValue instanceof PHIValue) {
+            aValueToCheckEscaping.markAsEscaped();
+            return;
+        }
 
         // Value is used as a return value, it is escaping
         if (aCurrentValue instanceof ReturnValueExpression) {
@@ -104,18 +113,24 @@ public class EscapeAnalysisOptimizerStage implements OptimizerStage {
             }
         }
 
+        if (aCurrentValue instanceof ThrowExpression) {
+            // Escaping by throwing,
+            aValueToCheckEscaping.markAsEscaped();
+            return;
+        }
+
         // Copied to another variable, we have to check the copy, too
         if (aCurrentValue instanceof VariableAssignmentExpression) {
             final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) aCurrentValue;
             final Variable theVariable = theAssignment.getVariable();
 
             theVariable.outgoingEdges().map(Edge::targetNode).forEach(
-                    node -> performEscapeAnalysisFor(aValueToCheckEscaping, theVariable, (Value) node, aNode)
+                    node -> performEscapeAnalysisFor(aValueToCheckEscaping, theVariable, (Value) node)
             );
         }
 
         aCurrentValue.outgoingEdges().map(Edge::targetNode).forEach(
-                node -> performEscapeAnalysisFor(aValueToCheckEscaping, aCurrentValue, (Value) node, aNode)
+                node -> performEscapeAnalysisFor(aValueToCheckEscaping, aCurrentValue, (Value) node)
         );
     }
 }

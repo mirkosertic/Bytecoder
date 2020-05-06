@@ -1143,6 +1143,16 @@ public class LLVMWriter implements AutoCloseable {
         target.print(toTempSymbol(e, "vtable"));
         target.print(")");
         currentSubProgram.writeDebugSuffixFor(e, target);
+
+        if (e.isEscaping()) {
+            linkerContext.getStatistics().context("Codegenerator")
+                    .counter("ArrayOnHeapAllocations").increment();
+        } else {
+            linkerContext.getStatistics().context("Codegenerator")
+                    .counter("ArrayOnStackAllocations").increment();
+
+            target.print(";; might be a stack allocation here. Please verify.");
+        }
     }
 
     private void write(final ThrowExpression e) {
@@ -1732,6 +1742,16 @@ public class LLVMWriter implements AutoCloseable {
         target.write(toTempSymbol(e, "vtable"));
         target.write(")");
         currentSubProgram.writeDebugSuffixFor(e, target);
+
+        if (e.isEscaping()) {
+            linkerContext.getStatistics().context("Codegenerator")
+                    .counter("MultiArrayOnHeapAllocations").increment();
+        } else {
+            linkerContext.getStatistics().context("Codegenerator")
+                    .counter("MultiArrayOnStackAllocations").increment();
+
+            target.print(";; might be a stack allocation here. Please verify.");
+        }
     }
 
     private void write(final SqrtExpression e) {
@@ -2155,14 +2175,14 @@ public class LLVMWriter implements AutoCloseable {
 
         if (e.isEscaping()) {
             linkerContext.getStatistics().context("Codegenerator")
-                    .counter("ObjectOnStackAllocations").increment();;
+                    .counter("ObjectOnHeapAllocations").increment();
         } else {
             linkerContext.getStatistics().context("Codegenerator")
-                    .counter("ObjectOnHeapAllocations").increment();;
+                    .counter("ObjectOnStackAllocations").increment();
         }
 
         target.print("call i32 (i32");
-        for (int i=0;i<e.getSignature().getArguments().length;i++) {
+        for (int i = 0; i < e.getSignature().getArguments().length; i++) {
             target.print(",");
             target.print(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
         }
@@ -2170,13 +2190,18 @@ public class LLVMWriter implements AutoCloseable {
         target.print(LLVMWriterUtils.toMethodName(e.getClazz(), LLVMWriter.NEWINSTANCE_METHOD_NAME, e.getSignature()));
         target.print("(i32 %");
         target.print(LLVMWriterUtils.runtimeClassVariableName(e.getClazz()));
-        for (int i=0;i<e.incomingDataFlows().size();i++) {
+        for (int i = 0; i < e.incomingDataFlows().size(); i++) {
             target.print(",");
             target.print(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
             target.print(" ");
             writeResolved(e.incomingDataFlows().get(i));
         }
-        target.println(")");
+
+        if (e.isEscaping()) {
+            target.println(")");
+        } else {
+            target.println(") ;; might be a stack allocation here. Please verify.");
+        }
     }
 
     private void write(final StackTopExpression e) {
