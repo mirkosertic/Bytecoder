@@ -61,19 +61,28 @@ public class EscapeAnalysisOptimizerStage implements OptimizerStage {
             aValueToCheckEscaping.markAsEscaped();
             return;
         }
+
+        // Used as a param in static invocation, it might be escaping
         if (aCurrentValue instanceof InvokeStaticMethodExpression) {
             final Value v = (Value) aValueToCheckEscaping;
             aValueToCheckEscaping.markAsEscaped();
             return;
         }
+
         if (aCurrentValue instanceof InvokeVirtualMethodExpression || aCurrentValue instanceof DirectInvokeMethodExpression) {
             final List<Value> theValues = aCurrentValue.incomingDataFlows();
+            // Value can be the receiver, but not an argument of the invocation
             if (theValues.indexOf(aPreviousValue) > 0) {
+                // Used as a argument in Virtual or Direct invocation, it might be escaping
                 aValueToCheckEscaping.markAsEscaped();
                 return;
             }
         }
 
+        // TODO: Field assignment check (static and instance)
+        // TODO: Array assignment check
+
+        // Copied to another variable, we have to check the copy, too
         if (aCurrentValue instanceof VariableAssignmentExpression) {
             final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) aCurrentValue;
             final Variable theVariable = theAssignment.getVariable();

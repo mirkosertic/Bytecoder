@@ -2152,6 +2152,15 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final NewObjectAndConstructExpression e) {
+
+        if (e.isEscaping()) {
+            linkerContext.getStatistics().context("Codegenerator")
+                    .counter("ObjectOnStackAllocations").increment();;
+        } else {
+            linkerContext.getStatistics().context("Codegenerator")
+                    .counter("ObjectOnHeapAllocations").increment();;
+        }
+
         target.print("call i32 (i32");
         for (int i=0;i<e.getSignature().getArguments().length;i++) {
             target.print(",");
