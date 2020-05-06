@@ -64,6 +64,7 @@ public enum KnownOptimizer implements Optimizer {
         public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
             final List<Optimizer> theOptimizer = new ArrayList<>();
             theOptimizer.add(new SinglePassOptimizer(new OptimizerStage[] {
+                    new EscapeAnalysisOptimizerStage(),
                     new InvokeVirtualOptimizerStage(),
                     new InefficientCompareOptimizerStage(),
             }));

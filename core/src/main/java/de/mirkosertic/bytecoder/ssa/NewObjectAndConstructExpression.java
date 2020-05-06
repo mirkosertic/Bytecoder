@@ -21,9 +21,10 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 import java.util.List;
 
-public class NewObjectAndConstructExpression extends InvocationExpression {
+public class NewObjectAndConstructExpression extends InvocationExpression implements ValueWithEscapeCheck {
 
     private final BytecodeObjectTypeRef clazz;
+    private boolean escaping;
 
     public NewObjectAndConstructExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef aClazz,
                                            final BytecodeMethodSignature aMethodSignature, final List<Value> aArguments) {
@@ -40,5 +41,15 @@ public class NewObjectAndConstructExpression extends InvocationExpression {
     @Override
     public TypeRef resolveType() {
         return TypeRef.toType(clazz);
+    }
+
+    @Override
+    public void markAsEscaped() {
+        escaping = true;
+    }
+
+    @Override
+    public boolean isEscaping() {
+        return escaping;
     }
 }
