@@ -195,8 +195,14 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             final LLVMDebugInformation debugInformation = new LLVMDebugInformation();
             final NativeMemoryLayouter memoryLayouter = new NativeMemoryLayouter(aLinkerContext, 8);
 
-            final File theLLFile = File.createTempFile("llvm", ".ll");
-            theLLFile.deleteOnExit();
+            final File theTempDirectory = new File(new File("."), ".llvm");
+            aOptions.getLogger().info("Using directory {} for temporary LLVM files", theTempDirectory);
+            if (!theTempDirectory.exists()) {
+                theTempDirectory.mkdirs();
+            }
+            final File theLLFile = new File(theTempDirectory, aEntryPointClass.getName() + aEntryPointMethodName + ".ll");
+            //theLLFile.deleteOnExit();
+
             try (final PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(theLLFile), StandardCharsets.UTF_8))) {
                 // We write the header first
                 pw.println("target triple = \"wasm32-unknown-unknown\"");
