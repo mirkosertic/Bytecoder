@@ -29,6 +29,7 @@ import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
+import de.mirkosertic.bytecoder.ssa.SetEnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.ThrowExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.ValueWithEscapeCheck;
@@ -63,6 +64,12 @@ public class EscapeAnalysisOptimizerStage implements OptimizerStage {
         // Value is used as a return value, it is escaping
         if (aCurrentValue instanceof ReturnValueExpression) {
             final Value v = (Value) aValueToCheckEscaping;
+            aValueToCheckEscaping.markAsEscaped();
+            return;
+        }
+
+        // Value is stored as enum constants, it is escaping
+        if (aCurrentValue instanceof SetEnumConstantsExpression) {
             aValueToCheckEscaping.markAsEscaped();
             return;
         }

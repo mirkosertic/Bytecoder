@@ -22,6 +22,7 @@ import de.mirkosertic.bytecoder.core.BytecodeLoader;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.Expression;
@@ -46,6 +47,10 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class EscapeAnalysisOptimizerStageTest {
+
+    public enum TestEnum {
+        ONE
+    }
 
     public static class TestInstance extends RuntimeException  {
 
@@ -180,9 +185,13 @@ public class EscapeAnalysisOptimizerStageTest {
     }
 
     private Program programFor(final String methodName, final BytecodeMethodSignature aSignature) {
+        return programFor(getClass(), methodName, aSignature);
+    }
+
+    private Program programFor(final Class aClazz, final String methodName, final BytecodeMethodSignature aSignature) {
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new LLVMIntrinsics());
-        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(getClass()));
+        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(aClazz));
 
         theLinkedClass.resolveStaticMethod(methodName, aSignature);
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull(methodName, aSignature);
@@ -192,6 +201,7 @@ public class EscapeAnalysisOptimizerStageTest {
 
         return p;
     }
+
 
     @Test
     public void testEscapingInstanceFromNew() {
@@ -290,6 +300,14 @@ public class EscapeAnalysisOptimizerStageTest {
         final Set<Value> theEscapingValues = escapingAssignments(p);
         Assert.assertEquals(1, theEscapingValues.size());
         Assert.assertTrue(theEscapingValues.iterator().next() instanceof NewObjectAndConstructExpression);
+    }
+
+    @Test
+    public void testIsEscapingEnumInit() {
+        final Program p = programFor(TestEnum.class, "<clinit>", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{}));
+
+        final Set<Value> theEscapingValues = escapingAssignments(p);
+        Assert.assertEquals(2, theEscapingValues.size());
     }
 
 }
