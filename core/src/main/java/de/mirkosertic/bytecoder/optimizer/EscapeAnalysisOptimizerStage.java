@@ -17,13 +17,15 @@ package de.mirkosertic.bytecoder.optimizer;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.graph.Edge;
+import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
-import de.mirkosertic.bytecoder.ssa.PHIValue;
+import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
+import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
@@ -41,19 +43,13 @@ public class EscapeAnalysisOptimizerStage implements OptimizerStage {
             final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) aExpression;
             final Value theAssignedValue = theAssignment.incomingDataFlows().get(0);
             if (theAssignedValue instanceof ValueWithEscapeCheck) {
-                performEscapeAnalysisFor((ValueWithEscapeCheck) theAssignedValue, theAssignment.getVariable(), theAssignment.getVariable());
+                performEscapeAnalysisFor((ValueWithEscapeCheck) theAssignedValue, theAssignment.getVariable(), theAssignment.getVariable(), aCurrentNode);
             }
         }
         return aExpression;
     }
 
-    private void performEscapeAnalysisFor(final ValueWithEscapeCheck aValueToCheckEscaping, final Value aPreviousValue, final Value aCurrentValue) {
-
-        // If the value is used in PHIs, we give up and mark it as escaping
-        if (aCurrentValue instanceof PHIValue) {
-            aValueToCheckEscaping.markAsEscaped();
-            return;
-        }
+    private void performEscapeAnalysisFor(final ValueWithEscapeCheck aValueToCheckEscaping, final Value aPreviousValue, final Value aCurrentValue, final RegionNode aNode) {
 
         // Value is used as a return value, it is escaping
         if (aCurrentValue instanceof ReturnValueExpression) {
@@ -69,6 +65,35 @@ public class EscapeAnalysisOptimizerStage implements OptimizerStage {
             return;
         }
 
+        if (aCurrentValue instanceof PutFieldExpression) {
+            final List<Value> theValues = aCurrentValue.incomingDataFlows();
+            // Value can be the receiver, but not an argument of the invocation
+            if (theValues.indexOf(aPreviousValue) > 0) {
+                // written to a field, it might be escaping
+                aValueToCheckEscaping.markAsEscaped();
+                return;
+            }
+        }
+
+        if (aCurrentValue instanceof PutStaticExpression) {
+            final List<Value> theValues = aCurrentValue.incomingDataFlows();
+            if (theValues.contains(aPreviousValue)) {
+                // written to a static field, it might be escaping
+                aValueToCheckEscaping.markAsEscaped();
+                return;
+            }
+        }
+
+        if (aCurrentValue instanceof ArrayStoreExpression) {
+            final List<Value> theValues = aCurrentValue.incomingDataFlows();
+            // Value can be the receiver or index, but the value
+            if (theValues.indexOf(aPreviousValue) == 2) {
+                // written to an array, it might be escaping
+                aValueToCheckEscaping.markAsEscaped();
+                return;
+            }
+        }
+
         if (aCurrentValue instanceof InvokeVirtualMethodExpression || aCurrentValue instanceof DirectInvokeMethodExpression) {
             final List<Value> theValues = aCurrentValue.incomingDataFlows();
             // Value can be the receiver, but not an argument of the invocation
@@ -79,17 +104,18 @@ public class EscapeAnalysisOptimizerStage implements OptimizerStage {
             }
         }
 
-        // TODO: Field assignment check (static and instance)
-        // TODO: Array assignment check
-
         // Copied to another variable, we have to check the copy, too
         if (aCurrentValue instanceof VariableAssignmentExpression) {
             final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) aCurrentValue;
             final Variable theVariable = theAssignment.getVariable();
 
-            theVariable.outgoingEdges().map(Edge::targetNode).forEach(t -> performEscapeAnalysisFor(aValueToCheckEscaping, theVariable, (Value) t));
+            theVariable.outgoingEdges().map(Edge::targetNode).forEach(
+                    node -> performEscapeAnalysisFor(aValueToCheckEscaping, theVariable, (Value) node, aNode)
+            );
         }
 
-        aCurrentValue.outgoingEdges().map(Edge::targetNode).forEach(t -> performEscapeAnalysisFor(aValueToCheckEscaping, aCurrentValue, (Value) t));
+        aCurrentValue.outgoingEdges().map(Edge::targetNode).forEach(
+                node -> performEscapeAnalysisFor(aValueToCheckEscaping, aCurrentValue, (Value) node, aNode)
+        );
     }
 }

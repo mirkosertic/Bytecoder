@@ -1,3 +1,18 @@
+/*
+ * Copyright 2020 Mirko Sertic
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package de.mirkosertic.bytecoder.optimizer;
 
 import de.mirkosertic.bytecoder.backend.llvm.LLVMIntrinsics;
@@ -22,6 +37,7 @@ import de.mirkosertic.bytecoder.ssa.ValueWithEscapeCheck;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashSet;
@@ -44,6 +60,13 @@ public class EscapeAnalysisOptimizerStageTest {
         public void escapingMethod(final TestInstance o) {
         }
     }
+
+    public static class Keeper {
+        TestInstance memberField;
+    }
+
+    static Keeper KEEPER = new Keeper();
+    static TestInstance staticField;
 
     public static Object isEscapingFromNewObject() {
         final TestInstance o = new TestInstance(100);
@@ -75,6 +98,36 @@ public class EscapeAnalysisOptimizerStageTest {
         final TestInstance o = new TestInstance(100);
         o.escapingMethod(o);
         return null;
+    }
+
+    public static Object isEscapingByStaticFieldWrite() {
+        final TestInstance o = new TestInstance(100);
+        staticField = o;
+        return null;
+    }
+
+    public static Object isEscapingByInstanceFieldWrite() {
+        final TestInstance o = new TestInstance(100);
+        KEEPER.memberField = o;
+        return null;
+    }
+
+    public static Object isEscapingByArrayWrite() {
+        final TestInstance o = new TestInstance(100);
+        final Object[] array = new Object[10];
+        array[5] = o;
+        return null;
+    }
+
+    public static Object isEscapingByPHI() {
+        final TestInstance o;
+        int x = 10;
+        if (x > 20) {
+            o = new TestInstance(20);
+        } else {
+            o = new TestInstance(10);
+        }
+        return o;
     }
 
     private Set<Value> escapingAssignments(final Program p) {
@@ -160,6 +213,43 @@ public class EscapeAnalysisOptimizerStageTest {
     @Test
     public void testIsEscapingByParameterOfMethodInvocationWithItself() {
         final Program p = programFor("isEscapingByParameterOfMethodInvocationWithItself", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{}));
+
+        final Set<Value> theEscapingValues = escapingAssignments(p);
+        Assert.assertEquals(1, theEscapingValues.size());
+        Assert.assertTrue(theEscapingValues.iterator().next() instanceof NewObjectAndConstructExpression);
+    }
+
+    @Test
+    public void testIsEscapingByStaticFieldWrite() {
+        final Program p = programFor("isEscapingByStaticFieldWrite", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{}));
+
+        final Set<Value> theEscapingValues = escapingAssignments(p);
+        Assert.assertEquals(1, theEscapingValues.size());
+        Assert.assertTrue(theEscapingValues.iterator().next() instanceof NewObjectAndConstructExpression);
+    }
+
+    @Test
+    public void testIsEscapingByInstanceFieldWrite() {
+        final Program p = programFor("isEscapingByInstanceFieldWrite", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{}));
+
+        final Set<Value> theEscapingValues = escapingAssignments(p);
+        Assert.assertEquals(1, theEscapingValues.size());
+        Assert.assertTrue(theEscapingValues.iterator().next() instanceof NewObjectAndConstructExpression);
+    }
+
+    @Test
+    public void testIsEscapingByArrayWrite() {
+        final Program p = programFor("isEscapingByArrayWrite", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{}));
+
+        final Set<Value> theEscapingValues = escapingAssignments(p);
+        Assert.assertEquals(1, theEscapingValues.size());
+        Assert.assertTrue(theEscapingValues.iterator().next() instanceof NewObjectAndConstructExpression);
+    }
+
+    @Test
+    @Ignore
+    public void testIsEscapingByPHI() {
+        final Program p = programFor("isEscapingByPHI", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{}));
 
         final Set<Value> theEscapingValues = escapingAssignments(p);
         Assert.assertEquals(1, theEscapingValues.size());
