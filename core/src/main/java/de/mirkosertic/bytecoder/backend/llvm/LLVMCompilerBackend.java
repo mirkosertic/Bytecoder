@@ -452,7 +452,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 });
 
                 // Some utility function
-                pw.println("define internal i32 @instanceof(i32 %object, i32 %typeid) inlinehint {");
+                pw.println("define internal i32 @bytecoder.instanceof(i32 %object, i32 %typeid) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %nulltest = icmp eq i32 %object, 0");
                 pw.println("    br i1 %nulltest, label %isnull, label %notnull");
@@ -616,7 +616,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println();
 
                 // NaN values are not equals to themself
-                pw.println("define internal i32 @isnan(float %value) inlinehint {");
+                pw.println("define internal i32 @bytecoder.isnan.float(float %value) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %test = fcmp oeq float %value, %value");
                 pw.println("    br i1 %test, label %iseq, label %isnoteq");
@@ -627,7 +627,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i32 @isnanDouble(double %value) inlinehint {");
+                pw.println("define internal i32 @bytecoder.isnan.double(double %value) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %test = fcmp oeq double %value, %value");
                 pw.println("    br i1 %test, label %iseq, label %isnoteq");
@@ -638,7 +638,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i32 @toi32(float %value) inlinehint {");
+                pw.println("define internal i32 @bytecoder.float.to.i32(float %value) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %test = fcmp oeq float %value, %value");
                 pw.println("    br i1 %test, label %iseq, label %isnoteq");
@@ -650,7 +650,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i64 @toi64(float %value) inlinehint {");
+                pw.println("define internal i64 @bytecoder.float.to.i64(float %value) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %test = fcmp oeq float %value, %value");
                 pw.println("    br i1 %test, label %iseq, label %isnoteq");
@@ -662,7 +662,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i32 @doubleToi32(double %value) inlinehint {");
+                pw.println("define internal i32 @bytecoder.double.to.i32(double %value) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %test = fcmp oeq double %value, %value");
                 pw.println("    br i1 %test, label %iseq, label %isnoteq");
@@ -674,7 +674,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i64 @doubleToi64(double %value) inlinehint {");
+                pw.println("define internal i64 @bytecoder.double.to.i64(double %value) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %test = fcmp oeq double %value, %value");
                 pw.println("    br i1 %test, label %iseq, label %isnoteq");
@@ -686,7 +686,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i32 @compare_i32(i32 %v1, i32 %v2) inlinehint {");
+                pw.println("define internal i32 @bytecoder.compare.i32(i32 %v1, i32 %v2) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %test = icmp eq i32 %v1,%v2");
                 pw.println("    br i1 %test, label %iseq, label %isnoteq");
@@ -702,7 +702,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i32 @compare_f32(float %v1, float %v2) inlinehint {");
+                pw.println("define internal i32 @bytecoder.compare.float(float %v1, float %v2) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %test = fcmp oeq float %v1,%v2");
                 pw.println("    br i1 %test, label %iseq, label %isnoteq");
@@ -718,7 +718,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i1 @exceedsrange(i32 %v, i32 %min, i32 %max) inlinehint {");
+                pw.println("define internal i1 @bytecoder.exceedsrange(i32 %v, i32 %min, i32 %max) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %test = icmp slt i32 %v, %min");
                 pw.println("    br i1 %test, label %exceed, label %continue");
@@ -732,7 +732,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i32 @maximum(i32 %a, i32 %b) inlinehint {");
+                pw.println("define internal i32 @bytecoder.maximum.i32(i32 %a, i32 %b) inlinehint {");
                 pw.println("entry:");
                 pw.println("   %test = icmp sgt i32 %a, %b");
                 pw.println("   br i1 %test, label %aisgreater, label %notgreater");
@@ -743,7 +743,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i64 @maximum.i64(i64 %a, i64 %b) inlinehint {");
+                pw.println("define internal i64 @bytecoder.maximum.i64(i64 %a, i64 %b) inlinehint {");
                 pw.println("entry:");
                 pw.println("   %test = icmp sgt i64 %a, %b");
                 pw.println("   br i1 %test, label %aisgreater, label %notgreater");
@@ -754,7 +754,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i32 @minimum(i32 %a, i32 %b) inlinehint {");
+                pw.println("define internal i32 @bytecoder.minimum.i32(i32 %a, i32 %b) inlinehint {");
                 pw.println("entry:");
                 pw.println("   %test = icmp slt i32 %a, %b");
                 pw.println("   br i1 %test, label %aissmaller, label %notsmaller");
@@ -765,7 +765,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i64 @minimum.i64(i64 %a, i64 %b) inlinehint {");
+                pw.println("define internal i64 @bytecoder.minimum.i64(i64 %a, i64 %b) inlinehint {");
                 pw.println("entry:");
                 pw.println("   %test = icmp slt i64 %a, %b");
                 pw.println("   br i1 %test, label %aissmaller, label %notsmaller");
@@ -777,7 +777,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println();
 
                 // Method type
-                pw.println("define internal i32 @checkmethodtype(i32 %methodType, i32 %index, i32 %expectedType) inlinehint {");
+                pw.println("define internal i32 @bytecoder.checkmethodtype(i32 %methodType, i32 %index, i32 %expectedType) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %offset = mul i32 %index, 4");
                 pw.println("    %ptr1 = add i32 %offset, 24");
@@ -794,7 +794,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println();
 
                 // Lambda
-                pw.println("define internal i32 @lambda__interfacedispatch(i32 %thisRef,i32 %methodId) {");
+                pw.println("define internal i32 @bytecoder.lambda__interfacedispatch(i32 %thisRef,i32 %methodId) {");
                 pw.println("    %offset = add i32 %thisRef, 8");
                 pw.println("    %offsetptr = inttoptr i32 %offset to i32*");
                 pw.println("    %ptr = load i32, i32* %offsetptr");
@@ -802,9 +802,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i32 @newLambdaImpl(i32 %methodType, i32 %implementationMethod, i32 %staticArguments) {");
+                pw.println("define internal i32 @bytecoder.newLambda(i32 %methodType, i32 %implementationMethod, i32 %staticArguments) {");
                 pw.println("entry:");
-                pw.println("    %lambda_interface_dispatch = ptrtoint i32(i32,i32)* @lambda__interfacedispatch to i32");
+                pw.println("    %lambda_interface_dispatch = ptrtoint i32(i32,i32)* @bytecoder.lambda__interfacedispatch to i32");
                 pw.println("    %type_offset = add i32 20, %methodType");
                 pw.println("    %type_offset_ptr = inttoptr i32 %type_offset to i32*");
                 pw.println("    %runtimeClass = load i32, i32* %type_offset_ptr");
@@ -967,7 +967,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i32 @newRuntimeClass(i32 %type, i32 %staticSize, i32 %enumValuesOffset, i32 %nameStringPoolIndex) {");
+                pw.println("define internal i32 @bytecoder.newRuntimeClass(i32 %type, i32 %staticSize, i32 %enumValuesOffset, i32 %nameStringPoolIndex) {");
                 pw.println("entry:");
                 pw.println("    %vtableptr = ptrtoint %jlClass__vtable__type* @jlClass__vtable to i32");
                 pw.println("    %allocated = call i32 @dmbcMemoryManager_INTnewObjectINTINTINT(i32 0, i32 %staticSize, i32 -1, i32 %vtableptr)");
@@ -1699,7 +1699,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.print("attributes #");
                 pw.print(attributeCounter.get());
                 pw.println(" = { \"wasm-export-name\"=\"bootstrap\" }");
-                pw.print("define void @bootstrap() #");
+                pw.print("define void @bytecoder.bootstrap() #");
                 pw.print(attributeCounter.get());
                 pw.println(" {");
                 pw.println("entry:");
@@ -1733,7 +1733,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.print("    %");
                     pw.print(theClassName);
                     pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
-                    pw.print("_allocated = call i32(i32,i32,i32,i32) @newRuntimeClass(i32 ");
+                    pw.print("_allocated = call i32(i32,i32,i32,i32) @bytecoder.newRuntimeClass(i32 ");
                     pw.print(theLinkedClass.getUniqueId());
                     pw.print(",i32 ");
                     pw.print(theMemoryLayout.classSize());
