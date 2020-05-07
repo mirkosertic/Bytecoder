@@ -201,7 +201,6 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theTempDirectory.mkdirs();
             }
             final File theLLFile = new File(theTempDirectory, aEntryPointClass.getName() + aEntryPointMethodName + ".ll");
-            //theLLFile.deleteOnExit();
 
             try (final PrintWriter pw = new PrintWriter(new OutputStreamWriter(new FileOutputStream(theLLFile), StandardCharsets.UTF_8))) {
                 // We write the header first
@@ -2861,7 +2860,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 try (final BufferedReader processOutput = new BufferedReader(new InputStreamReader(theLLCProcess.getErrorStream()))) {
                     String line;
                     while ((line = processOutput.readLine()) != null) {
-                        System.out.println(line);
+                        aOptions.getLogger().info(line);
                     }
                 }
 
@@ -2873,6 +2872,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     theCompileResult.add(new CompileResult.BinaryContent(aOptions.getFilenamePrefix() + ".o",
                             IOUtils.toByteArray(inputStream)));
                 }
+
+                // We can delete the LL file, as we have rhe object file now
+                theLLFile.delete();
             }
 
             // Link object file to wasm binary
@@ -2908,7 +2910,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         new InputStreamReader(theLinkerProcess.getErrorStream()))) {
                     String line;
                     while ((line = processOutput.readLine()) != null) {
-                        System.out.println(line);
+                        aOptions.getLogger().warn(line);
                     }
                 }
 
@@ -2921,6 +2923,10 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     theCompileResult.add(new CompileResult.BinaryContent(aOptions.getFilenamePrefix() + ".wasm",
                             IOUtils.toByteArray(inputStream)));
                 }
+
+                // We can delete the object and the wasm file now
+                new File(theObjectFileName).delete();
+                theWASMFile.delete();
             }
 
             return theCompileResult;
