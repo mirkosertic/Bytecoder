@@ -24,6 +24,7 @@ import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
+import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
@@ -105,6 +106,15 @@ public class EscapeAnalysisOptimizerStage implements OptimizerStage {
             // Value can be the receiver or index, but the value
             if (theValues.indexOf(aPreviousValue) == 2) {
                 // written to an array, it might be escaping
+                aValueToCheckEscaping.markAsEscaped();
+                return;
+            }
+        }
+
+        if (aCurrentValue instanceof NewObjectAndConstructExpression) {
+            final List<Value> theArguments = aCurrentValue.incomingDataFlows();
+            if (theArguments.contains(aPreviousValue)) {
+                // Value used as constructor argument, it might be escaping
                 aValueToCheckEscaping.markAsEscaped();
                 return;
             }

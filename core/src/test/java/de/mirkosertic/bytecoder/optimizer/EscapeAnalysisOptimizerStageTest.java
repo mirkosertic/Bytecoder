@@ -44,7 +44,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public class EscapeAnalysisOptimizerStageTest {
 
@@ -65,6 +64,15 @@ public class EscapeAnalysisOptimizerStageTest {
         }
 
         public void escapingMethod(final TestInstance o) {
+        }
+    }
+
+    public static class AnotherInstance  {
+
+        private final TestInstance testInstance;
+
+        public AnotherInstance(final TestInstance testInstance) {
+            this.testInstance = testInstance;
         }
     }
 
@@ -150,6 +158,12 @@ public class EscapeAnalysisOptimizerStageTest {
     public static Object isEscapingByThrow() {
         final TestInstance o = new TestInstance(10);
         throw o;
+    }
+
+    public static Object isEscapingByConstructorArgument() {
+        final TestInstance o = new TestInstance(20);
+        final AnotherInstance anotherInstance = new AnotherInstance(o);
+        return anotherInstance;
     }
 
     private Set<Value> escapingAssignments(final Program p) {
@@ -279,7 +293,7 @@ public class EscapeAnalysisOptimizerStageTest {
 
         final Set<Value> theEscapingValues = escapingAssignments(p);
         Assert.assertEquals(2, theEscapingValues.size());
-        final List<Value> theValues = StreamSupport.stream(theEscapingValues.spliterator(), false).collect(Collectors.toList());
+        final List<Value> theValues = theEscapingValues.stream().collect(Collectors.toList());
         Assert.assertTrue(theValues.get(0) instanceof NewObjectAndConstructExpression);
         Assert.assertTrue(theValues.get(1) instanceof NewObjectAndConstructExpression);
     }
@@ -310,4 +324,11 @@ public class EscapeAnalysisOptimizerStageTest {
         Assert.assertEquals(2, theEscapingValues.size());
     }
 
+    @Test
+    public void testIsEscapingByConstructorArgument() {
+        final Program p = programFor("isEscapingByConstructorArgument", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{}));
+
+        final Set<Value> theEscapingValues = escapingAssignments(p);
+        Assert.assertEquals(2, theEscapingValues.size());
+    }
 }
