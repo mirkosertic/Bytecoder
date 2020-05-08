@@ -86,8 +86,8 @@ public class TLong extends Number {
         return VM.stringToLong(aString);
     }
 
-    public static long parseLong(final String aString, final int base) {
-        return VM.stringToLong(aString);
+    public static long parseLong(final String aString, final int radix) {
+        return VM.stringToLong(aString, radix);
     }
 
     public static String toString(final long aValue) {

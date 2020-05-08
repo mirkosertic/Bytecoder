@@ -203,15 +203,19 @@ public class VM {
     public static final char NEWLINE = '\n';
 
     public static long stringToLong(final String aString) {
+        return stringToLong(aString,10);
+    }
+
+    public static long stringToLong(final String aString, int aRadix) {
         long theResult = 0;
-        int theMultiplier = 1;
+        long theMultiplier = 1;
         for (int k=aString.length()-1;k>=0;k--) {
             final char theCharAt = aString.charAt(k);
             if (k==0 && theCharAt == '-') {
                 theResult=-theResult;
             } else {
                 theResult += Character.getNumericValue(theCharAt) * theMultiplier;
-                theMultiplier *= 10;
+                theMultiplier *= aRadix;
             }
         }
         return theResult;
