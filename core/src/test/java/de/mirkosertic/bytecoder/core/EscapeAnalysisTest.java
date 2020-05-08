@@ -80,15 +80,6 @@ public class EscapeAnalysisTest {
         return null;
     }
 
-    public static void escapingMethod(final TestInstance a) {
-    }
-
-    public static Object isEscapingByParameterOfMethodInvocation() {
-        final TestInstance o = new TestInstance(100);
-        escapingMethod(o);
-        return null;
-    }
-
     public static Object isNotEscapingByParameterOfMethodInvocation() {
         final TestInstance o = new TestInstance(100);
         final int value = o.getValue();
@@ -222,14 +213,6 @@ public class EscapeAnalysisTest {
         final EscapeAnalysis.AnalysisResult theResult = analyze("isNotEscaping", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{}));
         final Set<Value> theEscapingValues = theResult.getEscapingValues();
         Assert.assertEquals(0, theEscapingValues.size());
-    }
-
-    @Test
-    public void testEscapingByParameterOfMethodInvocation() {
-        final EscapeAnalysis.AnalysisResult theResult = analyze("isEscapingByParameterOfMethodInvocation", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{}));
-        final Set<Value> theEscapingValues = theResult.getEscapingValues();
-        Assert.assertEquals(1, theEscapingValues.size());
-        Assert.assertTrue(theEscapingValues.iterator().next() instanceof NewObjectAndConstructExpression);
     }
 
     @Test
