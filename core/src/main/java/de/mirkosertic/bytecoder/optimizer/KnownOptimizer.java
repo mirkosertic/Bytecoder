@@ -66,7 +66,6 @@ public enum KnownOptimizer implements Optimizer {
             theOptimizer.add(new SinglePassOptimizer(new OptimizerStage[] {
                     new InvokeVirtualOptimizerStage(),
                     new InefficientCompareOptimizerStage(),
-                    new EscapeAnalysisOptimizerStage(),
             }));
             run(aGraph, aLinkerContext, theOptimizer);
         }

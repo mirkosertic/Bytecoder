@@ -108,6 +108,21 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
         }
     }
 
+    private static class CompiledMethod {
+
+        private final BytecodeLinkedClass linkedClass;
+        private final BytecodeMethod method;
+        private final Program program;
+        private final LLVMDebugInformation.SubProgram debugInformationSubProgram;
+
+        public CompiledMethod(final BytecodeLinkedClass linkedClass, final BytecodeMethod method, final Program program, final LLVMDebugInformation.SubProgram debugInformationSubProgram) {
+            this.linkedClass = linkedClass;
+            this.method = method;
+            this.program = program;
+            this.debugInformationSubProgram = debugInformationSubProgram;
+        }
+    }
+
     private final ProgramGeneratorFactory programGeneratorFactory;
 
     public LLVMCompilerBackend(final ProgramGeneratorFactory aProgramGeneratorFactory) {
@@ -135,6 +150,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
         final LLVMCompileResult theCompileResult = new LLVMCompileResult();
         final List<OpaqueReferenceMethod> opaqueReferenceMethods = new ArrayList<>();
+        final List<CompiledMethod> compiledMethods = new ArrayList<>();
 
         try {
             final List<String> stringPool = new ArrayList<>();
@@ -1397,229 +1413,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         // is done by LLVM!
                         KnownOptimizer.LLVM.optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
 
-                        // Now, we can generate the instance method here
-                        final String methodName = LLVMWriterUtils
-                                .toMethodName(theLinkedClass.getClassName(), theMethod.getName(), theSignature);
-
-                        final List<String> attributes = new ArrayList<>();
-                        final BytecodeAnnotation theExport = theMethod.getAttributes().getAnnotationByType(Export.class.getName());
-                        if (theExport != null) {
-
-                            if (theMethod.getSignature().getReturnType() == BytecodePrimitiveTypeRef.LONG) {
-                                throw new IllegalArgumentException("Cannot export method " + theMethod.getName().stringValue() + " in class " + theLinkedClass.getClassName().name() + " with signature " + theMethod.getSignature() + " : return type must not be Long");
-                            }
-                            for (final BytecodeTypeRef theTypeRef : theMethod.getSignature().getArguments()) {
-                                if (theTypeRef == BytecodePrimitiveTypeRef.LONG) {
-                                    throw new IllegalArgumentException("Cannot export method " + theMethod.getName().stringValue() + " in class " + theLinkedClass.getClassName().name() + " with signature " + theMethod.getSignature() + " : argument must not be Long");
-                                }
-                            }
-
-                            pw.print("attributes #");
-                            pw.print(attributeCounter.get());
-                            pw.print(" = {");
-                            pw.print("\"wasm-export-name\"");
-                            pw.print("=");
-                            pw.print("\"");
-                            pw.print(theExport.getElementValueByName("value").stringValue());
-                            pw.println("\"}");
-
-                            final int theAttribute = attributeCounter.getAndIncrement();
-                            attributes.add("#" + theAttribute);
-                        }
-
-                        pw.print("define ");
-                        if (attributes.isEmpty()) {
-                            pw.print("internal ");
-                        }
-                        pw.print(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getReturnType())));
-                        pw.print(" @");
-                        pw.print(methodName);
-                        pw.print("(");
-                        if (theMethod.getAccessFlags().isStatic()) {
-                            pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
-                            pw.print(" ");
-                            pw.print("%runtimeClass");
-                        }
-                        final List<Variable> theArguments = theSSAProgram.getArguments();
-                        for (int i = 0; i < theArguments.size(); i++) {
-                            final Variable theArgument = theArguments.get(i);
-                            final TypeRef theParamType = theArgument.resolveType();
-                            if (i == 0 && theMethod.getAccessFlags().isStatic()) {
-                                pw.print(",");
-                            }
-                            if (i > 0) {
-                                pw.print(",");
-                            }
-                            pw.print(LLVMWriterUtils.toType(theParamType));
-                            pw.print(" ");
-                            pw.print("%");
-                            pw.print(theArgument.getName());
-                            pw.print("_");
-                        }
-
-                        if (!attributes.isEmpty()) {
-                            pw.print(")");
-                            for (final String attr : attributes) {
-                                pw.print(" ");
-                                pw.print(attr);
-                            }
-                            pw.print(" ");
-                            subProgram.writeDebugSuffixTo(pw);
-                            pw.println(" {");
-                        } else {
-                            pw.print(") ");
-                            subProgram.writeDebugSuffixTo(pw);
-                            pw.println(" {");
-                        }
-
-                        try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter, aLinkerContext, theSymbolResolver)) {
-                            theWriter.write(theLinkedClass, theSSAProgram, subProgram);
-                        }
-
-                        pw.println("}");
-                        pw.println();
-
-                        // Export main entry point
-                        if (theLinkedClass.getClassName().name().equals(aEntryPointClass.getName()) && theMethod.getName().stringValue().equals(aEntryPointMethodName) && theMethod.getSignature().matchesExactlyTo(aEntryPointSignature)) {
-
-                            pw.print("attributes #");
-                            pw.print(attributeCounter.get());
-                            pw.print(" = {");
-                            pw.print("\"wasm-export-name\"");
-                            pw.print("=");
-                            pw.println("\"main\"}");
-
-                            final int theAttribute = attributeCounter.getAndIncrement();
-
-                            pw.print("define ");
-                            pw.print(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getReturnType())));
-                            pw.print(" @");
-                            pw.print(methodName);
-                            pw.print("_export_delegate (");
-                            if (theMethod.getAccessFlags().isStatic()) {
-                                pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
-                                pw.print(" ");
-                                pw.print("%runtimeClass");
-                            }
-                            for (int i = 0; i < theArguments.size(); i++) {
-                                final Variable theArgument = theArguments.get(i);
-                                final TypeRef theParamType = theArgument.resolveType();
-                                if (i == 0 && theMethod.getAccessFlags().isStatic()) {
-                                    pw.print(",");
-                                }
-                                if (i > 0) {
-                                    pw.print(",");
-                                }
-                                pw.print(LLVMWriterUtils.toType(theParamType));
-                                pw.print(" ");
-                                pw.print("%");
-                                pw.print(theArgument.getName());
-                                pw.print("_");
-                            }
-
-                            pw.print(") #");
-                            pw.print(theAttribute);
-                            pw.println(" {");
-                            pw.println("entry:");
-                            if (theMethod.getSignature().getReturnType().isVoid()) {
-                                pw.print("    call ");
-                            } else {
-                                pw.print("    %value = call ");
-                            }
-
-                            pw.print(LLVMWriterUtils.toSignature(theSignature));
-                            pw.print(" @");
-                            pw.print(methodName);
-                            pw.print("(");
-                            if (theMethod.getAccessFlags().isStatic()) {
-                                pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
-                                pw.print(" ");
-                                pw.print("%runtimeClass");
-                            }
-                            for (int i = 0; i < theArguments.size(); i++) {
-                                final Variable theArgument = theArguments.get(i);
-                                final TypeRef theParamType = theArgument.resolveType();
-                                if (i == 0 && theMethod.getAccessFlags().isStatic()) {
-                                    pw.print(",");
-                                }
-                                if (i > 0) {
-                                    pw.print(",");
-                                }
-                                pw.print(LLVMWriterUtils.toType(theParamType));
-                                pw.print(" ");
-                                pw.print("%");
-                                pw.print(theArgument.getName());
-                                pw.print("_");
-                            }
-                            pw.println(")");
-
-                            if (theMethod.getSignature().getReturnType().isVoid()) {
-                                pw.println("    ret void");
-                            } else {
-                                pw.print("    ret ");
-                                pw.print(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getReturnType())));
-                                pw.println(" %value");
-                            }
-
-                            pw.println("}");
-                            pw.println();
-                        }
+                        compiledMethods.add(new CompiledMethod(theLinkedClass, theMethod, theSSAProgram, subProgram));
                     });
                 });
-
-                // Generate callsite resolver code
-                for (final Map.Entry<String, CallSite> theEntry : callsites.entrySet()) {
-
-                    final CallSite callsite = theEntry.getValue();
-
-                    pw.print("@");
-                    pw.print("callsite");
-                    pw.print(System.identityHashCode(callsite));
-                    pw.println(" = private global i32 0");
-
-                    final Program theSSAProgram = theEntry.getValue().program;
-                    final LLVMDebugInformation.CompileUnit compileUnit = debugInformation.compileUnitFor("/resolvecallsite" + callsite);
-                    final LLVMDebugInformation.SubProgram subProgram = compileUnit.subProgram(theSSAProgram, "/resolvecallsite" + callsite, new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
-
-                    // Run optimizer
-                    // We use a special optimizer, which does only stuff LLVM CANNOT do, such
-                    // as virtual method invocation optimization. All other optimization work
-                    // is done by LLVM!
-                    KnownOptimizer.LLVM.optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
-
-                    pw.print("define internal i32 @resolvecallsite");
-                    pw.print(System.identityHashCode(callsite));
-                    pw.println("() {");
-                    pw.println("entry:");
-                    pw.print("    %value = load i32, i32* @callsite");
-                    pw.println(System.identityHashCode(callsite));
-                    pw.println("    %test = icmp eq i32 %value, 0");
-                    pw.println("    br i1 %test, label %notinitialized, label %initialized");
-                    pw.println("notinitialized:");
-                    pw.print("    %initstatus = call i32  @resolvecallsite");
-                    pw.print(System.identityHashCode(callsite));
-                    pw.println("_factory()");
-                    pw.print("    store i32 %initstatus, i32* @callsite");
-                    pw.println(System.identityHashCode(callsite));
-                    pw.println("    ret i32 %initstatus");
-                    pw.println("initialized:");
-                    pw.println("    ret i32 %value");
-                    pw.println("}");
-                    pw.println();
-
-                    pw.print("define internal i32 @resolvecallsite");
-                    pw.print(System.identityHashCode(callsite));
-                    pw.print("_factory() ");
-                    subProgram.writeDebugSuffixTo(pw);
-                    pw.println(" {");
-
-                    try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter, aLinkerContext, theSymbolResolver)) {
-                        theWriter.write(theEntry.getValue().owningClass, theEntry.getValue().program, subProgram);
-                    }
-
-                    pw.println("}");
-                    pw.println();
-                }
 
                 // New Instance helper for reflection stuff
                 pw.print("define internal i32 @");
@@ -1693,6 +1489,240 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("    unreachable");
                 pw.println("}");
                 pw.println();
+
+                // TODO: Perform escape analysis here
+
+                // We know know the interprocedural data flow, so we can write the LLVM code
+                for (final CompiledMethod theCompiledMethod : compiledMethods) {
+
+                    final BytecodeLinkedClass theLinkedClass = theCompiledMethod.linkedClass;
+                    final BytecodeMethod theMethod = theCompiledMethod.method;
+                    final BytecodeMethodSignature theSignature = theMethod.getSignature();
+                    final Program theSSAProgram = theCompiledMethod.program;
+                    final LLVMDebugInformation.SubProgram subProgram = theCompiledMethod.debugInformationSubProgram;
+
+                    // Now, we can generate the instance method here
+                    final String methodName = LLVMWriterUtils
+                            .toMethodName(theLinkedClass.getClassName(), theMethod.getName(), theSignature);
+
+                    final List<String> attributes = new ArrayList<>();
+                    final BytecodeAnnotation theExport = theMethod.getAttributes().getAnnotationByType(Export.class.getName());
+                    if (theExport != null) {
+
+                        if (theMethod.getSignature().getReturnType() == BytecodePrimitiveTypeRef.LONG) {
+                            throw new IllegalArgumentException("Cannot export method " + theMethod.getName().stringValue() + " in class " + theLinkedClass.getClassName().name() + " with signature " + theMethod.getSignature() + " : return type must not be Long");
+                        }
+                        for (final BytecodeTypeRef theTypeRef : theMethod.getSignature().getArguments()) {
+                            if (theTypeRef == BytecodePrimitiveTypeRef.LONG) {
+                                throw new IllegalArgumentException("Cannot export method " + theMethod.getName().stringValue() + " in class " + theLinkedClass.getClassName().name() + " with signature " + theMethod.getSignature() + " : argument must not be Long");
+                            }
+                        }
+
+                        pw.print("attributes #");
+                        pw.print(attributeCounter.get());
+                        pw.print(" = {");
+                        pw.print("\"wasm-export-name\"");
+                        pw.print("=");
+                        pw.print("\"");
+                        pw.print(theExport.getElementValueByName("value").stringValue());
+                        pw.println("\"}");
+
+                        final int theAttribute = attributeCounter.getAndIncrement();
+                        attributes.add("#" + theAttribute);
+                    }
+
+                    pw.print("define ");
+                    if (attributes.isEmpty()) {
+                        pw.print("internal ");
+                    }
+                    pw.print(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getReturnType())));
+                    pw.print(" @");
+                    pw.print(methodName);
+                    pw.print("(");
+                    if (theMethod.getAccessFlags().isStatic()) {
+                        pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
+                        pw.print(" ");
+                        pw.print("%runtimeClass");
+                    }
+                    final List<Variable> theArguments = theSSAProgram.getArguments();
+                    for (int i = 0; i < theArguments.size(); i++) {
+                        final Variable theArgument = theArguments.get(i);
+                        final TypeRef theParamType = theArgument.resolveType();
+                        if (i == 0 && theMethod.getAccessFlags().isStatic()) {
+                            pw.print(",");
+                        }
+                        if (i > 0) {
+                            pw.print(",");
+                        }
+                        pw.print(LLVMWriterUtils.toType(theParamType));
+                        pw.print(" ");
+                        pw.print("%");
+                        pw.print(theArgument.getName());
+                        pw.print("_");
+                    }
+
+                    if (!attributes.isEmpty()) {
+                        pw.print(")");
+                        for (final String attr : attributes) {
+                            pw.print(" ");
+                            pw.print(attr);
+                        }
+                        pw.print(" ");
+                        subProgram.writeDebugSuffixTo(pw);
+                        pw.println(" {");
+                    } else {
+                        pw.print(") ");
+                        subProgram.writeDebugSuffixTo(pw);
+                        pw.println(" {");
+                    }
+
+                    try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter, aLinkerContext, theSymbolResolver)) {
+                        theWriter.write(theLinkedClass, theSSAProgram, subProgram);
+                    }
+
+                    pw.println("}");
+                    pw.println();
+
+                    // Export main entry point
+                    if (theLinkedClass.getClassName().name().equals(aEntryPointClass.getName()) && theMethod.getName().stringValue().equals(aEntryPointMethodName) && theMethod.getSignature().matchesExactlyTo(aEntryPointSignature)) {
+
+                        pw.print("attributes #");
+                        pw.print(attributeCounter.get());
+                        pw.print(" = {");
+                        pw.print("\"wasm-export-name\"");
+                        pw.print("=");
+                        pw.println("\"main\"}");
+
+                        final int theAttribute = attributeCounter.getAndIncrement();
+
+                        pw.print("define ");
+                        pw.print(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getReturnType())));
+                        pw.print(" @");
+                        pw.print(methodName);
+                        pw.print("_export_delegate (");
+                        if (theMethod.getAccessFlags().isStatic()) {
+                            pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
+                            pw.print(" ");
+                            pw.print("%runtimeClass");
+                        }
+                        for (int i = 0; i < theArguments.size(); i++) {
+                            final Variable theArgument = theArguments.get(i);
+                            final TypeRef theParamType = theArgument.resolveType();
+                            if (i == 0 && theMethod.getAccessFlags().isStatic()) {
+                                pw.print(",");
+                            }
+                            if (i > 0) {
+                                pw.print(",");
+                            }
+                            pw.print(LLVMWriterUtils.toType(theParamType));
+                            pw.print(" ");
+                            pw.print("%");
+                            pw.print(theArgument.getName());
+                            pw.print("_");
+                        }
+
+                        pw.print(") #");
+                        pw.print(theAttribute);
+                        pw.println(" {");
+                        pw.println("entry:");
+                        if (theMethod.getSignature().getReturnType().isVoid()) {
+                            pw.print("    call ");
+                        } else {
+                            pw.print("    %value = call ");
+                        }
+
+                        pw.print(LLVMWriterUtils.toSignature(theSignature));
+                        pw.print(" @");
+                        pw.print(methodName);
+                        pw.print("(");
+                        if (theMethod.getAccessFlags().isStatic()) {
+                            pw.print(LLVMWriterUtils.toType(TypeRef.Native.REFERENCE));
+                            pw.print(" ");
+                            pw.print("%runtimeClass");
+                        }
+                        for (int i = 0; i < theArguments.size(); i++) {
+                            final Variable theArgument = theArguments.get(i);
+                            final TypeRef theParamType = theArgument.resolveType();
+                            if (i == 0 && theMethod.getAccessFlags().isStatic()) {
+                                pw.print(",");
+                            }
+                            if (i > 0) {
+                                pw.print(",");
+                            }
+                            pw.print(LLVMWriterUtils.toType(theParamType));
+                            pw.print(" ");
+                            pw.print("%");
+                            pw.print(theArgument.getName());
+                            pw.print("_");
+                        }
+                        pw.println(")");
+
+                        if (theMethod.getSignature().getReturnType().isVoid()) {
+                            pw.println("    ret void");
+                        } else {
+                            pw.print("    ret ");
+                            pw.print(LLVMWriterUtils.toType(TypeRef.toType(theSignature.getReturnType())));
+                            pw.println(" %value");
+                        }
+
+                        pw.println("}");
+                        pw.println();
+                    }
+                }
+
+                // Now we know the exact callsites, and we can generate the code for them
+                for (final Map.Entry<String, CallSite> theEntry : callsites.entrySet()) {
+
+                    final CallSite callsite = theEntry.getValue();
+
+                    pw.print("@");
+                    pw.print("callsite");
+                    pw.print(System.identityHashCode(callsite));
+                    pw.println(" = private global i32 0");
+
+                    final Program theSSAProgram = theEntry.getValue().program;
+                    final LLVMDebugInformation.CompileUnit compileUnit = debugInformation.compileUnitFor("/resolvecallsite" + callsite);
+                    final LLVMDebugInformation.SubProgram subProgram = compileUnit.subProgram(theSSAProgram, "/resolvecallsite" + callsite, new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
+
+                    // Run optimizer
+                    // We use a special optimizer, which does only stuff LLVM CANNOT do, such
+                    // as virtual method invocation optimization. All other optimization work
+                    // is done by LLVM!
+                    KnownOptimizer.LLVM.optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
+
+                    pw.print("define internal i32 @resolvecallsite");
+                    pw.print(System.identityHashCode(callsite));
+                    pw.println("() {");
+                    pw.println("entry:");
+                    pw.print("    %value = load i32, i32* @callsite");
+                    pw.println(System.identityHashCode(callsite));
+                    pw.println("    %test = icmp eq i32 %value, 0");
+                    pw.println("    br i1 %test, label %notinitialized, label %initialized");
+                    pw.println("notinitialized:");
+                    pw.print("    %initstatus = call i32  @resolvecallsite");
+                    pw.print(System.identityHashCode(callsite));
+                    pw.println("_factory()");
+                    pw.print("    store i32 %initstatus, i32* @callsite");
+                    pw.println(System.identityHashCode(callsite));
+                    pw.println("    ret i32 %initstatus");
+                    pw.println("initialized:");
+                    pw.println("    ret i32 %value");
+                    pw.println("}");
+                    pw.println();
+
+                    pw.print("define internal i32 @resolvecallsite");
+                    pw.print(System.identityHashCode(callsite));
+                    pw.print("_factory() ");
+                    subProgram.writeDebugSuffixTo(pw);
+                    pw.println(" {");
+
+                    try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter, aLinkerContext, theSymbolResolver)) {
+                        theWriter.write(theEntry.getValue().owningClass, theEntry.getValue().program, subProgram);
+                    }
+
+                    pw.println("}");
+                    pw.println();
+                }
 
                 // Generate bootstrap code
                 attributeCounter.incrementAndGet();

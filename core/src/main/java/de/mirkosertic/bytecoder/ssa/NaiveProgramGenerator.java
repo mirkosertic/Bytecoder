@@ -343,6 +343,26 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 });
             }
 
+            // We finally need to connect the PHI nodes from the back edges
+            for (final RegionNode theNode : theGraphDominators.getPreOrder()) {
+                final BlockState theNodeOut = theNode.liveOut();
+                theNode.outgoingEdges().forEach(edge -> {
+                    if (edge.edgeType() == ControlFlowEdgeType.back) {
+                        final RegionNode theReceiver = edge.targetNode();
+                        final BlockState theReceiverLiveIn = theReceiver.liveIn();
+                        theReceiverLiveIn.getPorts().entrySet().stream().forEach(entry -> {
+                            if (entry.getValue() instanceof PHIValue) {
+                                final PHIValue phi = (PHIValue) entry.getValue();
+                                final Value theOutValue = theNodeOut.getPorts().get(entry.getKey());
+                                if (theOutValue != phi) {
+                                    phi.receivesDataFrom(theOutValue);
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+
         } catch (final Exception e) {
             throw new ControlFlowProcessingException("Error processing CFG for " + aOwningClass.getThisInfo().getConstant().stringValue() + "." + aMethod.getName().stringValue(), e, theProgram.getControlFlowGraph());
         }
