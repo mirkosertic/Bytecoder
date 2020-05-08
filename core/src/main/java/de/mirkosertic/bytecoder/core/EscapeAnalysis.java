@@ -45,19 +45,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class EscapeAnalysis {
 
     public static class AnalysisResult {
 
-        private final BytecodeLinkedClass linkedClass;
         private final BytecodeMethod method;
         private final Program program;
         private final Set<Value> escapingValues;
 
-        public AnalysisResult(final BytecodeLinkedClass linkedClass, final BytecodeMethod method, final Program program) {
-            this.linkedClass = linkedClass;
+        public AnalysisResult(final BytecodeMethod method, final Program program) {
             this.method = method;
             this.program = program;
             this.escapingValues = new HashSet<>();
@@ -84,7 +81,7 @@ public class EscapeAnalysis {
     }
 
     private final Map<BytecodeLinkedClass, Map<BytecodeMethod, AnalysisResult>> analysisResults;
-    private final Stack<BytecodeMethod> workingStack;
+    private final Stack<AnalysisResult> workingStack;
     private final ProgramSupplier programSupplier;
 
     public EscapeAnalysis(final ProgramSupplier aProgramSupplier) {
@@ -97,14 +94,23 @@ public class EscapeAnalysis {
 
         // Check if the requested method is already on the working stack
         // In this case, the method seems to be recursive and we have to prevent duplicate work
+        for (final AnalysisResult theStackEntry : workingStack) {
+            if (theStackEntry.method == aMethod) {
+                // We make sure all arguments are escaping
+                for (final Variable v : theStackEntry.program.getArguments()) {
+                    theStackEntry.escaping(v);
+                }
+                return theStackEntry;
+            }
+        }
 
         // Return a cached result or perform a new analysis
         final Map<BytecodeMethod, AnalysisResult> theCached = analysisResults.computeIfAbsent(aLinkedClass, t -> new HashMap<>());
         AnalysisResult theResult = theCached.get(aMethod);
         if (theResult == null) {
-            theResult = new AnalysisResult(aLinkedClass, aMethod, aProgram);
+            theResult = new AnalysisResult(aMethod, aProgram);
 
-            workingStack.push(aMethod);
+            workingStack.push(theResult);
 
             final ControlFlowGraph aGraph = aProgram.getControlFlowGraph();
 

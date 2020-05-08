@@ -26,7 +26,8 @@ import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -189,12 +190,10 @@ public class EscapeAnalysisTest {
         final EscapeAnalysis e = new EscapeAnalysis(new EscapeAnalysis.ProgramSupplier() {
             @Override
             public List<EscapeAnalysis.AnalysisResult> provideFor(final EscapeAnalysis aAnalysis, final BytecodeObjectTypeRef aLinkedClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
-                final List<EscapeAnalysis.AnalysisResult> theResult = new ArrayList<>();
                 final BytecodeLinkedClass theRequestedClass = theLinkerContext.resolveClass(aLinkedClass);
                 final BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
                 final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
-                theResult.add(aAnalysis.analyze(theRequestedClass, theRequestedMethod, theProgram));
-                return theResult;
+                return Collections.singletonList(aAnalysis.analyze(theRequestedClass, theRequestedMethod, theProgram));
             }
         });
 
