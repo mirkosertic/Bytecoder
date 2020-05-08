@@ -84,7 +84,7 @@ public class EscapeAnalysis {
     }
 
     private final Map<BytecodeLinkedClass, Map<BytecodeMethod, AnalysisResult>> analysisResults;
-    private final Stack<AnalysisResult> workingStack;
+    private final Stack<BytecodeMethod> workingStack;
     private final ProgramSupplier programSupplier;
 
     public EscapeAnalysis(final ProgramSupplier aProgramSupplier) {
@@ -99,52 +99,56 @@ public class EscapeAnalysis {
         // In this case, the method seems to be recursive and we have to prevent duplicate work
 
         // Return a cached result or perform a new analysis
-        final Map<BytecodeMethod, AnalysisResult> theCached = analysisResults.computeIfAbsent(aLinkedClass, t -> new ConcurrentHashMap<>());
-        return theCached.computeIfAbsent(aMethod, t -> {
+        final Map<BytecodeMethod, AnalysisResult> theCached = analysisResults.computeIfAbsent(aLinkedClass, t -> new HashMap<>());
+        AnalysisResult theResult = theCached.get(aMethod);
+        if (theResult == null) {
+            theResult = new AnalysisResult(aLinkedClass, aMethod, aProgram);
+
+            workingStack.push(aMethod);
 
             final ControlFlowGraph aGraph = aProgram.getControlFlowGraph();
-
-            workingStack.push(new AnalysisResult(aLinkedClass, aMethod, aProgram));
 
             for (final Variable argument : aProgram.getArguments()) {
                 final TypeRef theType = argument.resolveType();
                 if (theType.isArray() || theType.isObject()) {
-                    performEscapeAnalysisFor(argument, argument, argument, new HashSet<>());
+                    performEscapeAnalysisFor(theResult, argument, argument, argument, new HashSet<>());
                 }
             }
             for (final RegionNode theNode : aGraph.dominators().getPreOrder()) {
-                analyze(theNode.getExpressions());
+                analyze(theResult, theNode.getExpressions());
             }
 
-            return workingStack.pop();
-        });
+            workingStack.pop();
+
+            theCached.put(aMethod, theResult);
+        }
+        return theResult;
     }
 
-    private void analyze(final ExpressionList aExpressionList) {
+    private void analyze(final AnalysisResult aResult, final ExpressionList aExpressionList) {
         for (final Expression theExpression : aExpressionList.toList()) {
             if (theExpression instanceof ExpressionListContainer) {
                 final ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
                 for (final ExpressionList theList : theContainer.getExpressionLists()) {
-                    analyze(theList);
+                    analyze(aResult, theList);
                 }
             }
 
-            analyze(theExpression);
+            analyze(aResult, theExpression);
         }
     }
 
-
-    private void analyze(final Expression aExpression) {
+    private void analyze(final AnalysisResult aResult, final Expression aExpression) {
         if (aExpression instanceof VariableAssignmentExpression) {
             final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) aExpression;
             final Value theAssignedValue = theAssignment.incomingDataFlows().get(0);
             if (theAssignedValue instanceof ValueWithEscapeCheck) {
-                performEscapeAnalysisFor(theAssignedValue, theAssignment.getVariable(), theAssignment.getVariable(), new HashSet<>());
+                performEscapeAnalysisFor(aResult, theAssignedValue, theAssignment.getVariable(), theAssignment.getVariable(), new HashSet<>());
             }
         }
     }
 
-    private void performEscapeAnalysisFor(final Value aValueToCheckEscaping, final Value aPreviousValue, final Value aCurrentValue, final Set<Value> aAlreadySeenPHIs) {
+    private void performEscapeAnalysisFor(final AnalysisResult aResult, final Value aValueToCheckEscaping, final Value aPreviousValue, final Value aCurrentValue, final Set<Value> aAlreadySeenPHIs) {
 
         if (aCurrentValue instanceof PHIValue && !aAlreadySeenPHIs.add(aCurrentValue)) {
             return;
@@ -152,16 +156,15 @@ public class EscapeAnalysis {
 
         // Value is used as a return value, it is escaping
         if (aCurrentValue instanceof ReturnValueExpression) {
-            workingStack.peek().escaping(aValueToCheckEscaping);
+            aResult.escaping(aValueToCheckEscaping);
             return;
         }
 
         // Value is stored as enum constants, it is escaping
         if (aCurrentValue instanceof SetEnumConstantsExpression) {
-            workingStack.peek().escaping(aValueToCheckEscaping);
+            aResult.escaping(aValueToCheckEscaping);
             return;
         }
-
 
         // Used as a param in static invocation, it might be escaping
         if (aCurrentValue instanceof InvokeStaticMethodExpression) {
@@ -174,7 +177,7 @@ public class EscapeAnalysis {
                     theExpression.getSignature())) {
                 if (theResult.isMethodArgumentEscaping(theIndex)) {
                     // It is escaping!
-                    workingStack.peek().escaping(aValueToCheckEscaping);
+                    aResult.escaping(aValueToCheckEscaping);
                     return;
                 }
             }
@@ -185,7 +188,7 @@ public class EscapeAnalysis {
             // Value can be the receiver, but not an argument of the invocation
             if (theValues.indexOf(aPreviousValue) > 0) {
                 // written to a field, it might be escaping
-                workingStack.peek().escaping(aValueToCheckEscaping);
+                aResult.escaping(aValueToCheckEscaping);
                 return;
             }
         }
@@ -194,7 +197,7 @@ public class EscapeAnalysis {
             final List<Value> theValues = aCurrentValue.incomingDataFlows();
             if (theValues.contains(aPreviousValue)) {
                 // written to a static field, it might be escaping
-                workingStack.peek().escaping(aValueToCheckEscaping);
+                aResult.escaping(aValueToCheckEscaping);
                 return;
             }
         }
@@ -204,7 +207,7 @@ public class EscapeAnalysis {
             // Value can be the receiver or index, but the value
             if (theValues.indexOf(aPreviousValue) == 2) {
                 // written to an array, it might be escaping
-                workingStack.peek().escaping(aValueToCheckEscaping);
+                aResult.escaping(aValueToCheckEscaping);
                 return;
             }
         }
@@ -213,7 +216,7 @@ public class EscapeAnalysis {
             final List<Value> theArguments = aCurrentValue.incomingDataFlows();
             if (theArguments.contains(aPreviousValue)) {
                 // Value used as constructor argument, it might be escaping
-                workingStack.peek().escaping(aValueToCheckEscaping);
+                aResult.escaping(aValueToCheckEscaping);
                 return;
             }
         }
@@ -223,7 +226,7 @@ public class EscapeAnalysis {
             // Value can be the receiver, but not an argument of the invocation
             if (theValues.indexOf(aPreviousValue) > 0) {
                 // Used as a argument in Virtual or Direct invocation, it might be escaping
-                workingStack.peek().escaping(aValueToCheckEscaping);
+                aResult.escaping(aValueToCheckEscaping);
                 return;
             }
         }
@@ -232,7 +235,7 @@ public class EscapeAnalysis {
 
         if (aCurrentValue instanceof ThrowExpression) {
             // Escaping by throwing,
-            workingStack.peek().escaping(aValueToCheckEscaping);
+            aResult.escaping(aValueToCheckEscaping);
             return;
         }
 
@@ -242,12 +245,12 @@ public class EscapeAnalysis {
             final Variable theVariable = theAssignment.getVariable();
 
             theVariable.outgoingEdges().map(Edge::targetNode).forEach(
-                    node -> performEscapeAnalysisFor(aValueToCheckEscaping, theVariable, (Value) node, aAlreadySeenPHIs)
+                    node -> performEscapeAnalysisFor(aResult, aValueToCheckEscaping, theVariable, (Value) node, aAlreadySeenPHIs)
             );
         }
 
         aCurrentValue.outgoingEdges().map(Edge::targetNode).forEach(
-                node -> performEscapeAnalysisFor(aValueToCheckEscaping, aCurrentValue, (Value) node, aAlreadySeenPHIs)
+                node -> performEscapeAnalysisFor(aResult, aValueToCheckEscaping, aCurrentValue, (Value) node, aAlreadySeenPHIs)
         );
     }
 }
