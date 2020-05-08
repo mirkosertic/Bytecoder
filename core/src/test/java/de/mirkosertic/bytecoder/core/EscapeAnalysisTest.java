@@ -186,13 +186,16 @@ public class EscapeAnalysisTest {
 
         KnownOptimizer.LLVM.optimize(p.getControlFlowGraph(), theLinkerContext);
 
-        final EscapeAnalysis e = new EscapeAnalysis((aAnalysis, aLinkedClass, aMethodName, aRequestedSignature) -> {
-            final List<EscapeAnalysis.AnalysisResult> theResult = new ArrayList<>();
-            final BytecodeLinkedClass theRequestedClass = theLinkerContext.resolveClass(aLinkedClass);
-            final BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aRequestedSignature);
-            final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
-            theResult.add(aAnalysis.analyze(theRequestedClass, theRequestedMethod, theProgram));
-            return theResult;
+        final EscapeAnalysis e = new EscapeAnalysis(new EscapeAnalysis.ProgramSupplier() {
+            @Override
+            public List<EscapeAnalysis.AnalysisResult> provideFor(final EscapeAnalysis aAnalysis, final BytecodeObjectTypeRef aLinkedClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
+                final List<EscapeAnalysis.AnalysisResult> theResult = new ArrayList<>();
+                final BytecodeLinkedClass theRequestedClass = theLinkerContext.resolveClass(aLinkedClass);
+                final BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
+                final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
+                theResult.add(aAnalysis.analyze(theRequestedClass, theRequestedMethod, theProgram));
+                return theResult;
+            }
         });
 
         return e.analyze(theLinkedClass, theMethod, p);
