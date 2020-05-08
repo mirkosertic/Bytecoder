@@ -46,6 +46,13 @@ public class Long64Test {
         Assert.assertEquals(5, count, 0);
     }
 
+    @Test
+    public void testBase16HexToString() {
+        long theValue = Long.parseLong("171f072b1e1", 16);
+        System.out.println(theValue);
+        Assert.assertEquals(1588876980705L, theValue);
+    }
+
     /*
     @Test
     public void testNumberOfTrailingZeros() {
