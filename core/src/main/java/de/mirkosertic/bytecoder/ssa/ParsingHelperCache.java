@@ -174,6 +174,9 @@ public class ParsingHelperCache {
                 final TypeRef theType = Value.widestTypeOf(theValues, linkerContext);
 
                 final PHIValue thePHI = new PHIValue(theEntry.getKey(), theType);
+                for (final Value v : theValues) {
+                    thePHI.receivesDataFrom(v);
+                }
 
                 theHelper.setStackValue(theRequestedStack - theEntry.getKey().getPos() - 1, thePHI);
                 aBlock.addToLiveIn(thePHI, theEntry.getKey());
@@ -202,6 +205,10 @@ public class ParsingHelperCache {
         }
         final TypeRef theType = Value.widestTypeOf(theValues, linkerContext);
         final PHIValue thePHI = new PHIValue(aDescription, theType);
+        for (final Value v : theValues) {
+            thePHI.receivesDataFrom(v);
+        }
+
         aImportingBlock.addToLiveIn(thePHI, aDescription);
 
         return thePHI;

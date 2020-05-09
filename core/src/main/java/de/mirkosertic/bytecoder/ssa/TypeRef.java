@@ -38,6 +38,9 @@ public interface TypeRef {
 
     boolean isObject();
 
+    @Override
+    String toString();
+
     enum Native implements TypeRef {
         BYTE {
             @Override
@@ -236,6 +239,11 @@ public interface TypeRef {
                 public boolean isObject() {
                     return true;
                 }
+
+                @Override
+                public String toString() {
+                    return "array of " + arrayType().singleElementType();
+                }
             };
         }
         if (aTypeRef.isPrimitive()) {
@@ -282,6 +290,11 @@ public interface TypeRef {
             @Override
             public boolean isObject() {
                 return true;
+            }
+
+            @Override
+            public String toString() {
+                return "object of type " + aTypeRef.name();
             }
         };
     }
