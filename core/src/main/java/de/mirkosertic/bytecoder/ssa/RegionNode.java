@@ -192,17 +192,6 @@ public class RegionNode extends Node<RegionNode, ControlFlowEdgeType> {
         liveOut.put(aDescription, aValue);
     }
 
-    public void replaceInLiveInAndOut(final Variable key, final Value value) {
-        final Set<VariableDescription> theInDesc = liveIn.entrySet().stream().filter(t -> t.getValue() == key).map(Map.Entry::getKey).collect(Collectors.toSet());
-        for (final VariableDescription desc : theInDesc) {
-            liveIn.put(desc, value);
-        }
-        final Set<VariableDescription> theOutDesc = liveOut.entrySet().stream().filter(t -> t.getValue() == key).map(Map.Entry::getKey).collect(Collectors.toSet());
-        for (final VariableDescription desc : theOutDesc) {
-            liveOut.put(desc, value);
-        }
-    }
-
     public BlockState liveIn() {
         final BlockState theState = new BlockState();
         for (final Map.Entry<VariableDescription, Value> theEntry : liveIn.entrySet()) {
