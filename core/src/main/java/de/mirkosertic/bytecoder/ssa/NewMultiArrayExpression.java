@@ -20,9 +20,10 @@ import java.util.List;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 
-public class NewMultiArrayExpression extends Expression {
+public class NewMultiArrayExpression extends Expression implements ValueWithEscapeCheck {
 
     private final BytecodeTypeRef type;
+    private boolean escaping;
 
     public NewMultiArrayExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeTypeRef aType, final List<Value> aDimensions) {
         super(aProgram, aAddress);
@@ -37,5 +38,15 @@ public class NewMultiArrayExpression extends Expression {
     @Override
     public TypeRef resolveType() {
         return TypeRef.Native.REFERENCE;
+    }
+
+    @Override
+    public void markAsEscaped() {
+        escaping = true;
+    }
+
+    @Override
+    public boolean isEscaping() {
+        return escaping;
     }
 }

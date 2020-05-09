@@ -92,7 +92,6 @@ public class DoubleTest {
         assertEquals("-123.5", new Double(-123.5d).toString());
     }
 
-
     @Test
     public void testValueOfInt() {
         assertEquals(123, Double.valueOf(123).intValue(), 0);

@@ -137,7 +137,7 @@ public class LLVMWriter implements AutoCloseable {
     public static final String CLASSINITSUFFIX = "__init";
     public static final String VTABLESUFFIX = "__vtable";
     public static final String VTABLETYPESUFFIX = "__vtable__type";
-    public static final String NEWINSTANCEHELPER = "newinstancehelper";
+    public static final String NEWINSTANCEHELPER = "bytecoder.newinstancehelper";
     public static final String INTERFACEDISPATCHSUFFIX = "__interfacedispatch";
 
     interface SymbolResolver {
@@ -1034,7 +1034,7 @@ public class LLVMWriter implements AutoCloseable {
 
         target.print("    %");
         target.print(toTempSymbol(e, "cond"));
-        target.print(" = call i1 @exceedsrange(i32 %");
+        target.print(" = call i1 @bytecoder.exceedsrange(i32 %");
         target.print(toTempSymbol(e, "value"));
         target.print(", i32 ");
         target.print(e.getLowValue());
@@ -1143,6 +1143,16 @@ public class LLVMWriter implements AutoCloseable {
         target.print(toTempSymbol(e, "vtable"));
         target.print(")");
         currentSubProgram.writeDebugSuffixFor(e, target);
+
+        if (e.isEscaping()) {
+            linkerContext.getStatistics().context("Codegenerator")
+                    .counter("ArrayOnHeapAllocations").increment();
+        } else {
+            linkerContext.getStatistics().context("Codegenerator")
+                    .counter("ArrayOnStackAllocations").increment();
+
+            target.print(";; might be a stack allocation here. Please verify.");
+        }
     }
 
     private void write(final ThrowExpression e) {
@@ -1732,6 +1742,16 @@ public class LLVMWriter implements AutoCloseable {
         target.write(toTempSymbol(e, "vtable"));
         target.write(")");
         currentSubProgram.writeDebugSuffixFor(e, target);
+
+        if (e.isEscaping()) {
+            linkerContext.getStatistics().context("Codegenerator")
+                    .counter("MultiArrayOnHeapAllocations").increment();
+        } else {
+            linkerContext.getStatistics().context("Codegenerator")
+                    .counter("MultiArrayOnStackAllocations").increment();
+
+            target.print(";; might be a stack allocation here. Please verify.");
+        }
     }
 
     private void write(final SqrtExpression e) {
@@ -1751,7 +1771,7 @@ public class LLVMWriter implements AutoCloseable {
         final Value theMethodType = e.incomingDataFlows().get(0);
         final Value theIndex = e.incomingDataFlows().get(1);
 
-        target.print("call i32 @checkmethodtype(i32 ");
+        target.print("call i32 @bytecoder.checkmethodtype(i32 ");
         write(theMethodType, true);
         target.print(", i32 ");
         write(theIndex, true);
@@ -1766,7 +1786,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final LambdaWithStaticImplExpression e) {
-        target.print("call i32 @newLambdaImpl(i32 ");
+        target.print("call i32 @bytecoder.newLambda(i32 ");
         write(e.getType(), true);
         target.print(",i32 ");
         write(e.getStaticRef(), true);
@@ -1776,7 +1796,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final LambdaConstructorReferenceExpression e) {
-        target.print("call i32 @newLambdaImpl(i32 ");
+        target.print("call i32 @bytecoder.newLambda(i32 ");
         write(e.getType(), true);
         target.print(",i32 ");
         write(e.getConstructorRef(), true);
@@ -1786,7 +1806,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final LambdaInterfaceReferenceExpression e) {
-        target.print("call i32 @newLambdaImpl(i32 ");
+        target.print("call i32 @bytecoder.newLambda(i32 ");
         write(e.getType(), true);
         target.print(",i32 ");
         write(e.getInterfaceRef(), true);
@@ -1796,7 +1816,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final LambdaVirtualReferenceExpression e) {
-        target.print("call i32 @newLambdaImpl(i32 ");
+        target.print("call i32 @bytecoder.newLambda(i32 ");
         write(e.getType(), true);
         target.print(",i32 ");
         write(e.getVirtualRef(), true);
@@ -1806,7 +1826,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final LambdaSpecialReferenceExpression e) {
-        target.print("call i32 @newLambdaImpl(i32 ");
+        target.print("call i32 @bytecoder.newLambda(i32 ");
         write(e.getType(), true);
         target.print(",i32 ");
         write(e.getSpecialRef(), true);
@@ -1827,10 +1847,10 @@ public class LLVMWriter implements AutoCloseable {
                 target.print(" @llvm.maximum.f32");
                 break;
             case LONG:
-                target.print(" @maximum.i64");
+                target.print(" @bytecoder.maximum.i64");
                 break;
             default:
-                target.print(" @maximum");
+                target.print(" @bytecoder.maximum.i32");
                 break;
         }
         target.print("(");
@@ -1896,13 +1916,13 @@ public class LLVMWriter implements AutoCloseable {
     private void write(final IsNaNExpression e) {
         final Value theValue = e.incomingDataFlows().get(0);
         if (theValue.resolveType().resolve() == TypeRef.Native.DOUBLE) {
-            target.print("call i32 @isnanDouble(");
+            target.print("call i32 @bytecoder.isnan.double(");
             target.print(LLVMWriterUtils.toType(theValue.resolveType()));
             target.print(" ");
             writeResolved(theValue);
             target.print(")");
         } else {
-            target.print("call i32 @isnan(");
+            target.print("call i32 @bytecoder.isnan.float(");
             target.print(LLVMWriterUtils.toType(theValue.resolveType()));
             target.print(" ");
             writeResolved(theValue);
@@ -1926,10 +1946,10 @@ public class LLVMWriter implements AutoCloseable {
                 target.print(" @llvm.minimum.f32");
                 break;
             case LONG:
-                target.print(" @minimum.i64");
+                target.print(" @bytecoder.minimum.i64");
                 break;
             default:
-                target.print(" @minimum");
+                target.print(" @bytecoder.minimum.i32");
                 break;
         }
         target.print("(");
@@ -2016,10 +2036,10 @@ public class LLVMWriter implements AutoCloseable {
         switch (theValue1Type) {
             case FLOAT:
             case DOUBLE:
-                target.print("call i32 @compare_f32(");
+                target.print("call i32 @bytecoder.compare.float(");
                 break;
             default:
-                target.print("call i32 @compare_i32(");
+                target.print("call i32 @bytecoder.compare.i32(");
                 break;
         }
         target.print(LLVMWriterUtils.toType(theValue1.resolveType()));
@@ -2052,7 +2072,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final InstanceOfExpression e) {
-        target.print("call i32 @instanceof(i32 ");
+        target.print("call i32 @bytecoder.instanceof(i32 ");
         writeResolved(e.incomingDataFlows().get(0));
         target.print(",i32 ");
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(e.getType().getConstant()));
@@ -2152,8 +2172,17 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final NewObjectAndConstructExpression e) {
+
+        if (e.isEscaping()) {
+            linkerContext.getStatistics().context("Codegenerator")
+                    .counter("ObjectOnHeapAllocations").increment();
+        } else {
+            linkerContext.getStatistics().context("Codegenerator")
+                    .counter("ObjectOnStackAllocations").increment();
+        }
+
         target.print("call i32 (i32");
-        for (int i=0;i<e.getSignature().getArguments().length;i++) {
+        for (int i = 0; i < e.getSignature().getArguments().length; i++) {
             target.print(",");
             target.print(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
         }
@@ -2161,13 +2190,18 @@ public class LLVMWriter implements AutoCloseable {
         target.print(LLVMWriterUtils.toMethodName(e.getClazz(), LLVMWriter.NEWINSTANCE_METHOD_NAME, e.getSignature()));
         target.print("(i32 %");
         target.print(LLVMWriterUtils.runtimeClassVariableName(e.getClazz()));
-        for (int i=0;i<e.incomingDataFlows().size();i++) {
+        for (int i = 0; i < e.incomingDataFlows().size(); i++) {
             target.print(",");
             target.print(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
             target.print(" ");
             writeResolved(e.incomingDataFlows().get(i));
         }
-        target.println(")");
+
+        if (e.isEscaping()) {
+            target.println(")");
+        } else {
+            target.println(") ;; might be a stack allocation here. Please verify.");
+        }
     }
 
     private void write(final StackTopExpression e) {
@@ -2219,7 +2253,7 @@ public class LLVMWriter implements AutoCloseable {
                     case LONG: {
                         // Convert double to i64
                         // NaN == 0
-                        target.print("call i64 @doubleToi64(double ");
+                        target.print("call i64 @bytecoder.double.to.i64(double ");
                         writeResolved(theSource);
                         target.print(")");
                         return;
@@ -2230,7 +2264,7 @@ public class LLVMWriter implements AutoCloseable {
                     case CHAR: {
                         // Convert doule to i32
                         // NaN == 0
-                        target.print("call i32 @doubleToi32(double ");
+                        target.print("call i32 @bytecoder.double.to.i32(double ");
                         writeResolved(theSource);
                         target.print(")");
                         return;
@@ -2257,7 +2291,7 @@ public class LLVMWriter implements AutoCloseable {
                     case LONG: {
                         // Convert float to i64
                         // NaN == 0
-                        target.print("call i64 @toi64(float ");
+                        target.print("call i64 @bytecoder.float.to.i64(float ");
                         writeResolved(theSource);
                         target.print(")");
                         return;
@@ -2268,7 +2302,7 @@ public class LLVMWriter implements AutoCloseable {
                     case CHAR: {
                         // Convert float to i32
                         // NaN == 0
-                        target.print("call i32 @toi32(float ");
+                        target.print("call i32 @bytecoder.float.to.i32(float ");
                         writeResolved(theSource);
                         target.print(")");
                         return;
