@@ -15,7 +15,6 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
@@ -46,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Collectors;
 
 public class EscapeAnalysis {
 
@@ -77,18 +77,20 @@ public class EscapeAnalysis {
         }
     }
 
-    public interface ProgramSupplier {
-        List<AnalysisResult> provideFor(final EscapeAnalysis aAnalysis, final BytecodeObjectTypeRef aLinkedClass, final String aMethodName, final BytecodeMethodSignature aSignature);
+    public interface AnalysisProvider {
+        AnalysisResult resultForStaticInvocation(final EscapeAnalysis aAnalysis, final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature);
+        AnalysisResult resultForConstructorInvocation(final EscapeAnalysis aAnalysis, final BytecodeObjectTypeRef aClass, final BytecodeMethodSignature aSignature);
+        AnalysisResult resultForDirectInvocation(EscapeAnalysis escapeAnalysis, BytecodeObjectTypeRef clazz, String methodName, BytecodeMethodSignature signature);
     }
 
     private final Map<BytecodeLinkedClass, Map<BytecodeMethod, AnalysisResult>> analysisResults;
     private final Stack<AnalysisResult> workingStack;
-    private final ProgramSupplier programSupplier;
+    private final AnalysisProvider analysisProvider;
 
-    public EscapeAnalysis(final ProgramSupplier aProgramSupplier) {
+    public EscapeAnalysis(final AnalysisProvider aAnalysisProvider) {
         analysisResults = new HashMap<>();
         workingStack = new Stack<>();
-        programSupplier = aProgramSupplier;
+        analysisProvider = aAnalysisProvider;
     }
 
     public AnalysisResult analyze(final BytecodeLinkedClass aLinkedClass, final BytecodeMethod aMethod, final Program aProgram) {
@@ -155,37 +157,37 @@ public class EscapeAnalysis {
         }
     }
 
-    private void performEscapeAnalysisFor(final AnalysisResult aResult, final Value aValueToCheckEscaping, final Value aPreviousValue, final Value aCurrentValue, final Set<Value> aAlreadySeenPHIs) {
+    private boolean performEscapeAnalysisFor(final AnalysisResult aResult, final Value aValueToCheckEscaping, final Value aPreviousValue, final Value aCurrentValue, final Set<Value> aAlreadySeenPHIs) {
 
         if (aCurrentValue instanceof PHIValue && !aAlreadySeenPHIs.add(aCurrentValue)) {
-            return;
+            return true;
         }
 
         // Value is used as a return value, it is escaping
         if (aCurrentValue instanceof ReturnValueExpression) {
             aResult.escaping(aValueToCheckEscaping);
-            return;
+            return true;
         }
 
         // Value is stored as enum constants, it is escaping
         if (aCurrentValue instanceof SetEnumConstantsExpression) {
             aResult.escaping(aValueToCheckEscaping);
-            return;
+            return true;
         }
 
         // Used as a param in static invocation, it might be escaping
         if (aCurrentValue instanceof InvokeStaticMethodExpression) {
             final InvokeStaticMethodExpression theExpression = (InvokeStaticMethodExpression) aCurrentValue;
-            final List<Value> theValues = aCurrentValue.incomingDataFlows();
-            final int theIndex = theValues.indexOf(aPreviousValue);
-            for (final AnalysisResult theResult : programSupplier.provideFor(this,
+            final List<Value> theArguments = aCurrentValue.incomingDataFlows();
+            final AnalysisResult theResult =  analysisProvider.resultForStaticInvocation(this,
                     theExpression.getClassName(),
                     theExpression.getMethodName(),
-                    theExpression.getSignature())) {
-                if (theResult.isMethodArgumentEscaping(theIndex)) {
-                    // It is escaping!
+                    theExpression.getSignature());
+            for (int i=0;i<theArguments.size();i++) {
+                final Value v = theArguments.get(i);
+                if (v == aPreviousValue && theResult.isMethodArgumentEscaping(i)) {
                     aResult.escaping(aValueToCheckEscaping);
-                    return;
+                    return true;
                 }
             }
         }
@@ -196,16 +198,16 @@ public class EscapeAnalysis {
             if (theValues.indexOf(aPreviousValue) > 0) {
                 // written to a field, it might be escaping
                 aResult.escaping(aValueToCheckEscaping);
-                return;
+                return true;
             }
         }
 
         if (aCurrentValue instanceof PutStaticExpression) {
             final List<Value> theValues = aCurrentValue.incomingDataFlows();
             if (theValues.contains(aPreviousValue)) {
-                // written to a static field, it might be escaping
+                // written to a static field, it is escaping
                 aResult.escaping(aValueToCheckEscaping);
-                return;
+                return true;
             }
         }
 
@@ -215,39 +217,65 @@ public class EscapeAnalysis {
             if (theValues.indexOf(aPreviousValue) == 2) {
                 // written to an array, it might be escaping
                 aResult.escaping(aValueToCheckEscaping);
-                return;
+                return true;
             }
         }
 
         if (aCurrentValue instanceof NewObjectAndConstructExpression) {
-            final List<Value> theArguments = aCurrentValue.incomingDataFlows();
-            if (theArguments.contains(aPreviousValue)) {
-                // Value used as constructor argument, it might be escaping
-                aResult.escaping(aValueToCheckEscaping);
-                return;
+            final NewObjectAndConstructExpression newObjectAndConstructExpression = (NewObjectAndConstructExpression) aCurrentValue;
+            final List<Value> theArguments = newObjectAndConstructExpression.incomingDataFlows();
+            final AnalysisResult theResult = analysisProvider.resultForConstructorInvocation(this,
+                    newObjectAndConstructExpression.getClazz(), newObjectAndConstructExpression.getSignature()
+            );
+            for (int i=0;i<theArguments.size();i++) {
+                final Value v = theArguments.get(i);
+                if (v == aPreviousValue && theResult.isMethodArgumentEscaping(i)) {
+                    aResult.escaping(aValueToCheckEscaping);
+                    return true;
+                }
             }
         }
 
-        if (aCurrentValue instanceof InvokeVirtualMethodExpression || aCurrentValue instanceof DirectInvokeMethodExpression) {
-            final List<Value> theValues = aCurrentValue.incomingDataFlows();
-            // Value can be the receiver, but not an argument of the invocation
-            if (theValues.indexOf(aPreviousValue) > 0) {
-                // Used as a argument in Virtual or Direct invocation, it might be escaping
-                aResult.escaping(aValueToCheckEscaping);
-                return;
+        if (aCurrentValue instanceof DirectInvokeMethodExpression) {
+            final DirectInvokeMethodExpression directInvokeMethodExpression = (DirectInvokeMethodExpression) aCurrentValue;
+            final List<Value> theArguments = directInvokeMethodExpression.incomingDataFlows();
+            final AnalysisResult theResult = analysisProvider.resultForDirectInvocation(this,
+                    directInvokeMethodExpression.getClazz(),
+                    directInvokeMethodExpression.getMethodName(),
+                    directInvokeMethodExpression.getSignature()
+            );
+            // We start with 1, because we ignore the target
+            for (int i=1;i<theArguments.size();i++) {
+                final Value v = theArguments.get(i);
+                if (v == aPreviousValue && theResult.isMethodArgumentEscaping(i)) {
+                    aResult.escaping(aValueToCheckEscaping);
+                    return true;
+                }
             }
+        }
+
+        if (aCurrentValue instanceof InvokeVirtualMethodExpression) {
+            // Virtual invocations always escape
+            // Is is quite hard to get this right. We need a new IR instruction for the
+            // the whole InvokeDynamic handling to get this right.
+            aResult.escaping(aValueToCheckEscaping);
+            return true;
         }
 
         if (aCurrentValue instanceof GetFieldExpression) {
-            // Field is read from the instance, we think it is escaping
-            aResult.escaping(aValueToCheckEscaping);
-            return;
+            final GetFieldExpression theGetField = (GetFieldExpression) aCurrentValue;
+            final TypeRef theType = theGetField.resolveType();
+            if (theType.isArray() || theType.isObject()) {
+                // Field of reference type is read from the instance, we think it is escaping
+                aResult.escaping(aValueToCheckEscaping);
+                return true;
+            }
         }
 
         if (aCurrentValue instanceof ThrowExpression) {
             // Escaping by throwing,
             aResult.escaping(aValueToCheckEscaping);
-            return;
+            return true;
         }
 
         // Copied to another variable, we have to check the copy, too
@@ -255,13 +283,22 @@ public class EscapeAnalysis {
             final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) aCurrentValue;
             final Variable theVariable = theAssignment.getVariable();
 
-            theVariable.outgoingEdges().map(Edge::targetNode).forEach(
-                    node -> performEscapeAnalysisFor(aResult, aValueToCheckEscaping, theVariable, (Value) node, aAlreadySeenPHIs)
-            );
+            final List<Value> theOutgoingValues = theVariable.outgoingEdges().map(t -> (Value)t.targetNode()).collect(Collectors.toList());
+            boolean theResult = false;
+            for (final Value node : theOutgoingValues) {
+                theResult = theResult | performEscapeAnalysisFor(aResult, aValueToCheckEscaping, theVariable, node, aAlreadySeenPHIs);
+            }
+
+            if (theResult) {
+                return true;
+            }
         }
 
-        aCurrentValue.outgoingEdges().map(Edge::targetNode).forEach(
-                node -> performEscapeAnalysisFor(aResult, aValueToCheckEscaping, aCurrentValue, (Value) node, aAlreadySeenPHIs)
-        );
+        boolean result = false;
+        final List<Value> theOutgoingValues = aCurrentValue.outgoingEdges().map(t -> (Value)t.targetNode()).collect(Collectors.toList());
+        for (final Value node : theOutgoingValues) {
+            result = result | performEscapeAnalysisFor(aResult, aValueToCheckEscaping, aCurrentValue, node, aAlreadySeenPHIs);
+        }
+        return result;
     }
 }
