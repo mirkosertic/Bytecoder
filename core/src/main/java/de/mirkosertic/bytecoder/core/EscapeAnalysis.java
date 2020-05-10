@@ -22,6 +22,7 @@ import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
+import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
@@ -237,7 +238,11 @@ public class EscapeAnalysis {
             }
         }
 
-        // TODO: Getfield might also cause an escape of an part of the value!
+        if (aCurrentValue instanceof GetFieldExpression) {
+            // Field is read from the instance, we think it is escaping
+            aResult.escaping(aValueToCheckEscaping);
+            return;
+        }
 
         if (aCurrentValue instanceof ThrowExpression) {
             // Escaping by throwing,

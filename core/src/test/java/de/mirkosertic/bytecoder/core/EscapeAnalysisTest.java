@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.api.web.Event;
+import de.mirkosertic.bytecoder.api.web.EventListener;
+import de.mirkosertic.bytecoder.api.web.Window;
 import de.mirkosertic.bytecoder.backend.llvm.LLVMIntrinsics;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
@@ -172,6 +175,31 @@ public class EscapeAnalysisTest {
         doSomethingStrange(o);
     }
 
+    private static void setTitle(final Window w) {
+        w.document().title("Title");
+    }
+
+    public static void opaqueNotEscaping() {
+        setTitle(Window.window());
+    }
+
+    public static void opaqueEventListenerEscaping() {
+        Window.window().document().addEventListener("click", new EventListener<Event>() {
+            @Override
+            public void run(Event aEvent) {
+                System.out.println("Clicked");
+            }
+        });
+    }
+
+    private static TestInstance escapeMember(final AnotherInstance o) {
+        return o.testInstance;
+    }
+
+    public static void memberEscaping() {
+        escapeMember(new AnotherInstance(new TestInstance(10)));
+    }
+
     private EscapeAnalysis.AnalysisResult analyze(final String methodName, final BytecodeMethodSignature aSignature) {
         return analyze(getClass(), methodName, aSignature);
     }
@@ -199,7 +227,6 @@ public class EscapeAnalysisTest {
 
         return e.analyze(theLinkedClass, theMethod, p);
     }
-
 
     @Test
     public void testEscapingInstanceFromNew() {
@@ -316,5 +343,26 @@ public class EscapeAnalysisTest {
         final EscapeAnalysis.AnalysisResult theResult = analyze("isEscapingByStaticInvocation", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{}));
         final Set<Value> theEscapingValues = theResult.getEscapingValues();
         Assert.assertEquals(1, theEscapingValues.size());
+    }
+
+    @Test
+    public void testOpaqueNotEscaping() {
+        final EscapeAnalysis.AnalysisResult theResult = analyze("opaqueNotEscaping", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{}));
+        final Set<Value> theEscapingValues = theResult.getEscapingValues();
+        Assert.assertEquals(0, theEscapingValues.size());
+    }
+
+    @Test
+    public void testOpaqueEventListenerEscaping() {
+        final EscapeAnalysis.AnalysisResult theResult = analyze("opaqueEventListenerEscaping", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{}));
+        final Set<Value> theEscapingValues = theResult.getEscapingValues();
+        Assert.assertEquals(1, theEscapingValues.size());
+    }
+
+    @Test
+    public void testMemberEscaping() {
+        final EscapeAnalysis.AnalysisResult theResult = analyze("memberEscaping", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{}));
+        final Set<Value> theEscapingValues = theResult.getEscapingValues();
+        Assert.assertEquals(2, theEscapingValues.size());
     }
 }
