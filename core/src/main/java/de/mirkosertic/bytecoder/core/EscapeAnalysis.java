@@ -22,6 +22,7 @@ import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
+import de.mirkosertic.bytecoder.ssa.InvocationExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
@@ -93,7 +94,7 @@ public class EscapeAnalysis {
     public interface ProgramDescriptorProvider {
         ProgramDescriptor resolveStaticInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature);
         ProgramDescriptor resolveConstructorInvocation(final BytecodeObjectTypeRef aClass, final BytecodeMethodSignature aSignature);
-        ProgramDescriptor resolveDirectInvocation(final BytecodeObjectTypeRef clazz, final String methodName, final BytecodeMethodSignature signature);
+        ProgramDescriptor resolveDirectInvocation(final BytecodeObjectTypeRef aClazz, final String  aMethodName, final BytecodeMethodSignature aSignature);
     }
 
     private final Map<BytecodeLinkedClass, Map<BytecodeMethod, AnalysisResult>> analysisResults;
@@ -137,7 +138,7 @@ public class EscapeAnalysis {
             for (final Variable argument : theProgram.getArguments()) {
                 final TypeRef theType = argument.resolveType();
                 if (theType.isArray() || theType.isObject()) {
-                    performEscapeAnalysisFor(theResult, argument, argument, argument, new HashSet<>(), false);
+                    performEscapeAnalysisFor(theResult, argument, argument, argument, new HashSet<>(), false, new HashSet<>());
                 }
             }
             for (final RegionNode theNode : aGraph.dominators().getPreOrder()) {
@@ -169,15 +170,19 @@ public class EscapeAnalysis {
             final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) aExpression;
             final Value theAssignedValue = theAssignment.incomingDataFlows().get(0);
             if (theAssignedValue instanceof ValueWithEscapeCheck) {
-                performEscapeAnalysisFor(aResult, theAssignedValue, theAssignment.getVariable(), theAssignment.getVariable(), new HashSet<>(), aIncludeReturn);
+                performEscapeAnalysisFor(aResult, theAssignedValue, theAssignment.getVariable(), theAssignment.getVariable(), new HashSet<>(), aIncludeReturn, new HashSet<>());
             }
         }
     }
 
-    private boolean performEscapeAnalysisFor(final AnalysisResult aResult, final Value aValueToCheckEscaping, final Value aPreviousValue, final Value aCurrentValue, final Set<Value> aAlreadySeenPHIs, final boolean aIncludeReturn) {
+    private boolean performEscapeAnalysisFor(final AnalysisResult aResult, final Value aValueToCheckEscaping, final Value aPreviousValue, final Value aCurrentValue, final Set<Value> aAlreadySeenPHIs, final boolean aIncludeReturn, final Set<Value> alreadyAnalyzed) {
 
         if (aCurrentValue instanceof PHIValue && !aAlreadySeenPHIs.add(aCurrentValue)) {
             return true;
+        }
+
+        if (!(aCurrentValue instanceof InvocationExpression)) {
+            alreadyAnalyzed.add(aCurrentValue);
         }
 
         // Value is used as a return value, it is escaping
@@ -202,13 +207,19 @@ public class EscapeAnalysis {
                     theExpression.getMethodName(),
                     theExpression.getSignature());
 
-            final AnalysisResult theResult =  analyze(theDescriptor);
-            for (int i=0;i<theArguments.size();i++) {
-                final Value v = theArguments.get(i);
-                if (v == aPreviousValue && theResult.isMethodArgumentEscaping(i)) {
-                    aResult.escaping(aValueToCheckEscaping);
-                    return true;
+            if (theDescriptor != null && !theDescriptor.method.getAccessFlags().isNative()) {
+                final AnalysisResult theResult = analyze(theDescriptor);
+                for (int i = 0; i < theArguments.size(); i++) {
+                    final Value v = theArguments.get(i);
+                    if (v == aPreviousValue && theResult.isMethodArgumentEscaping(i)) {
+                        aResult.escaping(aValueToCheckEscaping);
+                        return true;
+                    }
                 }
+            } else {
+                // Calls to native methods are always escaping
+                aResult.escaping(aValueToCheckEscaping);
+                return true;
             }
         }
 
@@ -233,7 +244,7 @@ public class EscapeAnalysis {
 
         if (aCurrentValue instanceof ArrayStoreExpression) {
             final List<Value> theValues = aCurrentValue.incomingDataFlows();
-            // Value can be the receiver or index, but the value
+            // Value can be the receiver or index
             if (theValues.indexOf(aPreviousValue) == 2) {
                 // written to an array, it might be escaping
                 aResult.escaping(aValueToCheckEscaping);
@@ -266,20 +277,26 @@ public class EscapeAnalysis {
                     directInvokeMethodExpression.getMethodName(),
                     directInvokeMethodExpression.getSignature()
             );
-            final AnalysisResult theResult = analyze(theDescriptor);
-            // We start with 1, because we ignore the target
-            for (int i=1;i<theArguments.size();i++) {
-                final Value v = theArguments.get(i);
-                if (v == aPreviousValue && theResult.isMethodArgumentEscaping(i)) {
-                    aResult.escaping(aValueToCheckEscaping);
-                    return true;
+            if (theDescriptor != null && !theDescriptor.method.getAccessFlags().isNative()) {
+                final AnalysisResult theResult = analyze(theDescriptor);
+                // We start with 1, because we ignore the target
+                for (int i = 1; i < theArguments.size(); i++) {
+                    final Value v = theArguments.get(i);
+                    if (v == aPreviousValue && theResult.isMethodArgumentEscaping(i)) {
+                        aResult.escaping(aValueToCheckEscaping);
+                        return true;
+                    }
                 }
+            } else {
+                // Calls to native methods are always escaping
+                aResult.escaping(aValueToCheckEscaping);
+                return true;
             }
         }
 
         if (aCurrentValue instanceof InvokeVirtualMethodExpression) {
             // Virtual invocations always escape
-            // Is is quite hard to get this right. We need a new IR instruction for the
+            // Is is quite hard to get this right. We need a new IR instruction for
             // the whole InvokeDynamic handling to get this right.
             aResult.escaping(aValueToCheckEscaping);
             return true;
@@ -309,7 +326,9 @@ public class EscapeAnalysis {
             final List<Value> theOutgoingValues = theVariable.outgoingEdges().map(t -> (Value)t.targetNode()).collect(Collectors.toList());
             boolean theResult = false;
             for (final Value node : theOutgoingValues) {
-                theResult = theResult | performEscapeAnalysisFor(aResult, aValueToCheckEscaping, theVariable, node, aAlreadySeenPHIs, aIncludeReturn);
+                if (!alreadyAnalyzed.contains(node)) {
+                    theResult = theResult | performEscapeAnalysisFor(aResult, aValueToCheckEscaping, theVariable, node, aAlreadySeenPHIs, aIncludeReturn, alreadyAnalyzed);
+                }
             }
 
             if (theResult) {
@@ -317,10 +336,13 @@ public class EscapeAnalysis {
             }
         }
 
+        // Continue to follow the dataflow
         boolean result = false;
         final List<Value> theOutgoingValues = aCurrentValue.outgoingEdges().map(t -> (Value)t.targetNode()).collect(Collectors.toList());
         for (final Value node : theOutgoingValues) {
-            result = result | performEscapeAnalysisFor(aResult, aValueToCheckEscaping, aCurrentValue, node, aAlreadySeenPHIs, aIncludeReturn);
+            if (!alreadyAnalyzed.contains(node)) {
+                result = result | performEscapeAnalysisFor(aResult, aValueToCheckEscaping, aCurrentValue, node, aAlreadySeenPHIs, aIncludeReturn, alreadyAnalyzed);
+            }
         }
         return result;
     }

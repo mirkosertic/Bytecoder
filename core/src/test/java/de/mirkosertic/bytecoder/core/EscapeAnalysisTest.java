@@ -29,6 +29,7 @@ import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -208,6 +209,10 @@ public class EscapeAnalysisTest {
         escapeMember(new AnotherInstance(new TestInstance(10)));
     }
 
+    public static Type[] escapingArray() {
+        return new Type[0];
+    }
+
     private EscapeAnalysis.AnalysisResult analyze(final String methodName, final BytecodeMethodSignature aSignature) {
         return analyze(getClass(), methodName, aSignature);
     }
@@ -229,6 +234,7 @@ public class EscapeAnalysisTest {
                 final BytecodeLinkedClass theRequestedClass = theLinkerContext.resolveClass(aClass);
                 final BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
                 final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
+                KnownOptimizer.LLVM.optimize(theProgram.getControlFlowGraph(), theLinkerContext);
                 return new EscapeAnalysis.ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
             }
 
@@ -237,6 +243,7 @@ public class EscapeAnalysisTest {
                 final BytecodeLinkedClass theRequestedClass = theLinkerContext.resolveClass(aClass);
                 final BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull("<init>", aSignature);
                 final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
+                KnownOptimizer.LLVM.optimize(theProgram.getControlFlowGraph(), theLinkerContext);
                 return new EscapeAnalysis.ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
             }
 
@@ -245,6 +252,7 @@ public class EscapeAnalysisTest {
                 final BytecodeLinkedClass theRequestedClass = theLinkerContext.resolveClass(aClass);
                 final BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
                 final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
+                KnownOptimizer.LLVM.optimize(theProgram.getControlFlowGraph(), theLinkerContext);
                 return new EscapeAnalysis.ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
             }
         });
@@ -396,4 +404,12 @@ public class EscapeAnalysisTest {
         final Set<Value> theEscapingValues = theResult.getEscapingValues();
         Assert.assertEquals(2, theEscapingValues.size());
     }
+
+    @Test
+    public void testEscapingArray() {
+        final EscapeAnalysis.AnalysisResult theResult = analyze("escapingArray", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Type.class),1), new BytecodeTypeRef[]{}));
+        final Set<Value> theEscapingValues = theResult.getEscapingValues();
+        Assert.assertEquals(1, theEscapingValues.size());
+    }
+
 }

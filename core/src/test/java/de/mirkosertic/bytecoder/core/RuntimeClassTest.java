@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.core;
 
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Type;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -68,11 +69,11 @@ public class RuntimeClassTest {
         Assert.assertFalse(String.class.isAssignableFrom(Object.class));
     }
 
-    private static final Class superClassOf(final Class aClass) {
+    private static Class superClassOf(final Class aClass) {
         return aClass.getSuperclass();
     }
 
-    private static final Class superClassOfObject(final Object aObject) {
+    private static Class superClassOfObject(final Object aObject) {
         return aObject.getClass().getSuperclass();
     }
 
@@ -95,4 +96,8 @@ public class RuntimeClassTest {
         Assert.assertNull(superClassOf(Object.class));
     }
 
+    @Test
+    public void testGetGenericInterfaces() {
+        final Type[] theResult = String.class.getGenericInterfaces();
+    }
 }

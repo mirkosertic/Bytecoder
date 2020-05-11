@@ -30,7 +30,9 @@ import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.classlib.java.util.Quicksort;
+import de.mirkosertic.bytecoder.core.BytecodeAccessFlags;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
+import de.mirkosertic.bytecoder.core.BytecodeAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeImportedLink;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
@@ -41,8 +43,10 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeResolvedMethods;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 import de.mirkosertic.bytecoder.core.BytecodeVTable;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
+import de.mirkosertic.bytecoder.core.EscapeAnalysis;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.ssa.MethodHandleExpression;
@@ -1491,6 +1495,57 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println();
 
                 // TODO: Perform escape analysis here
+                final EscapeAnalysis.ProgramDescriptorProvider theProvider = new EscapeAnalysis.ProgramDescriptorProvider() {
+                    @Override
+                    public EscapeAnalysis.ProgramDescriptor resolveStaticInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
+                        for (final CompiledMethod theMethod : compiledMethods) {
+                            if (theMethod.linkedClass.getClassName().equals(aClass) &&
+                                theMethod.method.getName().stringValue().equals(aMethodName) &&
+                                theMethod.method.getSignature().matchesExactlyTo(aSignature)) {
+                                return new EscapeAnalysis.ProgramDescriptor(theMethod.linkedClass, theMethod.method, theMethod.program);
+                            }
+                        }
+                        // Nothing found, this might be the case for runtime emulated classes
+                        return null;
+                    }
+
+                    @Override
+                    public EscapeAnalysis.ProgramDescriptor resolveConstructorInvocation(final BytecodeObjectTypeRef aClass, final BytecodeMethodSignature aSignature) {
+                        for (final CompiledMethod theMethod : compiledMethods) {
+                            if (theMethod.linkedClass.getClassName().equals(aClass) &&
+                                    theMethod.method.getName().stringValue().equals("<init>") &&
+                                    theMethod.method.getSignature().matchesExactlyTo(aSignature)) {
+                                return new EscapeAnalysis.ProgramDescriptor(theMethod.linkedClass, theMethod.method, theMethod.program);
+                            }
+                        }
+                        throw new IllegalArgumentException("Cannot find " + aClass.name() + ".<init> " + aSignature);
+                    }
+
+                    @Override
+                    public EscapeAnalysis.ProgramDescriptor resolveDirectInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
+                        for (final CompiledMethod theMethod : compiledMethods) {
+                            if (theMethod.linkedClass.getClassName().equals(aClass) &&
+                                    theMethod.method.getName().stringValue().equals(aMethodName) &&
+                                    theMethod.method.getSignature().matchesExactlyTo(aSignature)) {
+                                return new EscapeAnalysis.ProgramDescriptor(theMethod.linkedClass, theMethod.method, theMethod.program);
+                            }
+                        }
+                        // Nothing found, this might be the case for runtime emulated classes
+                        return null;
+                    }
+                };
+
+                aOptions.getLogger().info("Starting escape analysis");
+
+                final EscapeAnalysis theAnalysis = new EscapeAnalysis(theProvider);
+
+                // Analyze all methods
+                for (final CompiledMethod theCompiledMethod : compiledMethods) {
+                    theAnalysis.analyze(new EscapeAnalysis.ProgramDescriptor(theCompiledMethod.linkedClass,
+                                theCompiledMethod.method, theCompiledMethod.program));
+                }
+
+                aOptions.getLogger().info("Finished escape analysis");
 
                 // We know know the interprocedural data flow, so we can write the LLVM code
                 for (final CompiledMethod theCompiledMethod : compiledMethods) {
@@ -1689,6 +1744,13 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     // as virtual method invocation optimization. All other optimization work
                     // is done by LLVM!
                     KnownOptimizer.LLVM.optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
+
+                    // Perform escape analysis
+                    theAnalysis.analyze(new EscapeAnalysis.ProgramDescriptor(theEntry.getValue().owningClass,
+                            new BytecodeMethod(new BytecodeAccessFlags(0),
+                                    new BytecodeUtf8Constant("" + System.identityHashCode(callsite)),
+                                    new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(java.lang.invoke.CallSite.class), new BytecodeTypeRef[0]),
+                                    new BytecodeAttributeInfo[0]), theSSAProgram));
 
                     pw.print("define internal i32 @resolvecallsite");
                     pw.print(System.identityHashCode(callsite));
