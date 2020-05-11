@@ -77,28 +77,45 @@ public class EscapeAnalysis {
         }
     }
 
-    public interface AnalysisProvider {
-        AnalysisResult resultForStaticInvocation(final EscapeAnalysis aAnalysis, final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature);
-        AnalysisResult resultForConstructorInvocation(final EscapeAnalysis aAnalysis, final BytecodeObjectTypeRef aClass, final BytecodeMethodSignature aSignature);
-        AnalysisResult resultForDirectInvocation(EscapeAnalysis escapeAnalysis, BytecodeObjectTypeRef clazz, String methodName, BytecodeMethodSignature signature);
+    public static class ProgramDescriptor {
+
+        private final BytecodeLinkedClass linkedClass;
+        private final BytecodeMethod method;
+        private final Program program;
+
+        public ProgramDescriptor(final BytecodeLinkedClass linkedClass, final BytecodeMethod method, final Program program) {
+            this.linkedClass = linkedClass;
+            this.method = method;
+            this.program = program;
+        }
+    }
+
+    public interface ProgramDescriptorProvider {
+        ProgramDescriptor resolveStaticInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature);
+        ProgramDescriptor resolveConstructorInvocation(final BytecodeObjectTypeRef aClass, final BytecodeMethodSignature aSignature);
+        ProgramDescriptor resolveDirectInvocation(final BytecodeObjectTypeRef clazz, final String methodName, final BytecodeMethodSignature signature);
     }
 
     private final Map<BytecodeLinkedClass, Map<BytecodeMethod, AnalysisResult>> analysisResults;
     private final Stack<AnalysisResult> workingStack;
-    private final AnalysisProvider analysisProvider;
+    private final ProgramDescriptorProvider programDescriptorProvider;
 
-    public EscapeAnalysis(final AnalysisProvider aAnalysisProvider) {
+    public EscapeAnalysis(final ProgramDescriptorProvider aProgramDescriptorProvider) {
         analysisResults = new HashMap<>();
         workingStack = new Stack<>();
-        analysisProvider = aAnalysisProvider;
+        programDescriptorProvider = aProgramDescriptorProvider;
     }
 
-    public AnalysisResult analyze(final BytecodeLinkedClass aLinkedClass, final BytecodeMethod aMethod, final Program aProgram) {
+    public AnalysisResult analyze(final ProgramDescriptor aProgramDescriptor) {
+
+        final BytecodeLinkedClass theLinkedClass = aProgramDescriptor.linkedClass;
+        final BytecodeMethod theMethod = aProgramDescriptor.method;
+        final Program theProgram = aProgramDescriptor.program;
 
         // Check if the requested method is already on the working stack
         // In this case, the method seems to be recursive and we have to prevent duplicate work
         for (final AnalysisResult theStackEntry : workingStack) {
-            if (theStackEntry.method == aMethod) {
+            if (theStackEntry.method == theMethod) {
                 // We make sure all arguments are escaping
                 for (final Variable v : theStackEntry.program.getArguments()) {
                     theStackEntry.escaping(v);
@@ -108,63 +125,63 @@ public class EscapeAnalysis {
         }
 
         // Return a cached result or perform a new analysis
-        final Map<BytecodeMethod, AnalysisResult> theCached = analysisResults.computeIfAbsent(aLinkedClass, t -> new HashMap<>());
-        AnalysisResult theResult = theCached.get(aMethod);
+        final Map<BytecodeMethod, AnalysisResult> theCached = analysisResults.computeIfAbsent(theLinkedClass, t -> new HashMap<>());
+        AnalysisResult theResult = theCached.get(theMethod);
         if (theResult == null) {
-            theResult = new AnalysisResult(aMethod, aProgram);
+            theResult = new AnalysisResult(theMethod, theProgram);
 
             workingStack.push(theResult);
 
-            final ControlFlowGraph aGraph = aProgram.getControlFlowGraph();
+            final ControlFlowGraph aGraph = theProgram.getControlFlowGraph();
 
-            for (final Variable argument : aProgram.getArguments()) {
+            for (final Variable argument : theProgram.getArguments()) {
                 final TypeRef theType = argument.resolveType();
                 if (theType.isArray() || theType.isObject()) {
-                    performEscapeAnalysisFor(theResult, argument, argument, argument, new HashSet<>());
+                    performEscapeAnalysisFor(theResult, argument, argument, argument, new HashSet<>(), false);
                 }
             }
             for (final RegionNode theNode : aGraph.dominators().getPreOrder()) {
-                analyze(theResult, theNode.getExpressions());
+                analyze(theResult, theNode.getExpressions(), true);
             }
 
             workingStack.pop();
 
-            theCached.put(aMethod, theResult);
+            theCached.put(theMethod, theResult);
         }
         return theResult;
     }
 
-    private void analyze(final AnalysisResult aResult, final ExpressionList aExpressionList) {
+    private void analyze(final AnalysisResult aResult, final ExpressionList aExpressionList, final boolean aIncludeReturn) {
         for (final Expression theExpression : aExpressionList.toList()) {
             if (theExpression instanceof ExpressionListContainer) {
                 final ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
                 for (final ExpressionList theList : theContainer.getExpressionLists()) {
-                    analyze(aResult, theList);
+                    analyze(aResult, theList, aIncludeReturn);
                 }
             }
 
-            analyze(aResult, theExpression);
+            analyze(aResult, theExpression, aIncludeReturn);
         }
     }
 
-    private void analyze(final AnalysisResult aResult, final Expression aExpression) {
+    private void analyze(final AnalysisResult aResult, final Expression aExpression, final boolean aIncludeReturn) {
         if (aExpression instanceof VariableAssignmentExpression) {
             final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) aExpression;
             final Value theAssignedValue = theAssignment.incomingDataFlows().get(0);
             if (theAssignedValue instanceof ValueWithEscapeCheck) {
-                performEscapeAnalysisFor(aResult, theAssignedValue, theAssignment.getVariable(), theAssignment.getVariable(), new HashSet<>());
+                performEscapeAnalysisFor(aResult, theAssignedValue, theAssignment.getVariable(), theAssignment.getVariable(), new HashSet<>(), aIncludeReturn);
             }
         }
     }
 
-    private boolean performEscapeAnalysisFor(final AnalysisResult aResult, final Value aValueToCheckEscaping, final Value aPreviousValue, final Value aCurrentValue, final Set<Value> aAlreadySeenPHIs) {
+    private boolean performEscapeAnalysisFor(final AnalysisResult aResult, final Value aValueToCheckEscaping, final Value aPreviousValue, final Value aCurrentValue, final Set<Value> aAlreadySeenPHIs, final boolean aIncludeReturn) {
 
         if (aCurrentValue instanceof PHIValue && !aAlreadySeenPHIs.add(aCurrentValue)) {
             return true;
         }
 
         // Value is used as a return value, it is escaping
-        if (aCurrentValue instanceof ReturnValueExpression) {
+        if (aCurrentValue instanceof ReturnValueExpression && aIncludeReturn) {
             aResult.escaping(aValueToCheckEscaping);
             return true;
         }
@@ -179,10 +196,13 @@ public class EscapeAnalysis {
         if (aCurrentValue instanceof InvokeStaticMethodExpression) {
             final InvokeStaticMethodExpression theExpression = (InvokeStaticMethodExpression) aCurrentValue;
             final List<Value> theArguments = aCurrentValue.incomingDataFlows();
-            final AnalysisResult theResult =  analysisProvider.resultForStaticInvocation(this,
+
+            final ProgramDescriptor theDescriptor = programDescriptorProvider.resolveStaticInvocation(
                     theExpression.getClassName(),
                     theExpression.getMethodName(),
                     theExpression.getSignature());
+
+            final AnalysisResult theResult =  analyze(theDescriptor);
             for (int i=0;i<theArguments.size();i++) {
                 final Value v = theArguments.get(i);
                 if (v == aPreviousValue && theResult.isMethodArgumentEscaping(i)) {
@@ -224,9 +244,11 @@ public class EscapeAnalysis {
         if (aCurrentValue instanceof NewObjectAndConstructExpression) {
             final NewObjectAndConstructExpression newObjectAndConstructExpression = (NewObjectAndConstructExpression) aCurrentValue;
             final List<Value> theArguments = newObjectAndConstructExpression.incomingDataFlows();
-            final AnalysisResult theResult = analysisProvider.resultForConstructorInvocation(this,
+            final ProgramDescriptor theDescriptor = programDescriptorProvider.resolveConstructorInvocation(
                     newObjectAndConstructExpression.getClazz(), newObjectAndConstructExpression.getSignature()
             );
+
+            final AnalysisResult theResult = analyze(theDescriptor);
             for (int i=0;i<theArguments.size();i++) {
                 final Value v = theArguments.get(i);
                 if (v == aPreviousValue && theResult.isMethodArgumentEscaping(i)) {
@@ -239,11 +261,12 @@ public class EscapeAnalysis {
         if (aCurrentValue instanceof DirectInvokeMethodExpression) {
             final DirectInvokeMethodExpression directInvokeMethodExpression = (DirectInvokeMethodExpression) aCurrentValue;
             final List<Value> theArguments = directInvokeMethodExpression.incomingDataFlows();
-            final AnalysisResult theResult = analysisProvider.resultForDirectInvocation(this,
+            final ProgramDescriptor theDescriptor = programDescriptorProvider.resolveDirectInvocation(
                     directInvokeMethodExpression.getClazz(),
                     directInvokeMethodExpression.getMethodName(),
                     directInvokeMethodExpression.getSignature()
             );
+            final AnalysisResult theResult = analyze(theDescriptor);
             // We start with 1, because we ignore the target
             for (int i=1;i<theArguments.size();i++) {
                 final Value v = theArguments.get(i);
@@ -286,7 +309,7 @@ public class EscapeAnalysis {
             final List<Value> theOutgoingValues = theVariable.outgoingEdges().map(t -> (Value)t.targetNode()).collect(Collectors.toList());
             boolean theResult = false;
             for (final Value node : theOutgoingValues) {
-                theResult = theResult | performEscapeAnalysisFor(aResult, aValueToCheckEscaping, theVariable, node, aAlreadySeenPHIs);
+                theResult = theResult | performEscapeAnalysisFor(aResult, aValueToCheckEscaping, theVariable, node, aAlreadySeenPHIs, aIncludeReturn);
             }
 
             if (theResult) {
@@ -297,7 +320,7 @@ public class EscapeAnalysis {
         boolean result = false;
         final List<Value> theOutgoingValues = aCurrentValue.outgoingEdges().map(t -> (Value)t.targetNode()).collect(Collectors.toList());
         for (final Value node : theOutgoingValues) {
-            result = result | performEscapeAnalysisFor(aResult, aValueToCheckEscaping, aCurrentValue, node, aAlreadySeenPHIs);
+            result = result | performEscapeAnalysisFor(aResult, aValueToCheckEscaping, aCurrentValue, node, aAlreadySeenPHIs, aIncludeReturn);
         }
         return result;
     }

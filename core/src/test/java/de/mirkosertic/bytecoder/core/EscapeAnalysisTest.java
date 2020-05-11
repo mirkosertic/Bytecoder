@@ -145,10 +145,21 @@ public class EscapeAnalysisTest {
         return anotherInstance;
     }
 
-    public static Object isEscapingArgument(final Object o) {
-        Object x = null;
+    public static Object isNotEscapingArgument(final TestInstance o) {
+        TestInstance x = null;
         for (int i=0;i<10;i++) {
             if (i > 2) {
+                x = o;
+            }
+        }
+        return x;
+    }
+
+    public static Object isEscapingArgument(final TestInstance o) {
+        TestInstance x = null;
+        for (int i=0;i<10;i++) {
+            if (i > 2) {
+                KEEPER.memberField = o;
                 x = o;
             }
         }
@@ -212,33 +223,33 @@ public class EscapeAnalysisTest {
 
         KnownOptimizer.LLVM.optimize(p.getControlFlowGraph(), theLinkerContext);
 
-        final EscapeAnalysis e = new EscapeAnalysis(new EscapeAnalysis.AnalysisProvider() {
+        final EscapeAnalysis e = new EscapeAnalysis(new EscapeAnalysis.ProgramDescriptorProvider() {
             @Override
-            public EscapeAnalysis.AnalysisResult resultForStaticInvocation(final EscapeAnalysis aAnalysis, final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
+            public EscapeAnalysis.ProgramDescriptor resolveStaticInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
                 final BytecodeLinkedClass theRequestedClass = theLinkerContext.resolveClass(aClass);
                 final BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
                 final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
-                return aAnalysis.analyze(theRequestedClass, theRequestedMethod, theProgram);
+                return new EscapeAnalysis.ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
             }
 
             @Override
-            public EscapeAnalysis.AnalysisResult resultForConstructorInvocation(final EscapeAnalysis aAnalysis, final BytecodeObjectTypeRef aClass, final BytecodeMethodSignature aSignature) {
+            public EscapeAnalysis.ProgramDescriptor resolveConstructorInvocation(final BytecodeObjectTypeRef aClass, final BytecodeMethodSignature aSignature) {
                 final BytecodeLinkedClass theRequestedClass = theLinkerContext.resolveClass(aClass);
                 final BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull("<init>", aSignature);
                 final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
-                return aAnalysis.analyze(theRequestedClass, theRequestedMethod, theProgram);
+                return new EscapeAnalysis.ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
             }
 
             @Override
-            public EscapeAnalysis.AnalysisResult resultForDirectInvocation(final EscapeAnalysis aAnalysis, final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
+            public EscapeAnalysis.ProgramDescriptor resolveDirectInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
                 final BytecodeLinkedClass theRequestedClass = theLinkerContext.resolveClass(aClass);
                 final BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
                 final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
-                return aAnalysis.analyze(theRequestedClass, theRequestedMethod, theProgram);
+                return new EscapeAnalysis.ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
             }
         });
 
-        return e.analyze(theLinkedClass, theMethod, p);
+        return e.analyze(new EscapeAnalysis.ProgramDescriptor(theLinkedClass, theMethod, p));
     }
 
     @Test
@@ -337,8 +348,15 @@ public class EscapeAnalysisTest {
     }
 
     @Test
+    public void testIsNotEscapingArgument() {
+        final EscapeAnalysis.AnalysisResult theResult = analyze("isNotEscapingArgument", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(TestInstance.class)}));
+        final Set<Value> theEscapingValues = theResult.getEscapingValues();
+        Assert.assertEquals(0, theEscapingValues.size());
+   }
+
+    @Test
     public void testIsEscapingArgument() {
-        final EscapeAnalysis.AnalysisResult theResult = analyze("isEscapingArgument", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(Object.class)}));
+        final EscapeAnalysis.AnalysisResult theResult = analyze("isEscapingArgument", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(TestInstance.class)}));
         final Set<Value> theEscapingValues = theResult.getEscapingValues();
         Assert.assertEquals(1, theEscapingValues.size());
         Assert.assertTrue(theResult.isMethodArgumentEscaping(0));
