@@ -2138,7 +2138,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final SystemHasStackExpression e) {
-        target.print("add i32 0, 1");
+        target.print("add i32 0, 0");
     }
 
     private void write(final HeapBaseExpression e) {
