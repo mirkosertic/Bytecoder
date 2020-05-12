@@ -15,15 +15,13 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Type;
-
+import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import java.lang.reflect.InvocationTargetException;
 
 @RunWith(BytecoderUnitTestRunner.class)
 @BytecoderTestOptions(includeJVM = false)
@@ -94,10 +92,5 @@ public class RuntimeClassTest {
     @Test
     public void testGetSuperclassNull() {
         Assert.assertNull(superClassOf(Object.class));
-    }
-
-    @Test
-    public void testGetGenericInterfaces() {
-        final Type[] theResult = String.class.getGenericInterfaces();
     }
 }
