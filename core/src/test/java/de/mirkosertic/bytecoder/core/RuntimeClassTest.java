@@ -15,14 +15,13 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import java.lang.reflect.InvocationTargetException;
-
+import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import java.lang.reflect.InvocationTargetException;
 
 @RunWith(BytecoderUnitTestRunner.class)
 @BytecoderTestOptions(includeJVM = false)
@@ -68,11 +67,11 @@ public class RuntimeClassTest {
         Assert.assertFalse(String.class.isAssignableFrom(Object.class));
     }
 
-    private static final Class superClassOf(final Class aClass) {
+    private static Class superClassOf(final Class aClass) {
         return aClass.getSuperclass();
     }
 
-    private static final Class superClassOfObject(final Object aObject) {
+    private static Class superClassOfObject(final Object aObject) {
         return aObject.getClass().getSuperclass();
     }
 
@@ -94,5 +93,4 @@ public class RuntimeClassTest {
     public void testGetSuperclassNull() {
         Assert.assertNull(superClassOf(Object.class));
     }
-
 }

@@ -213,6 +213,22 @@ public class MemoryManager {
         return theAddress;
     }
 
+    public static void initStackObject(final int aPtr, final int aSize, final int aType, final int aVTableIndex) {
+        // Wipeout data
+        for (int i=0;i<aSize;i+=4) {
+            Address.setIntValue(aPtr, i, 0);
+        }
+
+        Address.setIntValue(aPtr, 0, aType);
+        Address.setIntValue(aPtr, 4, aVTableIndex);
+    }
+
+    public static void initStackArray(final int aPtr, final int aSize, final int aType, final int aVTableIndex) {
+        initStackObject(aPtr, 16 + 4 + 8 * aSize, aType, aVTableIndex);
+        Address.setIntValue(aPtr, 16, aSize);
+    }
+
+
     public static boolean isUsedByStaticData(final int aOwningBlock) {
         final int aPtrToObject = aOwningBlock + 12;
         return isUsedByStaticDataUserSpace(aPtrToObject);
