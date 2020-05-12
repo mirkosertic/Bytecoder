@@ -255,7 +255,7 @@ public class EscapeAnalysisTest {
                 KnownOptimizer.LLVM.optimize(theProgram.getControlFlowGraph(), theLinkerContext);
                 return new EscapeAnalysis.ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
             }
-        });
+        }, theLinkerContext.getStatistics());
 
         return e.analyze(new EscapeAnalysis.ProgramDescriptor(theLinkedClass, theMethod, p));
     }

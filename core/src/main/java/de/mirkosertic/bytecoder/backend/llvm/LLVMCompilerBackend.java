@@ -1540,7 +1540,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                 aOptions.getLogger().info("Starting escape analysis");
 
-                final EscapeAnalysis theAnalysis = new EscapeAnalysis(theProvider);
+                final EscapeAnalysis theAnalysis = new EscapeAnalysis(theProvider, aLinkerContext.getStatistics());
 
                 // Analyze all methods
                 for (final CompiledMethod theCompiledMethod : compiledMethods) {

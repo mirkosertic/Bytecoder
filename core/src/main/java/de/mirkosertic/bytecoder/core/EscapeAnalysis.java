@@ -100,11 +100,13 @@ public class EscapeAnalysis {
     private final Map<BytecodeLinkedClass, Map<BytecodeMethod, AnalysisResult>> analysisResults;
     private final Stack<AnalysisResult> workingStack;
     private final ProgramDescriptorProvider programDescriptorProvider;
+    private final Statistics statistics;
 
-    public EscapeAnalysis(final ProgramDescriptorProvider aProgramDescriptorProvider) {
+    public EscapeAnalysis(final ProgramDescriptorProvider aProgramDescriptorProvider, final Statistics aStatistics) {
         analysisResults = new HashMap<>();
         workingStack = new Stack<>();
         programDescriptorProvider = aProgramDescriptorProvider;
+        statistics = aStatistics;
     }
 
     public AnalysisResult analyze(final ProgramDescriptor aProgramDescriptor) {
@@ -188,12 +190,16 @@ public class EscapeAnalysis {
         // Value is used as a return value, it is escaping
         if (aCurrentValue instanceof ReturnValueExpression && aIncludeReturn) {
             aResult.escaping(aValueToCheckEscaping);
+            statistics.context("EscapeAnalysis")
+                    .counter("EscapeByReturn").increment();
             return true;
         }
 
         // Value is stored as enum constants, it is escaping
         if (aCurrentValue instanceof SetEnumConstantsExpression) {
             aResult.escaping(aValueToCheckEscaping);
+            statistics.context("EscapeAnalysis")
+                    .counter("EscapeBySetEnumConstant").increment();
             return true;
         }
 
@@ -213,12 +219,16 @@ public class EscapeAnalysis {
                     final Value v = theArguments.get(i);
                     if (v == aPreviousValue && theResult.isMethodArgumentEscaping(i)) {
                         aResult.escaping(aValueToCheckEscaping);
+                        statistics.context("EscapeAnalysis")
+                                .counter("EscapeByStaticInvocation").increment();
                         return true;
                     }
                 }
             } else {
                 // Calls to native methods are always escaping
                 aResult.escaping(aValueToCheckEscaping);
+                statistics.context("EscapeAnalysis")
+                        .counter("EscapeByStaticNativeInvocation").increment();
                 return true;
             }
         }
@@ -229,6 +239,8 @@ public class EscapeAnalysis {
             if (theValues.indexOf(aPreviousValue) > 0) {
                 // written to a field, it might be escaping
                 aResult.escaping(aValueToCheckEscaping);
+                statistics.context("EscapeAnalysis")
+                        .counter("EscapeByPutField").increment();
                 return true;
             }
         }
@@ -238,6 +250,8 @@ public class EscapeAnalysis {
             if (theValues.contains(aPreviousValue)) {
                 // written to a static field, it is escaping
                 aResult.escaping(aValueToCheckEscaping);
+                statistics.context("EscapeAnalysis")
+                        .counter("EscapeByPutStatic").increment();
                 return true;
             }
         }
@@ -248,6 +262,8 @@ public class EscapeAnalysis {
             if (theValues.indexOf(aPreviousValue) == 2) {
                 // written to an array, it might be escaping
                 aResult.escaping(aValueToCheckEscaping);
+                statistics.context("EscapeAnalysis")
+                        .counter("EscapeByArrayStore").increment();
                 return true;
             }
         }
@@ -264,6 +280,8 @@ public class EscapeAnalysis {
                 final Value v = theArguments.get(i);
                 if (v == aPreviousValue && theResult.isMethodArgumentEscaping(i)) {
                     aResult.escaping(aValueToCheckEscaping);
+                    statistics.context("EscapeAnalysis")
+                            .counter("EscapeByConstructorArgument").increment();
                     return true;
                 }
             }
@@ -284,12 +302,16 @@ public class EscapeAnalysis {
                     final Value v = theArguments.get(i);
                     if (v == aPreviousValue && theResult.isMethodArgumentEscaping(i)) {
                         aResult.escaping(aValueToCheckEscaping);
+                        statistics.context("EscapeAnalysis")
+                                .counter("EscapeByDirectInvocation").increment();
                         return true;
                     }
                 }
             } else {
                 // Calls to native methods are always escaping
                 aResult.escaping(aValueToCheckEscaping);
+                statistics.context("EscapeAnalysis")
+                        .counter("EscapeByDirectNative").increment();
                 return true;
             }
         }
@@ -299,6 +321,8 @@ public class EscapeAnalysis {
             // Is is quite hard to get this right. We need a new IR instruction for
             // the whole InvokeDynamic handling to get this right.
             aResult.escaping(aValueToCheckEscaping);
+            statistics.context("EscapeAnalysis")
+                    .counter("EscapeByVirtual").increment();
             return true;
         }
 
@@ -307,6 +331,9 @@ public class EscapeAnalysis {
             final TypeRef theType = theGetField.resolveType();
             if (theType.isArray() || theType.isObject()) {
                 // Field of reference type is read from the instance, we think it is escaping
+
+                statistics.context("EscapeAnalysis")
+                        .counter("EscapeByGetField").increment();
                 aResult.escaping(aValueToCheckEscaping);
                 return true;
             }
@@ -315,6 +342,8 @@ public class EscapeAnalysis {
         if (aCurrentValue instanceof ThrowExpression) {
             // Escaping by throwing,
             aResult.escaping(aValueToCheckEscaping);
+            statistics.context("EscapeAnalysis")
+                    .counter("EscapeByThrow").increment();
             return true;
         }
 
