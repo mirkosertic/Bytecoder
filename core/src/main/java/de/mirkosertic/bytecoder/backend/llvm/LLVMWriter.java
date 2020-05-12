@@ -530,12 +530,6 @@ public class LLVMWriter implements AutoCloseable {
         target.println(" to i32*");
     }
 
-    private void tempify(final NewArrayExpression e) {
-        target.print("    %");
-        target.print(toTempSymbol(e, "vtable"));
-        target.println(" = ptrtoint %dmbcArray__vtable__type* @dmbcArray__vtable to i32");
-    }
-
     private void tempify(final NewMultiArrayExpression e) {
         target.print("    %");
         target.print(toTempSymbol(e, "vtable"));
@@ -582,6 +576,143 @@ public class LLVMWriter implements AutoCloseable {
         target.print(theClassName);
         target.print(VTABLESUFFIX);
         target.println(" to i32");
+    }
+
+    private void tempify(final NewObjectAndConstructExpression e) {
+        if (!e.isEscaping()) {
+            // Perform stack allocation
+            final String theClassName = LLVMWriterUtils.toClassName(e.getClazz());
+            target.print("    %");
+            target.print(toTempSymbol(e, "vtable"));
+            target.print(" = ptrtoint %");
+            target.print(theClassName);
+            target.print(LLVMWriter.VTABLETYPESUFFIX);
+            target.print("* @");
+            target.print(theClassName);
+            target.print(LLVMWriter.VTABLESUFFIX);
+            target.println(" to i32");
+
+            final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(e.getClazz());
+            final int theInstanceSize = theLayout.instanceSize();
+            target.print("    %");
+            target.print(toTempSymbol(e, "alloc"));
+            target.print(" = alloca i32, i32 ");
+            target.println(theInstanceSize / 4);
+
+            target.print("    %");
+            target.print(toTempSymbol(e, "alloc_int"));
+            target.print(" = ptrtoint i32* %");
+            target.print(toTempSymbol(e, "alloc"));
+            target.println(" to i32");
+
+            final BytecodeObjectTypeRef theMemoryManagerClass = BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class);
+
+            target.print("    call void(i32,i32,i32,i32,i32) @");
+            target.print(LLVMWriterUtils.toMethodName(theMemoryManagerClass, "initStackObject",
+                    new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT})));
+            target.print("(");
+            target.print("i32 0, i32 %");
+            target.print(toTempSymbol(e, "alloc_int"));
+            target.print(",i32 ");
+            target.print(theLayout.instanceSize());
+            target.print(", i32 %");
+            target.print(LLVMWriterUtils.runtimeClassVariableName(e.getClazz()));
+            target.print(",i32 %");
+            target.print(toTempSymbol(e, "vtable"));
+            target.print(")");
+
+            currentSubProgram.writeDebugSuffixFor(e, target);
+            target.println();
+
+            target.print("    call void (i32");
+            for (int i = 0; i < e.getSignature().getArguments().length; i++) {
+                target.print(",");
+                target.print(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
+            }
+            target.print(") @");
+            target.print(LLVMWriterUtils.toMethodName(e.getClazz(), "<init>", e.getSignature()));
+            target.print("(i32 %");
+            target.print(toTempSymbol(e, "alloc_int"));
+            for (int i = 0; i < e.incomingDataFlows().size(); i++) {
+                target.print(",");
+                target.print(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
+                target.print(" ");
+                writeResolved(e.incomingDataFlows().get(i));
+            }
+
+            target.print(")");
+
+            currentSubProgram.writeDebugSuffixFor(e, target);
+            target.println();
+        }
+    }
+
+    private void tempify(final NewArrayExpression e) {
+
+        final BytecodeObjectTypeRef theArrayClass = BytecodeObjectTypeRef.fromRuntimeClass(Array.class);
+        final String theClassName = LLVMWriterUtils.toClassName(theArrayClass);
+        target.print("    %");
+        target.print(toTempSymbol(e, "vtable"));
+        target.print(" = ptrtoint %");
+        target.print(theClassName);
+        target.print(LLVMWriter.VTABLETYPESUFFIX);
+        target.print("* @");
+        target.print(theClassName);
+        target.print(LLVMWriter.VTABLESUFFIX);
+        target.println(" to i32");
+
+        if (!e.isEscaping()) {
+
+            // Perform stack allocation
+            target.print("    %");
+            target.print(toTempSymbol(e, "size"));
+            target.print(" = ");
+            writeSameAssignmentHack(TypeRef.Native.INT, e.incomingDataFlows().get(0));
+            target.println();
+
+            target.print("    %");
+            target.print(toTempSymbol(e, "size2"));
+            target.print(" = mul i32 8, %");
+            target.print(toTempSymbol(e, "size"));
+            target.println();
+
+            target.print("    %");
+            target.print(toTempSymbol(e, "size3"));
+            target.print(" = add i32 20, %");
+            target.print(toTempSymbol(e, "size2"));
+            target.println();
+
+            target.print("    %");
+            target.print(toTempSymbol(e, "alloc"));
+            target.print(" = alloca i32, i32 %");
+            target.print(toTempSymbol(e, "size3"));
+            target.println();
+
+            target.print("    %");
+            target.print(toTempSymbol(e, "alloc_int"));
+            target.print(" = ptrtoint i32* %");
+            target.print(toTempSymbol(e, "alloc"));
+            target.println(" to i32");
+
+            final BytecodeObjectTypeRef theMemoryManagerClass = BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class);
+
+            target.print("    call void(i32,i32,i32,i32,i32) @");
+            target.print(LLVMWriterUtils.toMethodName(theMemoryManagerClass, "initStackArray",
+                    new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT})));
+            target.print("(");
+            target.print("i32 0, i32 %");
+            target.print(toTempSymbol(e, "alloc_int"));
+            target.print(",i32 %");
+            target.print(toTempSymbol(e, "size"));
+            target.print(", i32 %");
+            target.print(LLVMWriterUtils.runtimeClassVariableName(theArrayClass));
+            target.print(",i32 %");
+            target.print(toTempSymbol(e, "vtable"));
+            target.print(")");
+
+            currentSubProgram.writeDebugSuffixFor(e, target);
+            target.println();
+        }
     }
 
     private void tempify(final TypeOfExpression e) {
@@ -862,6 +993,10 @@ public class LLVMWriter implements AutoCloseable {
 
             tempify((NewObjectExpression) v);
 
+        } else if (v instanceof NewObjectAndConstructExpression) {
+
+            tempify((NewObjectAndConstructExpression) v);
+
         } else if (v instanceof NewArrayExpression) {
 
             tempify((NewArrayExpression) v);
@@ -1128,30 +1263,35 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final NewArrayExpression e) {
-        final String theMethodName = LLVMWriterUtils.toMethodName(
-                BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
-                "newArray",
-                new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
-
-        target.print("call i32 @");
-        target.print(theMethodName);
-        target.print("(i32 0,i32 ");
-        writeResolved(e.incomingDataFlows().get(0));
-        target.print(",i32 %");
-        target.print(LLVMWriterUtils.runtimeClassVariableName(BytecodeObjectTypeRef.fromRuntimeClass(Array.class)));
-        target.print(",i32 %");
-        target.print(toTempSymbol(e, "vtable"));
-        target.print(")");
-        currentSubProgram.writeDebugSuffixFor(e, target);
-
         if (e.isEscaping()) {
             linkerContext.getStatistics().context("Codegenerator")
                     .counter("ArrayOnHeapAllocations").increment();
+
+            final String theMethodName = LLVMWriterUtils.toMethodName(
+                    BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
+                    "newArray",
+                    new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+
+            target.print("call i32 @");
+            target.print(theMethodName);
+            target.print("(i32 0,i32 ");
+            writeResolved(e.incomingDataFlows().get(0));
+            target.print(",i32 %");
+            target.print(LLVMWriterUtils.runtimeClassVariableName(BytecodeObjectTypeRef.fromRuntimeClass(Array.class)));
+            target.print(",i32 %");
+            target.print(toTempSymbol(e, "vtable"));
+            target.print(")");
+            currentSubProgram.writeDebugSuffixFor(e, target);
+
         } else {
+
             linkerContext.getStatistics().context("Codegenerator")
                     .counter("ArrayOnStackAllocations").increment();
 
-            target.print(";; might be a stack allocation here. Please verify.");
+            target.print("add i32 0, %");
+            target.print(toTempSymbol(e, "alloc_int"));
+
+            target.println(";; does not escape, please verify");
         }
     }
 
@@ -1742,16 +1882,6 @@ public class LLVMWriter implements AutoCloseable {
         target.write(toTempSymbol(e, "vtable"));
         target.write(")");
         currentSubProgram.writeDebugSuffixFor(e, target);
-
-        if (e.isEscaping()) {
-            linkerContext.getStatistics().context("Codegenerator")
-                    .counter("MultiArrayOnHeapAllocations").increment();
-        } else {
-            linkerContext.getStatistics().context("Codegenerator")
-                    .counter("MultiArrayOnStackAllocations").increment();
-
-            target.print(";; might be a stack allocation here. Please verify.");
-        }
     }
 
     private void write(final SqrtExpression e) {
@@ -2174,33 +2304,36 @@ public class LLVMWriter implements AutoCloseable {
     private void write(final NewObjectAndConstructExpression e) {
 
         if (e.isEscaping()) {
+
             linkerContext.getStatistics().context("Codegenerator")
                     .counter("ObjectOnHeapAllocations").increment();
+
+            target.print("call i32 (i32");
+            for (int i = 0; i < e.getSignature().getArguments().length; i++) {
+                target.print(",");
+                target.print(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
+            }
+            target.print(") @");
+            target.print(LLVMWriterUtils.toMethodName(e.getClazz(), LLVMWriter.NEWINSTANCE_METHOD_NAME, e.getSignature()));
+            target.print("(i32 %");
+            target.print(LLVMWriterUtils.runtimeClassVariableName(e.getClazz()));
+            for (int i = 0; i < e.incomingDataFlows().size(); i++) {
+                target.print(",");
+                target.print(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
+                target.print(" ");
+                writeResolved(e.incomingDataFlows().get(i));
+            }
+            target.println(")");
+
         } else {
+
             linkerContext.getStatistics().context("Codegenerator")
                     .counter("ObjectOnStackAllocations").increment();
-        }
 
-        target.print("call i32 (i32");
-        for (int i = 0; i < e.getSignature().getArguments().length; i++) {
-            target.print(",");
-            target.print(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
-        }
-        target.print(") @");
-        target.print(LLVMWriterUtils.toMethodName(e.getClazz(), LLVMWriter.NEWINSTANCE_METHOD_NAME, e.getSignature()));
-        target.print("(i32 %");
-        target.print(LLVMWriterUtils.runtimeClassVariableName(e.getClazz()));
-        for (int i = 0; i < e.incomingDataFlows().size(); i++) {
-            target.print(",");
-            target.print(LLVMWriterUtils.toType(TypeRef.toType(e.getSignature().getArguments()[i])));
-            target.print(" ");
-            writeResolved(e.incomingDataFlows().get(i));
-        }
+            target.print("add i32 0, %");
+            target.print(toTempSymbol(e, "alloc_int"));
 
-        if (e.isEscaping()) {
-            target.println(")");
-        } else {
-            target.println(") ;; might be a stack allocation here. Please verify.");
+            target.println(";; does not escape, please verify");
         }
     }
 

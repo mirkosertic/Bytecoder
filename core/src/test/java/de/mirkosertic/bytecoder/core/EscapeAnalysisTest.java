@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.api.web.Event;
+import de.mirkosertic.bytecoder.api.web.EventListener;
+import de.mirkosertic.bytecoder.api.web.Window;
 import de.mirkosertic.bytecoder.backend.llvm.LLVMIntrinsics;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
@@ -26,8 +29,7 @@ import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Collections;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -51,6 +53,7 @@ public class EscapeAnalysisTest {
         }
 
         public void escapingMethod(final TestInstance o) {
+            KEEPER.memberField = o;
         }
     }
 
@@ -67,7 +70,7 @@ public class EscapeAnalysisTest {
         TestInstance memberField;
     }
 
-    static Keeper KEEPER = new Keeper();
+    static final Keeper KEEPER = new Keeper();
     static TestInstance staticField;
 
     public static Object isEscapingFromNewObject() {
@@ -112,10 +115,9 @@ public class EscapeAnalysisTest {
         return null;
     }
 
-    public static Object isEscapingByPHI() {
+    public static Object isEscapingByPHI(final int value) {
         final TestInstance o;
-        int x = 10;
-        if (x > 20) {
+        if (value > 20) {
             o = new TestInstance(20);
         } else {
             o = new TestInstance(10);
@@ -144,8 +146,8 @@ public class EscapeAnalysisTest {
         return anotherInstance;
     }
 
-    public static Object isEscapingArgument(final Object o) {
-        Object x = null;
+    public static Object isNotEscapingArgument(final TestInstance o) {
+        TestInstance x = null;
         for (int i=0;i<10;i++) {
             if (i > 2) {
                 x = o;
@@ -154,8 +156,18 @@ public class EscapeAnalysisTest {
         return x;
     }
 
+    public static Object isEscapingArgument(final TestInstance o) {
+        TestInstance x = null;
+        for (int i=0;i<10;i++) {
+            if (i > 2) {
+                KEEPER.memberField = o;
+                x = o;
+            }
+        }
+        return x;
+    }
+
     public static void doSomething(final TestInstance o) {
-        o.toString();
     }
 
     public static void doSomethingStrange(final TestInstance o) {
@@ -163,13 +175,42 @@ public class EscapeAnalysisTest {
     }
 
     public static void isNotEscapingByStaticInvocation() {
-        TestInstance o = new TestInstance(10);
+        final TestInstance o = new TestInstance(10);
         doSomething(o);
     }
 
     public static void isEscapingByStaticInvocation() {
-        TestInstance o = new TestInstance(10);
+        final TestInstance o = new TestInstance(10);
         doSomethingStrange(o);
+    }
+
+    private static void setTitle(final Window w) {
+        w.document().title("Title");
+    }
+
+    public static void opaqueNotEscaping() {
+        setTitle(Window.window());
+    }
+
+    public static void opaqueEventListenerEscaping() {
+        Window.window().document().addEventListener("click", new EventListener<Event>() {
+            @Override
+            public void run(final Event aEvent) {
+                System.out.println("Clicked");
+            }
+        });
+    }
+
+    private static TestInstance escapeMember(final AnotherInstance o) {
+        return o.testInstance;
+    }
+
+    public static void memberEscaping() {
+        escapeMember(new AnotherInstance(new TestInstance(10)));
+    }
+
+    public static Type[] escapingArray() {
+        return new Type[0];
     }
 
     private EscapeAnalysis.AnalysisResult analyze(final String methodName, final BytecodeMethodSignature aSignature) {
@@ -187,19 +228,37 @@ public class EscapeAnalysisTest {
 
         KnownOptimizer.LLVM.optimize(p.getControlFlowGraph(), theLinkerContext);
 
-        final EscapeAnalysis e = new EscapeAnalysis(new EscapeAnalysis.ProgramSupplier() {
+        final EscapeAnalysis e = new EscapeAnalysis(new EscapeAnalysis.ProgramDescriptorProvider() {
             @Override
-            public List<EscapeAnalysis.AnalysisResult> provideFor(final EscapeAnalysis aAnalysis, final BytecodeObjectTypeRef aLinkedClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
-                final BytecodeLinkedClass theRequestedClass = theLinkerContext.resolveClass(aLinkedClass);
+            public EscapeAnalysis.ProgramDescriptor resolveStaticInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
+                final BytecodeLinkedClass theRequestedClass = theLinkerContext.resolveClass(aClass);
                 final BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
                 final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
-                return Collections.singletonList(aAnalysis.analyze(theRequestedClass, theRequestedMethod, theProgram));
+                KnownOptimizer.LLVM.optimize(theProgram.getControlFlowGraph(), theLinkerContext);
+                return new EscapeAnalysis.ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
             }
-        });
 
-        return e.analyze(theLinkedClass, theMethod, p);
+            @Override
+            public EscapeAnalysis.ProgramDescriptor resolveConstructorInvocation(final BytecodeObjectTypeRef aClass, final BytecodeMethodSignature aSignature) {
+                final BytecodeLinkedClass theRequestedClass = theLinkerContext.resolveClass(aClass);
+                final BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull("<init>", aSignature);
+                final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
+                KnownOptimizer.LLVM.optimize(theProgram.getControlFlowGraph(), theLinkerContext);
+                return new EscapeAnalysis.ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
+            }
+
+            @Override
+            public EscapeAnalysis.ProgramDescriptor resolveDirectInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
+                final BytecodeLinkedClass theRequestedClass = theLinkerContext.resolveClass(aClass);
+                final BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
+                final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
+                KnownOptimizer.LLVM.optimize(theProgram.getControlFlowGraph(), theLinkerContext);
+                return new EscapeAnalysis.ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
+            }
+        }, theLinkerContext.getStatistics());
+
+        return e.analyze(new EscapeAnalysis.ProgramDescriptor(theLinkedClass, theMethod, p));
     }
-
 
     @Test
     public void testEscapingInstanceFromNew() {
@@ -258,7 +317,7 @@ public class EscapeAnalysisTest {
 
     @Test
     public void testIsEscapingByPHI() {
-        final EscapeAnalysis.AnalysisResult theResult = analyze("isEscapingByPHI", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{}));
+        final EscapeAnalysis.AnalysisResult theResult = analyze("isEscapingByPHI", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT}));
         final Set<Value> theEscapingValues = theResult.getEscapingValues();
         Assert.assertEquals(2, theEscapingValues.size());
         final List<Value> theValues = theEscapingValues.stream().collect(Collectors.toList());
@@ -297,8 +356,15 @@ public class EscapeAnalysisTest {
     }
 
     @Test
+    public void testIsNotEscapingArgument() {
+        final EscapeAnalysis.AnalysisResult theResult = analyze("isNotEscapingArgument", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(TestInstance.class)}));
+        final Set<Value> theEscapingValues = theResult.getEscapingValues();
+        Assert.assertEquals(0, theEscapingValues.size());
+   }
+
+    @Test
     public void testIsEscapingArgument() {
-        final EscapeAnalysis.AnalysisResult theResult = analyze("isEscapingArgument", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(Object.class)}));
+        final EscapeAnalysis.AnalysisResult theResult = analyze("isEscapingArgument", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(TestInstance.class)}));
         final Set<Value> theEscapingValues = theResult.getEscapingValues();
         Assert.assertEquals(1, theEscapingValues.size());
         Assert.assertTrue(theResult.isMethodArgumentEscaping(0));
@@ -317,4 +383,33 @@ public class EscapeAnalysisTest {
         final Set<Value> theEscapingValues = theResult.getEscapingValues();
         Assert.assertEquals(1, theEscapingValues.size());
     }
+
+    @Test
+    public void testOpaqueNotEscaping() {
+        final EscapeAnalysis.AnalysisResult theResult = analyze("opaqueNotEscaping", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{}));
+        final Set<Value> theEscapingValues = theResult.getEscapingValues();
+        Assert.assertEquals(0, theEscapingValues.size());
+    }
+
+    @Test
+    public void testOpaqueEventListenerEscaping() {
+        final EscapeAnalysis.AnalysisResult theResult = analyze("opaqueEventListenerEscaping", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{}));
+        final Set<Value> theEscapingValues = theResult.getEscapingValues();
+        Assert.assertEquals(1, theEscapingValues.size());
+    }
+
+    @Test
+    public void testMemberEscaping() {
+        final EscapeAnalysis.AnalysisResult theResult = analyze("memberEscaping", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{}));
+        final Set<Value> theEscapingValues = theResult.getEscapingValues();
+        Assert.assertEquals(2, theEscapingValues.size());
+    }
+
+    @Test
+    public void testEscapingArray() {
+        final EscapeAnalysis.AnalysisResult theResult = analyze("escapingArray", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Type.class),1), new BytecodeTypeRef[]{}));
+        final Set<Value> theEscapingValues = theResult.getEscapingValues();
+        Assert.assertEquals(1, theEscapingValues.size());
+    }
+
 }
