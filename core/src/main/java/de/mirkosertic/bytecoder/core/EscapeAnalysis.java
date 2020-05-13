@@ -278,11 +278,23 @@ public class EscapeAnalysis {
             final AnalysisResult theResult = analyze(theDescriptor);
             for (int i=0;i<theArguments.size();i++) {
                 final Value v = theArguments.get(i);
-                if (v == aPreviousValue && theResult.isMethodArgumentEscaping(i)) {
-                    aResult.escaping(aValueToCheckEscaping);
-                    statistics.context("EscapeAnalysis")
-                            .counter("EscapeByConstructorArgument").increment();
-                    return true;
+                if (v == aPreviousValue && theResult.isMethodArgumentEscaping(i + 1)) {
+                    // Escaping to a new object
+                    // We have to check if the new object also escapes
+                    boolean result = false;
+                    final List<Value> theOutgoingValues = aCurrentValue.outgoingEdges().map(t -> (Value)t.targetNode()).collect(Collectors.toList());
+                    for (final Value node : theOutgoingValues) {
+                        if (!alreadyAnalyzed.contains(node)) {
+                            result = result | performEscapeAnalysisFor(aResult, aCurrentValue, aCurrentValue, node, new HashSet<>(), aIncludeReturn, new HashSet<>());
+                        }
+                    }
+
+                    if (result) {
+                        aResult.escaping(aValueToCheckEscaping);
+                        statistics.context("EscapeAnalysis")
+                                .counter("EscapeByConstructorArgument").increment();
+                        return true;
+                    }
                 }
             }
         }
