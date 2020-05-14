@@ -159,12 +159,14 @@ public class LLVMWriter implements AutoCloseable {
     private final NativeMemoryLayouter memoryLayouter;
     private final BytecodeLinkerContext linkerContext;
     private final SymbolResolver symbolResolver;
+    private final boolean escapeAnalysisEnabled;
 
-    public LLVMWriter(final PrintWriter output, final NativeMemoryLayouter memoryLayouter, final BytecodeLinkerContext linkerContext, final SymbolResolver symbolResolver) {
+    public LLVMWriter(final PrintWriter output, final NativeMemoryLayouter memoryLayouter, final BytecodeLinkerContext linkerContext, final SymbolResolver symbolResolver, final boolean aEscapeAnalysisEnabled) {
         this.target = output;
         this.memoryLayouter = memoryLayouter;
         this.linkerContext = linkerContext;
         this.symbolResolver = symbolResolver;
+        this.escapeAnalysisEnabled = aEscapeAnalysisEnabled;
     }
 
     @Override
@@ -579,7 +581,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void tempify(final NewObjectAndConstructExpression e) {
-        if (!e.isEscaping()) {
+        if (!e.isEscaping() && escapeAnalysisEnabled) {
             // Perform stack allocation
             final String theClassName = LLVMWriterUtils.toClassName(e.getClazz());
             target.print("    %");
@@ -661,7 +663,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print(LLVMWriter.VTABLESUFFIX);
         target.println(" to i32");
 
-        if (!e.isEscaping()) {
+        if (!e.isEscaping() && escapeAnalysisEnabled) {
 
             // Perform stack allocation
             target.print("    %");
@@ -1263,7 +1265,17 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final NewArrayExpression e) {
-        if (e.isEscaping()) {
+        if (!e.isEscaping() && escapeAnalysisEnabled) {
+
+            linkerContext.getStatistics().context("Codegenerator")
+                    .counter("ArrayOnStackAllocations").increment();
+
+            target.print("add i32 0, %");
+            target.print(toTempSymbol(e, "alloc_int"));
+
+            target.println(";; does not escape, please verify");
+
+        } else {
             linkerContext.getStatistics().context("Codegenerator")
                     .counter("ArrayOnHeapAllocations").increment();
 
@@ -1282,16 +1294,6 @@ public class LLVMWriter implements AutoCloseable {
             target.print(toTempSymbol(e, "vtable"));
             target.print(")");
             currentSubProgram.writeDebugSuffixFor(e, target);
-
-        } else {
-
-            linkerContext.getStatistics().context("Codegenerator")
-                    .counter("ArrayOnStackAllocations").increment();
-
-            target.print("add i32 0, %");
-            target.print(toTempSymbol(e, "alloc_int"));
-
-            target.println(";; does not escape, please verify");
         }
     }
 
@@ -2303,7 +2305,17 @@ public class LLVMWriter implements AutoCloseable {
 
     private void write(final NewObjectAndConstructExpression e) {
 
-        if (e.isEscaping()) {
+        if (!e.isEscaping() && escapeAnalysisEnabled) {
+
+            linkerContext.getStatistics().context("Codegenerator")
+                    .counter("ObjectOnStackAllocations").increment();
+
+            target.print("add i32 0, %");
+            target.print(toTempSymbol(e, "alloc_int"));
+
+            target.println(";; does not escape, please verify");
+
+        } else {
 
             linkerContext.getStatistics().context("Codegenerator")
                     .counter("ObjectOnHeapAllocations").increment();
@@ -2324,16 +2336,6 @@ public class LLVMWriter implements AutoCloseable {
                 writeResolved(e.incomingDataFlows().get(i));
             }
             target.println(")");
-
-        } else {
-
-            linkerContext.getStatistics().context("Codegenerator")
-                    .counter("ObjectOnStackAllocations").increment();
-
-            target.print("add i32 0, %");
-            target.print(toTempSymbol(e, "alloc_int"));
-
-            target.println(";; does not escape, please verify");
         }
     }
 

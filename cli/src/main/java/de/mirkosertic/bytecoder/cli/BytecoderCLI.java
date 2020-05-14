@@ -94,6 +94,9 @@ public class BytecoderCLI {
         @Option(names = "-llvmOptimizationLevel", required = false, description = "Optimization level for the LLVM backend. Generate code at different optimization levels. These correspond to the -O0, -O1, -O2, and -O3 optimization levels used by clang.")
         protected String llvmOptimizationLevel = LLVMOptimizationLevel.defaultValue().name();
 
+        @Option(names = "-escapeAnalysis", required = false, description = "Shall the escape analysis be enabled? Defaults to 'false'.")
+        protected boolean escapeAnalysisEnabled = false;
+
     }
 
     public static void main(final String[] args) throws IOException, ClassNotFoundException {
@@ -125,7 +128,7 @@ public class BytecoderCLI {
         final BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                 new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1) });
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), theCLIOptions.debugOutput, KnownOptimizer.valueOf(theCLIOptions.optimizationLevel), theCLIOptions.enableExceptionHandling, theCLIOptions.filenamePrefix, theCLIOptions.wasmInitialPages, theCLIOptions.wasmMaximumPages, theCLIOptions.minifyCompileResult, theCLIOptions.preferStackifier, Allocator.valueOf(theCLIOptions.registerAllocator), theCLIOptions.additionalClassesToLink, theCLIOptions.additionalResources, LLVMOptimizationLevel.valueOf(theCLIOptions.llvmOptimizationLevel));
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), theCLIOptions.debugOutput, KnownOptimizer.valueOf(theCLIOptions.optimizationLevel), theCLIOptions.enableExceptionHandling, theCLIOptions.filenamePrefix, theCLIOptions.wasmInitialPages, theCLIOptions.wasmMaximumPages, theCLIOptions.minifyCompileResult, theCLIOptions.preferStackifier, Allocator.valueOf(theCLIOptions.registerAllocator), theCLIOptions.additionalClassesToLink, theCLIOptions.additionalResources, LLVMOptimizationLevel.valueOf(theCLIOptions.llvmOptimizationLevel), theCLIOptions.escapeAnalysisEnabled);
         final CompileResult theCode = theCompileTarget.compile(theOptions, theTargetClass, "main", theSignature);
         for (final CompileResult.Content content : theCode.getContent()) {
             final File theBytecoderFileName = new File(theBytecoderDirectory, content.getFileName());

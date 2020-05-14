@@ -33,4 +33,7 @@ public @interface BytecoderTestOption {
     boolean exceptionsEnabled() default false;
 
     boolean minify() default false;
+
+    boolean escapeAnalysisEnabled() default false;
+
 }

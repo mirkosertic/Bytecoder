@@ -1634,7 +1634,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.println(" {");
                     }
 
-                    try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter, aLinkerContext, theSymbolResolver)) {
+                    try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter, aLinkerContext, theSymbolResolver, aOptions.isEscapeAnalysisEnabled())) {
                         theWriter.write(theLinkedClass, theSSAProgram, subProgram);
                     }
 
@@ -1781,7 +1781,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     subProgram.writeDebugSuffixTo(pw);
                     pw.println(" {");
 
-                    try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter, aLinkerContext, theSymbolResolver)) {
+                    try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter, aLinkerContext, theSymbolResolver, aOptions.isEscapeAnalysisEnabled())) {
                         theWriter.write(theEntry.getValue().owningClass, theEntry.getValue().program, subProgram);
                     }
 
