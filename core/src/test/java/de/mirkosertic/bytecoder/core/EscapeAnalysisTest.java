@@ -213,6 +213,13 @@ public class EscapeAnalysisTest {
         return new Type[0];
     }
 
+    public static Object isNotEscapingByConstructorArgument() {
+        final TestInstance o = new TestInstance(20);
+        final AnotherInstance anotherInstance = new AnotherInstance(o);
+        return null;
+    }
+
+
     private EscapeAnalysis.AnalysisResult analyze(final String methodName, final BytecodeMethodSignature aSignature) {
         return analyze(getClass(), methodName, aSignature);
     }
@@ -353,6 +360,12 @@ public class EscapeAnalysisTest {
         final EscapeAnalysis.AnalysisResult theResult = analyze("isEscapingByConstructorArgument", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{}));
         final Set<Value> theEscapingValues = theResult.getEscapingValues();
         Assert.assertEquals(2, theEscapingValues.size());
+    }
+    @Test
+    public void testIsNotEscapingByConstructorArgument() {
+        final EscapeAnalysis.AnalysisResult theResult = analyze("isNotEscapingByConstructorArgument", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{}));
+        final Set<Value> theEscapingValues = theResult.getEscapingValues();
+        Assert.assertEquals(0, theEscapingValues.size());
     }
 
     @Test
