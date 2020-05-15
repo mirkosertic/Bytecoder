@@ -86,31 +86,31 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
         final BytecoderTestOptions declaredOptions = getTestClass().getJavaClass().getAnnotation(BytecoderTestOptions.class);
         if (declaredOptions != null) {
             if (declaredOptions.includeJVM()) {
-                testOptions.add(new TestOption(null, false, false, false));
+                testOptions.add(new TestOption(null, false, false, false, false));
             }
             if (declaredOptions.value().length == 0 && declaredOptions.includeTestPermutations()) {
-                testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, false));
-                testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, true));
-                testOptions.add(new TestOption(CompileTarget.BackendType.js, true, false, false));
-                testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, false));
-                testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, false));
-                testOptions.add(new TestOption(CompileTarget.BackendType.wasm_llvm, false, false, false));
+                testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, false, false));
+                testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, true, false));
+                testOptions.add(new TestOption(CompileTarget.BackendType.js, true, false, false, false));
+                testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, false, false));
+                testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, false, false));
+                testOptions.add(new TestOption(CompileTarget.BackendType.wasm_llvm, false, false, false, false));
 
             } else {
                 for (final BytecoderTestOption o : declaredOptions.value()) {
-                    testOptions.add(new TestOption(o.backend(), o.preferStackifier(), o.exceptionsEnabled(), o.minify()));
+                    testOptions.add(new TestOption(o.backend(), o.preferStackifier(), o.exceptionsEnabled(), o.minify(), o. escapeAnalysisEnabled()));
                 }
             }
             additionalClassesToLink = declaredOptions.additionalClassesToLink();
             additionalResources = declaredOptions.additionalResources();
         } else {
-            testOptions.add(new TestOption(null, false, false, false));
-            testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, false));
-            testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, true));
-            testOptions.add(new TestOption(CompileTarget.BackendType.js, true, false, false));
-            testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, false));
-            testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, false));
-            testOptions.add(new TestOption(CompileTarget.BackendType.wasm_llvm, false, false, false));
+            testOptions.add(new TestOption(null, false, false, false, false));
+            testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, false, false));
+            testOptions.add(new TestOption(CompileTarget.BackendType.js, false, false, true, false));
+            testOptions.add(new TestOption(CompileTarget.BackendType.js, true, false, false, false));
+            testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, false, false));
+            testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, false, false));
+            testOptions.add(new TestOption(CompileTarget.BackendType.wasm_llvm, false, false, false, false));
 
             additionalClassesToLink = new String[0];
             additionalResources = new String[0];
@@ -275,7 +275,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 final StringWriter theStrWriter = new StringWriter();
                 final PrintWriter theCodeWriter = new PrintWriter(theStrWriter);
 
-                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, aTestOption.isExceptionsEnabled(), "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear, additionalClassesToLink, additionalResources, null);
+                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, aTestOption.isExceptionsEnabled(), "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear, additionalClassesToLink, additionalResources, null, aTestOption.isEscapeAnalysisEnabled());
                 final JSCompileResult result = (JSCompileResult) theCompileTarget.compile(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
                 final CompileResult.StringContent content = (CompileResult.StringContent) result.getContent()[0];
 
@@ -374,7 +374,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 final BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
                 final BytecodeObjectTypeRef theTestClassType = new BytecodeObjectTypeRef(testClass.getName());
 
-                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, false, "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear, additionalClassesToLink, additionalResources, null);
+                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, false, "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear, additionalClassesToLink, additionalResources, null, aTestOption.isEscapeAnalysisEnabled());
                 final WASMCompileResult theResult = (WASMCompileResult) theCompileTarget.compile(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
                 final WASMCompileResult.WASMCompileContent textualContent = (WASMCompileResult.WASMCompileContent) theResult.getContent()[0];
                 final WASMCompileResult.WASMCompileContent binaryContent = (WASMCompileResult.WASMCompileContent)theResult.getContent()[1];
@@ -557,7 +557,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 final BytecodeMethodSignature theSignature = theCompileTarget.toMethodSignature(aFrameworkMethod.getMethod());
                 final BytecodeObjectTypeRef theTypeRef = new BytecodeObjectTypeRef(testClass.getName());
 
-                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, false, "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear, additionalClassesToLink, additionalResources, LLVMOptimizationLevel.defaultValue());
+                final CompileOptions theOptions = new CompileOptions(LOGGER, true, KnownOptimizer.ALL, false, "bytecoder", 512, 512, aTestOption.isMinify(), aTestOption.isPreferStackifier(), Allocator.linear, additionalClassesToLink, additionalResources, LLVMOptimizationLevel.defaultValue(), aTestOption.isEscapeAnalysisEnabled());
                 final LLVMCompileResult theResult = (LLVMCompileResult) theCompileTarget.compile(theOptions, testClass.getJavaClass(), aFrameworkMethod.getName(), theSignature);
                 final CompileResult.StringContent textualContent = (CompileResult.StringContent) theResult.getContent()[0];
                 final CompileResult.StringContent jsContent = (CompileResult.StringContent)theResult.getContent()[1];

@@ -129,7 +129,7 @@ public class LinearRegisterAllocatorTest {
 
         assertEquals(8, theAllocator.assignedRegister().size());
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0], new String[0], null);
+        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0], new String[0], null, false);
         final JSMinifier theMinifier = new JSMinifier(theOptions);
         final SourceMapWriter theSourcemapWriter = new SourceMapWriter();
         final StringWriter theWriter = new StringWriter();
