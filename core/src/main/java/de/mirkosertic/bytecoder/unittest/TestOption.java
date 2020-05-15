@@ -23,12 +23,14 @@ public class TestOption {
     private final boolean preferStackifier;
     private final boolean exceptionsEnabled;
     private final boolean minify;
+    private final boolean escapeAnalysisEnabled;
 
-    public TestOption(final CompileTarget.BackendType backendType, final boolean preferStackifier, final boolean exceptionsEnabled, final boolean minify) {
+    public TestOption(final CompileTarget.BackendType backendType, final boolean preferStackifier, final boolean exceptionsEnabled, final boolean minify, final boolean escapeAnalysisEnabled) {
         this.backendType = backendType;
         this.preferStackifier = preferStackifier;
         this.exceptionsEnabled = exceptionsEnabled;
         this.minify = minify;
+        this.escapeAnalysisEnabled = escapeAnalysisEnabled;
     }
 
     public String toDescription() {
@@ -71,5 +73,9 @@ public class TestOption {
 
     public boolean isMinify() {
         return minify;
+    }
+
+    public boolean isEscapeAnalysisEnabled() {
+        return escapeAnalysisEnabled;
     }
 }

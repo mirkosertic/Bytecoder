@@ -146,6 +146,12 @@ public class BytecoderMavenMojo extends AbstractMojo {
      */
     protected String llvmOptimizationLevel = LLVMOptimizationLevel.defaultValue().name();
 
+    /**
+     * Shall the escape analysis be enabled? Defaults to 'false'.
+     */
+    @Parameter(required = false, defaultValue = "false")
+    protected boolean escapeAnalysisEnabled = false;
+
     @Override
     public void execute() throws MojoExecutionException {
         final File theBaseDirectory = new File(buildDirectory);
@@ -161,7 +167,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
             final BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                     new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1) });
 
-            final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.valueOf(optimizationLevel), enableExceptionHandling, filenamePrefix, wasmInitialPages, wasmMaximumPages, minifyCompileResult, preferStackifier, Allocator.valueOf(registerAllocator), additionalClassesToLink, additionalResources, LLVMOptimizationLevel.valueOf(llvmOptimizationLevel));
+            final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.valueOf(optimizationLevel), enableExceptionHandling, filenamePrefix, wasmInitialPages, wasmMaximumPages, minifyCompileResult, preferStackifier, Allocator.valueOf(registerAllocator), additionalClassesToLink, additionalResources, LLVMOptimizationLevel.valueOf(llvmOptimizationLevel), escapeAnalysisEnabled);
             final CompileResult theCode = theCompileTarget.compile(theOptions, theTargetClass, "main", theSignature);
             for (final CompileResult.Content content : theCode.getContent()) {
                 final File theBytecoderFileName = new File(theBytecoderDirectory, content.getFileName());
