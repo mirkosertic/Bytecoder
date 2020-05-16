@@ -32,6 +32,7 @@ import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
+import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 import org.junit.Test;
@@ -164,7 +165,7 @@ public class PointsToEscapeAnalysisTest {
                 new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
         final List<Value> escapedValues = new ArrayList<>(graph.escapedValues());
         assertEquals(2, escapedValues.size());
-        assertTrue(containsOneInstanceOf(escapedValues, NewObjectAndConstructExpression.class));
-        assertTrue(containsOneInstanceOf(escapedValues, MethodParameterValue.class, t -> t.getParameterIndex() == 1));
+        assertTrue(containsOneInstanceOf(escapedValues, NewArrayExpression.class));
+        assertTrue(containsOneInstanceOf(escapedValues, SelfReferenceParameterValue.class));
     }
 }

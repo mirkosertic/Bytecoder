@@ -26,6 +26,8 @@ import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
+import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
+import de.mirkosertic.bytecoder.ssa.InvocationExpression;
 import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
@@ -36,6 +38,7 @@ import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
+import de.mirkosertic.bytecoder.ssa.ThrowExpression;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.ValueWithEscapeCheck;
@@ -46,10 +49,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Collectors;
 
 public class PointsToEscapeAnalysis {
 
@@ -66,12 +72,58 @@ public class PointsToEscapeAnalysis {
         }
     }
 
+    static class Scope {
+
+        private final Set<Scope> flowsInto;
+
+        Scope() {
+            flowsInto = new HashSet<>();
+        }
+
+        public void flowsInto(final Scope otherScope) {
+            flowsInto.add(otherScope);
+        }
+    }
+
+    static class LocalScope extends Scope {
+
+    }
+
+    static class StaticScope extends Scope {
+
+    }
+
+    static class ReturnScope extends Scope {
+
+    }
+
+    static class ThisScope extends Scope {
+        private final SelfReferenceParameterValue selfReferenceParameterValue;
+
+        public ThisScope(final SelfReferenceParameterValue selfReferenceParameterValue) {
+            this.selfReferenceParameterValue = selfReferenceParameterValue;
+        }
+    }
+
+    static class MethodParameterScope extends Scope {
+        private final MethodParameterValue methodParameterValue;
+
+        public MethodParameterScope(final MethodParameterValue methodParameterValue) {
+            this.methodParameterValue = methodParameterValue;
+        }
+    }
+
     private final Map<Value, GraphNode> nodes;
     private final Set<Value> escapedValues;
+    private final Map<Value, Scope> scopes;
 
     public PointsToEscapeAnalysis(final BytecodeLinkedClass aClass, final BytecodeMethod aMethod, final Program aProgram) {
         nodes = new HashMap<>();
         escapedValues = new HashSet<>();
+        scopes = new HashMap<>();
+
+        final StaticScope staticScope = new StaticScope();
+        final ReturnScope returnScope = new ReturnScope();
 
         // Step 1 : Build a reference flow graph
         for (final Variable v : aProgram.getArguments()) {
@@ -87,6 +139,76 @@ public class PointsToEscapeAnalysis {
         for (final RegionNode theNode : g.dominators().getPreOrder()) {
             analyze(theNode.getExpressions());
         }
+
+        // Step 2: we compute the scope flow
+        final Queue<GraphNode> workingQueue = new LinkedList<>(nodes.values().stream().filter(t -> t.incomingEdges().count() == 0).collect(Collectors.toSet()));
+        while (!workingQueue.isEmpty()) {
+            final GraphNode currentEntry = workingQueue.poll();
+            System.out.println(currentEntry.value);
+
+            final Set<GraphNode> theOutgoing = currentEntry.outgoingEdges().map(Edge::targetNode).filter(t -> !scopes.containsKey(t)).collect(Collectors.toSet());
+            if (currentEntry.value instanceof NewArrayExpression) {
+                scopes.put(currentEntry.value, new LocalScope());
+                workingQueue.addAll(theOutgoing);
+            } else if (currentEntry.value instanceof NewMultiArrayExpression) {
+                scopes.put(currentEntry.value, new LocalScope());
+                workingQueue.addAll(theOutgoing);
+            } else if (currentEntry.value instanceof GetStaticExpression) {
+                scopes.put(currentEntry.value, staticScope);
+                workingQueue.addAll(theOutgoing);
+            } else if (currentEntry.value instanceof SelfReferenceParameterValue) {
+                scopes.put(currentEntry.value, new ThisScope(((SelfReferenceParameterValue) currentEntry.value)));
+                workingQueue.addAll(theOutgoing);
+            } else if (currentEntry.value instanceof MethodParameterValue) {
+                scopes.put(currentEntry.value, new MethodParameterScope(((MethodParameterValue) currentEntry.value)));
+                workingQueue.addAll(theOutgoing);
+            } else {
+                final Set<GraphNode> theIncoming = currentEntry.incomingEdges().map(t -> (GraphNode) t.sourceNode()).collect(Collectors.toSet());
+                final Set<GraphNode> theIncomingWithScope = theIncoming.stream().filter(t -> scopes.containsKey(t.value)).collect(Collectors.toSet());
+                if (theIncoming.size() == theIncomingWithScope.size()) {
+                    // We have all predecessor scopes, so we can continue and compute the scope flow
+                    // for the current node
+
+                    // TODO: Compute the scope flow here
+
+                    if (currentEntry.value instanceof ReturnValueExpression || currentEntry.value instanceof ThrowExpression) {
+                        scopes.put(currentEntry.value, returnScope);
+                        theIncomingWithScope.stream().map(t -> scopes.get(t.value)).forEach(scope -> scope.flowsInto(returnScope));
+                    } else if (currentEntry.value instanceof PutStaticExpression) {
+                        scopes.put(currentEntry.value, staticScope);
+                        theIncomingWithScope.stream().map(t -> scopes.get(t.value)).forEach(scope -> scope.flowsInto(staticScope));
+                    } else {
+
+                        final Set<GraphNode> theArrayWrites = theIncoming.stream().filter(t -> t.value instanceof ArrayStoreExpression).collect(Collectors.toSet());
+                        if (!theArrayWrites.isEmpty()) {
+                            // Terminal instruction, write to an array
+                            if (theIncomingWithScope.size() != 2) {
+                                throw new IllegalArgumentException("Expected 2 incoming values for arraystore, got " + theIncomingWithScope.size());
+                            }
+                            final GraphNode theValue = theArrayWrites.iterator().next();
+                            theIncoming.stream().filter(t -> t!= theValue).forEach(array -> scopes.get(theValue.value).flowsInto(scopes.get(array.value)));
+
+                        } else if (theIncomingWithScope.size() == 1 && !(currentEntry.value instanceof InvocationExpression)) {
+
+                            scopes.put(currentEntry.value, scopes.get(theIncomingWithScope.iterator().next().value));
+                            workingQueue.addAll(theOutgoing);
+
+                        } else {
+
+                            throw new IllegalArgumentException("Don't know how to join " + currentEntry.value + " with imcoing size " + theIncomingWithScope.size());
+
+                        }
+
+                    }
+
+                } else {
+                    // Condition not met, we try again later later
+                    workingQueue.add(currentEntry);
+                }
+            }
+        }
+
+        // Step 3: Compute escaping allocations from flows
 
         // Step 2: we build graph partitions
         final List<Set<GraphNode>> partitions = new ArrayList<>();
@@ -314,7 +436,7 @@ public class PointsToEscapeAnalysis {
                 final GraphNode arrayNode = nodeFor(theIncoming.get(0));
                 final GraphNode valueNode = nodeFor(theIncoming.get(2));
 
-                arrayNode.addEdgeTo(PointsTo.to, rNode);
+                rNode.addEdgeTo(PointsTo.to, arrayNode);
                 valueNode.addEdgeTo(PointsTo.to, rNode);
             }
 
