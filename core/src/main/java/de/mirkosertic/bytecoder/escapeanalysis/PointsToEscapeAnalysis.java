@@ -45,8 +45,6 @@ import de.mirkosertic.bytecoder.ssa.ValueWithEscapeCheck;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -74,7 +72,7 @@ public class PointsToEscapeAnalysis {
 
     static class Scope {
 
-        private final Set<Scope> flowsInto;
+        final Set<Scope> flowsInto;
 
         Scope() {
             flowsInto = new HashSet<>();
@@ -115,12 +113,14 @@ public class PointsToEscapeAnalysis {
 
     private final Map<Value, GraphNode> nodes;
     private final Set<Value> escapedValues;
-    private final Map<Value, Scope> scopes;
+    private final Map<Variable, Set<Scope>> argumentFlows;
 
     public PointsToEscapeAnalysis(final BytecodeLinkedClass aClass, final BytecodeMethod aMethod, final Program aProgram) {
         nodes = new HashMap<>();
         escapedValues = new HashSet<>();
-        scopes = new HashMap<>();
+        argumentFlows = new HashMap<>();
+
+        final Map<Value, Scope> scopes = new HashMap<>();
 
         final StaticScope staticScope = new StaticScope();
         final ReturnScope returnScope = new ReturnScope();
@@ -208,63 +208,61 @@ public class PointsToEscapeAnalysis {
             }
         }
 
-        // Step 3: Compute escaping allocations from flows
-
-        // Step 2: we build graph partitions
-        final List<Set<GraphNode>> partitions = new ArrayList<>();
-        final List<GraphNode> searchSpace = new ArrayList(nodes.values());
-        while (!searchSpace.isEmpty()) {
-            final GraphNode anyNode = searchSpace.get(0);
-            final Set<GraphNode> partition = interconnectedNodesFor(anyNode, searchSpace);
-            partitions.add(partition);
-            searchSpace.removeAll(partition);
-        }
-
-        // Step 3: we check all partitions if they contain something
-        // that might cause an escape. If so, we mark potential escaping objects
-        for (final Set<GraphNode> partition : partitions) {
-
-            final long returnOrStaticEscapeCount = partition.stream().map(t -> t.value).filter(t -> {
-                if (t instanceof ReturnValueExpression) {
-                    return true;
+        // Step 3: Compute escaping allocations from flows for the arguments
+        for (final Variable v : aProgram.getArguments()) {
+            final TypeRef theType = v.resolveType();
+            if (theType.isObject() || theType.isArray()) {
+                final Set<Scope> nonLocalScopes = new HashSet<>();
+                final Stack<Scope> workingStack = new Stack<>();
+                final Set<Scope> alreadySeen = new HashSet<>();
+                workingStack.push(scopes.get(v));
+                while (!workingStack.isEmpty()) {
+                    final Scope current = workingStack.pop();
+                    if (alreadySeen.add(current)) {
+                        if (!(current instanceof LocalScope)) {
+                            nonLocalScopes.add(current);
+                        }
+                        workingStack.addAll(current.flowsInto);
+                    }
                 }
-                if (t instanceof PutStaticExpression) {
-                    return true;
+                // Ignore self scope
+                nonLocalScopes.remove(scopes.get(v));
+
+                if (!nonLocalScopes.isEmpty()) {
+                    escapedValues.add(v);
                 }
-                return false;
-            }).count();
 
-            // Brute force escape
-            if (returnOrStaticEscapeCount > 0) {
-
-                partition.stream().map(t -> t.value).forEach(t -> {
-                    if (t instanceof MethodParameterValue) {
-                        escapedValues.add(t);
-                    }
-                    if (t instanceof SelfReferenceParameterValue) {
-                        escapedValues.add(t);
-                    }
-                    if (t instanceof NewObjectAndConstructExpression) {
-                        escapedValues.add(t);
-                    }
-                    if (t instanceof NewArrayExpression) {
-                        escapedValues.add(t);
-                    }
-                    if (t instanceof NewMultiArrayExpression) {
-                        escapedValues.add(t);
-                    }
-                });
-
-            } else{
-
-                // TODO: If there are any instantiations
-                // or PutField or ArrayStore scope changes
-                // we mark the datasources as escaping
-
+                argumentFlows.put(v, nonLocalScopes);
             }
-        }
+        };
 
-        // Step 4 : Propagate the escaped status
+        // Step 4 : Compute escapes for allocations
+        scopes.entrySet().stream().filter(t ->
+                t.getKey() instanceof NewArrayExpression ||
+                t.getKey() instanceof NewMultiArrayExpression ||
+                t.getKey() instanceof NewObjectAndConstructExpression).forEach(entry -> {
+
+            final Set<Scope> nonLocalScopes = new HashSet<>();
+            final Stack<Scope> workingStack = new Stack<>();
+            final Set<Scope> alreadySeen = new HashSet<>();
+            workingStack.push(entry.getValue());
+            while (!workingStack.isEmpty()) {
+                final Scope current = workingStack.pop();
+                if (alreadySeen.add(current)) {
+                    if (!(current instanceof LocalScope)) {
+                        nonLocalScopes.add(current);
+                    }
+                    workingStack.addAll(current.flowsInto);
+                }
+            }
+            // Ignore self scope
+            nonLocalScopes.remove(entry.getValue());
+
+            escapedValues.add(entry.getKey());
+
+        });
+
+        // Step 5 : Propagate the escaped status
         for (final Value v : escapedValues) {
             if (v instanceof ValueWithEscapeCheck) {
                 ((ValueWithEscapeCheck) v).markAsEscaped();
@@ -443,25 +441,5 @@ public class PointsToEscapeAnalysis {
         } else {
             System.out.println(aExpression.getClass().getName());
         }
-    }
-
-    static Set<GraphNode> interconnectedNodesFor(final GraphNode aNode, final Collection<GraphNode> aSearchSpace) {
-        final Set<GraphNode> result = new HashSet<>();
-        final Stack<GraphNode> workqueue = new Stack<>();
-        workqueue.push(aNode);
-        while (!workqueue.isEmpty()) {
-            final GraphNode current = workqueue.pop();
-            current.outgoingEdges().map(Edge::targetNode).filter(aSearchSpace::contains).forEach(t -> {
-                if (result.add(t)) {
-                    workqueue.push(t);
-                }
-            });
-            current.incomingEdges().map(t -> (GraphNode) t.sourceNode()).filter(aSearchSpace::contains).forEach(t -> {
-                if (result.add(t)) {
-                    workqueue.push(t);
-                }
-            });
-        }
-        return result;
     }
 }
