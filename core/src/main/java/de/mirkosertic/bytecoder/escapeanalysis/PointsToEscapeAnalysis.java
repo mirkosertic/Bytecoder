@@ -21,13 +21,13 @@ import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.graph.EdgeType;
 import de.mirkosertic.bytecoder.graph.Node;
 import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
+import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
-import de.mirkosertic.bytecoder.ssa.InvocationExpression;
 import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
@@ -95,6 +95,10 @@ public class PointsToEscapeAnalysis {
 
     }
 
+    static class ForeignScope extends Scope {
+
+    }
+
     static class ThisScope extends Scope {
         private final SelfReferenceParameterValue selfReferenceParameterValue;
 
@@ -141,7 +145,7 @@ public class PointsToEscapeAnalysis {
         }
 
         // Step 2: we compute the scope flow
-        final Queue<GraphNode> workingQueue = new LinkedList<>(nodes.values().stream().filter(t -> t.incomingEdges().count() == 0).collect(Collectors.toSet()));
+        final Queue<GraphNode> workingQueue = nodes.values().stream().filter(t -> t.incomingEdges().count() == 0).distinct().collect(Collectors.toCollection(LinkedList::new));
         while (!workingQueue.isEmpty()) {
             final GraphNode currentEntry = workingQueue.poll();
             System.out.println(currentEntry.value);
@@ -176,7 +180,7 @@ public class PointsToEscapeAnalysis {
                         theIncomingWithScope.stream().map(t -> scopes.get(t.value)).forEach(scope -> scope.flowsInto(returnScope));
                     } else if (currentEntry.value instanceof PutStaticExpression) {
                         scopes.put(currentEntry.value, staticScope);
-                        theIncomingWithScope.stream().map(t -> scopes.get(t.value)).forEach(scope -> scope.flowsInto(staticScope));
+                        theIncomingWithScope.stream().map(t -> scopes.get(t.value)).forEach(scope -> scope.flowsInto(returnScope));
                     } else {
 
                         final Set<GraphNode> theArrayWrites = theIncoming.stream().filter(t -> t.value instanceof ArrayStoreExpression).collect(Collectors.toSet());
@@ -188,15 +192,37 @@ public class PointsToEscapeAnalysis {
                             final GraphNode theValue = theArrayWrites.iterator().next();
                             theIncoming.stream().filter(t -> t!= theValue).forEach(array -> scopes.get(theValue.value).flowsInto(scopes.get(array.value)));
 
-                        } else if (theIncomingWithScope.size() == 1 && !(currentEntry.value instanceof InvocationExpression)) {
+                        } else if (currentEntry.value instanceof VariableAssignmentExpression) {
 
                             scopes.put(currentEntry.value, scopes.get(theIncomingWithScope.iterator().next().value));
                             workingQueue.addAll(theOutgoing);
 
                         } else {
 
-                            throw new IllegalArgumentException("Don't know how to join " + currentEntry.value + " with imcoing size " + theIncomingWithScope.size());
+                            if (currentEntry.value instanceof NewObjectAndConstructExpression) {
 
+                                final Scope newScope = new ForeignScope();
+                                scopes.put(currentEntry.value, newScope);
+                                theIncoming.stream().map(t -> scopes.get(t.value)).forEach(t -> t.flowsInto(newScope));
+
+                                workingQueue.addAll(theOutgoing);
+
+                            } else if (currentEntry.value instanceof GetStaticExpression || currentEntry.value instanceof ClassReferenceValue) {
+
+                                final Scope newScope = new StaticScope();
+                                scopes.put(currentEntry.value, newScope);
+                                theIncoming.stream().map(t -> scopes.get(t.value)).forEach(t -> t.flowsInto(newScope));
+
+                                workingQueue.addAll(theOutgoing);
+
+                            } else {
+
+                                final Scope newScope = new LocalScope();
+                                scopes.put(currentEntry.value, newScope);
+                                theIncoming.stream().map(t -> scopes.get(t.value)).forEach(t -> t.flowsInto(newScope));
+
+                                workingQueue.addAll(theOutgoing);
+                            }
                         }
 
                     }
@@ -234,7 +260,7 @@ public class PointsToEscapeAnalysis {
 
                 argumentFlows.put(v, nonLocalScopes);
             }
-        };
+        }
 
         // Step 4 : Compute escapes for allocations
         scopes.entrySet().stream().filter(t ->
@@ -259,7 +285,6 @@ public class PointsToEscapeAnalysis {
             nonLocalScopes.remove(entry.getValue());
 
             escapedValues.add(entry.getKey());
-
         });
 
         // Step 5 : Propagate the escaped status
@@ -278,13 +303,26 @@ public class PointsToEscapeAnalysis {
                 } else {
                     label = "this";
                 }
-                if (escapedValues.contains(v.value)) {
-                    System.out.println(" n_" + System.identityHashCode(v) + "[color=blue fontcolor=white style=filled fillcolor=blue shape=octagon label=\"" + label + "\"];");
-                } else {
-                    System.out.println(" n_" + System.identityHashCode(v) + "[color=blue fontcolor=blue shape=octagon label=\"" + label + "\"];");
-                }
+                System.out.println(" n_" + System.identityHashCode(v) + "[color=blue fontcolor=blue shape=octagon label=\"" + label + "\"];");
             } else if (v.value instanceof Variable) {
-                System.out.println(" n_" + System.identityHashCode(v) + "[label=\"" + ((Variable) v.value).getName() + "\"];");
+                if (aProgram.getArguments().contains(v.value)) {
+                    final Set<Value> theIncoming = v.value.incomingDataFlows().stream().collect(Collectors.toSet());
+                    final Value singleIncoming = theIncoming.iterator().next();
+                    final String label;
+                    if (singleIncoming instanceof MethodParameterValue) {
+                        label = "arg" + ((MethodParameterValue) singleIncoming).getParameterIndex();
+                    } else {
+                        label = "this";
+                    }
+                    if (escapedValues.contains(v.value)) {
+                        System.out.println(" n_" + System.identityHashCode(v) + "[color=red fontcolor=white style=filled fillcolor=red shape=octagon label=\"" + label + "\"];");
+                    } else {
+                        System.out.println(" n_" + System.identityHashCode(v) + "[shape=octagon label=\"" + label + "\"];");
+                    }
+
+                } else {
+                    System.out.println(" n_" + System.identityHashCode(v) + "[label=\"" + ((Variable) v.value).getName() + "\"];");
+                }
             } else {
                 if (escapedValues.contains(v.value)) {
                     System.out.println(" n_" + System.identityHashCode(v) + "[color=red shape=box fontcolor=white style=filled fillcolor=red label=\"" + v.value.getClass().getSimpleName() + "\"];");
@@ -384,7 +422,6 @@ public class PointsToEscapeAnalysis {
                 final GraphNode thePut = nodeFor(p);
                 instanceNode.addEdgeTo(PointsTo.to, thePut);
                 valueNode.addEdgeTo(PointsTo.to, thePut);
-
 
             }
 

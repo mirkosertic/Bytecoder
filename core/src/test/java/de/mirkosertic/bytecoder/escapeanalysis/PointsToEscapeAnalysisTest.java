@@ -25,14 +25,12 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
-import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
 import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
-import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
@@ -119,7 +117,7 @@ public class PointsToEscapeAnalysisTest {
         final List<Value> escapedValues = new ArrayList<>(graph.escapedValues());
         assertEquals(2, escapedValues.size());
         assertTrue(containsOneInstanceOf(escapedValues, NewObjectAndConstructExpression.class));
-        assertTrue(containsOneInstanceOf(escapedValues, MethodParameterValue.class, t -> t.getParameterIndex() == 1));
+        assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> "_a".equals(t.getName())));
     }
 
     @Test
@@ -129,7 +127,7 @@ public class PointsToEscapeAnalysisTest {
         final List<Value> escapedValues = new ArrayList<>(graph.escapedValues());
         assertEquals(2, escapedValues.size());
         assertTrue(containsOneInstanceOf(escapedValues, NewObjectAndConstructExpression.class));
-        assertTrue(containsOneInstanceOf(escapedValues, MethodParameterValue.class, t -> t.getParameterIndex() == 1));
+        assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> "_a".equals(t.getName())));
     }
 
     @Test
@@ -138,8 +136,8 @@ public class PointsToEscapeAnalysisTest {
                 new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
         final List<Value> escapedValues = new ArrayList<>(graph.escapedValues());
         assertEquals(1, escapedValues.size());
-        assertTrue(escapedValues.get(0) instanceof MethodParameterValue);
-        assertEquals(1, ((MethodParameterValue) escapedValues.get(0)).getParameterIndex());
+        assertTrue(escapedValues.get(0) instanceof Variable);
+        assertEquals("_a", ((Variable) escapedValues.get(0)).getName());
     }
 
     @Test
