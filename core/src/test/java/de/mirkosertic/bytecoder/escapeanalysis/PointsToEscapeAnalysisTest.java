@@ -88,6 +88,12 @@ public class PointsToEscapeAnalysisTest {
         return x;
     }
 
+    private Object method7(final Object a, final int b1, final Object k) {
+        final A x = new A(a);
+        x.o = k;
+        return null;
+    }
+
     private PointsToEscapeAnalysis graphFor(final Class aClazz, final String methodName, final BytecodeMethodSignature aSignature) {
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new LLVMIntrinsics());
@@ -125,8 +131,7 @@ public class PointsToEscapeAnalysisTest {
         final PointsToEscapeAnalysis graph = graphFor(getClass(), "method2", new BytecodeMethodSignature(OBJECT_TYPE_REF,
                 new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
         final List<Value> escapedValues = new ArrayList<>(graph.escapedValues());
-        assertEquals(2, escapedValues.size());
-        assertTrue(containsOneInstanceOf(escapedValues, NewObjectAndConstructExpression.class));
+        assertEquals(1, escapedValues.size());
         assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> "_a".equals(t.getName())));
     }
 
@@ -166,5 +171,15 @@ public class PointsToEscapeAnalysisTest {
         assertEquals(2, escapedValues.size());
         assertTrue(containsOneInstanceOf(escapedValues, NewArrayExpression.class));
         assertTrue(containsOneInstanceOf(escapedValues, Variable.class));
+    }
+
+    @Test
+    public void testMethod7() {
+        final PointsToEscapeAnalysis graph = graphFor(getClass(), "method7", new BytecodeMethodSignature(OBJECT_TYPE_REF,
+                new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
+        final List<Value> escapedValues = new ArrayList<>(graph.escapedValues());
+        assertEquals(2, escapedValues.size());
+        assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> "_a".equals(t.getName())));
+        assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> "_k".equals(t.getName())));
     }
 }
