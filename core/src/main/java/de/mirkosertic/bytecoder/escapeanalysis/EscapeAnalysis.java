@@ -17,8 +17,6 @@ package de.mirkosertic.bytecoder.escapeanalysis;
 
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.Statistics;
 import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
@@ -81,25 +79,6 @@ public class EscapeAnalysis {
         public boolean isMethodArgumentEscaping(final int aIndex) {
             return escapingValues.contains(program.getArguments().get(aIndex));
         }
-    }
-
-    public static class ProgramDescriptor {
-
-        private final BytecodeLinkedClass linkedClass;
-        private final BytecodeMethod method;
-        private final Program program;
-
-        public ProgramDescriptor(final BytecodeLinkedClass linkedClass, final BytecodeMethod method, final Program program) {
-            this.linkedClass = linkedClass;
-            this.method = method;
-            this.program = program;
-        }
-    }
-
-    public interface ProgramDescriptorProvider {
-        ProgramDescriptor resolveStaticInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature);
-        ProgramDescriptor resolveConstructorInvocation(final BytecodeObjectTypeRef aClass, final BytecodeMethodSignature aSignature);
-        ProgramDescriptor resolveDirectInvocation(final BytecodeObjectTypeRef aClazz, final String  aMethodName, final BytecodeMethodSignature aSignature);
     }
 
     private final Map<BytecodeLinkedClass, Map<BytecodeMethod, AnalysisResult>> analysisResults;

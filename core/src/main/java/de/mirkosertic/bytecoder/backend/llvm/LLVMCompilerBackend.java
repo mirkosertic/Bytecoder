@@ -47,6 +47,8 @@ import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 import de.mirkosertic.bytecoder.core.BytecodeVTable;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
 import de.mirkosertic.bytecoder.escapeanalysis.EscapeAnalysis;
+import de.mirkosertic.bytecoder.escapeanalysis.ProgramDescriptor;
+import de.mirkosertic.bytecoder.escapeanalysis.ProgramDescriptorProvider;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.ssa.MethodHandleExpression;
@@ -1498,14 +1500,14 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println();
 
                 // TODO: Perform escape analysis here
-                final EscapeAnalysis.ProgramDescriptorProvider theProvider = new EscapeAnalysis.ProgramDescriptorProvider() {
+                final ProgramDescriptorProvider theProvider = new ProgramDescriptorProvider() {
                     @Override
-                    public EscapeAnalysis.ProgramDescriptor resolveStaticInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
+                    public ProgramDescriptor resolveStaticInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
                         for (final CompiledMethod theMethod : compiledMethods) {
                             if (theMethod.linkedClass.getClassName().equals(aClass) &&
                                 theMethod.method.getName().stringValue().equals(aMethodName) &&
                                 theMethod.method.getSignature().matchesExactlyTo(aSignature)) {
-                                return new EscapeAnalysis.ProgramDescriptor(theMethod.linkedClass, theMethod.method, theMethod.program);
+                                return new ProgramDescriptor(theMethod.linkedClass, theMethod.method, theMethod.program);
                             }
                         }
                         // Nothing found, this might be the case for runtime emulated classes
@@ -1513,24 +1515,24 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     }
 
                     @Override
-                    public EscapeAnalysis.ProgramDescriptor resolveConstructorInvocation(final BytecodeObjectTypeRef aClass, final BytecodeMethodSignature aSignature) {
+                    public ProgramDescriptor resolveConstructorInvocation(final BytecodeObjectTypeRef aClass, final BytecodeMethodSignature aSignature) {
                         for (final CompiledMethod theMethod : compiledMethods) {
                             if (theMethod.linkedClass.getClassName().equals(aClass) &&
                                     theMethod.method.getName().stringValue().equals("<init>") &&
                                     theMethod.method.getSignature().matchesExactlyTo(aSignature)) {
-                                return new EscapeAnalysis.ProgramDescriptor(theMethod.linkedClass, theMethod.method, theMethod.program);
+                                return new ProgramDescriptor(theMethod.linkedClass, theMethod.method, theMethod.program);
                             }
                         }
                         throw new IllegalArgumentException("Cannot find " + aClass.name() + ".<init> " + aSignature);
                     }
 
                     @Override
-                    public EscapeAnalysis.ProgramDescriptor resolveDirectInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
+                    public ProgramDescriptor resolveDirectInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
                         for (final CompiledMethod theMethod : compiledMethods) {
                             if (theMethod.linkedClass.getClassName().equals(aClass) &&
                                     theMethod.method.getName().stringValue().equals(aMethodName) &&
                                     theMethod.method.getSignature().matchesExactlyTo(aSignature)) {
-                                return new EscapeAnalysis.ProgramDescriptor(theMethod.linkedClass, theMethod.method, theMethod.program);
+                                return new ProgramDescriptor(theMethod.linkedClass, theMethod.method, theMethod.program);
                             }
                         }
                         // Nothing found, this might be the case for runtime emulated classes
@@ -1544,7 +1546,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                 // Analyze all methods
                 for (final CompiledMethod theCompiledMethod : compiledMethods) {
-                    theAnalysis.analyze(new EscapeAnalysis.ProgramDescriptor(theCompiledMethod.linkedClass,
+                    theAnalysis.analyze(new ProgramDescriptor(theCompiledMethod.linkedClass,
                                 theCompiledMethod.method, theCompiledMethod.program));
                 }
 
@@ -1749,7 +1751,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     KnownOptimizer.LLVM.optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
 
                     // Perform escape analysis
-                    theAnalysis.analyze(new EscapeAnalysis.ProgramDescriptor(theEntry.getValue().owningClass,
+                    theAnalysis.analyze(new ProgramDescriptor(theEntry.getValue().owningClass,
                             new BytecodeMethod(new BytecodeAccessFlags(0),
                                     new BytecodeUtf8Constant("" + System.identityHashCode(callsite)),
                                     new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(java.lang.invoke.CallSite.class), new BytecodeTypeRef[0]),

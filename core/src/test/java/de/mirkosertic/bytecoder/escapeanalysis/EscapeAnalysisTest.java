@@ -244,36 +244,36 @@ public class EscapeAnalysisTest {
 
         KnownOptimizer.LLVM.optimize(p.getControlFlowGraph(), theLinkerContext);
 
-        final EscapeAnalysis e = new EscapeAnalysis(new EscapeAnalysis.ProgramDescriptorProvider() {
+        final EscapeAnalysis e = new EscapeAnalysis(new ProgramDescriptorProvider() {
             @Override
-            public EscapeAnalysis.ProgramDescriptor resolveStaticInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
+            public ProgramDescriptor resolveStaticInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
                 final BytecodeLinkedClass theRequestedClass = theLinkerContext.resolveClass(aClass);
                 final BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
                 final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
                 KnownOptimizer.LLVM.optimize(theProgram.getControlFlowGraph(), theLinkerContext);
-                return new EscapeAnalysis.ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
+                return new ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
             }
 
             @Override
-            public EscapeAnalysis.ProgramDescriptor resolveConstructorInvocation(final BytecodeObjectTypeRef aClass, final BytecodeMethodSignature aSignature) {
+            public ProgramDescriptor resolveConstructorInvocation(final BytecodeObjectTypeRef aClass, final BytecodeMethodSignature aSignature) {
                 final BytecodeLinkedClass theRequestedClass = theLinkerContext.resolveClass(aClass);
                 final BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull("<init>", aSignature);
                 final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
                 KnownOptimizer.LLVM.optimize(theProgram.getControlFlowGraph(), theLinkerContext);
-                return new EscapeAnalysis.ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
+                return new ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
             }
 
             @Override
-            public EscapeAnalysis.ProgramDescriptor resolveDirectInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
+            public ProgramDescriptor resolveDirectInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
                 final BytecodeLinkedClass theRequestedClass = theLinkerContext.resolveClass(aClass);
                 final BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
                 final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
                 KnownOptimizer.LLVM.optimize(theProgram.getControlFlowGraph(), theLinkerContext);
-                return new EscapeAnalysis.ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
+                return new ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
             }
         }, theLinkerContext.getStatistics());
 
-        return e.analyze(new EscapeAnalysis.ProgramDescriptor(theLinkedClass, theMethod, p));
+        return e.analyze(new ProgramDescriptor(theLinkedClass, theMethod, p));
     }
 
     @Test
