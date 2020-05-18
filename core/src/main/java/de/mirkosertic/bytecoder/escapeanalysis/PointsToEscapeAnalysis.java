@@ -170,6 +170,14 @@ public class PointsToEscapeAnalysis {
             return escapedValues;
         }
 
+        private String toScopeDebugLabel(final Scope scope) {
+            if (scope instanceof MethodParameterScope) {
+                final MethodParameterScope mp = (MethodParameterScope) scope;
+                return "MethodParameterScope #" + mp.methodParameterValue.getParameterIndex();
+            }
+            return scope.getClass().getSimpleName();
+        }
+
         public void printDebugDotTree() {
             System.out.println("digraph refflow {");
             for (final GraphNode v: nodes.values()) {
@@ -180,11 +188,11 @@ public class PointsToEscapeAnalysis {
                     } else {
                         label = "this";
                     }
-                    label+="\\n\\n" + scopes.get(v.value).getClass().getSimpleName();
+                    label+="\\n\\n" + toScopeDebugLabel(scopes.get(v.value));
                     System.out.println(" n_" + System.identityHashCode(v) + "[color=blue fontcolor=blue shape=octagon label=\"" + label + "\"];");
                 } else if (v.value instanceof Variable) {
                     String label = ((Variable) v.value).getName();
-                    label+="\\n\\n" + scopes.get(v.value).getClass().getSimpleName();
+                    label+="\\n\\n" + toScopeDebugLabel(scopes.get(v.value));
                     if (program.getArguments().contains(v.value)) {
                         if (escapedValues.contains(v.value)) {
                             System.out.println(" n_" + System.identityHashCode(v) + "[color=red fontcolor=white style=filled fillcolor=red shape=octagon label=\"" + label + "\"];");
@@ -197,7 +205,7 @@ public class PointsToEscapeAnalysis {
                     }
                 } else {
                     String label = v.value.getClass().getSimpleName();
-                    label+="\\n\\n" + scopes.get(v.value).getClass().getSimpleName();
+                    label+="\\n\\n" + toScopeDebugLabel(scopes.get(v.value));
                     if (escapedValues.contains(v.value)) {
                         System.out.println(" n_" + System.identityHashCode(v) + "[color=red shape=box fontcolor=white style=filled fillcolor=red label=\"" + label + "\"];");
                     } else {
@@ -209,6 +217,13 @@ public class PointsToEscapeAnalysis {
                     System.out.println(" n_" + System.identityHashCode(t));
                 });
             }
+            /*for (final Scope s : new HashSet<>(scopes.values())) {
+                System.out.println(" n_" + System.identityHashCode(s) + "[shape=doublecircle label=\"" + toScopeDebugLabel(s) + "\"];");
+                for (final Scope f : s.flowsInto) {
+                    System.out.print(" n_" + System.identityHashCode(s) + " -> ");
+                    System.out.println(" n_" + System.identityHashCode(f));
+                }
+            }*/
             System.out.println("}");
         }
     }
@@ -346,11 +361,10 @@ public class PointsToEscapeAnalysis {
                             if (theIncomingWithScope.size() == 1) {
                                 final Scope newScope = analysisResult.scopes.get(theIncomingWithScope.iterator().next().value);
                                 analysisResult.scopes.put(currentEntry.value, newScope);
-                                theIncoming.stream().map(t -> analysisResult.scopes.get(t.value)).forEach(t -> t.flowsInto(newScope));
                             } else if (currentEntry.value instanceof PHIValue) {
                                 final Scope newScope = analysisResult.scopes.computeIfAbsent(currentEntry.value, key -> new PHIScope(theIncomingWithScope.stream().map(t -> analysisResult.scopes.get(t.value)).collect(Collectors.toSet())));
                                 analysisResult.scopes.put(currentEntry.value, newScope);
-                                theIncoming.stream().map(t -> analysisResult.scopes.get(t.value)).forEach(t -> t.flowsInto(newScope));
+                                theIncoming.stream().map(t -> analysisResult.scopes.get(t.value)).filter(t -> t != newScope).forEach(t -> t.flowsInto(newScope));
                             } else {
                                 // Should not happen due to SSA form
                                 throw new IllegalArgumentException("Don't know how to handle multiple flow assignments for " + currentEntry.value);
