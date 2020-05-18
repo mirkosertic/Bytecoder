@@ -81,6 +81,10 @@ public class PointsToEscapeAnalysis {
 
         public void flowsInto(final Scope otherScope) {
             flowsInto.add(otherScope);
+            otherScope.receivesFrom(this);
+        }
+
+        public void receivesFrom(final Scope otherScope) {
         }
     }
 
@@ -98,6 +102,22 @@ public class PointsToEscapeAnalysis {
 
     static class ForeignScope extends Scope {
 
+    }
+
+    static class PHIScope extends Scope {
+
+        private Set<Scope> mergingScopes;
+
+        public PHIScope(final Set<Scope> mergingScopes) {
+            this.mergingScopes = mergingScopes;
+        }
+
+        @Override
+        public void receivesFrom(Scope otherScope) {
+            for (final Scope merged : mergingScopes) {
+                otherScope.flowsInto(merged);
+            }
+        }
     }
 
     static class ThisScope extends Scope {
@@ -121,9 +141,11 @@ public class PointsToEscapeAnalysis {
         private final Set<Value> escapedValues;
         private final Map<Variable, Set<Scope>> argumentFlows;
         private final Program program;
+        private final Map<Value, Scope> scopes;
 
         AnalysisResult(final Program aProgram) {
             program = aProgram;
+            scopes = new HashMap<>();
             nodes = new HashMap<>();
             escapedValues = new HashSet<>();
             argumentFlows = new HashMap<>();
@@ -152,16 +174,18 @@ public class PointsToEscapeAnalysis {
             System.out.println("digraph refflow {");
             for (final GraphNode v: nodes.values()) {
                 if (v.value instanceof MethodParameterValue || v.value instanceof SelfReferenceParameterValue) {
-                    final String label;
+                    String label;
                     if (v.value instanceof MethodParameterValue) {
                         label = "arg" + ((MethodParameterValue) v.value).getParameterIndex();
                     } else {
                         label = "this";
                     }
+                    label+="\\n\\n" + scopes.get(v.value).getClass().getSimpleName();
                     System.out.println(" n_" + System.identityHashCode(v) + "[color=blue fontcolor=blue shape=octagon label=\"" + label + "\"];");
                 } else if (v.value instanceof Variable) {
+                    String label = ((Variable) v.value).getName();
+                    label+="\\n\\n" + scopes.get(v.value).getClass().getSimpleName();
                     if (program.getArguments().contains(v.value)) {
-                        final String label = ((Variable) v.value).getName();
                         if (escapedValues.contains(v.value)) {
                             System.out.println(" n_" + System.identityHashCode(v) + "[color=red fontcolor=white style=filled fillcolor=red shape=octagon label=\"" + label + "\"];");
                         } else {
@@ -169,13 +193,15 @@ public class PointsToEscapeAnalysis {
                         }
 
                     } else {
-                        System.out.println(" n_" + System.identityHashCode(v) + "[label=\"" + ((Variable) v.value).getName() + "\"];");
+                        System.out.println(" n_" + System.identityHashCode(v) + "[label=\"" + label + "\"];");
                     }
                 } else {
+                    String label = v.value.getClass().getSimpleName();
+                    label+="\\n\\n" + scopes.get(v.value).getClass().getSimpleName();
                     if (escapedValues.contains(v.value)) {
-                        System.out.println(" n_" + System.identityHashCode(v) + "[color=red shape=box fontcolor=white style=filled fillcolor=red label=\"" + v.value.getClass().getSimpleName() + "\"];");
+                        System.out.println(" n_" + System.identityHashCode(v) + "[color=red shape=box fontcolor=white style=filled fillcolor=red label=\"" + label + "\"];");
                     } else {
-                        System.out.println(" n_" + System.identityHashCode(v) + "[shape=box label=\"" + v.value.getClass().getSimpleName() + "\"];");
+                        System.out.println(" n_" + System.identityHashCode(v) + "[shape=box label=\"" + label + "\"];");
                     }
                 }
                 v.outgoingEdges().map(Edge::targetNode).forEach(t -> {
@@ -198,7 +224,6 @@ public class PointsToEscapeAnalysis {
 
         final AnalysisResult analysisResult = new AnalysisResult(aProgramDescriptor.program);
 
-        final Map<Value, Scope> scopes = new HashMap<>();
         final StaticScope staticScope = new StaticScope();
         final ReturnScope returnScope = new ReturnScope();
 
@@ -237,37 +262,37 @@ public class PointsToEscapeAnalysis {
             final GraphNode currentEntry = workingQueue.poll();
             System.out.println(currentEntry.value);
 
-            final Set<GraphNode> theOutgoing = currentEntry.outgoingEdges().map(Edge::targetNode).filter(t -> !scopes.containsKey(t)).collect(Collectors.toSet());
+            final Set<GraphNode> theOutgoing = currentEntry.outgoingEdges().map(Edge::targetNode).filter(t -> !analysisResult.scopes.containsKey(t.value)).collect(Collectors.toSet());
             if (currentEntry.value instanceof NewArrayExpression) {
-                scopes.put(currentEntry.value, new LocalScope());
+                analysisResult.scopes.put(currentEntry.value, new LocalScope());
                 workingQueue.addAll(theOutgoing);
             } else if (currentEntry.value instanceof NewMultiArrayExpression) {
-                scopes.put(currentEntry.value, new LocalScope());
+                analysisResult.scopes.put(currentEntry.value, new LocalScope());
                 workingQueue.addAll(theOutgoing);
             } else if (currentEntry.value instanceof GetStaticExpression) {
-                scopes.put(currentEntry.value, staticScope);
+                analysisResult.scopes.put(currentEntry.value, staticScope);
                 workingQueue.addAll(theOutgoing);
             } else if (currentEntry.value instanceof SelfReferenceParameterValue) {
-                scopes.put(currentEntry.value, new ThisScope(((SelfReferenceParameterValue) currentEntry.value)));
+                analysisResult.scopes.put(currentEntry.value, new ThisScope(((SelfReferenceParameterValue) currentEntry.value)));
                 workingQueue.addAll(theOutgoing);
             } else if (currentEntry.value instanceof MethodParameterValue) {
-                scopes.put(currentEntry.value, new MethodParameterScope(((MethodParameterValue) currentEntry.value)));
+                analysisResult.scopes.put(currentEntry.value, new MethodParameterScope(((MethodParameterValue) currentEntry.value)));
                 workingQueue.addAll(theOutgoing);
             } else {
                 final Set<GraphNode> theIncoming = currentEntry.incomingEdges().map(t -> (GraphNode) t.sourceNode()).collect(Collectors.toSet());
-                final Set<GraphNode> theIncomingWithScope = theIncoming.stream().filter(t -> scopes.containsKey(t.value)).collect(Collectors.toSet());
+                final Set<GraphNode> theIncomingWithScope = theIncoming.stream().filter(t -> analysisResult.scopes.containsKey(t.value)).collect(Collectors.toSet());
                 if (theIncoming.size() == theIncomingWithScope.size()) {
                     // We have all predecessor scopes, so we can continue and compute the scope flow
                     // for the current node
 
                     if (currentEntry.value instanceof ReturnValueExpression || currentEntry.value instanceof ThrowExpression) {
                         // Terminal instruction
-                        scopes.put(currentEntry.value, returnScope);
-                        theIncomingWithScope.stream().map(t -> scopes.get(t.value)).forEach(scope -> scope.flowsInto(returnScope));
+                        analysisResult.scopes.put(currentEntry.value, returnScope);
+                        theIncomingWithScope.stream().map(t -> analysisResult.scopes.get(t.value)).forEach(scope -> scope.flowsInto(returnScope));
                     } else if (currentEntry.value instanceof PutStaticExpression) {
                         // Terminal instruction
-                        scopes.put(currentEntry.value, staticScope);
-                        theIncomingWithScope.stream().map(t -> scopes.get(t.value)).forEach(scope -> scope.flowsInto(returnScope));
+                        analysisResult.scopes.put(currentEntry.value, staticScope);
+                        theIncomingWithScope.stream().map(t -> analysisResult.scopes.get(t.value)).forEach(scope -> scope.flowsInto(returnScope));
                     } else {
 
                         final Set<GraphNode> theArrayWrites = theIncoming.stream().filter(t -> t.value instanceof ArrayStoreExpression).collect(Collectors.toSet());
@@ -277,7 +302,7 @@ public class PointsToEscapeAnalysis {
                                 throw new IllegalArgumentException("Expected 2 incoming values for ArrayStore, got " + theIncomingWithScope.size());
                             }
                             final GraphNode theValue = theArrayWrites.iterator().next();
-                            theIncoming.stream().filter(t -> t != theValue).forEach(array -> scopes.get(theValue.value).flowsInto(scopes.get(array.value)));
+                            theIncoming.stream().filter(t -> t != theValue).forEach(array -> analysisResult.scopes.get(theValue.value).flowsInto(analysisResult.scopes.get(array.value)));
 
                         } else if (!thePutFields.isEmpty()) {
 
@@ -285,47 +310,47 @@ public class PointsToEscapeAnalysis {
                                 throw new IllegalArgumentException("Expected 2 incoming values for PutField, got " + theIncomingWithScope.size());
                             }
                             final GraphNode theValue = thePutFields.iterator().next();
-                            theIncoming.stream().filter(t -> t != theValue).forEach(instance -> scopes.get(theValue.value).flowsInto(scopes.get(instance.value)));
+                            theIncoming.stream().filter(t -> t != theValue).forEach(instance -> analysisResult.scopes.get(theValue.value).flowsInto(analysisResult.scopes.get(instance.value)));
 
                         } else if (currentEntry.value instanceof VariableAssignmentExpression) {
 
-                            scopes.put(currentEntry.value, scopes.get(theIncomingWithScope.iterator().next().value));
+                            analysisResult.scopes.put(currentEntry.value, analysisResult.scopes.get(theIncomingWithScope.iterator().next().value));
                             workingQueue.addAll(theOutgoing);
 
                         } else if (currentEntry.value instanceof NewObjectAndConstructExpression) {
 
                             final Scope newScope = new ForeignScope();
-                            scopes.put(currentEntry.value, newScope);
-                            theIncoming.stream().map(t -> scopes.get(t.value)).forEach(t -> t.flowsInto(newScope));
+                            analysisResult.scopes.put(currentEntry.value, newScope);
+                            theIncoming.stream().map(t -> analysisResult.scopes.get(t.value)).forEach(t -> t.flowsInto(newScope));
 
                             workingQueue.addAll(theOutgoing);
 
                         } else if (currentEntry.value instanceof GetStaticExpression || currentEntry.value instanceof ClassReferenceValue) {
 
                             final Scope newScope = new StaticScope();
-                            scopes.put(currentEntry.value, newScope);
-                            theIncoming.stream().map(t -> scopes.get(t.value)).forEach(t -> t.flowsInto(newScope));
+                            analysisResult.scopes.put(currentEntry.value, newScope);
+                            theIncoming.stream().map(t -> analysisResult.scopes.get(t.value)).forEach(t -> t.flowsInto(newScope));
 
                             workingQueue.addAll(theOutgoing);
 
                         } else if (currentEntry.value instanceof NullValue) {
 
                             final Scope newScope = new LocalScope();
-                            scopes.put(currentEntry.value, newScope);
-                            theIncoming.stream().map(t -> scopes.get(t.value)).forEach(t -> t.flowsInto(newScope));
+                            analysisResult.scopes.put(currentEntry.value, newScope);
+                            theIncoming.stream().map(t -> analysisResult.scopes.get(t.value)).forEach(t -> t.flowsInto(newScope));
 
                             workingQueue.addAll(theOutgoing);
 
                         } else {
 
                             if (theIncomingWithScope.size() == 1) {
-                                final Scope newScope = scopes.get(theIncomingWithScope.iterator().next().value);
-                                scopes.put(currentEntry.value, newScope);
-                                theIncoming.stream().map(t -> scopes.get(t.value)).forEach(t -> t.flowsInto(newScope));
+                                final Scope newScope = analysisResult.scopes.get(theIncomingWithScope.iterator().next().value);
+                                analysisResult.scopes.put(currentEntry.value, newScope);
+                                theIncoming.stream().map(t -> analysisResult.scopes.get(t.value)).forEach(t -> t.flowsInto(newScope));
                             } else if (currentEntry.value instanceof PHIValue) {
-                                Scope newScope = scopes.computeIfAbsent(currentEntry.value, key -> new LocalScope());
-                                scopes.put(currentEntry.value, newScope);
-                                theIncoming.stream().map(t -> scopes.get(t.value)).forEach(t -> t.flowsInto(newScope));
+                                final Scope newScope = analysisResult.scopes.computeIfAbsent(currentEntry.value, key -> new PHIScope(theIncomingWithScope.stream().map(t -> analysisResult.scopes.get(t.value)).collect(Collectors.toSet())));
+                                analysisResult.scopes.put(currentEntry.value, newScope);
+                                theIncoming.stream().map(t -> analysisResult.scopes.get(t.value)).forEach(t -> t.flowsInto(newScope));
                             } else {
                                 // Should not happen due to SSA form
                                 throw new IllegalArgumentException("Don't know how to handle multiple flow assignments for " + currentEntry.value);
@@ -352,7 +377,7 @@ public class PointsToEscapeAnalysis {
 
                 final Value selfValue = v.incomingDataFlows().get(0);
 
-                workingStack.push(scopes.get(selfValue));
+                workingStack.push(analysisResult.scopes.get(selfValue));
                 while (!workingStack.isEmpty()) {
                     final Scope current = workingStack.pop();
                     if (alreadySeen.add(current)) {
@@ -363,7 +388,7 @@ public class PointsToEscapeAnalysis {
                     }
                 }
                 // Ignore self scope
-                nonLocalScopes.remove(scopes.get(selfValue));
+                nonLocalScopes.remove(analysisResult.scopes.get(selfValue));
 
                 if (!nonLocalScopes.isEmpty()) {
                     analysisResult.escapedValue(v);
@@ -374,7 +399,7 @@ public class PointsToEscapeAnalysis {
         }
 
         // Step 4 : Compute escapes for allocations
-        scopes.entrySet().stream().filter(t ->
+        analysisResult.scopes.entrySet().stream().filter(t ->
                 t.getKey() instanceof NewArrayExpression ||
                 t.getKey() instanceof NewMultiArrayExpression ||
                 t.getKey() instanceof NewObjectAndConstructExpression).forEach(entry -> {
