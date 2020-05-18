@@ -108,6 +108,24 @@ public class PointsToEscapeAnalysisTest {
         return o;
     }
 
+    private Object method9(final Object a, final int b1, final Object k) {
+        A o = null;
+        for (int i=0; i < b1; i++) {
+            o = (A) a;
+        }
+        o.o = k;
+        return null;
+    }
+
+    private Object method10(final Object a, final int b1, final Object k) {
+        A o = null;
+        for (int i=0; i < b1; i++) {
+            o = (A) a;
+        }
+        o.o = k;
+        return o;
+    }
+
     private PointsToEscapeAnalysis.AnalysisResult analyze(final Class aClazz, final String methodName, final BytecodeMethodSignature aSignature) {
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new LLVMIntrinsics());
@@ -229,6 +247,27 @@ public class PointsToEscapeAnalysisTest {
     @Test
     public void testMethod8() {
         final PointsToEscapeAnalysis.AnalysisResult result = analyze(getClass(), "method8", new BytecodeMethodSignature(OBJECT_TYPE_REF,
+                new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
+        result.printDebugDotTree();
+        final List<Value> escapedValues = new ArrayList<>(result.escapedValues());
+        assertEquals(2, escapedValues.size());
+        assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> "_a".equals(t.getName())));
+        assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> "_k".equals(t.getName())));
+    }
+
+    @Test
+    public void testMethod9() {
+        final PointsToEscapeAnalysis.AnalysisResult result = analyze(getClass(), "method9", new BytecodeMethodSignature(OBJECT_TYPE_REF,
+                new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
+        result.printDebugDotTree();
+        final List<Value> escapedValues = new ArrayList<>(result.escapedValues());
+        assertEquals(1, escapedValues.size());
+        assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> "_k".equals(t.getName())));
+    }
+
+    @Test
+    public void testMethod10() {
+        final PointsToEscapeAnalysis.AnalysisResult result = analyze(getClass(), "method10", new BytecodeMethodSignature(OBJECT_TYPE_REF,
                 new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
         result.printDebugDotTree();
         final List<Value> escapedValues = new ArrayList<>(result.escapedValues());

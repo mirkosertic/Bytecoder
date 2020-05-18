@@ -106,7 +106,7 @@ public class PointsToEscapeAnalysis {
 
     static class PHIScope extends Scope {
 
-        private Set<Scope> mergingScopes;
+        private final Set<Scope> mergingScopes;
 
         public PHIScope(final Set<Scope> mergingScopes) {
             this.mergingScopes = mergingScopes;
@@ -174,6 +174,9 @@ public class PointsToEscapeAnalysis {
             if (scope instanceof MethodParameterScope) {
                 final MethodParameterScope mp = (MethodParameterScope) scope;
                 return "MethodParameterScope #" + mp.methodParameterValue.getParameterIndex();
+            }
+            if (scope == null) {
+                return "Unknown Scope";
             }
             return scope.getClass().getSimpleName();
         }
@@ -260,12 +263,17 @@ public class PointsToEscapeAnalysis {
                     .filter(t -> t instanceof PHIValue)
                     .map(t -> (PHIValue) t)
                     .filter(t -> t.resolveType().isObject() || t.resolveType().isArray())
-                    .filter(t -> alreadyKnownPHIvalues.add(t)).forEach(t -> {
+                    .filter(alreadyKnownPHIvalues::add).forEach(t -> {
 
                 final GraphNode phiNode = analysisResult.nodeFor(t);
-                for (final Value incoming : t.incomingDataFlows()) {
-                    final GraphNode incomingNode = analysisResult.nodeFor(incoming);
-                    incomingNode.addEdgeTo(PointsTo.to, phiNode);
+                for (final RegionNode pred : theNode.getPredecessors()) {
+                    final BlockState theOut = pred.liveOut();
+                    final Value incomingValue = theOut.getPorts().get(t.getDescription());
+                    final GraphNode incomingNode = analysisResult.nodeFor(incomingValue);
+
+                    if (incomingNode != phiNode) {
+                        incomingNode.addEdgeTo(PointsTo.to, phiNode);
+                    }
                 }
             });
             analyze(theNode.getExpressions(), analysisResult);
@@ -276,7 +284,6 @@ public class PointsToEscapeAnalysis {
         while (!workingQueue.isEmpty()) {
             final GraphNode currentEntry = workingQueue.poll();
             System.out.println(currentEntry.value);
-
             final Set<GraphNode> theOutgoing = currentEntry.outgoingEdges().map(Edge::targetNode).filter(t -> !analysisResult.scopes.containsKey(t.value)).collect(Collectors.toSet());
             if (currentEntry.value instanceof NewArrayExpression) {
                 analysisResult.scopes.put(currentEntry.value, new LocalScope());
@@ -324,8 +331,14 @@ public class PointsToEscapeAnalysis {
                             if (theIncomingWithScope.size() != 2) {
                                 throw new IllegalArgumentException("Expected 2 incoming values for PutField, got " + theIncomingWithScope.size());
                             }
+
                             final GraphNode theValue = thePutFields.iterator().next();
-                            theIncoming.stream().filter(t -> t != theValue).forEach(instance -> analysisResult.scopes.get(theValue.value).flowsInto(analysisResult.scopes.get(instance.value)));
+                            theIncoming.stream().filter(t -> t != theValue).forEach(instance -> {
+                                if (!analysisResult.scopes.containsKey(currentEntry.value)) {
+                                    analysisResult.scopes.put(currentEntry.value, analysisResult.scopes.get(instance.value));
+                                }
+                                analysisResult.scopes.get(theValue.value).flowsInto(analysisResult.scopes.get(instance.value));
+                            });
 
                         } else if (currentEntry.value instanceof VariableAssignmentExpression) {
 
@@ -373,7 +386,6 @@ public class PointsToEscapeAnalysis {
                             workingQueue.addAll(theOutgoing);
                         }
                     }
-
                 } else {
                     // Condition not met, we try again later
                     workingQueue.add(currentEntry);
@@ -395,7 +407,7 @@ public class PointsToEscapeAnalysis {
                 while (!workingStack.isEmpty()) {
                     final Scope current = workingStack.pop();
                     if (alreadySeen.add(current)) {
-                        if (!(current instanceof LocalScope)) {
+                        if (!(current instanceof LocalScope) && !(current instanceof PHIScope)) {
                             nonLocalScopes.add(current);
                         }
                         workingStack.addAll(current.flowsInto);
