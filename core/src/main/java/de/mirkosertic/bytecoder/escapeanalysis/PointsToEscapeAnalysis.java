@@ -39,6 +39,7 @@ import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
+import de.mirkosertic.bytecoder.ssa.SetEnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.ThrowExpression;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Value;
@@ -113,7 +114,7 @@ public class PointsToEscapeAnalysis {
         }
 
         @Override
-        public void receivesFrom(Scope otherScope) {
+        public void receivesFrom(final Scope otherScope) {
             for (final Scope merged : mergingScopes) {
                 otherScope.flowsInto(merged);
             }
@@ -258,7 +259,7 @@ public class PointsToEscapeAnalysis {
         final ControlFlowGraph g = aProgramDescriptor.program.getControlFlowGraph();
         final Set<PHIValue> alreadyKnownPHIvalues = new HashSet<>();
         for (final RegionNode theNode : g.dominators().getPreOrder()) {
-            BlockState theLiveIn = theNode.liveIn();
+            final BlockState theLiveIn = theNode.liveIn();
             theLiveIn.getPorts().values().stream()
                     .filter(t -> t instanceof PHIValue)
                     .map(t -> (PHIValue) t)
@@ -314,17 +315,28 @@ public class PointsToEscapeAnalysis {
                     } else if (currentEntry.value instanceof PutStaticExpression) {
                         // Terminal instruction
                         analysisResult.scopes.put(currentEntry.value, staticScope);
-                        theIncomingWithScope.stream().map(t -> analysisResult.scopes.get(t.value)).forEach(scope -> scope.flowsInto(returnScope));
+                        theIncomingWithScope.stream().map(t -> analysisResult.scopes.get(t.value)).forEach(scope -> scope.flowsInto(staticScope));
+                    } else if (currentEntry.value instanceof SetEnumConstantsExpression) {
+                        // Terminal instruction
+                        analysisResult.scopes.put(currentEntry.value, staticScope);
+                        theIncomingWithScope.stream().map(t -> analysisResult.scopes.get(t.value)).forEach(scope -> scope.flowsInto(staticScope));
                     } else {
 
                         final Set<GraphNode> theArrayWrites = theIncoming.stream().filter(t -> t.value instanceof ArrayStoreExpression).collect(Collectors.toSet());
                         final Set<GraphNode> thePutFields = theIncoming.stream().filter(t -> t.value instanceof PutFieldExpression).collect(Collectors.toSet());
                         if (!theArrayWrites.isEmpty()) {
+
                             if (theIncomingWithScope.size() != 2) {
                                 throw new IllegalArgumentException("Expected 2 incoming values for ArrayStore, got " + theIncomingWithScope.size());
                             }
+
                             final GraphNode theValue = theArrayWrites.iterator().next();
-                            theIncoming.stream().filter(t -> t != theValue).forEach(array -> analysisResult.scopes.get(theValue.value).flowsInto(analysisResult.scopes.get(array.value)));
+                            theIncoming.stream().filter(t -> t != theValue).forEach(array -> {
+                                if (!analysisResult.scopes.containsKey(currentEntry.value)) {
+                                    analysisResult.scopes.put(currentEntry.value, analysisResult.scopes.get(array.value));
+                                }
+                                analysisResult.scopes.get(theValue.value).flowsInto(analysisResult.scopes.get(array.value));
+                            });
 
                         } else if (!thePutFields.isEmpty()) {
 
@@ -555,6 +567,16 @@ public class PointsToEscapeAnalysis {
 
                 theValueNode.addEdgeTo(PointsTo.to, putNode);
             }
+
+        } else if (aExpression instanceof SetEnumConstantsExpression) {
+
+            final SetEnumConstantsExpression p = (SetEnumConstantsExpression) aExpression;
+            final GraphNode putNode = analysisResult.nodeFor(p);
+
+            final List<Value> theIncoming = p.incomingDataFlows();
+            final GraphNode theValueNode = analysisResult.nodeFor(theIncoming.get(0));
+
+            theValueNode.addEdgeTo(PointsTo.to, putNode);
 
         } else if (aExpression instanceof GetFieldExpression) {
 
