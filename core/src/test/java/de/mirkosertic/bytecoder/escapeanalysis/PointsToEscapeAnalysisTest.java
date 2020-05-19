@@ -224,12 +224,20 @@ public class PointsToEscapeAnalysisTest {
         return analysis.analyze(aProgramDescriptor);
     }
 
+    <T> boolean containsNInstancesOf(final Collection<T> aCollection, final Class<? extends T> aType, final int aNumber) {
+        return aCollection.stream().filter(t -> aType.isAssignableFrom(t.getClass())).count() == aNumber;
+    }
+
     <T> boolean containsOneInstanceOf(final Collection<T> aCollection, final Class<? extends T> aType) {
-        return aCollection.stream().filter(t -> aType.isAssignableFrom(t.getClass())).count() == 1;
+        return containsNInstancesOf(aCollection, aType, 1);
+    }
+
+    <T,X> boolean containsNInstancesOf(final Collection<T> aCollection, final Class<X> aType, final Predicate<X> aPred, final int aNumber) {
+        return aCollection.stream().filter(t -> aType.isAssignableFrom(t.getClass())).filter(t -> aPred.test((X) t)).count() == aNumber;
     }
 
     <T,X> boolean containsOneInstanceOf(final Collection<T> aCollection, final Class<X> aType, final Predicate<X> aPred) {
-        return aCollection.stream().filter(t -> aType.isAssignableFrom(t.getClass())).filter(t -> aPred.test((X) t)).count() == 1;
+        return containsNInstancesOf(aCollection, aType, aPred, 1);
     }
 
     @Test
@@ -246,12 +254,17 @@ public class PointsToEscapeAnalysisTest {
         final Set<PointsToEscapeAnalysis.Scope> scopesForA = result.argumentsFlowsFor(p.argumentAt(1));
         final Set<PointsToEscapeAnalysis.Scope> scopesForB1 = result.argumentsFlowsFor(p.argumentAt(2));
         final Set<PointsToEscapeAnalysis.Scope> scopesForK = result.argumentsFlowsFor(p.argumentAt(3));
+        final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
 
         assertTrue(scopesForThis.isEmpty());
         assertEquals(2, scopesForA.size());
         assertTrue(containsOneInstanceOf(scopesForA, PointsToEscapeAnalysis.ReturnScope.class));
         assertNull(scopesForB1);
         assertTrue(scopesForK.isEmpty());
+
+        assertEquals(2, returning.size());
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 1));
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.ForeignScope.class));
     }
 
     @Test
@@ -267,12 +280,16 @@ public class PointsToEscapeAnalysisTest {
         final Set<PointsToEscapeAnalysis.Scope> scopesForA = result.argumentsFlowsFor(p.argumentAt(1));
         final Set<PointsToEscapeAnalysis.Scope> scopesForB1 = result.argumentsFlowsFor(p.argumentAt(2));
         final Set<PointsToEscapeAnalysis.Scope> scopesForK = result.argumentsFlowsFor(p.argumentAt(3));
+        final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
 
         assertTrue(scopesForThis.isEmpty());
         assertEquals(1, scopesForA.size());
         assertTrue(containsOneInstanceOf(scopesForA, PointsToEscapeAnalysis.ForeignScope.class));
         assertNull(scopesForB1);
         assertTrue(scopesForK.isEmpty());
+
+        assertEquals(1, returning.size());
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.LocalScope.class));
     }
 
     @Test
@@ -289,12 +306,16 @@ public class PointsToEscapeAnalysisTest {
         final Set<PointsToEscapeAnalysis.Scope> scopesForA = result.argumentsFlowsFor(p.argumentAt(1));
         final Set<PointsToEscapeAnalysis.Scope> scopesForB1 = result.argumentsFlowsFor(p.argumentAt(2));
         final Set<PointsToEscapeAnalysis.Scope> scopesForK = result.argumentsFlowsFor(p.argumentAt(3));
+        final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
 
         assertTrue(scopesForThis.isEmpty());
         assertEquals(1, scopesForA.size());
         assertTrue(containsOneInstanceOf(scopesForA, PointsToEscapeAnalysis.StaticScope.class));
         assertNull(scopesForB1);
         assertTrue(scopesForK.isEmpty());
+
+        assertEquals(1, returning.size());
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.LocalScope.class));
     }
 
     @Test
@@ -310,11 +331,15 @@ public class PointsToEscapeAnalysisTest {
         final Set<PointsToEscapeAnalysis.Scope> scopesForA = result.argumentsFlowsFor(p.argumentAt(1));
         final Set<PointsToEscapeAnalysis.Scope> scopesForB1 = result.argumentsFlowsFor(p.argumentAt(2));
         final Set<PointsToEscapeAnalysis.Scope> scopesForK = result.argumentsFlowsFor(p.argumentAt(3));
+        final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
 
         assertTrue(scopesForThis.isEmpty());
         assertTrue(scopesForA.isEmpty());
         assertNull(scopesForB1);
         assertTrue(scopesForK.isEmpty());
+
+        assertEquals(1, returning.size());
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.LocalScope.class));
     }
 
     @Test
@@ -330,11 +355,15 @@ public class PointsToEscapeAnalysisTest {
         final Set<PointsToEscapeAnalysis.Scope> scopesForA = result.argumentsFlowsFor(p.argumentAt(1));
         final Set<PointsToEscapeAnalysis.Scope> scopesForB1 = result.argumentsFlowsFor(p.argumentAt(2));
         final Set<PointsToEscapeAnalysis.Scope> scopesForK = result.argumentsFlowsFor(p.argumentAt(3));
+        final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
 
         assertTrue(scopesForThis.isEmpty());
         assertTrue(scopesForA.isEmpty());
         assertNull(scopesForB1);
         assertTrue(scopesForK.isEmpty());
+
+        assertEquals(1, returning.size());
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.LocalScope.class));
     }
 
     @Test
@@ -352,12 +381,17 @@ public class PointsToEscapeAnalysisTest {
         final Set<PointsToEscapeAnalysis.Scope> scopesForA = result.argumentsFlowsFor(p.argumentAt(1));
         final Set<PointsToEscapeAnalysis.Scope> scopesForB1 = result.argumentsFlowsFor(p.argumentAt(2));
         final Set<PointsToEscapeAnalysis.Scope> scopesForK = result.argumentsFlowsFor(p.argumentAt(3));
+        final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
 
         assertEquals(1, scopesForThis.size());
         assertTrue(containsOneInstanceOf(scopesForThis, PointsToEscapeAnalysis.ReturnScope.class));
         assertTrue(scopesForA.isEmpty());
         assertNull(scopesForB1);
         assertTrue(scopesForK.isEmpty());
+
+        assertEquals(2, returning.size());
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.LocalScope.class));
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.ThisScope.class));
     }
 
     @Test
@@ -374,6 +408,7 @@ public class PointsToEscapeAnalysisTest {
         final Set<PointsToEscapeAnalysis.Scope> scopesForA = result.argumentsFlowsFor(p.argumentAt(1));
         final Set<PointsToEscapeAnalysis.Scope> scopesForB1 = result.argumentsFlowsFor(p.argumentAt(2));
         final Set<PointsToEscapeAnalysis.Scope> scopesForK = result.argumentsFlowsFor(p.argumentAt(3));
+        final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
 
         assertTrue(scopesForThis.isEmpty());
         assertEquals(1, scopesForA.size());
@@ -381,6 +416,9 @@ public class PointsToEscapeAnalysisTest {
         assertNull(scopesForB1);
         assertEquals(1, scopesForK.size());
         assertTrue(containsOneInstanceOf(scopesForK, PointsToEscapeAnalysis.ForeignScope.class));
+
+        assertEquals(1, returning.size());
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.LocalScope.class));
     }
 
     @Test
@@ -398,6 +436,7 @@ public class PointsToEscapeAnalysisTest {
         final Set<PointsToEscapeAnalysis.Scope> scopesForA = result.argumentsFlowsFor(p.argumentAt(1));
         final Set<PointsToEscapeAnalysis.Scope> scopesForB1 = result.argumentsFlowsFor(p.argumentAt(2));
         final Set<PointsToEscapeAnalysis.Scope> scopesForK = result.argumentsFlowsFor(p.argumentAt(3));
+        final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
 
         assertTrue(scopesForThis.isEmpty());
         assertEquals(2, scopesForA.size());
@@ -407,6 +446,11 @@ public class PointsToEscapeAnalysisTest {
         assertEquals(2, scopesForK.size());
         assertTrue(containsOneInstanceOf(scopesForK, PointsToEscapeAnalysis.ReturnScope.class));
         assertTrue(containsOneInstanceOf(scopesForK, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 1));
+
+        assertEquals(4, returning.size());
+        assertTrue(containsNInstancesOf(returning, PointsToEscapeAnalysis.LocalScope.class, 2));
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 3));
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 1));
     }
 
     @Test
@@ -423,12 +467,16 @@ public class PointsToEscapeAnalysisTest {
         final Set<PointsToEscapeAnalysis.Scope> scopesForA = result.argumentsFlowsFor(p.argumentAt(1));
         final Set<PointsToEscapeAnalysis.Scope> scopesForB1 = result.argumentsFlowsFor(p.argumentAt(2));
         final Set<PointsToEscapeAnalysis.Scope> scopesForK = result.argumentsFlowsFor(p.argumentAt(3));
+        final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
 
         assertTrue(scopesForThis.isEmpty());
         assertTrue(scopesForA.isEmpty());
         assertNull(scopesForB1);
         assertEquals(1, scopesForK.size());
         assertTrue(containsOneInstanceOf(scopesForK, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 1));
+
+        assertEquals(1, returning.size());
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.LocalScope.class));
     }
 
     @Test
@@ -446,6 +494,7 @@ public class PointsToEscapeAnalysisTest {
         final Set<PointsToEscapeAnalysis.Scope> scopesForA = result.argumentsFlowsFor(p.argumentAt(1));
         final Set<PointsToEscapeAnalysis.Scope> scopesForB1 = result.argumentsFlowsFor(p.argumentAt(2));
         final Set<PointsToEscapeAnalysis.Scope> scopesForK = result.argumentsFlowsFor(p.argumentAt(3));
+        final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
 
         assertTrue(scopesForThis.isEmpty());
         assertEquals(1, scopesForA.size());
@@ -454,6 +503,11 @@ public class PointsToEscapeAnalysisTest {
         assertEquals(2, scopesForK.size());
         assertTrue(containsOneInstanceOf(scopesForK, PointsToEscapeAnalysis.ReturnScope.class));
         assertTrue(containsOneInstanceOf(scopesForK, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 1));
+
+        assertEquals(3, returning.size());
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.LocalScope.class));
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 3));
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 1));
     }
 
     @Test
@@ -470,12 +524,16 @@ public class PointsToEscapeAnalysisTest {
         final Set<PointsToEscapeAnalysis.Scope> scopesForA = result.argumentsFlowsFor(p.argumentAt(1));
         final Set<PointsToEscapeAnalysis.Scope> scopesForB1 = result.argumentsFlowsFor(p.argumentAt(2));
         final Set<PointsToEscapeAnalysis.Scope> scopesForK = result.argumentsFlowsFor(p.argumentAt(3));
+        final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
 
         assertTrue(scopesForThis.isEmpty());
         assertTrue(scopesForA.isEmpty());
         assertNull(scopesForB1);
         assertEquals(1, scopesForK.size());
         assertTrue(containsOneInstanceOf(scopesForK, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 1));
+
+        assertEquals(1, returning.size());
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.LocalScope.class));
     }
 
     @Test
@@ -493,6 +551,7 @@ public class PointsToEscapeAnalysisTest {
         final Set<PointsToEscapeAnalysis.Scope> scopesForA = result.argumentsFlowsFor(p.argumentAt(1));
         final Set<PointsToEscapeAnalysis.Scope> scopesForB1 = result.argumentsFlowsFor(p.argumentAt(2));
         final Set<PointsToEscapeAnalysis.Scope> scopesForK = result.argumentsFlowsFor(p.argumentAt(3));
+        final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
 
         assertTrue(scopesForThis.isEmpty());
         assertEquals(1, scopesForA.size());
@@ -501,6 +560,11 @@ public class PointsToEscapeAnalysisTest {
         assertEquals(2, scopesForK.size());
         assertTrue(containsOneInstanceOf(scopesForK, PointsToEscapeAnalysis.ReturnScope.class));
         assertTrue(containsOneInstanceOf(scopesForK, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 1));
+
+        assertEquals(3, returning.size());
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.LocalScope.class));
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 1));
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 3));
     }
 
     @Test
@@ -517,6 +581,7 @@ public class PointsToEscapeAnalysisTest {
         final Set<PointsToEscapeAnalysis.Scope> scopesForA = result.argumentsFlowsFor(p.argumentAt(1));
         final Set<PointsToEscapeAnalysis.Scope> scopesForB1 = result.argumentsFlowsFor(p.argumentAt(2));
         final Set<PointsToEscapeAnalysis.Scope> scopesForK = result.argumentsFlowsFor(p.argumentAt(3));
+        final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
 
         assertTrue(scopesForThis.isEmpty());
         assertEquals(2, scopesForA.size());
@@ -524,6 +589,9 @@ public class PointsToEscapeAnalysisTest {
         assertTrue(containsOneInstanceOf(scopesForA, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 3));
         assertNull(scopesForB1);
         assertTrue(scopesForK.isEmpty());
+
+        assertEquals(1, returning.size());
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 1));
     }
 
     @Test
@@ -539,16 +607,20 @@ public class PointsToEscapeAnalysisTest {
         final Set<PointsToEscapeAnalysis.Scope> scopesForA = result.argumentsFlowsFor(p.argumentAt(1));
         final Set<PointsToEscapeAnalysis.Scope> scopesForB1 = result.argumentsFlowsFor(p.argumentAt(2));
         final Set<PointsToEscapeAnalysis.Scope> scopesForK = result.argumentsFlowsFor(p.argumentAt(3));
+        final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
 
         assertTrue(scopesForThis.isEmpty());
         assertTrue(scopesForA.isEmpty());
         assertNull(scopesForB1);
         assertTrue(scopesForK.isEmpty());
+
+        assertEquals(1, returning.size());
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.StaticScope.class));
     }
 
     @Test
     public void testEnumInit() {
-        final PointsToEscapeAnalysis.AnalysisResult result = analyzeVirtualMethod(TestEnum.class, "<clinit>", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
+        final PointsToEscapeAnalysis.AnalysisResult result = analyzeStaticMethod(TestEnum.class, "<clinit>", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                 new BytecodeTypeRef[]{}));
         result.printDebugDotTree();
         final List<Value> escapedValues = new ArrayList<>(result.escapedValues());
@@ -556,5 +628,8 @@ public class PointsToEscapeAnalysisTest {
         assertTrue(containsOneInstanceOf(escapedValues, NewObjectAndConstructExpression.class));
 
         final Program p = result.program();
+
+        final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
+        assertTrue(returning.isEmpty());
     }
 }

@@ -148,6 +148,7 @@ public class PointsToEscapeAnalysis {
         private final Map<Variable, Set<Scope>> argumentFlows;
         private final Program program;
         private final Map<Value, Scope> scopes;
+        private final Set<Scope> returnFlows;
 
         AnalysisResult(final Program aProgram) {
             program = aProgram;
@@ -155,6 +156,7 @@ public class PointsToEscapeAnalysis {
             nodes = new HashMap<>();
             escapedValues = new HashSet<>();
             argumentFlows = new HashMap<>();
+            returnFlows = new HashSet<>();
         }
 
         public Program program() {
@@ -178,6 +180,10 @@ public class PointsToEscapeAnalysis {
 
         public Set<Value> escapedValues() {
             return escapedValues;
+        }
+
+        public Set<Scope> returnFlows() {
+            return returnFlows;
         }
 
         public Set<Scope> argumentsFlowsFor(final Variable v) {
@@ -489,6 +495,24 @@ public class PointsToEscapeAnalysis {
                 }
             }
         });
+
+        // Step 5 : Compute returning flows
+        analysisResult.scopes.values().stream().filter(t -> !(t instanceof ReturnScope) && !(t instanceof PHIScope)).forEach(t -> {
+            final Stack<Scope> workingStack = new Stack<>();
+            final Set<Scope> alreadySeen = new HashSet<>();
+            workingStack.push(t);
+            while (!workingStack.isEmpty()) {
+                final Scope s = workingStack.pop();
+                if (alreadySeen.add(s)) {
+                    if (s instanceof ReturnScope) {
+                        analysisResult.returnFlows.add(t);
+                        return;
+                    }
+                    workingStack.addAll(s.flowsInto);
+                }
+            }
+        });
+
         return analysisResult;
     }
 
