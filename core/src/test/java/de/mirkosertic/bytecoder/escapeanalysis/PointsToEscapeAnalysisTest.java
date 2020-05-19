@@ -624,8 +624,9 @@ public class PointsToEscapeAnalysisTest {
                 new BytecodeTypeRef[]{}));
         result.printDebugDotTree();
         final List<Value> escapedValues = new ArrayList<>(result.escapedValues());
-        assertEquals(1, escapedValues.size());
+        assertEquals(2, escapedValues.size());
         assertTrue(containsOneInstanceOf(escapedValues, NewObjectAndConstructExpression.class));
+        assertTrue(containsOneInstanceOf(escapedValues, NewArrayExpression.class));
 
         final Program p = result.program();
 

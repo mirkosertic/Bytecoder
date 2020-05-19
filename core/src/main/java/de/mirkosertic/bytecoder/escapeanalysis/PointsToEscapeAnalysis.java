@@ -626,10 +626,10 @@ public class PointsToEscapeAnalysis {
             final SetEnumConstantsExpression p = (SetEnumConstantsExpression) aExpression;
             final GraphNode putNode = analysisResult.nodeFor(p);
 
-            final List<Value> theIncoming = p.incomingDataFlows();
-            final GraphNode theValueNode = analysisResult.nodeFor(theIncoming.get(0));
-
-            theValueNode.addEdgeTo(PointsTo.to, putNode);
+            for (final Value v : p.incomingDataFlows()) {
+                final GraphNode theValueNode = analysisResult.nodeFor(v);
+                theValueNode.addEdgeTo(PointsTo.to, putNode);
+            }
 
         } else if (aExpression instanceof GetFieldExpression) {
 
