@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.escapeanalysis;
 
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.graph.EdgeType;
 import de.mirkosertic.bytecoder.graph.Node;
@@ -31,6 +32,7 @@ import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
+import de.mirkosertic.bytecoder.ssa.NewObjectExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
@@ -48,6 +50,7 @@ import de.mirkosertic.bytecoder.ssa.ValueWithEscapeCheck;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -102,7 +105,7 @@ public class PointsToEscapeAnalysis {
 
     }
 
-    static class ForeignScope extends Scope {
+    static class InvocationResultScope extends Scope {
 
     }
 
@@ -123,10 +126,7 @@ public class PointsToEscapeAnalysis {
     }
 
     static class ThisScope extends Scope {
-        private final SelfReferenceParameterValue selfReferenceParameterValue;
-
-        public ThisScope(final SelfReferenceParameterValue selfReferenceParameterValue) {
-            this.selfReferenceParameterValue = selfReferenceParameterValue;
+        public ThisScope() {
         }
     }
 
@@ -209,7 +209,7 @@ public class PointsToEscapeAnalysis {
             }
             if (scope != null && includeFlow) {
                 for (final Scope f : scope.flowsInto) {
-                    label += "\\n Flows into " + toScopeDebugLabel(f, false);
+                    label += "\\nFlows into " + toScopeDebugLabel(f, false);
                 }
             }
             return label;
@@ -254,27 +254,50 @@ public class PointsToEscapeAnalysis {
                     System.out.println(" n_" + System.identityHashCode(t));
                 });
             }
-            /*for (final Scope s : new HashSet<>(scopes.values())) {
-                System.out.println(" n_" + System.identityHashCode(s) + "[shape=doublecircle label=\"" + toScopeDebugLabel(s) + "\"];");
-                for (final Scope f : s.flowsInto) {
-                    System.out.print(" n_" + System.identityHashCode(s) + " -> ");
-                    System.out.println(" n_" + System.identityHashCode(f));
-                }
-            }*/
             System.out.println("}");
         }
     }
 
+    static class CachedAnalysisResult {
+        final ProgramDescriptor programDescriptor;
+        final AnalysisResult analysisResult;
+
+        public CachedAnalysisResult(final ProgramDescriptor programDescriptor, final AnalysisResult analysisResult) {
+            this.programDescriptor = programDescriptor;
+            this.analysisResult = analysisResult;
+        }
+    }
 
     private final ProgramDescriptorProvider programDescriptorProvider;
+    private final Stack<CachedAnalysisResult> analysisStack;
+    private final Map<BytecodeLinkedClass, List<CachedAnalysisResult>> cache;
 
-    public PointsToEscapeAnalysis(final ProgramDescriptorProvider programDescriptorProvider) {
-        this.programDescriptorProvider = programDescriptorProvider;
+    public PointsToEscapeAnalysis(final ProgramDescriptorProvider aProgramDescriptorProvider) {
+        programDescriptorProvider = aProgramDescriptorProvider;
+        analysisStack = new Stack<>();
+        cache = new HashMap<>();
     }
 
     public AnalysisResult analyze(final ProgramDescriptor aProgramDescriptor) {
 
+        // We search in the cache
+        final List<CachedAnalysisResult> cachedForCurrentClass = cache.computeIfAbsent(aProgramDescriptor.linkedClass, t -> new ArrayList<>());
+        for (final CachedAnalysisResult entry : cachedForCurrentClass) {
+            if (entry.programDescriptor.linkedClass == aProgramDescriptor.linkedClass && entry.programDescriptor.method == aProgramDescriptor.method) {
+                // We have it already computed
+                return entry.analysisResult;
+            }
+        }
+
+        // We check for recursion in the analysis
+        for (final CachedAnalysisResult stackEntry : analysisStack) {
+            if (stackEntry.programDescriptor.linkedClass == aProgramDescriptor.linkedClass && stackEntry.programDescriptor.method == aProgramDescriptor.method) {
+                // TODO: Check for recursion in the current stack
+            }
+        }
+
         final AnalysisResult analysisResult = new AnalysisResult(aProgramDescriptor.program);
+        analysisStack.push(new CachedAnalysisResult(aProgramDescriptor, analysisResult));
 
         final StaticScope staticScope = new StaticScope();
         final ReturnScope returnScope = new ReturnScope();
@@ -313,18 +336,18 @@ public class PointsToEscapeAnalysis {
             analyze(theNode.getExpressions(), analysisResult);
         }
 
-        analysisResult.printDebugDotTree();
-
         // Step 2: we compute the scope flow
         final Queue<GraphNode> workingQueue = analysisResult.nodes.values().stream().filter(t -> t.incomingEdges().count() == 0).distinct().collect(Collectors.toCollection(LinkedList::new));
         while (!workingQueue.isEmpty()) {
             final GraphNode currentEntry = workingQueue.poll();
-            System.out.println(currentEntry.value);
             final Set<GraphNode> theOutgoing = currentEntry.outgoingEdges().map(Edge::targetNode).filter(t -> !analysisResult.scopes.containsKey(t.value)).collect(Collectors.toSet());
             if (currentEntry.value instanceof NewArrayExpression) {
                 analysisResult.scopes.put(currentEntry.value, new LocalScope());
                 workingQueue.addAll(theOutgoing);
             } else if (currentEntry.value instanceof NewMultiArrayExpression) {
+                analysisResult.scopes.put(currentEntry.value, new LocalScope());
+                workingQueue.addAll(theOutgoing);
+            } else if (currentEntry.value instanceof NewObjectExpression) {
                 analysisResult.scopes.put(currentEntry.value, new LocalScope());
                 workingQueue.addAll(theOutgoing);
             } else if (currentEntry.value instanceof GetStaticExpression) {
@@ -334,7 +357,7 @@ public class PointsToEscapeAnalysis {
                 analysisResult.scopes.put(currentEntry.value, staticScope);
                 workingQueue.addAll(theOutgoing);
             } else if (currentEntry.value instanceof SelfReferenceParameterValue) {
-                analysisResult.scopes.put(currentEntry.value, new ThisScope(((SelfReferenceParameterValue) currentEntry.value)));
+                analysisResult.scopes.put(currentEntry.value, new ThisScope());
                 workingQueue.addAll(theOutgoing);
             } else if (currentEntry.value instanceof MethodParameterValue) {
                 analysisResult.scopes.put(currentEntry.value, new MethodParameterScope(((MethodParameterValue) currentEntry.value)));
@@ -358,6 +381,16 @@ public class PointsToEscapeAnalysis {
                         // Terminal instruction
                         analysisResult.scopes.put(currentEntry.value, staticScope);
                         theIncomingWithScope.stream().map(t -> analysisResult.scopes.get(t.value)).forEach(scope -> scope.flowsInto(staticScope));
+                    } else if (currentEntry.value instanceof ClassReferenceValue) {
+                        final Scope newScope = new StaticScope();
+                        analysisResult.scopes.put(currentEntry.value, newScope);
+                        theIncoming.stream().map(t -> analysisResult.scopes.get(t.value)).forEach(t -> t.flowsInto(newScope));
+                        workingQueue.addAll(theOutgoing);
+                    } else if (currentEntry.value instanceof NullValue) {
+                        final Scope newScope = new LocalScope();
+                        analysisResult.scopes.put(currentEntry.value, newScope);
+                        theIncoming.stream().map(t -> analysisResult.scopes.get(t.value)).forEach(t -> t.flowsInto(newScope));
+                        workingQueue.addAll(theOutgoing);
                     } else {
 
                         final Set<GraphNode> theArrayWrites = theIncoming.stream().filter(t -> t.value instanceof ArrayStoreExpression).collect(Collectors.toSet());
@@ -397,25 +430,42 @@ public class PointsToEscapeAnalysis {
 
                         } else if (currentEntry.value instanceof NewObjectAndConstructExpression) {
 
-                            final Scope newScope = new ForeignScope();
+                            final InvocationResultScope newScope = new InvocationResultScope();
+
+                            final NewObjectAndConstructExpression x = (NewObjectAndConstructExpression) currentEntry.value;
+                            // We analyze the constructor invocation
+                            final AnalysisResult constructorAnalysis = analyze(programDescriptorProvider.resolveConstructorInvocation(x.getClazz(), x.getSignature()));
+                            final List<Value> constructorArguments = currentEntry.value.incomingDataFlows();
+
+                            // Now, for every argument, we check if it escapes to other scopes
+                            for (int i=0;i<constructorAnalysis.program.getArguments().size();i++) {
+                                final Variable programArgument = constructorAnalysis.program.argumentAt(i);
+                                final TypeRef argumentType = programArgument.resolveType();
+                                if (argumentType.isArray() || argumentType.isObject()) {
+                                    final Scope incomingScope;
+                                    if (i == 0) {
+                                        incomingScope = newScope;
+                                    } else {
+                                        incomingScope = analysisResult.scopes.get(constructorArguments.get(i - 1));
+                                    }
+                                    for (final Scope s : constructorAnalysis.argumentsFlowsFor(programArgument)) {
+                                        if (s instanceof StaticScope) {
+                                            incomingScope.flowsInto(staticScope);
+                                        } else if (s instanceof ReturnScope) {
+                                            incomingScope.flowsInto(newScope);
+                                        } else if (s instanceof ThisScope) {
+                                            incomingScope.flowsInto(newScope);
+                                        } else if (s instanceof MethodParameterScope) {
+                                            final MethodParameterScope mp = (MethodParameterScope) s;
+                                            final Scope mpScope = analysisResult.scopes.get(constructorArguments.get(mp.parameterIndex()));
+                                            incomingScope.flowsInto(mpScope);
+                                        }
+                                    }
+                                }
+                            }
+
+                            // All dataflows are not defined, we can continue with the new scope from here
                             analysisResult.scopes.put(currentEntry.value, newScope);
-                            theIncoming.stream().map(t -> analysisResult.scopes.get(t.value)).forEach(t -> t.flowsInto(newScope));
-
-                            workingQueue.addAll(theOutgoing);
-
-                        } else if (currentEntry.value instanceof GetStaticExpression || currentEntry.value instanceof ClassReferenceValue) {
-
-                            final Scope newScope = new StaticScope();
-                            analysisResult.scopes.put(currentEntry.value, newScope);
-                            theIncoming.stream().map(t -> analysisResult.scopes.get(t.value)).forEach(t -> t.flowsInto(newScope));
-
-                            workingQueue.addAll(theOutgoing);
-
-                        } else if (currentEntry.value instanceof NullValue) {
-
-                            final Scope newScope = new LocalScope();
-                            analysisResult.scopes.put(currentEntry.value, newScope);
-                            theIncoming.stream().map(t -> analysisResult.scopes.get(t.value)).forEach(t -> t.flowsInto(newScope));
 
                             workingQueue.addAll(theOutgoing);
 
@@ -458,7 +508,7 @@ public class PointsToEscapeAnalysis {
                 while (!workingStack.isEmpty()) {
                     final Scope current = workingStack.pop();
                     if (alreadySeen.add(current)) {
-                        if (current != selfScope && (current instanceof ThisScope || current instanceof MethodParameterScope || current instanceof StaticScope || current instanceof ForeignScope || current instanceof ReturnScope)) {
+                        if (current != selfScope && (current instanceof ThisScope || current instanceof MethodParameterScope || current instanceof StaticScope || current instanceof ReturnScope)) {
                             targetScopes.add(current);
                             analysisResult.escapedValue(v);
                         }
@@ -512,6 +562,10 @@ public class PointsToEscapeAnalysis {
                 }
             }
         });
+
+        // We put it into the cache
+        analysisStack.pop();
+        cachedForCurrentClass.add(new CachedAnalysisResult(aProgramDescriptor, analysisResult));
 
         return analysisResult;
     }
