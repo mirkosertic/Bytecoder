@@ -799,4 +799,55 @@ public class PointsToEscapeAnalysisTest {
         assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.LocalScope.class));
         assertTrue(containsNInstancesOf(returning, PointsToEscapeAnalysis.InvocationResultScope.class, 2));
     }
+
+    static abstract class Base {
+        abstract void doIt(final Object o, final int a);
+    }
+
+    static class Impl1 extends Base {
+
+        @Override
+        void doIt(Object o, int a) {
+        }
+    }
+
+    static class Impl2 extends Base {
+        @Override
+        void doIt(Object o, int a) {
+        }
+    }
+
+    private Object method20(final Object a, final int b1, final Object k) {
+        A a1 = new A(null);
+        Base test1 = new Impl1();
+        Base test2 = new Impl2();
+        test1.doIt(a1, b1);
+        return null;
+    }
+
+    @Test
+    public void testMethod20() {
+        final PointsToEscapeAnalysis.AnalysisResult result = analyzeVirtualMethod(getClass(), "method20", new BytecodeMethodSignature(OBJECT_TYPE_REF,
+                new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
+        result.printDebugDotTree();
+        final List<Value> escapedValues = new ArrayList<>(result.escapedValues());
+        assertEquals(2, escapedValues.size());
+        assertTrue(containsOneInstanceOf(escapedValues, NewObjectAndConstructExpression.class, t -> t.getClazz().name().equals(Impl1.class.getName())));
+        assertTrue(containsOneInstanceOf(escapedValues, NewObjectAndConstructExpression.class, t -> t.getClazz().name().equals(A.class.getName())));
+
+        final Program p = result.program();
+        final Set<PointsToEscapeAnalysis.Scope> scopesForThis = result.argumentsFlowsFor(p.argumentAt(0));
+        final Set<PointsToEscapeAnalysis.Scope> scopesForA = result.argumentsFlowsFor(p.argumentAt(1));
+        final Set<PointsToEscapeAnalysis.Scope> scopesForB1 = result.argumentsFlowsFor(p.argumentAt(2));
+        final Set<PointsToEscapeAnalysis.Scope> scopesForK = result.argumentsFlowsFor(p.argumentAt(3));
+        final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
+
+        assertTrue(scopesForThis.isEmpty());
+        assertTrue(scopesForA.isEmpty());
+        assertNull(scopesForB1);
+        assertTrue(scopesForK.isEmpty());
+
+        assertEquals(1, returning.size());
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.LocalScope.class));
+    }
 }

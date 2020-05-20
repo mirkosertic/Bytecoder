@@ -511,7 +511,28 @@ public class PointsToEscapeAnalysis {
 
                         } else if (currentEntry.value instanceof InvokeVirtualMethodExpression) {
 
-                            throw new IllegalArgumentException("Not implemented : " + currentEntry.value);
+                            // Virtual invocations are tricky, as we might also call a lambda with
+                            // a delegating static implementation. This is currently impossible to figure out
+                            // so we go the way to think all arguments escape to static scope here
+
+
+                            // TODO: Check which classes are used in lambdas here to make a better guess
+
+                            final InvocationResultScope invocationScope = new InvocationResultScope();
+
+                            final InvokeVirtualMethodExpression x = (InvokeVirtualMethodExpression) currentEntry.value;
+                            for (final Value v : x.incomingDataFlows()) {
+                                final TypeRef argumentType = v.resolveType();
+                                if (argumentType.isArray() || argumentType.isObject()) {
+                                    final Scope incomingScope = analysisResult.scopes.get(v);
+                                    incomingScope.flowsInto(staticScope);
+                                }
+                            }
+
+                            // All dataflows are not defined, we can continue with the new scope from here
+                            analysisResult.scopes.put(currentEntry.value, invocationScope);
+
+                            workingQueue.addAll(theOutgoing);
 
                         } else if (currentEntry.value instanceof InvokeStaticMethodExpression) {
 
