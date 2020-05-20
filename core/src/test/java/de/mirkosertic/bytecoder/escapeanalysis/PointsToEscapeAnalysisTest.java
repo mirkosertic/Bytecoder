@@ -657,4 +657,76 @@ public class PointsToEscapeAnalysisTest {
         assertEquals(1, returning.size());
         assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.LocalScope.class));
     }
+
+    class B {
+        B(A a1, A a2) {
+            a1.o = a2;
+        }
+    }
+
+    private Object method16(final Object a, final int b1, final Object k) {
+        A a1 = new A(null);
+        A a2 = new A(null);
+        new B(a1, a2);
+        return a1;
+    }
+
+    @Test
+    public void testMethod16() {
+        final PointsToEscapeAnalysis.AnalysisResult result = analyzeVirtualMethod(getClass(), "method16", new BytecodeMethodSignature(OBJECT_TYPE_REF,
+                new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
+        result.printDebugDotTree();
+        final List<Value> escapedValues = new ArrayList<>(result.escapedValues());
+        assertEquals(2, escapedValues.size());
+        assertTrue(containsNInstancesOf(escapedValues, NewObjectAndConstructExpression.class, 2));
+
+        final Program p = result.program();
+        final Set<PointsToEscapeAnalysis.Scope> scopesForThis = result.argumentsFlowsFor(p.argumentAt(0));
+        final Set<PointsToEscapeAnalysis.Scope> scopesForA = result.argumentsFlowsFor(p.argumentAt(1));
+        final Set<PointsToEscapeAnalysis.Scope> scopesForB1 = result.argumentsFlowsFor(p.argumentAt(2));
+        final Set<PointsToEscapeAnalysis.Scope> scopesForK = result.argumentsFlowsFor(p.argumentAt(3));
+        final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
+
+        assertTrue(scopesForThis.isEmpty());
+        assertTrue(scopesForA.isEmpty());
+        assertNull(scopesForB1);
+        assertTrue(scopesForK.isEmpty());
+
+        assertEquals(4, returning.size());
+        assertTrue(containsNInstancesOf(returning, PointsToEscapeAnalysis.LocalScope.class, 2));
+        assertTrue(containsNInstancesOf(returning, PointsToEscapeAnalysis.InvocationResultScope.class, 2));
+    }
+
+    private Object method17(final Object a, final int b1, final Object k) {
+        A a1 = new A(null);
+        A a2 = new A(null);
+        new B(a1, a2);
+        return a2;
+    }
+
+    @Test
+    public void testMethod17() {
+        final PointsToEscapeAnalysis.AnalysisResult result = analyzeVirtualMethod(getClass(), "method17", new BytecodeMethodSignature(OBJECT_TYPE_REF,
+                new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
+        result.printDebugDotTree();
+        final List<Value> escapedValues = new ArrayList<>(result.escapedValues());
+        assertEquals(1, escapedValues.size());
+        assertTrue(containsOneInstanceOf(escapedValues, NewObjectAndConstructExpression.class));
+
+        final Program p = result.program();
+        final Set<PointsToEscapeAnalysis.Scope> scopesForThis = result.argumentsFlowsFor(p.argumentAt(0));
+        final Set<PointsToEscapeAnalysis.Scope> scopesForA = result.argumentsFlowsFor(p.argumentAt(1));
+        final Set<PointsToEscapeAnalysis.Scope> scopesForB1 = result.argumentsFlowsFor(p.argumentAt(2));
+        final Set<PointsToEscapeAnalysis.Scope> scopesForK = result.argumentsFlowsFor(p.argumentAt(3));
+        final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
+
+        assertTrue(scopesForThis.isEmpty());
+        assertTrue(scopesForA.isEmpty());
+        assertNull(scopesForB1);
+        assertTrue(scopesForK.isEmpty());
+
+        assertEquals(2, returning.size());
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.LocalScope.class));
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.InvocationResultScope.class));
+    }
 }

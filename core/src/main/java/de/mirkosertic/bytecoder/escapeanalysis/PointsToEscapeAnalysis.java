@@ -457,7 +457,7 @@ public class PointsToEscapeAnalysis {
                                             incomingScope.flowsInto(newScope);
                                         } else if (s instanceof MethodParameterScope) {
                                             final MethodParameterScope mp = (MethodParameterScope) s;
-                                            final Scope mpScope = analysisResult.scopes.get(constructorArguments.get(mp.parameterIndex()));
+                                            final Scope mpScope = analysisResult.scopes.get(constructorArguments.get(mp.parameterIndex() - 1));
                                             incomingScope.flowsInto(mpScope);
                                         }
                                     }
