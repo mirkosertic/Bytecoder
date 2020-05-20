@@ -53,7 +53,6 @@ import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.CurrentExceptionExpression;
 import de.mirkosertic.bytecoder.ssa.DataEndExpression;
 import de.mirkosertic.bytecoder.ssa.DebugPosition;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
 import de.mirkosertic.bytecoder.ssa.EnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
@@ -71,6 +70,7 @@ import de.mirkosertic.bytecoder.ssa.IFElseExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InstanceOfExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
+import de.mirkosertic.bytecoder.ssa.InvokeDirectMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.IsNaNExpression;
@@ -213,8 +213,8 @@ public class JSSSAWriter {
             print((IntegerValue) aValue);
         } else if (aValue instanceof NewArrayExpression) {
             print((NewArrayExpression) aValue);
-        } else if (aValue instanceof DirectInvokeMethodExpression) {
-            print((DirectInvokeMethodExpression) aValue);
+        } else if (aValue instanceof InvokeDirectMethodExpression) {
+            print((InvokeDirectMethodExpression) aValue);
         } else if (aValue instanceof FloatValue) {
             print((FloatValue) aValue);
         } else if (aValue instanceof DoubleValue) {
@@ -996,7 +996,7 @@ public class JSSSAWriter {
         }
     }
 
-    private void print(final DirectInvokeMethodExpression aValue) {
+    private void print(final InvokeDirectMethodExpression aValue) {
 
         final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(aValue.getClazz());
         final String theMethodName = aValue.getMethodName();
@@ -1335,8 +1335,8 @@ public class JSSSAWriter {
             startLine();
             print(theE);
             writer.text(";").newLine();
-        } else if (aExpression instanceof DirectInvokeMethodExpression) {
-            final DirectInvokeMethodExpression theE = (DirectInvokeMethodExpression) aExpression;
+        } else if (aExpression instanceof InvokeDirectMethodExpression) {
+            final InvokeDirectMethodExpression theE = (InvokeDirectMethodExpression) aExpression;
             startLine();
             print(theE);
             writer.text(";").newLine();

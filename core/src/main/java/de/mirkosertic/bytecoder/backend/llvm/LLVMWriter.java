@@ -48,7 +48,6 @@ import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadExpression;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.DataEndExpression;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
 import de.mirkosertic.bytecoder.ssa.EnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
@@ -65,6 +64,7 @@ import de.mirkosertic.bytecoder.ssa.HeapBaseExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InstanceOfExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
+import de.mirkosertic.bytecoder.ssa.InvokeDirectMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.IsNaNExpression;
@@ -1027,7 +1027,7 @@ public class LLVMWriter implements AutoCloseable {
 
             tempify((FloorExpression) v);
 
-        } else if (v instanceof DirectInvokeMethodExpression) {
+        } else if (v instanceof InvokeDirectMethodExpression) {
 
             // Nothing to be done here
 
@@ -1083,9 +1083,9 @@ public class LLVMWriter implements AutoCloseable {
                 write((UnreachableExpression) e);
             } else if (e instanceof PutFieldExpression) {
                 write((PutFieldExpression) e);
-            } else if (e instanceof DirectInvokeMethodExpression) {
+            } else if (e instanceof InvokeDirectMethodExpression) {
                 target.print("    ");
-                write((DirectInvokeMethodExpression) e);
+                write((InvokeDirectMethodExpression) e);
             } else if (e instanceof InvokeVirtualMethodExpression) {
                 target.print("    ");
                 write((InvokeVirtualMethodExpression) e);
@@ -1401,7 +1401,7 @@ public class LLVMWriter implements AutoCloseable {
         currentSubProgram.writeDebugSuffixFor(e, target);
     }
 
-    private void write(final DirectInvokeMethodExpression e) {
+    private void write(final InvokeDirectMethodExpression e) {
 
         final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(e.getClazz());
         final String theMethodName = e.getMethodName();
@@ -1702,8 +1702,8 @@ public class LLVMWriter implements AutoCloseable {
             write((NewObjectAndConstructExpression) aValue);
         } else if (aValue instanceof GetFieldExpression) {
             write((GetFieldExpression) aValue);
-        } else if (aValue instanceof DirectInvokeMethodExpression) {
-            write((DirectInvokeMethodExpression) aValue);
+        } else if (aValue instanceof InvokeDirectMethodExpression) {
+            write((InvokeDirectMethodExpression) aValue);
         } else if (aValue instanceof NullValue) {
             write((NullValue) aValue);
         } else if (aValue instanceof GetStaticExpression) {

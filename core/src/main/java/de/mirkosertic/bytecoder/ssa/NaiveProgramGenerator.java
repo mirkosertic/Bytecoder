@@ -1034,7 +1034,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
                         }
 
-                        final DirectInvokeMethodExpression theExpression = new DirectInvokeMethodExpression(aProgram, theInstruction.getOpcodeAddress(), theType,
+                        final InvokeDirectMethodExpression theExpression = new InvokeDirectMethodExpression(aProgram, theInstruction.getOpcodeAddress(), theType,
                                 theMethodName, theSignature, theTarget, theArguments);
                         if (theSignature.getReturnType().isVoid()) {
                             aTargetBlock.getExpressions().add(theExpression);

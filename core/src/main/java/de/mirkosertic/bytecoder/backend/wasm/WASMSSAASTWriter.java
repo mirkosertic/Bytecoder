@@ -70,7 +70,6 @@ import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteExpression;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.CurrentExceptionExpression;
 import de.mirkosertic.bytecoder.ssa.DataEndExpression;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
 import de.mirkosertic.bytecoder.ssa.EnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
@@ -88,6 +87,7 @@ import de.mirkosertic.bytecoder.ssa.IFElseExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InstanceOfExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
+import de.mirkosertic.bytecoder.ssa.InvokeDirectMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.IsNaNExpression;
@@ -342,8 +342,8 @@ public class WASMSSAASTWriter {
             generateInitVariableExpression((VariableAssignmentExpression) aExpression);
             return;
         }
-        if (aExpression instanceof DirectInvokeMethodExpression) {
-            generateDirectMethodInvokeExpression((DirectInvokeMethodExpression) aExpression);
+        if (aExpression instanceof InvokeDirectMethodExpression) {
+            generateDirectMethodInvokeExpression((InvokeDirectMethodExpression) aExpression);
             return;
         }
         if (aExpression instanceof IFExpression) {
@@ -627,7 +627,7 @@ public class WASMSSAASTWriter {
         c.falseWriter.writeExpressionList(aExpression.getElsePart());
     }
 
-    private void generateDirectMethodInvokeExpression(final DirectInvokeMethodExpression aExpression) {
+    private void generateDirectMethodInvokeExpression(final InvokeDirectMethodExpression aExpression) {
         if (aExpression.getSignature().getReturnType().isVoid()) {
             container.addChild(directMethodInvokeValue(aExpression));
         } else {
@@ -684,8 +684,8 @@ public class WASMSSAASTWriter {
         if (aValue instanceof IntegerValue) {
             return integerValue((IntegerValue) aValue);
         }
-        if (aValue instanceof DirectInvokeMethodExpression) {
-            return directMethodInvokeValue((DirectInvokeMethodExpression) aValue);
+        if (aValue instanceof InvokeDirectMethodExpression) {
+            return directMethodInvokeValue((InvokeDirectMethodExpression) aValue);
         }
         if (aValue instanceof InvokeStaticMethodExpression) {
             return invokeStaticValue((InvokeStaticMethodExpression) aValue);
@@ -1437,7 +1437,7 @@ public class WASMSSAASTWriter {
         }
     }
 
-    private WASMExpression directMethodInvokeValue(final DirectInvokeMethodExpression aValue) {
+    private WASMExpression directMethodInvokeValue(final InvokeDirectMethodExpression aValue) {
 
         final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(aValue.getClazz());
         final String theMethodName = aValue.getMethodName();

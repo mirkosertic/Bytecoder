@@ -20,12 +20,12 @@ import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.Statistics;
 import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.InvocationExpression;
+import de.mirkosertic.bytecoder.ssa.InvokeDirectMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
@@ -283,13 +283,13 @@ public class EscapeAnalysis {
             }
         }
 
-        if (aCurrentValue instanceof DirectInvokeMethodExpression) {
-            final DirectInvokeMethodExpression directInvokeMethodExpression = (DirectInvokeMethodExpression) aCurrentValue;
-            final List<Value> theArguments = directInvokeMethodExpression.incomingDataFlows();
+        if (aCurrentValue instanceof InvokeDirectMethodExpression) {
+            final InvokeDirectMethodExpression invokeDirectMethodExpression = (InvokeDirectMethodExpression) aCurrentValue;
+            final List<Value> theArguments = invokeDirectMethodExpression.incomingDataFlows();
             final ProgramDescriptor theDescriptor = programDescriptorProvider.resolveDirectInvocation(
-                    directInvokeMethodExpression.getClazz(),
-                    directInvokeMethodExpression.getMethodName(),
-                    directInvokeMethodExpression.getSignature()
+                    invokeDirectMethodExpression.getClazz(),
+                    invokeDirectMethodExpression.getMethodName(),
+                    invokeDirectMethodExpression.getSignature()
             );
             if (theDescriptor != null && !theDescriptor.method.getAccessFlags().isNative()) {
                 final AnalysisResult theResult = analyze(theDescriptor);
