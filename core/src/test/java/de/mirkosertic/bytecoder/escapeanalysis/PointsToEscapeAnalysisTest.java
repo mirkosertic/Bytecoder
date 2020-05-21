@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.escapeanalysis;
 
+import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 import de.mirkosertic.bytecoder.backend.llvm.LLVMIntrinsics;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
@@ -95,6 +96,9 @@ public class PointsToEscapeAnalysisTest {
             public ProgramDescriptor resolveStaticInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
                 final BytecodeLinkedClass theRequestedClass = aLinkercontext.resolveClass(aClass);
                 final BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
+                if (theRequestedMethod.getAccessFlags().isNative()) {
+                    return new ProgramDescriptor(theRequestedClass, theRequestedMethod, null);
+                }
                 final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
                 KnownOptimizer.LLVM.optimize(theProgram.getControlFlowGraph(), aLinkercontext);
                 return new ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
@@ -113,6 +117,9 @@ public class PointsToEscapeAnalysisTest {
             public ProgramDescriptor resolveDirectInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
                 final BytecodeLinkedClass theRequestedClass = aLinkercontext.resolveClass(aClass);
                 final BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
+                if (theRequestedMethod.getAccessFlags().isNative()) {
+                    return new ProgramDescriptor(theRequestedClass, theRequestedMethod, null);
+                }
                 final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
                 KnownOptimizer.LLVM.optimize(theProgram.getControlFlowGraph(), aLinkercontext);
                 return new ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
@@ -886,5 +893,82 @@ public class PointsToEscapeAnalysisTest {
 
         assertEquals(1, returning.size());
         assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.InvocationResultScope.class));
+    }
+
+    static abstract class X implements OpaqueReferenceType {
+
+        public static native X current(Object something);
+
+        public abstract void doSomethingWith(final Object o);
+    }
+
+    private Object method22(final Object a, final int b1, final Object k) {
+        final X x = X.current(null);
+        x.doSomethingWith(a);
+        return k;
+    }
+
+    @Test
+    public void testMethod22() {
+        final PointsToEscapeAnalysis.AnalysisResult result = analyzeVirtualMethod(getClass(), "method22", new BytecodeMethodSignature(OBJECT_TYPE_REF,
+                new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
+        result.printDebugDotTree();
+        final List<Value> escapedValues = new ArrayList<>(result.escapedValues());
+        assertEquals(2, escapedValues.size());
+        assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> t.isSynthetic() && t.getName().equals("_a")));
+        assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> t.isSynthetic() && t.getName().equals("_k")));
+
+        final Program p = result.program();
+        final Set<PointsToEscapeAnalysis.Scope> scopesForThis = result.argumentsFlowsFor(p.argumentAt(0));
+        final Set<PointsToEscapeAnalysis.Scope> scopesForA = result.argumentsFlowsFor(p.argumentAt(1));
+        final Set<PointsToEscapeAnalysis.Scope> scopesForB1 = result.argumentsFlowsFor(p.argumentAt(2));
+        final Set<PointsToEscapeAnalysis.Scope> scopesForK = result.argumentsFlowsFor(p.argumentAt(3));
+        final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
+
+        assertTrue(scopesForThis.isEmpty());
+
+        assertEquals(1, scopesForA.size());
+        assertTrue(containsOneInstanceOf(scopesForA, PointsToEscapeAnalysis.StaticScope.class));
+
+        assertNull(scopesForB1);
+
+        assertEquals(1, scopesForK.size());
+        assertTrue(containsOneInstanceOf(scopesForK, PointsToEscapeAnalysis.ReturnScope.class));
+
+        assertEquals(1, returning.size());
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 3));
+    }
+
+    private Object method23(final Object a, final int b1, final Object k) {
+        throw (RuntimeException) a;
+    }
+
+    @Test
+    public void testMethod23() {
+        final PointsToEscapeAnalysis.AnalysisResult result = analyzeVirtualMethod(getClass(), "method23", new BytecodeMethodSignature(OBJECT_TYPE_REF,
+                new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
+        result.printDebugDotTree();
+        final List<Value> escapedValues = new ArrayList<>(result.escapedValues());
+        assertEquals(1, escapedValues.size());
+        assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> t.isSynthetic() && t.getName().equals("_a")));
+
+        final Program p = result.program();
+        final Set<PointsToEscapeAnalysis.Scope> scopesForThis = result.argumentsFlowsFor(p.argumentAt(0));
+        final Set<PointsToEscapeAnalysis.Scope> scopesForA = result.argumentsFlowsFor(p.argumentAt(1));
+        final Set<PointsToEscapeAnalysis.Scope> scopesForB1 = result.argumentsFlowsFor(p.argumentAt(2));
+        final Set<PointsToEscapeAnalysis.Scope> scopesForK = result.argumentsFlowsFor(p.argumentAt(3));
+        final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
+
+        assertTrue(scopesForThis.isEmpty());
+
+        assertEquals(1, scopesForA.size());
+        assertTrue(containsOneInstanceOf(scopesForA, PointsToEscapeAnalysis.ReturnScope.class));
+
+        assertNull(scopesForB1);
+
+        assertTrue(scopesForK.isEmpty());
+
+        assertEquals(1, returning.size());
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 1));
     }
 }

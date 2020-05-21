@@ -199,7 +199,6 @@ public class PointsToEscapeAnalysis {
             return toScopeDebugLabel(scope, true);
         }
 
-
         private String toScopeDebugLabel(final Scope scope, final boolean includeFlow) {
             String label;
             if (scope instanceof MethodParameterScope) {
@@ -468,7 +467,7 @@ public class PointsToEscapeAnalysis {
                                         if (s instanceof StaticScope) {
                                             incomingScope.flowsInto(staticScope);
                                         } else if (s instanceof ReturnScope) {
-                                            incomingScope.flowsInto(invocationScope);
+                                            throw new IllegalArgumentException("Constructors must not have a return scope!");
                                         } else if (s instanceof ThisScope) {
                                             incomingScope.flowsInto(invocationScope);
                                         } else if (s instanceof MethodParameterScope) {
@@ -490,36 +489,56 @@ public class PointsToEscapeAnalysis {
                             final InvocationResultScope invocationScope = new InvocationResultScope();
 
                             final InvokeDirectMethodExpression x = (InvokeDirectMethodExpression) currentEntry.value;
-                            // We analyze the method invocation
-                            final AnalysisResult methodAnalysisAnalysis = analyze(programDescriptorProvider.resolveDirectInvocation(x.getClazz(), x.getMethodName(), x.getSignature()));
-                            final List<Value> methodArguments = currentEntry.value.incomingDataFlows();
 
-                            // Now, for every argument, we check if it escapes to other scopes
-                            for (int i = 0; i < methodAnalysisAnalysis.program.getArguments().size(); i++) {
-                                final Variable programArgument = methodAnalysisAnalysis.program.argumentAt(i);
-                                final TypeRef argumentType = programArgument.resolveType();
-                                if (argumentType.isArray() || argumentType.isObject()) {
-                                    final Scope incomingScope = analysisResult.scopes.get(methodArguments.get(i));
-                                    for (final Scope s : methodAnalysisAnalysis.argumentsFlowsFor(programArgument)) {
-                                        if (s instanceof StaticScope) {
-                                            incomingScope.flowsInto(staticScope);
-                                        } else if (s instanceof ReturnScope) {
-                                            incomingScope.flowsInto(invocationScope);
-                                        } else if (s instanceof ThisScope) {
-                                            incomingScope.flowsInto(analysisResult.scopes.get(methodArguments.get(0)));
-                                        } else if (s instanceof MethodParameterScope) {
-                                            final MethodParameterScope mp = (MethodParameterScope) s;
-                                            final Scope mpScope = analysisResult.scopes.get(methodArguments.get(mp.parameterIndex()));
-                                            incomingScope.flowsInto(mpScope);
+                            // We analyze the method invocation
+                            final ProgramDescriptor pd = programDescriptorProvider.resolveDirectInvocation(x.getClazz(), x.getMethodName(), x.getSignature());
+                            if (pd.method.getAccessFlags().isNative()) {
+                                // We assume everything escapes for native methods
+                                for (final Value v : currentEntry.value.incomingDataFlows()) {
+                                    final TypeRef argumentType = v.resolveType();
+                                    if (argumentType.isArray() || argumentType.isObject()) {
+                                        final Scope incomingScope = analysisResult.scopes.get(v);
+                                        incomingScope.flowsInto(staticScope);
+                                    }
+                                }
+
+                                // All dataflows are not defined, we can continue with the new scope from here
+                                analysisResult.scopes.put(currentEntry.value, invocationScope);
+
+                                workingQueue.addAll(theOutgoing);
+
+                            } else {
+
+                                final AnalysisResult methodAnalysisAnalysis = analyze(pd);
+                                final List<Value> methodArguments = currentEntry.value.incomingDataFlows();
+
+                                // Now, for every argument, we check if it escapes to other scopes
+                                for (int i = 0; i < methodAnalysisAnalysis.program.getArguments().size(); i++) {
+                                    final Variable programArgument = methodAnalysisAnalysis.program.argumentAt(i);
+                                    final TypeRef argumentType = programArgument.resolveType();
+                                    if (argumentType.isArray() || argumentType.isObject()) {
+                                        final Scope incomingScope = analysisResult.scopes.get(methodArguments.get(i));
+                                        for (final Scope s : methodAnalysisAnalysis.argumentsFlowsFor(programArgument)) {
+                                            if (s instanceof StaticScope) {
+                                                incomingScope.flowsInto(staticScope);
+                                            } else if (s instanceof ReturnScope) {
+                                                incomingScope.flowsInto(invocationScope);
+                                            } else if (s instanceof ThisScope) {
+                                                incomingScope.flowsInto(analysisResult.scopes.get(methodArguments.get(0)));
+                                            } else if (s instanceof MethodParameterScope) {
+                                                final MethodParameterScope mp = (MethodParameterScope) s;
+                                                final Scope mpScope = analysisResult.scopes.get(methodArguments.get(mp.parameterIndex()));
+                                                incomingScope.flowsInto(mpScope);
+                                            }
                                         }
                                     }
                                 }
+
+                                // All dataflows are not defined, we can continue with the new scope from here
+                                analysisResult.scopes.put(currentEntry.value, invocationScope);
+
+                                workingQueue.addAll(theOutgoing);
                             }
-
-                            // All dataflows are not defined, we can continue with the new scope from here
-                            analysisResult.scopes.put(currentEntry.value, invocationScope);
-
-                            workingQueue.addAll(theOutgoing);
 
                         } else if (currentEntry.value instanceof InvokeVirtualMethodExpression) {
 
@@ -549,39 +568,54 @@ public class PointsToEscapeAnalysis {
                         } else if (currentEntry.value instanceof InvokeStaticMethodExpression) {
 
                             final InvocationResultScope invocationScope = new InvocationResultScope();
-
                             final InvokeStaticMethodExpression x = (InvokeStaticMethodExpression) currentEntry.value;
-                            // We analyze the constructor invocation
-                            final AnalysisResult staticAnalysis = analyze(programDescriptorProvider.resolveStaticInvocation(x.getClassName(), x.getMethodName(), x.getSignature()));
-                            final List<Value> staticArguments = currentEntry.value.incomingDataFlows();
+                            final ProgramDescriptor pd = programDescriptorProvider.resolveStaticInvocation(x.getClassName(), x.getMethodName(), x.getSignature());
+                            if (pd.method.getAccessFlags().isNative()) {
+                                // We assume everything escapes for native methods
+                                for (final Value v : currentEntry.value.incomingDataFlows()) {
+                                    final TypeRef argumentType = v.resolveType();
+                                    if (argumentType.isArray() || argumentType.isObject()) {
+                                        final Scope incomingScope = analysisResult.scopes.get(v);
+                                        incomingScope.flowsInto(staticScope);
+                                    }
+                                }
 
-                            // Now, for every argument, we check if it escapes to other scopes
-                            for (int i = 0; i < staticAnalysis.program.getArguments().size(); i++) {
-                                final Variable programArgument = staticAnalysis.program.argumentAt(i);
-                                final TypeRef argumentType = programArgument.resolveType();
-                                if (argumentType.isArray() || argumentType.isObject()) {
-                                    final Scope incomingScope = analysisResult.scopes.get(staticArguments.get(i));
-                                    for (final Scope s : staticAnalysis.argumentsFlowsFor(programArgument)) {
-                                        if (s instanceof StaticScope) {
-                                            incomingScope.flowsInto(staticScope);
-                                        } else if (s instanceof ReturnScope) {
-                                            incomingScope.flowsInto(invocationScope);
-                                        } else if (s instanceof ThisScope) {
-                                            throw new IllegalArgumentException("this cannot be used in a static context!");
-                                        } else if (s instanceof MethodParameterScope) {
-                                            final MethodParameterScope mp = (MethodParameterScope) s;
-                                            final Scope mpScope = analysisResult.scopes.get(staticArguments.get(mp.parameterIndex()));
-                                            incomingScope.flowsInto(mpScope);
+                                // All dataflows are not defined, we can continue with the new scope from here
+                                analysisResult.scopes.put(currentEntry.value, invocationScope);
+
+                                workingQueue.addAll(theOutgoing);
+
+                            } else {
+                                final AnalysisResult staticAnalysis = analyze(pd);
+                                final List<Value> staticArguments = currentEntry.value.incomingDataFlows();
+
+                                // Now, for every argument, we check if it escapes to other scopes
+                                for (int i = 0; i < staticAnalysis.program.getArguments().size(); i++) {
+                                    final Variable programArgument = staticAnalysis.program.argumentAt(i);
+                                    final TypeRef argumentType = programArgument.resolveType();
+                                    if (argumentType.isArray() || argumentType.isObject()) {
+                                        final Scope incomingScope = analysisResult.scopes.get(staticArguments.get(i));
+                                        for (final Scope s : staticAnalysis.argumentsFlowsFor(programArgument)) {
+                                            if (s instanceof StaticScope) {
+                                                incomingScope.flowsInto(staticScope);
+                                            } else if (s instanceof ReturnScope) {
+                                                incomingScope.flowsInto(invocationScope);
+                                            } else if (s instanceof ThisScope) {
+                                                throw new IllegalArgumentException("this cannot be used in a static context!");
+                                            } else if (s instanceof MethodParameterScope) {
+                                                final MethodParameterScope mp = (MethodParameterScope) s;
+                                                final Scope mpScope = analysisResult.scopes.get(staticArguments.get(mp.parameterIndex()));
+                                                incomingScope.flowsInto(mpScope);
+                                            }
                                         }
                                     }
                                 }
+
+                                // All dataflows are not defined, we can continue with the new scope from here
+                                analysisResult.scopes.put(currentEntry.value, invocationScope);
+
+                                workingQueue.addAll(theOutgoing);
                             }
-
-                            // All dataflows are not defined, we can continue with the new scope from here
-                            analysisResult.scopes.put(currentEntry.value, invocationScope);
-
-                            workingQueue.addAll(theOutgoing);
-
                         } else {
 
                             if (theIncomingWithScope.size() == 1) {
