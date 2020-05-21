@@ -55,6 +55,7 @@ import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -296,7 +297,18 @@ public class PointsToEscapeAnalysis {
         // We check for recursion in the analysis
         for (final CachedAnalysisResult stackEntry : analysisStack) {
             if (stackEntry.programDescriptor.linkedClass == aProgramDescriptor.linkedClass && stackEntry.programDescriptor.method == aProgramDescriptor.method) {
-                // TODO: Check for recursion in the current stack
+                // Recursion cannot be analyzed here
+                // We assume that every argument escapes to the static flow
+                final AnalysisResult recursionResult = new AnalysisResult(stackEntry.programDescriptor.program);
+                final StaticScope staticScope = new StaticScope();
+                for (final Variable v : stackEntry.programDescriptor.program.getArguments()) {
+                    final TypeRef t = v.resolveType();
+                    if (t.isArray() || t.isObject()) {
+                        recursionResult.escapedValue(v);
+                        recursionResult.setArgumentFlows(v, Collections.singleton(staticScope));
+                    }
+                }
+                return recursionResult;
             }
         }
 

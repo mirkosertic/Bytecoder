@@ -850,4 +850,41 @@ public class PointsToEscapeAnalysisTest {
         assertEquals(1, returning.size());
         assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.LocalScope.class));
     }
+
+    private Object method21(final Object a, final int b1, final Object k) {
+        return method21(a, b1, k);
+    }
+
+    @Test
+    public void testMethod21() {
+        final PointsToEscapeAnalysis.AnalysisResult result = analyzeVirtualMethod(getClass(), "method21", new BytecodeMethodSignature(OBJECT_TYPE_REF,
+                new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
+        result.printDebugDotTree();
+        final List<Value> escapedValues = new ArrayList<>(result.escapedValues());
+        assertEquals(3, escapedValues.size());
+        assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> t.isSynthetic() && t.getName().equals("_a")));
+        assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> t.isSynthetic() && t.getName().equals("_k")));
+        assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> t.isSynthetic() && t.getName().equals("__tr")));
+
+        final Program p = result.program();
+        final Set<PointsToEscapeAnalysis.Scope> scopesForThis = result.argumentsFlowsFor(p.argumentAt(0));
+        final Set<PointsToEscapeAnalysis.Scope> scopesForA = result.argumentsFlowsFor(p.argumentAt(1));
+        final Set<PointsToEscapeAnalysis.Scope> scopesForB1 = result.argumentsFlowsFor(p.argumentAt(2));
+        final Set<PointsToEscapeAnalysis.Scope> scopesForK = result.argumentsFlowsFor(p.argumentAt(3));
+        final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
+
+        assertEquals(1, scopesForThis.size());
+        assertTrue(containsOneInstanceOf(scopesForThis, PointsToEscapeAnalysis.StaticScope.class));
+
+        assertEquals(1, scopesForA.size());
+        assertTrue(containsOneInstanceOf(scopesForA, PointsToEscapeAnalysis.StaticScope.class));
+
+        assertNull(scopesForB1);
+
+        assertEquals(1, scopesForK.size());
+        assertTrue(containsOneInstanceOf(scopesForK, PointsToEscapeAnalysis.StaticScope.class));
+
+        assertEquals(1, returning.size());
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.InvocationResultScope.class));
+    }
 }
