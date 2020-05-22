@@ -37,7 +37,6 @@ import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -1073,7 +1072,9 @@ public class PointsToEscapeAnalysisTest {
         assertTrue(scopesForSrc.isEmpty());
         assertTrue(scopesForLocale.isEmpty());
 
-        assertTrue(returning.isEmpty());
+        assertEquals(3, returning.size());
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.LocalScope.class));
+        assertTrue(containsNInstancesOf(returning, PointsToEscapeAnalysis.InvocationResultScope.class, 2));
     }
 
     private Object method27(final Object a, final int b1, final Object k) {
@@ -1116,14 +1117,14 @@ public class PointsToEscapeAnalysisTest {
     }
 
     @Test
-    @Ignore
     public void testMethod28() {
         final PointsToEscapeAnalysis.AnalysisResult result = analyzeVirtualMethod(getClass(), "method28", new BytecodeMethodSignature(OBJECT_TYPE_REF,
                 new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
 
         result.printDebugDotTree();
         final List<Value> escapedValues = new ArrayList<>(result.escapedValues());
-        assertTrue(escapedValues.isEmpty());
+        assertEquals(1, escapedValues.size());
+        assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> t.getName().equals("__tr")));
 
         final Program p = result.program();
         final Set<PointsToEscapeAnalysis.Scope> scopesForThis = result.argumentsFlowsFor(p.argumentAt(0));
@@ -1133,13 +1134,14 @@ public class PointsToEscapeAnalysisTest {
 
         final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
 
-        assertTrue(scopesForThis.isEmpty());
+        assertEquals(1, scopesForThis.size());
+        assertTrue(containsOneInstanceOf(scopesForThis, PointsToEscapeAnalysis.ReturnScope.class));
 
         assertTrue(scopesForA.isEmpty());
         assertNull(scopesForB1);
         assertTrue(scopesForK.isEmpty());
 
         assertEquals(1, returning.size());
-        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.StaticScope.class));
+        assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.ThisScope.class));
     }
 }

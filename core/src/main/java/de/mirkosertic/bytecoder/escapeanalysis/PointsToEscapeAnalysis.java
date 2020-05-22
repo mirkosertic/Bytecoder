@@ -80,8 +80,17 @@ import java.util.stream.Collectors;
 
 public class PointsToEscapeAnalysis {
 
-    enum PointsTo implements EdgeType {
-        to
+    enum Flowdirection {
+        forward, backward
+    }
+
+    class PointsTo implements EdgeType {
+
+        private Flowdirection flowdirection;
+
+        public PointsTo() {
+            flowdirection = Flowdirection.forward;
+        }
     }
 
     static class GraphNode extends Node<GraphNode, PointsTo> {
@@ -268,9 +277,13 @@ public class PointsToEscapeAnalysis {
                         System.out.println(" n_" + System.identityHashCode(v) + "[shape=box label=\"" + label + "\"];");
                     }
                 }
-                v.outgoingEdges().map(Edge::targetNode).forEach(t -> {
-                    System.out.print(" n_" + System.identityHashCode(v) + " -> ");
-                    System.out.println(" n_" + System.identityHashCode(t));
+                v.outgoingEdges().forEach(edge -> {
+                    System.out.print(" n_" + System.identityHashCode(edge.sourceNode()) + " -> ");
+                    if (edge.edgeType().flowdirection == Flowdirection.forward) {
+                        System.out.println(" n_" + System.identityHashCode(edge.targetNode()));
+                    } else {
+                        System.out.println(" n_" + System.identityHashCode(edge.targetNode()) + "[color=blue]");
+                    }
                 });
             }
             System.out.println("}");
@@ -342,7 +355,7 @@ public class PointsToEscapeAnalysis {
             if (theType.isArray() || theType.isObject()) {
                 final GraphNode varNode = analysisResult.nodeFor(v);
                 final GraphNode initValue = analysisResult.nodeFor(v.incomingDataFlows().get(0));
-                initValue.addEdgeTo(PointsTo.to, varNode);
+                initValue.addEdgeTo(new PointsTo(), varNode);
             }
         }
 
@@ -357,7 +370,7 @@ public class PointsToEscapeAnalysis {
                     .filter(alreadyKnownPHIvalues::add).forEach(t -> {
 
                 final GraphNode phiNode = analysisResult.nodeFor(t);
-                for (final RegionNode pred : theNode.getPredecessors()) {
+                for (final RegionNode pred : theNode.getPredecessorsIgnoringBackEdges()) {
                     if (pred != theNode) {
                         final BlockState theOut = pred.liveOut();
                         final Value incomingValue = theOut.getPorts().get(t.getDescription());
@@ -369,7 +382,7 @@ public class PointsToEscapeAnalysis {
 
                         if (incomingNode != phiNode) {
                             if (incomingNode.outgoingEdges().map(Edge::targetNode).noneMatch(x -> x != phiNode)) {
-                                incomingNode.addEdgeTo(PointsTo.to, phiNode);
+                                incomingNode.addEdgeTo(new PointsTo(), phiNode);
                             }
                         }
                     }
@@ -378,8 +391,28 @@ public class PointsToEscapeAnalysis {
             analyze(theNode.getExpressions(), analysisResult);
         }
 
-        // Step 2: we compute the scope flow
-        final Queue<GraphNode> workingQueue = analysisResult.nodes.values().stream().filter(t -> t.incomingEdges().count() == 0).distinct().collect(Collectors.toCollection(LinkedList::new));
+        // Step 2: find back edges in the graph
+        final Set<GraphNode> rootNodes = analysisResult.nodes.values().stream().filter(t -> t.incomingEdges().count() == 0).collect(Collectors.toSet());
+        for (final GraphNode rootNode : rootNodes) {
+            final Stack<GraphNode> worklist = new Stack<>();
+            final Set<GraphNode> alreadySeen = new HashSet<>();
+            worklist.push(rootNode);
+            while (!worklist.isEmpty()) {
+                final GraphNode currentNode = worklist.pop();
+                if (alreadySeen.add(currentNode)) {
+                    currentNode.outgoingEdges().forEach(edge -> {
+                        if (!alreadySeen.contains(edge.targetNode())) {
+                            worklist.add(edge.targetNode());
+                        } else {
+                            edge.edgeType().flowdirection = Flowdirection.backward;
+                        }
+                    });
+                }
+            }
+        }
+
+        // Step 3: we compute the scope flow
+        final Queue<GraphNode> workingQueue = new LinkedList<>(rootNodes);
         while (!workingQueue.isEmpty()) {
             final GraphNode currentEntry = workingQueue.poll();
             final Set<GraphNode> theOutgoing = currentEntry.outgoingEdges().map(Edge::targetNode).filter(t -> !analysisResult.scopes.containsKey(t.value)).collect(Collectors.toSet());
@@ -414,7 +447,7 @@ public class PointsToEscapeAnalysis {
                 analysisResult.scopes.put(currentEntry.value, new MethodParameterScope(((MethodParameterValue) currentEntry.value)));
                 addNotExisting(workingQueue, theOutgoing);
             } else {
-                final Set<GraphNode> theIncoming = currentEntry.incomingEdges().map(t -> (GraphNode) t.sourceNode()).collect(Collectors.toSet());
+                final Set<GraphNode> theIncoming = currentEntry.incomingEdges().filter(edge -> edge.edgeType().flowdirection == Flowdirection.forward).map(t -> (GraphNode) t.sourceNode()).collect(Collectors.toSet());
                 final Set<GraphNode> theIncomingWithScope = theIncoming.stream().filter(t -> analysisResult.scopes.containsKey(t.value)).collect(Collectors.toSet());
                 if (theIncoming.size() == theIncomingWithScope.size()) {
                     // We have all predecessor scopes, so we can continue and compute the scope flow
@@ -687,6 +720,14 @@ public class PointsToEscapeAnalysis {
                             if (theIncomingWithScope.size() == 1) {
                                 final Scope newScope = analysisResult.scopes.get(theIncomingWithScope.iterator().next().value);
                                 analysisResult.scopes.put(currentEntry.value, newScope);
+
+                                if (currentEntry.value instanceof Variable) {
+                                    // This variable might flow back into a PHIScope we already know
+                                    currentEntry.value.outgoingEdges().map(Edge::targetNode)
+                                            .map(analysisResult.scopes::get)
+                                            .filter(t -> t instanceof PHIScope).forEach(newScope::flowsInto);
+                                }
+
                             } else if (currentEntry.value instanceof PHIValue) {
                                 final Scope newScope = analysisResult.scopes.computeIfAbsent(currentEntry.value, key -> new PHIScope(theIncomingWithScope.stream().map(t -> analysisResult.scopes.get(t.value)).collect(Collectors.toSet())));
                                 analysisResult.scopes.put(currentEntry.value, newScope);
@@ -706,7 +747,7 @@ public class PointsToEscapeAnalysis {
             }
         }
 
-        // Step 3: Compute escaping allocations of flows for the arguments
+        // Step 4: Compute escaping allocations of flows for the arguments
         for (final Variable v : aProgramDescriptor.program.getArguments()) {
             final TypeRef theType = v.resolveType();
             if (theType.isObject() || theType.isArray()) {
@@ -734,7 +775,7 @@ public class PointsToEscapeAnalysis {
             }
         }
 
-        // Step 4 : Compute escapes for allocations
+        // Step 5 : Compute escapes for allocations
         analysisResult.scopes.entrySet().stream().filter(t ->
                 t.getKey() instanceof NewArrayExpression ||
                 t.getKey() instanceof NewMultiArrayExpression ||
@@ -812,7 +853,7 @@ public class PointsToEscapeAnalysis {
                 final GraphNode varNode = analysisResult.nodeFor(v.getVariable());
                 final GraphNode valueNode = analysisResult.nodeFor(theIncoming.get(0));
 
-                valueNode.addEdgeTo(PointsTo.to, varNode);
+                valueNode.addEdgeTo(new PointsTo(), varNode);
 
                 analyze(valueNode.value, analysisResult);
             }
@@ -826,7 +867,7 @@ public class PointsToEscapeAnalysis {
                 final TypeRef type = v.resolveType();
                 if (type.isObject() || type.isArray()) {
                     final GraphNode arg = analysisResult.nodeFor(v);
-                    arg.addEdgeTo(PointsTo.to, newNode);
+                    arg.addEdgeTo(new PointsTo(), newNode);
                 }
             }
 
@@ -839,7 +880,7 @@ public class PointsToEscapeAnalysis {
                 final TypeRef type = v.resolveType();
                 if (type.isObject() || type.isArray()) {
                     final GraphNode arg = analysisResult.nodeFor(v);
-                    arg.addEdgeTo(PointsTo.to, newNode);
+                    arg.addEdgeTo(new PointsTo(), newNode);
                 }
             }
 
@@ -852,7 +893,7 @@ public class PointsToEscapeAnalysis {
                 final TypeRef type = v.resolveType();
                 if (type.isObject() || type.isArray()) {
                     final GraphNode arg = analysisResult.nodeFor(v);
-                    arg.addEdgeTo(PointsTo.to, newNode);
+                    arg.addEdgeTo(new PointsTo(), newNode);
                 }
             }
 
@@ -868,7 +909,7 @@ public class PointsToEscapeAnalysis {
                 final TypeRef type = v.resolveType();
                 if (type.isObject() || type.isArray()) {
                     final GraphNode arg = analysisResult.nodeFor(v);
-                    arg.addEdgeTo(PointsTo.to, newNode);
+                    arg.addEdgeTo(new PointsTo(), newNode);
                 }
             }
 
@@ -881,7 +922,7 @@ public class PointsToEscapeAnalysis {
                 final TypeRef type = v.resolveType();
                 if (type.isObject() || type.isArray()) {
                     final GraphNode arg = analysisResult.nodeFor(v);
-                    arg.addEdgeTo(PointsTo.to, newNode);
+                    arg.addEdgeTo(new PointsTo(), newNode);
                 }
             }
 
@@ -894,7 +935,23 @@ public class PointsToEscapeAnalysis {
                 final TypeRef type = v.resolveType();
                 if (type.isObject() || type.isArray()) {
                     final GraphNode arg = analysisResult.nodeFor(v);
-                    arg.addEdgeTo(PointsTo.to, newNode);
+                    arg.addEdgeTo(new PointsTo(), newNode);
+                }
+            }
+
+        } else if (aExpression instanceof PHIValue) {
+
+            final PHIValue phi = (PHIValue) aExpression;
+            final GraphNode phiNode = analysisResult.nodeFor(phi);
+
+            for (final Value v : phi.incomingDataFlows()) {
+                final TypeRef type = v.resolveType();
+                if (type.isObject() || type.isArray()) {
+                    final GraphNode arg = analysisResult.nodeFor(v);
+
+                    if (arg.outgoingEdges().map(Edge::targetNode).noneMatch(x -> x == phiNode)) {
+                        arg.addEdgeTo(new PointsTo(), phiNode);
+                    }
                 }
             }
 
@@ -912,7 +969,7 @@ public class PointsToEscapeAnalysis {
                 final GraphNode rNode = analysisResult.nodeFor(r);
                 final GraphNode argNode = analysisResult.nodeFor(theIncoming.get(0));
 
-                argNode.addEdgeTo(PointsTo.to, rNode);
+                argNode.addEdgeTo(new PointsTo(), rNode);
             }
 
         } else if (aExpression instanceof PutFieldExpression) {
@@ -925,8 +982,8 @@ public class PointsToEscapeAnalysis {
                 final GraphNode valueNode = analysisResult.nodeFor(theIncoming.get(1));
 
                 final GraphNode thePut = analysisResult.nodeFor(p);
-                valueNode.addEdgeTo(PointsTo.to, thePut);
-                thePut.addEdgeTo(PointsTo.to, instanceNode);
+                valueNode.addEdgeTo(new PointsTo(), thePut);
+                thePut.addEdgeTo(new PointsTo(), instanceNode);
 
             }
 
@@ -948,7 +1005,7 @@ public class PointsToEscapeAnalysis {
                 final List<Value> theIncoming = p.incomingDataFlows();
                 final GraphNode theValueNode = analysisResult.nodeFor(theIncoming.get(0));
 
-                theValueNode.addEdgeTo(PointsTo.to, putNode);
+                theValueNode.addEdgeTo(new PointsTo(), putNode);
             }
 
         } else if (aExpression instanceof SetEnumConstantsExpression) {
@@ -958,7 +1015,7 @@ public class PointsToEscapeAnalysis {
 
             for (final Value v : p.incomingDataFlows()) {
                 final GraphNode theValueNode = analysisResult.nodeFor(v);
-                theValueNode.addEdgeTo(PointsTo.to, putNode);
+                theValueNode.addEdgeTo(new PointsTo(), putNode);
             }
 
         } else if (aExpression instanceof GetFieldExpression) {
@@ -971,7 +1028,7 @@ public class PointsToEscapeAnalysis {
                 final GraphNode instanceNode = analysisResult.nodeFor(p);
                 final GraphNode valueNode = analysisResult.nodeFor(theIncoming.get(0));
 
-                valueNode.addEdgeTo(PointsTo.to, instanceNode);
+                valueNode.addEdgeTo(new PointsTo(), instanceNode);
             }
 
         } else if (aExpression instanceof NewArrayExpression) {
@@ -994,8 +1051,8 @@ public class PointsToEscapeAnalysis {
                 final GraphNode arrayNode = analysisResult.nodeFor(theIncoming.get(0));
                 final GraphNode valueNode = analysisResult.nodeFor(theIncoming.get(2));
 
-                rNode.addEdgeTo(PointsTo.to, arrayNode);
-                valueNode.addEdgeTo(PointsTo.to, rNode);
+                rNode.addEdgeTo(new PointsTo(), arrayNode);
+                valueNode.addEdgeTo(new PointsTo(), rNode);
             }
         } else if (aExpression instanceof ArrayEntryExpression) {
 
@@ -1008,7 +1065,7 @@ public class PointsToEscapeAnalysis {
                 final GraphNode rNode = analysisResult.nodeFor(x);
                 final GraphNode arrayNode = analysisResult.nodeFor(theIncoming.get(0));
 
-                arrayNode.addEdgeTo(PointsTo.to, rNode);
+                arrayNode.addEdgeTo(new PointsTo(), rNode);
             }
         }
     }
