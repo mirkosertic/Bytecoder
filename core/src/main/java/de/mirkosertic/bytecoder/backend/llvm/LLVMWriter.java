@@ -86,8 +86,8 @@ import de.mirkosertic.bytecoder.ssa.NegatedExpression;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
-import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
-import de.mirkosertic.bytecoder.ssa.NewObjectExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceAndConstructExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
@@ -95,7 +95,7 @@ import de.mirkosertic.bytecoder.ssa.PtrOfExpression;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
-import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
+import de.mirkosertic.bytecoder.ssa.ResolveCallsiteInstanceExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
 import de.mirkosertic.bytecoder.ssa.SetEnumConstantsExpression;
@@ -159,14 +159,14 @@ public class LLVMWriter implements AutoCloseable {
     private final NativeMemoryLayouter memoryLayouter;
     private final BytecodeLinkerContext linkerContext;
     private final SymbolResolver symbolResolver;
-    private final boolean escapeAnalysisEnabled;
+    private final boolean stackAllocationEnabled;
 
     public LLVMWriter(final PrintWriter output, final NativeMemoryLayouter memoryLayouter, final BytecodeLinkerContext linkerContext, final SymbolResolver symbolResolver, final boolean aEscapeAnalysisEnabled) {
         this.target = output;
         this.memoryLayouter = memoryLayouter;
         this.linkerContext = linkerContext;
         this.symbolResolver = symbolResolver;
-        this.escapeAnalysisEnabled = aEscapeAnalysisEnabled;
+        this.stackAllocationEnabled = aEscapeAnalysisEnabled;
     }
 
     @Override
@@ -567,7 +567,7 @@ public class LLVMWriter implements AutoCloseable {
         target.println("*");
     }
 
-    private void tempify(final NewObjectExpression e) {
+    private void tempify(final NewInstanceExpression e) {
         final String theClassName = LLVMWriterUtils.toClassName(BytecodeObjectTypeRef.fromUtf8Constant(e.getType().getConstant()));
         target.print("    %");
         target.print(toTempSymbol(e, "vtable"));
@@ -580,8 +580,8 @@ public class LLVMWriter implements AutoCloseable {
         target.println(" to i32");
     }
 
-    private void tempify(final NewObjectAndConstructExpression e) {
-        if (!e.isEscaping() && escapeAnalysisEnabled) {
+    private void tempify(final NewInstanceAndConstructExpression e) {
+        if (!e.isEscaping() && stackAllocationEnabled) {
             // Perform stack allocation
             final String theClassName = LLVMWriterUtils.toClassName(e.getClazz());
             target.print("    %");
@@ -663,7 +663,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print(LLVMWriter.VTABLESUFFIX);
         target.println(" to i32");
 
-        if (!e.isEscaping() && escapeAnalysisEnabled) {
+        if (!e.isEscaping() && stackAllocationEnabled) {
 
             // Perform stack allocation
             target.print("    %");
@@ -991,13 +991,13 @@ public class LLVMWriter implements AutoCloseable {
 
             tempify((TypeOfExpression) v);
 
-        } else if (v instanceof NewObjectExpression) {
+        } else if (v instanceof NewInstanceExpression) {
 
-            tempify((NewObjectExpression) v);
+            tempify((NewInstanceExpression) v);
 
-        } else if (v instanceof NewObjectAndConstructExpression) {
+        } else if (v instanceof NewInstanceAndConstructExpression) {
 
-            tempify((NewObjectAndConstructExpression) v);
+            tempify((NewInstanceAndConstructExpression) v);
 
         } else if (v instanceof NewArrayExpression) {
 
@@ -1039,7 +1039,7 @@ public class LLVMWriter implements AutoCloseable {
 
             // Nothing to be done here
 
-        } else if (v instanceof NewObjectAndConstructExpression) {
+        } else if (v instanceof NewInstanceAndConstructExpression) {
 
             // Nothing to be done here
 
@@ -1265,7 +1265,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final NewArrayExpression e) {
-        if (!e.isEscaping() && escapeAnalysisEnabled) {
+        if (!e.isEscaping() && stackAllocationEnabled) {
 
             linkerContext.getStatistics().context("Codegenerator")
                     .counter("ArrayOnStackAllocations").increment();
@@ -1698,8 +1698,8 @@ public class LLVMWriter implements AutoCloseable {
             write((TypeConversionExpression) aValue);
         } else if (aValue instanceof StackTopExpression) {
             write((StackTopExpression) aValue);
-        } else if (aValue instanceof NewObjectAndConstructExpression) {
-            write((NewObjectAndConstructExpression) aValue);
+        } else if (aValue instanceof NewInstanceAndConstructExpression) {
+            write((NewInstanceAndConstructExpression) aValue);
         } else if (aValue instanceof GetFieldExpression) {
             write((GetFieldExpression) aValue);
         } else if (aValue instanceof InvokeDirectMethodExpression) {
@@ -1732,8 +1732,8 @@ public class LLVMWriter implements AutoCloseable {
             write((NewInstanceFromDefaultConstructorExpression) aValue);
         } else if (aValue instanceof InstanceOfExpression) {
             write((InstanceOfExpression) aValue);
-        } else if (aValue instanceof NewObjectExpression) {
-            write((NewObjectExpression) aValue);
+        } else if (aValue instanceof NewInstanceExpression) {
+            write((NewInstanceExpression) aValue);
         } else if (aValue instanceof CompareExpression) {
             write((CompareExpression) aValue);
         } else if (aValue instanceof NegatedExpression) {
@@ -1750,8 +1750,8 @@ public class LLVMWriter implements AutoCloseable {
             write((FloatValue) aValue);
         } else if (aValue instanceof ByteValue) {
             write((ByteValue) aValue);
-        } else if (aValue instanceof ResolveCallsiteObjectExpression) {
-            write((ResolveCallsiteObjectExpression) aValue);
+        } else if (aValue instanceof ResolveCallsiteInstanceExpression) {
+            write((ResolveCallsiteInstanceExpression) aValue);
         } else if (aValue instanceof DoubleValue) {
             write((DoubleValue) aValue);
         } else if (aValue instanceof FloatingPointCeilExpression) {
@@ -2020,7 +2020,7 @@ public class LLVMWriter implements AutoCloseable {
         }
     }
 
-    private void write(final ResolveCallsiteObjectExpression e) {
+    private void write(final ResolveCallsiteInstanceExpression e) {
         final BytecodeLinkedClass theOwningClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(e.getOwningClass().getThisInfo().getConstant()));
         target.print("call i32 @");
         target.print(symbolResolver.resolveCallsiteBootstrapFor(theOwningClass,
@@ -2184,7 +2184,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print(")");
     }
 
-    private void write(final NewObjectExpression e) {
+    private void write(final NewInstanceExpression e) {
         final String theMethodName = LLVMWriterUtils.toMethodName(
                 BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class),
                 "newObject",
@@ -2303,9 +2303,9 @@ public class LLVMWriter implements AutoCloseable {
         target.print(toTempSymbol(e, "ptr"));
     }
 
-    private void write(final NewObjectAndConstructExpression e) {
+    private void write(final NewInstanceAndConstructExpression e) {
 
-        if (!e.isEscaping() && escapeAnalysisEnabled) {
+        if (!e.isEscaping() && stackAllocationEnabled) {
 
             linkerContext.getStatistics().context("Codegenerator")
                     .counter("ObjectOnStackAllocations").increment();

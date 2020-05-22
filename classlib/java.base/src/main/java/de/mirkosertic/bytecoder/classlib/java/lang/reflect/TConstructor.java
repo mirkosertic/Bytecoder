@@ -30,6 +30,6 @@ public class TConstructor {
     }
 
     public Object newInstance(final Object[] constructorArgs) {
-        return VM.newInstanceWithDefaultConstructor(clz);
+        return VM.newInstanceFromDefaultConstructor(clz);
     }
 }

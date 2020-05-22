@@ -93,15 +93,15 @@ import de.mirkosertic.bytecoder.ssa.NegatedExpression;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
-import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
-import de.mirkosertic.bytecoder.ssa.NewObjectExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceAndConstructExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
-import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
+import de.mirkosertic.bytecoder.ssa.ResolveCallsiteInstanceExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
@@ -193,8 +193,8 @@ public class JSSSAWriter {
             print((InvokeVirtualMethodExpression) aValue);
         } else if (aValue instanceof InvokeStaticMethodExpression) {
             print((InvokeStaticMethodExpression) aValue);
-        } else if (aValue instanceof NewObjectExpression) {
-            print((NewObjectExpression) aValue);
+        } else if (aValue instanceof NewInstanceExpression) {
+            print((NewInstanceExpression) aValue);
         } else if (aValue instanceof ByteValue) {
             print((ByteValue) aValue);
         } else if (aValue instanceof BinaryExpression) {
@@ -265,8 +265,8 @@ public class JSSSAWriter {
             print((LambdaVirtualReferenceExpression) aValue);
         } else if (aValue instanceof LambdaSpecialReferenceExpression) {
             print((LambdaSpecialReferenceExpression) aValue);
-        } else if (aValue instanceof ResolveCallsiteObjectExpression) {
-            print((ResolveCallsiteObjectExpression) aValue);
+        } else if (aValue instanceof ResolveCallsiteInstanceExpression) {
+            print((ResolveCallsiteInstanceExpression) aValue);
         } else if (aValue instanceof StackTopExpression) {
             print((StackTopExpression) aValue);
         } else if (aValue instanceof MemorySizeExpression) {
@@ -285,8 +285,8 @@ public class JSSSAWriter {
             print((FloatingPointCeilExpression) aValue);
         } else if (aValue instanceof EnumConstantsExpression) {
             print((EnumConstantsExpression) aValue);
-        } else if (aValue instanceof NewObjectAndConstructExpression) {
-            print((NewObjectAndConstructExpression) aValue);
+        } else if (aValue instanceof NewInstanceAndConstructExpression) {
+            print((NewInstanceAndConstructExpression) aValue);
         } else if (aValue instanceof PHIValue) {
             print((PHIValue) aValue);
         } else if (aValue instanceof IsNaNExpression) {
@@ -369,7 +369,7 @@ public class JSSSAWriter {
         }
     }
 
-    private void print(final NewObjectAndConstructExpression aValue) {
+    private void print(final NewInstanceAndConstructExpression aValue) {
         writer.text(minifier.toClassName(aValue.getClazz())).text(".").text(minifier.toSymbol("__runtimeclass")).text(".").text(minifier.toMethodName("$newInstance", aValue.getSignature())).text("(");
         final List<Value> theArguments = aValue.incomingDataFlows();
         for (int i=0;i<theArguments.size();i++) {
@@ -435,7 +435,7 @@ public class JSSSAWriter {
         }
     }
 
-    private void print(final ResolveCallsiteObjectExpression aValue) {
+    private void print(final ResolveCallsiteInstanceExpression aValue) {
         writer.text("bytecoder.resolveStaticCallSiteObject(")
                 .text(minifier.toClassName(aValue.getOwningClass().getThisInfo()))
                 .text(",'")
@@ -857,7 +857,7 @@ public class JSSSAWriter {
         writer.text("" + aValue.getByteValue());
     }
 
-    private void print(final NewObjectExpression aValue) {
+    private void print(final NewInstanceExpression aValue) {
         writer.text(minifier.toClassName(aValue.getType())).text(".").text(minifier.toSymbol("newInstance")).text("()");
     }
 
@@ -1512,9 +1512,9 @@ public class JSSSAWriter {
             withDeeperIndent().writeExpressions(theE.getElsePart());
 
             startLine().text("}").newLine();
-        } else if (aExpression instanceof NewObjectAndConstructExpression) {
+        } else if (aExpression instanceof NewInstanceAndConstructExpression) {
             final JSSSAWriter theDeeper = withDeeperIndent();
-            theDeeper.print((NewObjectAndConstructExpression) aExpression);
+            theDeeper.print((NewInstanceAndConstructExpression) aExpression);
             theDeeper.writer.text(";");
         } else {
             throw new IllegalStateException("Not implemented : " + aExpression);

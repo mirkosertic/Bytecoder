@@ -91,11 +91,11 @@ public class StaticDependencies {
             } else if (e instanceof ClassReferenceValue) {
                 final ClassReferenceValue r = (ClassReferenceValue) e;
                 dependencies.add(aProgram.getLinkerContext().resolveClass(r.getType()));
-            } else if (e instanceof NewObjectExpression) {
-                final NewObjectExpression n = (NewObjectExpression) e;
+            } else if (e instanceof NewInstanceExpression) {
+                final NewInstanceExpression n = (NewInstanceExpression) e;
                 dependencies.add(aProgram.getLinkerContext().resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(n.getType().getConstant())));
-            } else if (e instanceof NewObjectAndConstructExpression) {
-                final NewObjectAndConstructExpression n = (NewObjectAndConstructExpression) e;
+            } else if (e instanceof NewInstanceAndConstructExpression) {
+                final NewInstanceAndConstructExpression n = (NewInstanceAndConstructExpression) e;
                 dependencies.add(aProgram.getLinkerContext().resolveClass(n.getClazz()));
             }
 

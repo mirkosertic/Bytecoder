@@ -28,7 +28,7 @@ import de.mirkosertic.bytecoder.ssa.InvocationExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeDirectMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
-import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceAndConstructExpression;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
@@ -252,11 +252,11 @@ public class EscapeAnalysis {
             }
         }
 
-        if (aCurrentValue instanceof NewObjectAndConstructExpression) {
-            final NewObjectAndConstructExpression newObjectAndConstructExpression = (NewObjectAndConstructExpression) aCurrentValue;
-            final List<Value> theArguments = newObjectAndConstructExpression.incomingDataFlows();
+        if (aCurrentValue instanceof NewInstanceAndConstructExpression) {
+            final NewInstanceAndConstructExpression newInstanceAndConstructExpression = (NewInstanceAndConstructExpression) aCurrentValue;
+            final List<Value> theArguments = newInstanceAndConstructExpression.incomingDataFlows();
             final ProgramDescriptor theDescriptor = programDescriptorProvider.resolveConstructorInvocation(
-                    newObjectAndConstructExpression.getClazz(), newObjectAndConstructExpression.getSignature()
+                    newInstanceAndConstructExpression.getClazz(), newInstanceAndConstructExpression.getSignature()
             );
 
             final AnalysisResult theResult = analyze(theDescriptor);

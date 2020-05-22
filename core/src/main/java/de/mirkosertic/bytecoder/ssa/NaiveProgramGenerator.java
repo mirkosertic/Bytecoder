@@ -931,7 +931,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
                 final BytecodeClassinfoConstant theClassInfo = theINS.getClassInfoForObjectToCreate();
                 final BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(theClassInfo.getConstant());
-                final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theObjectType), new NewObjectExpression(aProgram, theInstruction.getOpcodeAddress(), theClassInfo));
+                final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theObjectType), new NewInstanceExpression(aProgram, theInstruction.getOpcodeAddress(), theClassInfo));
                 aHelper.push(theINS.getOpcodeAddress(), theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionNEWARRAY) {
                 final BytecodeInstructionNEWARRAY theINS = (BytecodeInstructionNEWARRAY) theInstruction;
@@ -1008,14 +1008,14 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     guard: {
                         if ("<init>".equals(theMethodName)) {
                             final List<Value> theIncomingValues = theTarget.incomingDataFlows();
-                            if (theIncomingValues.size() == 1 && theIncomingValues.get(0) instanceof NewObjectExpression) {
+                            if (theIncomingValues.size() == 1 && theIncomingValues.get(0) instanceof NewInstanceExpression) {
 
                                 for (final RegionNode theNode : aProgram.getControlFlowGraph().dominators().getPreOrder()) {
                                     for (final Expression theExpression : theNode.getExpressions().toList()) {
                                         if (theExpression instanceof VariableAssignmentExpression) {
                                             final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) theExpression;
                                             if (theAssignment.getVariable().getName().equals(theTarget.getName()) &&
-                                                    theAssignment.incomingDataFlows().get(0) instanceof NewObjectExpression) {
+                                                    theAssignment.incomingDataFlows().get(0) instanceof NewInstanceExpression) {
                                                 // We have a candidate!
                                                 theNode.getExpressions().remove(theAssignment);
                                             }
@@ -1025,7 +1025,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
                                 aTargetBlock.getExpressions().add(
                                         new VariableAssignmentExpression(aProgram, theINS.getOpcodeAddress(),
-                                                theTarget, new NewObjectAndConstructExpression(
+                                                theTarget, new NewInstanceAndConstructExpression(
                                                 aProgram, theInstruction.getOpcodeAddress(),
                                                 theType, theSignature, theArguments)
                                         ));
@@ -1301,7 +1301,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
                         switch (theImplRef.getReferenceKind()) {
                             case REF_invokeInterface: {
-                                final NewObjectAndConstructExpression theValue = new NewObjectAndConstructExpression(
+                                final NewInstanceAndConstructExpression theValue = new NewInstanceAndConstructExpression(
                                         aProgram, theInstruction.getOpcodeAddress(),
                                         BytecodeObjectTypeRef.fromRuntimeClass(VM.InvokeInterfaceCallsite.class),
                                         new BytecodeMethodSignature(
@@ -1318,7 +1318,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                                 break;
                             }
                             case REF_invokeVirtual: {
-                                final NewObjectAndConstructExpression theValue = new NewObjectAndConstructExpression(
+                                final NewInstanceAndConstructExpression theValue = new NewInstanceAndConstructExpression(
                                         aProgram, theInstruction.getOpcodeAddress(),
                                         BytecodeObjectTypeRef.fromRuntimeClass(VM.InvokeVirtualCallsite.class),
                                         new BytecodeMethodSignature(
@@ -1335,7 +1335,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                                 break;
                             }
                             case REF_invokeSpecial: {
-                                final NewObjectAndConstructExpression theValue = new NewObjectAndConstructExpression(
+                                final NewInstanceAndConstructExpression theValue = new NewInstanceAndConstructExpression(
                                         aProgram, theInstruction.getOpcodeAddress(),
                                         BytecodeObjectTypeRef.fromRuntimeClass(VM.InvokeSpecialCallsite.class),
                                         new BytecodeMethodSignature(
@@ -1352,7 +1352,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                                 break;
                             }
                             case REF_invokeStatic: {
-                                final NewObjectAndConstructExpression theValue = new NewObjectAndConstructExpression(
+                                final NewInstanceAndConstructExpression theValue = new NewInstanceAndConstructExpression(
                                         aProgram, theInstruction.getOpcodeAddress(),
                                         BytecodeObjectTypeRef.fromRuntimeClass(VM.LambdaStaticImplCallsite.class),
                                         new BytecodeMethodSignature(
@@ -1381,7 +1381,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                                 theConstructorMethodRef.setAdapterAnnotation(theAdaptertInfo);
                                 final Variable theConstructorMethodRefVariable = theInitNode.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theConstructorMethodRef);
 
-                                final NewObjectAndConstructExpression theValue = new NewObjectAndConstructExpression(
+                                final NewInstanceAndConstructExpression theValue = new NewInstanceAndConstructExpression(
                                         aProgram, theInstruction.getOpcodeAddress(),
                                         BytecodeObjectTypeRef.fromRuntimeClass(VM.LambdaConstructorRefCallsite.class),
                                         new BytecodeMethodSignature(
@@ -1411,7 +1411,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     }
 
                     // First step, we construct a callsite
-                    final ResolveCallsiteObjectExpression theValue = new ResolveCallsiteObjectExpression(theInstruction.getOpcodeAddress(), aOwningClass.getThisInfo().getConstant().stringValue() + "_" + aMethod.getName().stringValue() + "_" + theINS.getOpcodeAddress().getAddress(), aOwningClass, theProgram, theInitNode);
+                    final ResolveCallsiteInstanceExpression theValue = new ResolveCallsiteInstanceExpression(theInstruction.getOpcodeAddress(), aOwningClass.getThisInfo().getConstant().stringValue() + "_" + aMethod.getName().stringValue() + "_" + theINS.getOpcodeAddress().getAddress(), aOwningClass, theProgram, theInitNode);
                     final Variable theCallsiteVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, theValue);
 
                     final List<Value> theInvokeArguments = new ArrayList<>();

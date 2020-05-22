@@ -95,6 +95,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, false, false));
                 testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, false, false));
                 testOptions.add(new TestOption(CompileTarget.BackendType.wasm_llvm, false, false, false, false));
+                //testOptions.add(new TestOption(CompileTarget.BackendType.wasm_llvm, false, false, false, true));
 
             } else {
                 for (final BytecoderTestOption o : declaredOptions.value()) {
@@ -111,6 +112,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
             testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, false, false));
             testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, false, false));
             testOptions.add(new TestOption(CompileTarget.BackendType.wasm_llvm, false, false, false, false));
+            //testOptions.add(new TestOption(CompileTarget.BackendType.wasm_llvm, false, false, false, true));
 
             additionalClassesToLink = new String[0];
             additionalResources = new String[0];

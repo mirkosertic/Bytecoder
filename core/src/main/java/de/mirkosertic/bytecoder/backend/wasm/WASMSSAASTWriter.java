@@ -109,8 +109,8 @@ import de.mirkosertic.bytecoder.ssa.NegatedExpression;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
-import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
-import de.mirkosertic.bytecoder.ssa.NewObjectExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceAndConstructExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
@@ -118,7 +118,7 @@ import de.mirkosertic.bytecoder.ssa.PtrOfExpression;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
-import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
+import de.mirkosertic.bytecoder.ssa.ResolveCallsiteInstanceExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
 import de.mirkosertic.bytecoder.ssa.SetEnumConstantsExpression;
@@ -693,8 +693,8 @@ public class WASMSSAASTWriter {
         if (aValue instanceof GetFieldExpression) {
             return getFieldValue((GetFieldExpression) aValue);
         }
-        if (aValue instanceof NewObjectExpression) {
-            return newObjectValue((NewObjectExpression) aValue);
+        if (aValue instanceof NewInstanceExpression) {
+            return newObjectValue((NewInstanceExpression) aValue);
         }
         if (aValue instanceof GetStaticExpression) {
             return getStaticValue((GetStaticExpression) aValue);
@@ -759,8 +759,8 @@ public class WASMSSAASTWriter {
         if (aValue instanceof DoubleValue) {
             return doubleValue((DoubleValue) aValue);
         }
-        if (aValue instanceof ResolveCallsiteObjectExpression) {
-            return resolveCallSiteObjectValue((ResolveCallsiteObjectExpression) aValue);
+        if (aValue instanceof ResolveCallsiteInstanceExpression) {
+            return resolveCallSiteObjectValue((ResolveCallsiteInstanceExpression) aValue);
         }
         if (aValue instanceof MethodHandlesGeneratedLookupExpression) {
             return methodHandlesGeneratedLookupValue((MethodHandlesGeneratedLookupExpression) aValue);
@@ -816,8 +816,8 @@ public class WASMSSAASTWriter {
         if (aValue instanceof EnumConstantsExpression) {
             return enumConstants((EnumConstantsExpression) aValue);
         }
-        if (aValue instanceof NewObjectAndConstructExpression) {
-            return newObjectAndConstruct((NewObjectAndConstructExpression) aValue);
+        if (aValue instanceof NewInstanceAndConstructExpression) {
+            return newObjectAndConstruct((NewInstanceAndConstructExpression) aValue);
         }
         if (aValue instanceof IsNaNExpression) {
             return isNaN((IsNaNExpression) aValue);
@@ -932,7 +932,7 @@ public class WASMSSAASTWriter {
                 f32.eq(theValue, theValue, null), null);
     }
 
-    private WASMValue newObjectAndConstruct(final NewObjectAndConstructExpression aValue) {
+    private WASMValue newObjectAndConstruct(final NewInstanceAndConstructExpression aValue) {
 
         final String theMethodName = WASMWriterUtils.toMethodName(aValue.getClazz(), "$newInstance", aValue.getSignature());
         final WeakFunctionReferenceCallable theFunction = weakFunctionReference(theMethodName, aValue);
@@ -1089,7 +1089,7 @@ public class WASMSSAASTWriter {
         return i32.c(0, aValue);
     }
 
-    private WASMExpression resolveCallSiteObjectValue(final ResolveCallsiteObjectExpression aValue) {
+    private WASMExpression resolveCallSiteObjectValue(final ResolveCallsiteInstanceExpression aValue) {
         final Function theFunction = resolver.resolveCallsiteBootstrapFor(aValue.getOwningClass(),
                 aValue.getCallsiteId(),
                 aValue.getProgram(),
@@ -1396,7 +1396,7 @@ public class WASMSSAASTWriter {
         }
     }
 
-    private WASMExpression newObjectValue(final NewObjectExpression aValue) {
+    private WASMExpression newObjectValue(final NewInstanceExpression aValue) {
 
         final BytecodeObjectTypeRef theType = BytecodeObjectTypeRef.fromUtf8Constant(aValue.getType().getConstant());
 

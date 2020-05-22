@@ -21,13 +21,13 @@ import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
 import java.util.List;
 
-public class NewObjectAndConstructExpression extends InvocationExpression implements ValueWithEscapeCheck {
+public class NewInstanceAndConstructExpression extends InvocationExpression implements ValueWithEscapeCheck {
 
     private final BytecodeObjectTypeRef clazz;
     private boolean escaping;
 
-    public NewObjectAndConstructExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef aClazz,
-                                           final BytecodeMethodSignature aMethodSignature, final List<Value> aArguments) {
+    public NewInstanceAndConstructExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef aClazz,
+                                             final BytecodeMethodSignature aMethodSignature, final List<Value> aArguments) {
         super(aProgram, aAddress, aMethodSignature);
         clazz = aClazz;
 

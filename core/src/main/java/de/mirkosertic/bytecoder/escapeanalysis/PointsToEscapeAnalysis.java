@@ -15,14 +15,17 @@
  */
 package de.mirkosertic.bytecoder.escapeanalysis;
 
+import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.graph.EdgeType;
 import de.mirkosertic.bytecoder.graph.Node;
+import de.mirkosertic.bytecoder.ssa.ArrayEntryExpression;
 import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
 import de.mirkosertic.bytecoder.ssa.BlockState;
 import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.CurrentExceptionExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
@@ -32,22 +35,30 @@ import de.mirkosertic.bytecoder.ssa.InvocationExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeDirectMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaConstructorReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaInterfaceReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaSpecialReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaVirtualReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaWithStaticImplExpression;
 import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
-import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
-import de.mirkosertic.bytecoder.ssa.NewObjectExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceAndConstructExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
+import de.mirkosertic.bytecoder.ssa.ResolveCallsiteInstanceExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.SetEnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.ThrowExpression;
+import de.mirkosertic.bytecoder.ssa.TypeOfExpression;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.ValueWithEscapeCheck;
@@ -55,6 +66,7 @@ import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -207,7 +219,7 @@ public class PointsToEscapeAnalysis {
             }else if (scope instanceof LocalScope) {
                 label =  "LocalScope #" + System.identityHashCode(scope);
             } else if (scope == null) {
-                label =  "Unknown Scope";
+                label = "Unknown Scope";
             } else {
                 label = scope.getClass().getSimpleName();
             }
@@ -246,6 +258,9 @@ public class PointsToEscapeAnalysis {
                     }
                 } else {
                     String label = v.value.getClass().getSimpleName();
+                    if (v.value instanceof PHIValue) {
+                        label += " " + System.identityHashCode(v.value);
+                    }
                     label+="\\n\\n" + toScopeDebugLabel(scopes.get(v.value));
                     if (escapedValues.contains(v.value)) {
                         System.out.println(" n_" + System.identityHashCode(v) + "[color=red shape=box fontcolor=white style=filled fillcolor=red label=\"" + label + "\"];");
@@ -275,11 +290,13 @@ public class PointsToEscapeAnalysis {
     private final ProgramDescriptorProvider programDescriptorProvider;
     private final Stack<CachedAnalysisResult> analysisStack;
     private final Map<BytecodeLinkedClass, List<CachedAnalysisResult>> cache;
+    private final Logger logger;
 
-    public PointsToEscapeAnalysis(final ProgramDescriptorProvider aProgramDescriptorProvider) {
+    public PointsToEscapeAnalysis(final ProgramDescriptorProvider aProgramDescriptorProvider, final Logger aLogger) {
         programDescriptorProvider = aProgramDescriptorProvider;
         analysisStack = new Stack<>();
         cache = new HashMap<>();
+        logger = aLogger;
     }
 
     public AnalysisResult analyze(final ProgramDescriptor aProgramDescriptor) {
@@ -311,6 +328,8 @@ public class PointsToEscapeAnalysis {
             }
         }
 
+        logger.info(" Analyzing {}.{} {}", aProgramDescriptor.linkedClass.getClassName().name(), aProgramDescriptor.method.getName().stringValue(), aProgramDescriptor.method.getSignature());
+
         final AnalysisResult analysisResult = new AnalysisResult(aProgramDescriptor.program);
         analysisStack.push(new CachedAnalysisResult(aProgramDescriptor, analysisResult));
 
@@ -339,12 +358,20 @@ public class PointsToEscapeAnalysis {
 
                 final GraphNode phiNode = analysisResult.nodeFor(t);
                 for (final RegionNode pred : theNode.getPredecessors()) {
-                    final BlockState theOut = pred.liveOut();
-                    final Value incomingValue = theOut.getPorts().get(t.getDescription());
-                    final GraphNode incomingNode = analysisResult.nodeFor(incomingValue);
+                    if (pred != theNode) {
+                        final BlockState theOut = pred.liveOut();
+                        final Value incomingValue = theOut.getPorts().get(t.getDescription());
+                        final GraphNode incomingNode = analysisResult.nodeFor(incomingValue);
 
-                    if (incomingNode != phiNode) {
-                        incomingNode.addEdgeTo(PointsTo.to, phiNode);
+                        if (incomingValue instanceof PHIValue && alreadyKnownPHIvalues.contains((incomingValue))) {
+                            continue;
+                        }
+
+                        if (incomingNode != phiNode) {
+                            if (incomingNode.outgoingEdges().map(Edge::targetNode).noneMatch(x -> x != phiNode)) {
+                                incomingNode.addEdgeTo(PointsTo.to, phiNode);
+                            }
+                        }
                     }
                 }
             });
@@ -358,25 +385,34 @@ public class PointsToEscapeAnalysis {
             final Set<GraphNode> theOutgoing = currentEntry.outgoingEdges().map(Edge::targetNode).filter(t -> !analysisResult.scopes.containsKey(t.value)).collect(Collectors.toSet());
             if (currentEntry.value instanceof NewArrayExpression) {
                 analysisResult.scopes.put(currentEntry.value, new LocalScope());
-                workingQueue.addAll(theOutgoing);
+                addNotExisting(workingQueue, theOutgoing);
             } else if (currentEntry.value instanceof NewMultiArrayExpression) {
                 analysisResult.scopes.put(currentEntry.value, new LocalScope());
-                workingQueue.addAll(theOutgoing);
-            } else if (currentEntry.value instanceof NewObjectExpression) {
+                addNotExisting(workingQueue, theOutgoing);
+            } else if (currentEntry.value instanceof NewInstanceExpression) {
                 analysisResult.scopes.put(currentEntry.value, new LocalScope());
-                workingQueue.addAll(theOutgoing);
+                addNotExisting(workingQueue, theOutgoing);
             } else if (currentEntry.value instanceof GetStaticExpression) {
                 analysisResult.scopes.put(currentEntry.value, staticScope);
-                workingQueue.addAll(theOutgoing);
+                addNotExisting(workingQueue, theOutgoing);
+            } else if (currentEntry.value instanceof CurrentExceptionExpression) {
+                analysisResult.scopes.put(currentEntry.value, staticScope);
+                addNotExisting(workingQueue, theOutgoing);
+            } else if (currentEntry.value instanceof TypeOfExpression) {
+                analysisResult.scopes.put(currentEntry.value, staticScope);
+                addNotExisting(workingQueue, theOutgoing);
+            } else if (currentEntry.value instanceof ResolveCallsiteInstanceExpression) {
+                analysisResult.scopes.put(currentEntry.value, staticScope);
+                addNotExisting(workingQueue, theOutgoing);
             } else if (currentEntry.value instanceof StringValue) {
                 analysisResult.scopes.put(currentEntry.value, staticScope);
-                workingQueue.addAll(theOutgoing);
+                addNotExisting(workingQueue, theOutgoing);
             } else if (currentEntry.value instanceof SelfReferenceParameterValue) {
                 analysisResult.scopes.put(currentEntry.value, new ThisScope());
-                workingQueue.addAll(theOutgoing);
+                addNotExisting(workingQueue, theOutgoing);
             } else if (currentEntry.value instanceof MethodParameterValue) {
                 analysisResult.scopes.put(currentEntry.value, new MethodParameterScope(((MethodParameterValue) currentEntry.value)));
-                workingQueue.addAll(theOutgoing);
+                addNotExisting(workingQueue, theOutgoing);
             } else {
                 final Set<GraphNode> theIncoming = currentEntry.incomingEdges().map(t -> (GraphNode) t.sourceNode()).collect(Collectors.toSet());
                 final Set<GraphNode> theIncomingWithScope = theIncoming.stream().filter(t -> analysisResult.scopes.containsKey(t.value)).collect(Collectors.toSet());
@@ -400,21 +436,17 @@ public class PointsToEscapeAnalysis {
                         final Scope newScope = new StaticScope();
                         analysisResult.scopes.put(currentEntry.value, newScope);
                         theIncoming.stream().map(t -> analysisResult.scopes.get(t.value)).forEach(t -> t.flowsInto(newScope));
-                        workingQueue.addAll(theOutgoing);
+                        addNotExisting(workingQueue, theOutgoing);
                     } else if (currentEntry.value instanceof NullValue) {
                         final Scope newScope = new LocalScope();
                         analysisResult.scopes.put(currentEntry.value, newScope);
                         theIncoming.stream().map(t -> analysisResult.scopes.get(t.value)).forEach(t -> t.flowsInto(newScope));
-                        workingQueue.addAll(theOutgoing);
+                        addNotExisting(workingQueue, theOutgoing);
                     } else {
 
                         final Set<GraphNode> theArrayWrites = theIncoming.stream().filter(t -> t.value instanceof ArrayStoreExpression).collect(Collectors.toSet());
                         final Set<GraphNode> thePutFields = theIncoming.stream().filter(t -> t.value instanceof PutFieldExpression).collect(Collectors.toSet());
-                        if (!theArrayWrites.isEmpty()) {
-
-                            if (theIncomingWithScope.size() != 2) {
-                                throw new IllegalArgumentException("Expected 2 incoming values for ArrayStore, got " + theIncomingWithScope.size());
-                            }
+                        if (!theArrayWrites.isEmpty() && theIncomingWithScope.size() >= 2) {
 
                             final GraphNode theValue = theArrayWrites.iterator().next();
                             theIncoming.stream().filter(t -> t != theValue).forEach(array -> {
@@ -424,11 +456,7 @@ public class PointsToEscapeAnalysis {
                                 analysisResult.scopes.get(theValue.value).flowsInto(analysisResult.scopes.get(array.value));
                             });
 
-                        } else if (!thePutFields.isEmpty()) {
-
-                            if (theIncomingWithScope.size() != 2) {
-                                throw new IllegalArgumentException("Expected 2 incoming values for PutField, got " + theIncomingWithScope.size());
-                            }
+                        } else if (!thePutFields.isEmpty() && theIncomingWithScope.size() >= 2) {
 
                             final GraphNode theValue = thePutFields.iterator().next();
                             theIncoming.stream().filter(t -> t != theValue).forEach(instance -> {
@@ -438,16 +466,30 @@ public class PointsToEscapeAnalysis {
                                 analysisResult.scopes.get(theValue.value).flowsInto(analysisResult.scopes.get(instance.value));
                             });
 
+                            analysisResult.scopes.get(theValue.value).flowsInto(analysisResult.scopes.get(currentEntry.value));
+
                         } else if (currentEntry.value instanceof VariableAssignmentExpression) {
 
                             analysisResult.scopes.put(currentEntry.value, analysisResult.scopes.get(theIncomingWithScope.iterator().next().value));
-                            workingQueue.addAll(theOutgoing);
+                            addNotExisting(workingQueue, theOutgoing);
 
-                        } else if (currentEntry.value instanceof NewObjectAndConstructExpression) {
+                        } else if (currentEntry.value instanceof NewInstanceFromDefaultConstructorExpression) {
 
                             final InvocationResultScope invocationScope = new InvocationResultScope();
 
-                            final NewObjectAndConstructExpression x = (NewObjectAndConstructExpression) currentEntry.value;
+                            final NewInstanceFromDefaultConstructorExpression x = (NewInstanceFromDefaultConstructorExpression) currentEntry.value;
+                            // We are pretty sure the runtime implementation does not let escape anything, so we are safe here
+
+                            // All dataflows are now defined, we can continue with the new scope from here
+                            analysisResult.scopes.put(currentEntry.value, invocationScope);
+
+                            addNotExisting(workingQueue, theOutgoing);
+
+                        } else if (currentEntry.value instanceof NewInstanceAndConstructExpression) {
+
+                            final InvocationResultScope invocationScope = new InvocationResultScope();
+
+                            final NewInstanceAndConstructExpression x = (NewInstanceAndConstructExpression) currentEntry.value;
                             // We analyze the constructor invocation
                             final AnalysisResult constructorAnalysis = analyze(programDescriptorProvider.resolveConstructorInvocation(x.getClazz(), x.getSignature()));
                             final List<Value> constructorArguments = currentEntry.value.incomingDataFlows();
@@ -479,10 +521,10 @@ public class PointsToEscapeAnalysis {
                                 }
                             }
 
-                            // All dataflows are not defined, we can continue with the new scope from here
+                            // All dataflows are now defined, we can continue with the new scope from here
                             analysisResult.scopes.put(currentEntry.value, invocationScope);
 
-                            workingQueue.addAll(theOutgoing);
+                            addNotExisting(workingQueue, theOutgoing);
 
                         } else if (currentEntry.value instanceof InvokeDirectMethodExpression) {
 
@@ -492,7 +534,7 @@ public class PointsToEscapeAnalysis {
 
                             // We analyze the method invocation
                             final ProgramDescriptor pd = programDescriptorProvider.resolveDirectInvocation(x.getClazz(), x.getMethodName(), x.getSignature());
-                            if (pd.method.getAccessFlags().isNative()) {
+                            if (pd == null || pd.method.getAccessFlags().isNative()) {
                                 // We assume everything escapes for native methods
                                 for (final Value v : currentEntry.value.incomingDataFlows()) {
                                     final TypeRef argumentType = v.resolveType();
@@ -502,10 +544,10 @@ public class PointsToEscapeAnalysis {
                                     }
                                 }
 
-                                // All dataflows are not defined, we can continue with the new scope from here
+                                // All dataflows are now defined, we can continue with the new scope from here
                                 analysisResult.scopes.put(currentEntry.value, invocationScope);
 
-                                workingQueue.addAll(theOutgoing);
+                                addNotExisting(workingQueue, theOutgoing);
 
                             } else {
 
@@ -534,18 +576,42 @@ public class PointsToEscapeAnalysis {
                                     }
                                 }
 
-                                // All dataflows are not defined, we can continue with the new scope from here
+                                // All dataflows are now defined, we can continue with the new scope from here
                                 analysisResult.scopes.put(currentEntry.value, invocationScope);
 
-                                workingQueue.addAll(theOutgoing);
+                                addNotExisting(workingQueue, theOutgoing);
                             }
+
+                        } else if (currentEntry.value instanceof LambdaWithStaticImplExpression ||
+                                   currentEntry.value instanceof LambdaInterfaceReferenceExpression ||
+                                   currentEntry.value instanceof LambdaVirtualReferenceExpression ||
+                                   currentEntry.value instanceof LambdaConstructorReferenceExpression ||
+                                   currentEntry.value instanceof LambdaSpecialReferenceExpression) {
+
+                            // Lambda factories are tricky.
+                            // We might analyze the code for most of them excluding the interface and virtual invocations
+                            // but for now we assume everything is escaping to static scope here
+
+                            final InvocationResultScope invocationScope = new InvocationResultScope();
+
+                            for (final Value v : currentEntry.value.incomingDataFlows()) {
+                                final TypeRef argumentType = v.resolveType();
+                                if (argumentType.isArray() || argumentType.isObject()) {
+                                    final Scope incomingScope = analysisResult.scopes.get(v);
+                                    incomingScope.flowsInto(staticScope);
+                                }
+                            }
+
+                            // All dataflows are now defined, we can continue with the new scope from here
+                            analysisResult.scopes.put(currentEntry.value, invocationScope);
+
+                            addNotExisting(workingQueue, theOutgoing);
 
                         } else if (currentEntry.value instanceof InvokeVirtualMethodExpression) {
 
                             // Virtual invocations are tricky, as we might also call a lambda with
                             // a delegating static implementation. This is currently impossible to figure out
                             // so we go the way to think all arguments escape to static scope here
-
 
                             // TODO: Check which classes are used in lambdas here to make a better guess
 
@@ -560,17 +626,17 @@ public class PointsToEscapeAnalysis {
                                 }
                             }
 
-                            // All dataflows are not defined, we can continue with the new scope from here
+                            // All dataflows are now defined, we can continue with the new scope from here
                             analysisResult.scopes.put(currentEntry.value, invocationScope);
 
-                            workingQueue.addAll(theOutgoing);
+                            addNotExisting(workingQueue, theOutgoing);
 
                         } else if (currentEntry.value instanceof InvokeStaticMethodExpression) {
 
                             final InvocationResultScope invocationScope = new InvocationResultScope();
                             final InvokeStaticMethodExpression x = (InvokeStaticMethodExpression) currentEntry.value;
                             final ProgramDescriptor pd = programDescriptorProvider.resolveStaticInvocation(x.getClassName(), x.getMethodName(), x.getSignature());
-                            if (pd.method.getAccessFlags().isNative()) {
+                            if (pd == null || pd.method.getAccessFlags().isNative()) {
                                 // We assume everything escapes for native methods
                                 for (final Value v : currentEntry.value.incomingDataFlows()) {
                                     final TypeRef argumentType = v.resolveType();
@@ -580,10 +646,10 @@ public class PointsToEscapeAnalysis {
                                     }
                                 }
 
-                                // All dataflows are not defined, we can continue with the new scope from here
+                                // All dataflows are now defined, we can continue with the new scope from here
                                 analysisResult.scopes.put(currentEntry.value, invocationScope);
 
-                                workingQueue.addAll(theOutgoing);
+                                addNotExisting(workingQueue, theOutgoing);
 
                             } else {
                                 final AnalysisResult staticAnalysis = analyze(pd);
@@ -604,17 +670,17 @@ public class PointsToEscapeAnalysis {
                                                 throw new IllegalArgumentException("this cannot be used in a static context!");
                                             } else if (s instanceof MethodParameterScope) {
                                                 final MethodParameterScope mp = (MethodParameterScope) s;
-                                                final Scope mpScope = analysisResult.scopes.get(staticArguments.get(mp.parameterIndex()));
+                                                final Scope mpScope = analysisResult.scopes.get(staticArguments.get(mp.parameterIndex() - 1));
                                                 incomingScope.flowsInto(mpScope);
                                             }
                                         }
                                     }
                                 }
 
-                                // All dataflows are not defined, we can continue with the new scope from here
+                                // All dataflows are now defined, we can continue with the new scope from here
                                 analysisResult.scopes.put(currentEntry.value, invocationScope);
 
-                                workingQueue.addAll(theOutgoing);
+                                addNotExisting(workingQueue, theOutgoing);
                             }
                         } else {
 
@@ -630,7 +696,7 @@ public class PointsToEscapeAnalysis {
                                 throw new IllegalArgumentException("Don't know how to handle multiple flow assignments for " + currentEntry.value);
                             }
 
-                            workingQueue.addAll(theOutgoing);
+                            addNotExisting(workingQueue, theOutgoing);
                         }
                     }
                 } else {
@@ -672,7 +738,7 @@ public class PointsToEscapeAnalysis {
         analysisResult.scopes.entrySet().stream().filter(t ->
                 t.getKey() instanceof NewArrayExpression ||
                 t.getKey() instanceof NewMultiArrayExpression ||
-                t.getKey() instanceof NewObjectAndConstructExpression).forEach(entry -> {
+                t.getKey() instanceof NewInstanceAndConstructExpression).forEach(entry -> {
 
             final Stack<Scope> workingStack = new Stack<>();
             final Set<Scope> alreadySeen = new HashSet<>();
@@ -751,9 +817,22 @@ public class PointsToEscapeAnalysis {
                 analyze(valueNode.value, analysisResult);
             }
 
-        } else if (aExpression instanceof NewObjectAndConstructExpression) {
+        } else if (aExpression instanceof NewInstanceAndConstructExpression) {
 
-            final NewObjectAndConstructExpression n = (NewObjectAndConstructExpression) aExpression;
+            final NewInstanceAndConstructExpression n = (NewInstanceAndConstructExpression) aExpression;
+            final GraphNode newNode = analysisResult.nodeFor(n);
+
+            for (final Value v : n.incomingDataFlows()) {
+                final TypeRef type = v.resolveType();
+                if (type.isObject() || type.isArray()) {
+                    final GraphNode arg = analysisResult.nodeFor(v);
+                    arg.addEdgeTo(PointsTo.to, newNode);
+                }
+            }
+
+        } else if (aExpression instanceof NewInstanceFromDefaultConstructorExpression) {
+
+            final NewInstanceFromDefaultConstructorExpression n = (NewInstanceFromDefaultConstructorExpression) aExpression;
             final GraphNode newNode = analysisResult.nodeFor(n);
 
             for (final Value v : n.incomingDataFlows()) {
@@ -777,9 +856,38 @@ public class PointsToEscapeAnalysis {
                 }
             }
 
+        } else if (aExpression instanceof LambdaWithStaticImplExpression ||
+                   aExpression instanceof LambdaInterfaceReferenceExpression ||
+                   aExpression instanceof LambdaVirtualReferenceExpression ||
+                   aExpression instanceof LambdaConstructorReferenceExpression ||
+                   aExpression instanceof LambdaSpecialReferenceExpression) {
+
+            final GraphNode newNode = analysisResult.nodeFor(aExpression);
+
+            for (final Value v : aExpression.incomingDataFlows()) {
+                final TypeRef type = v.resolveType();
+                if (type.isObject() || type.isArray()) {
+                    final GraphNode arg = analysisResult.nodeFor(v);
+                    arg.addEdgeTo(PointsTo.to, newNode);
+                }
+            }
+
         } else if (aExpression instanceof ThrowExpression) {
 
             final ThrowExpression n = (ThrowExpression) aExpression;
+            final GraphNode newNode = analysisResult.nodeFor(n);
+
+            for (final Value v : n.incomingDataFlows()) {
+                final TypeRef type = v.resolveType();
+                if (type.isObject() || type.isArray()) {
+                    final GraphNode arg = analysisResult.nodeFor(v);
+                    arg.addEdgeTo(PointsTo.to, newNode);
+                }
+            }
+
+        } else if (aExpression instanceof TypeOfExpression) {
+
+            final TypeOfExpression n = (TypeOfExpression) aExpression;
             final GraphNode newNode = analysisResult.nodeFor(n);
 
             for (final Value v : n.incomingDataFlows()) {
@@ -821,6 +929,14 @@ public class PointsToEscapeAnalysis {
                 thePut.addEdgeTo(PointsTo.to, instanceNode);
 
             }
+
+        } else if (aExpression instanceof ResolveCallsiteInstanceExpression) {
+
+            final GraphNode node = analysisResult.nodeFor(aExpression);
+
+        } else if (aExpression instanceof GetStaticExpression) {
+
+            final GraphNode node = analysisResult.nodeFor(aExpression);
 
         } else if (aExpression instanceof PutStaticExpression) {
 
@@ -880,6 +996,27 @@ public class PointsToEscapeAnalysis {
 
                 rNode.addEdgeTo(PointsTo.to, arrayNode);
                 valueNode.addEdgeTo(PointsTo.to, rNode);
+            }
+        } else if (aExpression instanceof ArrayEntryExpression) {
+
+            final ArrayEntryExpression x = (ArrayEntryExpression) aExpression;
+            final List<Value> theIncoming = x.incomingDataFlows();
+
+            final TypeRef theType = x.resolveType();
+            if (theType.isArray() || theType.isObject()) {
+
+                final GraphNode rNode = analysisResult.nodeFor(x);
+                final GraphNode arrayNode = analysisResult.nodeFor(theIncoming.get(0));
+
+                arrayNode.addEdgeTo(PointsTo.to, rNode);
+            }
+        }
+    }
+
+    private static <T>  void addNotExisting(final Queue<T> aQueue, final Collection<T> aValues) {
+        for (final T value : aValues) {
+            if (!aQueue.contains(value)) {
+                aQueue.add(value);
             }
         }
     }

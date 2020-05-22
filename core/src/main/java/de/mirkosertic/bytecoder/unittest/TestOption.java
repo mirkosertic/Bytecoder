@@ -41,7 +41,9 @@ public class TestOption {
                 " minify=" +
                 minify +
                 " exceptionsEnabled=" +
-                exceptionsEnabled;
+                exceptionsEnabled +
+                " escapeAnalysisEnabled=" +
+                escapeAnalysisEnabled;
     }
 
     public String toFilePrefix() {
@@ -55,6 +57,9 @@ public class TestOption {
         }
         if (exceptionsEnabled) {
             builder.append("_exceptionsEnabled");
+        }
+        if (escapeAnalysisEnabled) {
+            builder.append("_escapeAnalysisEnabled");
         }
         return builder.toString();
     }

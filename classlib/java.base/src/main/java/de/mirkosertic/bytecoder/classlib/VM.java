@@ -193,7 +193,7 @@ public class VM {
 
     public static native Object newLambdaSpecialInvocation(final MethodType aConstructedType, final MethodHandle aDelegateMethod, final Object... staticArguments);
 
-    public static Object newInstanceWithDefaultConstructor(final Class clz) {
+    public static Object newInstanceFromDefaultConstructor(final Class clz) {
         return null;
     }
 
@@ -206,7 +206,7 @@ public class VM {
         return stringToLong(aString,10);
     }
 
-    public static long stringToLong(final String aString, int aRadix) {
+    public static long stringToLong(final String aString, final int aRadix) {
         long theResult = 0;
         long theMultiplier = 1;
         for (int k=aString.length()-1;k>=0;k--) {

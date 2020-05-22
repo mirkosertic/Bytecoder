@@ -30,7 +30,7 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
-import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceAndConstructExpression;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.Value;
@@ -282,7 +282,7 @@ public class EscapeAnalysisTest {
         final Set<Value> theEscapingValues = theResult.getEscapingValues();
 
         Assert.assertEquals(1, theEscapingValues.size());
-        Assert.assertTrue(theEscapingValues.iterator().next() instanceof NewObjectAndConstructExpression);
+        Assert.assertTrue(theEscapingValues.iterator().next() instanceof NewInstanceAndConstructExpression);
     }
 
     @Test
@@ -304,7 +304,7 @@ public class EscapeAnalysisTest {
         final EscapeAnalysis.AnalysisResult theResult = analyze("isEscapingByParameterOfMethodInvocationWithItself", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{}));
         final Set<Value> theEscapingValues = theResult.getEscapingValues();
         Assert.assertEquals(1, theEscapingValues.size());
-        Assert.assertTrue(theEscapingValues.iterator().next() instanceof NewObjectAndConstructExpression);
+        Assert.assertTrue(theEscapingValues.iterator().next() instanceof NewInstanceAndConstructExpression);
     }
 
     @Test
@@ -312,7 +312,7 @@ public class EscapeAnalysisTest {
         final EscapeAnalysis.AnalysisResult theResult = analyze("isEscapingByStaticFieldWrite", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{}));
         final Set<Value> theEscapingValues = theResult.getEscapingValues();
         Assert.assertEquals(1, theEscapingValues.size());
-        Assert.assertTrue(theEscapingValues.iterator().next() instanceof NewObjectAndConstructExpression);
+        Assert.assertTrue(theEscapingValues.iterator().next() instanceof NewInstanceAndConstructExpression);
     }
 
     @Test
@@ -320,7 +320,7 @@ public class EscapeAnalysisTest {
         final EscapeAnalysis.AnalysisResult theResult = analyze("isEscapingByInstanceFieldWrite", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{}));
         final Set<Value> theEscapingValues = theResult.getEscapingValues();
         Assert.assertEquals(1, theEscapingValues.size());
-        Assert.assertTrue(theEscapingValues.iterator().next() instanceof NewObjectAndConstructExpression);
+        Assert.assertTrue(theEscapingValues.iterator().next() instanceof NewInstanceAndConstructExpression);
     }
 
     @Test
@@ -328,7 +328,7 @@ public class EscapeAnalysisTest {
         final EscapeAnalysis.AnalysisResult theResult = analyze("isEscapingByArrayWrite", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{}));
         final Set<Value> theEscapingValues = theResult.getEscapingValues();
         Assert.assertEquals(1, theEscapingValues.size());
-        Assert.assertTrue(theEscapingValues.iterator().next() instanceof NewObjectAndConstructExpression);
+        Assert.assertTrue(theEscapingValues.iterator().next() instanceof NewInstanceAndConstructExpression);
     }
 
     @Test
@@ -337,8 +337,8 @@ public class EscapeAnalysisTest {
         final Set<Value> theEscapingValues = theResult.getEscapingValues();
         Assert.assertEquals(2, theEscapingValues.size());
         final List<Value> theValues = theEscapingValues.stream().collect(Collectors.toList());
-        Assert.assertTrue(theValues.get(0) instanceof NewObjectAndConstructExpression);
-        Assert.assertTrue(theValues.get(1) instanceof NewObjectAndConstructExpression);
+        Assert.assertTrue(theValues.get(0) instanceof NewInstanceAndConstructExpression);
+        Assert.assertTrue(theValues.get(1) instanceof NewInstanceAndConstructExpression);
     }
 
     @Test
@@ -346,7 +346,7 @@ public class EscapeAnalysisTest {
         final EscapeAnalysis.AnalysisResult theResult = analyze("isEscapingByPHIFromLoop", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{}));
         final Set<Value> theEscapingValues = theResult.getEscapingValues();
         Assert.assertEquals(1, theEscapingValues.size());
-        Assert.assertTrue(theEscapingValues.iterator().next() instanceof NewObjectAndConstructExpression);
+        Assert.assertTrue(theEscapingValues.iterator().next() instanceof NewInstanceAndConstructExpression);
     }
 
     @Test
@@ -354,7 +354,7 @@ public class EscapeAnalysisTest {
         final EscapeAnalysis.AnalysisResult theResult = analyze("isEscapingByThrow", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), new BytecodeTypeRef[]{}));
         final Set<Value> theEscapingValues = theResult.getEscapingValues();
         Assert.assertEquals(1, theEscapingValues.size());
-        Assert.assertTrue(theEscapingValues.iterator().next() instanceof NewObjectAndConstructExpression);
+        Assert.assertTrue(theEscapingValues.iterator().next() instanceof NewInstanceAndConstructExpression);
     }
 
     @Test
