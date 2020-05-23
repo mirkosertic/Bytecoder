@@ -388,7 +388,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             if (!aMethod.getAccessFlags().isStatic()) {
                 final TypeRef theClass = TypeRef.toType(BytecodeObjectTypeRef.fromUtf8Constant(aOwningClass.getThisInfo().getConstant()));
                 theParsingState.setLocalVariable(aCurrentBlock.getStartAddress(), theParsingState.numberOfLocalVariables(),
-                        theClass, Variable.createThisRef(theClass));
+                        theClass, aProgram.getArguments().get(0));
             }
             theParsingState.push(aCurrentBlock.getStartAddress(), new CurrentExceptionExpression(aProgram, null));
         } else if (aCurrentBlock == aProgram.getControlFlowGraph().startNode()) {

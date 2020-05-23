@@ -253,7 +253,7 @@ public class PointsToEscapeAnalysis {
                     label+="\\n\\n" + toScopeDebugLabel(scopes.get(v.value));
                     System.out.println(" n_" + System.identityHashCode(v) + "[color=blue fontcolor=blue shape=octagon label=\"" + label + "\"];");
                 } else if (v.value instanceof Variable) {
-                    String label = ((Variable) v.value).getName();
+                    String label = ((Variable) v.value).getName() + " " + System.identityHashCode(v.value);
                     label+="\\n\\n" + toScopeDebugLabel(scopes.get(v.value));
                     if (program.getArguments().contains(v.value)) {
                         if (escapedValues.contains(v.value)) {
@@ -282,7 +282,7 @@ public class PointsToEscapeAnalysis {
                     if (edge.edgeType().flowdirection == Flowdirection.forward) {
                         System.out.println(" n_" + System.identityHashCode(edge.targetNode()));
                     } else {
-                        System.out.println(" n_" + System.identityHashCode(edge.targetNode()) + "[color=blue]");
+                        System.out.println(" n_" + System.identityHashCode(edge.targetNode()) + "[style=dashed]");
                     }
                 });
             }
@@ -394,21 +394,7 @@ public class PointsToEscapeAnalysis {
         // Step 2: find back edges in the graph
         final Set<GraphNode> rootNodes = analysisResult.nodes.values().stream().filter(t -> t.incomingEdges().count() == 0).collect(Collectors.toSet());
         for (final GraphNode rootNode : rootNodes) {
-            final Stack<GraphNode> worklist = new Stack<>();
-            final Set<GraphNode> alreadySeen = new HashSet<>();
-            worklist.push(rootNode);
-            while (!worklist.isEmpty()) {
-                final GraphNode currentNode = worklist.pop();
-                if (alreadySeen.add(currentNode)) {
-                    currentNode.outgoingEdges().forEach(edge -> {
-                        if (!alreadySeen.contains(edge.targetNode())) {
-                            worklist.add(edge.targetNode());
-                        } else {
-                            edge.edgeType().flowdirection = Flowdirection.backward;
-                        }
-                    });
-                }
-            }
+            findBackEdgesFor(rootNode, new Stack<>());
         }
 
         // Step 3: we compute the scope flow
@@ -489,6 +475,8 @@ public class PointsToEscapeAnalysis {
                                 analysisResult.scopes.get(theValue.value).flowsInto(analysisResult.scopes.get(array.value));
                             });
 
+                            addNotExisting(workingQueue, theOutgoing);
+
                         } else if (!thePutFields.isEmpty() && theIncomingWithScope.size() >= 2) {
 
                             final GraphNode theValue = thePutFields.iterator().next();
@@ -500,6 +488,8 @@ public class PointsToEscapeAnalysis {
                             });
 
                             analysisResult.scopes.get(theValue.value).flowsInto(analysisResult.scopes.get(currentEntry.value));
+
+                            addNotExisting(workingQueue, theOutgoing);
 
                         } else if (currentEntry.value instanceof VariableAssignmentExpression) {
 
@@ -822,6 +812,19 @@ public class PointsToEscapeAnalysis {
         cachedForCurrentClass.add(new CachedAnalysisResult(aProgramDescriptor, analysisResult));
 
         return analysisResult;
+    }
+
+    private void findBackEdgesFor(final GraphNode aCurrentNode, final Stack<Object> aTraversalStack) {
+        aTraversalStack.push(aCurrentNode);
+        for (Edge<PointsTo, GraphNode> outgoing : aCurrentNode.outgoingEdges().collect(Collectors.toSet())) {
+            if (aTraversalStack.contains(outgoing.targetNode())) {
+                // Back edge found
+                outgoing.edgeType().flowdirection = Flowdirection.backward;
+            } else {
+                findBackEdgesFor(outgoing.targetNode(), aTraversalStack);
+            }
+        }
+        aTraversalStack.pop();
     }
 
     private void analyze(final ExpressionList aExpressionList, final AnalysisResult analysisResult) {

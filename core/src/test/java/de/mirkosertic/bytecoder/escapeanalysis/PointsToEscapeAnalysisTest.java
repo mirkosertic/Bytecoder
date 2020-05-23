@@ -1072,9 +1072,9 @@ public class PointsToEscapeAnalysisTest {
         assertTrue(scopesForSrc.isEmpty());
         assertTrue(scopesForLocale.isEmpty());
 
-        assertEquals(3, returning.size());
+        assertEquals(4, returning.size());
         assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.LocalScope.class));
-        assertTrue(containsNInstancesOf(returning, PointsToEscapeAnalysis.InvocationResultScope.class, 2));
+        assertTrue(containsNInstancesOf(returning, PointsToEscapeAnalysis.InvocationResultScope.class, 3));
     }
 
     private Object method27(final Object a, final int b1, final Object k) {
