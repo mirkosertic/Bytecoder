@@ -26,6 +26,7 @@ import de.mirkosertic.bytecoder.ssa.BlockState;
 import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.CurrentExceptionExpression;
+import de.mirkosertic.bytecoder.ssa.EnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
@@ -421,6 +422,9 @@ public class PointsToEscapeAnalysis {
                 analysisResult.scopes.put(currentEntry.value, staticScope);
                 addNotExisting(workingQueue, theOutgoing);
             } else if (currentEntry.value instanceof ResolveCallsiteInstanceExpression) {
+                analysisResult.scopes.put(currentEntry.value, staticScope);
+                addNotExisting(workingQueue, theOutgoing);
+            } else if (currentEntry.value instanceof EnumConstantsExpression) {
                 analysisResult.scopes.put(currentEntry.value, staticScope);
                 addNotExisting(workingQueue, theOutgoing);
             } else if (currentEntry.value instanceof StringValue) {
