@@ -491,6 +491,22 @@ public class PointsToEscapeAnalysis {
                     workingQueue.add(currentEntry);
                 }
                 // Terminal instruction
+            } else if (currentEntry.value instanceof NewInstanceFromDefaultConstructorExpression) {
+                // We are creating an instance from a type only known at runtime
+                // There is always one incoming reference
+                final List<GraphNode> theIncoming = currentEntry.incomingEdges().map(t -> (GraphNode) t.sourceNode()).collect(Collectors.toList());
+                if (theIncoming.size() != 1) {
+                    throw new IllegalArgumentException("NewInstanceFromDefaultConstructorExpression with unexpected number of incoming edges : " + theIncoming.size());
+                }
+                final Scope theIncomingScope = analysisResult.scopes.get(theIncoming.get(0).value);
+                if (theIncomingScope != null) {
+                    final InvocationResultScope scope = new InvocationResultScope();
+                    analysisResult.scopes.put(currentEntry.value, scope);
+                    addNotExisting(workingQueue, theOutgoing);
+                } else {
+                    // Incoming value is not resolved yet, we put it back onto the workingqueue
+                    workingQueue.add(currentEntry);
+                }
             } else if (currentEntry.value instanceof PutStaticExpression) {
                 // We are writing something into a static field
                 // There is always one incoming reference
@@ -563,18 +579,6 @@ public class PointsToEscapeAnalysis {
                     } else if (currentEntry.value instanceof VariableAssignmentExpression) {
 
                         analysisResult.scopes.put(currentEntry.value, analysisResult.scopes.get(theIncomingWithScope.iterator().next().value));
-                        addNotExisting(workingQueue, theOutgoing);
-
-                    } else if (currentEntry.value instanceof NewInstanceFromDefaultConstructorExpression) {
-
-                        final InvocationResultScope invocationScope = new InvocationResultScope();
-
-                        final NewInstanceFromDefaultConstructorExpression x = (NewInstanceFromDefaultConstructorExpression) currentEntry.value;
-                        // We are pretty sure the runtime implementation does not let escape anything, so we are safe here
-
-                        // All dataflows are now defined, we can continue with the new scope from here
-                        analysisResult.scopes.put(currentEntry.value, invocationScope);
-
                         addNotExisting(workingQueue, theOutgoing);
 
                     } else if (currentEntry.value instanceof NewInstanceAndConstructExpression) {
