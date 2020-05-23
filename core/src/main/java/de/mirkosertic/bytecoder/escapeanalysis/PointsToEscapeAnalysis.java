@@ -881,7 +881,7 @@ public class PointsToEscapeAnalysis {
     }
 
     private boolean isComplete(final AnalysisResult aResult, final GraphNode aNode, final int aExpectedIncomingValues) {
-        final List<GraphNode> theIncoming = aNode.incomingEdges().map(t -> (GraphNode) t.sourceNode()).collect(Collectors.toList());
+        final List<GraphNode> theIncoming = aNode.incomingEdges().filter(t -> t.edgeType().flowdirection == Flowdirection.forward).map(t -> (GraphNode) t.sourceNode()).collect(Collectors.toList());
         if (theIncoming.size() != aExpectedIncomingValues) {
             throw new IllegalArgumentException(aNode.value.getClass().getSimpleName() + " with unexpected number of incoming edges : " + theIncoming.size()+ ", expected " + aExpectedIncomingValues);
         }
