@@ -462,12 +462,9 @@ public class PointsToEscapeAnalysis {
             } else if (currentEntry.value instanceof ReturnValueExpression) {
                 // We are returning something
                 // There is always one incoming reference
-                final List<GraphNode> theIncoming = currentEntry.incomingEdges().map(t -> (GraphNode) t.sourceNode()).collect(Collectors.toList());
-                if (theIncoming.size() != 1) {
-                    throw new IllegalArgumentException("ReturnValueExpression with unexpected number of incoming edges : " + theIncoming.size());
-                }
-                final Scope theIncomingScope = analysisResult.scopes.get(theIncoming.get(0).value);
-                if (theIncomingScope != null) {
+                if (isComplete(analysisResult, currentEntry, 1)) {
+                    final List<Value> incomingValues = currentEntry.value.incomingDataFlows();
+                    final Scope theIncomingScope = analysisResult.scopes.get(incomingValues.get(0));
                     theIncomingScope.flowsInto(returnScope);
                     analysisResult.scopes.put(currentEntry.value, returnScope);
                 } else {
@@ -478,12 +475,9 @@ public class PointsToEscapeAnalysis {
             } else if (currentEntry.value instanceof ThrowExpression) {
                 // We are throwing something
                 // There is always one incoming reference
-                final List<GraphNode> theIncoming = currentEntry.incomingEdges().map(t -> (GraphNode) t.sourceNode()).collect(Collectors.toList());
-                if (theIncoming.size() != 1) {
-                    throw new IllegalArgumentException("ThrowExpression with unexpected number of incoming edges : " + theIncoming.size());
-                }
-                final Scope theIncomingScope = analysisResult.scopes.get(theIncoming.get(0).value);
-                if (theIncomingScope != null) {
+                if (isComplete(analysisResult, currentEntry, 1)) {
+                    final List<Value> incomingValues = currentEntry.value.incomingDataFlows();
+                    final Scope theIncomingScope = analysisResult.scopes.get(incomingValues.get(0));
                     theIncomingScope.flowsInto(returnScope);
                     analysisResult.scopes.put(currentEntry.value, returnScope);
                 } else {
@@ -494,12 +488,7 @@ public class PointsToEscapeAnalysis {
             } else if (currentEntry.value instanceof NewInstanceFromDefaultConstructorExpression) {
                 // We are creating an instance from a type only known at runtime
                 // There is always one incoming reference
-                final List<GraphNode> theIncoming = currentEntry.incomingEdges().map(t -> (GraphNode) t.sourceNode()).collect(Collectors.toList());
-                if (theIncoming.size() != 1) {
-                    throw new IllegalArgumentException("NewInstanceFromDefaultConstructorExpression with unexpected number of incoming edges : " + theIncoming.size());
-                }
-                final Scope theIncomingScope = analysisResult.scopes.get(theIncoming.get(0).value);
-                if (theIncomingScope != null) {
+                if (isComplete(analysisResult, currentEntry, 1)) {
                     final InvocationResultScope scope = new InvocationResultScope();
                     analysisResult.scopes.put(currentEntry.value, scope);
                     addNotExisting(workingQueue, theOutgoing);
@@ -510,12 +499,9 @@ public class PointsToEscapeAnalysis {
             } else if (currentEntry.value instanceof PutStaticExpression) {
                 // We are writing something into a static field
                 // There is always one incoming reference
-                final List<GraphNode> theIncoming = currentEntry.incomingEdges().map(t -> (GraphNode) t.sourceNode()).collect(Collectors.toList());
-                if (theIncoming.size() != 1) {
-                    throw new IllegalArgumentException("PutStaticExpression with unexpected number of incoming edges : " + theIncoming.size());
-                }
-                final Scope theIncomingScope = analysisResult.scopes.get(theIncoming.get(0).value);
-                if (theIncomingScope != null) {
+                if (isComplete(analysisResult, currentEntry, 1)) {
+                    final List<Value> incomingValues = currentEntry.value.incomingDataFlows();
+                    final Scope theIncomingScope = analysisResult.scopes.get(incomingValues.get(0));
                     theIncomingScope.flowsInto(staticScope);
                     analysisResult.scopes.put(currentEntry.value, staticScope);
                 } else {
@@ -526,14 +512,9 @@ public class PointsToEscapeAnalysis {
             } else if (currentEntry.value instanceof SetEnumConstantsExpression) {
                 // We are setting the enum constants within a runtime class
                 // There is always one incoming reference
-                final List<GraphNode> theIncoming = currentEntry.incomingEdges().map(t -> (GraphNode) t.sourceNode()).collect(Collectors.toList());
-                if (theIncoming.size() != 2) {
-                    throw new IllegalArgumentException("SetEnumConstantsExpression with unexpected number of incoming edges : " + theIncoming.size());
-                }
-                final long theIncomingWithScope = theIncoming.stream().filter(t -> analysisResult.scopes.get(t.value) != null).count();
-                if (theIncomingWithScope == 2) {
-                    final List<Value> theExpArgs = currentEntry.value.incomingDataFlows();
-                    final Value theValue = theExpArgs.get(1);
+                if (isComplete(analysisResult, currentEntry, 2)) {
+                    final List<Value> incomingValues = currentEntry.value.incomingDataFlows();
+                    final Value theValue = incomingValues.get(1);
                     analysisResult.scopes.get(theValue).flowsInto(staticScope);
                 } else {
                     // Not all incoming values are resolved yet, we put it back onto the workingqueue
@@ -862,7 +843,7 @@ public class PointsToEscapeAnalysis {
             }
         });
 
-        // Step 5 : Compute returning flows
+        // Step 6 : Compute returning flows
         analysisResult.scopes.values().stream().filter(t -> !(t instanceof ReturnScope) && !(t instanceof PHIScope)).forEach(t -> {
             final Stack<Scope> workingStack = new Stack<>();
             final Set<Scope> alreadySeen = new HashSet<>();
@@ -897,6 +878,18 @@ public class PointsToEscapeAnalysis {
             }
         }
         aTraversalStack.pop();
+    }
+
+    private boolean isComplete(final AnalysisResult aResult, final GraphNode aNode, final int aExpectedIncomingValues) {
+        final List<GraphNode> theIncoming = aNode.incomingEdges().map(t -> (GraphNode) t.sourceNode()).collect(Collectors.toList());
+        if (theIncoming.size() != aExpectedIncomingValues) {
+            throw new IllegalArgumentException(aNode.value.getClass().getSimpleName() + " with unexpected number of incoming edges : " + theIncoming.size()+ ", expected " + aExpectedIncomingValues);
+        }
+        final long theIncomingWithScope = theIncoming.stream().filter(t -> aResult.scopes.get(t.value) != null).count();
+        if (theIncomingWithScope == aExpectedIncomingValues) {
+            return true;
+        }
+        return false;
     }
 
     private void analyze(final ExpressionList aExpressionList, final AnalysisResult analysisResult) {
