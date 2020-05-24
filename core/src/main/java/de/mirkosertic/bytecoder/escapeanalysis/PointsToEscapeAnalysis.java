@@ -371,17 +371,20 @@ public class PointsToEscapeAnalysis {
 
         final ControlFlowGraph g = aProgramDescriptor.program.getControlFlowGraph();
         final Set<PHIValue> alreadyKnownPHIvalues = new HashSet<>();
-        for (final RegionNode theNode : g.dominators().getPreOrder()) {
+        final List<RegionNode> thePreOrder = g.dominators().getPreOrder();
+        for (final RegionNode theNode : thePreOrder) {
             final BlockState theLiveIn = theNode.liveIn();
-            theLiveIn.getPorts().values().stream()
-                    .filter(t -> t instanceof PHIValue)
-                    .map(t -> (PHIValue) t)
-                    .filter(t -> t.resolveType().isObject() || t.resolveType().isArray())
-                    .filter(alreadyKnownPHIvalues::add).forEach(t -> {
+            final int theNodeIndex = thePreOrder.indexOf(theNode);
+            theLiveIn.getPorts().entrySet().stream()
+                    .filter(t -> t.getValue() instanceof PHIValue)
+                    .filter(t -> t.getValue().resolveType().isObject() || t.getValue().resolveType().isArray())
+                    .filter(t -> alreadyKnownPHIvalues.add((PHIValue) t.getValue())).forEach(t -> {
 
-                final GraphNode phiNode = analysisResult.nodeFor(t);
-                theLiveIn.getPorts().entrySet().stream().filter(x -> x.getValue() == t).forEach(k -> phiNode.comment = "LiveIn #" + theNode.getStartAddress().getAddress() + " @ " + k.getKey());
-                for (final Value v : t.incomingDataFlows()) {
+                final PHIValue phiValue = (PHIValue) t.getValue();
+                final GraphNode phiNode = analysisResult.nodeFor(phiValue);
+                phiNode.comment = "LiveIn #" + theNode.getStartAddress().getAddress() + " @ " + t.getKey();
+
+                for (final Value v : phiValue.incomingDataFlows()) {
                     final GraphNode s = analysisResult.nodeFor(v);
                     if (s.outgoingEdges().map(Edge::targetNode).noneMatch(x -> x == phiNode)) {
                         if (alreadyKnownPHIvalues.contains(v)) {
