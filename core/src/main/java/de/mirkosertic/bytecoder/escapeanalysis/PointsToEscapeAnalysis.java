@@ -715,7 +715,155 @@ public class PointsToEscapeAnalysis {
                     // Not all incoming values are resolved yet, we put it back into the workingqueue
                     workingQueue.add(currentEntry);
                 }
+            } else if (currentEntry.value instanceof LambdaWithStaticImplExpression) {
+                if (isComplete(analysisResult, currentEntry, 4)) {
+                    // Lambda factories are tricky.
+                    // Arguments to not escape on construction, but maybe on invocation
+                    // of the lambda. As we do not know, we assume everything escapes to
+                    // static scope
+                    final InvocationResultScope invocationScope = new InvocationResultScope();
+
+                    for (final Value v : currentEntry.value.incomingDataFlows()) {
+                        final TypeRef argumentType = v.resolveType();
+                        if (argumentType.isArray() || argumentType.isObject()) {
+                            final Scope incomingScope = analysisResult.scopes.get(v);
+                            incomingScope.flowsInto(staticScope);
+                        }
+                    }
+
+                    // All dataflows are now defined, we can continue with the new scope from here
+                    analysisResult.scopes.put(currentEntry.value, invocationScope);
+
+                    addNotExisting(workingQueue, theOutgoing);
+
+                } else {
+                    // Not all incoming values are resolved yet, we put it back into the workingqueue
+                    workingQueue.add(currentEntry);
+                }
+            } else if (currentEntry.value instanceof LambdaInterfaceReferenceExpression) {
+                if (isComplete(analysisResult, currentEntry, 3)) {
+                    // Lambda factories are tricky.
+                    // Arguments to not escape on construction, but maybe on invocation
+                    // of the lambda. As we do not know, we assume everything escapes to
+                    // static scope
+                    final InvocationResultScope invocationScope = new InvocationResultScope();
+
+                    for (final Value v : currentEntry.value.incomingDataFlows()) {
+                        final TypeRef argumentType = v.resolveType();
+                        if (argumentType.isArray() || argumentType.isObject()) {
+                            final Scope incomingScope = analysisResult.scopes.get(v);
+                            incomingScope.flowsInto(staticScope);
+                        }
+                    }
+
+                    // All dataflows are now defined, we can continue with the new scope from here
+                    analysisResult.scopes.put(currentEntry.value, invocationScope);
+
+                    addNotExisting(workingQueue, theOutgoing);
+
+                } else {
+                    // Not all incoming values are resolved yet, we put it back into the workingqueue
+                    workingQueue.add(currentEntry);
+                }
+            } else if (currentEntry.value instanceof LambdaVirtualReferenceExpression) {
+                if (isComplete(analysisResult, currentEntry, 3)) {
+                    // Lambda factories are tricky.
+                    // Arguments to not escape on construction, but maybe on invocation
+                    // of the lambda. As we do not know, we assume everything escapes to
+                    // static scope
+                    final InvocationResultScope invocationScope = new InvocationResultScope();
+
+                    for (final Value v : currentEntry.value.incomingDataFlows()) {
+                        final TypeRef argumentType = v.resolveType();
+                        if (argumentType.isArray() || argumentType.isObject()) {
+                            final Scope incomingScope = analysisResult.scopes.get(v);
+                            incomingScope.flowsInto(staticScope);
+                        }
+                    }
+
+                    // All dataflows are now defined, we can continue with the new scope from here
+                    analysisResult.scopes.put(currentEntry.value, invocationScope);
+
+                    addNotExisting(workingQueue, theOutgoing);
+
+                } else {
+                    // Not all incoming values are resolved yet, we put it back into the workingqueue
+                    workingQueue.add(currentEntry);
+                }
+            } else if (currentEntry.value instanceof LambdaConstructorReferenceExpression) {
+                if (isComplete(analysisResult, currentEntry, 3)) {
+                    // Lambda factories are tricky.
+                    // Arguments to not escape on construction, but maybe on invocation
+                    // of the lambda. As we do not know, we assume everything escapes to
+                    // static scope
+                    final InvocationResultScope invocationScope = new InvocationResultScope();
+
+                    for (final Value v : currentEntry.value.incomingDataFlows()) {
+                        final TypeRef argumentType = v.resolveType();
+                        if (argumentType.isArray() || argumentType.isObject()) {
+                            final Scope incomingScope = analysisResult.scopes.get(v);
+                            incomingScope.flowsInto(staticScope);
+                        }
+                    }
+
+                    // All dataflows are now defined, we can continue with the new scope from here
+                    analysisResult.scopes.put(currentEntry.value, invocationScope);
+
+                    addNotExisting(workingQueue, theOutgoing);
+
+                } else {
+                    // Not all incoming values are resolved yet, we put it back into the workingqueue
+                    workingQueue.add(currentEntry);
+                }
+            } else if (currentEntry.value instanceof LambdaSpecialReferenceExpression) {
+                if (isComplete(analysisResult, currentEntry, 3)) {
+                    // Lambda factories are tricky.
+                    // Arguments to not escape on construction, but maybe on invocation
+                    // of the lambda. As we do not know, we assume everything escapes to
+                    // static scope
+                    final InvocationResultScope invocationScope = new InvocationResultScope();
+
+                    for (final Value v : currentEntry.value.incomingDataFlows()) {
+                        final TypeRef argumentType = v.resolveType();
+                        if (argumentType.isArray() || argumentType.isObject()) {
+                            final Scope incomingScope = analysisResult.scopes.get(v);
+                            incomingScope.flowsInto(staticScope);
+                        }
+                    }
+
+                    // All dataflows are now defined, we can continue with the new scope from here
+                    analysisResult.scopes.put(currentEntry.value, invocationScope);
+
+                    addNotExisting(workingQueue, theOutgoing);
+
+                } else {
+                    // Not all incoming values are resolved yet, we put it back into the workingqueue
+                    workingQueue.add(currentEntry);
+                }
+            } else if (currentEntry.value instanceof ArrayStoreExpression) {
+                if (isComplete(analysisResult, currentEntry, 1)) {
+                    final Set<GraphNode> theIncoming = currentEntry.incomingEdges().map(t -> (GraphNode) t.sourceNode()).collect(Collectors.toSet());
+                    final Scope scope = analysisResult.scopes.get(theIncoming.iterator().next().value);
+                    analysisResult.scopes.put(currentEntry.value, scope);
+
+                    addNotExisting(workingQueue, theOutgoing);
+                } else {
+                    // Not all incoming values are resolved yet, we put it back into the workingqueue
+                    workingQueue.add(currentEntry);
+                }
+            } else if (currentEntry.value instanceof PutFieldExpression) {
+                if (isComplete(analysisResult, currentEntry, 1)) {
+                    final Set<GraphNode> theIncoming = currentEntry.incomingEdges().map(t -> (GraphNode) t.sourceNode()).collect(Collectors.toSet());
+                    final Scope scope = analysisResult.scopes.get(theIncoming.iterator().next().value);
+                    analysisResult.scopes.put(currentEntry.value, scope);
+
+                    addNotExisting(workingQueue, theOutgoing);
+                } else {
+                    // Not all incoming values are resolved yet, we put it back into the workingqueue
+                    workingQueue.add(currentEntry);
+                }
             } else {
+                System.out.println(currentEntry.value);
                 final Set<GraphNode> theIncoming = currentEntry.incomingEdges().filter(edge -> edge.edgeType().flowdirection == Flowdirection.forward).map(t -> (GraphNode) t.sourceNode()).collect(Collectors.toSet());
                 final Set<GraphNode> theIncomingWithScope = theIncoming.stream().filter(t -> analysisResult.scopes.containsKey(t.value)).collect(Collectors.toSet());
                 if (theIncoming.size() == theIncomingWithScope.size()) {
@@ -753,31 +901,6 @@ public class PointsToEscapeAnalysis {
                     } else if (currentEntry.value instanceof VariableAssignmentExpression) {
 
                         analysisResult.scopes.put(currentEntry.value, analysisResult.scopes.get(theIncomingWithScope.iterator().next().value));
-                        addNotExisting(workingQueue, theOutgoing);
-
-                    } else if (currentEntry.value instanceof LambdaWithStaticImplExpression ||
-                               currentEntry.value instanceof LambdaInterfaceReferenceExpression ||
-                               currentEntry.value instanceof LambdaVirtualReferenceExpression ||
-                               currentEntry.value instanceof LambdaConstructorReferenceExpression ||
-                               currentEntry.value instanceof LambdaSpecialReferenceExpression) {
-
-                        // Lambda factories are tricky.
-                        // We might analyze the code for most of them excluding the interface and virtual invocations
-                        // but for now we assume everything is escaping to static scope here
-
-                        final InvocationResultScope invocationScope = new InvocationResultScope();
-
-                        for (final Value v : currentEntry.value.incomingDataFlows()) {
-                            final TypeRef argumentType = v.resolveType();
-                            if (argumentType.isArray() || argumentType.isObject()) {
-                                final Scope incomingScope = analysisResult.scopes.get(v);
-                                incomingScope.flowsInto(staticScope);
-                            }
-                        }
-
-                        // All dataflows are now defined, we can continue with the new scope from here
-                        analysisResult.scopes.put(currentEntry.value, invocationScope);
-
                         addNotExisting(workingQueue, theOutgoing);
 
                     } else {
