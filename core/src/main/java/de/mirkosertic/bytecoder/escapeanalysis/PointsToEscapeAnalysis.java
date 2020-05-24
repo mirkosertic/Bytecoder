@@ -372,21 +372,10 @@ public class PointsToEscapeAnalysis {
                     .filter(alreadyKnownPHIvalues::add).forEach(t -> {
 
                 final GraphNode phiNode = analysisResult.nodeFor(t);
-                for (final RegionNode pred : theNode.getPredecessorsIgnoringBackEdges()) {
-                    if (pred != theNode) {
-                        final BlockState theOut = pred.liveOut();
-                        final Value incomingValue = theOut.getPorts().get(t.getDescription());
-                        final GraphNode incomingNode = analysisResult.nodeFor(incomingValue);
-
-                        if (incomingValue instanceof PHIValue && alreadyKnownPHIvalues.contains((incomingValue))) {
-                            continue;
-                        }
-
-                        if (incomingNode != phiNode) {
-                            if (incomingNode.outgoingEdges().map(Edge::targetNode).noneMatch(x -> x != phiNode)) {
-                                incomingNode.addEdgeTo(new PointsTo(), phiNode);
-                            }
-                        }
+                for (final Value v : t.incomingDataFlows()) {
+                    final GraphNode s = analysisResult.nodeFor(v);
+                    if (s.outgoingEdges().map(Edge::targetNode).noneMatch(x -> x != phiNode)) {
+                        s.addEdgeTo(new PointsTo(), phiNode);
                     }
                 }
             });
