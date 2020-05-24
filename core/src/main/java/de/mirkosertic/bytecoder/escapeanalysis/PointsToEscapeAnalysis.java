@@ -93,11 +93,16 @@ public class PointsToEscapeAnalysis {
         public PointsTo() {
             flowdirection = Flowdirection.forward;
         }
+
+        public PointsTo(final Flowdirection flowdirection) {
+            this.flowdirection = flowdirection;
+        }
     }
 
     static class GraphNode extends Node<GraphNode, PointsTo> {
 
         private final Value value;
+        private String comment;
 
         public GraphNode(final Value value) {
             this.value = value;
@@ -271,6 +276,9 @@ public class PointsToEscapeAnalysis {
                     String label = v.value.getClass().getSimpleName();
                     if (v.value instanceof PHIValue) {
                         label += " " + System.identityHashCode(v.value);
+                        if (v.comment != null) {
+                            label += " " + v.comment;
+                        }
                     }
                     label+="\\n\\n" + toScopeDebugLabel(scopes.get(v.value));
                     if (escapedValues.contains(v.value)) {
@@ -372,10 +380,15 @@ public class PointsToEscapeAnalysis {
                     .filter(alreadyKnownPHIvalues::add).forEach(t -> {
 
                 final GraphNode phiNode = analysisResult.nodeFor(t);
+                theLiveIn.getPorts().entrySet().stream().filter(x -> x.getValue() == t).forEach(k -> phiNode.comment = "LiveIn #" + theNode.getStartAddress().getAddress() + " @ " + k.getKey());
                 for (final Value v : t.incomingDataFlows()) {
                     final GraphNode s = analysisResult.nodeFor(v);
-                    if (s.outgoingEdges().map(Edge::targetNode).noneMatch(x -> x != phiNode)) {
-                        s.addEdgeTo(new PointsTo(), phiNode);
+                    if (s.outgoingEdges().map(Edge::targetNode).noneMatch(x -> x == phiNode)) {
+                        if (alreadyKnownPHIvalues.contains(v)) {
+                            s.addEdgeTo(new PointsTo(Flowdirection.backward), phiNode);
+                        } else {
+                            s.addEdgeTo(new PointsTo(), phiNode);
+                        }
                     }
                 }
             });
