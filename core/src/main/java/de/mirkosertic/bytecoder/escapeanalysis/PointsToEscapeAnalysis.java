@@ -403,6 +403,9 @@ public class PointsToEscapeAnalysis {
         final Queue<GraphNode> workingQueue = new LinkedList<>(rootNodes);
         while (!workingQueue.isEmpty()) {
             final GraphNode currentEntry = workingQueue.poll();
+            if (analysisResult.scopes.containsKey(currentEntry.value)) {
+                continue;
+            }
             final Set<GraphNode> theOutgoing = currentEntry.outgoingEdges().map(Edge::targetNode).filter(t -> !analysisResult.scopes.containsKey(t.value)).collect(Collectors.toSet());
             if (currentEntry.value instanceof NullValue) {
                 // The null constant. It is always local scope
@@ -862,75 +865,91 @@ public class PointsToEscapeAnalysis {
                     // Not all incoming values are resolved yet, we put it back into the workingqueue
                     workingQueue.add(currentEntry);
                 }
-            } else {
-                System.out.println(currentEntry.value);
-                final Set<GraphNode> theIncoming = currentEntry.incomingEdges().filter(edge -> edge.edgeType().flowdirection == Flowdirection.forward).map(t -> (GraphNode) t.sourceNode()).collect(Collectors.toSet());
-                final Set<GraphNode> theIncomingWithScope = theIncoming.stream().filter(t -> analysisResult.scopes.containsKey(t.value)).collect(Collectors.toSet());
-                if (theIncoming.size() == theIncomingWithScope.size()) {
-                    // We have all predecessor scopes, so we can continue and compute the scope flow
-                    // for the current node
+            } else if (currentEntry.value instanceof GetFieldExpression) {
+                // We are accessing a field of something
+                // There is always one incoming reference
+                if (isComplete(analysisResult, currentEntry, 1)) {
+                    final List<Value> incomingValues = currentEntry.value.incomingDataFlows();
+                    final Scope theIncomingScope = analysisResult.scopes.get(incomingValues.get(0));
+                    analysisResult.scopes.put(currentEntry.value, theIncomingScope);
 
-                    final Set<GraphNode> theArrayWrites = theIncoming.stream().filter(t -> t.value instanceof ArrayStoreExpression).collect(Collectors.toSet());
-                    final Set<GraphNode> thePutFields = theIncoming.stream().filter(t -> t.value instanceof PutFieldExpression).collect(Collectors.toSet());
-                    if (!theArrayWrites.isEmpty() && theIncomingWithScope.size() >= 2) {
+                    addNotExisting(workingQueue, theOutgoing);
 
-                        final GraphNode theValue = theArrayWrites.iterator().next();
-                        theIncoming.stream().filter(t -> t != theValue).forEach(array -> {
-                            if (!analysisResult.scopes.containsKey(currentEntry.value)) {
-                                analysisResult.scopes.put(currentEntry.value, analysisResult.scopes.get(array.value));
-                            }
-                            analysisResult.scopes.get(theValue.value).flowsInto(analysisResult.scopes.get(array.value));
-                        });
-
-                        addNotExisting(workingQueue, theOutgoing);
-
-                    } else if (!thePutFields.isEmpty() && theIncomingWithScope.size() >= 2) {
-
-                        final GraphNode theValue = thePutFields.iterator().next();
-                        theIncoming.stream().filter(t -> t != theValue).forEach(instance -> {
-                            if (!analysisResult.scopes.containsKey(currentEntry.value)) {
-                                analysisResult.scopes.put(currentEntry.value, analysisResult.scopes.get(instance.value));
-                            }
-                            analysisResult.scopes.get(theValue.value).flowsInto(analysisResult.scopes.get(instance.value));
-                        });
-
-                        analysisResult.scopes.get(theValue.value).flowsInto(analysisResult.scopes.get(currentEntry.value));
-
-                        addNotExisting(workingQueue, theOutgoing);
-
-                    } else if (currentEntry.value instanceof VariableAssignmentExpression) {
-
-                        analysisResult.scopes.put(currentEntry.value, analysisResult.scopes.get(theIncomingWithScope.iterator().next().value));
-                        addNotExisting(workingQueue, theOutgoing);
-
-                    } else {
-
-                        if (theIncomingWithScope.size() == 1) {
-                            final Scope newScope = analysisResult.scopes.get(theIncomingWithScope.iterator().next().value);
-                            analysisResult.scopes.put(currentEntry.value, newScope);
-
-                            if (currentEntry.value instanceof Variable) {
-                                // This variable might flow back into a PHIScope we already know
-                                currentEntry.value.outgoingEdges().map(Edge::targetNode)
-                                        .map(analysisResult.scopes::get)
-                                        .filter(t -> t instanceof PHIScope).forEach(newScope::flowsInto);
-                            }
-
-                        } else if (currentEntry.value instanceof PHIValue) {
-                            final Scope newScope = analysisResult.scopes.computeIfAbsent(currentEntry.value, key -> new PHIScope(theIncomingWithScope.stream().map(t -> analysisResult.scopes.get(t.value)).collect(Collectors.toSet())));
-                            analysisResult.scopes.put(currentEntry.value, newScope);
-                            theIncoming.stream().map(t -> analysisResult.scopes.get(t.value)).filter(t -> t != newScope).forEach(t -> t.flowsInto(newScope));
-                        } else if (theIncomingWithScope.size() > 1) {
-                            // Should not happen due to SSA form
-                            throw new IllegalArgumentException("Don't know how to handle multiple flow assignments for " + currentEntry.value);
-                        }
-
-                        addNotExisting(workingQueue, theOutgoing);
-                    }
                 } else {
-                    // Condition not met, we try again later
+                    // Incoming value is not resolved yet, we put it back onto the workingqueue
                     workingQueue.add(currentEntry);
                 }
+            } else if (currentEntry.value instanceof ArrayEntryExpression) {
+                // We are reading an array element of something
+                // There is always one incoming reference
+                if (isComplete(analysisResult, currentEntry, 1)) {
+                    final List<Value> incomingValues = currentEntry.value.incomingDataFlows();
+                    final Scope theIncomingScope = analysisResult.scopes.get(incomingValues.get(0));
+                    analysisResult.scopes.put(currentEntry.value, theIncomingScope);
+
+                    addNotExisting(workingQueue, theOutgoing);
+
+                } else {
+                    // Incoming value is not resolved yet, we put it back onto the workingqueue
+                    workingQueue.add(currentEntry);
+                }
+            } else if (currentEntry.value instanceof Variable) {
+                final long theIncomingCount = currentEntry.incomingEdges().filter(edge -> edge.edgeType().flowdirection == Flowdirection.forward).map(t -> (GraphNode) t.sourceNode()).count();
+                if (isComplete(analysisResult, currentEntry, theIncomingCount)) {
+                    // First of all, we need the scope for the current variable
+                    // This os derived from the incoming value which is not a PutPield or ArrayStore expression
+                    final Set<GraphNode> theInitializer = currentEntry.incomingEdges()
+                            .filter(edge -> edge.edgeType().flowdirection == Flowdirection.forward)
+                            .map(t -> (GraphNode) t.sourceNode())
+                            .filter(t -> !(t.value instanceof ArrayStoreExpression) && !(t.value instanceof PutFieldExpression))
+                            .collect(Collectors.toSet());
+                    if (theInitializer.size() != 1) {
+                        throw new IllegalArgumentException("Expected a single initializer for " + currentEntry.value + ", got " + theInitializer.size());
+                    }
+                    final Scope scope = analysisResult.scopes.get(theInitializer.iterator().next().value);
+                    analysisResult.scopes.put(currentEntry.value, scope);
+
+                    // Now we check for incoming ArrayStore or PutField Expressions
+                    currentEntry.incomingEdges()
+                            .filter(edge -> edge.edgeType().flowdirection == Flowdirection.forward)
+                            .map(t -> ((GraphNode) t.sourceNode()).value)
+                            .filter(t -> (t instanceof PutFieldExpression) || (t instanceof ArrayStoreExpression))
+                            .forEach(t -> {
+                                final Scope incoming = analysisResult.scopes.get(t);
+                                incoming.flowsInto(scope);
+                            });
+
+                    // And we are done
+                    addNotExisting(workingQueue, theOutgoing);
+                } else {
+                    // Not all incoming values are resolved yet, we put it back into the workingqueue
+                    workingQueue.add(currentEntry);
+                }
+            } else if (currentEntry.value instanceof PHIValue) {
+                // All incoming forward edges must be resolved
+                final long theIncomingCount = currentEntry.incomingEdges().filter(edge -> edge.edgeType().flowdirection == Flowdirection.forward).map(t -> (GraphNode) t.sourceNode()).count();
+                if (isComplete(analysisResult, currentEntry, theIncomingCount)) {
+
+                    final Set<Scope> mergingScopes = currentEntry.incomingEdges()
+                            .filter(edge -> edge.edgeType().flowdirection == Flowdirection.forward)
+                            .map(t -> ((GraphNode) t.sourceNode()).value)
+                            .map(analysisResult.scopes::get).collect(Collectors.toSet());
+
+                    final PHIScope scope = new PHIScope(mergingScopes);
+                    for (final Scope s : mergingScopes) {
+                        s.flowsInto(scope);
+                    }
+
+                    analysisResult.scopes.put(currentEntry.value, scope);
+
+                    addNotExisting(workingQueue, theOutgoing);
+
+                } else {
+                    // Not all incoming values are resolved yet, we put it back into the workingqueue
+                    workingQueue.add(currentEntry);
+                }
+            } else {
+                throw new IllegalArgumentException("Not supported : " + currentEntry.value);
             }
         }
 
