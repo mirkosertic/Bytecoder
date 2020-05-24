@@ -396,7 +396,7 @@ public class PointsToEscapeAnalysis {
         }
 
         // Step 2: find back edges in the graph
-        final Set<GraphNode> rootNodes = analysisResult.nodes.values().stream().filter(t -> t.incomingEdges().count() == 0).collect(Collectors.toSet());
+        final Set<GraphNode> rootNodes = analysisResult.nodes.values().stream().filter(t -> t.incomingEdges().filter(x -> x.edgeType().flowdirection == Flowdirection.forward).count() == 0).collect(Collectors.toSet());
         for (final GraphNode rootNode : rootNodes) {
             findBackEdgesFor(rootNode, new Stack<>());
         }
@@ -1035,11 +1035,13 @@ public class PointsToEscapeAnalysis {
     private void findBackEdgesFor(final GraphNode aCurrentNode, final Stack<Object> aTraversalStack) {
         aTraversalStack.push(aCurrentNode);
         for (final Edge<PointsTo, GraphNode> outgoing : aCurrentNode.outgoingEdges().collect(Collectors.toSet())) {
-            if (aTraversalStack.contains(outgoing.targetNode())) {
-                // Back edge found
-                outgoing.edgeType().flowdirection = Flowdirection.backward;
-            } else {
-                findBackEdgesFor(outgoing.targetNode(), aTraversalStack);
+            if (outgoing.edgeType().flowdirection == Flowdirection.forward) {
+                if (aTraversalStack.contains(outgoing.targetNode())) {
+                    // Back edge found
+                    outgoing.edgeType().flowdirection = Flowdirection.backward;
+                } else {
+                    findBackEdgesFor(outgoing.targetNode(), aTraversalStack);
+                }
             }
         }
         aTraversalStack.pop();
