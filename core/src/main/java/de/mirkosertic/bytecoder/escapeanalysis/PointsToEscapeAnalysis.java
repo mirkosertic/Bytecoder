@@ -41,7 +41,10 @@ import de.mirkosertic.bytecoder.ssa.LambdaInterfaceReferenceExpression;
 import de.mirkosertic.bytecoder.ssa.LambdaSpecialReferenceExpression;
 import de.mirkosertic.bytecoder.ssa.LambdaVirtualReferenceExpression;
 import de.mirkosertic.bytecoder.ssa.LambdaWithStaticImplExpression;
+import de.mirkosertic.bytecoder.ssa.MethodHandleExpression;
+import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupExpression;
 import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
+import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceAndConstructExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceExpression;
@@ -390,7 +393,21 @@ public class PointsToEscapeAnalysis {
                         if (alreadyKnownPHIvalues.contains(v)) {
                             s.addEdgeTo(new PointsTo(Flowdirection.backward), phiNode);
                         } else {
-                            s.addEdgeTo(new PointsTo(), phiNode);
+                            boolean backedge = false;
+                            predcheck: for (final RegionNode thePred : theNode.getPredecessors()) {
+                                final BlockState thePredOut = thePred.liveOut();
+                                if (thePredOut.getPorts().get(t.getKey()) == v) {
+                                    if (thePreOrder.indexOf(thePred) >= theNodeIndex) {
+                                        backedge = true;
+                                        break predcheck;
+                                    }
+                                }
+                            }
+                            if (backedge) {
+                                s.addEdgeTo(new PointsTo(Flowdirection.backward), phiNode);
+                            } else {
+                                s.addEdgeTo(new PointsTo(), phiNode);
+                            }
                         }
                     }
                 }
@@ -399,7 +416,7 @@ public class PointsToEscapeAnalysis {
         }
 
         // Step 2: find back edges in the graph
-        final Set<GraphNode> rootNodes = analysisResult.nodes.values().stream().filter(t -> t.incomingEdges().filter(x -> x.edgeType().flowdirection == Flowdirection.forward).count() == 0).collect(Collectors.toSet());
+        final Set<GraphNode> rootNodes = analysisResult.nodes.values().stream().filter(t -> t.incomingEdges().noneMatch(x -> x.edgeType().flowdirection == Flowdirection.forward)).collect(Collectors.toSet());
         for (final GraphNode rootNode : rootNodes) {
             findBackEdgesFor(rootNode, new Stack<>());
         }
@@ -458,6 +475,18 @@ public class PointsToEscapeAnalysis {
                 addNotExisting(workingQueue, theOutgoing);
             } else if (currentEntry.value instanceof ClassReferenceValue) {
                 // We are accessing a runtime class
+                analysisResult.scopes.put(currentEntry.value, staticScope);
+                addNotExisting(workingQueue, theOutgoing);
+            } else if (currentEntry.value instanceof MethodHandlesGeneratedLookupExpression) {
+                // We are accessing the method handles reference
+                analysisResult.scopes.put(currentEntry.value, staticScope);
+                addNotExisting(workingQueue, theOutgoing);
+            } else if (currentEntry.value instanceof MethodTypeExpression) {
+                // We are accessing a methodtype
+                analysisResult.scopes.put(currentEntry.value, staticScope);
+                addNotExisting(workingQueue, theOutgoing);
+            } else if (currentEntry.value instanceof MethodHandleExpression) {
+                // We are accessing a methodhandle
                 analysisResult.scopes.put(currentEntry.value, staticScope);
                 addNotExisting(workingQueue, theOutgoing);
             } else if (currentEntry.value instanceof SelfReferenceParameterValue) {
