@@ -61,6 +61,7 @@ import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.SetEnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.StringValue;
+import de.mirkosertic.bytecoder.ssa.SuperTypeOfExpression;
 import de.mirkosertic.bytecoder.ssa.ThrowExpression;
 import de.mirkosertic.bytecoder.ssa.TypeOfExpression;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
@@ -455,6 +456,12 @@ public class PointsToEscapeAnalysis {
                 addNotExisting(workingQueue, theOutgoing);
             } else if (currentEntry.value instanceof TypeOfExpression) {
                 // We are accessing the runtime class of a reference
+                // there is an incoming reference, but we don't care about its scope
+                // as the result of this operation is always static scope
+                analysisResult.scopes.put(currentEntry.value, staticScope);
+                addNotExisting(workingQueue, theOutgoing);
+            } else if (currentEntry.value instanceof SuperTypeOfExpression) {
+                // We are accessing the super class of a runtime class
                 // there is an incoming reference, but we don't care about its scope
                 // as the result of this operation is always static scope
                 analysisResult.scopes.put(currentEntry.value, staticScope);
@@ -987,6 +994,19 @@ public class PointsToEscapeAnalysis {
             }
         }
 
+        // During analysis, where might be PHIValues with only a back-edge to another PHIValue
+        // In this case, we have to propagate the flow by hand
+        analysisResult.scopes.keySet().stream().filter(t -> t instanceof PHIValue).filter(t -> t.outgoingEdges().count() == 1).forEach(t -> {
+            final GraphNode node = analysisResult.nodes.get(t);
+            final Set<GraphNode> target = node.outgoingEdges().filter(x -> x.edgeType().flowdirection == Flowdirection.backward).map(k -> k.targetNode()).collect(Collectors.toSet());
+            if (target.size() == 1) {
+                // We found one
+                final PHIScope sourceScope = (PHIScope) analysisResult.scopes.get(t);
+                final Scope targetScope = analysisResult.scopes.get(target.iterator().next().value);
+                sourceScope.flowsInto.add(targetScope);
+            }
+        });
+
         // Step 4: Compute escaping allocations of flows for the arguments
         for (final Variable v : aProgramDescriptor.program.getArguments()) {
             final TypeRef theType = v.resolveType();
@@ -1193,6 +1213,19 @@ public class PointsToEscapeAnalysis {
         } else if (aExpression instanceof TypeOfExpression) {
 
             final TypeOfExpression n = (TypeOfExpression) aExpression;
+            final GraphNode newNode = analysisResult.nodeFor(n);
+
+            for (final Value v : n.incomingDataFlows()) {
+                final TypeRef type = v.resolveType();
+                if (type.isObject() || type.isArray()) {
+                    final GraphNode arg = analysisResult.nodeFor(v);
+                    arg.addEdgeTo(new PointsTo(), newNode);
+                }
+            }
+
+        } else if (aExpression instanceof SuperTypeOfExpression) {
+
+            final SuperTypeOfExpression n = (SuperTypeOfExpression) aExpression;
             final GraphNode newNode = analysisResult.nodeFor(n);
 
             for (final Value v : n.incomingDataFlows()) {
