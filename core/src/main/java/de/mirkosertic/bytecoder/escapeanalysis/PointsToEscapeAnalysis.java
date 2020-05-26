@@ -238,15 +238,12 @@ public class PointsToEscapeAnalysis {
                 label =  "MethodParameterScope #" + mp.methodParameterValue.getParameterIndex();
             }else if (scope instanceof LocalScope) {
                 label =  "LocalScope #" + System.identityHashCode(scope);
+            }else if (scope instanceof PHIScope) {
+                label =  "PHIScope #" + System.identityHashCode(scope);
             } else if (scope == null) {
                 label = "Unknown Scope";
             } else {
                 label = scope.getClass().getSimpleName();
-            }
-            if (scope != null && includeFlow) {
-                for (final Scope f : scope.flowsInto) {
-                    label += "\\nFlows into " + toScopeDebugLabel(f, false);
-                }
             }
             return label;
         }
@@ -386,7 +383,7 @@ public class PointsToEscapeAnalysis {
 
                 final PHIValue phiValue = (PHIValue) t.getValue();
                 final GraphNode phiNode = analysisResult.nodeFor(phiValue);
-                phiNode.comment = "LiveIn #" + theNode.getStartAddress().getAddress() + " @ " + t.getKey();
+                //phiNode.comment = "LiveIn #" + theNode.getStartAddress().getAddress() + " @ " + t.getKey();
 
                 for (final Value v : phiValue.incomingDataFlows()) {
                     final GraphNode s = analysisResult.nodeFor(v);
