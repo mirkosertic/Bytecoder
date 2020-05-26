@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.escapeanalysis;
 
+import com.google.common.collect.Sets;
 import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.graph.Edge;
@@ -116,9 +117,11 @@ public class PointsToEscapeAnalysis {
     static class Scope {
 
         final Set<Scope> flowsInto;
+        final Set<Scope> receivesFrom;
 
         Scope() {
             flowsInto = new HashSet<>();
+            receivesFrom = new HashSet<>();
         }
 
         public void flowsInto(final Scope otherScope) {
@@ -127,6 +130,7 @@ public class PointsToEscapeAnalysis {
         }
 
         public void receivesFrom(final Scope otherScope) {
+            receivesFrom.add(otherScope);
         }
     }
 
@@ -156,6 +160,7 @@ public class PointsToEscapeAnalysis {
 
         @Override
         public void receivesFrom(final Scope otherScope) {
+            super.receivesFrom(otherScope);
             for (final Scope merged : mergingScopes) {
                 otherScope.flowsInto(merged);
             }
@@ -244,6 +249,11 @@ public class PointsToEscapeAnalysis {
                 label = "Unknown Scope";
             } else {
                 label = scope.getClass().getSimpleName();
+            }
+            if (scope != null && includeFlow) {
+                for (final Scope f : scope.flowsInto) {
+                    label += "\\nFlows into " + toScopeDebugLabel(f, false);
+                }
             }
             return label;
         }
@@ -589,7 +599,7 @@ public class PointsToEscapeAnalysis {
                                 if (s instanceof StaticScope) {
                                     incomingScope.flowsInto(staticScope);
                                 } else if (s instanceof ReturnScope) {
-                                    throw new IllegalArgumentException("Constructors must not have a return scope!");
+                                    // throw new IllegalArgumentException("Constructors must not have a return scope!");
                                 } else if (s instanceof ThisScope) {
                                     incomingScope.flowsInto(invocationScope);
                                 } else if (s instanceof MethodParameterScope) {
@@ -965,8 +975,9 @@ public class PointsToEscapeAnalysis {
                 }
             } else if (currentEntry.value instanceof PHIValue) {
                 // All incoming forward edges must be resolved
-                final long theIncomingCount = currentEntry.incomingEdges().filter(edge -> edge.edgeType().flowdirection == Flowdirection.forward).map(t -> (GraphNode) t.sourceNode()).count();
-                if (isComplete(analysisResult, currentEntry, theIncomingCount)) {
+                final long theIncomingForward = currentEntry.incomingEdges().filter(t -> t.edgeType().flowdirection == Flowdirection.forward).count();
+                final long theIncomingResolved = currentEntry.incomingEdges().filter(t -> t.edgeType().flowdirection == Flowdirection.forward).filter(t -> analysisResult.scopes.containsKey(((GraphNode) t.sourceNode()).value)).count();
+                if (theIncomingForward == theIncomingResolved) {
 
                     final Set<Scope> mergingScopes = currentEntry.incomingEdges()
                             .filter(edge -> edge.edgeType().flowdirection == Flowdirection.forward)
@@ -993,14 +1004,16 @@ public class PointsToEscapeAnalysis {
 
         // During analysis, where might be PHIValues with only a back-edge to another PHIValue
         // In this case, we have to propagate the flow by hand
-        analysisResult.scopes.keySet().stream().filter(t -> t instanceof PHIValue).filter(t -> t.outgoingEdges().count() == 1).forEach(t -> {
-            final GraphNode node = analysisResult.nodes.get(t);
-            final Set<GraphNode> target = node.outgoingEdges().filter(x -> x.edgeType().flowdirection == Flowdirection.backward).map(k -> k.targetNode()).collect(Collectors.toSet());
+        analysisResult.scopes.keySet().stream().filter(t -> t instanceof Variable || t instanceof PHIValue).filter(t -> t.outgoingEdges().count() == 1)
+                .map(analysisResult::nodeFor)
+                .filter(t -> t.outgoingEdges().filter(x -> x.edgeType().flowdirection == Flowdirection.backward).count() == 1)
+                .forEach(node -> {
+            final Set<GraphNode> target = node.outgoingEdges().filter(x -> x.edgeType().flowdirection == Flowdirection.backward).map(Edge::targetNode).collect(Collectors.toSet());
             if (target.size() == 1) {
                 // We found one
-                final PHIScope sourceScope = (PHIScope) analysisResult.scopes.get(t);
+                final Scope sourceScope = analysisResult.scopes.get(node.value);
                 final Scope targetScope = analysisResult.scopes.get(target.iterator().next().value);
-                sourceScope.flowsInto.add(targetScope);
+                sourceScope.flowsInto(targetScope);
             }
         });
 
@@ -1019,7 +1032,7 @@ public class PointsToEscapeAnalysis {
                 while (!workingStack.isEmpty()) {
                     final Scope current = workingStack.pop();
                     if (alreadySeen.add(current)) {
-                        if (current != selfScope && (current instanceof ThisScope || current instanceof MethodParameterScope || current instanceof StaticScope || current instanceof ReturnScope)) {
+                        if (current != selfScope && (current instanceof PHIScope || current instanceof ThisScope || current instanceof MethodParameterScope || current instanceof StaticScope || current instanceof ReturnScope)) {
                             targetScopes.add(current);
                             analysisResult.escapedValue(v);
                         }
@@ -1029,6 +1042,31 @@ public class PointsToEscapeAnalysis {
                 }
 
                 analysisResult.setArgumentFlows(v, targetScopes);
+            }
+        }
+        // Now, we check if there is an intersection of the argument flows.
+        // If so, we know they are somehow interacting
+        for (final Variable v : aProgramDescriptor.program.getArguments()) {
+            final TypeRef theType = v.resolveType();
+            if (theType.isObject() || theType.isArray()) {
+                final Set<Scope> theVScope = analysisResult.argumentFlows.get(v);
+                for (final Variable othervar : aProgramDescriptor.program.getArguments()) {
+                    final TypeRef theOtherType = othervar.resolveType();
+                    if (othervar != v && (theOtherType.isObject() || theOtherType.isArray())) {
+                        final Set<Scope> theOtherScope = analysisResult.argumentFlows.get(othervar);
+                        if (Sets.intersection(theVScope, theOtherScope).size() > 0) {
+                            theVScope.add(analysisResult.scopes.get(othervar));
+                            analysisResult.escapedValue(v);
+                        }
+                    }
+                }
+            }
+        }
+        for (final Variable v : aProgramDescriptor.program.getArguments()) {
+            final TypeRef theType = v.resolveType();
+            if (theType.isObject() || theType.isArray()) {
+                final Set<Scope> theVScope = analysisResult.argumentFlows.get(v);
+                analysisResult.argumentFlows.put(v, theVScope.stream().filter(t -> !(t instanceof PHIScope)).collect(Collectors.toSet()));
             }
         }
 

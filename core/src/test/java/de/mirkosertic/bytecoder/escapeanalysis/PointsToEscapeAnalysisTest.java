@@ -428,8 +428,9 @@ public class PointsToEscapeAnalysisTest {
                 new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
         result.printDebugDotTree();
         final List<Value> escapedValues = new ArrayList<>(result.escapedValues());
-        assertEquals(1, escapedValues.size());
+        assertEquals(2, escapedValues.size());
         assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> "_k".equals(t.getName())));
+        assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> "_a".equals(t.getName())));
 
         final Program p = result.program();
         final Set<PointsToEscapeAnalysis.Scope> scopesForThis = result.argumentsFlowsFor(p.argumentAt(0));
@@ -439,7 +440,8 @@ public class PointsToEscapeAnalysisTest {
         final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
 
         assertTrue(scopesForThis.isEmpty());
-        assertTrue(scopesForA.isEmpty());
+        assertEquals(1, scopesForA.size());
+        assertTrue(containsOneInstanceOf(scopesForA, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 3));
         assertNull(scopesForB1);
         assertEquals(1, scopesForK.size());
         assertTrue(containsOneInstanceOf(scopesForK, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 1));
@@ -475,8 +477,9 @@ public class PointsToEscapeAnalysisTest {
         final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
 
         assertTrue(scopesForThis.isEmpty());
-        assertEquals(1, scopesForA.size());
+        assertEquals(2, scopesForA.size());
         assertTrue(containsOneInstanceOf(scopesForA, PointsToEscapeAnalysis.ReturnScope.class));
+        assertTrue(containsOneInstanceOf(scopesForA, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 3));
         assertNull(scopesForB1);
         assertEquals(2, scopesForK.size());
         assertTrue(containsOneInstanceOf(scopesForK, PointsToEscapeAnalysis.ReturnScope.class));
@@ -503,8 +506,9 @@ public class PointsToEscapeAnalysisTest {
                 new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
         result.printDebugDotTree();
         final List<Value> escapedValues = new ArrayList<>(result.escapedValues());
-        assertEquals(1, escapedValues.size());
+        assertEquals(2, escapedValues.size());
         assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> "_k".equals(t.getName())));
+        assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> "_a".equals(t.getName())));
 
         final Program p = result.program();
         final Set<PointsToEscapeAnalysis.Scope> scopesForThis = result.argumentsFlowsFor(p.argumentAt(0));
@@ -514,7 +518,8 @@ public class PointsToEscapeAnalysisTest {
         final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
 
         assertTrue(scopesForThis.isEmpty());
-        assertTrue(scopesForA.isEmpty());
+        assertEquals(1, scopesForA.size());
+        assertTrue(containsOneInstanceOf(scopesForA, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 3));
         assertNull(scopesForB1);
         assertEquals(1, scopesForK.size());
         assertTrue(containsOneInstanceOf(scopesForK, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 1));
@@ -550,7 +555,8 @@ public class PointsToEscapeAnalysisTest {
         final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
 
         assertTrue(scopesForThis.isEmpty());
-        assertEquals(1, scopesForA.size());
+        assertEquals(2, scopesForA.size());
+        assertTrue(containsOneInstanceOf(scopesForA, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 3));
         assertTrue(containsOneInstanceOf(scopesForA, PointsToEscapeAnalysis.ReturnScope.class));
         assertNull(scopesForB1);
         assertEquals(2, scopesForK.size());
@@ -891,16 +897,22 @@ public class PointsToEscapeAnalysisTest {
         final Set<PointsToEscapeAnalysis.Scope> scopesForK = result.argumentsFlowsFor(p.argumentAt(3));
         final Set<PointsToEscapeAnalysis.Scope> returning = result.returnFlows();
 
-        assertEquals(1, scopesForThis.size());
+        assertEquals(3, scopesForThis.size());
         assertTrue(containsOneInstanceOf(scopesForThis, PointsToEscapeAnalysis.StaticScope.class));
+        assertTrue(containsOneInstanceOf(scopesForThis, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 3));
+        assertTrue(containsOneInstanceOf(scopesForThis, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 1));
 
-        assertEquals(1, scopesForA.size());
+        assertEquals(3, scopesForA.size());
+        assertTrue(containsOneInstanceOf(scopesForA, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 3));
         assertTrue(containsOneInstanceOf(scopesForA, PointsToEscapeAnalysis.StaticScope.class));
+        assertTrue(containsOneInstanceOf(scopesForA, PointsToEscapeAnalysis.ThisScope.class));
 
         assertNull(scopesForB1);
 
-        assertEquals(1, scopesForK.size());
+        assertEquals(3, scopesForK.size());
+        assertTrue(containsOneInstanceOf(scopesForK, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 1));
         assertTrue(containsOneInstanceOf(scopesForK, PointsToEscapeAnalysis.StaticScope.class));
+        assertTrue(containsOneInstanceOf(scopesForK, PointsToEscapeAnalysis.ThisScope.class));
 
         assertEquals(1, returning.size());
         assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.InvocationResultScope.class));
@@ -1013,7 +1025,7 @@ public class PointsToEscapeAnalysisTest {
         assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.InvocationResultScope.class));
     }
 
-    private Object method25(final Object a, final int b1, final Object k) throws IllegalAccessException, InstantiationException {
+    private Object method25(final Object a, final int b1, final Object k) {
         System.arraycopy(a, 0, k, 0, 10);
         return null;
     }
@@ -1025,8 +1037,9 @@ public class PointsToEscapeAnalysisTest {
 
         result.printDebugDotTree();
         final List<Value> escapedValues = new ArrayList<>(result.escapedValues());
-        assertEquals(1, escapedValues.size());
+        assertEquals(2, escapedValues.size());
         assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> t.getName().equals("_a")));
+        assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> t.getName().equals("_k")));
 
         final Program p = result.program();
         final Set<PointsToEscapeAnalysis.Scope> scopesForThis = result.argumentsFlowsFor(p.argumentAt(0));
@@ -1042,7 +1055,8 @@ public class PointsToEscapeAnalysisTest {
         assertTrue(containsOneInstanceOf(scopesForA, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 3));
 
         assertNull(scopesForB1);
-        assertTrue(scopesForK.isEmpty());
+        assertEquals(1, scopesForK.size());
+        assertTrue(containsOneInstanceOf(scopesForK, PointsToEscapeAnalysis.MethodParameterScope.class, t -> t.parameterIndex() == 1));
 
         assertEquals(1, returning.size());
         assertTrue(containsOneInstanceOf(returning, PointsToEscapeAnalysis.LocalScope.class));
@@ -1061,7 +1075,9 @@ public class PointsToEscapeAnalysisTest {
 
         result.printDebugDotTree();
         final List<Value> escapedValues = new ArrayList<>(result.escapedValues());
-        assertTrue(escapedValues.isEmpty());
+        assertEquals(2, escapedValues.size());
+        assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> t.getName().equals("_src")));
+        assertTrue(containsOneInstanceOf(escapedValues, Variable.class, t -> t.getName().equals("_locale")));
 
         final Program p = result.program();
         final Set<PointsToEscapeAnalysis.Scope> scopesForSrc = result.argumentsFlowsFor(p.argumentAt(0));
