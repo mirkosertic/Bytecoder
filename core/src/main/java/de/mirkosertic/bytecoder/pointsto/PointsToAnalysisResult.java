@@ -25,39 +25,6 @@ import java.util.Set;
 
 public class PointsToAnalysisResult {
 
-    interface Symbol {
-        default boolean origin() {
-            return true;
-        }
-    }
-
-    enum GlobalSymbols implements Symbol {
-        thisScope,staticScope
-    }
-
-    public static class ParamPref implements Symbol {
-
-        private final int number;
-
-        public ParamPref(final int number) {
-            this.number = number;
-        }
-    }
-
-    public static class VariableSymbol implements Symbol {
-
-        private final String name;
-
-        public VariableSymbol(final String name) {
-            this.name = name;
-        }
-
-        @Override
-        public boolean origin() {
-            return false;
-        }
-    }
-
     public static class AllocationSymbol implements Symbol {
 
         public AllocationSymbol() {
@@ -84,10 +51,12 @@ public class PointsToAnalysisResult {
 
     private final Map<Symbol, Set<Symbol>> pts;
     private final List<PotentialScopeMergeOperation> potentialScopeMergeOperations;
+    private final Set<Symbol> returningSymbols;
 
     public PointsToAnalysisResult() {
         pts = new HashMap<>();
         potentialScopeMergeOperations = new ArrayList<>();
+        returningSymbols = new HashSet<>();
     }
 
     public List<PotentialScopeMergeOperation> potentialScopeMergeOperations() {
@@ -116,19 +85,27 @@ public class PointsToAnalysisResult {
         pts.computeIfAbsent(aDestination, t -> new HashSet<>()).add(aSource);
     }
 
+    public void returns(final Symbol aSymbol) {
+        returningSymbols.add(aSymbol);
+    }
+
     public Set<Symbol> resolvedPointsToFor(final Symbol aSymbol) {
         final Set<Symbol> initialSet = pts.get(aSymbol);
         if (initialSet == null) {
             return Collections.emptySet();
         }
+        final Set<Symbol> alreadyExpanded = new HashSet<>();
         final Set<Symbol> workingSet = new HashSet<>(initialSet);
         repeat: while (true) {
             for (final Symbol entry : workingSet) {
                 if (!entry.origin()) {
-                    final Set<Symbol> result = pts.get(entry);
+                    final Set<Symbol> result = new HashSet<>(pts.get(entry));
                     if (result != null) {
                         workingSet.remove(entry);
-                        workingSet.addAll(result);
+                        if (alreadyExpanded.add(entry)) {
+                            result.removeAll(alreadyExpanded);
+                            workingSet.addAll(result);
+                        }
                         continue repeat;
                     }
                 }
@@ -136,5 +113,9 @@ public class PointsToAnalysisResult {
             break;
         }
         return workingSet;
+    }
+
+    public Set<Symbol> returningSymbols() {
+        return returningSymbols;
     }
 }

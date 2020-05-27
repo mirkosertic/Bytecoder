@@ -33,6 +33,8 @@ import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceAndConstructExpression;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
 import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.ProgramDescriptor;
+import de.mirkosertic.bytecoder.ssa.ProgramDescriptorProvider;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
@@ -99,7 +101,7 @@ public class PointsToEscapeAnalysisTest {
     }
 
     private PointsToEscapeAnalysis.AnalysisResult analyzeMethod(final BytecodeLinkerContext aLinkercontext, final ProgramDescriptor aProgramDescriptor) {
-        final Program p = aProgramDescriptor.program;
+        final Program p = aProgramDescriptor.program();
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(aLinkercontext, new LLVMIntrinsics());
 
         final PointsToEscapeAnalysis analysis = new PointsToEscapeAnalysis(new ProgramDescriptorProvider() {

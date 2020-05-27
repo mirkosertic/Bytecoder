@@ -13,21 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.escapeanalysis;
+package de.mirkosertic.bytecoder.pointsto;
 
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodeMethod;
-import de.mirkosertic.bytecoder.ssa.Program;
+public class VariableSymbol implements Symbol {
 
-public class ProgramDescriptor {
+    private final String name;
 
-    final BytecodeLinkedClass linkedClass;
-    final BytecodeMethod method;
-    final Program program;
+    public VariableSymbol(final String name) {
+        this.name = name;
+    }
 
-    public ProgramDescriptor(final BytecodeLinkedClass linkedClass, final BytecodeMethod method, final Program program) {
-        this.linkedClass = linkedClass;
-        this.method = method;
-        this.program = program;
+    @Override
+    public boolean origin() {
+        return false;
     }
 }

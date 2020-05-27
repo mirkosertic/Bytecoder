@@ -54,6 +54,8 @@ import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.ProgramDescriptor;
+import de.mirkosertic.bytecoder.ssa.ProgramDescriptorProvider;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
@@ -336,9 +338,9 @@ public class PointsToEscapeAnalysis {
     public AnalysisResult analyze(final ProgramDescriptor aProgramDescriptor) {
 
         // We search in the cache
-        final List<CachedAnalysisResult> cachedForCurrentClass = cache.computeIfAbsent(aProgramDescriptor.linkedClass, t -> new ArrayList<>());
+        final List<CachedAnalysisResult> cachedForCurrentClass = cache.computeIfAbsent(aProgramDescriptor.linkedClass(), t -> new ArrayList<>());
         for (final CachedAnalysisResult entry : cachedForCurrentClass) {
-            if (entry.programDescriptor.linkedClass == aProgramDescriptor.linkedClass && entry.programDescriptor.method == aProgramDescriptor.method) {
+            if (entry.programDescriptor.linkedClass() == aProgramDescriptor.linkedClass() && entry.programDescriptor.method() == aProgramDescriptor.method()) {
                 // We have it already computed
                 return entry.analysisResult;
             }
@@ -346,12 +348,12 @@ public class PointsToEscapeAnalysis {
 
         // We check for recursion in the analysis
         for (final CachedAnalysisResult stackEntry : analysisStack) {
-            if (stackEntry.programDescriptor.linkedClass == aProgramDescriptor.linkedClass && stackEntry.programDescriptor.method == aProgramDescriptor.method) {
+            if (stackEntry.programDescriptor.linkedClass() == aProgramDescriptor.linkedClass() && stackEntry.programDescriptor.method() == aProgramDescriptor.method()) {
                 // Recursion cannot be analyzed here
                 // We assume that every argument escapes to the static flow
-                final AnalysisResult recursionResult = new AnalysisResult(stackEntry.programDescriptor.program);
+                final AnalysisResult recursionResult = new AnalysisResult(stackEntry.programDescriptor.program());
                 final StaticScope staticScope = new StaticScope();
-                for (final Variable v : stackEntry.programDescriptor.program.getArguments()) {
+                for (final Variable v : stackEntry.programDescriptor.program().getArguments()) {
                     final TypeRef t = v.resolveType();
                     if (t.isArray() || t.isObject()) {
                         recursionResult.escapedValue(v);
@@ -362,16 +364,16 @@ public class PointsToEscapeAnalysis {
             }
         }
 
-        logger.info(" Analyzing {}.{} {}", aProgramDescriptor.linkedClass.getClassName().name(), aProgramDescriptor.method.getName().stringValue(), aProgramDescriptor.method.getSignature());
+        logger.info(" Analyzing {}.{} {}", aProgramDescriptor.linkedClass().getClassName().name(), aProgramDescriptor.method().getName().stringValue(), aProgramDescriptor.method().getSignature());
 
-        final AnalysisResult analysisResult = new AnalysisResult(aProgramDescriptor.program);
+        final AnalysisResult analysisResult = new AnalysisResult(aProgramDescriptor.program());
         analysisStack.push(new CachedAnalysisResult(aProgramDescriptor, analysisResult));
 
         final StaticScope staticScope = new StaticScope();
         final ReturnScope returnScope = new ReturnScope();
 
         // Step 1 : Build a reference flow graph
-        for (final Variable v : aProgramDescriptor.program.getArguments()) {
+        for (final Variable v : aProgramDescriptor.program().getArguments()) {
             final TypeRef theType = v.resolveType();
             if (theType.isArray() || theType.isObject()) {
                 final GraphNode varNode = analysisResult.nodeFor(v);
@@ -380,7 +382,7 @@ public class PointsToEscapeAnalysis {
             }
         }
 
-        final ControlFlowGraph g = aProgramDescriptor.program.getControlFlowGraph();
+        final ControlFlowGraph g = aProgramDescriptor.program().getControlFlowGraph();
         final Set<PHIValue> alreadyKnownPHIvalues = new HashSet<>();
         final List<RegionNode> thePreOrder = g.dominators().getPreOrder();
         for (final RegionNode theNode : thePreOrder) {
@@ -628,7 +630,7 @@ public class PointsToEscapeAnalysis {
                 if (isComplete(analysisResult, currentEntry, requiredArgs)) {
                     final InvocationResultScope invocationScope = new InvocationResultScope();
                     final ProgramDescriptor pd = programDescriptorProvider.resolveStaticInvocation(exp.getClassName(), exp.getMethodName(), exp.getSignature());
-                    if (pd == null || pd.method.getAccessFlags().isNative()) {
+                    if (pd == null || pd.method().getAccessFlags().isNative()) {
                         // We assume everything escapes for native methods
                         for (final Value v : currentEntry.value.incomingDataFlows()) {
                             final TypeRef argumentType = v.resolveType();
@@ -685,7 +687,7 @@ public class PointsToEscapeAnalysis {
 
                     // We analyze the method invocation
                     final ProgramDescriptor pd = programDescriptorProvider.resolveDirectInvocation(exp.getClazz(), exp.getMethodName(), exp.getSignature());
-                    if (pd == null || pd.method.getAccessFlags().isNative()) {
+                    if (pd == null || pd.method().getAccessFlags().isNative()) {
                         // We assume everything escapes for native methods
                         for (final Value v : currentEntry.value.incomingDataFlows()) {
                             final TypeRef argumentType = v.resolveType();
@@ -1018,7 +1020,7 @@ public class PointsToEscapeAnalysis {
         });
 
         // Step 4: Compute escaping allocations of flows for the arguments
-        for (final Variable v : aProgramDescriptor.program.getArguments()) {
+        for (final Variable v : aProgramDescriptor.program().getArguments()) {
             final TypeRef theType = v.resolveType();
             if (theType.isObject() || theType.isArray()) {
                 final Set<Scope> targetScopes = new HashSet<>();
@@ -1046,11 +1048,11 @@ public class PointsToEscapeAnalysis {
         }
         // Now, we check if there is an intersection of the argument flows.
         // If so, we know they are somehow interacting
-        for (final Variable v : aProgramDescriptor.program.getArguments()) {
+        for (final Variable v : aProgramDescriptor.program().getArguments()) {
             final TypeRef theType = v.resolveType();
             if (theType.isObject() || theType.isArray()) {
                 final Set<Scope> theVScope = analysisResult.argumentFlows.get(v);
-                for (final Variable othervar : aProgramDescriptor.program.getArguments()) {
+                for (final Variable othervar : aProgramDescriptor.program().getArguments()) {
                     final TypeRef theOtherType = othervar.resolveType();
                     if (othervar != v && (theOtherType.isObject() || theOtherType.isArray())) {
                         final Set<Scope> theOtherScope = analysisResult.argumentFlows.get(othervar);
@@ -1062,7 +1064,7 @@ public class PointsToEscapeAnalysis {
                 }
             }
         }
-        for (final Variable v : aProgramDescriptor.program.getArguments()) {
+        for (final Variable v : aProgramDescriptor.program().getArguments()) {
             final TypeRef theType = v.resolveType();
             if (theType.isObject() || theType.isArray()) {
                 final Set<Scope> theVScope = analysisResult.argumentFlows.get(v);
