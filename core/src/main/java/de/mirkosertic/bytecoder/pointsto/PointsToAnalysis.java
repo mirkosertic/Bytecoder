@@ -30,6 +30,7 @@ import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
+import de.mirkosertic.bytecoder.ssa.InvokeDirectMethodExpression;
 import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceAndConstructExpression;
@@ -250,10 +251,10 @@ public class PointsToAnalysis {
                     aAnalysisResult.assign(varSymbol, alloc);
                 } else if (value instanceof NewArrayExpression) {
                     final AllocationSymbol alloc = aAnalysisResult.allocation();
-                    aAnalysisResult.alias(varSymbol, alloc);
+                    aAnalysisResult.assign(varSymbol, alloc);
                 } else if (value instanceof NewMultiArrayExpression) {
                     final AllocationSymbol alloc = aAnalysisResult.allocation();
-                    aAnalysisResult.alias(varSymbol, alloc);
+                    aAnalysisResult.assign(varSymbol, alloc);
                 } else {
                     // Assignment
                     throw new IllegalArgumentException("Unknown :" + value);
@@ -290,6 +291,8 @@ public class PointsToAnalysis {
             final List<Value> incoming = aExpression.incomingDataFlows();
             final VariableSymbol valueSymbol = resolveVariable(incoming.get(1), aSymbolCache);
             aAnalysisResult.writeInto(GlobalSymbols.staticScope, valueSymbol);
+        } else if (aExpression instanceof InvokeDirectMethodExpression) {
+            toSymbol(aAnalysisResult, (InvokeDirectMethodExpression) aExpression, aSymbolCache);
         } else if (aExpression instanceof GotoExpression ||
                    aExpression instanceof IFExpression ||
                    aExpression instanceof ReturnExpression) {
@@ -297,5 +300,35 @@ public class PointsToAnalysis {
         } else {
             throw new IllegalArgumentException("Not supported expression : " + aExpression);
         }
+    }
+
+    private InvocationResultSymbol toSymbol(final PointsToAnalysisResult aAnalysisResult, final InvokeDirectMethodExpression aExpression, final SymbolCache aSymbolCache) {
+        final List<Value> params = aExpression.incomingDataFlows();
+        final PointsToAnalysisResult analysisResult = analyze(programDescriptorProvider.resolveDirectInvocation(aExpression.getClazz(), aExpression.getMethodName(), aExpression.getSignature()));
+        final Map<Symbol, Set<Symbol>> flows = analysisResult.computeMergingFlows();
+        final InvocationResultSymbol invocationResult = new InvocationResultSymbol();
+        for (final Map.Entry<Symbol, Set<Symbol>> entry : flows.entrySet()) {
+            Symbol source = null;
+            if (entry.getKey() == GlobalSymbols.thisScope) {
+                source = resolveVariable(params.get(0), aSymbolCache);
+            } else if (entry.getKey() instanceof ParamPref) {
+                final ParamPref p = (ParamPref) entry.getKey();
+                source = resolveVariable(params.get(p.index()), aSymbolCache);
+            }
+            if (source != null) {
+                // We check where the source if flowing to
+                for (final Symbol target : entry.getValue()) {
+                    if (target == GlobalSymbols.thisScope) {
+                        aAnalysisResult.writeInto(resolveVariable(params.get(0), aSymbolCache), source);
+                    } else if (target == GlobalSymbols.staticScope) {
+                        analysisResult.writeInto(GlobalSymbols.staticScope, source);
+                    } else if (target instanceof ParamPref) {
+                        final ParamPref p = (ParamPref) target;
+                        analysisResult.writeInto(resolveVariable(params.get(p.index()), aSymbolCache), source);
+                    }
+                }
+            }
+        }
+        return invocationResult;
     }
 }

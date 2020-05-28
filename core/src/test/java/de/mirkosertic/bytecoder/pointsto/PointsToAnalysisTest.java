@@ -335,7 +335,8 @@ public class PointsToAnalysisTest {
         final Set<Symbol> returningSymbols = result.returningSymbols();
         Assert.assertTrue(returningSymbols.isEmpty());
 
-        result.computeMergingFlows();
+        final Map<Symbol, Set<Symbol>> flows = result.computeMergingFlows();
+        System.out.println(flows);
     }
 
     private Object method12(final Object a, final int b1, final Object k) {

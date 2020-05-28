@@ -100,16 +100,14 @@ public class PointsToAnalysisResult {
         final Set<Symbol> workingSet = new HashSet<>(initialSet);
         repeat: while (true) {
             for (final Symbol entry : workingSet) {
-                if (!entry.origin()) {
+                if (!entry.origin() && pts.containsKey(entry)) {
                     final Set<Symbol> result = new HashSet<>(pts.get(entry));
-                    if (result != null) {
-                        workingSet.remove(entry);
-                        if (alreadyExpanded.add(entry)) {
-                            result.removeAll(alreadyExpanded);
-                            workingSet.addAll(result);
-                        }
-                        continue repeat;
+                    workingSet.remove(entry);
+                    if (alreadyExpanded.add(entry)) {
+                        result.removeAll(alreadyExpanded);
+                        workingSet.addAll(result);
                     }
+                    continue repeat;
                 }
             }
             break;
