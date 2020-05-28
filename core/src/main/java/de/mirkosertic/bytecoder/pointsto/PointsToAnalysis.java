@@ -60,7 +60,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
-import java.util.stream.Collectors;
 
 public class PointsToAnalysis {
 
@@ -221,10 +220,34 @@ public class PointsToAnalysis {
                     final VariableSymbol arraySymbol = resolveVariable(value.incomingDataFlows().get(0), aSymbolCache);
                     aAnalysisResult.readFrom(varSymbol, arraySymbol);
                 } else if (value instanceof NewInstanceAndConstructExpression) {
-                    final List<Symbol> incomingSymbols = value.incomingDataFlows().stream().map(t -> resolveVariable(t, aSymbolCache)).collect(Collectors.toList());
-                    // TODO: Compute escaping flows here
+                    final NewInstanceAndConstructExpression newInstance = (NewInstanceAndConstructExpression) value;
+                    final List<Value> params = newInstance.incomingDataFlows();
+                    final PointsToAnalysisResult analysisResult = analyze(programDescriptorProvider.resolveConstructorInvocation(newInstance.getClazz(), newInstance.getSignature()));
+                    final Map<Symbol, Set<Symbol>> flows = analysisResult.computeMergingFlows();
                     final AllocationSymbol alloc = aAnalysisResult.allocation();
-                    aAnalysisResult.alias(varSymbol, alloc);
+                    for (final Map.Entry<Symbol, Set<Symbol>> entry : flows.entrySet()) {
+                        Symbol source = null;
+                        if (entry.getKey() == GlobalSymbols.thisScope) {
+                            source = alloc;
+                        } else if (entry.getKey() instanceof ParamPref) {
+                            final ParamPref p = (ParamPref) entry.getKey();
+                            source = resolveVariable(params.get(p.index() -1), aSymbolCache);
+                        }
+                        if (source != null) {
+                            // We check where the source if flowing to
+                            for (final Symbol target : entry.getValue()) {
+                                if (target == GlobalSymbols.thisScope) {
+                                    aAnalysisResult.writeInto(alloc, source);
+                                } else if (target == GlobalSymbols.staticScope) {
+                                    analysisResult.writeInto(GlobalSymbols.staticScope, source);
+                                } else if (target instanceof ParamPref) {
+                                    final ParamPref p = (ParamPref) target;
+                                    analysisResult.writeInto(resolveVariable(params.get(p.index() - 1), aSymbolCache), source);
+                                }
+                            }
+                        }
+                    }
+                    aAnalysisResult.assign(varSymbol, alloc);
                 } else if (value instanceof NewArrayExpression) {
                     final AllocationSymbol alloc = aAnalysisResult.allocation();
                     aAnalysisResult.alias(varSymbol, alloc);

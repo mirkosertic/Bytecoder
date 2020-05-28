@@ -35,6 +35,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -335,6 +336,28 @@ public class PointsToAnalysisTest {
         Assert.assertTrue(returningSymbols.isEmpty());
 
         result.computeMergingFlows();
+    }
+
+    private Object method12(final Object a, final int b1, final Object k) {
+        return new A(a);
+    }
+
+    @Test
+    public void testMethod12() {
+        final PointsToAnalysisResult result = analyzeVirtualMethod(getClass(), "method12", new BytecodeMethodSignature(OBJECT_TYPE_REF,
+                new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
+
+        final Set<Symbol> returningSymbols = result.returningSymbols();
+        Assert.assertEquals(1, returningSymbols.size());
+
+        final Set<Symbol> pointsTo = result.resolvedPointsToFor(returningSymbols.iterator().next());
+        Assert.assertEquals(1, pointsTo.size());
+        Assert.assertTrue(containsOneInstanceOf(pointsTo, AllocationSymbol.class));
+
+        final Map<Symbol, Set<Symbol>> flows = result.computeMergingFlows();
+        Assert.assertEquals(2, flows.size());
+        Assert.assertTrue(containsOneInstanceOf(flows.keySet(), ParamPref.class, t -> t.index() == 1));
+        Assert.assertTrue(containsOneInstanceOf(flows.keySet(), AllocationSymbol.class));
     }
 
     <T> boolean containsNInstancesOf(final Collection<T> aCollection, final Class<? extends T> aType, final int aNumber) {
