@@ -17,20 +17,36 @@ package de.mirkosertic.bytecoder.pointsto;
 
 import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.ssa.ArrayEntryExpression;
+import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
 import de.mirkosertic.bytecoder.ssa.BlockState;
+import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.EnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
+import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
+import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
+import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceAndConstructExpression;
+import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
+import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.ProgramDescriptor;
 import de.mirkosertic.bytecoder.ssa.ProgramDescriptorProvider;
+import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
+import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
+import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
+import de.mirkosertic.bytecoder.ssa.SetEnumConstantsExpression;
+import de.mirkosertic.bytecoder.ssa.StringValue;
+import de.mirkosertic.bytecoder.ssa.SuperTypeOfExpression;
 import de.mirkosertic.bytecoder.ssa.ThrowExpression;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Value;
@@ -44,6 +60,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Collectors;
 
 public class PointsToAnalysis {
 
@@ -146,6 +163,16 @@ public class PointsToAnalysis {
         }
     }
 
+    private VariableSymbol resolveVariable(final Value value, final SymbolCache aSymbolCache) {
+        if (value instanceof Variable) {
+            return aSymbolCache.variableSymbolForVariable((Variable) value);
+        } else if (value instanceof PHIValue) {
+            return aSymbolCache.variableSymbolForPHI((PHIValue) value);
+        } else {
+            throw new IllegalArgumentException("Don't know how to handle return of " + value);
+        }
+    }
+
     private void analyze(final Value aExpression, final PointsToAnalysisResult aAnalysisResult, final SymbolCache aSymbolCache) {
         if (aExpression instanceof VariableAssignmentExpression) {
             final VariableAssignmentExpression exp = (VariableAssignmentExpression) aExpression;
@@ -161,6 +188,49 @@ public class PointsToAnalysis {
                 } else if (value instanceof PHIValue) {
                     final Symbol valueSymbol = aSymbolCache.variableSymbolForPHI((PHIValue) value);
                     aAnalysisResult.alias(varSymbol, valueSymbol);
+                } else if (value instanceof NullValue) {
+                    // Null-Constant are in static scope
+                    final Symbol valueSymbol = GlobalSymbols.staticScope;
+                    aAnalysisResult.alias(varSymbol, valueSymbol);
+                } else if (value instanceof StringValue) {
+                    // String constants are also in static scope
+                    final Symbol valueSymbol = GlobalSymbols.staticScope;
+                    aAnalysisResult.alias(varSymbol, valueSymbol);
+                } else if (value instanceof GetStaticExpression) {
+                    // String constants are also in static scope
+                    final Symbol valueSymbol = GlobalSymbols.staticScope;
+                    aAnalysisResult.alias(varSymbol, valueSymbol);
+                } else if (value instanceof ClassReferenceValue) {
+                    // Class references are always in static scope
+                    final Symbol valueSymbol = GlobalSymbols.staticScope;
+                    aAnalysisResult.alias(varSymbol, valueSymbol);
+                } else if (value instanceof EnumConstantsExpression) {
+                    // Enum constants are always in static scope
+                    final Symbol valueSymbol = GlobalSymbols.staticScope;
+                    aAnalysisResult.alias(varSymbol, valueSymbol);
+                } else if (value instanceof SuperTypeOfExpression) {
+                    // The Superclass of a a class reference is in static scope, too
+                    final Symbol valueSymbol = GlobalSymbols.staticScope;
+                    aAnalysisResult.alias(varSymbol, valueSymbol);
+                } else if (value instanceof ArrayEntryExpression) {
+                    // We inherit the symbol from the array we read from
+                    final VariableSymbol arraySymbol = resolveVariable(value.incomingDataFlows().get(0), aSymbolCache);
+                    aAnalysisResult.readFrom(varSymbol, arraySymbol);
+                } else if (value instanceof GetFieldExpression) {
+                    // We inherit the symbol from the object we read from
+                    final VariableSymbol arraySymbol = resolveVariable(value.incomingDataFlows().get(0), aSymbolCache);
+                    aAnalysisResult.readFrom(varSymbol, arraySymbol);
+                } else if (value instanceof NewInstanceAndConstructExpression) {
+                    final List<Symbol> incomingSymbols = value.incomingDataFlows().stream().map(t -> resolveVariable(t, aSymbolCache)).collect(Collectors.toList());
+                    // TODO: Compute escaping flows here
+                    final AllocationSymbol alloc = aAnalysisResult.allocation();
+                    aAnalysisResult.alias(varSymbol, alloc);
+                } else if (value instanceof NewArrayExpression) {
+                    final AllocationSymbol alloc = aAnalysisResult.allocation();
+                    aAnalysisResult.alias(varSymbol, alloc);
+                } else if (value instanceof NewMultiArrayExpression) {
+                    final AllocationSymbol alloc = aAnalysisResult.allocation();
+                    aAnalysisResult.alias(varSymbol, alloc);
                 } else {
                     // Assignment
                     throw new IllegalArgumentException("Unknown :" + value);
@@ -171,30 +241,35 @@ public class PointsToAnalysis {
             final Value returnValue = exp.incomingDataFlows().get(0);
             final TypeRef returnValueType = returnValue.resolveType();
             if (returnValueType.isArray() || returnValueType.isObject()) {
-                if (returnValue instanceof Variable) {
-                    final VariableSymbol returningSymbol = aSymbolCache.variableSymbolForVariable((Variable) returnValue);
-                    aAnalysisResult.returns(returningSymbol);
-                } else if (returnValue instanceof PHIValue) {
-                    final VariableSymbol returningSymbol = aSymbolCache.variableSymbolForPHI((PHIValue) returnValue);
-                    aAnalysisResult.returns(returningSymbol);
-                } else {
-                    throw new IllegalArgumentException("Don't know how to handle return of " + returnValue);
-                }
+                final VariableSymbol returnSymbol = resolveVariable(returnValue, aSymbolCache);
+                aAnalysisResult.returns(returnSymbol);
             }
         } else if (aExpression instanceof ThrowExpression) {
             final ThrowExpression exp = (ThrowExpression) aExpression;
             final Value returnValue = exp.incomingDataFlows().get(0);
-            if (returnValue instanceof Variable) {
-                final VariableSymbol returningSymbol = aSymbolCache.variableSymbolForVariable((Variable) returnValue);
-                aAnalysisResult.returns(returningSymbol);
-            } else if (returnValue instanceof PHIValue) {
-                final VariableSymbol returningSymbol = aSymbolCache.variableSymbolForPHI((PHIValue) returnValue);
-                aAnalysisResult.returns(returningSymbol);
-            } else {
-                throw new IllegalArgumentException("Don't know how to handle return of " + returnValue);
-            }
+            final VariableSymbol returnSymbol = resolveVariable(returnValue, aSymbolCache);
+            aAnalysisResult.returns(returnSymbol);
+        } else if (aExpression instanceof ArrayStoreExpression) {
+            final List<Value> incoming = aExpression.incomingDataFlows();
+            final VariableSymbol arraySymbol = resolveVariable(incoming.get(0), aSymbolCache);
+            final VariableSymbol valueSymbol = resolveVariable(incoming.get(2), aSymbolCache);
+            aAnalysisResult.writeInto(arraySymbol, valueSymbol);
+        } else if (aExpression instanceof PutFieldExpression) {
+            final List<Value> incoming = aExpression.incomingDataFlows();
+            final VariableSymbol instanceSymbol = resolveVariable(incoming.get(0), aSymbolCache);
+            final VariableSymbol valueSymbol = resolveVariable(incoming.get(1), aSymbolCache);
+            aAnalysisResult.writeInto(instanceSymbol, valueSymbol);
+        } else if (aExpression instanceof PutStaticExpression) {
+            final List<Value> incoming = aExpression.incomingDataFlows();
+            final VariableSymbol valueSymbol = resolveVariable(incoming.get(0), aSymbolCache);
+            aAnalysisResult.writeInto(GlobalSymbols.staticScope, valueSymbol);
+        } else if (aExpression instanceof SetEnumConstantsExpression) {
+            final List<Value> incoming = aExpression.incomingDataFlows();
+            final VariableSymbol valueSymbol = resolveVariable(incoming.get(1), aSymbolCache);
+            aAnalysisResult.writeInto(GlobalSymbols.staticScope, valueSymbol);
         } else if (aExpression instanceof GotoExpression ||
-                   aExpression instanceof IFExpression) {
+                   aExpression instanceof IFExpression ||
+                   aExpression instanceof ReturnExpression) {
             // Not relevant for analysis
         } else {
             throw new IllegalArgumentException("Not supported expression : " + aExpression);

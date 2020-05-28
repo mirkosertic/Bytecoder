@@ -52,6 +52,10 @@ public class PointsToAnalysisTest {
 
     private static Object ESCAPER;
 
+    enum Enum {
+        v1,v2,v3
+    }
+
     private PointsToAnalysisResult analyzeVirtualMethod(final Class aClazz, final String aMethodName, final BytecodeMethodSignature aSignature) {
         return analyzeVirtualMethod(BytecodeObjectTypeRef.fromRuntimeClass(aClazz), aMethodName, aSignature);
     }
@@ -169,6 +173,164 @@ public class PointsToAnalysisTest {
         Assert.assertEquals(2, pointsTo.size());
         Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamPref.class, t -> t.index() == 1));
         Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamPref.class, t -> t.index() == 3));
+    }
+
+    private Object method3(final Object a, final int b1, final Object k) {
+        Object b = null;
+        Object c = "Hello";
+        Object d = String.class;
+        Object e = String.class.getSuperclass();
+        return b;
+    }
+
+    @Test
+    public void testMethod3() {
+        final PointsToAnalysisResult result = analyzeVirtualMethod(getClass(), "method3", new BytecodeMethodSignature(OBJECT_TYPE_REF,
+                new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
+
+        final Set<Symbol> returningSymbols = result.returningSymbols();
+        Assert.assertEquals(1, returningSymbols.size());
+
+        final Set<Symbol> pointsTo = result.resolvedPointsToFor(returningSymbols.iterator().next());
+        Assert.assertEquals(1, pointsTo.size());
+        Assert.assertTrue(containsOneInstanceOf(pointsTo, GlobalSymbols.class, t -> t == GlobalSymbols.staticScope));
+    }
+
+    private Object method4(final Object a, final int b1, final Object k) {
+        Object[] b = (Object[]) a;
+        b[1] = k;
+        return b;
+    }
+
+    @Test
+    public void testMethod4() {
+        final PointsToAnalysisResult result = analyzeVirtualMethod(getClass(), "method4", new BytecodeMethodSignature(OBJECT_TYPE_REF,
+                new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
+
+        final Set<Symbol> returningSymbols = result.returningSymbols();
+        Assert.assertEquals(1, returningSymbols.size());
+
+        final Set<Symbol> pointsTo = result.resolvedPointsToFor(returningSymbols.iterator().next());
+        Assert.assertEquals(2, pointsTo.size());
+        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamPref.class, t -> t.index() == 1));
+        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamPref.class, t -> t.index() == 3));
+    }
+
+    private Object method5(final Object a, final int b1, final Object k) {
+        Object[] b = (Object[]) a;
+        return b[0];
+    }
+
+    @Test
+    public void testMethod5() {
+        final PointsToAnalysisResult result = analyzeVirtualMethod(getClass(), "method5", new BytecodeMethodSignature(OBJECT_TYPE_REF,
+                new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
+
+        final Set<Symbol> returningSymbols = result.returningSymbols();
+        Assert.assertEquals(1, returningSymbols.size());
+
+        final Set<Symbol> pointsTo = result.resolvedPointsToFor(returningSymbols.iterator().next());
+        Assert.assertEquals(1, pointsTo.size());
+        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamPref.class, t -> t.index() == 1));
+    }
+
+    private Object method6(final Object a, final int b1, final Object k) {
+        A b = (A) a;
+        b.o = k;
+        return b;
+    }
+
+    @Test
+    public void testMethod6() {
+        final PointsToAnalysisResult result = analyzeVirtualMethod(getClass(), "method6", new BytecodeMethodSignature(OBJECT_TYPE_REF,
+                new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
+
+        final Set<Symbol> returningSymbols = result.returningSymbols();
+        Assert.assertEquals(1, returningSymbols.size());
+
+        final Set<Symbol> pointsTo = result.resolvedPointsToFor(returningSymbols.iterator().next());
+        Assert.assertEquals(2, pointsTo.size());
+        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamPref.class, t -> t.index() == 1));
+        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamPref.class, t -> t.index() == 3));
+    }
+
+    private Object method7(final Object a, final int b1, final Object k) {
+        A b = (A) a;
+        return b.o;
+    }
+
+    @Test
+    public void testMethod7() {
+        final PointsToAnalysisResult result = analyzeVirtualMethod(getClass(), "method7", new BytecodeMethodSignature(OBJECT_TYPE_REF,
+                new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
+
+        final Set<Symbol> returningSymbols = result.returningSymbols();
+        Assert.assertEquals(1, returningSymbols.size());
+
+        final Set<Symbol> pointsTo = result.resolvedPointsToFor(returningSymbols.iterator().next());
+        Assert.assertEquals(1, pointsTo.size());
+        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamPref.class, t -> t.index() == 1));
+    }
+
+    private Object method8(final Object a, final int b1, final Object k) {
+        return ESCAPER;
+    }
+
+    @Test
+    public void testMethod8() {
+        final PointsToAnalysisResult result = analyzeVirtualMethod(getClass(), "method8", new BytecodeMethodSignature(OBJECT_TYPE_REF,
+                new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
+
+        final Set<Symbol> returningSymbols = result.returningSymbols();
+        Assert.assertEquals(1, returningSymbols.size());
+
+        final Set<Symbol> pointsTo = result.resolvedPointsToFor(returningSymbols.iterator().next());
+        Assert.assertEquals(1, pointsTo.size());
+        Assert.assertTrue(containsOneInstanceOf(pointsTo, GlobalSymbols.class, t -> t == GlobalSymbols.staticScope));
+    }
+
+    private Object method9(final Object a, final int b1, final Object k) {
+        ESCAPER = a;
+        return k;
+    }
+
+    @Test
+    public void testMethod9() {
+        final PointsToAnalysisResult result = analyzeVirtualMethod(getClass(), "method9", new BytecodeMethodSignature(OBJECT_TYPE_REF,
+                new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
+
+        final Set<Symbol> returningSymbols = result.returningSymbols();
+        Assert.assertEquals(1, returningSymbols.size());
+
+        final Set<Symbol> pointsTo = result.resolvedPointsToFor(returningSymbols.iterator().next());
+        Assert.assertEquals(1, pointsTo.size());
+        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamPref.class, t -> t.index() == 3));
+    }
+
+    private Object method10(final Object a, final int b1, final Object k) {
+        return Enum.class.getEnumConstants();
+    }
+
+    @Test
+    public void testMethod10() {
+        final PointsToAnalysisResult result = analyzeVirtualMethod(getClass(), "method10", new BytecodeMethodSignature(OBJECT_TYPE_REF,
+                new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
+
+        final Set<Symbol> returningSymbols = result.returningSymbols();
+        Assert.assertEquals(1, returningSymbols.size());
+
+        final Set<Symbol> pointsTo = result.resolvedPointsToFor(returningSymbols.iterator().next());
+        Assert.assertEquals(1, pointsTo.size());
+        Assert.assertTrue(containsOneInstanceOf(pointsTo, GlobalSymbols.class, t -> t == GlobalSymbols.staticScope));
+    }
+
+    @Test
+    public void testMethod11() {
+        final PointsToAnalysisResult result = analyzeStaticMethod(Enum.class, "<clinit>", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
+                new BytecodeTypeRef[]{}));
+
+        final Set<Symbol> returningSymbols = result.returningSymbols();
+        Assert.assertTrue(returningSymbols.isEmpty());
     }
 
     <T> boolean containsNInstancesOf(final Collection<T> aCollection, final Class<? extends T> aType, final int aNumber) {

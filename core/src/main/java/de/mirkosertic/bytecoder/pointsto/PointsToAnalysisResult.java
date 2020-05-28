@@ -25,12 +25,6 @@ import java.util.Set;
 
 public class PointsToAnalysisResult {
 
-    public static class AllocationSymbol implements Symbol {
-
-        public AllocationSymbol() {
-        }
-    }
-
     static class PotentialScopeMergeOperation {
         private final Symbol destination;
         private final Symbol source;
@@ -52,11 +46,19 @@ public class PointsToAnalysisResult {
     private final Map<Symbol, Set<Symbol>> pts;
     private final List<PotentialScopeMergeOperation> potentialScopeMergeOperations;
     private final Set<Symbol> returningSymbols;
+    private final Set<Symbol> allocationSymbols;
 
     public PointsToAnalysisResult() {
         pts = new HashMap<>();
         potentialScopeMergeOperations = new ArrayList<>();
         returningSymbols = new HashSet<>();
+        allocationSymbols = new HashSet<>();
+    }
+
+    public AllocationSymbol allocation() {
+        final AllocationSymbol alloc = new AllocationSymbol();
+        allocationSymbols.add(alloc);
+        return alloc;
     }
 
     public List<PotentialScopeMergeOperation> potentialScopeMergeOperations() {

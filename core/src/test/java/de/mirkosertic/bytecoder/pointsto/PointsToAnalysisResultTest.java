@@ -65,14 +65,14 @@ public class PointsToAnalysisResultTest {
 
         final PointsToAnalysisResult result = new PointsToAnalysisResult();
         result.alias(var1, thisRef);
-        result.alias(var2, new PointsToAnalysisResult.AllocationSymbol());
+        result.alias(var2, result.allocation());
         result.assign(phi, var1);
         result.assign(phi, var2);
 
         final Set<Symbol> resolvedPointsTo = result.resolvedPointsToFor(phi);
         assertEquals(2, resolvedPointsTo.size());
         assertTrue(containsOneInstanceOf(resolvedPointsTo, GlobalSymbols.class, t -> t == GlobalSymbols.thisScope));
-        assertTrue(containsOneInstanceOf(resolvedPointsTo, PointsToAnalysisResult.AllocationSymbol.class));
+        assertTrue(containsOneInstanceOf(resolvedPointsTo, AllocationSymbol.class));
     }
 
     @Test
@@ -91,13 +91,13 @@ public class PointsToAnalysisResultTest {
 
         final PointsToAnalysisResult result = new PointsToAnalysisResult();
         result.alias(var1, thisRef);
-        result.alias(var2, new PointsToAnalysisResult.AllocationSymbol());
+        result.alias(var2, result.allocation());
         result.writeInto(var1, var2);
 
         final Set<Symbol> resolvedPointsTo = result.resolvedPointsToFor(var1);
         assertEquals(2, resolvedPointsTo.size());
         assertTrue(containsOneInstanceOf(resolvedPointsTo, GlobalSymbols.class, t -> t == GlobalSymbols.thisScope));
-        assertTrue(containsOneInstanceOf(resolvedPointsTo, PointsToAnalysisResult.AllocationSymbol.class));
+        assertTrue(containsOneInstanceOf(resolvedPointsTo, AllocationSymbol.class));
 
         final List<PointsToAnalysisResult.PotentialScopeMergeOperation> writeOps = result.potentialScopeMergeOperations();
         assertEquals(1, writeOps.size());
@@ -106,12 +106,12 @@ public class PointsToAnalysisResultTest {
 
         final Set<Symbol> sourcePointsTo = result.resolvedPointsToFor(op.source());
         assertEquals(1, sourcePointsTo.size());
-        assertTrue(containsOneInstanceOf(sourcePointsTo, PointsToAnalysisResult.AllocationSymbol.class));
+        assertTrue(containsOneInstanceOf(sourcePointsTo, AllocationSymbol.class));
 
         final Set<Symbol> destPointsTo = result.resolvedPointsToFor(op.destination());
         assertEquals(2, destPointsTo.size());
         assertTrue(containsOneInstanceOf(destPointsTo, GlobalSymbols.class, t -> t == GlobalSymbols.thisScope));
-        assertTrue(containsOneInstanceOf(destPointsTo, PointsToAnalysisResult.AllocationSymbol.class));
+        assertTrue(containsOneInstanceOf(destPointsTo, AllocationSymbol.class));
     }
 
     @Test
