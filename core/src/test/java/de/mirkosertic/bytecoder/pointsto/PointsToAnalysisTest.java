@@ -53,7 +53,7 @@ public class PointsToAnalysisTest {
     private static Object ESCAPER;
 
     enum Enum {
-        v1,v2,v3
+        v1
     }
 
     private PointsToAnalysisResult analyzeVirtualMethod(final Class aClazz, final String aMethodName, final BytecodeMethodSignature aSignature) {
@@ -305,6 +305,8 @@ public class PointsToAnalysisTest {
         final Set<Symbol> pointsTo = result.resolvedPointsToFor(returningSymbols.iterator().next());
         Assert.assertEquals(1, pointsTo.size());
         Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamPref.class, t -> t.index() == 3));
+
+        result.computeMergingFlows();
     }
 
     private Object method10(final Object a, final int b1, final Object k) {
@@ -331,6 +333,8 @@ public class PointsToAnalysisTest {
 
         final Set<Symbol> returningSymbols = result.returningSymbols();
         Assert.assertTrue(returningSymbols.isEmpty());
+
+        result.computeMergingFlows();
     }
 
     <T> boolean containsNInstancesOf(final Collection<T> aCollection, final Class<? extends T> aType, final int aNumber) {

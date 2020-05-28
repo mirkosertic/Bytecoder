@@ -120,4 +120,36 @@ public class PointsToAnalysisResult {
     public Set<Symbol> returningSymbols() {
         return returningSymbols;
     }
+
+    public Map<Symbol, Set<Symbol>> computeMergingFlows() {
+        final Map<Symbol, Set<Symbol>> result = new HashMap<>();
+        for (final Symbol ret : returningSymbols) {
+            if (ret.origin()) {
+                result.computeIfAbsent(ret, t -> new HashSet<>()).add(GlobalSymbols.returnScope);
+            } else {
+                for (final Symbol s : resolvedPointsToFor(ret)){
+                    result.computeIfAbsent(s, t -> new HashSet<>()).add(GlobalSymbols.returnScope);
+                }
+            }
+        }
+        for (final PotentialScopeMergeOperation merge : potentialScopeMergeOperations) {
+            final Set<Symbol> destinations;
+            if (merge.destination.origin()) {
+                destinations = Collections.singleton(merge.destination);
+            } else {
+                destinations = resolvedPointsToFor(merge.destination);
+            }
+            final Set<Symbol> sources;
+            if (merge.source.origin()) {
+                sources = Collections.singleton(merge.source);
+            } else {
+                sources = resolvedPointsToFor(merge.source);
+            }
+
+            for (final Symbol s : sources) {
+                result.computeIfAbsent(s, t -> new HashSet<>()).addAll(destinations);
+            }
+        }
+        return result;
+    }
 }
