@@ -716,7 +716,7 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private void printInvokeStatic(final InvokeStaticMethodExpression aValue) {
-        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aValue.getClassName());
+        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aValue.getInvokedClass());
         final BytecodeResolvedMethods theMethods = theLinkedClass.resolvedMethods();
         final AtomicBoolean theFound = new AtomicBoolean(false);
         theMethods.stream().forEach(aMethodMapsEntry -> {

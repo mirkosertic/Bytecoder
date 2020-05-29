@@ -629,7 +629,7 @@ public class PointsToEscapeAnalysis {
                 final long requiredArgs = Arrays.stream(exp.getSignature().getArguments()).filter(t -> t.isArray() || !t.isPrimitive()).count();
                 if (isComplete(analysisResult, currentEntry, requiredArgs)) {
                     final InvocationResultScope invocationScope = new InvocationResultScope();
-                    final ProgramDescriptor pd = programDescriptorProvider.resolveStaticInvocation(exp.getClassName(), exp.getMethodName(), exp.getSignature());
+                    final ProgramDescriptor pd = programDescriptorProvider.resolveStaticInvocation(exp.getInvokedClass(), exp.getMethodName(), exp.getSignature());
                     if (pd == null || pd.method().getAccessFlags().isNative()) {
                         // We assume everything escapes for native methods
                         for (final Value v : currentEntry.value.incomingDataFlows()) {
@@ -686,7 +686,7 @@ public class PointsToEscapeAnalysis {
                     final InvocationResultScope invocationScope = new InvocationResultScope();
 
                     // We analyze the method invocation
-                    final ProgramDescriptor pd = programDescriptorProvider.resolveDirectInvocation(exp.getClazz(), exp.getMethodName(), exp.getSignature());
+                    final ProgramDescriptor pd = programDescriptorProvider.resolveDirectInvocation(exp.getInvokedClass(), exp.getMethodName(), exp.getSignature());
                     if (pd == null || pd.method().getAccessFlags().isNative()) {
                         // We assume everything escapes for native methods
                         for (final Value v : currentEntry.value.incomingDataFlows()) {

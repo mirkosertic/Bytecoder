@@ -1403,7 +1403,7 @@ public class LLVMWriter implements AutoCloseable {
 
     private void write(final InvokeDirectMethodExpression e) {
 
-        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(e.getClazz());
+        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(e.getInvokedClass());
         final String theMethodName = e.getMethodName();
         final BytecodeMethodSignature theSignature = e.getSignature();
 
@@ -1439,7 +1439,7 @@ public class LLVMWriter implements AutoCloseable {
 
             target.print(LLVMWriterUtils.toMethodName(theEntry.getProvidingClass().getClassName(), theMethodName, theSignature));
         } else {
-            target.print(LLVMWriterUtils.toMethodName(e.getClazz(), theMethodName, theSignature));
+            target.print(LLVMWriterUtils.toMethodName(e.getInvokedClass(), theMethodName, theSignature));
         }
         target.print("(");
         final List<Value> theValues = e.incomingDataFlows();
@@ -2844,13 +2844,13 @@ public class LLVMWriter implements AutoCloseable {
         target.print("call ");
         target.print(LLVMWriterUtils.toSignature(aValue.getSignature()));
         target.print(" @");
-        target.print(LLVMWriterUtils.toMethodName(aValue.getClassName(), aValue.getMethodName(), aValue.getSignature()));
+        target.print(LLVMWriterUtils.toMethodName(aValue.getInvokedClass(), aValue.getMethodName(), aValue.getSignature()));
 
-        if (aValue.getClassName().name().equals(MemoryManager.class.getName())) {
+        if (aValue.getInvokedClass().name().equals(MemoryManager.class.getName())) {
             target.print("(i32 0");
         } else {
             target.print("(i32 %");
-            target.print(LLVMWriterUtils.runtimeClassVariableName(aValue.getClassName()));
+            target.print(LLVMWriterUtils.runtimeClassVariableName(aValue.getInvokedClass()));
         }
         final List<Value> args = aValue.incomingDataFlows();
         for (int i=0;i<args.size();i++) {

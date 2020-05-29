@@ -16,5 +16,5 @@
 package de.mirkosertic.bytecoder.pointsto;
 
 enum GlobalSymbols implements Symbol {
-    thisScope,staticScope,returnScope
+    thisScope,staticScope,returnScope,localScope
 }

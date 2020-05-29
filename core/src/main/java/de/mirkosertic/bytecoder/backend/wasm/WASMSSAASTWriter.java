@@ -1439,7 +1439,7 @@ public class WASMSSAASTWriter {
 
     private WASMExpression directMethodInvokeValue(final InvokeDirectMethodExpression aValue) {
 
-        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(aValue.getClazz());
+        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(aValue.getInvokedClass());
         final String theMethodName = aValue.getMethodName();
         final BytecodeMethodSignature theSignature = aValue.getSignature();
 
@@ -1448,7 +1448,7 @@ public class WASMSSAASTWriter {
         final List<Value> theArguments = theIncomingData.subList(1, theIncomingData.size());
 
         if (theTargetClass.isOpaqueType() && !theMethodName.equals("<init>")) {
-            final Function function = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(aValue.getClazz(), aValue.getMethodName(), aValue.getSignature()));
+            final Function function = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(aValue.getInvokedClass(), aValue.getMethodName(), aValue.getSignature()));
 
             final List<WASMValue> arguments = new ArrayList<>();
             arguments.add(toValue(theTarget));
@@ -1461,7 +1461,7 @@ public class WASMSSAASTWriter {
 
         if (theMethodName.equals("<init>")) {
 
-            final Function function = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(aValue.getClazz(), aValue.getMethodName(), aValue.getSignature()));
+            final Function function = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(aValue.getInvokedClass(), aValue.getMethodName(), aValue.getSignature()));
 
             final List<WASMValue> arguments = new ArrayList<>();
             arguments.add(toValue(theTarget));
@@ -1489,7 +1489,7 @@ public class WASMSSAASTWriter {
 
     private WASMExpression invokeStaticValue(final InvokeStaticMethodExpression aValue) {
 
-        final Callable function = weakFunctionReference(WASMWriterUtils.toMethodName(aValue.getClassName(), aValue.getMethodName(), aValue.getSignature()), aValue);
+        final Callable function = weakFunctionReference(WASMWriterUtils.toMethodName(aValue.getInvokedClass(), aValue.getMethodName(), aValue.getSignature()), aValue);
         final List<WASMValue> arguments = new ArrayList<>();
         arguments.add(i32.c(0, aValue));
 

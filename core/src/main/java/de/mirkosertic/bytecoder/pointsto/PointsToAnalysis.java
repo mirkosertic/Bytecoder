@@ -22,6 +22,7 @@ import de.mirkosertic.bytecoder.ssa.ArrayStoreExpression;
 import de.mirkosertic.bytecoder.ssa.BlockState;
 import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+import de.mirkosertic.bytecoder.ssa.CurrentExceptionExpression;
 import de.mirkosertic.bytecoder.ssa.EnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
@@ -31,9 +32,22 @@ import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeDirectMethodExpression;
+import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
+import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaConstructorReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaInterfaceReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaSpecialReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaVirtualReferenceExpression;
+import de.mirkosertic.bytecoder.ssa.LambdaWithStaticImplExpression;
+import de.mirkosertic.bytecoder.ssa.LookupSwitchExpression;
+import de.mirkosertic.bytecoder.ssa.MethodHandleExpression;
+import de.mirkosertic.bytecoder.ssa.MethodHandlesGeneratedLookupExpression;
 import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
+import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceAndConstructExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
@@ -42,14 +56,19 @@ import de.mirkosertic.bytecoder.ssa.ProgramDescriptorProvider;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
+import de.mirkosertic.bytecoder.ssa.ResolveCallsiteInstanceExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
 import de.mirkosertic.bytecoder.ssa.SetEnumConstantsExpression;
+import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.SuperTypeOfExpression;
+import de.mirkosertic.bytecoder.ssa.TableSwitchExpression;
 import de.mirkosertic.bytecoder.ssa.ThrowExpression;
+import de.mirkosertic.bytecoder.ssa.TypeOfExpression;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
+import de.mirkosertic.bytecoder.ssa.UnreachableExpression;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
@@ -96,6 +115,25 @@ public class PointsToAnalysis {
                 return entry.analysisResult;
             }
         }
+
+        // We check for recursion in the analysis
+        for (final CachedAnalysisResult stackEntry : analysisStack) {
+            if (stackEntry.programDescriptor.linkedClass() == aProgramDescriptor.linkedClass() && stackEntry.programDescriptor.method() == aProgramDescriptor.method()) {
+                // Recursion cannot be analyzed here
+                // We assume that every argument escapes to the static flow
+                final SymbolCache symbolCache = new SymbolCache();
+                final PointsToAnalysisResult recursionResult = new PointsToAnalysisResult();
+                for (final Variable v : stackEntry.programDescriptor.program().getArguments()) {
+                    final TypeRef t = v.resolveType();
+                    if (t.isArray() || t.isObject()) {
+                        recursionResult.assign(GlobalSymbols.staticScope, resolve(v, symbolCache));
+                    }
+                }
+                return recursionResult;
+            }
+        }
+
+        logger.info(" Analyzing {}.{} {}", aProgramDescriptor.linkedClass().getClassName().name(), aProgramDescriptor.method().getName().stringValue(), aProgramDescriptor.method().getSignature());
 
         final PointsToAnalysisResult analysisResult = new PointsToAnalysisResult();
         analysisStack.push(new CachedAnalysisResult(aProgramDescriptor, analysisResult));
@@ -163,13 +201,19 @@ public class PointsToAnalysis {
         }
     }
 
-    private VariableSymbol resolveVariable(final Value value, final SymbolCache aSymbolCache) {
+    private Symbol resolve(final Value value, final SymbolCache aSymbolCache) {
         if (value instanceof Variable) {
             return aSymbolCache.variableSymbolForVariable((Variable) value);
         } else if (value instanceof PHIValue) {
             return aSymbolCache.variableSymbolForPHI((PHIValue) value);
+        } else if (value instanceof LambdaWithStaticImplExpression ||
+                   value instanceof LambdaSpecialReferenceExpression ||
+                   value instanceof LambdaVirtualReferenceExpression ||
+                   value instanceof LambdaConstructorReferenceExpression ||
+                   value instanceof LambdaInterfaceReferenceExpression) {
+            return GlobalSymbols.staticScope;
         } else {
-            throw new IllegalArgumentException("Don't know how to handle return of " + value);
+            throw new IllegalArgumentException("Don't know how to handle " + value);
         }
     }
 
@@ -178,9 +222,8 @@ public class PointsToAnalysis {
             final VariableAssignmentExpression exp = (VariableAssignmentExpression) aExpression;
             final Variable var = exp.getVariable();
             final TypeRef varType = var.resolveType();
+            final Value value = exp.incomingDataFlows().get(0);
             if (varType.isObject() || varType.isArray()) {
-                final Value value = exp.incomingDataFlows().get(0);
-
                 final Symbol varSymbol = aSymbolCache.variableSymbolForVariable(var);
                 if (value instanceof Variable) {
                     final Symbol valueSymbol = aSymbolCache.variableSymbolForVariable((Variable) value);
@@ -190,7 +233,7 @@ public class PointsToAnalysis {
                     aAnalysisResult.alias(varSymbol, valueSymbol);
                 } else if (value instanceof NullValue) {
                     // Null-Constant are in static scope
-                    final Symbol valueSymbol = GlobalSymbols.staticScope;
+                    final Symbol valueSymbol = GlobalSymbols.localScope;
                     aAnalysisResult.alias(varSymbol, valueSymbol);
                 } else if (value instanceof StringValue) {
                     // String constants are also in static scope
@@ -208,17 +251,41 @@ public class PointsToAnalysis {
                     // Enum constants are always in static scope
                     final Symbol valueSymbol = GlobalSymbols.staticScope;
                     aAnalysisResult.alias(varSymbol, valueSymbol);
+                } else if (value instanceof CurrentExceptionExpression) {
+                    // Exceptions are always in static scope
+                    final Symbol valueSymbol = GlobalSymbols.staticScope;
+                    aAnalysisResult.alias(varSymbol, valueSymbol);
+                } else if (value instanceof MethodHandlesGeneratedLookupExpression) {
+                    // The MethodHandles lookup are always in static scope
+                    final Symbol valueSymbol = GlobalSymbols.staticScope;
+                    aAnalysisResult.alias(varSymbol, valueSymbol);
+                } else if (value instanceof MethodTypeExpression) {
+                    // The MethodTypes lookup are always in static scope
+                    final Symbol valueSymbol = GlobalSymbols.staticScope;
+                    aAnalysisResult.alias(varSymbol, valueSymbol);
+                } else if (value instanceof MethodHandleExpression) {
+                    // The Methodhandles are always in static scope
+                    final Symbol valueSymbol = GlobalSymbols.staticScope;
+                    aAnalysisResult.alias(varSymbol, valueSymbol);
+                } else if (value instanceof ResolveCallsiteInstanceExpression) {
+                    // Callsites always in static scope
+                    final Symbol valueSymbol = GlobalSymbols.staticScope;
+                    aAnalysisResult.alias(varSymbol, valueSymbol);
                 } else if (value instanceof SuperTypeOfExpression) {
                     // The Superclass of a a class reference is in static scope, too
                     final Symbol valueSymbol = GlobalSymbols.staticScope;
                     aAnalysisResult.alias(varSymbol, valueSymbol);
+                } else if (value instanceof TypeOfExpression) {
+                    // The runtime class of an object is in static scope, too
+                    final Symbol valueSymbol = GlobalSymbols.staticScope;
+                    aAnalysisResult.alias(varSymbol, valueSymbol);
                 } else if (value instanceof ArrayEntryExpression) {
                     // We inherit the symbol from the array we read from
-                    final VariableSymbol arraySymbol = resolveVariable(value.incomingDataFlows().get(0), aSymbolCache);
+                    final Symbol arraySymbol = resolve(value.incomingDataFlows().get(0), aSymbolCache);
                     aAnalysisResult.readFrom(varSymbol, arraySymbol);
                 } else if (value instanceof GetFieldExpression) {
                     // We inherit the symbol from the object we read from
-                    final VariableSymbol arraySymbol = resolveVariable(value.incomingDataFlows().get(0), aSymbolCache);
+                    final Symbol arraySymbol = resolve(value.incomingDataFlows().get(0), aSymbolCache);
                     aAnalysisResult.readFrom(varSymbol, arraySymbol);
                 } else if (value instanceof NewInstanceAndConstructExpression) {
                     final NewInstanceAndConstructExpression newInstance = (NewInstanceAndConstructExpression) value;
@@ -232,7 +299,7 @@ public class PointsToAnalysis {
                             source = alloc;
                         } else if (entry.getKey() instanceof ParamPref) {
                             final ParamPref p = (ParamPref) entry.getKey();
-                            source = resolveVariable(params.get(p.index() -1), aSymbolCache);
+                            source = resolve(params.get(p.index() -1), aSymbolCache);
                         }
                         if (source != null) {
                             // We check where the source if flowing to
@@ -243,7 +310,7 @@ public class PointsToAnalysis {
                                     analysisResult.writeInto(GlobalSymbols.staticScope, source);
                                 } else if (target instanceof ParamPref) {
                                     final ParamPref p = (ParamPref) target;
-                                    analysisResult.writeInto(resolveVariable(params.get(p.index() - 1), aSymbolCache), source);
+                                    analysisResult.writeInto(resolve(params.get(p.index() - 1), aSymbolCache), source);
                                 }
                             }
                         }
@@ -255,9 +322,55 @@ public class PointsToAnalysis {
                 } else if (value instanceof NewMultiArrayExpression) {
                     final AllocationSymbol alloc = aAnalysisResult.allocation();
                     aAnalysisResult.assign(varSymbol, alloc);
+                } else if (value instanceof NewInstanceExpression) {
+                    final AllocationSymbol alloc = aAnalysisResult.allocation();
+                    aAnalysisResult.assign(varSymbol, alloc);
+                } else if (value instanceof InvokeDirectMethodExpression) {
+                    final InvocationResultSymbol s = toSymbol(aAnalysisResult, (InvokeDirectMethodExpression) value, aSymbolCache);
+                    aAnalysisResult.assign(varSymbol, s);
+                } else if (value instanceof InvokeVirtualMethodExpression) {
+                    final InvocationResultSymbol s = toSymbol(aAnalysisResult, (InvokeVirtualMethodExpression) value, aSymbolCache);
+                    aAnalysisResult.assign(varSymbol, s);
+                } else if (value instanceof InvokeStaticMethodExpression) {
+                    final InvocationResultSymbol s = toSymbol(aAnalysisResult, (InvokeStaticMethodExpression) value, aSymbolCache);
+                    aAnalysisResult.assign(varSymbol, s);
+                } else if (value instanceof NewInstanceFromDefaultConstructorExpression) {
+                    final AllocationSymbol alloc = aAnalysisResult.allocation();
+                    aAnalysisResult.assign(varSymbol, alloc);
+                } else if (value instanceof LambdaWithStaticImplExpression ||
+                           value instanceof LambdaConstructorReferenceExpression ||
+                           value instanceof LambdaInterfaceReferenceExpression ||
+                           value instanceof LambdaVirtualReferenceExpression ||
+                           value instanceof LambdaSpecialReferenceExpression) {
+                    for (final Value v : aExpression.incomingDataFlows()) {
+                        final TypeRef t = v.resolveType();
+                        if (t.isObject() || t.isArray()) {
+                            if (v instanceof Variable || v instanceof PHIValue) {
+                                aAnalysisResult.assign(GlobalSymbols.staticScope, resolve(v, aSymbolCache));
+                            } else {
+                                aAnalysisResult.assign(GlobalSymbols.staticScope, resolve(v, aSymbolCache));
+                            }
+                        }
+                    }
+                    final InvocationResultSymbol result = new InvocationResultSymbol();
+                    aAnalysisResult.assign(varSymbol, result);
                 } else {
                     // Assignment
                     throw new IllegalArgumentException("Unknown :" + value);
+                }
+            } else {
+                if (value instanceof InvokeDirectMethodExpression) {
+                    // Invocation result is not an object, but has to be analyzed
+                    // the result can be ignored
+                    toSymbol(aAnalysisResult, (InvokeDirectMethodExpression) value, aSymbolCache);
+                } else if (value instanceof InvokeVirtualMethodExpression) {
+                    // Invocation result is not an object, but has to be analyzed
+                    // the result can be ignored
+                    toSymbol(aAnalysisResult, (InvokeVirtualMethodExpression) value, aSymbolCache);
+                } else if (value instanceof InvokeStaticMethodExpression) {
+                    // Invocation result is not an object, but has to be analyzed
+                    // the result can be ignored
+                    toSymbol(aAnalysisResult, (InvokeStaticMethodExpression) value, aSymbolCache);
                 }
             }
         } else if (aExpression instanceof ReturnValueExpression) {
@@ -265,37 +378,45 @@ public class PointsToAnalysis {
             final Value returnValue = exp.incomingDataFlows().get(0);
             final TypeRef returnValueType = returnValue.resolveType();
             if (returnValueType.isArray() || returnValueType.isObject()) {
-                final VariableSymbol returnSymbol = resolveVariable(returnValue, aSymbolCache);
+                final Symbol returnSymbol = resolve(returnValue, aSymbolCache);
                 aAnalysisResult.returns(returnSymbol);
             }
         } else if (aExpression instanceof ThrowExpression) {
             final ThrowExpression exp = (ThrowExpression) aExpression;
             final Value returnValue = exp.incomingDataFlows().get(0);
-            final VariableSymbol returnSymbol = resolveVariable(returnValue, aSymbolCache);
+            final Symbol returnSymbol = resolve(returnValue, aSymbolCache);
             aAnalysisResult.returns(returnSymbol);
         } else if (aExpression instanceof ArrayStoreExpression) {
             final List<Value> incoming = aExpression.incomingDataFlows();
-            final VariableSymbol arraySymbol = resolveVariable(incoming.get(0), aSymbolCache);
-            final VariableSymbol valueSymbol = resolveVariable(incoming.get(2), aSymbolCache);
+            final Symbol arraySymbol = resolve(incoming.get(0), aSymbolCache);
+            final Symbol valueSymbol = resolve(incoming.get(2), aSymbolCache);
             aAnalysisResult.writeInto(arraySymbol, valueSymbol);
         } else if (aExpression instanceof PutFieldExpression) {
             final List<Value> incoming = aExpression.incomingDataFlows();
-            final VariableSymbol instanceSymbol = resolveVariable(incoming.get(0), aSymbolCache);
-            final VariableSymbol valueSymbol = resolveVariable(incoming.get(1), aSymbolCache);
+            final Symbol instanceSymbol = resolve(incoming.get(0), aSymbolCache);
+            final Symbol valueSymbol = resolve(incoming.get(1), aSymbolCache);
             aAnalysisResult.writeInto(instanceSymbol, valueSymbol);
         } else if (aExpression instanceof PutStaticExpression) {
             final List<Value> incoming = aExpression.incomingDataFlows();
-            final VariableSymbol valueSymbol = resolveVariable(incoming.get(0), aSymbolCache);
+            final Symbol valueSymbol = resolve(incoming.get(0), aSymbolCache);
             aAnalysisResult.writeInto(GlobalSymbols.staticScope, valueSymbol);
         } else if (aExpression instanceof SetEnumConstantsExpression) {
             final List<Value> incoming = aExpression.incomingDataFlows();
-            final VariableSymbol valueSymbol = resolveVariable(incoming.get(1), aSymbolCache);
+            final Symbol valueSymbol = resolve(incoming.get(1), aSymbolCache);
             aAnalysisResult.writeInto(GlobalSymbols.staticScope, valueSymbol);
         } else if (aExpression instanceof InvokeDirectMethodExpression) {
             toSymbol(aAnalysisResult, (InvokeDirectMethodExpression) aExpression, aSymbolCache);
+        } else if (aExpression instanceof InvokeVirtualMethodExpression) {
+            toSymbol(aAnalysisResult, (InvokeVirtualMethodExpression) aExpression, aSymbolCache);
+        } else if (aExpression instanceof InvokeStaticMethodExpression) {
+            toSymbol(aAnalysisResult, (InvokeStaticMethodExpression) aExpression, aSymbolCache);
         } else if (aExpression instanceof GotoExpression ||
                    aExpression instanceof IFExpression ||
-                   aExpression instanceof ReturnExpression) {
+                   aExpression instanceof ReturnExpression ||
+                   aExpression instanceof TableSwitchExpression ||
+                   aExpression instanceof LookupSwitchExpression ||
+                   aExpression instanceof SetMemoryLocationExpression ||
+                   aExpression instanceof UnreachableExpression) {
             // Not relevant for analysis
         } else {
             throw new IllegalArgumentException("Not supported expression : " + aExpression);
@@ -304,31 +425,99 @@ public class PointsToAnalysis {
 
     private InvocationResultSymbol toSymbol(final PointsToAnalysisResult aAnalysisResult, final InvokeDirectMethodExpression aExpression, final SymbolCache aSymbolCache) {
         final List<Value> params = aExpression.incomingDataFlows();
-        final PointsToAnalysisResult analysisResult = analyze(programDescriptorProvider.resolveDirectInvocation(aExpression.getClazz(), aExpression.getMethodName(), aExpression.getSignature()));
+        final ProgramDescriptor descriptor = programDescriptorProvider.resolveDirectInvocation(aExpression.getInvokedClass(), aExpression.getMethodName(), aExpression.getSignature());
+
+        if (descriptor == null || descriptor.method().getAccessFlags().isNative() || descriptor.program() == null) {
+            // We assume everything is flowing into static scope here
+            for (final Value v : aExpression.incomingDataFlows()) {
+                final TypeRef t = v.resolveType();
+                if (t.isObject() || t.isArray()) {
+                    aAnalysisResult.assign(GlobalSymbols.staticScope, resolve(v, aSymbolCache));
+                }
+            }
+            return new InvocationResultSymbol();
+        }
+
+        final PointsToAnalysisResult analysisResult = analyze(descriptor);
         final Map<Symbol, Set<Symbol>> flows = analysisResult.computeMergingFlows();
         final InvocationResultSymbol invocationResult = new InvocationResultSymbol();
         for (final Map.Entry<Symbol, Set<Symbol>> entry : flows.entrySet()) {
             Symbol source = null;
             if (entry.getKey() == GlobalSymbols.thisScope) {
-                source = resolveVariable(params.get(0), aSymbolCache);
+                source = resolve(params.get(0), aSymbolCache);
             } else if (entry.getKey() instanceof ParamPref) {
                 final ParamPref p = (ParamPref) entry.getKey();
-                source = resolveVariable(params.get(p.index()), aSymbolCache);
+                source = resolve(params.get(p.index()), aSymbolCache);
             }
             if (source != null) {
                 // We check where the source if flowing to
                 for (final Symbol target : entry.getValue()) {
                     if (target == GlobalSymbols.thisScope) {
-                        aAnalysisResult.writeInto(resolveVariable(params.get(0), aSymbolCache), source);
+                        aAnalysisResult.writeInto(resolve(params.get(0), aSymbolCache), source);
                     } else if (target == GlobalSymbols.staticScope) {
                         analysisResult.writeInto(GlobalSymbols.staticScope, source);
                     } else if (target instanceof ParamPref) {
                         final ParamPref p = (ParamPref) target;
-                        analysisResult.writeInto(resolveVariable(params.get(p.index()), aSymbolCache), source);
+                        analysisResult.writeInto(resolve(params.get(p.index()), aSymbolCache), source);
                     }
                 }
             }
         }
         return invocationResult;
+    }
+
+    private InvocationResultSymbol toSymbol(final PointsToAnalysisResult aAnalysisResult, final InvokeStaticMethodExpression aExpression, final SymbolCache aSymbolCache) {
+        final List<Value> params = aExpression.incomingDataFlows();
+
+        final ProgramDescriptor descriptor = programDescriptorProvider.resolveStaticInvocation(aExpression.getInvokedClass(), aExpression.getMethodName(), aExpression.getSignature());
+        if (descriptor == null || descriptor.method().getAccessFlags().isNative() || descriptor.program() == null) {
+            // We assume everything is flowing into static scope here
+            for (final Value v : aExpression.incomingDataFlows()) {
+                final TypeRef t = v.resolveType();
+                if (t.isObject() || t.isArray()) {
+                    aAnalysisResult.assign(GlobalSymbols.staticScope, resolve(v, aSymbolCache));
+                }
+            }
+            return new InvocationResultSymbol();
+        }
+
+        final PointsToAnalysisResult analysisResult = analyze(descriptor);
+        final Map<Symbol, Set<Symbol>> flows = analysisResult.computeMergingFlows();
+
+        final InvocationResultSymbol invocationResult = new InvocationResultSymbol();
+        for (final Map.Entry<Symbol, Set<Symbol>> entry : flows.entrySet()) {
+            Symbol source = null;
+            if (entry.getKey() == GlobalSymbols.thisScope) {
+                throw new IllegalArgumentException("There should be no this scope in static invocations");
+            } else if (entry.getKey() instanceof ParamPref) {
+                final ParamPref p = (ParamPref) entry.getKey();
+                source = resolve(params.get(p.index() - 1), aSymbolCache);
+            }
+            if (source != null) {
+                // We check where the source if flowing to
+                for (final Symbol target : entry.getValue()) {
+                    if (target == GlobalSymbols.thisScope) {
+                        throw new IllegalArgumentException("There should be no this scope in static invocations");
+                    } else if (target == GlobalSymbols.staticScope) {
+                        analysisResult.writeInto(GlobalSymbols.staticScope, source);
+                    } else if (target instanceof ParamPref) {
+                        final ParamPref p = (ParamPref) target;
+                        analysisResult.writeInto(resolve(params.get(p.index() - 1), aSymbolCache), source);
+                    }
+                }
+            }
+        }
+        return invocationResult;
+    }
+
+    private InvocationResultSymbol toSymbol(final PointsToAnalysisResult aAnalysisResult, final InvokeVirtualMethodExpression aExpression, final SymbolCache aSymbolCache) {
+        // All arguments escape to static context, because we do not know
+        for (final Value v : aExpression.incomingDataFlows()) {
+            final TypeRef t = v.resolveType();
+            if (t.isObject() || t.isArray()) {
+                aAnalysisResult.assign(GlobalSymbols.staticScope, resolve(v, aSymbolCache));
+            }
+        }
+        return new InvocationResultSymbol();
     }
 }

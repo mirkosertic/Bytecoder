@@ -69,7 +69,7 @@ public class StaticDependencies {
         if (alreadySeen.add(e)) {
             if (e instanceof InvokeStaticMethodExpression) {
                 final InvokeStaticMethodExpression inv = (InvokeStaticMethodExpression) e;
-                dependencies.add(aProgram.getLinkerContext().resolveClass(inv.getClassName()));
+                dependencies.add(aProgram.getLinkerContext().resolveClass(inv.getInvokedClass()));
             } else if (e instanceof PutStaticExpression) {
                 final PutStaticExpression put = (PutStaticExpression) e;
                 final BytecodeResolvedFields.FieldEntry theEntry = implementingClassForStaticField(aProgram.getLinkerContext(), BytecodeObjectTypeRef.fromUtf8Constant(put.getField().getClassIndex().getClassConstant().getConstant()),

@@ -46,13 +46,13 @@ import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 import de.mirkosertic.bytecoder.core.BytecodeVTable;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
-import de.mirkosertic.bytecoder.escapeanalysis.PointsToEscapeAnalysis;
-import de.mirkosertic.bytecoder.ssa.ProgramDescriptor;
-import de.mirkosertic.bytecoder.ssa.ProgramDescriptorProvider;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
+import de.mirkosertic.bytecoder.pointsto.PointsToAnalysis;
 import de.mirkosertic.bytecoder.ssa.MethodHandleExpression;
 import de.mirkosertic.bytecoder.ssa.Program;
+import de.mirkosertic.bytecoder.ssa.ProgramDescriptor;
+import de.mirkosertic.bytecoder.ssa.ProgramDescriptorProvider;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
@@ -1540,7 +1540,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     }
                 };
 
-                final PointsToEscapeAnalysis theAnalysis = new PointsToEscapeAnalysis(theProvider, aLinkerContext.getLogger());
+                final PointsToAnalysis theAnalysis = new PointsToAnalysis(theProvider, aLinkerContext.getLogger());
 
                 if (aOptions.isEscapeAnalysisEnabled()) {
                     aOptions.getLogger().info("Starting escape analysis");

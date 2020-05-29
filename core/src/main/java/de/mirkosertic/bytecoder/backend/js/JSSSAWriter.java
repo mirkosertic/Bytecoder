@@ -929,7 +929,7 @@ public class JSSSAWriter {
 
     private void print(final InvokeStaticMethodExpression aValue) {
 
-        final BytecodeLinkedClass theClass = linkerContext.resolveClass(aValue.getClassName());
+        final BytecodeLinkedClass theClass = linkerContext.resolveClass(aValue.getInvokedClass());
         final String theMethodName = aValue.getMethodName();
         final BytecodeMethodSignature theSignature = aValue.getSignature();
 
@@ -969,7 +969,7 @@ public class JSSSAWriter {
                 }
             } else {
                 // We continue the normal flow, as method implementation is provided by the bytecode
-                writer.text(minifier.toClassName(aValue.getClassName())).text(".").text(minifier.toMethodName(theMethodName, theSignature)).text("(");
+                writer.text(minifier.toClassName(aValue.getInvokedClass())).text(".").text(minifier.toMethodName(theMethodName, theSignature)).text("(");
 
                 final List<Value> theVariables = aValue.incomingDataFlows();
 
@@ -982,7 +982,7 @@ public class JSSSAWriter {
                 writer.text(")");
             }
         } else {
-            writer.text(minifier.toClassName(aValue.getClassName())).text(".").text(minifier.toSymbol("init")).text("().").text(minifier.toMethodName(theMethodName, theSignature)).text("(");
+            writer.text(minifier.toClassName(aValue.getInvokedClass())).text(".").text(minifier.toSymbol("init")).text("().").text(minifier.toMethodName(theMethodName, theSignature)).text("(");
 
             final List<Value> theVariables = aValue.incomingDataFlows();
 
@@ -998,7 +998,7 @@ public class JSSSAWriter {
 
     private void print(final InvokeDirectMethodExpression aValue) {
 
-        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(aValue.getClazz());
+        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(aValue.getInvokedClass());
         final String theMethodName = aValue.getMethodName();
         final BytecodeMethodSignature theSignature = aValue.getSignature();
 

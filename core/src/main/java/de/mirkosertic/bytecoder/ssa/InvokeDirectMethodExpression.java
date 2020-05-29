@@ -41,7 +41,7 @@ public class InvokeDirectMethodExpression extends InvocationExpression {
         methodName = aMethodName;
     }
 
-    public BytecodeObjectTypeRef getClazz() {
+    public BytecodeObjectTypeRef getInvokedClass() {
         return clazz;
     }
 
