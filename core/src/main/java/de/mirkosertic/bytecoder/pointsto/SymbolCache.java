@@ -17,7 +17,6 @@ package de.mirkosertic.bytecoder.pointsto;
 
 import de.mirkosertic.bytecoder.ssa.MethodParameterValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
-import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
 
 import java.util.HashMap;
