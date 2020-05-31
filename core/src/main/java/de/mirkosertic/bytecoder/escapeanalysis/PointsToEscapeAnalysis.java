@@ -1177,6 +1177,15 @@ public class PointsToEscapeAnalysis {
                 valueNode.addEdgeTo(new PointsTo(), varNode);
 
                 analyze(valueNode.value, analysisResult);
+            } else if (theIncoming.get(0) instanceof InvokeStaticMethodExpression) {
+                final GraphNode valueNode = analysisResult.nodeFor(theIncoming.get(0));
+                analyze(valueNode.value, analysisResult);
+            } else if (theIncoming.get(0) instanceof InvokeDirectMethodExpression) {
+                final GraphNode valueNode = analysisResult.nodeFor(theIncoming.get(0));
+                analyze(valueNode.value, analysisResult);
+            } else if (theIncoming.get(0) instanceof InvokeVirtualMethodExpression) {
+                final GraphNode valueNode = analysisResult.nodeFor(theIncoming.get(0));
+                analyze(valueNode.value, analysisResult);
             }
 
         } else if (aExpression instanceof NewInstanceAndConstructExpression) {
