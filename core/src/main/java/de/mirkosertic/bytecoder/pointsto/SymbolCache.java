@@ -37,10 +37,6 @@ public class SymbolCache {
         return (VariableSymbol) mappings.computeIfAbsent(aVariable, t -> new VariableSymbol(aVariable.getName()));
     }
 
-    public VariableSymbol variableSymbolForValue(final Value aValue, final String aName) {
-        return (VariableSymbol) mappings.computeIfAbsent(aValue, t -> new VariableSymbol(aName));
-    }
-
     public VariableSymbol variableSymbolForPHI(final PHIValue aValue) {
         final String name = phiVariables.computeIfAbsent(aValue, t -> "PHI" + phiVariables.size());
         return (VariableSymbol) mappings.computeIfAbsent(aValue, t -> new VariableSymbol(name));
