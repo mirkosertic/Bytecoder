@@ -15,6 +15,17 @@
  */
 package de.mirkosertic.bytecoder.pointsto;
 
+import de.mirkosertic.bytecoder.ssa.Value;
+
 public class AllocationSymbol implements Symbol {
 
+    private final Value value;
+
+    public AllocationSymbol(final Value value) {
+        this.value = value;
+    }
+
+    public Value value() {
+        return value;
+    }
 }

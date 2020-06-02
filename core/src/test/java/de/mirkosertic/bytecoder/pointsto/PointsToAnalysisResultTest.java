@@ -65,7 +65,7 @@ public class PointsToAnalysisResultTest {
 
         final PointsToAnalysisResult result = new PointsToAnalysisResult();
         result.alias(var1, thisRef);
-        result.alias(var2, result.allocation());
+        result.alias(var2, result.allocation(null));
         result.assign(phi, var1);
         result.assign(phi, var2);
 
@@ -91,7 +91,7 @@ public class PointsToAnalysisResultTest {
 
         final PointsToAnalysisResult result = new PointsToAnalysisResult();
         result.alias(var1, thisRef);
-        result.alias(var2, result.allocation());
+        result.alias(var2, result.allocation(null));
         result.writeInto(var1, var2);
 
         final Set<Symbol> resolvedPointsTo = result.resolvedPointsToFor(var1);

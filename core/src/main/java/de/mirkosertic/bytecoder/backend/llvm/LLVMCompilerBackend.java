@@ -46,9 +46,11 @@ import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 import de.mirkosertic.bytecoder.core.BytecodeVTable;
 import de.mirkosertic.bytecoder.core.BytecodeVirtualMethodIdentifier;
+import de.mirkosertic.bytecoder.escapeanalysis.EscapeAnalysis;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.pointsto.PointsToAnalysis;
+import de.mirkosertic.bytecoder.pointsto.PointsToAnalysisResult;
 import de.mirkosertic.bytecoder.ssa.MethodHandleExpression;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramDescriptor;
@@ -1499,7 +1501,6 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                // TODO: Perform escape analysis here
                 final ProgramDescriptorProvider theProvider = new ProgramDescriptorProvider() {
                     @Override
                     public ProgramDescriptor resolveStaticInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
@@ -1542,18 +1543,24 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                 final PointsToAnalysis theAnalysis = new PointsToAnalysis(theProvider, aLinkerContext.getLogger());
 
-                if (aOptions.isEscapeAnalysisEnabled()) {
-                    aOptions.getLogger().info("Starting escape analysis");
+                // Analyze all methods
+                aOptions.getLogger().info("Starting interprocesdural dataflow analysis");
 
-                    // Analyze all methods
-                    for (final CompiledMethod theCompiledMethod : compiledMethods) {
+                final EscapeAnalysis escapeAnalysis = new EscapeAnalysis();
+                for (final CompiledMethod theCompiledMethod : compiledMethods) {
 
-                        theAnalysis.analyze(new ProgramDescriptor(theCompiledMethod.linkedClass,
-                                theCompiledMethod.method, theCompiledMethod.program));
+                    final ProgramDescriptor pg = new ProgramDescriptor(theCompiledMethod.linkedClass,
+                            theCompiledMethod.method, theCompiledMethod.program);
+
+                    final PointsToAnalysisResult result = theAnalysis.analyze(pg);
+
+                    if (aOptions.isEscapeAnalysisEnabled()) {
+                        // Perform some escape analysis
+                        escapeAnalysis.analyze(pg, result);
                     }
-
-                    aOptions.getLogger().info("Finished escape analysis");
                 }
+
+                aOptions.getLogger().info("Finished interprocesdural dataflow analysis");
 
                 // We know know the interprocedural data flow, so we can write the LLVM code
                 for (final CompiledMethod theCompiledMethod : compiledMethods) {

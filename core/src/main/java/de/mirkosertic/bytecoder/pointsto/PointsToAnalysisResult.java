@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.pointsto;
 
+import de.mirkosertic.bytecoder.ssa.Value;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,7 +48,7 @@ public class PointsToAnalysisResult {
     private final Map<Symbol, Set<Symbol>> pts;
     private final List<PotentialScopeMergeOperation> potentialScopeMergeOperations;
     private final Set<Symbol> returningSymbols;
-    private final Set<Symbol> allocationSymbols;
+    private final Set<AllocationSymbol> allocationSymbols;
 
     public PointsToAnalysisResult() {
         pts = new HashMap<>();
@@ -55,8 +57,8 @@ public class PointsToAnalysisResult {
         allocationSymbols = new HashSet<>();
     }
 
-    public AllocationSymbol allocation() {
-        final AllocationSymbol alloc = new AllocationSymbol();
+    public AllocationSymbol allocation(final Value v) {
+        final AllocationSymbol alloc = new AllocationSymbol(v);
         allocationSymbols.add(alloc);
         return alloc;
     }
@@ -117,6 +119,10 @@ public class PointsToAnalysisResult {
 
     public Set<Symbol> returningSymbols() {
         return returningSymbols;
+    }
+
+    public Set<AllocationSymbol> allocationSymbols() {
+        return allocationSymbols;
     }
 
     public Map<Symbol, Set<Symbol>> computeMergingFlows() {

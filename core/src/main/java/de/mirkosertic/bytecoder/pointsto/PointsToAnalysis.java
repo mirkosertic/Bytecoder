@@ -292,7 +292,7 @@ public class PointsToAnalysis {
                     final List<Value> params = newInstance.incomingDataFlows();
                     final PointsToAnalysisResult analysisResult = analyze(programDescriptorProvider.resolveConstructorInvocation(newInstance.getClazz(), newInstance.getSignature()));
                     final Map<Symbol, Set<Symbol>> flows = analysisResult.computeMergingFlows();
-                    final AllocationSymbol alloc = aAnalysisResult.allocation();
+                    final AllocationSymbol alloc = aAnalysisResult.allocation(newInstance);
                     for (final Map.Entry<Symbol, Set<Symbol>> entry : flows.entrySet()) {
                         Symbol source = null;
                         if (entry.getKey() == GlobalSymbols.thisScope) {
@@ -317,13 +317,13 @@ public class PointsToAnalysis {
                     }
                     aAnalysisResult.assign(varSymbol, alloc);
                 } else if (value instanceof NewArrayExpression) {
-                    final AllocationSymbol alloc = aAnalysisResult.allocation();
+                    final AllocationSymbol alloc = aAnalysisResult.allocation(value);
                     aAnalysisResult.assign(varSymbol, alloc);
                 } else if (value instanceof NewMultiArrayExpression) {
-                    final AllocationSymbol alloc = aAnalysisResult.allocation();
+                    final AllocationSymbol alloc = aAnalysisResult.allocation(value);
                     aAnalysisResult.assign(varSymbol, alloc);
                 } else if (value instanceof NewInstanceExpression) {
-                    final AllocationSymbol alloc = aAnalysisResult.allocation();
+                    final AllocationSymbol alloc = aAnalysisResult.allocation(value);
                     aAnalysisResult.assign(varSymbol, alloc);
                 } else if (value instanceof InvokeDirectMethodExpression) {
                     final InvocationResultSymbol s = toSymbol(aAnalysisResult, (InvokeDirectMethodExpression) value, aSymbolCache);
@@ -335,7 +335,7 @@ public class PointsToAnalysis {
                     final InvocationResultSymbol s = toSymbol(aAnalysisResult, (InvokeStaticMethodExpression) value, aSymbolCache);
                     aAnalysisResult.assign(varSymbol, s);
                 } else if (value instanceof NewInstanceFromDefaultConstructorExpression) {
-                    final AllocationSymbol alloc = aAnalysisResult.allocation();
+                    final AllocationSymbol alloc = aAnalysisResult.allocation(value);
                     aAnalysisResult.assign(varSymbol, alloc);
                 } else if (value instanceof LambdaWithStaticImplExpression ||
                            value instanceof LambdaConstructorReferenceExpression ||
@@ -346,9 +346,9 @@ public class PointsToAnalysis {
                         final TypeRef t = v.resolveType();
                         if (t.isObject() || t.isArray()) {
                             if (v instanceof Variable || v instanceof PHIValue) {
-                                aAnalysisResult.assign(GlobalSymbols.staticScope, resolve(v, aSymbolCache));
+                                aAnalysisResult.writeInto(GlobalSymbols.staticScope, resolve(v, aSymbolCache));
                             } else {
-                                aAnalysisResult.assign(GlobalSymbols.staticScope, resolve(v, aSymbolCache));
+                                aAnalysisResult.writeInto(GlobalSymbols.staticScope, resolve(v, aSymbolCache));
                             }
                         }
                     }
@@ -432,7 +432,7 @@ public class PointsToAnalysis {
             for (final Value v : aExpression.incomingDataFlows()) {
                 final TypeRef t = v.resolveType();
                 if (t.isObject() || t.isArray()) {
-                    aAnalysisResult.assign(GlobalSymbols.staticScope, resolve(v, aSymbolCache));
+                    aAnalysisResult.writeInto(GlobalSymbols.staticScope, resolve(v, aSymbolCache));
                 }
             }
             return new InvocationResultSymbol();
@@ -475,7 +475,7 @@ public class PointsToAnalysis {
             for (final Value v : aExpression.incomingDataFlows()) {
                 final TypeRef t = v.resolveType();
                 if (t.isObject() || t.isArray()) {
-                    aAnalysisResult.assign(GlobalSymbols.staticScope, resolve(v, aSymbolCache));
+                    aAnalysisResult.writeInto(GlobalSymbols.staticScope, resolve(v, aSymbolCache));
                 }
             }
             return new InvocationResultSymbol();
@@ -515,7 +515,7 @@ public class PointsToAnalysis {
         for (final Value v : aExpression.incomingDataFlows()) {
             final TypeRef t = v.resolveType();
             if (t.isObject() || t.isArray()) {
-                aAnalysisResult.assign(GlobalSymbols.staticScope, resolve(v, aSymbolCache));
+                aAnalysisResult.writeInto(GlobalSymbols.staticScope, resolve(v, aSymbolCache));
             }
         }
         return new InvocationResultSymbol();
