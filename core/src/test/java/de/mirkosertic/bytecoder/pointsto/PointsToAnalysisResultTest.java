@@ -133,17 +133,17 @@ public class PointsToAnalysisResultTest {
 
         final PointsToAnalysisResult result = new PointsToAnalysisResult();
         result.alias(var1, thisRef);
-        result.alias(var2, new ParamPref(1));
+        result.alias(var2, new ParamRef(1));
         result.assign(phi, var1);
         result.assign(phi, var3);
         result.writeInto(phi, var2);
-        result.alias(var3, new ParamPref(2));
+        result.alias(var3, new ParamRef(2));
 
         final Set<Symbol> resolvedPointsTo = result.resolvedPointsToFor(phi);
         assertEquals(3, resolvedPointsTo.size());
         assertTrue(containsOneInstanceOf(resolvedPointsTo, GlobalSymbols.class, t -> t == GlobalSymbols.thisScope));
-        assertTrue(containsOneInstanceOf(resolvedPointsTo, ParamPref.class, t -> t.index() == 1));
-        assertTrue(containsOneInstanceOf(resolvedPointsTo, ParamPref.class, t -> t.index() == 2));
+        assertTrue(containsOneInstanceOf(resolvedPointsTo, ParamRef.class, t -> t.index() == 1));
+        assertTrue(containsOneInstanceOf(resolvedPointsTo, ParamRef.class, t -> t.index() == 2));
     }
 
     @Test
@@ -164,13 +164,13 @@ public class PointsToAnalysisResultTest {
 
         final PointsToAnalysisResult result = new PointsToAnalysisResult();
         result.alias(var1, thisRef);
-        result.alias(var2, new ParamPref(1));
+        result.alias(var2, new ParamRef(1));
         result.readFrom(var3, var2);
         result.alias(var4, var3);
 
         final Set<Symbol> resolvedPointsTo = result.resolvedPointsToFor(var4);
         assertEquals(1, resolvedPointsTo.size());
-        assertTrue(containsOneInstanceOf(resolvedPointsTo, ParamPref.class, t -> t.index() == 1));
+        assertTrue(containsOneInstanceOf(resolvedPointsTo, ParamRef.class, t -> t.index() == 1));
     }
 
     <T> boolean containsNInstancesOf(final Collection<T> aCollection, final Class<? extends T> aType, final int aNumber) {

@@ -297,8 +297,8 @@ public class PointsToAnalysis {
                         Symbol source = null;
                         if (entry.getKey() == GlobalSymbols.thisScope) {
                             source = alloc;
-                        } else if (entry.getKey() instanceof ParamPref) {
-                            final ParamPref p = (ParamPref) entry.getKey();
+                        } else if (entry.getKey() instanceof ParamRef) {
+                            final ParamRef p = (ParamRef) entry.getKey();
                             source = resolve(params.get(p.index() -1), aSymbolCache);
                         }
                         if (source != null) {
@@ -308,8 +308,8 @@ public class PointsToAnalysis {
                                     aAnalysisResult.writeInto(alloc, source);
                                 } else if (target == GlobalSymbols.staticScope) {
                                     analysisResult.writeInto(GlobalSymbols.staticScope, source);
-                                } else if (target instanceof ParamPref) {
-                                    final ParamPref p = (ParamPref) target;
+                                } else if (target instanceof ParamRef) {
+                                    final ParamRef p = (ParamRef) target;
                                     analysisResult.writeInto(resolve(params.get(p.index() - 1), aSymbolCache), source);
                                 }
                             }
@@ -445,8 +445,8 @@ public class PointsToAnalysis {
             Symbol source = null;
             if (entry.getKey() == GlobalSymbols.thisScope) {
                 source = resolve(params.get(0), aSymbolCache);
-            } else if (entry.getKey() instanceof ParamPref) {
-                final ParamPref p = (ParamPref) entry.getKey();
+            } else if (entry.getKey() instanceof ParamRef) {
+                final ParamRef p = (ParamRef) entry.getKey();
                 source = resolve(params.get(p.index()), aSymbolCache);
             }
             if (source != null) {
@@ -456,8 +456,8 @@ public class PointsToAnalysis {
                         aAnalysisResult.writeInto(resolve(params.get(0), aSymbolCache), source);
                     } else if (target == GlobalSymbols.staticScope) {
                         analysisResult.writeInto(GlobalSymbols.staticScope, source);
-                    } else if (target instanceof ParamPref) {
-                        final ParamPref p = (ParamPref) target;
+                    } else if (target instanceof ParamRef) {
+                        final ParamRef p = (ParamRef) target;
                         analysisResult.writeInto(resolve(params.get(p.index()), aSymbolCache), source);
                     }
                 }
@@ -489,8 +489,8 @@ public class PointsToAnalysis {
             Symbol source = null;
             if (entry.getKey() == GlobalSymbols.thisScope) {
                 throw new IllegalArgumentException("There should be no this scope in static invocations");
-            } else if (entry.getKey() instanceof ParamPref) {
-                final ParamPref p = (ParamPref) entry.getKey();
+            } else if (entry.getKey() instanceof ParamRef) {
+                final ParamRef p = (ParamRef) entry.getKey();
                 source = resolve(params.get(p.index() - 1), aSymbolCache);
             }
             if (source != null) {
@@ -500,8 +500,8 @@ public class PointsToAnalysis {
                         throw new IllegalArgumentException("There should be no this scope in static invocations");
                     } else if (target == GlobalSymbols.staticScope) {
                         analysisResult.writeInto(GlobalSymbols.staticScope, source);
-                    } else if (target instanceof ParamPref) {
-                        final ParamPref p = (ParamPref) target;
+                    } else if (target instanceof ParamRef) {
+                        final ParamRef p = (ParamRef) target;
                         analysisResult.writeInto(resolve(params.get(p.index() - 1), aSymbolCache), source);
                     }
                 }

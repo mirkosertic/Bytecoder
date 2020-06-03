@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.pointsto;
 
-interface Symbol {
+public interface Symbol {
     default boolean origin() {
         return true;
     }

@@ -15,22 +15,45 @@
  */
 package de.mirkosertic.bytecoder.escapeanalysis;
 
+import java.util.Map;
+import java.util.Set;
+
 import de.mirkosertic.bytecoder.pointsto.AllocationSymbol;
+import de.mirkosertic.bytecoder.pointsto.GlobalSymbols;
+import de.mirkosertic.bytecoder.pointsto.ParamRef;
 import de.mirkosertic.bytecoder.pointsto.PointsToAnalysisResult;
+import de.mirkosertic.bytecoder.pointsto.Symbol;
 import de.mirkosertic.bytecoder.ssa.ProgramDescriptor;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.ValueWithEscapeCheck;
 
 public class EscapeAnalysis {
+
     public void analyze(final ProgramDescriptor aProgramDescriptor, final PointsToAnalysisResult aAnalysisResult) {
+        final Map<Symbol, Set<Symbol>> flows = aAnalysisResult.computeMergingFlows();
         for (final AllocationSymbol allocation : aAnalysisResult.allocationSymbols()) {
             final Value v = allocation.value();
+            final Set<Symbol> symbolFlow = flows.get(allocation);
+            if (symbolFlow != null) {
+                boolean escaping = false;
+                for (final Symbol s : symbolFlow) {
+                    if (s == GlobalSymbols.returnScope ||
+                            s == GlobalSymbols.staticScope ||
+                            s == GlobalSymbols.thisScope ||
+                            s instanceof ParamRef) {
+                        // Escaping into either return, static, this or
+                        // method argument scope
+                        escaping = true;
+                        break;
+                    }
+                }
 
-            // TODO: Implement EA here
-
-            if (v instanceof ValueWithEscapeCheck) {
-                // We just mark the allocation as escaping to be sure here
-                ((ValueWithEscapeCheck) v).markAsEscaped();
+                if (escaping) {
+                    if (v instanceof ValueWithEscapeCheck) {
+                        // We just mark the allocation as escaping to be sure here
+                        ((ValueWithEscapeCheck) v).markAsEscaped();
+                    }
+                }
             }
         }
     }

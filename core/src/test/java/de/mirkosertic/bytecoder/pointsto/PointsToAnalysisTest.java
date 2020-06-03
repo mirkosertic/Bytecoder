@@ -192,7 +192,7 @@ public class PointsToAnalysisTest {
 
         final Set<Symbol> pointsTo = result.resolvedPointsToFor(returningSymbols.iterator().next());
         Assert.assertEquals(1, pointsTo.size());
-        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamPref.class, t -> t.index() == 1));
+        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamRef.class, t -> t.index() == 1));
     }
 
     private Object method2(final Object a, final int b1, final Object k) {
@@ -215,8 +215,8 @@ public class PointsToAnalysisTest {
 
         final Set<Symbol> pointsTo = result.resolvedPointsToFor(returningSymbols.iterator().next());
         Assert.assertEquals(2, pointsTo.size());
-        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamPref.class, t -> t.index() == 1));
-        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamPref.class, t -> t.index() == 3));
+        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamRef.class, t -> t.index() == 1));
+        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamRef.class, t -> t.index() == 3));
     }
 
     private Object method3(final Object a, final int b1, final Object k) {
@@ -256,8 +256,8 @@ public class PointsToAnalysisTest {
 
         final Set<Symbol> pointsTo = result.resolvedPointsToFor(returningSymbols.iterator().next());
         Assert.assertEquals(2, pointsTo.size());
-        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamPref.class, t -> t.index() == 1));
-        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamPref.class, t -> t.index() == 3));
+        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamRef.class, t -> t.index() == 1));
+        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamRef.class, t -> t.index() == 3));
     }
 
     private Object method5(final Object a, final int b1, final Object k) {
@@ -275,7 +275,7 @@ public class PointsToAnalysisTest {
 
         final Set<Symbol> pointsTo = result.resolvedPointsToFor(returningSymbols.iterator().next());
         Assert.assertEquals(1, pointsTo.size());
-        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamPref.class, t -> t.index() == 1));
+        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamRef.class, t -> t.index() == 1));
     }
 
     private Object method6(final Object a, final int b1, final Object k) {
@@ -294,8 +294,8 @@ public class PointsToAnalysisTest {
 
         final Set<Symbol> pointsTo = result.resolvedPointsToFor(returningSymbols.iterator().next());
         Assert.assertEquals(2, pointsTo.size());
-        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamPref.class, t -> t.index() == 1));
-        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamPref.class, t -> t.index() == 3));
+        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamRef.class, t -> t.index() == 1));
+        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamRef.class, t -> t.index() == 3));
     }
 
     private Object method7(final Object a, final int b1, final Object k) {
@@ -313,7 +313,7 @@ public class PointsToAnalysisTest {
 
         final Set<Symbol> pointsTo = result.resolvedPointsToFor(returningSymbols.iterator().next());
         Assert.assertEquals(1, pointsTo.size());
-        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamPref.class, t -> t.index() == 1));
+        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamRef.class, t -> t.index() == 1));
     }
 
     private Object method8(final Object a, final int b1, final Object k) {
@@ -348,7 +348,7 @@ public class PointsToAnalysisTest {
 
         final Set<Symbol> pointsTo = result.resolvedPointsToFor(returningSymbols.iterator().next());
         Assert.assertEquals(1, pointsTo.size());
-        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamPref.class, t -> t.index() == 3));
+        Assert.assertTrue(containsOneInstanceOf(pointsTo, ParamRef.class, t -> t.index() == 3));
 
         result.computeMergingFlows();
     }
@@ -400,7 +400,7 @@ public class PointsToAnalysisTest {
 
         final Map<Symbol, Set<Symbol>> flows = result.computeMergingFlows();
         Assert.assertEquals(2, flows.size());
-        Assert.assertTrue(containsOneInstanceOf(flows.keySet(), ParamPref.class, t -> t.index() == 1));
+        Assert.assertTrue(containsOneInstanceOf(flows.keySet(), ParamRef.class, t -> t.index() == 1));
         Assert.assertTrue(containsOneInstanceOf(flows.keySet(), AllocationSymbol.class));
     }
 

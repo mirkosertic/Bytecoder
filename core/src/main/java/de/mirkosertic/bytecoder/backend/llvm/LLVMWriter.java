@@ -48,6 +48,8 @@ import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadExpression;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.DataEndExpression;
+import de.mirkosertic.bytecoder.ssa.DebugInformation;
+import de.mirkosertic.bytecoder.ssa.DebugPosition;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
 import de.mirkosertic.bytecoder.ssa.EnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
@@ -155,6 +157,7 @@ public class LLVMWriter implements AutoCloseable {
 
     private final PrintWriter target;
     private RegionNode currentNode;
+    private DebugInformation currentDebugInformation;
     private LLVMDebugInformation.SubProgram currentSubProgram;
     private final NativeMemoryLayouter memoryLayouter;
     private final BytecodeLinkerContext linkerContext;
@@ -231,6 +234,7 @@ public class LLVMWriter implements AutoCloseable {
                 RegionNode.FORWARD_EDGE_FILTER_REGULAR_FLOW_ONLY);
         final List<RegionNode> theRegularFlow = order.getNodesInOrder();
         final Set<String> theAlreadySeenPHIs = new HashSet<>();
+        currentDebugInformation = aProgram.getDebugInformation();
         currentSubProgram = aSubProgram;
         target.println("entry:");
 
@@ -1273,7 +1277,15 @@ public class LLVMWriter implements AutoCloseable {
             target.print("add i32 0, %");
             target.print(toTempSymbol(e, "alloc_int"));
 
-            target.println(";; does not escape, please verify");
+            final DebugPosition debugPosition = currentDebugInformation.debugPositionFor(e.getAddress());
+            if (debugPosition != null) {
+                target.print(";; does not escape, please verify in ");
+                target.print(debugPosition.getFileName());
+                target.print(" @ ");
+                target.println(debugPosition.getLineNumber() + 1);
+            } else {
+                target.println(";; does not escape, please verify");
+            }
 
         } else {
             linkerContext.getStatistics().context("Codegenerator")
@@ -2313,7 +2325,15 @@ public class LLVMWriter implements AutoCloseable {
             target.print("add i32 0, %");
             target.print(toTempSymbol(e, "alloc_int"));
 
-            target.println(";; does not escape, please verify");
+            final DebugPosition debugPosition = currentDebugInformation.debugPositionFor(e.getAddress());
+            if (debugPosition != null) {
+                target.print(";; does not escape, please verify in ");
+                target.print(debugPosition.getFileName());
+                target.print(" @ ");
+                target.println(debugPosition.getLineNumber() + 1);
+            } else {
+                target.println(";; does not escape, please verify");
+            }
 
         } else {
 

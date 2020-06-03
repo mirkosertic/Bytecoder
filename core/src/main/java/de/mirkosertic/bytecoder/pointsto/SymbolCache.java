@@ -41,7 +41,7 @@ public class SymbolCache {
         return (VariableSymbol) mappings.computeIfAbsent(aValue, t -> new VariableSymbol(name));
     }
 
-    public ParamPref symbolForMethodParameter(final MethodParameterValue aValue) {
-        return (ParamPref) mappings.computeIfAbsent(aValue, t -> new ParamPref(aValue.getParameterIndex()));
+    public ParamRef symbolForMethodParameter(final MethodParameterValue aValue) {
+        return (ParamRef) mappings.computeIfAbsent(aValue, t -> new ParamRef(aValue.getParameterIndex()));
     }
 }

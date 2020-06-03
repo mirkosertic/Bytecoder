@@ -15,11 +15,11 @@
  */
 package de.mirkosertic.bytecoder.pointsto;
 
-public class ParamPref implements Symbol {
+public class ParamRef implements Symbol {
 
     private final int index;
 
-    public ParamPref(final int index) {
+    public ParamRef(final int index) {
         this.index = index;
     }
 
