@@ -259,7 +259,6 @@ public class EscapeAnalysisTest {
     }
 
     @Test
-    @Ignore
     public void testMethod7() {
         final PointsToAnalysisResult result = analyzeVirtualMethod(getClass(), "method7", new BytecodeMethodSignature(OBJECT_TYPE_REF,
                 new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));

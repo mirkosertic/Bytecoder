@@ -345,11 +345,7 @@ public class PointsToAnalysis {
                     for (final Value v : aExpression.incomingDataFlows()) {
                         final TypeRef t = v.resolveType();
                         if (t.isObject() || t.isArray()) {
-                            if (v instanceof Variable || v instanceof PHIValue) {
-                                aAnalysisResult.writeInto(GlobalSymbols.staticScope, resolve(v, aSymbolCache));
-                            } else {
-                                aAnalysisResult.writeInto(GlobalSymbols.staticScope, resolve(v, aSymbolCache));
-                            }
+                            aAnalysisResult.writeInto(GlobalSymbols.staticScope, resolve(v, aSymbolCache));
                         }
                     }
                     final InvocationResultSymbol result = new InvocationResultSymbol();
@@ -455,10 +451,10 @@ public class PointsToAnalysis {
                     if (target == GlobalSymbols.thisScope) {
                         aAnalysisResult.writeInto(resolve(params.get(0), aSymbolCache), source);
                     } else if (target == GlobalSymbols.staticScope) {
-                        analysisResult.writeInto(GlobalSymbols.staticScope, source);
+                        aAnalysisResult.writeInto(GlobalSymbols.staticScope, source);
                     } else if (target instanceof ParamRef) {
                         final ParamRef p = (ParamRef) target;
-                        analysisResult.writeInto(resolve(params.get(p.index()), aSymbolCache), source);
+                        aAnalysisResult.writeInto(resolve(params.get(p.index()), aSymbolCache), source);
                     }
                 }
             }
@@ -499,10 +495,10 @@ public class PointsToAnalysis {
                     if (target == GlobalSymbols.thisScope) {
                         throw new IllegalArgumentException("There should be no this scope in static invocations");
                     } else if (target == GlobalSymbols.staticScope) {
-                        analysisResult.writeInto(GlobalSymbols.staticScope, source);
+                        aAnalysisResult.writeInto(GlobalSymbols.staticScope, source);
                     } else if (target instanceof ParamRef) {
                         final ParamRef p = (ParamRef) target;
-                        analysisResult.writeInto(resolve(params.get(p.index() - 1), aSymbolCache), source);
+                        aAnalysisResult.writeInto(resolve(params.get(p.index() - 1), aSymbolCache), source);
                     }
                 }
             }
