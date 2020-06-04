@@ -307,10 +307,10 @@ public class PointsToAnalysis {
                                 if (target == GlobalSymbols.thisScope) {
                                     aAnalysisResult.writeInto(alloc, source);
                                 } else if (target == GlobalSymbols.staticScope) {
-                                    analysisResult.writeInto(GlobalSymbols.staticScope, source);
+                                    aAnalysisResult.writeInto(GlobalSymbols.staticScope, source);
                                 } else if (target instanceof ParamRef) {
                                     final ParamRef p = (ParamRef) target;
-                                    analysisResult.writeInto(resolve(params.get(p.index() - 1), aSymbolCache), source);
+                                    aAnalysisResult.writeInto(resolve(params.get(p.index() - 1), aSymbolCache), source);
                                 }
                             }
                         }
