@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.function.Predicate;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import de.mirkosertic.bytecoder.backend.llvm.LLVMIntrinsics;
@@ -57,6 +56,18 @@ public class EscapeAnalysisTest {
         Object o;
 
         public A(final Object o) {
+            this.o = o;
+        }
+
+        public A() {
+            this.o = o;
+        }
+    }
+
+    public static class B {
+        Object o;
+
+        public B(final Object o) {
             this.o = o;
         }
     }
@@ -103,8 +114,12 @@ public class EscapeAnalysisTest {
         final PointsToAnalysis analysis = new PointsToAnalysis(new ProgramDescriptorProvider() {
             @Override
             public ProgramDescriptor resolveStaticInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
-                final BytecodeLinkedClass theRequestedClass = aLinkercontext.resolveClass(aClass);
-                final BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
+                BytecodeLinkedClass theRequestedClass = aLinkercontext.resolveClass(aClass);
+                BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
+                while (theRequestedMethod == null) {
+                    theRequestedClass = theRequestedClass.getSuperClass();
+                    theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
+                }
                 if (theRequestedMethod.getAccessFlags().isNative()) {
                     return new ProgramDescriptor(theRequestedClass, theRequestedMethod, null);
                 }
@@ -261,6 +276,43 @@ public class EscapeAnalysisTest {
     @Test
     public void testMethod7() {
         final PointsToAnalysisResult result = analyzeVirtualMethod(getClass(), "method7", new BytecodeMethodSignature(OBJECT_TYPE_REF,
+                new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
+
+        final Set<AllocationSymbol> allocationSymbols = result.allocationSymbols();
+        assertEquals(1, allocationSymbols.size());
+        assertTrue(containsOneInstanceOf(allocationSymbols, AllocationSymbol.class, t -> t.value() instanceof NewInstanceAndConstructExpression && ((ValueWithEscapeCheck) (t.value())).isEscaping()));
+    }
+
+    private Object method8(final Object a, final int b1, final Object k) {
+        ESCAPER = new B(new A(null));
+        return null;
+    }
+
+    @Test
+    public void testMethod8() {
+        final PointsToAnalysisResult result = analyzeVirtualMethod(getClass(), "method8", new BytecodeMethodSignature(OBJECT_TYPE_REF,
+                new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
+
+        final Set<AllocationSymbol> allocationSymbols = result.allocationSymbols();
+        assertEquals(2, allocationSymbols.size());
+        assertTrue(containsNInstancesOf(allocationSymbols, AllocationSymbol.class, t -> t.value() instanceof NewInstanceAndConstructExpression && ((ValueWithEscapeCheck) (t.value())).isEscaping(), 2));
+    }
+
+
+    private static <T> T requireNonNull(T obj) {
+        if (obj == null)
+            throw new NullPointerException();
+        return obj;
+    }
+
+    private Object method9(final Object a, final int b1, final Object k) {
+        ESCAPER = requireNonNull(new A());
+        return null;
+    }
+
+    @Test
+    public void testMethod9() {
+        final PointsToAnalysisResult result = analyzeVirtualMethod(getClass(), "method9", new BytecodeMethodSignature(OBJECT_TYPE_REF,
                 new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
 
         final Set<AllocationSymbol> allocationSymbols = result.allocationSymbols();

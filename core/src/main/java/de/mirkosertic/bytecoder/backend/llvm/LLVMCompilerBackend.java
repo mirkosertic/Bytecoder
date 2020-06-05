@@ -1544,7 +1544,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 final PointsToAnalysis theAnalysis = new PointsToAnalysis(theProvider, aLinkerContext.getLogger());
 
                 // Analyze all methods
-                aOptions.getLogger().info("Starting interprocesdural dataflow analysis");
+                aOptions.getLogger().info("Starting interprocedural dataflow analysis");
 
                 final EscapeAnalysis escapeAnalysis = new EscapeAnalysis();
                 for (final CompiledMethod theCompiledMethod : compiledMethods) {
@@ -1560,7 +1560,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     }
                 }
 
-                aOptions.getLogger().info("Finished interprocesdural dataflow analysis");
+                aOptions.getLogger().info("Finished interprocedural dataflow analysis");
 
                 // We know know the interprocedural data flow, so we can write the LLVM code
                 for (final CompiledMethod theCompiledMethod : compiledMethods) {

@@ -133,7 +133,7 @@ public class PointsToAnalysis {
             }
         }
 
-        logger.info(" Analyzing {}.{} {}", aProgramDescriptor.linkedClass().getClassName().name(), aProgramDescriptor.method().getName().stringValue(), aProgramDescriptor.method().getSignature());
+        logger.info("Analyzing {}.{} {}", aProgramDescriptor.linkedClass().getClassName().name(), aProgramDescriptor.method().getName().stringValue(), aProgramDescriptor.method().getSignature());
 
         final PointsToAnalysisResult analysisResult = new PointsToAnalysisResult();
         analysisStack.push(new CachedAnalysisResult(aProgramDescriptor, analysisResult));
@@ -452,6 +452,8 @@ public class PointsToAnalysis {
                         aAnalysisResult.writeInto(resolve(params.get(0), aSymbolCache), source);
                     } else if (target == GlobalSymbols.staticScope) {
                         aAnalysisResult.writeInto(GlobalSymbols.staticScope, source);
+                    } else if (target == GlobalSymbols.returnScope) {
+                        aAnalysisResult.writeInto(invocationResult, source);
                     } else if (target instanceof ParamRef) {
                         final ParamRef p = (ParamRef) target;
                         aAnalysisResult.writeInto(resolve(params.get(p.index()), aSymbolCache), source);
@@ -496,6 +498,8 @@ public class PointsToAnalysis {
                         throw new IllegalArgumentException("There should be no this scope in static invocations");
                     } else if (target == GlobalSymbols.staticScope) {
                         aAnalysisResult.writeInto(GlobalSymbols.staticScope, source);
+                    } else if (target == GlobalSymbols.returnScope) {
+                        aAnalysisResult.writeInto(invocationResult, source);
                     } else if (target instanceof ParamRef) {
                         final ParamRef p = (ParamRef) target;
                         aAnalysisResult.writeInto(resolve(params.get(p.index() - 1), aSymbolCache), source);

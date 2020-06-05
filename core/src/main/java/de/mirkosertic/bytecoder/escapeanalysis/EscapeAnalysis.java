@@ -15,11 +15,13 @@
  */
 package de.mirkosertic.bytecoder.escapeanalysis;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 import de.mirkosertic.bytecoder.pointsto.AllocationSymbol;
 import de.mirkosertic.bytecoder.pointsto.GlobalSymbols;
+import de.mirkosertic.bytecoder.pointsto.InvocationResultSymbol;
 import de.mirkosertic.bytecoder.pointsto.ParamRef;
 import de.mirkosertic.bytecoder.pointsto.PointsToAnalysisResult;
 import de.mirkosertic.bytecoder.pointsto.Symbol;
@@ -35,8 +37,23 @@ public class EscapeAnalysis {
             final Value v = allocation.value();
             final Set<Symbol> symbolFlow = flows.get(allocation);
             if (symbolFlow != null) {
+                final Set<Symbol> merged = new HashSet<>(symbolFlow);
+                final Set<Symbol> expaned = new HashSet<>();
+                check: for(;;) {
+                    for (final Symbol s : merged) {
+                        if (((s instanceof AllocationSymbol) || (s instanceof InvocationResultSymbol)) && expaned.add(s)) {
+                            final Set<Symbol> replacement = flows.get(s);
+                            if (replacement != null) {
+                                merged.addAll(flows.get(s));
+                                merged.remove(s);
+                            }
+                            continue check;
+                        }
+                    }
+                    break check;
+                }
                 boolean escaping = false;
-                for (final Symbol s : symbolFlow) {
+                for (final Symbol s : merged) {
                     if (s == GlobalSymbols.returnScope ||
                             s == GlobalSymbols.staticScope ||
                             s == GlobalSymbols.thisScope ||
