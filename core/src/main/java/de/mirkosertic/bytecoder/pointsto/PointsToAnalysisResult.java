@@ -154,6 +154,23 @@ public class PointsToAnalysisResult {
                 result.computeIfAbsent(s, t -> new HashSet<>()).addAll(destinations);
             }
         }
+        for (final Map.Entry<Symbol, Set<Symbol>> entry : result.entrySet()) {
+            final Set<Symbol> expaned = new HashSet<>();
+            check: for(;;) {
+                final Set<Symbol> values = entry.getValue();
+                for (final Symbol s : values) {
+                    if (((s instanceof AllocationSymbol) || (s instanceof InvocationResultSymbol)) && expaned.add(s)) {
+                        final Set<Symbol> replacement = result.get(s);
+                        if (replacement != null) {
+                            values.addAll(result.get(s));
+                            values.remove(s);
+                        }
+                        continue check;
+                    }
+                }
+                break check;
+            }
+        }
         return result;
     }
 }

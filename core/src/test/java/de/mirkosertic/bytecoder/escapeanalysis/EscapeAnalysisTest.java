@@ -18,6 +18,10 @@ package de.mirkosertic.bytecoder.escapeanalysis;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
+import java.io.FilterOutputStream;
+import java.io.PrintStream;
 import java.util.Collection;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -319,4 +323,20 @@ public class EscapeAnalysisTest {
         assertEquals(1, allocationSymbols.size());
         assertTrue(containsOneInstanceOf(allocationSymbols, AllocationSymbol.class, t -> t.value() instanceof NewInstanceAndConstructExpression && ((ValueWithEscapeCheck) (t.value())).isEscaping()));
     }
+
+    private Object method10(final Object a, final int b1, final Object k) {
+        ESCAPER = new PrintStream(new FileOutputStream((FileDescriptor) null), false);
+        return null;
+    }
+
+    @Test
+    public void testMethod10() {
+        final PointsToAnalysisResult result = analyzeVirtualMethod(getClass(), "method10", new BytecodeMethodSignature(OBJECT_TYPE_REF,
+                new BytecodeTypeRef[]{OBJECT_TYPE_REF, BytecodePrimitiveTypeRef.INT, OBJECT_TYPE_REF}));
+
+        final Set<AllocationSymbol> allocationSymbols = result.allocationSymbols();
+        assertEquals(2, allocationSymbols.size());
+        assertTrue(containsNInstancesOf(allocationSymbols, AllocationSymbol.class, t -> t.value() instanceof NewInstanceAndConstructExpression && ((ValueWithEscapeCheck) (t.value())).isEscaping(), 2));
+    }
+
 }

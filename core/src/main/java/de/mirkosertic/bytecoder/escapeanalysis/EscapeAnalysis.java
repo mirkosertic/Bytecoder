@@ -53,7 +53,7 @@ public class EscapeAnalysis {
                     break check;
                 }
                 boolean escaping = false;
-                for (final Symbol s : merged) {
+                for (final Symbol s : symbolFlow) {
                     if (s == GlobalSymbols.returnScope ||
                             s == GlobalSymbols.staticScope ||
                             s == GlobalSymbols.thisScope ||
