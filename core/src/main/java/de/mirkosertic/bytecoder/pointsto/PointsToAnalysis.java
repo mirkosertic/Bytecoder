@@ -133,7 +133,7 @@ public class PointsToAnalysis {
             }
         }
 
-        logger.info("Analyzing {}.{} {}", aProgramDescriptor.linkedClass().getClassName().name(), aProgramDescriptor.method().getName().stringValue(), aProgramDescriptor.method().getSignature());
+        logger.debug("Analyzing {}.{} {}", aProgramDescriptor.linkedClass().getClassName().name(), aProgramDescriptor.method().getName().stringValue(), aProgramDescriptor.method().getSignature());
 
         final PointsToAnalysisResult analysisResult = new PointsToAnalysisResult();
         analysisStack.push(new CachedAnalysisResult(aProgramDescriptor, analysisResult));
