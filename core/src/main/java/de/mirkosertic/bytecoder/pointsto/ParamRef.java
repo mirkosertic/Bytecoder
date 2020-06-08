@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Mirko Sertic
+ * Copyright 2020 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,23 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang.reflect;
+package de.mirkosertic.bytecoder.pointsto;
 
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-import de.mirkosertic.bytecoder.classlib.VM;
+public class ParamRef implements Symbol {
 
-@SubstitutesInClass(completeReplace = true)
-public class TConstructor {
+    private final int index;
 
-    private final Class clz;
-    private final Class[] signature;
-
-    public TConstructor(final Class clz, final Class[] signature) {
-        this.clz = clz;
-        this.signature = signature;
+    public ParamRef(final int index) {
+        this.index = index;
     }
 
-    public Object newInstance(final Object[] constructorArgs) {
-        return VM.newInstanceFromDefaultConstructor(clz);
+    public int index() {
+        return index;
     }
 }

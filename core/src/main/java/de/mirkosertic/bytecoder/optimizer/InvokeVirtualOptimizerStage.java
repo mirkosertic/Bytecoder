@@ -23,9 +23,9 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.Statistics;
 import de.mirkosertic.bytecoder.ssa.ClassHierarchyAnalysis;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
+import de.mirkosertic.bytecoder.ssa.InvokeDirectMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.Value;
@@ -53,7 +53,7 @@ public class InvokeVirtualOptimizerStage implements OptimizerStage {
     private Expression visit(final VariableAssignmentExpression aExpression, final BytecodeLinkerContext aLinkerContext) {
         final Value theValue = aExpression.incomingDataFlows().get(0);
         if (theValue instanceof InvokeVirtualMethodExpression) {
-            final Optional<DirectInvokeMethodExpression> theNewExpression = visit((InvokeVirtualMethodExpression) theValue, aLinkerContext);
+            final Optional<InvokeDirectMethodExpression> theNewExpression = visit((InvokeVirtualMethodExpression) theValue, aLinkerContext);
             theNewExpression.ifPresent(
                     directInvokeMethodExpression -> aExpression.replaceIncomingDataEdge(theValue, directInvokeMethodExpression));
         }
@@ -61,7 +61,7 @@ public class InvokeVirtualOptimizerStage implements OptimizerStage {
     }
 
     private Expression visit(final ExpressionList aExpressions, final InvokeVirtualMethodExpression aExpression, final BytecodeLinkerContext aLinkerContext) {
-        final Optional<DirectInvokeMethodExpression> theNewExpression = visit(aExpression, aLinkerContext);
+        final Optional<InvokeDirectMethodExpression> theNewExpression = visit(aExpression, aLinkerContext);
         if (theNewExpression.isPresent()) {
             final Expression theNew = theNewExpression.get();
             aExpressions.replace(aExpression, theNew);
@@ -70,7 +70,7 @@ public class InvokeVirtualOptimizerStage implements OptimizerStage {
         return aExpression;
     }
 
-    private Optional<DirectInvokeMethodExpression> visit(final InvokeVirtualMethodExpression aExpression, final BytecodeLinkerContext aLinkerContext) {
+    private Optional<InvokeDirectMethodExpression> visit(final InvokeVirtualMethodExpression aExpression, final BytecodeLinkerContext aLinkerContext) {
         // Do not optimize interface invocation as they might be used for lambda expressions
         if (aExpression.isInterfaceInvocation()) {
             return Optional.empty();
@@ -100,7 +100,7 @@ public class InvokeVirtualOptimizerStage implements OptimizerStage {
             // as wait is final and cannot be overwritten anyhow.
             final BytecodeMethod theMethodToInvoke = theLinked.getBytecodeClass().methodByNameAndSignatureOrNull(theMethodName, theSignature);
 
-            final DirectInvokeMethodExpression theNewExpression = new DirectInvokeMethodExpression(aExpression.getProgram(), aExpression.getAddress(), theClazz, theMethodToInvoke.getName().stringValue(),
+            final InvokeDirectMethodExpression theNewExpression = new InvokeDirectMethodExpression(aExpression.getProgram(), aExpression.getAddress(), theClazz, theMethodToInvoke.getName().stringValue(),
                     theSignature);
             aExpression.routeIncomingDataFlowsTo(theNewExpression);
 

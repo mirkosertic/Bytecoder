@@ -201,6 +201,7 @@
                             <backend>wasm_llvm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <filenamePrefix>jbox2d_wasmllvm</filenamePrefix>
+                            <escapeAnalysisEnabled>true</escapeAnalysisEnabled>
                         </configuration>
                     </execution>
                     <execution>
@@ -237,6 +238,7 @@
                             <backend>wasm_llvm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <filenamePrefix>vue_wasmllvm</filenamePrefix>
+                            <escapeAnalysisEnabled>true</escapeAnalysisEnabled>
                         </configuration>
                     </execution>
                     <execution>
@@ -274,6 +276,7 @@
                             <backend>wasm_llvm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <filenamePrefix>lua_wasmllvm</filenamePrefix>
+                            <escapeAnalysisEnabled>true</escapeAnalysisEnabled>
                         </configuration>
                     </execution>
                 </executions>

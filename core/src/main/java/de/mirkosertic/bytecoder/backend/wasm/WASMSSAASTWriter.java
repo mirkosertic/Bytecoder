@@ -70,7 +70,6 @@ import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationWriteExpression;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.CurrentExceptionExpression;
 import de.mirkosertic.bytecoder.ssa.DataEndExpression;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
 import de.mirkosertic.bytecoder.ssa.EnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
@@ -88,6 +87,7 @@ import de.mirkosertic.bytecoder.ssa.IFElseExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InstanceOfExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
+import de.mirkosertic.bytecoder.ssa.InvokeDirectMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.IsNaNExpression;
@@ -109,8 +109,8 @@ import de.mirkosertic.bytecoder.ssa.NegatedExpression;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
-import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
-import de.mirkosertic.bytecoder.ssa.NewObjectExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceAndConstructExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
@@ -118,7 +118,7 @@ import de.mirkosertic.bytecoder.ssa.PtrOfExpression;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
-import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
+import de.mirkosertic.bytecoder.ssa.ResolveCallsiteInstanceExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
 import de.mirkosertic.bytecoder.ssa.SetEnumConstantsExpression;
@@ -342,8 +342,8 @@ public class WASMSSAASTWriter {
             generateInitVariableExpression((VariableAssignmentExpression) aExpression);
             return;
         }
-        if (aExpression instanceof DirectInvokeMethodExpression) {
-            generateDirectMethodInvokeExpression((DirectInvokeMethodExpression) aExpression);
+        if (aExpression instanceof InvokeDirectMethodExpression) {
+            generateDirectMethodInvokeExpression((InvokeDirectMethodExpression) aExpression);
             return;
         }
         if (aExpression instanceof IFExpression) {
@@ -627,7 +627,7 @@ public class WASMSSAASTWriter {
         c.falseWriter.writeExpressionList(aExpression.getElsePart());
     }
 
-    private void generateDirectMethodInvokeExpression(final DirectInvokeMethodExpression aExpression) {
+    private void generateDirectMethodInvokeExpression(final InvokeDirectMethodExpression aExpression) {
         if (aExpression.getSignature().getReturnType().isVoid()) {
             container.addChild(directMethodInvokeValue(aExpression));
         } else {
@@ -684,8 +684,8 @@ public class WASMSSAASTWriter {
         if (aValue instanceof IntegerValue) {
             return integerValue((IntegerValue) aValue);
         }
-        if (aValue instanceof DirectInvokeMethodExpression) {
-            return directMethodInvokeValue((DirectInvokeMethodExpression) aValue);
+        if (aValue instanceof InvokeDirectMethodExpression) {
+            return directMethodInvokeValue((InvokeDirectMethodExpression) aValue);
         }
         if (aValue instanceof InvokeStaticMethodExpression) {
             return invokeStaticValue((InvokeStaticMethodExpression) aValue);
@@ -693,8 +693,8 @@ public class WASMSSAASTWriter {
         if (aValue instanceof GetFieldExpression) {
             return getFieldValue((GetFieldExpression) aValue);
         }
-        if (aValue instanceof NewObjectExpression) {
-            return newObjectValue((NewObjectExpression) aValue);
+        if (aValue instanceof NewInstanceExpression) {
+            return newObjectValue((NewInstanceExpression) aValue);
         }
         if (aValue instanceof GetStaticExpression) {
             return getStaticValue((GetStaticExpression) aValue);
@@ -759,8 +759,8 @@ public class WASMSSAASTWriter {
         if (aValue instanceof DoubleValue) {
             return doubleValue((DoubleValue) aValue);
         }
-        if (aValue instanceof ResolveCallsiteObjectExpression) {
-            return resolveCallSiteObjectValue((ResolveCallsiteObjectExpression) aValue);
+        if (aValue instanceof ResolveCallsiteInstanceExpression) {
+            return resolveCallSiteObjectValue((ResolveCallsiteInstanceExpression) aValue);
         }
         if (aValue instanceof MethodHandlesGeneratedLookupExpression) {
             return methodHandlesGeneratedLookupValue((MethodHandlesGeneratedLookupExpression) aValue);
@@ -816,8 +816,8 @@ public class WASMSSAASTWriter {
         if (aValue instanceof EnumConstantsExpression) {
             return enumConstants((EnumConstantsExpression) aValue);
         }
-        if (aValue instanceof NewObjectAndConstructExpression) {
-            return newObjectAndConstruct((NewObjectAndConstructExpression) aValue);
+        if (aValue instanceof NewInstanceAndConstructExpression) {
+            return newObjectAndConstruct((NewInstanceAndConstructExpression) aValue);
         }
         if (aValue instanceof IsNaNExpression) {
             return isNaN((IsNaNExpression) aValue);
@@ -932,7 +932,7 @@ public class WASMSSAASTWriter {
                 f32.eq(theValue, theValue, null), null);
     }
 
-    private WASMValue newObjectAndConstruct(final NewObjectAndConstructExpression aValue) {
+    private WASMValue newObjectAndConstruct(final NewInstanceAndConstructExpression aValue) {
 
         final String theMethodName = WASMWriterUtils.toMethodName(aValue.getClazz(), "$newInstance", aValue.getSignature());
         final WeakFunctionReferenceCallable theFunction = weakFunctionReference(theMethodName, aValue);
@@ -1089,7 +1089,7 @@ public class WASMSSAASTWriter {
         return i32.c(0, aValue);
     }
 
-    private WASMExpression resolveCallSiteObjectValue(final ResolveCallsiteObjectExpression aValue) {
+    private WASMExpression resolveCallSiteObjectValue(final ResolveCallsiteInstanceExpression aValue) {
         final Function theFunction = resolver.resolveCallsiteBootstrapFor(aValue.getOwningClass(),
                 aValue.getCallsiteId(),
                 aValue.getProgram(),
@@ -1396,7 +1396,7 @@ public class WASMSSAASTWriter {
         }
     }
 
-    private WASMExpression newObjectValue(final NewObjectExpression aValue) {
+    private WASMExpression newObjectValue(final NewInstanceExpression aValue) {
 
         final BytecodeObjectTypeRef theType = BytecodeObjectTypeRef.fromUtf8Constant(aValue.getType().getConstant());
 
@@ -1437,9 +1437,9 @@ public class WASMSSAASTWriter {
         }
     }
 
-    private WASMExpression directMethodInvokeValue(final DirectInvokeMethodExpression aValue) {
+    private WASMExpression directMethodInvokeValue(final InvokeDirectMethodExpression aValue) {
 
-        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(aValue.getClazz());
+        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(aValue.getInvokedClass());
         final String theMethodName = aValue.getMethodName();
         final BytecodeMethodSignature theSignature = aValue.getSignature();
 
@@ -1448,7 +1448,7 @@ public class WASMSSAASTWriter {
         final List<Value> theArguments = theIncomingData.subList(1, theIncomingData.size());
 
         if (theTargetClass.isOpaqueType() && !theMethodName.equals("<init>")) {
-            final Function function = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(aValue.getClazz(), aValue.getMethodName(), aValue.getSignature()));
+            final Function function = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(aValue.getInvokedClass(), aValue.getMethodName(), aValue.getSignature()));
 
             final List<WASMValue> arguments = new ArrayList<>();
             arguments.add(toValue(theTarget));
@@ -1461,7 +1461,7 @@ public class WASMSSAASTWriter {
 
         if (theMethodName.equals("<init>")) {
 
-            final Function function = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(aValue.getClazz(), aValue.getMethodName(), aValue.getSignature()));
+            final Function function = module.functionIndex().firstByLabel(WASMWriterUtils.toMethodName(aValue.getInvokedClass(), aValue.getMethodName(), aValue.getSignature()));
 
             final List<WASMValue> arguments = new ArrayList<>();
             arguments.add(toValue(theTarget));
@@ -1489,7 +1489,7 @@ public class WASMSSAASTWriter {
 
     private WASMExpression invokeStaticValue(final InvokeStaticMethodExpression aValue) {
 
-        final Callable function = weakFunctionReference(WASMWriterUtils.toMethodName(aValue.getClassName(), aValue.getMethodName(), aValue.getSignature()), aValue);
+        final Callable function = weakFunctionReference(WASMWriterUtils.toMethodName(aValue.getInvokedClass(), aValue.getMethodName(), aValue.getSignature()), aValue);
         final List<WASMValue> arguments = new ArrayList<>();
         arguments.add(i32.c(0, aValue));
 

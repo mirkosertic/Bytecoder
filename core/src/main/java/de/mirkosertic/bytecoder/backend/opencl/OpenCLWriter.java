@@ -37,7 +37,6 @@ import de.mirkosertic.bytecoder.ssa.BinaryExpression;
 import de.mirkosertic.bytecoder.ssa.BreakExpression;
 import de.mirkosertic.bytecoder.ssa.CompareExpression;
 import de.mirkosertic.bytecoder.ssa.ContinueExpression;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
 import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
@@ -47,6 +46,7 @@ import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.IFElseExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
+import de.mirkosertic.bytecoder.ssa.InvokeDirectMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.Label;
@@ -485,8 +485,8 @@ public class OpenCLWriter extends IndentSSAWriter {
             printTypeConversionValue((TypeConversionExpression) aValue);
         } else if (aValue instanceof CompareExpression) {
             printCompareExpression((CompareExpression) aValue);
-        } else if (aValue instanceof DirectInvokeMethodExpression) {
-            printDirectInvokeMethodExpression((DirectInvokeMethodExpression) aValue);
+        } else if (aValue instanceof InvokeDirectMethodExpression) {
+            printDirectInvokeMethodExpression((InvokeDirectMethodExpression) aValue);
         } else if (aValue instanceof FloorExpression) {
             printFloorExpression((FloorExpression) aValue);
         } else if (aValue instanceof PHIValue) {
@@ -509,7 +509,7 @@ public class OpenCLWriter extends IndentSSAWriter {
         print("))");
     }
 
-    private void printDirectInvokeMethodExpression(final DirectInvokeMethodExpression aExpression) {
+    private void printDirectInvokeMethodExpression(final InvokeDirectMethodExpression aExpression) {
         print(aExpression.getMethodName());
         print("(");
 
@@ -716,7 +716,7 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private void printInvokeStatic(final InvokeStaticMethodExpression aValue) {
-        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aValue.getClassName());
+        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aValue.getInvokedClass());
         final BytecodeResolvedMethods theMethods = theLinkedClass.resolvedMethods();
         final AtomicBoolean theFound = new AtomicBoolean(false);
         theMethods.stream().forEach(aMethodMapsEntry -> {

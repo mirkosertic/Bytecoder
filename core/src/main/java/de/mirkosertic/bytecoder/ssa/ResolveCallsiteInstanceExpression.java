@@ -15,20 +15,33 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
+import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
-public class NewObjectExpression extends Expression {
+public class ResolveCallsiteInstanceExpression extends Expression {
 
-    private final BytecodeClassinfoConstant type;
+    private final String callsiteId;
+    private final BytecodeClass owningClass;
+    private final RegionNode bootstrapMethod;
 
-    public NewObjectExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeClassinfoConstant aType) {
+    public ResolveCallsiteInstanceExpression(final BytecodeOpcodeAddress aAddress, final String aCallsiteId, final BytecodeClass aOwningClass,
+                                             final Program aProgram, final RegionNode aBootstrapMethod) {
         super(aProgram, aAddress);
-        type = aType;
+        callsiteId = aCallsiteId;
+        owningClass = aOwningClass;
+        bootstrapMethod = aBootstrapMethod;
     }
 
-    public BytecodeClassinfoConstant getType() {
-        return type;
+    public String getCallsiteId() {
+        return callsiteId;
+    }
+
+    public BytecodeClass getOwningClass() {
+        return owningClass;
+    }
+
+    public RegionNode getBootstrapMethod() {
+        return bootstrapMethod;
     }
 
     @Override
