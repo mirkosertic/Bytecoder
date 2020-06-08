@@ -35,7 +35,7 @@ public class InvokeStaticMethodExpression extends InvocationExpression {
         receivesDataFrom(aArguments);
     }
 
-    public BytecodeObjectTypeRef getClassName() {
+    public BytecodeObjectTypeRef getInvokedClass() {
         return className;
     }
 

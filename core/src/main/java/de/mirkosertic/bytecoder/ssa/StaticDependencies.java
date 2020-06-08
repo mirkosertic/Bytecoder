@@ -69,7 +69,7 @@ public class StaticDependencies {
         if (alreadySeen.add(e)) {
             if (e instanceof InvokeStaticMethodExpression) {
                 final InvokeStaticMethodExpression inv = (InvokeStaticMethodExpression) e;
-                dependencies.add(aProgram.getLinkerContext().resolveClass(inv.getClassName()));
+                dependencies.add(aProgram.getLinkerContext().resolveClass(inv.getInvokedClass()));
             } else if (e instanceof PutStaticExpression) {
                 final PutStaticExpression put = (PutStaticExpression) e;
                 final BytecodeResolvedFields.FieldEntry theEntry = implementingClassForStaticField(aProgram.getLinkerContext(), BytecodeObjectTypeRef.fromUtf8Constant(put.getField().getClassIndex().getClassConstant().getConstant()),
@@ -91,11 +91,11 @@ public class StaticDependencies {
             } else if (e instanceof ClassReferenceValue) {
                 final ClassReferenceValue r = (ClassReferenceValue) e;
                 dependencies.add(aProgram.getLinkerContext().resolveClass(r.getType()));
-            } else if (e instanceof NewObjectExpression) {
-                final NewObjectExpression n = (NewObjectExpression) e;
+            } else if (e instanceof NewInstanceExpression) {
+                final NewInstanceExpression n = (NewInstanceExpression) e;
                 dependencies.add(aProgram.getLinkerContext().resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(n.getType().getConstant())));
-            } else if (e instanceof NewObjectAndConstructExpression) {
-                final NewObjectAndConstructExpression n = (NewObjectAndConstructExpression) e;
+            } else if (e instanceof NewInstanceAndConstructExpression) {
+                final NewInstanceAndConstructExpression n = (NewInstanceAndConstructExpression) e;
                 dependencies.add(aProgram.getLinkerContext().resolveClass(n.getClazz()));
             }
 

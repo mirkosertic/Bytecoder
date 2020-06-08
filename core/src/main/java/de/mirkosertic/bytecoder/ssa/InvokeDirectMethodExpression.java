@@ -15,33 +15,33 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
-import java.util.List;
-
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 
-public class DirectInvokeMethodExpression extends InvocationExpression {
+import java.util.List;
+
+public class InvokeDirectMethodExpression extends InvocationExpression {
 
     private final BytecodeObjectTypeRef clazz;
     private final String methodName;
 
-    public DirectInvokeMethodExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef aClazz, final String aMethodName,
-            final BytecodeMethodSignature aMethodSignature, final Value aTarget, final List<Value> aArguments) {
+    public InvokeDirectMethodExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef aClazz, final String aMethodName,
+                                        final BytecodeMethodSignature aMethodSignature, final Value aTarget, final List<Value> aArguments) {
         this(aProgram, aAddress, aClazz, aMethodName, aMethodSignature);
 
         receivesDataFrom(aTarget);
         receivesDataFrom(aArguments);
     }
 
-    public DirectInvokeMethodExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef aClazz, final String aMethodName,
-            final BytecodeMethodSignature aMethodSignature) {
+    public InvokeDirectMethodExpression(final Program aProgram, final BytecodeOpcodeAddress aAddress, final BytecodeObjectTypeRef aClazz, final String aMethodName,
+                                        final BytecodeMethodSignature aMethodSignature) {
         super(aProgram, aAddress, aMethodSignature);
         clazz = aClazz;
         methodName = aMethodName;
     }
 
-    public BytecodeObjectTypeRef getClazz() {
+    public BytecodeObjectTypeRef getInvokedClass() {
         return clazz;
     }
 

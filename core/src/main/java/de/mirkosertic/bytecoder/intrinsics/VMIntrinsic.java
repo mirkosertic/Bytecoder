@@ -42,7 +42,7 @@ import de.mirkosertic.bytecoder.ssa.LambdaVirtualReferenceExpression;
 import de.mirkosertic.bytecoder.ssa.LambdaWithStaticImplExpression;
 import de.mirkosertic.bytecoder.ssa.MethodTypeArgumentCheckExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
-import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceAndConstructExpression;
 import de.mirkosertic.bytecoder.ssa.ParsingHelper;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
@@ -92,7 +92,7 @@ public class VMIntrinsic extends Intrinsic {
                 aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
                 return true;
             }
-            if ("newInstanceWithDefaultConstructor".equals(aMethodName)) {
+            if ("newInstanceFromDefaultConstructor".equals(aMethodName)) {
                 aHelper.push(aInstruction.getOpcodeAddress(), new NewInstanceFromDefaultConstructorExpression(aProgram, aInstruction.getOpcodeAddress(), aArguments.get(0)));
                 return true;
             }
@@ -108,7 +108,7 @@ public class VMIntrinsic extends Intrinsic {
                 final TypeRef theStringType = TypeRef.toType(BytecodeObjectTypeRef.fromRuntimeClass(String.class));
 
                 final Variable theNewVariable = aTargetBlock
-                        .newVariable(aInstruction.getOpcodeAddress(), theStringType, new NewObjectAndConstructExpression(aProgram, aInstruction.getOpcodeAddress(),
+                        .newVariable(aInstruction.getOpcodeAddress(), theStringType, new NewInstanceAndConstructExpression(aProgram, aInstruction.getOpcodeAddress(),
                                 theStringRef, theConstructorSignature, theArguments));
                 aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
                 return true;

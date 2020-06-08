@@ -39,8 +39,9 @@ public abstract class DebugInformation {
             @Override
             public DebugPosition debugPositionFor(final BytecodeOpcodeAddress aAddress) {
                 final BytecodeLineNumberTableAttributeInfo.Entry[] theEntries = aLineNumberInfo.getEntries();
-                for (final BytecodeLineNumberTableAttributeInfo.Entry theEntry : theEntries) {
-                    if (theEntry.getStartPc() == aAddress.getAddress()) {
+                for (int i=theEntries.length-1; i>=0; i--) {
+                    final BytecodeLineNumberTableAttributeInfo.Entry theEntry = theEntries[i];
+                    if (theEntry.getStartPc() <= aAddress.getAddress()) {
                         // DebugPosition Line-Number indices are zero-based
                         return new DebugPosition(aOriginalFileName, theEntry.getLineNumber() - 1);
                     }

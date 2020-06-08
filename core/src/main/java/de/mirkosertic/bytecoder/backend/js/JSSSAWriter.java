@@ -53,7 +53,6 @@ import de.mirkosertic.bytecoder.ssa.ContinueExpression;
 import de.mirkosertic.bytecoder.ssa.CurrentExceptionExpression;
 import de.mirkosertic.bytecoder.ssa.DataEndExpression;
 import de.mirkosertic.bytecoder.ssa.DebugPosition;
-import de.mirkosertic.bytecoder.ssa.DirectInvokeMethodExpression;
 import de.mirkosertic.bytecoder.ssa.DoubleValue;
 import de.mirkosertic.bytecoder.ssa.EnumConstantsExpression;
 import de.mirkosertic.bytecoder.ssa.Expression;
@@ -71,6 +70,7 @@ import de.mirkosertic.bytecoder.ssa.IFElseExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
 import de.mirkosertic.bytecoder.ssa.InstanceOfExpression;
 import de.mirkosertic.bytecoder.ssa.IntegerValue;
+import de.mirkosertic.bytecoder.ssa.InvokeDirectMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeStaticMethodExpression;
 import de.mirkosertic.bytecoder.ssa.InvokeVirtualMethodExpression;
 import de.mirkosertic.bytecoder.ssa.IsNaNExpression;
@@ -93,15 +93,15 @@ import de.mirkosertic.bytecoder.ssa.NegatedExpression;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
-import de.mirkosertic.bytecoder.ssa.NewObjectAndConstructExpression;
-import de.mirkosertic.bytecoder.ssa.NewObjectExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceAndConstructExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
-import de.mirkosertic.bytecoder.ssa.ResolveCallsiteObjectExpression;
+import de.mirkosertic.bytecoder.ssa.ResolveCallsiteInstanceExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnExpression;
 import de.mirkosertic.bytecoder.ssa.ReturnValueExpression;
 import de.mirkosertic.bytecoder.ssa.SelfReferenceParameterValue;
@@ -193,8 +193,8 @@ public class JSSSAWriter {
             print((InvokeVirtualMethodExpression) aValue);
         } else if (aValue instanceof InvokeStaticMethodExpression) {
             print((InvokeStaticMethodExpression) aValue);
-        } else if (aValue instanceof NewObjectExpression) {
-            print((NewObjectExpression) aValue);
+        } else if (aValue instanceof NewInstanceExpression) {
+            print((NewInstanceExpression) aValue);
         } else if (aValue instanceof ByteValue) {
             print((ByteValue) aValue);
         } else if (aValue instanceof BinaryExpression) {
@@ -213,8 +213,8 @@ public class JSSSAWriter {
             print((IntegerValue) aValue);
         } else if (aValue instanceof NewArrayExpression) {
             print((NewArrayExpression) aValue);
-        } else if (aValue instanceof DirectInvokeMethodExpression) {
-            print((DirectInvokeMethodExpression) aValue);
+        } else if (aValue instanceof InvokeDirectMethodExpression) {
+            print((InvokeDirectMethodExpression) aValue);
         } else if (aValue instanceof FloatValue) {
             print((FloatValue) aValue);
         } else if (aValue instanceof DoubleValue) {
@@ -265,8 +265,8 @@ public class JSSSAWriter {
             print((LambdaVirtualReferenceExpression) aValue);
         } else if (aValue instanceof LambdaSpecialReferenceExpression) {
             print((LambdaSpecialReferenceExpression) aValue);
-        } else if (aValue instanceof ResolveCallsiteObjectExpression) {
-            print((ResolveCallsiteObjectExpression) aValue);
+        } else if (aValue instanceof ResolveCallsiteInstanceExpression) {
+            print((ResolveCallsiteInstanceExpression) aValue);
         } else if (aValue instanceof StackTopExpression) {
             print((StackTopExpression) aValue);
         } else if (aValue instanceof MemorySizeExpression) {
@@ -285,8 +285,8 @@ public class JSSSAWriter {
             print((FloatingPointCeilExpression) aValue);
         } else if (aValue instanceof EnumConstantsExpression) {
             print((EnumConstantsExpression) aValue);
-        } else if (aValue instanceof NewObjectAndConstructExpression) {
-            print((NewObjectAndConstructExpression) aValue);
+        } else if (aValue instanceof NewInstanceAndConstructExpression) {
+            print((NewInstanceAndConstructExpression) aValue);
         } else if (aValue instanceof PHIValue) {
             print((PHIValue) aValue);
         } else if (aValue instanceof IsNaNExpression) {
@@ -369,7 +369,7 @@ public class JSSSAWriter {
         }
     }
 
-    private void print(final NewObjectAndConstructExpression aValue) {
+    private void print(final NewInstanceAndConstructExpression aValue) {
         writer.text(minifier.toClassName(aValue.getClazz())).text(".").text(minifier.toSymbol("__runtimeclass")).text(".").text(minifier.toMethodName("$newInstance", aValue.getSignature())).text("(");
         final List<Value> theArguments = aValue.incomingDataFlows();
         for (int i=0;i<theArguments.size();i++) {
@@ -435,7 +435,7 @@ public class JSSSAWriter {
         }
     }
 
-    private void print(final ResolveCallsiteObjectExpression aValue) {
+    private void print(final ResolveCallsiteInstanceExpression aValue) {
         writer.text("bytecoder.resolveStaticCallSiteObject(")
                 .text(minifier.toClassName(aValue.getOwningClass().getThisInfo()))
                 .text(",'")
@@ -857,7 +857,7 @@ public class JSSSAWriter {
         writer.text("" + aValue.getByteValue());
     }
 
-    private void print(final NewObjectExpression aValue) {
+    private void print(final NewInstanceExpression aValue) {
         writer.text(minifier.toClassName(aValue.getType())).text(".").text(minifier.toSymbol("newInstance")).text("()");
     }
 
@@ -929,7 +929,7 @@ public class JSSSAWriter {
 
     private void print(final InvokeStaticMethodExpression aValue) {
 
-        final BytecodeLinkedClass theClass = linkerContext.resolveClass(aValue.getClassName());
+        final BytecodeLinkedClass theClass = linkerContext.resolveClass(aValue.getInvokedClass());
         final String theMethodName = aValue.getMethodName();
         final BytecodeMethodSignature theSignature = aValue.getSignature();
 
@@ -969,7 +969,7 @@ public class JSSSAWriter {
                 }
             } else {
                 // We continue the normal flow, as method implementation is provided by the bytecode
-                writer.text(minifier.toClassName(aValue.getClassName())).text(".").text(minifier.toMethodName(theMethodName, theSignature)).text("(");
+                writer.text(minifier.toClassName(aValue.getInvokedClass())).text(".").text(minifier.toMethodName(theMethodName, theSignature)).text("(");
 
                 final List<Value> theVariables = aValue.incomingDataFlows();
 
@@ -982,7 +982,7 @@ public class JSSSAWriter {
                 writer.text(")");
             }
         } else {
-            writer.text(minifier.toClassName(aValue.getClassName())).text(".").text(minifier.toSymbol("init")).text("().").text(minifier.toMethodName(theMethodName, theSignature)).text("(");
+            writer.text(minifier.toClassName(aValue.getInvokedClass())).text(".").text(minifier.toSymbol("init")).text("().").text(minifier.toMethodName(theMethodName, theSignature)).text("(");
 
             final List<Value> theVariables = aValue.incomingDataFlows();
 
@@ -996,9 +996,9 @@ public class JSSSAWriter {
         }
     }
 
-    private void print(final DirectInvokeMethodExpression aValue) {
+    private void print(final InvokeDirectMethodExpression aValue) {
 
-        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(aValue.getClazz());
+        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(aValue.getInvokedClass());
         final String theMethodName = aValue.getMethodName();
         final BytecodeMethodSignature theSignature = aValue.getSignature();
 
@@ -1335,8 +1335,8 @@ public class JSSSAWriter {
             startLine();
             print(theE);
             writer.text(";").newLine();
-        } else if (aExpression instanceof DirectInvokeMethodExpression) {
-            final DirectInvokeMethodExpression theE = (DirectInvokeMethodExpression) aExpression;
+        } else if (aExpression instanceof InvokeDirectMethodExpression) {
+            final InvokeDirectMethodExpression theE = (InvokeDirectMethodExpression) aExpression;
             startLine();
             print(theE);
             writer.text(";").newLine();
@@ -1512,9 +1512,9 @@ public class JSSSAWriter {
             withDeeperIndent().writeExpressions(theE.getElsePart());
 
             startLine().text("}").newLine();
-        } else if (aExpression instanceof NewObjectAndConstructExpression) {
+        } else if (aExpression instanceof NewInstanceAndConstructExpression) {
             final JSSSAWriter theDeeper = withDeeperIndent();
-            theDeeper.print((NewObjectAndConstructExpression) aExpression);
+            theDeeper.print((NewInstanceAndConstructExpression) aExpression);
             theDeeper.writer.text(";");
         } else {
             throw new IllegalStateException("Not implemented : " + aExpression);

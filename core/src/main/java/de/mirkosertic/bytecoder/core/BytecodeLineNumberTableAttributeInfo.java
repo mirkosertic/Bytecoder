@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import java.util.Arrays;
+import java.util.Comparator;
+
 public class BytecodeLineNumberTableAttributeInfo implements BytecodeAttributeInfo {
 
     public static class Entry {
@@ -39,6 +42,7 @@ public class BytecodeLineNumberTableAttributeInfo implements BytecodeAttributeIn
 
     public BytecodeLineNumberTableAttributeInfo(final Entry[] entries) {
         this.entries = entries;
+        Arrays.sort(entries, Comparator.comparingInt(o -> o.lineNumber));
     }
 
     public Entry[] getEntries() {
