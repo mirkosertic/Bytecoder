@@ -144,6 +144,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
     /**
      * Optimization level for the LLVM backend. Generate code at different optimization levels. These correspond to the -O0, -O1, -O2, and -O3 optimization levels used by clang.
      */
+    @Parameter(required = false, defaultValue = "O2")
     protected String llvmOptimizationLevel = LLVMOptimizationLevel.defaultValue().name();
 
     /**
@@ -160,7 +161,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
 
         try {
             final ClassLoader theLoader = prepareClassLoader();
-            final Class theTargetClass = theLoader.loadClass(mainClass);
+            final Class<?> theTargetClass = theLoader.loadClass(mainClass);
 
             final CompileTarget theCompileTarget = new CompileTarget(theLoader, CompileTarget.BackendType.valueOf(backend));
 
