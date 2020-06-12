@@ -70,6 +70,14 @@ public class TClass {
         return false;
     }
 
+    public boolean isArray() {
+        return false;
+    }
+
+    public boolean isPrimitive() {
+        return false;
+    }
+
     public boolean isAnonymousClass() {
         return false;
     }
