@@ -31,7 +31,7 @@ public class SimpleMemoryManagerTest {
     @Test
     public void testMalloc() {
         final SimpleMemoryManager mm = new SimpleMemoryManager(1000);
-        int ptr = mm.malloc(100);
+        final int ptr = mm.malloc(100);
         assertEquals(12, ptr);
         assertEquals(888, mm.freeMemory());
         assertEquals(112, mm.allocated());
@@ -54,7 +54,120 @@ public class SimpleMemoryManagerTest {
         assertEquals(688, mm.freeMemory());
         assertEquals(312, mm.allocated());
 
+        mm.printDebug(System.out);
+    }
+
+    @Test
+    public void testMallocFreeMallocHeadOfFreeList() {
+        final SimpleMemoryManager mm = new SimpleMemoryManager(1000);
+        final int a = mm.malloc(100);
+        final int b = mm.malloc(200);
+        final int c = mm.malloc(300);
+        mm.free(a);
+        mm.free(b);
+
+        assertEquals(688, mm.freeMemory());
+        assertEquals(312, mm.allocated());
+
+        final int d = mm.malloc(200);
 
         mm.printDebug(System.out);
+
+        assertEquals(124, d);
+    }
+
+    @Test
+    public void testMallocFreeMallocMiddleOfFreeList() {
+        final SimpleMemoryManager mm = new SimpleMemoryManager(1000);
+        final int a = mm.malloc(100);
+        final int b = mm.malloc(200);
+        final int c = mm.malloc(300);
+        mm.free(b);
+        mm.free(a);
+
+        assertEquals(688, mm.freeMemory());
+        assertEquals(312, mm.allocated());
+
+        final int d = mm.malloc(200);
+
+        mm.printDebug(System.out);
+
+        assertEquals(124, d);
+    }
+
+    @Test
+    public void testMallocFreeMallocEndOfFreeList() {
+        final SimpleMemoryManager mm = new SimpleMemoryManager(1000);
+        final int a = mm.malloc(100);
+        final int b = mm.malloc(200);
+        final int c = mm.malloc(300);
+        mm.free(a);
+        mm.free(b);
+
+        assertEquals(688, mm.freeMemory());
+        assertEquals(312, mm.allocated());
+
+        final int d = mm.malloc(352);
+
+        mm.printDebug(System.out);
+
+        assertEquals(648, d);
+    }
+
+    @Test
+    public void testSplitBeginningOfFreeList() {
+        final SimpleMemoryManager mm = new SimpleMemoryManager(1000);
+        final int a = mm.malloc(100);
+        final int b = mm.malloc(200);
+        final int c = mm.malloc(300);
+        mm.free(b);
+        mm.free(a);
+
+        assertEquals(688, mm.freeMemory());
+        assertEquals(312, mm.allocated());
+
+        final int d = mm.malloc(50);
+
+        mm.printDebug(System.out);
+
+        assertEquals(12, d);
+    }
+
+    @Test
+    public void testSplitMiddleOfFreeList() {
+        final SimpleMemoryManager mm = new SimpleMemoryManager(1000);
+        final int a = mm.malloc(100);
+        final int b = mm.malloc(200);
+        final int c = mm.malloc(300);
+        mm.free(b);
+        mm.free(a);
+
+        assertEquals(688, mm.freeMemory());
+        assertEquals(312, mm.allocated());
+
+        final int d = mm.malloc(150);
+
+        mm.printDebug(System.out);
+
+        assertEquals(124, d);
+    }
+
+    @Test
+    public void testSplitEndOfFreeList() {
+        final SimpleMemoryManager mm = new SimpleMemoryManager(1000);
+        final int a = mm.malloc(100);
+        final int b = mm.malloc(200);
+        final int c = mm.malloc(300);
+        mm.free(b);
+        mm.free(a);
+
+        assertEquals(688, mm.freeMemory());
+        assertEquals(312, mm.allocated());
+
+        final int d = mm.malloc(300);
+
+        mm.printDebug(System.out);
+
+        assertEquals(648, d);
     }
 }

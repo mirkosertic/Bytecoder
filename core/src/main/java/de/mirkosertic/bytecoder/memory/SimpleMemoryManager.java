@@ -69,7 +69,28 @@ public class SimpleMemoryManager {
         Chunk current = freeList;
         while (current != null) {
             if (current.size >= size) {
-                int remaining = current.size - size;
+                final int remaining = current.size - size;
+                if (remaining == 0) {
+                    // We have an exact match
+                    final Chunk allocatedListHead = allocatedList;
+                    final Chunk allocated = new Chunk(current.position, size, null, allocatedListHead);
+                    if (allocatedListHead != null) {
+                        allocatedListHead.prev = allocated;
+                    }
+                    allocatedList = allocated;
+
+                    if (current.prev != null) {
+                        current.prev.next = current.next;
+                    } else {
+                        freeList = current.next;
+                    }
+
+                    if (current.next != null) {
+                        current.next.prev = current.prev;
+                    }
+
+                    return allocated.position;
+                }
                 if (remaining > 12) {
                     // We can use split this chunk
 
@@ -87,7 +108,7 @@ public class SimpleMemoryManager {
                         final Chunk newFree = new Chunk(current.position + size, remaining, current.prev, current.next);
                         current.prev.next = newFree;
                         if (current.next != null) {
-                            current.next = newFree;
+                            current.next.prev = newFree;
                         }
                     } else {
                         final Chunk newFree = new Chunk(current.position + size, remaining, null, current.next);
@@ -105,11 +126,11 @@ public class SimpleMemoryManager {
         return -1;
     }
 
-    public void free(int position) {
+    public void free(final int position) {
         free_internal(position - 12);
     }
 
-    private void free_internal(int position) {
+    private void free_internal(final int position) {
         Chunk current = allocatedList;
         while (current != null) {
             if (current.position == position) {
@@ -117,6 +138,9 @@ public class SimpleMemoryManager {
                 // Remove from allocation list
                 if (current.prev != null) {
                     current.prev.next = current.next;
+                }
+                if (current.next != null) {
+                    current.next.prev = current.prev;
                 }
 
                 // Prepend to the list of free blocks
