@@ -25,6 +25,8 @@ import de.mirkosertic.bytecoder.api.Export;
  */
 public class MemoryManager {
 
+    public static native int log(int amount);
+
     @Export("initMemory")
     public static void initNative() {
         initInternal(Address.getMemorySize());

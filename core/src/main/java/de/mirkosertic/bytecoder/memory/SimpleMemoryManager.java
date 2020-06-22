@@ -24,12 +24,14 @@ public class SimpleMemoryManager {
         int size;
         Chunk prev;
         Chunk next;
+        int gcEpoc;
 
-        public Chunk(final int position, final int size, final Chunk prev, final Chunk next) {
+        public Chunk(final int position, final int size, final Chunk prev, final Chunk next, final int gcEpoc) {
             this.position = position;
             this.size = size;
             this.prev = prev;
             this.next = next;
+            this.gcEpoc = gcEpoc;
         }
     }
 
@@ -37,7 +39,7 @@ public class SimpleMemoryManager {
     private Chunk allocatedList;
 
     public SimpleMemoryManager(final int totalMemory) {
-        freeList = new Chunk(0, totalMemory, null, null);
+        freeList = new Chunk(0, totalMemory, null, null, 0);
         allocatedList = null;
     }
 
@@ -62,7 +64,7 @@ public class SimpleMemoryManager {
     }
 
     public int malloc(final int size) {
-        return malloc_internal(size + 12) + 12;
+        return malloc_internal(size + 16) + 16;
     }
 
     private int malloc_internal(final int size) {
@@ -70,10 +72,10 @@ public class SimpleMemoryManager {
         while (current != null) {
             if (current.size >= size) {
                 final int remaining = current.size - size;
-                if (remaining == 0) {
+                if (remaining < 16) {
                     // We have an exact match
                     final Chunk allocatedListHead = allocatedList;
-                    final Chunk allocated = new Chunk(current.position, size, null, allocatedListHead);
+                    final Chunk allocated = new Chunk(current.position, current.size, null, allocatedListHead, 0);
                     if (allocatedListHead != null) {
                         allocatedListHead.prev = allocated;
                     }
@@ -91,13 +93,13 @@ public class SimpleMemoryManager {
 
                     return allocated.position;
                 }
-                if (remaining > 12) {
+                if (remaining > 16) {
                     // We can use split this chunk
 
                     // We create the allocated chunk by appending it to the list of
                     // allocated blocks
                     final Chunk allocatedListHead = allocatedList;
-                    final Chunk allocated = new Chunk(current.position, size, null, allocatedListHead);
+                    final Chunk allocated = new Chunk(current.position, size, null, allocatedListHead, 0);
                     if (allocatedListHead != null) {
                         allocatedListHead.prev = allocated;
                     }
@@ -105,13 +107,13 @@ public class SimpleMemoryManager {
 
                     // Now we split the original block
                     if (current.prev != null) {
-                        final Chunk newFree = new Chunk(current.position + size, remaining, current.prev, current.next);
+                        final Chunk newFree = new Chunk(current.position + size, remaining, current.prev, current.next, 0);
                         current.prev.next = newFree;
                         if (current.next != null) {
                             current.next.prev = newFree;
                         }
                     } else {
-                        final Chunk newFree = new Chunk(current.position + size, remaining, null, current.next);
+                        final Chunk newFree = new Chunk(current.position + size, remaining, null, current.next, 0);
                         if (current.next !=  null) {
                             current.next.prev = newFree;
                         }
@@ -127,7 +129,7 @@ public class SimpleMemoryManager {
     }
 
     public void free(final int position) {
-        free_internal(position - 12);
+        free_internal(position - 16);
     }
 
     private void free_internal(final int position) {
@@ -138,7 +140,10 @@ public class SimpleMemoryManager {
                 // Remove from allocation list
                 if (current.prev != null) {
                     current.prev.next = current.next;
+                } else {
+                    allocatedList = current.next;
                 }
+
                 if (current.next != null) {
                     current.next.prev = current.prev;
                 }
@@ -153,6 +158,17 @@ public class SimpleMemoryManager {
             }
 
             current = current.next;
+        }
+    }
+
+    public void GC() {
+        Chunk current = allocatedList;
+        while (current != null) {
+            final Chunk next = current.next;
+
+            free_internal(current.position);
+
+            current = next;
         }
     }
 
@@ -214,6 +230,8 @@ public class SimpleMemoryManager {
                 ps.print(current.position);
                 ps.print(" Size: ");
                 ps.print(current.size);
+                ps.print(" GCEpoc: ");
+                ps.print(current.gcEpoc);
                 ps.println("\"];");
 
                 if (current.next != null) {

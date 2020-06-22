@@ -53,6 +53,7 @@ import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.ProgramDescriptor;
 import de.mirkosertic.bytecoder.ssa.ProgramDescriptorProvider;
+import de.mirkosertic.bytecoder.ssa.PtrOfExpression;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
@@ -253,6 +254,10 @@ public class PointsToAnalysis {
                     aAnalysisResult.alias(varSymbol, valueSymbol);
                 } else if (value instanceof CurrentExceptionExpression) {
                     // Exceptions are always in static scope
+                    final Symbol valueSymbol = GlobalSymbols.staticScope;
+                    aAnalysisResult.alias(varSymbol, valueSymbol);
+                } else if (value instanceof PtrOfExpression) {
+                    // Special case, we assume everything is in static scope here
                     final Symbol valueSymbol = GlobalSymbols.staticScope;
                     aAnalysisResult.alias(varSymbol, valueSymbol);
                 } else if (value instanceof MethodHandlesGeneratedLookupExpression) {

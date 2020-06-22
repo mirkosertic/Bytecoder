@@ -1450,6 +1450,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             newLambdaSpecialInvocationMethodTypeMethodHandleObject: function() {},");
             theWriter.println("         },");
             theWriter.println("         memorymanager: {");
+            theWriter.println("             logINT: function(thisref, value) {");
+            theWriter.println("                     console.log('Log : ' + value);");
+            theWriter.println("             },");
             theWriter.println("             isUsedAsCallbackINT : function(thisref, ptr) {");
             theWriter.println("                 return bytecoder.callbacks.includes(ptr);");
             theWriter.println("             },");
