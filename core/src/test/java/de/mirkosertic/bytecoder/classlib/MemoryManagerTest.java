@@ -105,7 +105,7 @@ public class MemoryManagerTest {
         final long x = MemoryManager.freeMem();
 
         final long l = MemoryManager.malloc(100);
-        Assert.assertEquals(x - 112, MemoryManager.freeMem(), 0);
+        Assert.assertEquals(x - 116, MemoryManager.freeMem(), 0);
 
         MemoryManager.GC();
 
