@@ -64,73 +64,65 @@ public class MemoryManager {
 
     @Export("freeMem")
     public static int freeMem() {
-        int theResult = 0;
+        int resultSize = 0;
 
         final int heapBase = Address.getHeapBase();
 
         int current = Address.getIntValue(heapBase, 4);
         while (current != 0) {
-            theResult += Address.getIntValue(current, 0);
+            resultSize += Address.getIntValue(current, 0);
             current = Address.getIntValue(current, 4);
         }
-        return theResult;
+        return resultSize;
     }
 
     @Export("usedMem")
     public static int usedMem() {
-        int theResult = 0;
+        int resultSize = 0;
 
         final int heapBase = Address.getHeapBase();
 
         int current = Address.getIntValue(heapBase, 8);
         while (current != 0) {
-            theResult += Address.getIntValue(current, 0);
+            resultSize += Address.getIntValue(current, 0);
             current = Address.getIntValue(current, 4);
         }
-        return theResult;
+        return resultSize;
     }
 
-    private static void internalFree(final int aPointer) {
+    private static void internalFree(final int current) {
 
         final int heapBase = Address.getHeapBase();
 
-        // Remove the block from the list of allocated blocks
-        int current = Address.getIntValue(heapBase, 8);
+        final int currentPrev = Address.getIntValue(current, 12);
+        final int currentNext = Address.getIntValue(current, 4);
 
-        int thePrevious = 0;
-        while(current != 0) {
-
-            final int theNext = Address.getIntValue(current, 4);
-
-            if (current == aPointer) {
-                // This is the block
-                // Remove it from the list of allocated blocks
-                if (thePrevious == 0) {
-                    Address.setIntValue(heapBase, 8, theNext);
-                } else {
-                    Address.setIntValue(thePrevious, 4, theNext);
-                }
-
-                // Ok, now we prepend it to the list of free blocks
-                final int theFreeStartPtr = Address.getIntValue(heapBase, 4);
-                Address.setIntValue(current, 4, theFreeStartPtr);
-
-                Address.setIntValue(heapBase, 4, current);
-                return;
-            }
-
-            thePrevious = current;
-            current = theNext;
+        if (currentPrev != 0) {
+            Address.setIntValue(current, 4, currentNext);
+        } else {
+            Address.setIntValue(heapBase, 8, currentNext);
         }
+
+        if (currentNext != 0) {
+            Address.setIntValue(currentNext, 12, currentPrev);
+        }
+
+        // Prepend to the list of free blocks
+        final int freeListHead = Address.getIntValue(heapBase, 4);
+
+        Address.setIntValue(current, 4, freeListHead);
+        Address.setIntValue(freeListHead, 12, current);
+        Address.setIntValue(current, 12, 0);
+
+        Address.setIntValue(heapBase, 4, current);
     }
 
     @Export("free")
     public static void free(final int aPointer) {
 
-        int theStart = aPointer;
-        theStart-=16;
+        final int pointerToBlock = aPointer - 16;
 
-        internalFree(theStart);
+        internalFree(pointerToBlock);
     }
 
     @Export("malloc")
@@ -148,25 +140,27 @@ public class MemoryManager {
             final int theSize = Address.getIntValue(current, 0);
             final int theNext = Address.getIntValue(current, 4);
             if (theSize >= aSize) {
-                final int theRemaining = theSize - aSize;
+                final int remainingSize = theSize - aSize;
 
-                if (theRemaining > 16) {
+                if (remainingSize > 16) {
                     Address.setIntValue(current, 0, aSize);
 
                     // Block can be safely split
-                    final int theNewFreeStart = current + aSize;
-                    final int theNewFreeSize = theSize - aSize;
-                    Address.setIntValue(theNewFreeStart, 0, theNewFreeSize);
-                    Address.setIntValue(theNewFreeStart, 4, theNext);
+                    final int newFreeStart = current + aSize;
+                    final int newFreeSize = theSize - aSize;
+                    Address.setIntValue(newFreeStart, 0, newFreeSize);
+                    Address.setIntValue(newFreeStart, 4, theNext);
 
-                    //Address.setIntValue(theNext, 12, theNewFreeStart);
+                    if (theNext != 0) {
+                        Address.setIntValue(theNext, 12, newFreeStart);
+                    }
 
                     if (previous == 0) {
-                        Address.setIntValue(heapBase, 4, theNewFreeStart);
-                        //Address.setIntValue(theNewFreeStart, 12, 0);
+                        Address.setIntValue(heapBase, 4, newFreeStart);
+                        Address.setIntValue(newFreeStart, 12, 0);
                     } else {
-                        Address.setIntValue(previous, 4, theNewFreeStart);
-                        //Address.setIntValue(theNewFreeStart, 12, previous);
+                        Address.setIntValue(previous, 4, newFreeStart);
+                        Address.setIntValue(newFreeStart, 12, previous);
                     }
                 } else {
                     // Remaining size would be too small, be have to completely occupy it
@@ -174,33 +168,39 @@ public class MemoryManager {
 
                     if (previous == 0) {
                         Address.setIntValue(heapBase, 4, theNext);
-                        //Address.setIntValue(theNext, 12, 0);
+                        if (theNext != 0) {
+                            Address.setIntValue(theNext, 12, 0);
+                        }
                     } else {
                         Address.setIntValue(previous, 4, theNext);
-                        //Address.setIntValue(theNext, 12, previous);
+                        if (theNext != 0) {
+                            Address.setIntValue(theNext, 12, previous);
+                        }
                     }
                 }
 
                 // Add the current block to the allocated block ist by prepending it to the list
-                final int theReservedListPtr = Address.getIntValue(heapBase, 8);
+                final int reservedListHead = Address.getIntValue(heapBase, 8);
 
-                Address.setIntValue(current, 4, theReservedListPtr);
-                //Address.setIntValue(theReservedListPtr, 12, current);
+                Address.setIntValue(current, 4, reservedListHead);
+                if (reservedListHead != 0) {
+                    Address.setIntValue(reservedListHead, 12, current);
+                }
 
                 Address.setIntValue(heapBase, 8, current);
-                //Address.setIntValue(current, 12, 0);
+                Address.setIntValue(current, 12, 0);
 
                 // Reset survivor count of the block
                 Address.setIntValue(current, 8, 1);
 
                 // Wipeout data
-                final int theDataStart = current + 16;
+                final int dataStart = current + 16;
 
                 for (int i=0;i<aSize-16;i+=4) {
-                    Address.setIntValue(theDataStart, i, 0);
+                    Address.setIntValue(dataStart, i, 0);
                 }
 
-                return theDataStart;
+                return dataStart;
             }
 
             previous = current;
@@ -213,11 +213,11 @@ public class MemoryManager {
     @Export("newObject")
     public static int newObject(final int aSize, final int aType, final int aVTableIndex) {
 
-        final int theAddress = malloc(aSize);
-        Address.setIntValue(theAddress, 0, aType);
-        Address.setIntValue(theAddress, 4, aVTableIndex);
+        final int allocated = malloc(aSize);
+        Address.setIntValue(allocated, 0, aType);
+        Address.setIntValue(allocated, 4, aVTableIndex);
 
-        return theAddress;
+        return allocated;
     }
 
     public static void initStackObject(final int aPtr, final int aSize, final int aType, final int aVTableIndex) {
@@ -241,33 +241,33 @@ public class MemoryManager {
     }
 
     public static boolean isUsedByStaticDataUserSpace(final int aPtrToObject) {
-        int theDataStart = 0;
+        int dataStart = 0;
         final int theDataEnd = Address.getDataEnd();
-        while(theDataStart <= theDataEnd) {
-            if (Address.getIntValue(theDataStart, 0) == aPtrToObject) {
+        while(dataStart <= theDataEnd) {
+            if (Address.getIntValue(dataStart, 0) == aPtrToObject) {
                 return true;
             }
-            theDataStart += 4;
+            dataStart += 4;
         }
         return false;
     }
 
     public static boolean isUsedByStack(final int aOwningBlock) {
-        final int theOwningData = aOwningBlock + 16;
-        return isUsedByStackUserSpace(theOwningData);
+        final int objectPtr = aOwningBlock + 16;
+        return isUsedByStackUserSpace(objectPtr);
     }
 
     public static boolean isUsedByStackUserSpace(final int aPtrToObject) {
         if (Address.systemHasStack() == 0) {
             return false;
         }
-        int theStackStart = Address.getStackTop();
-        final int theMemorySize = Address.getMemorySize();
-        while(theStackStart + 4 < theMemorySize) {
-            if (Address.getIntValue(theStackStart, 0) == aPtrToObject) {
+        int stackStart = Address.getStackTop();
+        final int memorySize = Address.getMemorySize();
+        while(stackStart + 4 < memorySize) {
+            if (Address.getIntValue(stackStart, 0) == aPtrToObject) {
                 return true;
             }
-            theStackStart += 4;
+            stackStart += 4;
         }
 
         return false;
@@ -278,13 +278,13 @@ public class MemoryManager {
     }
 
     public static boolean isUsedByHeapUserSpace(final int aPtrToObject) {
-        final int theAllocationStart = aPtrToObject - 16;
+        final int allocationPtr = aPtrToObject - 16;
         final int heapBase = Address.getHeapBase();
 
         int current = Address.getIntValue(heapBase, 8);
         while(current != 0) {
             // Ignore self reference
-            if (theAllocationStart != current) {
+            if (allocationPtr != current) {
                 final int theSize = Address.getIntValue(current, 0);
                 for (int i = 16; i < theSize; i += 4) {
                     if (Address.getIntValue(current, i) == aPtrToObject) {
@@ -324,27 +324,27 @@ public class MemoryManager {
         int freeCounter = 0;
         int stepCounter = 0;
         while(current != 0) {
-            final int theNext = Address.getIntValue(current, 4);
-            final int theSurvivorCount = Address.getIntValue(current, 8);
-            if (currentEpoch % theSurvivorCount == 0) {
+            final int next = Address.getIntValue(current, 4);
+            final int survivorCount = Address.getIntValue(current, 8);
+            if (currentEpoch % survivorCount == 0) {
                 if (!isUsedByHeap(current) && !isUsedByStack(current)  && !(isUsedByStaticData(current)) && (!isUsedAsCallback(current + 12))) {
                     internalFree(current);
                     freeCounter++;
                 } else {
                     // Increment the survivor count of the allocation block
-                    if (theSurvivorCount < 32) {
-                        Address.setIntValue(current, 8, theSurvivorCount * 2);
+                    if (survivorCount < 32) {
+                        Address.setIntValue(current, 8, survivorCount * 2);
                     }
                 }
                 if (stepCounter++ >= blockLimit) {
                     // We have reached the limit for the current run
                     // We save the next block to proceed and exit here
-                    Address.setIntValue(heapBase, 12, theNext);
+                    Address.setIntValue(heapBase, 12, next);
                     return stepCounter;
                 }
             }
 
-            current = theNext;
+            current = next;
         }
         // Increment epoch
         Address.setIntValue(heapBase, 16, currentEpoch + 1);
@@ -359,21 +359,21 @@ public class MemoryManager {
     public static int newArray(final int aSize, final int aType, final int aVTableIndex) {
 
         // Arrays are normal objects. Their data are a length field plus n * data
-        final int theObject = newObject(16 + 4 + 8 * aSize, aType, aVTableIndex);
+        final int newArray = newObject(16 + 4 + 8 * aSize, aType, aVTableIndex);
 
-        Address.setIntValue(theObject, 16, aSize);
-        return theObject;
+        Address.setIntValue(newArray, 16, aSize);
+        return newArray;
     }
 
     @Export("newArrayINTINTINTINT")
     public static int newArray(final int aSize1, final int aSize2, final int aType, final int aVTableIndex) {
-        final int theResult = newArray(aSize1, aType, aVTableIndex);
+        final int newArray = newArray(aSize1, aType, aVTableIndex);
         for (int i=0;i<aSize1;i++) {
             final int theOffset = 16 + 4 + 8 * i;
             final int theSubArray = newArray(aSize2, aType, aVTableIndex);
-            Address.setIntValue(theResult, theOffset, theSubArray);
+            Address.setIntValue(newArray, theOffset, theSubArray);
         }
-        return theResult;
+        return newArray;
     }
 
     @Export("logAllocations")
@@ -413,14 +413,14 @@ public class MemoryManager {
         final int theAllocation = aObjectPtr - 16;
         final int heapBase = Address.getHeapBase();
 
-        int theCurrent = Address.getIntValue(heapBase, 4);
+        int current = Address.getIntValue(heapBase, 4);
         int index = 0;
-        while (theCurrent != 0) {
-            if (theCurrent == theAllocation) {
+        while (current != 0) {
+            if (current == theAllocation) {
                 return index;
             }
             index++;
-            theCurrent = Address.getIntValue(theCurrent, 4);
+            current = Address.getIntValue(current, 4);
         }
         return -1;
     }
