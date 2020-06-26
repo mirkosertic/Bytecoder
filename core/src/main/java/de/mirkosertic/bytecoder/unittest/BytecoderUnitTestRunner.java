@@ -450,6 +450,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                         "$newInstance", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0])));
                 theWriter.println("(0);");
                 theWriter.println("                             console.log(\"Bootstrapped\")");
+                //theWriter.println("                             bytecoder.exports.logAllocations(0);");
                 theWriter.println("                             try {");
                 theWriter.println("                                 console.log(\"Starting main method\")");
                 theWriter.println("                                 bytecoder.exports.main(theTest);");
