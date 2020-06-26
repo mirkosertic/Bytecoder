@@ -15,6 +15,33 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
+import static de.mirkosertic.bytecoder.backend.wasm.WASMSSAASTWriter.toType;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.f32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Stack;
+import java.util.stream.Collectors;
+
 import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
 import de.mirkosertic.bytecoder.allocator.Register;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
@@ -78,33 +105,6 @@ import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.stackifier.HeadToHeadControlFlowException;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.Stack;
-import java.util.stream.Collectors;
-
-import static de.mirkosertic.bytecoder.backend.wasm.WASMSSAASTWriter.toType;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.f32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
-
 public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResult> {
 
     private static class CallSite {
@@ -152,6 +152,8 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         final BytecodeLinkedClass theArrayClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
 
         final BytecodeLinkedClass theMemoryManagerClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class));
+
+        theMemoryManagerClass.resolveStaticMethod("logAllocations", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
 
         theMemoryManagerClass.resolveStaticMethod("freeMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
         theMemoryManagerClass.resolveStaticMethod("usedMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
@@ -1453,12 +1455,16 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             logINT: function(thisref, value) {");
             theWriter.println("                     console.log('Log : ' + value);");
             theWriter.println("             },");
+            theWriter.println("             logAllocationDetailsINTINTINT: function(thisref, current, prev, next) {");
+            theWriter.println("                     if (prev != 0) console.log('m_' + current + ' -> m_' + prev + '[label=\"Prev\"]');");
+            theWriter.println("                     if (next != 0) console.log('m_' + current + ' -> m_' + next + '[label=\"Next\"]');");
+            theWriter.println("             },");
             theWriter.println("             isUsedAsCallbackINT : function(thisref, ptr) {");
             theWriter.println("                 return bytecoder.callbacks.includes(ptr);");
             theWriter.println("             },");
             theWriter.println("             printObjectDebugInternalObjectINTINTBOOLEANBOOLEAN: function(thisref, ptr, indexAlloc, indexFree, usedByStack, usedByHeap) {");
             theWriter.println("                 console.log('Memory debug for ' + ptr);");
-            theWriter.println("                 var theAllocatedBlock = ptr - 12;");
+            theWriter.println("                 var theAllocatedBlock = ptr - 16;");
             theWriter.println("                 var theSize = bytecoder.intInMemory(theAllocatedBlock);");
             theWriter.println("                 var theNext = bytecoder.intInMemory(theAllocatedBlock +  4);");
             theWriter.println("                 var theSurvivorCount = bytecoder.intInMemory(theAllocatedBlock +  8);");

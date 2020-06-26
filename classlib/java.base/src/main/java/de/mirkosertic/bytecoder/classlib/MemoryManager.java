@@ -106,16 +106,16 @@ public class MemoryManager {
                 // This is the block
                 // Remove it from the list of allocated blocks
                 if (thePrevious == 0) {
-                    Address.setIntValue(8, 0, theNext);
+                    Address.setIntValue(heapBase, 8, theNext);
                 } else {
                     Address.setIntValue(thePrevious, 4, theNext);
                 }
 
                 // Ok, now we prepend it to the list of free blocks
-                final int theFreeStartPtr = Address.getIntValue(4, 0);
-
+                final int theFreeStartPtr = Address.getIntValue(heapBase, 4);
                 Address.setIntValue(current, 4, theFreeStartPtr);
-                Address.setIntValue(4, 0, current);
+
+                Address.setIntValue(heapBase, 4, current);
                 return;
             }
 
@@ -159,10 +159,14 @@ public class MemoryManager {
                     Address.setIntValue(theNewFreeStart, 0, theNewFreeSize);
                     Address.setIntValue(theNewFreeStart, 4, theNext);
 
+                    //Address.setIntValue(theNext, 12, theNewFreeStart);
+
                     if (previous == 0) {
                         Address.setIntValue(heapBase, 4, theNewFreeStart);
+                        //Address.setIntValue(theNewFreeStart, 12, 0);
                     } else {
                         Address.setIntValue(previous, 4, theNewFreeStart);
+                        //Address.setIntValue(theNewFreeStart, 12, previous);
                     }
                 } else {
                     // Remaining size would be too small, be have to completely occupy it
@@ -170,8 +174,10 @@ public class MemoryManager {
 
                     if (previous == 0) {
                         Address.setIntValue(heapBase, 4, theNext);
+                        //Address.setIntValue(theNext, 12, 0);
                     } else {
                         Address.setIntValue(previous, 4, theNext);
+                        //Address.setIntValue(theNext, 12, previous);
                     }
                 }
 
@@ -179,7 +185,10 @@ public class MemoryManager {
                 final int theReservedListPtr = Address.getIntValue(heapBase, 8);
 
                 Address.setIntValue(current, 4, theReservedListPtr);
+                //Address.setIntValue(theReservedListPtr, 12, current);
+
                 Address.setIntValue(heapBase, 8, current);
+                //Address.setIntValue(current, 12, 0);
 
                 // Reset survivor count of the block
                 Address.setIntValue(current, 8, 1);
@@ -366,6 +375,23 @@ public class MemoryManager {
         }
         return theResult;
     }
+
+    @Export("logAllocations")
+    public static void logAllocations() {
+        final int heapBase = Address.getHeapBase();
+
+        int current = Address.getIntValue(heapBase, 8);
+        while (current != 0) {
+            final int prev = Address.getIntValue(current, 12);
+            final int next = Address.getIntValue(current, 4);
+
+            logAllocationDetails(current, prev, next);
+
+            current = next;
+        }
+    }
+
+    public static native void logAllocationDetails(final int start, final int prev, final int next);
 
     public static int indexInAllocationList(final int aObjectPtr) {
         final int theAllocation = aObjectPtr - 16;
