@@ -165,9 +165,48 @@ public class MemoryManager {
 
                     // Wipeout data
                     final int dataStart = allocated + 16;
-
-                    for (int i=0;i<aSize-16;i+=4) {
-                        Address.setIntValue(dataStart, i, 0);
+                    final int fillSize = aSize - 16;
+                    if (fillSize == 0) {
+                        /// Nothing to do
+                    } else if (fillSize == 4) {
+                        Address.setIntValue(dataStart, 0, 0);
+                    } else if (fillSize == 8) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                    } else if (fillSize == 12) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                        Address.setIntValue(dataStart, 8, 0);
+                    } else if (fillSize == 16) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                        Address.setIntValue(dataStart, 8, 0);
+                        Address.setIntValue(dataStart, 12, 0);
+                    } else if (fillSize == 20) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                        Address.setIntValue(dataStart, 8, 0);
+                        Address.setIntValue(dataStart, 12, 0);
+                        Address.setIntValue(dataStart, 16, 0);
+                    } else if (fillSize == 24) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                        Address.setIntValue(dataStart, 8, 0);
+                        Address.setIntValue(dataStart, 12, 0);
+                        Address.setIntValue(dataStart, 16, 0);
+                        Address.setIntValue(dataStart, 20, 0);
+                    } else if (fillSize == 28) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                        Address.setIntValue(dataStart, 8, 0);
+                        Address.setIntValue(dataStart, 12, 0);
+                        Address.setIntValue(dataStart, 16, 0);
+                        Address.setIntValue(dataStart, 20, 0);
+                        Address.setIntValue(dataStart, 24, 0);
+                    } else {
+                        for (int i = 0; i < fillSize; i += 4) {
+                            Address.setIntValue(dataStart, i, 0);
+                        }
                     }
 
                     return dataStart;
@@ -215,11 +254,49 @@ public class MemoryManager {
 
                     // Wipeout data
                     final int dataStart = allocated + 16;
-
-                    for (int i=0;i<aSize-16;i+=4) {
-                        Address.setIntValue(dataStart, i, 0);
+                    final int fillSize = aSize - 16;
+                    if (fillSize == 0) {
+                        /// Nothing to do
+                    } else if (fillSize == 4) {
+                        Address.setIntValue(dataStart, 0, 0);
+                    } else if (fillSize == 8) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                    } else if (fillSize == 12) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                        Address.setIntValue(dataStart, 8, 0);
+                    } else if (fillSize == 16) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                        Address.setIntValue(dataStart, 8, 0);
+                        Address.setIntValue(dataStart, 12, 0);
+                    } else if (fillSize == 20) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                        Address.setIntValue(dataStart, 8, 0);
+                        Address.setIntValue(dataStart, 12, 0);
+                        Address.setIntValue(dataStart, 16, 0);
+                    } else if (fillSize == 24) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                        Address.setIntValue(dataStart, 8, 0);
+                        Address.setIntValue(dataStart, 12, 0);
+                        Address.setIntValue(dataStart, 16, 0);
+                        Address.setIntValue(dataStart, 20, 0);
+                    } else if (fillSize == 28) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                        Address.setIntValue(dataStart, 8, 0);
+                        Address.setIntValue(dataStart, 12, 0);
+                        Address.setIntValue(dataStart, 16, 0);
+                        Address.setIntValue(dataStart, 20, 0);
+                        Address.setIntValue(dataStart, 24, 0);
+                    } else {
+                        for (int i = 0; i < fillSize; i += 4) {
+                            Address.setIntValue(dataStart, i, 0);
+                        }
                     }
-
                     return dataStart;
                 }
             }
