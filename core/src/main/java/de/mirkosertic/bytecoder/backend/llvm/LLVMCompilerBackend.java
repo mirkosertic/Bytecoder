@@ -1558,7 +1558,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                     if (aOptions.isEscapeAnalysisEnabled()) {
                         // Perform some escape analysis
-                        escapeAnalysis.analyze(pg, result);
+                        escapeAnalysis.analyze(aLinkerContext.getLogger(), pg, result);
                     }
                 }
 

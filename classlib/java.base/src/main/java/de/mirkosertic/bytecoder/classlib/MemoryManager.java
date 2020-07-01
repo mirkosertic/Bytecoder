@@ -133,81 +133,177 @@ public class MemoryManager {
 
         final int heapBase = Address.getHeapBase();
 
-        // We search the free list for a suitable sized block
-        int previous = 0;
         int current = Address.getIntValue(heapBase, 4);
-        while(current != 0) {
-            final int theSize = Address.getIntValue(current, 0);
-            final int theNext = Address.getIntValue(current, 4);
-            if (theSize >= aSize) {
-                final int remainingSize = theSize - aSize;
-
-                if (remainingSize > 16) {
-                    Address.setIntValue(current, 0, aSize);
-
-                    // Block can be safely split
-                    final int newFreeStart = current + aSize;
-                    final int newFreeSize = theSize - aSize;
-                    Address.setIntValue(newFreeStart, 0, newFreeSize);
-                    Address.setIntValue(newFreeStart, 4, theNext);
-
-                    if (theNext != 0) {
-                        Address.setIntValue(theNext, 12, newFreeStart);
+        while (current != 0) {
+            final int currentSize = Address.getIntValue(current, 0);
+            final int currentPrev = Address.getIntValue(current, 12);
+            final int currentNext = Address.getIntValue(current, 4);
+            if (currentSize >= aSize) {
+                final int remaining = currentSize - aSize;
+                if (remaining < 16) {
+                    // We have an exact match
+                    final int allocatedListHead = Address.getIntValue(heapBase, 8);
+                    final int allocated = current;
+                    Address.setIntValue(allocated, 0, currentSize);
+                    Address.setIntValue(allocated, 4, allocatedListHead);
+                    Address.setIntValue(allocated, 8, 1);
+                    Address.setIntValue(allocated,12, 0);
+                    if (allocatedListHead != 0) {
+                        Address.setIntValue(allocatedListHead, 12, allocated);
                     }
+                    Address.setIntValue(heapBase, 8, allocated);
 
-                    if (previous == 0) {
-                        Address.setIntValue(heapBase, 4, newFreeStart);
-                        Address.setIntValue(newFreeStart, 12, 0);
+                    if (currentPrev != 0) {
+                        Address.setIntValue(currentPrev, 4, currentNext);
                     } else {
-                        Address.setIntValue(previous, 4, newFreeStart);
-                        Address.setIntValue(newFreeStart, 12, previous);
+                        Address.setIntValue(heapBase, 4, currentNext);
                     }
-                } else {
-                    // Remaining size would be too small, be have to completely occupy it
-                    Address.setIntValue(current, 0, theSize);
 
-                    if (previous == 0) {
-                        Address.setIntValue(heapBase, 4, theNext);
-                        if (theNext != 0) {
-                            Address.setIntValue(theNext, 12, 0);
+                    if (currentNext != 0) {
+                        Address.setIntValue(currentNext,12, currentPrev);
+                    }
+
+                    // Wipeout data
+                    final int dataStart = allocated + 16;
+                    final int fillSize = aSize - 16;
+                    if (fillSize == 0) {
+                        /// Nothing to do
+                    } else if (fillSize == 4) {
+                        Address.setIntValue(dataStart, 0, 0);
+                    } else if (fillSize == 8) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                    } else if (fillSize == 12) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                        Address.setIntValue(dataStart, 8, 0);
+                    } else if (fillSize == 16) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                        Address.setIntValue(dataStart, 8, 0);
+                        Address.setIntValue(dataStart, 12, 0);
+                    } else if (fillSize == 20) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                        Address.setIntValue(dataStart, 8, 0);
+                        Address.setIntValue(dataStart, 12, 0);
+                        Address.setIntValue(dataStart, 16, 0);
+                    } else if (fillSize == 24) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                        Address.setIntValue(dataStart, 8, 0);
+                        Address.setIntValue(dataStart, 12, 0);
+                        Address.setIntValue(dataStart, 16, 0);
+                        Address.setIntValue(dataStart, 20, 0);
+                    } else if (fillSize == 28) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                        Address.setIntValue(dataStart, 8, 0);
+                        Address.setIntValue(dataStart, 12, 0);
+                        Address.setIntValue(dataStart, 16, 0);
+                        Address.setIntValue(dataStart, 20, 0);
+                        Address.setIntValue(dataStart, 24, 0);
+                    } else {
+                        for (int i = 0; i < fillSize; i += 4) {
+                            Address.setIntValue(dataStart, i, 0);
+                        }
+                    }
+
+                    return dataStart;
+                }
+                if (remaining > 16) {
+                    // We can use split this chunk
+
+                    // We create the allocated chunk by appending it to the list of
+                    // allocated blocks
+                    final int allocatedListHead = Address.getIntValue(heapBase, 8);
+                    final int allocated = current;
+                    Address.setIntValue(allocated, 0, aSize);
+                    Address.setIntValue(allocated, 4, allocatedListHead);
+                    Address.setIntValue(allocated, 8, 1);
+                    Address.setIntValue(allocated, 12, 0);
+                    if (allocatedListHead != 0) {
+                        Address.setIntValue(allocatedListHead, 12, allocated);
+                    }
+                    Address.setIntValue(heapBase, 8, allocated);
+
+                    // Now we split the original block
+                    if (currentPrev != 0) {
+                        final int newFree = current + aSize;
+                        Address.setIntValue(newFree, 0, remaining);
+                        Address.setIntValue(newFree, 4, currentNext);
+                        Address.setIntValue(newFree, 8, 1);
+                        Address.setIntValue(newFree, 12, currentPrev);
+                        if (currentPrev != 0) {
+                            Address.setIntValue(currentPrev, 4, newFree);
+                        }
+                        if (currentNext != 0) {
+                            Address.setIntValue(currentNext, 12, newFree);
                         }
                     } else {
-                        Address.setIntValue(previous, 4, theNext);
-                        if (theNext != 0) {
-                            Address.setIntValue(theNext, 12, previous);
+                        final int newFree = current + aSize;
+                        Address.setIntValue(newFree, 0, remaining);
+                        Address.setIntValue(newFree, 4, currentNext);
+                        Address.setIntValue(newFree, 8, 1);
+                        Address.setIntValue(newFree, 12, 0);
+                        if (currentNext !=  0) {
+                            Address.setIntValue(currentNext, 12, newFree);
+                        }
+                        Address.setIntValue(heapBase, 4, newFree);
+                    }
+
+                    // Wipeout data
+                    final int dataStart = allocated + 16;
+                    final int fillSize = aSize - 16;
+                    if (fillSize == 0) {
+                        /// Nothing to do
+                    } else if (fillSize == 4) {
+                        Address.setIntValue(dataStart, 0, 0);
+                    } else if (fillSize == 8) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                    } else if (fillSize == 12) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                        Address.setIntValue(dataStart, 8, 0);
+                    } else if (fillSize == 16) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                        Address.setIntValue(dataStart, 8, 0);
+                        Address.setIntValue(dataStart, 12, 0);
+                    } else if (fillSize == 20) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                        Address.setIntValue(dataStart, 8, 0);
+                        Address.setIntValue(dataStart, 12, 0);
+                        Address.setIntValue(dataStart, 16, 0);
+                    } else if (fillSize == 24) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                        Address.setIntValue(dataStart, 8, 0);
+                        Address.setIntValue(dataStart, 12, 0);
+                        Address.setIntValue(dataStart, 16, 0);
+                        Address.setIntValue(dataStart, 20, 0);
+                    } else if (fillSize == 28) {
+                        Address.setIntValue(dataStart, 0, 0);
+                        Address.setIntValue(dataStart, 4, 0);
+                        Address.setIntValue(dataStart, 8, 0);
+                        Address.setIntValue(dataStart, 12, 0);
+                        Address.setIntValue(dataStart, 16, 0);
+                        Address.setIntValue(dataStart, 20, 0);
+                        Address.setIntValue(dataStart, 24, 0);
+                    } else {
+                        for (int i = 0; i < fillSize; i += 4) {
+                            Address.setIntValue(dataStart, i, 0);
                         }
                     }
+                    return dataStart;
                 }
-
-                // Add the current block to the allocated block ist by prepending it to the list
-                final int reservedListHead = Address.getIntValue(heapBase, 8);
-
-                Address.setIntValue(current, 4, reservedListHead);
-                if (reservedListHead != 0) {
-                    Address.setIntValue(reservedListHead, 12, current);
-                }
-
-                Address.setIntValue(heapBase, 8, current);
-                Address.setIntValue(current, 12, 0);
-
-                // Reset survivor count of the block
-                Address.setIntValue(current, 8, 1);
-
-                // Wipeout data
-                final int dataStart = current + 16;
-
-                for (int i=0;i<aSize-16;i+=4) {
-                    Address.setIntValue(dataStart, i, 0);
-                }
-
-                return dataStart;
             }
-
-            previous = current;
-            current = theNext;
+            current = Address.getIntValue(current, 4);
         }
         Address.unreachable();
-        return 0;
+        return -1;
     }
 
     @Export("newObject")

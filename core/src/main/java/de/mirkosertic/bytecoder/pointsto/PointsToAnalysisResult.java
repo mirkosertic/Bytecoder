@@ -136,18 +136,20 @@ public class PointsToAnalysisResult {
                 }
             }
         }
+        final Map<Symbol, Set<Symbol>> resolvedPointsCache = new HashMap<>();
+
         for (final PotentialScopeMergeOperation merge : potentialScopeMergeOperations) {
             final Set<Symbol> destinations;
             if (merge.destination.origin()) {
                 destinations = Collections.singleton(merge.destination);
             } else {
-                destinations = resolvedPointsToFor(merge.destination);
+                destinations = resolvedPointsCache.computeIfAbsent(merge.destination, symbol -> resolvedPointsToFor(symbol));
             }
             final Set<Symbol> sources;
             if (merge.source.origin()) {
                 sources = Collections.singleton(merge.source);
             } else {
-                sources = resolvedPointsToFor(merge.source);
+                sources = resolvedPointsCache.computeIfAbsent(merge.source, symbol -> resolvedPointsToFor(symbol));
             }
 
             for (final Symbol s : sources) {
