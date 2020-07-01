@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.pointsto.AllocationSymbol;
 import de.mirkosertic.bytecoder.pointsto.GlobalSymbols;
 import de.mirkosertic.bytecoder.pointsto.InvocationResultSymbol;
@@ -31,7 +32,22 @@ import de.mirkosertic.bytecoder.ssa.ValueWithEscapeCheck;
 
 public class EscapeAnalysis {
 
-    public void analyze(final ProgramDescriptor aProgramDescriptor, final PointsToAnalysisResult aAnalysisResult) {
+    public void analyze(final Logger aLogger, final ProgramDescriptor aProgramDescriptor, final PointsToAnalysisResult aAnalysisResult) {
+
+        if (aAnalysisResult.potentialScopeMergeOperations().size() > 1000) {
+
+            aLogger.info("{}.{} seems to be too complex. Giving up escape analysis", aProgramDescriptor.linkedClass().getClassName().name(), aProgramDescriptor.method().getName().stringValue());
+
+            for (final AllocationSymbol allocation : aAnalysisResult.allocationSymbols()) {
+                final Value v = allocation.value();
+                if (v instanceof ValueWithEscapeCheck) {
+                    ((ValueWithEscapeCheck) v).markAsEscaped();
+                }
+            }
+
+            return;
+        }
+
         final Map<Symbol, Set<Symbol>> flows = aAnalysisResult.computeMergingFlows();
         for (final AllocationSymbol allocation : aAnalysisResult.allocationSymbols()) {
             final Value v = allocation.value();

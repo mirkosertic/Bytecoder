@@ -156,7 +156,7 @@ public class EscapeAnalysisTest {
 
         final PointsToAnalysisResult analysisResult = analysis.analyze(aProgramDescriptor);
         final EscapeAnalysis escapeAnalysis = new EscapeAnalysis();
-        escapeAnalysis.analyze(aProgramDescriptor, analysisResult);
+        escapeAnalysis.analyze(aLinkercontext.getLogger(), aProgramDescriptor, analysisResult);
 
         return analysisResult;
     }
