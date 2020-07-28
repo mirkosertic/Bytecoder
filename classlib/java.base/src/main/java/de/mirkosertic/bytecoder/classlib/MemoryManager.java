@@ -98,7 +98,7 @@ public class MemoryManager {
         final int currentNext = Address.getIntValue(current, 4);
 
         if (currentPrev != 0) {
-            Address.setIntValue(current, 4, currentNext);
+            Address.setIntValue(currentPrev, 4, currentNext);
         } else {
             Address.setIntValue(heapBase, 8, currentNext);
         }
@@ -339,12 +339,14 @@ public class MemoryManager {
     public static boolean isUsedByStaticDataUserSpace(final int aPtrToObject) {
         int dataStart = 0;
         final int theDataEnd = Address.getDataEnd();
+
         while(dataStart <= theDataEnd) {
             if (Address.getIntValue(dataStart, 0) == aPtrToObject) {
                 return true;
             }
             dataStart += 4;
         }
+
         return false;
     }
 
@@ -357,6 +359,7 @@ public class MemoryManager {
         if (Address.systemHasStack() == 0) {
             return false;
         }
+
         int stackStart = Address.getStackTop();
         final int memorySize = Address.getMemorySize();
         while(stackStart + 4 < memorySize) {
@@ -379,6 +382,8 @@ public class MemoryManager {
 
         int current = Address.getIntValue(heapBase, 8);
         while(current != 0) {
+            final int next = Address.getIntValue(current, 4);
+
             // Ignore self reference
             if (allocationPtr != current) {
                 final int theSize = Address.getIntValue(current, 0);
@@ -388,7 +393,7 @@ public class MemoryManager {
                     }
                 }
             }
-            current = Address.getIntValue(current, 4);
+            current = next;
         }
 
         return false;
@@ -423,7 +428,7 @@ public class MemoryManager {
             final int next = Address.getIntValue(current, 4);
             final int survivorCount = Address.getIntValue(current, 8);
             if (currentEpoch % survivorCount == 0) {
-                if (!isUsedByHeap(current) && !isUsedByStack(current)  && !(isUsedByStaticData(current)) && (!isUsedAsCallback(current + 12))) {
+                if (!isUsedByHeap(current) && !isUsedByStack(current)  && !(isUsedByStaticData(current)) && (!isUsedAsCallback(current + 16))) {
                     internalFree(current);
                     freeCounter++;
                 } else {
@@ -436,6 +441,7 @@ public class MemoryManager {
                     // We have reached the limit for the current run
                     // We save the next block to proceed and exit here
                     Address.setIntValue(heapBase, 12, next);
+
                     return stepCounter;
                 }
             }
