@@ -34,6 +34,12 @@ jobs:
      - uses: joschi/setup-jdk@v1
        with:
            java-version: ${{ matrix.java }}
+     - uses: actions/cache@v1
+       with:
+         path: ~/.m2/repository
+         key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+         restore-keys: |
+           ${{ runner.os }}-maven-
      - run: wget https://apt.llvm.org/llvm.sh
      - run: chmod +x llvm.sh
      - run: sudo ./llvm.sh 10
@@ -49,6 +55,12 @@ jobs:
       - uses: joschi/setup-jdk@v1
         with:
           java-version: ${{ matrix.java }}
+      - uses: actions/cache@v1
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
       - run: wget https://apt.llvm.org/llvm.sh
       - run: chmod +x llvm.sh
       - run: sudo ./llvm.sh 10
@@ -64,6 +76,12 @@ jobs:
       - uses: joschi/setup-jdk@v1
         with:
           java-version: ${{ matrix.java }}
+      - uses: actions/cache@v1
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
       - run: wget https://apt.llvm.org/llvm.sh
       - run: chmod +x llvm.sh
       - run: sudo ./llvm.sh 10
@@ -79,6 +97,12 @@ jobs:
       - uses: joschi/setup-jdk@v1
         with:
           java-version: ${{ matrix.java }}
+      - uses: actions/cache@v1
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
       - run: wget https://apt.llvm.org/llvm.sh
       - run: chmod +x llvm.sh
       - run: sudo ./llvm.sh 10
