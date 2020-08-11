@@ -1283,7 +1283,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     // Do nothing here
                 } else {
                     theWriter.tab().text("C.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature))
-                        .assign().text("C.prototype.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(";").newLine();
+                        .assign().text("p.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature)).text(";").newLine();
                 }
 
             });
