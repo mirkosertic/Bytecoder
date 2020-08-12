@@ -56,8 +56,9 @@
         <dependency>
             <groupId>org.clojure</groupId>
             <artifactId>clojure</artifactId>
-            <version>1.4.0</version>
+            <version>${clojure.version}</version>
         </dependency>
+
     </dependencies>
 
     <build>

@@ -43,4 +43,12 @@ public class TAtomicReference<V> {
         value = aNewValue;
         return old;
     }
+
+    public boolean compareAndSet(final V expect, final V update) {
+        if (value == expect) {
+            value = update;
+            return true;
+        }
+        return false;
+    }
 }
