@@ -1424,7 +1424,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         // We use a special LLVM optimizer, which does only stuff LLVM CANNOT do, such
                         // as virtual method invocation optimization. All other optimization work
                         // is done by LLVM!
-                        KnownOptimizer.LLVM.optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
+                        KnownOptimizer.LLVM.optimize(this, theSSAProgram.getControlFlowGraph(), aLinkerContext);
 
                         compiledMethods.add(new CompiledMethod(theLinkedClass, theMethod, theSSAProgram, subProgram));
                     });
@@ -1760,7 +1760,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     // We use a special optimizer, which does only stuff LLVM CANNOT do, such
                     // as virtual method invocation optimization. All other optimization work
                     // is done by LLVM!
-                    KnownOptimizer.LLVM.optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
+                    KnownOptimizer.LLVM.optimize(this, theSSAProgram.getControlFlowGraph(), aLinkerContext);
 
                     // Perform escape analysis
                     if (aOptions.isEscapeAnalysisEnabled()) {

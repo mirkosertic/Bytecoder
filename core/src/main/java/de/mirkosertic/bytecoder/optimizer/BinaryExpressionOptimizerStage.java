@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.optimizer;
 
+import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.BinaryExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
@@ -32,7 +33,7 @@ public class BinaryExpressionOptimizerStage implements OptimizerStage {
     }
 
     @Override
-    public Expression optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext, final RegionNode aCurrentNode,
+    public Expression optimize(final CompileBackend aBackend, final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext, final RegionNode aCurrentNode,
                                final ExpressionList aExpressionList, final Expression aExpression) {
         loop:
         while (true) {

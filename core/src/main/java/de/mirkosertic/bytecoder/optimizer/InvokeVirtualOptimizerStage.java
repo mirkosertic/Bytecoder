@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.optimizer;
 
+import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
@@ -36,8 +37,8 @@ import java.util.Optional;
 public class InvokeVirtualOptimizerStage implements OptimizerStage {
 
     @Override
-    public Expression optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext, final RegionNode aCurrentNode,
-            final ExpressionList aExpressionList, final Expression aExpression) {
+    public Expression optimize(final CompileBackend aBackend, final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext, final RegionNode aCurrentNode,
+                               final ExpressionList aExpressionList, final Expression aExpression) {
 
         if (aExpression instanceof InvokeVirtualMethodExpression) {
             return visit(aExpressionList, (InvokeVirtualMethodExpression) aExpression, aLinkerContext);

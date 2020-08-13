@@ -541,7 +541,7 @@ public class PassThruRegisterAllocatorTest {
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("getNextID", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{}));
         final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
 
-        KnownOptimizer.ALL.optimize(p.getControlFlowGraph(), theLinkerContext);
+        KnownOptimizer.ALL.optimize(null, p.getControlFlowGraph(), theLinkerContext);
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {

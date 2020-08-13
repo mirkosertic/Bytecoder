@@ -899,13 +899,10 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         final BytecodeClassTopologicOrder theOrderedClasses = new BytecodeClassTopologicOrder(aLinkerContext);
         final List<MethodHandleExpression> methodHandles = new ArrayList<>();
-        final JSSSAWriter.IDResolver theResolver = new JSSSAWriter.IDResolver() {
-            @Override
-            public String methodHandleDelegateFor(final MethodHandleExpression e) {
-                final int pos = methodHandles.size();
-                methodHandles.add(e);
-                return "handle" + pos;
-            }
+        final JSSSAWriter.IDResolver theResolver = e -> {
+            final int pos = methodHandles.size();
+            methodHandles.add(e);
+            return "handle" + pos;
         };
 
         theOrderedClasses.getClassesInOrder().stream().forEach(theEntry -> {
@@ -1180,7 +1177,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 //Run optimizer
                 if (!theMethod.getAccessFlags().isAbstract() && !theMethod.getAccessFlags().isNative()) {
-                    aOptions.getOptimizer().optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
+                    aOptions.getOptimizer().optimize(this, theSSAProgram.getControlFlowGraph(), aLinkerContext);
                 }
 
                 final StringBuilder theArguments = new StringBuilder();
