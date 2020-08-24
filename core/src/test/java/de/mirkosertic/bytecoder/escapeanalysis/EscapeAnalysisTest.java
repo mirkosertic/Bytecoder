@@ -90,7 +90,7 @@ public class EscapeAnalysisTest {
         theLinkedClass.resolveVirtualMethod(aMethodName, aSignature);
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
         final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
-        KnownOptimizer.LLVM.optimize(p.getControlFlowGraph(), theLinkerContext);
+        KnownOptimizer.LLVM.optimize(null, p.getControlFlowGraph(), theLinkerContext);
 
         return analyzeMethod(theLinkerContext, new ProgramDescriptor(theLinkedClass, theMethod, p));
     }
@@ -107,7 +107,7 @@ public class EscapeAnalysisTest {
         theLinkedClass.resolveStaticMethod(aMethodName, aSignature);
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
         final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
-        KnownOptimizer.LLVM.optimize(p.getControlFlowGraph(), theLinkerContext);
+        KnownOptimizer.LLVM.optimize(null, p.getControlFlowGraph(), theLinkerContext);
 
         return analyzeMethod(theLinkerContext, new ProgramDescriptor(theLinkedClass, theMethod, p));
     }
@@ -128,7 +128,7 @@ public class EscapeAnalysisTest {
                     return new ProgramDescriptor(theRequestedClass, theRequestedMethod, null);
                 }
                 final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
-                KnownOptimizer.LLVM.optimize(theProgram.getControlFlowGraph(), aLinkercontext);
+                KnownOptimizer.LLVM.optimize(null, theProgram.getControlFlowGraph(), aLinkercontext);
                 return new ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
             }
 
@@ -137,7 +137,7 @@ public class EscapeAnalysisTest {
                 final BytecodeLinkedClass theRequestedClass = aLinkercontext.resolveClass(aClass);
                 final BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull("<init>", aSignature);
                 final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
-                KnownOptimizer.LLVM.optimize(theProgram.getControlFlowGraph(), aLinkercontext);
+                KnownOptimizer.LLVM.optimize(null, theProgram.getControlFlowGraph(), aLinkercontext);
                 return new ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
             }
 
@@ -149,7 +149,7 @@ public class EscapeAnalysisTest {
                     return new ProgramDescriptor(theRequestedClass, theRequestedMethod, null);
                 }
                 final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
-                KnownOptimizer.LLVM.optimize(theProgram.getControlFlowGraph(), aLinkercontext);
+                KnownOptimizer.LLVM.optimize(null, theProgram.getControlFlowGraph(), aLinkercontext);
                 return new ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
             }
         }, aLinkercontext.getLogger());

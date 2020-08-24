@@ -79,7 +79,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         final Program theSSAProgram = theGenerator.generateFrom(theKernelClass.getBytecodeClass(), theKernelMethod);
 
         //Run optimizer
-        aOptions.getOptimizer().optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
+        aOptions.getOptimizer().optimize(this, theSSAProgram.getControlFlowGraph(), aLinkerContext);
 
         // Perform register allocation
         final AbstractAllocator theKernelAllocator = aOptions.getAllocator().allocate(theSSAProgram, t -> t.resolveType(), aLinkerContext);
@@ -111,7 +111,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
                 final Program theSSAProgram1 = theGenerator.generateFrom(aMethodMapEntry.getProvidingClass().getBytecodeClass(), theMethod);
 
                 //Run optimizer
-                aOptions.getOptimizer().optimize(theSSAProgram1.getControlFlowGraph(), aLinkerContext);
+                aOptions.getOptimizer().optimize(this, theSSAProgram1.getControlFlowGraph(), aLinkerContext);
 
                 // Perform register allocation
                 final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram1, t -> t.resolveType(), aLinkerContext);

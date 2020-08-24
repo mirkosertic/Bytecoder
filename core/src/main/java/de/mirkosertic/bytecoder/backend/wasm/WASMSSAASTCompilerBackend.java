@@ -821,7 +821,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 final Program theSSAProgram = theGenerator.generateFrom(aMethodMapEntry.getProvidingClass().getBytecodeClass(), theMethod);
 
                 //Run optimizer
-                aOptions.getOptimizer().optimize(theSSAProgram.getControlFlowGraph(), aLinkerContext);
+                aOptions.getOptimizer().optimize(this, theSSAProgram.getControlFlowGraph(), aLinkerContext);
 
                 // Perform register allocation
                 final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram, variable -> {
