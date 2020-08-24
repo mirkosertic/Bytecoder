@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.optimizer;
 
+import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.Expression;
@@ -35,7 +36,7 @@ import java.util.stream.Collectors;
 public class InlineCallArgumentsOptimizerStage implements OptimizerStage{
 
     @Override
-    public Expression optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext, final RegionNode aCurrentNode,
+    public Expression optimize(final CompileBackend aBackend, final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext, final RegionNode aCurrentNode,
                                final ExpressionList aExpressionList, final Expression aExpression) {
 
         Value theValueToObserve = null;

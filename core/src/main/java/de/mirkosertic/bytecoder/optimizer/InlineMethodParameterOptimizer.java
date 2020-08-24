@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.optimizer;
 
+import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.Program;
@@ -29,7 +30,7 @@ import java.util.Map;
 public class InlineMethodParameterOptimizer implements Optimizer {
 
     @Override
-    public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
+    public void optimize(final CompileBackend aBackend, final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
         final Program theProgram = aGraph.getProgram();
 
         // We need a list of variables that are only initialized once with method parameters
@@ -52,7 +53,7 @@ public class InlineMethodParameterOptimizer implements Optimizer {
         // those inits are replaced by the method parameter values
         if (!theOnceInitialized.isEmpty()) {
             final SinglePassOptimizer theSinglePass = new SinglePassOptimizer(new OptimizerStage[]{
-                    (aGraph1, aLinkerContext1, aCurrentNode, aExpressionList, aExpression) -> {
+                    (aCompilBackend1, aGraph1, aLinkerContext1, aCurrentNode, aExpressionList, aExpression) -> {
                         if (aExpression instanceof VariableAssignmentExpression) {
                             final VariableAssignmentExpression theVarAssign = (VariableAssignmentExpression) aExpression;
                             final Value theValue = theVarAssign.incomingDataFlows().get(0);
@@ -66,7 +67,7 @@ public class InlineMethodParameterOptimizer implements Optimizer {
                         return aExpression;
                     }
             });
-            theSinglePass.optimize(aGraph, aLinkerContext);
+            theSinglePass.optimize(aBackend, aGraph, aLinkerContext);
 
             // Todo: Wipeout from livein/out and phi value propagation
         }

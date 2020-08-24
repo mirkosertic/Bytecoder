@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.optimizer;
 
+import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.Expression;
@@ -31,26 +32,26 @@ public class SinglePassOptimizer implements Optimizer {
     }
 
     @Override
-    public void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
+    public void optimize(final CompileBackend aBackend, final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
         for (final RegionNode theNode : aGraph.dominators().getPreOrder()) {
-            optimize(aGraph, aLinkerContext, theNode, theNode.getExpressions());
+            optimize(aBackend, aGraph, aLinkerContext, theNode, theNode.getExpressions());
         }
     }
 
-    private void optimize(final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext,
+    private void optimize(final CompileBackend aBackend, final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext,
             final RegionNode aCurrentNode,
             final ExpressionList aExpressionList) {
         for (final Expression theExpression : aExpressionList.toList()) {
             if (theExpression instanceof ExpressionListContainer) {
                 final ExpressionListContainer theContainer = (ExpressionListContainer) theExpression;
                 for (final ExpressionList theList : theContainer.getExpressionLists()) {
-                    optimize(aGraph, aLinkerContext, aCurrentNode, theList);
+                    optimize(aBackend, aGraph, aLinkerContext, aCurrentNode, theList);
                 }
             }
             Expression theStart = theExpression;
             for (final OptimizerStage theStage : stages) {
                 if (theStart != null) {
-                    theStart = theStage.optimize(aGraph, aLinkerContext, aCurrentNode, aExpressionList, theStart);
+                    theStart = theStage.optimize(aBackend, aGraph, aLinkerContext, aCurrentNode, aExpressionList, theStart);
                 }
             }
         }
