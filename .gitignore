@@ -4,3 +4,8 @@
 **/target/*
 **/.DS_Store
 /manual/public/
+
+# Eclipse
+.settings
+.classpath
+.project
