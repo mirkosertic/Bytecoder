@@ -201,6 +201,13 @@ class OpenCLContext implements Context {
                     final TypeRef.ArrayTypeRef theArrayTypeRef = (TypeRef.ArrayTypeRef) theFieldType;
                     final TypeRef theArrayElement = TypeRef.toType(theArrayTypeRef.arrayType().getType());
                     switch (theArrayElement.resolve()) {
+                    case FLOAT: {
+                        final Field theField = theKernelClass.getDeclaredField(theArgument.getField().getValue().getName().stringValue());
+                        theField.setAccessible(true);
+                        final float[] theData = (float[]) theField.get(aKernel);
+                        theDataRef = new DataRef(Pointer.to(theData), Sizeof.cl_float * theData.length);
+                        break;
+                    }
                     case INT: {
                         final Field theField = theKernelClass.getDeclaredField(theArgument.getField().getValue().getName().stringValue());
                         theField.setAccessible(true);
@@ -208,11 +215,32 @@ class OpenCLContext implements Context {
                         theDataRef = new DataRef(Pointer.to(theData), Sizeof.cl_int * theData.length);
                         break;
                     }
-                    case FLOAT: {
+                    case LONG: {
                         final Field theField = theKernelClass.getDeclaredField(theArgument.getField().getValue().getName().stringValue());
                         theField.setAccessible(true);
-                        final float[] theData = (float[]) theField.get(aKernel);
-                        theDataRef = new DataRef(Pointer.to(theData), Sizeof.cl_float * theData.length);
+                        final long[] theData = (long[]) theField.get(aKernel);
+                        theDataRef = new DataRef(Pointer.to(theData), Sizeof.cl_long * theData.length);
+                        break;
+                    }
+                    case DOUBLE: {
+                        final Field theField = theKernelClass.getDeclaredField(theArgument.getField().getValue().getName().stringValue());
+                        theField.setAccessible(true);
+                        final double[] theData = (double[]) theField.get(aKernel);
+                        theDataRef = new DataRef(Pointer.to(theData), Sizeof.cl_double * theData.length);
+                        break;
+                    }
+                    case SHORT: {
+                        final Field theField = theKernelClass.getDeclaredField(theArgument.getField().getValue().getName().stringValue());
+                        theField.setAccessible(true);
+                        final short[] theData = (short[]) theField.get(aKernel);
+                        theDataRef = new DataRef(Pointer.to(theData), Sizeof.cl_short * theData.length);
+                        break;
+                    }
+                    case BYTE: {
+                        final Field theField = theKernelClass.getDeclaredField(theArgument.getField().getValue().getName().stringValue());
+                        theField.setAccessible(true);
+                        final byte[] theData = (byte[]) theField.get(aKernel);
+                        theDataRef = new DataRef(Pointer.to(theData), Sizeof.cl_char * theData.length);
                         break;
                     }
                     case REFERENCE: {
@@ -263,6 +291,26 @@ class OpenCLContext implements Context {
                         case INT: {
                             final int theData = (int) theField.get(aKernel);
                             clSetKernelArg(theCachedKernel.kernel, i, Sizeof.cl_int, Pointer.to(new int[]{theData}));
+                            break;
+                        }
+                        case LONG: {
+                            final long theData = (long) theField.get(aKernel);
+                            clSetKernelArg(theCachedKernel.kernel, i, Sizeof.cl_long, Pointer.to(new long[]{theData}));
+                            break;
+                        }
+                        case DOUBLE: {
+                            final double theData = (double) theField.get(aKernel);
+                            clSetKernelArg(theCachedKernel.kernel, i, Sizeof.cl_double, Pointer.to(new double[]{theData}));
+                            break;
+                        }
+                        case SHORT: {
+                            final short theData = (short) theField.get(aKernel);
+                            clSetKernelArg(theCachedKernel.kernel, i, Sizeof.cl_short, Pointer.to(new short[]{theData}));
+                            break;
+                        }
+                        case BYTE: {
+                            final byte theData = (byte) theField.get(aKernel);
+                            clSetKernelArg(theCachedKernel.kernel, i, Sizeof.cl_char, Pointer.to(new byte[]{theData}));
                             break;
                         }
                         default:
