@@ -15,19 +15,31 @@
  */
 package de.mirkosertic.bytecoder.backend.opencl;
 
+import java.util.Optional;
+import java.util.function.Function;
+
+import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.api.opencl.Context;
 import de.mirkosertic.bytecoder.api.opencl.DeviceProperties;
 import de.mirkosertic.bytecoder.api.opencl.Platform;
 import de.mirkosertic.bytecoder.api.opencl.PlatformProperties;
-import de.mirkosertic.bytecoder.api.Logger;
 
 public class CPUPlatform implements Platform {
 
     private final PlatformProperties platformProperties;
     private final DeviceProperties deviceProperties;
     private final Logger logger;
+    private final Function<Logger, Context> cpuContextFactory;
 
     public CPUPlatform(Logger aLogger) {
+        this(aLogger, CPUContext::new);
+    }
+    
+    /**
+     * @param aLogger
+     * @param cpuContextFactory - custom cpuContextFactory eg. {@link CPUContextUsingFixedThreadPool::new}
+     */
+    public CPUPlatform(Logger aLogger, Function<Logger, Context> cpuContextFactory) {
         logger = aLogger;
         platformProperties = () -> "JVM Emulation";
         deviceProperties = new DeviceProperties() {
@@ -56,11 +68,12 @@ public class CPUPlatform implements Platform {
                 return 1;
             }
         };
+        this.cpuContextFactory = Optional.ofNullable(cpuContextFactory).orElse(CPUContext::new);
     }
 
     @Override
     public Context createContext() {
-        return new CPUContext(logger);
+        return cpuContextFactory.apply(logger);
     }
 
     @Override

@@ -18,57 +18,39 @@ package de.mirkosertic.bytecoder.backend.opencl;
 import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.set_global_id;
 import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.set_global_size;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
+import java.util.stream.IntStream;
 
+import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.api.opencl.Context;
 import de.mirkosertic.bytecoder.api.opencl.Kernel;
-import de.mirkosertic.bytecoder.api.Logger;
 
 public class CPUContext implements Context {
 
-    private final ExecutorService executorService;
     private final Logger logger;
 
     public CPUContext(Logger aLogger) {
         logger = aLogger;
-        executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(), new ThreadFactory() {
-
-            int counter = 0;
-
-            @Override
-            public Thread newThread(Runnable aRunnable) {
-                return new Thread(aRunnable, "OpenCL-CPU#" + (counter ++));
-            }
-        });
     }
 
     @Override
     public void compute(int aNumberOfStreams, Kernel aKernel) {
-        CountDownLatch theLatch = new CountDownLatch(aNumberOfStreams);
-        for (int i=0;i<aNumberOfStreams;i++) {
-            final int theWorkItemId = i;
-            executorService.submit(() -> {
-                try {
-                    set_global_id(0, theWorkItemId);
-                    set_global_size(0, aNumberOfStreams);
-                    aKernel.processWorkItem();
-                } finally {
-                    theLatch.countDown();
-                }
-            });
-        }
-        try {
-            theLatch.await();
-        } catch (InterruptedException e) {
-            throw new IllegalStateException("Something went wrong", e);
-        }
+        
+        IntStream.range(0, aNumberOfStreams)
+        .parallel()
+        .forEach(workItemId->{
+            try {
+                set_global_size(0, aNumberOfStreams);
+                set_global_id(0, workItemId);
+                aKernel.processWorkItem();
+            } catch (Exception e) {
+                throw new IllegalStateException("Kernel execution (single work item) failed.", e);
+            }
+        }); // blocks until all work-items are complete
+
     }
 
     @Override
     public void close() {
-        executorService.shutdownNow();
+        // no-op
     }
 }
