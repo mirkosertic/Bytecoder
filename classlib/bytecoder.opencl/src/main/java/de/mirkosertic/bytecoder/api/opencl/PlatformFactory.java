@@ -26,5 +26,16 @@ public abstract class PlatformFactory {
         return theLoader.iterator().next();
     }
 
+    /**
+     * Creates a {@link Platform} with default {@link OpenCLOptions}
+     * @param aLogger
+     * @return
+     */
+    public Platform createPlatform(final Logger aLogger) {
+        return createPlatform(aLogger, OpenCLOptions.defaults());
+    }
+    
     public abstract Platform createPlatform(Logger aLogger, OpenCLOptions aOptions);
+    
+    
 }

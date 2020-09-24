@@ -31,6 +31,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.api.opencl.OpenCLOptions;
@@ -53,10 +54,14 @@ public class OpenCLPlatform implements Platform {
     private final OpenCLOptions openCLOptions;
 
     static class Device {
+        final int index;
         final cl_device_id id;
         private final DeviceProperties deviceProperties;
+        private final Platform parent;
 
-        Device(final cl_device_id aId, final DeviceProperties aDeviceProperties) {
+        Device(final int index, final Platform parent, final cl_device_id aId, final DeviceProperties aDeviceProperties) {
+            this.index = index;
+            this.parent = parent;
             id = aId;
             deviceProperties = aDeviceProperties;
         }
@@ -64,11 +69,13 @@ public class OpenCLPlatform implements Platform {
 
     static class Platform {
 
+        final int index;
         final cl_platform_id id;
         private final PlatformProperties platformProperties;
         private final List<Device> deviceList;
 
-        Platform(final cl_platform_id aId, final PlatformProperties aPlatformProperties) {
+        Platform(final int index, final cl_platform_id aId, final PlatformProperties aPlatformProperties) {
+            this.index = index;
             id = aId;
             platformProperties = aPlatformProperties;
             deviceList = new ArrayList<>();
@@ -101,7 +108,10 @@ public class OpenCLPlatform implements Platform {
             final cl_platform_id theSelectedPlatform = thePlattforms[i];
 
             try {
-                final Platform thePlatform = new Platform(theSelectedPlatform, () -> getString(theSelectedPlatform, CL_PLATFORM_NAME));
+                final Platform thePlatform = new Platform(
+                        i,
+                        theSelectedPlatform, 
+                        () -> getString(theSelectedPlatform, CL_PLATFORM_NAME));
 
                 logger.info("Platform with id {} is {}", i, thePlatform.platformProperties.getName());
 
@@ -113,6 +123,8 @@ public class OpenCLPlatform implements Platform {
                 final cl_device_id[] devices = new cl_device_id[numDevices];
                 clGetDeviceIDs(theSelectedPlatform, CL_DEVICE_TYPE_ALL, numDevices, devices, null);
 
+                int devideIndex = 0;
+                
                 for (final cl_device_id theDevice : devices) {
 
                     final DeviceProperties theDeviceProperties = new DeviceProperties() {
@@ -142,10 +154,12 @@ public class OpenCLPlatform implements Platform {
                         }
                     };
 
-                    logger.info("Found device {} with #CU {} and max workgroup size {} " + theDeviceProperties.getName() ,theDeviceProperties
-                            .getNumberOfComputeUnits() ,theDeviceProperties.getMaxWorkGroupSize());
+                    logger.info("Found device {} with #CU {} and max workgroup size {} ", 
+                            theDeviceProperties.getName(),
+                            theDeviceProperties.getNumberOfComputeUnits(),
+                            theDeviceProperties.getMaxWorkGroupSize());
 
-                    thePlatform.deviceList.add(new Device(theDevice, theDeviceProperties));
+                    thePlatform.deviceList.add(new Device(devideIndex++, thePlatform, theDevice, theDeviceProperties));
                 }
 
                 thePlatforms.add(thePlatform);
@@ -157,23 +171,15 @@ public class OpenCLPlatform implements Platform {
         if (thePlatforms.isEmpty()) {
             throw new IllegalStateException("No OpenCL platform detected");
         }
+        
+        final Device bestDevice = findBestDevice(thePlatforms, aOptions);
 
-        int thePlatformID = thePlatforms.size() - 1;
-        final String theOverriddenPlatform = System.getProperty("OPENCL_PLATFORM");
-        if (theOverriddenPlatform != null && theOverriddenPlatform.length() > 0) {
-            thePlatformID = Integer.parseInt(theOverriddenPlatform);
-        }
+        selectedDevice = bestDevice;
+        selectedPlatform = bestDevice.parent;
 
-        int theDeviceID = 0;
-        final String theOverriddenDevice = System.getProperty("OPENCL_DEVICE");
-        if (theOverriddenDevice != null && theOverriddenDevice.length() > 0) {
-            theDeviceID = Integer.parseInt(theOverriddenDevice);
-        }
-
-        selectedPlatform = thePlatforms.get(thePlatformID);
-
-        logger.info("Device detection done, platform {} selected", thePlatformID);
-        selectedDevice = selectedPlatform.deviceList.get(theDeviceID);
+        logger.info("Device detection done, platform {} and device {} selected", 
+                selectedPlatform.index, 
+                selectedDevice.index);
     }
 
     @Override
@@ -191,6 +197,33 @@ public class OpenCLPlatform implements Platform {
         return new OpenCLContext(this, logger, openCLOptions);
     }
 
+    private Device findBestDevice(final List<Platform> platforms, final OpenCLOptions clOptions) {
+        final Optional<Integer> preferredPlatformIndex = getSystemPropertyAsInt("OPENCL_PLATFORM");
+        final Optional<Integer> preferredDeviceIndex = getSystemPropertyAsInt("OPENCL_DEVICE");
+
+        return platforms.stream()
+        .filter(p->preferredPlatformIndex.map(index->index==p.index).orElse(true))
+        .filter(p->clOptions.getPlatformFilter().test(p.platformProperties))
+        .flatMap(p->p.deviceList
+                .stream()
+                .filter(d->preferredDeviceIndex.map(index->index==d.index).orElse(true)))
+        .sorted((a, b)->clOptions.getPreferredDeviceComparator().compare(b.deviceProperties, a.deviceProperties))
+        .findFirst()
+        .orElseThrow(()->new IllegalStateException("Cannot find usable OpenCL device"));
+    }
+    
+    private Optional<Integer> getSystemPropertyAsInt(final String name) {
+        final String propertyLiteral = System.getProperty(name);
+        if (propertyLiteral != null && propertyLiteral.length() > 0) {
+            try {
+                return Optional.of(Integer.parseInt(propertyLiteral));
+            } catch (Exception e) {
+                logger.warn("cannot parse system property '{}' to an interer value '{}'", name);
+            }
+        }
+        return Optional.empty();
+    }
+    
     private static String getString(final cl_platform_id platform, final int paramName) {
         final long[] size = new long[1];
         clGetPlatformInfo(platform, paramName, 0, null, size);
