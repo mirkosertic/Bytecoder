@@ -109,18 +109,20 @@ public class OpenCLOptions {
          * There are different output styles available for generated code.
          * @param codeGeneratorStyle
          */
-        public void codeGeneratorStyle(CodeGeneratorStyle codeGeneratorStyle) {
+        public OpenCLOptionsBuilder codeGeneratorStyle(CodeGeneratorStyle codeGeneratorStyle) {
             Objects.requireNonNull(codeGeneratorStyle);
             this.codeGeneratorStyle = codeGeneratorStyle;
+            return this;
         }
         
         /**
          * Platforms are rejected if the platformFilter predicate returns false.
          * @param platformFilter
          */
-        public void setPlatformFilter(Predicate<PlatformProperties> platformFilter) {
+        public OpenCLOptionsBuilder platformFilter(Predicate<PlatformProperties> platformFilter) {
             Objects.requireNonNull(platformFilter);
             this.platformFilter = platformFilter;
+            return this;
         }
         
         /**
@@ -128,9 +130,10 @@ public class OpenCLOptions {
          * overridden by system property {@code OPENCL_DEVICE}.  
          * @param preferredPlatformComparator
          */
-        public void setPreferredDeviceComparator(Comparator<DeviceProperties> preferredDeviceComparator) {
+        public OpenCLOptionsBuilder preferredDeviceComparator(Comparator<DeviceProperties> preferredDeviceComparator) {
             Objects.requireNonNull(preferredDeviceComparator);
             this.preferredDeviceComparator = preferredDeviceComparator;
+            return this;
         }
         
         public OpenCLOptions build() {
