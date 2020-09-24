@@ -112,7 +112,7 @@ public class ContextTest {
         final Float2[] theResult = new Float2[] {float2(-1f, -1f)};
 
         try (final Context theContext = thePlatform.createContext()) {
-            theContext.compute(1, new Kernel() {
+            theContext.compute(theA.length, new Kernel() {
                 @Override
                 public void processWorkItem() {
                     final int id = get_global_id(0);
@@ -135,7 +135,7 @@ public class ContextTest {
         final Float2[] theResult = new Float2[] {float2(0f, 0f), float2(0f, 0f)};
 
         try (final Context theContext = thePlatform.createContext()) {
-            theContext.compute(4, new Kernel() {
+            theContext.compute(theA.length, new Kernel() {
                 @Override
                 public void processWorkItem() {
                     final int id = get_global_id(0);
@@ -159,7 +159,7 @@ public class ContextTest {
         final Float2[] theResult = new Float2[] {float2(0f, 0f), float2(0f, 0f)};
 
         try (final Context theContext = thePlatform.createContext()) {
-            theContext.compute(4, new Kernel() {
+            theContext.compute(theA.length, new Kernel() {
                 @Override
                 public void processWorkItem() {
                     final int id = get_global_id(0);
