@@ -53,7 +53,8 @@ public class Float2 implements FloatSerializable {
     }
 
     static Float2 normalize(final Float2 aVector) {
-        throw new IllegalArgumentException("Not implemented for CPU emulation");
+        float length = aVector.length();
+        return float2(aVector.s0 / length, aVector.s1 / length);
     }
 
     float length() {

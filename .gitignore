@@ -4,6 +4,7 @@
 **/target/*
 **/.DS_Store
 /manual/public/
+.llvm
 
 # Eclipse
 .settings
