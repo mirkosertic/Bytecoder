@@ -7,7 +7,7 @@ googleAnalytics = "UA-33614060-5"
 [params]
 author = "Mirko Sertic"
 editURL = "https://github.com/mirkosertic/Bytecoder/tree/master/manual/content/"
-bytecoderversion = "2020-07-29"
+bytecoderversion = "2020-09-25"
 [outputs]
 home = [ "HTML", "RSS", "JSON"]
 [[menu.shortcuts]]
