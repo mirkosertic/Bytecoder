@@ -38,11 +38,14 @@ public class TRandom {
     }
 
     public int nextInt() {
-        return (int) Math.random();
+        return (int) (Math.random() * 2_147_483_647);
     }
 
     public int nextInt(final int seed) {
         return (int) Math.random();
     }
 
+    public long nextLong() {
+        return (long) (Math.random() *  9_223_372_036_854_775_807L);
+    }
 }
