@@ -2766,7 +2766,11 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                 theWriter.print("bytecoder.referenceTable[target].");
                                 theWriter.print(theOpaquePropertyName);
 
-                                final String theConversionFunction = conversionFunctionToJSForOpaqueType(aLinkerContext, theSignature.getArguments()[0]);
+                                final BytecodeTypeRef[] theArguments = theSignature.getArguments();
+                                if (theArguments.length != 1) {
+                                    throw new IllegalStateException("OpaqueProperty setter must have exactly one argument. Property " + theEntry.getKey() + "." + theOpaquePropertyName + " has " + theArguments.length + " arguments.");
+                                }
+                                final String theConversionFunction = conversionFunctionToJSForOpaqueType(aLinkerContext, theArguments[0]);
                                 if (theConversionFunction != null) {
                                     theWriter.print("=");
                                     theWriter.print(theConversionFunction);
