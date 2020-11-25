@@ -15,24 +15,12 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.api.web.*;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import de.mirkosertic.bytecoder.api.web.Console;
-import de.mirkosertic.bytecoder.api.web.Event;
-import de.mirkosertic.bytecoder.api.web.EventListener;
-import de.mirkosertic.bytecoder.api.web.FloatArray;
-import de.mirkosertic.bytecoder.api.web.HTMLDocument;
-import de.mirkosertic.bytecoder.api.web.Int8Array;
-import de.mirkosertic.bytecoder.api.web.IntArray;
-import de.mirkosertic.bytecoder.api.web.OpaqueArrays;
-import de.mirkosertic.bytecoder.api.web.OpaqueReferenceArray;
-import de.mirkosertic.bytecoder.api.web.Promise;
-import de.mirkosertic.bytecoder.api.web.Response;
-import de.mirkosertic.bytecoder.api.web.StringPromise;
-import de.mirkosertic.bytecoder.api.web.Window;
 import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 
@@ -129,6 +117,13 @@ public class OpaqueReferenceTest {
         final Int8Array a = OpaqueArrays.createInt8Array(10);
         a.setByte(1, (byte) 99);
         Assert.assertEquals((byte) 99, a.getByte(1), 0);
+    }
+
+    @Test
+    public void testInt16Array() {
+        final Int16Array a = OpaqueArrays.createInt16Array(10);
+        a.setShort(1, (short) 99);
+        Assert.assertEquals((short) 99, a.getShort(1), 0);
     }
 
     private static class Logger {
