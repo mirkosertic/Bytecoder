@@ -1493,6 +1493,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theWriter.println("             createInt8ArrayINT: function(thisref, p1) {");
             theWriter.println("                 return bytecoder.toBytecoderReference(new Int8Array(p1));");
             theWriter.println("             },");
+            theWriter.println("             createInt16ArrayINT: function(thisref, p1) {");
+            theWriter.println("                 return bytecoder.toBytecoderReference(new Int16Array(p1));");
+            theWriter.println("             },");
             theWriter.println("         },");
 
             theWriter.println("         float : {");
