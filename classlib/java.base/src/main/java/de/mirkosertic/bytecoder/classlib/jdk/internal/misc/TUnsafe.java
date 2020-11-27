@@ -141,6 +141,12 @@ public class TUnsafe {
     public void putInt(final long a, final int b) {
     }
 
+    public void putIntUnaligned(final Object a, final long b, final int c, final boolean d) {
+    }
+
+    public void putShortUnaligned(final Object a, final long b, final short c, final boolean d) {
+    }
+
     public short getShort(final long a) {
         return 0;
     }
