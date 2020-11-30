@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2020 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,8 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
-public interface HTMLCanvasElement extends HTMLElement, CanvasImageSource {
 
-    CanvasRenderingContext2D getContext(final String contextName);
-    int width();
-    int height();
+import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
+
+public interface HTMLImageElement extends CanvasImageSource, OpaqueReferenceType {
 }
