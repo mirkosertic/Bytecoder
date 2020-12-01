@@ -15,9 +15,15 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
+import de.mirkosertic.bytecoder.api.OpaqueProperty;
+
 public interface HTMLCanvasElement extends HTMLElement, CanvasImageSource {
 
     CanvasRenderingContext2D getContext(final String contextName);
+
+    @OpaqueProperty
     int width();
+
+    @OpaqueProperty
     int height();
 }
