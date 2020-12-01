@@ -19,6 +19,8 @@ import de.mirkosertic.bytecoder.api.OpaqueProperty;
 import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
 public interface CanvasRenderingContext2D extends OpaqueReferenceType {
+    @OpaqueProperty
+    void setGlobalCompositeOperation(String type);
 
     @OpaqueProperty
     void setFillStyle(String aStyle);
@@ -52,4 +54,16 @@ public interface CanvasRenderingContext2D extends OpaqueReferenceType {
     void arc(double x, double y, double radius, double startAngle, double endAngle, boolean anticlockwise);
 
     void stroke();
+
+    void fill();
+
+    void rect(int x, int y, int width, int height);
+
+    void drawImage(CanvasImageSource image, int sx, int sy);
+
+    void drawImage(CanvasImageSource image, int sx, int sy, int sWidth, int sHeight, int dx, int dy, int dWidth, int dHeight);
+
+    void getImageData(int sx, int sy, int sw, int sh);
+
+    void clearRect(int x, int y, int width, int height);
 }
