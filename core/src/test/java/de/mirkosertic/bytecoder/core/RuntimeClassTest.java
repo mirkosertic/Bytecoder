@@ -42,6 +42,12 @@ public class RuntimeClassTest {
     }
 
     @Test
+    public void testGetSimpleName() {
+        System.out.println(RuntimeClassTest.class.getSimpleName());
+        Assert.assertEquals("RuntimeClassTest", RuntimeClassTest.class.getSimpleName());
+    }
+
+    @Test
     public void testForName() throws ClassNotFoundException {
         final Class cl = Class.forName(Object.class.getName());
         Assert.assertSame(Object.class, cl);
