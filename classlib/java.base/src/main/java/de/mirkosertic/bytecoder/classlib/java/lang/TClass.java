@@ -15,6 +15,11 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.api.AnyTypeMatches;
+import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.java.lang.reflect.TConstructor;
+
 import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -23,11 +28,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.net.URL;
 import java.security.ProtectionDomain;
-
-import de.mirkosertic.bytecoder.api.AnyTypeMatches;
-import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-import de.mirkosertic.bytecoder.classlib.java.lang.reflect.TConstructor;
 
 @SubstitutesInClass(completeReplace = true)
 public class TClass {
@@ -55,7 +55,12 @@ public class TClass {
     }
 
     public String getSimpleName() {
-        return getName();
+        final String fqName = getName();
+        final int p = fqName.lastIndexOf('.');
+        if (p>=0) {
+            return fqName.substring(p + 1);
+        }
+        return fqName;
     }
 
     public String getPackageName() {
