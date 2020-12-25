@@ -175,10 +175,12 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
        theWriter.tab().text("},").newLine();
 
         theWriter.tab().text("lambdaConstructorRef").colon().text("function(typeToConstruct,constructorRef,staticArguments)").space().text("{").newLine();
+        theWriter.tab(2).text("var selfRef").assign().text("staticArguments.data[0];").newLine();
+        theWriter.tab(2).text("var staticArgs").assign().text("staticArguments.data.splice(1);").newLine();
         theWriter.tab(2).text("var handler").assign().text("function()").space().text("{").newLine();
         theWriter.tab(3).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();
-        theWriter.tab(3).text("var concated").assign().text("staticArguments.data.splice(1).concat(args);").newLine();
-        theWriter.tab(3).text("return constructorRef.apply(staticArguments.data[0],concated);").newLine();
+        theWriter.tab(3).text("var concated").assign().text("staticArgs.concat(args);").newLine();
+        theWriter.tab(3).text("return constructorRef.apply(selfRef,concated);").newLine();
         theWriter.tab(2).text("};").newLine();
         theWriter.tab(2).text("return typeToConstruct.returntype.").text(theMinifier.toSymbol("newLambdaInstance")).text("(handler);").newLine();
         theWriter.tab().text("},").newLine();
@@ -193,19 +195,23 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab().text("},").newLine();
 
         theWriter.tab().text("lambdaVirtualRef").colon().text("function(typeToConstruct,methodRef,staticArguments)").space().text("{").newLine();
+        theWriter.tab(2).text("var selfRef").assign().text("staticArguments.data[0];").newLine();
+        theWriter.tab(2).text("var staticArgs").assign().text("staticArguments.data.splice(1);").newLine();
         theWriter.tab(2).text("var handler").assign().text("function()").space().text("{").newLine();
         theWriter.tab(3).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();
-        theWriter.tab(3).text("var concated").assign().text("staticArguments.data.splice(1).concat(args);").newLine();
-        theWriter.tab(3).text("return methodRef.apply(staticArguments.data[0],concated);").newLine();
+        theWriter.tab(3).text("var concated").assign().text("staticArgs.concat(args);").newLine();
+        theWriter.tab(3).text("return methodRef.apply(selfRef,concated);").newLine();
         theWriter.tab(2).text("};").newLine();
         theWriter.tab(2).text("return typeToConstruct.returntype.").text(theMinifier.toSymbol("newLambdaInstance")).text("(handler);").newLine();
         theWriter.tab().text("},").newLine();
 
         theWriter.tab().text("lambdaSpecialRef").colon().text("function(typeToConstruct,methodRef,staticArguments)").space().text("{").newLine();
+        theWriter.tab(2).text("var selfRef").assign().text("staticArguments.data[0];").newLine();
+        theWriter.tab(2).text("var staticArgs").assign().text("staticArguments.data.splice(1);").newLine();
         theWriter.tab(2).text("var handler").assign().text("function()").space().text("{").newLine();
         theWriter.tab(3).text("var args").assign().text("Array.prototype.slice.call(arguments);").newLine();
-        theWriter.tab(3).text("var concated").assign().text("staticArguments.data.splice(1).concat(args);").newLine();
-        theWriter.tab(3).text("return methodRef.apply(staticArguments.data[0],concated);").newLine();
+        theWriter.tab(3).text("var concated").assign().text("staticArgs.concat(args);").newLine();
+        theWriter.tab(3).text("return methodRef.apply(selfRef,concated);").newLine();
         theWriter.tab(2).text("};").newLine();
         theWriter.tab(2).text("return typeToConstruct.returntype.").text(theMinifier.toSymbol("newLambdaInstance")).text("(handler);").newLine();
         theWriter.tab().text("},").newLine();
