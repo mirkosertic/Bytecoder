@@ -1398,14 +1398,9 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         final List<String> theCallingArgs = new ArrayList<>();
         final List<BytecodeTypeRef> theEffectiveArguments = new ArrayList<>();
         for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
-            // We ignore the first static arg, as this is passed as "this" to the function
-            final String theArgName = "linkArg" +k;
-            if (k>0) {
-                theDelegateArgs.add(theArgName);
-                theCallingArgs.add(theArgName);
-            } else {
-                theCallingArgs.add("this");
-            }
+            final String theArgName = "linkArg" + k;
+            theDelegateArgs.add(theArgName);
+            theCallingArgs.add(theArgName);
             theEffectiveArguments.add(theAdapterAnnotation.getLinkageSignature().getArguments()[k]);
         }
         for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
