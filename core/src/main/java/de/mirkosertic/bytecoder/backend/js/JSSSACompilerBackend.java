@@ -1065,7 +1065,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 theWriter.tab().text("C.").text(theMinifier.toSymbol("newLambdaInstance")).assign().text("function(impl)").space().text("{").newLine();
                 theWriter.tab(2).text("var l").assign().text("C.").text(theMinifier.toSymbol("newInstance")).text("();").newLine();
                 for (final BytecodeMethod theMethod : theLinkedClass.getBytecodeClass().getMethods()) {
-                    if (!theMethod.isConstructor() && !theMethod.isClassInitializer()) {
+                    if (!theMethod.isConstructor() && !theMethod.isClassInitializer() && theMethod.getAccessFlags().isAbstract()) {
                         theWriter.tab(2).text("l.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theMethod.getSignature())).assign().text("impl.bind(l);").newLine();
                     }
                 }

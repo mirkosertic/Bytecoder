@@ -27,15 +27,14 @@ public class PatternTest {
     @Test
     public void testCompile1() {
         System.out.println("Before Pattern call");
-        Pattern javascriptPattern = Pattern.compile("^[a-zA-Z_$][a-zA-Z_$0-9]*$");
+        final Pattern javascriptPattern = Pattern.compile("^[a-zA-Z_$][a-zA-Z_$0-9]*$");
         System.out.println("After Pattern call");
     }
 
     @Test
     public void testCompile2() {
         System.out.println("Before Pattern call");
-        Pattern javascriptPattern = Pattern.compile("^[^\":,}/ ][^:]*$");
+        final Pattern javascriptPattern = Pattern.compile("^[^\":,}/ ][^:]*$");
         System.out.println("After Pattern call");
     }
-
 }
