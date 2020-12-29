@@ -583,55 +583,52 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             final BytecodeResolvedMethods theMethodMap = theLinkedClass.resolvedMethods();
             final String theClassName = WASMWriterUtils.toClassName(aEntry.targetNode().getClassName());
 
-            if (!theLinkedClass.getBytecodeClass().getAccessFlags().isInterface() && !theLinkedClass.getBytecodeClass().getAccessFlags().isAbstract()) {
+            final ExportableFunction instanceOf = module.getFunctions()
+                    .newFunction(theClassName + WASMSSAASTWriter.INSTANCEOFSUFFIX,
+                            Arrays.asList(param("thisRef", PrimitiveType.i32), param("p1", PrimitiveType.i32)), PrimitiveType.i32).toTable();
 
-                final ExportableFunction instanceOf = module.getFunctions()
-                        .newFunction(theClassName + WASMSSAASTWriter.INSTANCEOFSUFFIX,
-                                Arrays.asList(param("thisRef", PrimitiveType.i32), param("p1", PrimitiveType.i32)), PrimitiveType.i32).toTable();
+            for (final BytecodeLinkedClass theType : theLinkedClass.getImplementingTypes()) {
+                final Iff b = instanceOf.flow.iff("b" + theType.getUniqueId(), i32.eq(getLocal(instanceOf.localByLabel("p1"), null), i32.c(theType.getUniqueId(), null), null), null);
+                b.flow.ret(i32.c(1, null), null);
+            }
+            instanceOf.flow.ret(i32.c(0, null), null);
 
-                for (final BytecodeLinkedClass theType : theLinkedClass.getImplementingTypes()) {
-                    final Iff b = instanceOf.flow.iff("b" + theType.getUniqueId(), i32.eq(getLocal(instanceOf.localByLabel("p1"), null), i32.c(theType.getUniqueId(), null), null), null);
-                    b.flow.ret(i32.c(1, null), null);
-                }
-                instanceOf.flow.ret(i32.c(0, null), null);
+            final ExportableFunction resolveTableIndex = module.getFunctions()
+                    .newFunction(theClassName + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX,
+                            Arrays.asList(param("thisRef", PrimitiveType.i32), param("p1", PrimitiveType.i32)), PrimitiveType.i32).toTable();
 
-                final ExportableFunction resolveTableIndex = module.getFunctions()
-                        .newFunction(theClassName + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX,
-                                Arrays.asList(param("thisRef", PrimitiveType.i32), param("p1", PrimitiveType.i32)), PrimitiveType.i32).toTable();
+            // First of all, we collect the list of implementation methods
+            final Map<Integer, WeakFunctionTableReference> theImplementedMethods = new HashMap<>();
 
-                // First of all, we collect the list of implementation methods
-                final Map<Integer, WeakFunctionTableReference> theImplementedMethods = new HashMap<>();
+            // The instanceof method is also part of the vtable
+            theImplementedMethods.put(WASMSSAASTWriter.GENERATED_INSTANCEOF_METHOD_ID,
+                    weakFunctionTableReference(instanceOf.getLabel(), null));
 
-                // The instanceof method is also part of the vtable
-                theImplementedMethods.put(WASMSSAASTWriter.GENERATED_INSTANCEOF_METHOD_ID,
-                        weakFunctionTableReference(instanceOf.getLabel(), null));
+            // Collect all virtual methods and create function references
+            final List<BytecodeResolvedMethods.MethodEntry> theEntries = theMethodMap.stream().collect(Collectors.toList());
+            final Set<BytecodeVirtualMethodIdentifier> theVisitedMethods = new HashSet<>();
+            for (int i = theEntries.size() - 1; 0 <= i; i--) {
+                final BytecodeResolvedMethods.MethodEntry aMethodMapEntry = theEntries.get(i);
+                final BytecodeMethod theMethod = aMethodMapEntry.getValue();
 
-                // Collect all virtual methods and create function references
-                final List<BytecodeResolvedMethods.MethodEntry> theEntries = theMethodMap.stream().collect(Collectors.toList());
-                final Set<BytecodeVirtualMethodIdentifier> theVisitedMethods = new HashSet<>();
-                for (int i = theEntries.size() - 1; 0 <= i; i--) {
-                    final BytecodeResolvedMethods.MethodEntry aMethodMapEntry = theEntries.get(i);
-                    final BytecodeMethod theMethod = aMethodMapEntry.getValue();
+                if (!theMethod.getAccessFlags().isStatic() &&
+                        !theMethod.isConstructor() &&
+                        !theMethod.getAccessFlags().isAbstract() &&
+                        !"desiredAssertionStatus".equals(theMethod.getName().stringValue()) &&
+                        !"getEnumConstants".equals(theMethod.getName().stringValue()) &&
+                        theMethod.getAttributes().getAnnotationByType(Substitutes.class.getName()) == null) {
 
-                    if (!theMethod.getAccessFlags().isStatic() &&
-                            !theMethod.isConstructor() &&
-                            !theMethod.getAccessFlags().isAbstract() &&
-                            !"desiredAssertionStatus".equals(theMethod.getName().stringValue()) &&
-                            !"getEnumConstants".equals(theMethod.getName().stringValue()) &&
-                            theMethod.getAttributes().getAnnotationByType(Substitutes.class.getName()) == null) {
+                    final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
+                            .identifierFor(theMethod);
 
-                        final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
-                                .identifierFor(theMethod);
+                    if (theVisitedMethods.add(theMethodIdentifier)) {
 
-                        if (theVisitedMethods.add(theMethodIdentifier)) {
+                        final String theFullMethodName = WASMWriterUtils
+                                .toMethodName(aMethodMapEntry.getProvidingClass().getClassName(),
+                                        theMethod.getName(),
+                                        theMethod.getSignature());
 
-                            final String theFullMethodName = WASMWriterUtils
-                                    .toMethodName(aMethodMapEntry.getProvidingClass().getClassName(),
-                                            theMethod.getName(),
-                                            theMethod.getSignature());
-
-                            theImplementedMethods.put(theMethodIdentifier.getIdentifier(), weakFunctionTableReference(theFullMethodName, null));
-                        }
+                        theImplementedMethods.put(theMethodIdentifier.getIdentifier(), weakFunctionTableReference(theFullMethodName, null));
                     }
                 }
 
