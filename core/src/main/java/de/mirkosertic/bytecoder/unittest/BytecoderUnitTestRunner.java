@@ -94,8 +94,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 testOptions.add(new TestOption(CompileTarget.BackendType.js, true, false, false, false));
                 testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, false, false));
                 testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, false, false));
-                //testOptions.add(new TestOption(CompileTarget.BackendType.wasm_llvm, false, false, false, false));
-                testOptions.add(new TestOption(CompileTarget.BackendType.wasm_llvm, false, false, false, true));
+                testOptions.add(new TestOption(CompileTarget.BackendType.wasm_llvm, false, false, false, false));
+                //testOptions.add(new TestOption(CompileTarget.BackendType.wasm_llvm, false, false, false, true));
 
             } else {
                 for (final BytecoderTestOption o : declaredOptions.value()) {
@@ -111,8 +111,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
             testOptions.add(new TestOption(CompileTarget.BackendType.js, true, false, false, false));
             testOptions.add(new TestOption(CompileTarget.BackendType.wasm, false, false, false, false));
             testOptions.add(new TestOption(CompileTarget.BackendType.wasm, true, false, false, false));
-            //testOptions.add(new TestOption(CompileTarget.BackendType.wasm_llvm, false, false, false, false));
-            testOptions.add(new TestOption(CompileTarget.BackendType.wasm_llvm, false, false, false, true));
+            testOptions.add(new TestOption(CompileTarget.BackendType.wasm_llvm, false, false, false, false));
+            //testOptions.add(new TestOption(CompileTarget.BackendType.wasm_llvm, false, false, false, true));
 
             additionalClassesToLink = new String[0];
             additionalResources = new String[0];
@@ -568,6 +568,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
 
                 final String theFileName = LLVMWriterUtils.toMethodName(theTypeRef, aFrameworkMethod.getName(), theSignature) + "_" + aTestOption.toFilePrefix()+  ".html";
 
+                final String theWASMFileName = LLVMWriterUtils.toMethodName(theTypeRef, aFrameworkMethod.getName(), theSignature) + "_bytecoder.wasm";
+
                 final File theWorkingDirectory = new File(".");
 
                 initializeTestWebServer();
@@ -596,24 +598,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 theWriter.println("                try {");
 
                 theWriter.println();
-                theWriter.print("                    var binaryBuffer = new Uint8Array([");
-                try (final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-                    binaryContent.writeTo(bos);
-                    bos.flush();
-                    final byte[] theData = bos.toByteArray();
-                    for (int i = 0; i < theData.length; i++) {
-                        if (i > 0) {
-                            theWriter.print(",");
-                        }
-                        theWriter.print(theData[i] & 0xFF);
-                    }
-                }
-
-                theWriter.println("]);");
-
-                theWriter.println("                    console.log('Size of compiled WASM binary is ' + binaryBuffer.length);");
-                theWriter.println();
-                theWriter.println("                    var theInstantiatePromise = WebAssembly.instantiate(binaryBuffer, bytecoder.imports);");
+                theWriter.println("                    var theInstantiatePromise = WebAssembly.instantiateStreaming(fetch('" + theWASMFileName + "'), bytecoder.imports);");
                 theWriter.println("                    theInstantiatePromise.then(");
                 theWriter.println("                         function (resolved) {");
                 theWriter.println("                             var wasmModule = resolved.module;");

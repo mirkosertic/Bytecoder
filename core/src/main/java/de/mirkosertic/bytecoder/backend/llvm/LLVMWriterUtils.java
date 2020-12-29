@@ -17,7 +17,6 @@ package de.mirkosertic.bytecoder.backend.llvm;
 
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
@@ -111,16 +110,6 @@ public class LLVMWriterUtils {
         }
         theResult.append(")");
         return theResult.toString();
-    }
-
-    public static boolean filteredForTest(final BytecodeLinkedClass aClass) {
-        /*if (!aClass.getClassName().name().contains("LLVMCompilerBackendTest")
-                && !aClass.getClassName().name().equals(MemoryManager.class.getName())
-                && !aClass.getClassName().name().equals(Array.class.getName())
-                && !aClass.getClassName().name().equals(Enum.class.getName())) {
-            return false;
-        }*/
-        return true;
     }
 
     public static String runtimeClassVariableName(final BytecodeObjectTypeRef aType) {

@@ -130,4 +130,11 @@ public class InvokeDynamicInterfaceTest {
         assertFalse(andChecker.is(-10));
         assertTrue(andChecker.is(6));
     }
+
+    @Test
+    public void testLambdaInstanceOf() {
+        final Object c = Range(10, 10);
+        assertTrue(c instanceof Checker);
+        assertFalse(c instanceof String);
+    }
 }
