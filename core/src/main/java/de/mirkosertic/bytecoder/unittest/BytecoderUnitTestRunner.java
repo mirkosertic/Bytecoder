@@ -50,7 +50,6 @@ import org.openqa.selenium.remote.CapabilityType;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.BrowserWebDriverContainer;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -397,6 +396,8 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
 
                 final File theGeneratedFile = new File(theGeneratedFilesDir, theFileName);
 
+                final String theWASMFileName = theResult.getMinifier().toClassName(theTestClassType) + "." + theResult.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "_" + aTestOption.toFilePrefix() + ".wasm";
+
                 final PrintWriter theWriter = new PrintWriter(theGeneratedFile);
                 theWriter.println("<html>");
                 theWriter.println("    <body>");
@@ -412,25 +413,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                 theWriter.println("                console.log('Test started');");
                 theWriter.println("                try {");
 
-                theWriter.println();
-                theWriter.print("                    var binaryBuffer = new Uint8Array([");
-                try (final ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
-                    binaryContent.writeTo(bos);
-                    bos.flush();
-                    final byte[] theData = bos.toByteArray();
-                    for (int i = 0; i < theData.length; i++) {
-                        if (i > 0) {
-                            theWriter.print(",");
-                        }
-                        theWriter.print(theData[i] & 0xFF);
-                    }
-                }
-
-                theWriter.println("]);");
-
-                theWriter.println("                    console.log('Size of compiled WASM binary is ' + binaryBuffer.length);");
-                theWriter.println();
-                theWriter.println("                    var theInstantiatePromise = WebAssembly.instantiate(binaryBuffer, bytecoder.imports);");
+                theWriter.println("                    var theInstantiatePromise = WebAssembly.instantiateStreaming(fetch('" + theWASMFileName + "'), bytecoder.imports);");
                 theWriter.println("                    theInstantiatePromise.then(");
                 theWriter.println("                         function (resolved) {");
                 theWriter.println("                             var wasmModule = resolved.module;");
@@ -492,7 +475,7 @@ public class BytecoderUnitTestRunner extends ParentRunner<FrameworkMethodWithTes
                     jsContent.writeTo(fos);
                 }
 
-                try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theResult.getMinifier().toClassName(theTestClassType) + "." + theResult.getMinifier().toMethodName(aFrameworkMethod.getName(), theSignature) + "_" + aTestOption.toFilePrefix() + ".wasm"))) {
+                try (final FileOutputStream fos = new FileOutputStream(new File(theGeneratedFilesDir, theWASMFileName))) {
                     binaryContent.writeTo(fos);
                 }
 

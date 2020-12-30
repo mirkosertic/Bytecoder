@@ -631,66 +631,67 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         theImplementedMethods.put(theMethodIdentifier.getIdentifier(), weakFunctionTableReference(theFullMethodName, null));
                     }
                 }
+            }
 
-                final int binary_search_threshold = 8;
+            final int binary_search_threshold = 8;
 
-                // Now, we have to check
-                // If there are only a few implementation methods,
-                // we can use a simple linear comparison chain to find the right method
-                // if there are many, we implement a binary search strategy
-                if (theImplementedMethods.size() < binary_search_threshold) {
-                    Expressions theContainerToAdd = resolveTableIndex.flow;
-                    for (final Map.Entry<Integer, WeakFunctionTableReference> theEntry : theImplementedMethods.entrySet()) {
+            // Now, we have to check
+            // If there are only a few implementation methods,
+            // we can use a simple linear comparison chain to find the right method
+            // if there are many, we implement a binary search strategy
+            if (theImplementedMethods.size() < binary_search_threshold) {
+                Expressions theContainerToAdd = resolveTableIndex.flow;
+                for (final Map.Entry<Integer, WeakFunctionTableReference> theEntry : theImplementedMethods.entrySet()) {
 
-                        final Iff iff = theContainerToAdd.iff("b" + theEntry.getKey(), i32.eq(getLocal(resolveTableIndex.localByLabel("p1"), null), i32.c(theEntry.getKey(), null), null), null);
-                        iff.flow.ret(theEntry.getValue(), null);
-                        theContainerToAdd = iff.falseFlow;
-                    }
-                } else {
-                    final List<Integer> theSorted = theImplementedMethods.keySet().stream().sorted().collect(Collectors.toList());
-                    final Stack<List<Integer>> theWorkList = new Stack<>();
-                    theWorkList.push(theSorted);
+                    final Iff iff = theContainerToAdd.iff("b" + theEntry.getKey(), i32.eq(getLocal(resolveTableIndex.localByLabel("p1"), null), i32.c(theEntry.getKey(), null), null), null);
+                    iff.flow.ret(theEntry.getValue(), null);
+                    theContainerToAdd = iff.falseFlow;
+                }
+            } else {
+                final List<Integer> theSorted = theImplementedMethods.keySet().stream().sorted().collect(Collectors.toList());
+                final Stack<List<Integer>> theWorkList = new Stack<>();
+                theWorkList.push(theSorted);
 
-                    final Stack<Expressions> theContainer = new Stack<>();
-                    theContainer.push(resolveTableIndex.flow);
+                final Stack<Expressions> theContainer = new Stack<>();
+                theContainer.push(resolveTableIndex.flow);
 
-                    int stepCounter = 1;
-                    while (!theWorkList.isEmpty()) {
-                        final List<Integer> theStackTop = theWorkList.pop();
-                        Expressions theContainerToAdd = theContainer.pop();
-                        if (theStackTop.size() < binary_search_threshold) {
-                            for (final int theMethodIdentifier : theStackTop) {
-                                final WeakFunctionTableReference theEntry = theImplementedMethods
-                                        .get(theMethodIdentifier);
+                int stepCounter = 1;
+                while (!theWorkList.isEmpty()) {
+                    final List<Integer> theStackTop = theWorkList.pop();
+                    Expressions theContainerToAdd = theContainer.pop();
+                    if (theStackTop.size() < binary_search_threshold) {
+                        for (final int theMethodIdentifier : theStackTop) {
+                            final WeakFunctionTableReference theEntry = theImplementedMethods
+                                    .get(theMethodIdentifier);
 
-                                // Do we need some sanity check here?
-                                final Iff iff = theContainerToAdd.iff("b" + stepCounter++,
-                                        i32.eq(getLocal(resolveTableIndex.localByLabel("p1"), null),
-                                                i32.c(theMethodIdentifier, null), null), null);
-                                iff.flow.ret(theEntry, null);
-                                theContainerToAdd = iff.falseFlow;
-                            }
-                            // We can trap here if nothing was found
-                            theContainerToAdd.unreachable(null);
-                        } else {
-                            final int half = theStackTop.size() / 2;
-                            final int theSplitPoint = theStackTop.get(half);
-                            final List<Integer> theLowerBound = theStackTop.subList(0, half);
-                            final List<Integer> theUpperBound = theStackTop.subList(half, theStackTop.size());
-
-                            final Iff iff = theContainerToAdd.iff("b" + stepCounter++, i32.lt_s(getLocal(resolveTableIndex.localByLabel("p1"), null), i32.c(theSplitPoint, null), null), null);
-                            theWorkList.push(theUpperBound);
-                            theContainer.push(iff.falseFlow);
-
-                            theWorkList.push(theLowerBound);
-                            theContainer.push(iff.flow);
+                            // Do we need some sanity check here?
+                            final Iff iff = theContainerToAdd.iff("b" + stepCounter++,
+                                    i32.eq(getLocal(resolveTableIndex.localByLabel("p1"), null),
+                                            i32.c(theMethodIdentifier, null), null), null);
+                            iff.flow.ret(theEntry, null);
+                            theContainerToAdd = iff.falseFlow;
                         }
+                        // We can trap here if nothing was found
+                        theContainerToAdd.unreachable(null);
+                    } else {
+                        final int half = theStackTop.size() / 2;
+                        final int theSplitPoint = theStackTop.get(half);
+                        final List<Integer> theLowerBound = theStackTop.subList(0, half);
+                        final List<Integer> theUpperBound = theStackTop.subList(half, theStackTop.size());
+
+                        final Iff iff = theContainerToAdd.iff("b" + stepCounter++, i32.lt_s(getLocal(resolveTableIndex.localByLabel("p1"), null), i32.c(theSplitPoint, null), null), null);
+                        theWorkList.push(theUpperBound);
+                        theContainer.push(iff.falseFlow);
+
+                        theWorkList.push(theLowerBound);
+                        theContainer.push(iff.flow);
                     }
                 }
-
-                // Nothing wa found, so we trap
-                resolveTableIndex.flow.unreachable(null);
             }
+
+            // Nothing was found
+            // We return -1 for the case the method was called by a lambda handler
+            resolveTableIndex.flow.ret(i32.c(-1, null), null);
 
             theMethodMap.stream().forEach(aMethodMapEntry -> {
 
@@ -986,7 +987,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         final ExportableFunction newRuntimeClassFunction;
         {
             final String mallocFunctionName = WASMWriterUtils.toClassName(theMemoryManagerClass.getClassName()) + "_INTnewObjectINTINTINT";
-            newRuntimeClassFunction = module.getFunctions().newFunction("newRuntimeClass", Arrays.asList(param("type", PrimitiveType.i32),param("staticSize", PrimitiveType.i32),param("enumValuesOffset", PrimitiveType.i32),param("nameStringPoolIndex", PrimitiveType.i32)), PrimitiveType.i32);
+            newRuntimeClassFunction = module.getFunctions().newFunction("newRuntimeClass", Arrays.asList(param("type", PrimitiveType.i32),param("staticSize", PrimitiveType.i32),param("enumValuesOffset", PrimitiveType.i32),param("nameStringPoolIndex", PrimitiveType.i32),param("vtableFunctionIndex", PrimitiveType.i32)), PrimitiveType.i32);
             final Local newRef = newRuntimeClassFunction.newLocal("newRef", PrimitiveType.i32);
             newRuntimeClassFunction.flow.setLocal(newRef,
                     call(module.functionIndex().firstByLabel(mallocFunctionName),
@@ -996,7 +997,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     i32.add(getLocal(newRef, null), getLocal(newRuntimeClassFunction.localByLabel("enumValuesOffset"), null), null), null);
             newRuntimeClassFunction.flow.i32.store(16, getLocal(newRef, null), getLocal(newRuntimeClassFunction.localByLabel("nameStringPoolIndex"), null), null);
             newRuntimeClassFunction.flow.i32.store(20, getLocal(newRef, null), getLocal(newRuntimeClassFunction.localByLabel("type"), null), null);
+            newRuntimeClassFunction.flow.i32.store(24, getLocal(newRef, null), getLocal(newRuntimeClassFunction.localByLabel("vtableFunctionIndex"), null), null);
             newRuntimeClassFunction.flow.ret(getLocal(newRef, null), null);
+
         }
 
         {
@@ -1033,6 +1036,10 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 final StringValue theName = new StringValue(theLinkedClass.getClassName().name());
                 final Global theGlobal = theResolver.globalForStringFromPool(theName);
                 initArguments.add(i32.c(theConstantPool.register(theName), null));
+
+                final Function vtableFunction = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(aEntry.targetNode().getClassName()) + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX);
+                final int vtableindex = module.functionIndex().indexOf(vtableFunction);
+                initArguments.add(i32.c(vtableindex, null));
 
                 bootstrap.flow.setGlobal(runtimeClassGlobal,
                         call(newRuntimeClassFunction, initArguments, null), null);
@@ -1141,10 +1148,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             final Local newRef = newLambdaImplFunction.newLocal("newRef", PrimitiveType.i32);
             newLambdaImplFunction.flow.setLocal(newRef,
                     call(module.functionIndex().firstByLabel(mallocFunctionName),
-                            Arrays.asList(i32.c(0, null), i32.c(16, null),
+                            Arrays.asList(i32.c(0, null), i32.c(20, null),
                                     getLocal(newLambdaImplFunction.localByLabel("type"), null), i32.c(module.getTables().funcTable().indexOf(lambdaStaticResolvevtableindex), null)), null), null);
             newLambdaImplFunction.flow.i32.store(8, getLocal(newRef, null), getLocal(newLambdaImplFunction.localByLabel("implMethodNumber"), null), null);
             newLambdaImplFunction.flow.i32.store(12, getLocal(newRef, null), getLocal(newLambdaImplFunction.localByLabel("staticArguments"), null), null);
+            newLambdaImplFunction.flow.i32.store(16, getLocal(newRef, null), getLocal(newLambdaImplFunction.localByLabel("type"), null), null);
             newLambdaImplFunction.flow.ret(getLocal(newRef, null), null);
         }
 
