@@ -293,8 +293,41 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             });
         });
 
+        // Virtual lamnda handler
         final ExportableFunction lambdaStaticResolvevtableindex = module.getFunctions().newFunction("LAMBDAWITHSTATICIMPL" + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX, Arrays.asList(param("thisRef", PrimitiveType.i32), param("methodId", PrimitiveType.i32)), PrimitiveType.i32).toTable();
-        lambdaStaticResolvevtableindex.flow.ret(i32.load(8, getLocal(lambdaStaticResolvevtableindex.localByLabel("thisRef"), null), null), null);
+        {
+            // First of all, we extract the invoked method from the thisref
+            final Local methodTypeLocal = lambdaStaticResolvevtableindex.newLocal("methodtype", PrimitiveType.i32);
+            lambdaStaticResolvevtableindex.flow.setLocal(methodTypeLocal, i32.load(16, getLocal(lambdaStaticResolvevtableindex.localByLabel("thisRef"), null), null), null);
+            final Local runtimeClassLocal = lambdaStaticResolvevtableindex.newLocal("runtimeclass", PrimitiveType.i32);
+
+            final List<WASMValue> arguments = new ArrayList<>();
+            arguments.add(i32.load(20, getLocal(methodTypeLocal, null), null));
+            lambdaStaticResolvevtableindex.flow.setLocal(
+                    runtimeClassLocal,
+                    call(weakFunctionReference(WASMSSAASTWriter.RUNTIMECLASSRESOLVER, null),arguments, null)
+                    , null);
+            final Local defaultVtableResolver = lambdaStaticResolvevtableindex.newLocal("defaultvtable", PrimitiveType.i32);
+            lambdaStaticResolvevtableindex.flow.setLocal(defaultVtableResolver, i32.load(24, getLocal(runtimeClassLocal, null), null), null);
+
+            final List<WASMValue> theOtherArguments = new ArrayList<>();
+            theOtherArguments.add(getLocal(lambdaStaticResolvevtableindex.localByLabel("thisRef"), null));
+            theOtherArguments.add(getLocal(lambdaStaticResolvevtableindex.localByLabel("methodId"), null));
+
+            final List<PrimitiveType> types = new ArrayList<>();
+            types.add(PrimitiveType.i32);
+            types.add(PrimitiveType.i32);
+            final WASMType theCalledFunction = module.getTypes().typeFor(types, PrimitiveType.i32);
+
+            final Local defaulthandlermethod = lambdaStaticResolvevtableindex.newLocal("defaulthandlermethod", PrimitiveType.i32);
+            lambdaStaticResolvevtableindex.flow.setLocal(defaulthandlermethod, call(theCalledFunction, theOtherArguments, getLocal(defaultVtableResolver, null), null), null);
+
+            final Iff check = lambdaStaticResolvevtableindex.flow.iff("check",
+                    i32.eq(getLocal(defaulthandlermethod, null), i32.c(-1, null), null), null);
+            check.flow.ret(i32.load(8, getLocal(lambdaStaticResolvevtableindex.localByLabel("thisRef"), null), null), null);
+            check.falseFlow.ret(getLocal(defaulthandlermethod, null), null);
+            lambdaStaticResolvevtableindex.flow.unreachable(null);
+        }
 
         final ExportableFunction lambdaConstructorRef = module.getFunctions().newFunction("LAMBDACONSTRUCTORREF" + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX, Arrays.asList(param("thisRef", PrimitiveType.i32), param("methodId", PrimitiveType.i32)), PrimitiveType.i32).toTable();
         lambdaConstructorRef.flow.ret(i32.load(8, getLocal(lambdaConstructorRef.localByLabel("thisRef"), null), null), null);
@@ -921,6 +954,23 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             });
         });
 
+        // Convert runtime class it to runtime class
+        {
+            final ExportableFunction theInstanceOfHelper = module.getFunctions().newFunction(WASMSSAASTWriter.RUNTIMECLASSRESOLVER,
+                    Collections.singletonList(param("runtimeClass", PrimitiveType.i32)), PrimitiveType.i32);
+
+            aLinkerContext.linkedClasses().map(Edge::targetNode).forEach(search -> {
+                if (!search.emulatedByRuntime()) {
+                    final Iff theIff = theInstanceOfHelper.flow.iff(search.getClassName().name(),
+                            i32.eq(i32.c(search.getUniqueId(), null), getLocal(theInstanceOfHelper.localByLabel("runtimeClass"), null), null), null);
+
+                    theIff.flow.ret(call(weakFunctionReference(WASMWriterUtils.toClassName(search.getClassName()) + WASMSSAASTWriter.CLASSINITSUFFIX, null), Collections.emptyList(), null), null);
+                }
+            });
+
+            theInstanceOfHelper.flow.unreachable(null);
+        }
+
         // NewInstance reflection helper
         {
             final ExportableFunction theInstanceOfHelper = module.getFunctions().newFunction(WASMSSAASTWriter.NEWINSTANCEHELPER,
@@ -1036,10 +1086,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 final StringValue theName = new StringValue(theLinkedClass.getClassName().name());
                 final Global theGlobal = theResolver.globalForStringFromPool(theName);
                 initArguments.add(i32.c(theConstantPool.register(theName), null));
-
-                final Function vtableFunction = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(aEntry.targetNode().getClassName()) + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX);
-                final int vtableindex = module.functionIndex().indexOf(vtableFunction);
-                initArguments.add(i32.c(vtableindex, null));
+                initArguments.add(weakFunctionTableReference(WASMWriterUtils.toClassName(aEntry.targetNode().getClassName()) + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX, null));
 
                 bootstrap.flow.setGlobal(runtimeClassGlobal,
                         call(newRuntimeClassFunction, initArguments, null), null);
@@ -1222,7 +1269,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     theSignatureParams.add(theSignatureType);
                 }
 
-                final WASMType theCalledFunction = module.getTypes().typeFor(theSignatureParams);
+
 
                 final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(theDelegateMethod);
 
@@ -1242,6 +1289,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     theOtherArguments.add(getLocal(theFunction.localByLabel("param" + i), null));
                 }
 
+                final WASMType theCalledFunction = module.getTypes().typeFor(theSignatureParams);
                 theFunction.flow.voidCallIndirect(theCalledFunction, theOtherArguments, theIndex, null);
 
                 theFunction.exportAs(theFunctionName);
