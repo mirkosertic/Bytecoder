@@ -850,7 +850,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("    %type_offset_ptr = inttoptr i32 %type_offset to i32*");
                 pw.println("    %runtimeClass = load i32, i32* %type_offset_ptr");
 
-                pw.println("    %defaultInterfaceDispatch = call i32 @defaultinterfacedispatch(i32 %runtimeClass)");
+                pw.println("    %interfacedispatchoffset = add i32 24, %runtimeClass");
+                pw.println("    %interfacedispatchptr = inttoptr i32 %interfacedispatchoffset to i32*");
+                pw.println("    %defaultInterfaceDispatch = load i32, i32* %interfacedispatchptr");
 
                 pw.println("    %vtable = call i32 @dynamicvtable(i32 %runtimeClass, i32 %implementationMethod,i32 %lambda_interface_dispatch)");
 
@@ -1016,7 +1018,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i32 @bytecoder.newRuntimeClass(i32 %type, i32 %staticSize, i32 %enumValuesOffset, i32 %nameStringPoolIndex) {");
+                pw.println("define internal i32 @bytecoder.newRuntimeClass(i32 %type, i32 %staticSize, i32 %enumValuesOffset, i32 %nameStringPoolIndex, i32 %interfaceDispatchPtr) {");
                 pw.println("entry:");
                 pw.println("    %vtableptr = ptrtoint %jlClass__vtable__type* @jlClass__vtable to i32");
                 pw.println("    %allocated = call i32 @dmbcMemoryManager_INTnewObjectINTINTINT(i32 0, i32 %staticSize, i32 -1, i32 %vtableptr)");
@@ -1029,6 +1031,10 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("    %typepos = add i32 %allocated, 20");
                 pw.println("    %typepos_ptr = inttoptr i32 %typepos to i32*");
                 pw.println("    store i32 %type, i32* %typepos_ptr");
+                pw.println("    %interfaceDispatchPtrpos = add i32 %allocated, 24");
+                pw.println("    %interfaceDispatchPtrpos_ptr = inttoptr i32 %interfaceDispatchPtrpos to i32*");
+                pw.println("    store i32 %interfaceDispatchPtr, i32* %interfaceDispatchPtrpos_ptr");
+
                 pw.println("    ret i32 %allocated");
                 pw.println("}");
                 pw.println();
@@ -1842,7 +1848,15 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.print("    %");
                     pw.print(theClassName);
                     pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
-                    pw.print("_allocated = call i32(i32,i32,i32,i32) @bytecoder.newRuntimeClass(i32 ");
+                    pw.print("_interfacedispatchptr = ptrtoint i32(i32,i32)* @");
+                    pw.print(theClassName);
+                    pw.print(LLVMWriter.INTERFACEDISPATCHSUFFIX);
+                    pw.println(" to i32");
+
+                    pw.print("    %");
+                    pw.print(theClassName);
+                    pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
+                    pw.print("_allocated = call i32(i32,i32,i32,i32,i32) @bytecoder.newRuntimeClass(i32 ");
                     pw.print(theLinkedClass.getUniqueId());
                     pw.print(",i32 ");
                     pw.print(theMemoryLayout.classSize());
@@ -1856,7 +1870,12 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.print(",i32 %");
                     pw.print(theClassName);
                     pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
-                    pw.println("_classnameptr)");
+                    pw.print("_classnameptr");
+
+                    pw.print(",i32 %");
+                    pw.print(theClassName);
+                    pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
+                    pw.println("_interfacedispatchptr)");
 
                     // Store the runtime class itself
                     pw.print("    store i32 %");
@@ -1943,56 +1962,6 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.print(i);
                     pw.println(" = private global i32 0");
                 }
-                pw.println();
-
-                // Generate code to resolve default interface vtable resolver method
-                pw.println("define internal i32 @defaultinterfacedispatch(i32 %runtimeclass) {");
-                pw.println("entry:");
-                aLinkerContext.linkedClasses().map(Edge::targetNode).forEach(search -> {
-
-                    if (!search.emulatedByRuntime()) {
-
-                        final String theClassName = LLVMWriterUtils.toClassName(search.getClassName());
-
-                        pw.print("    %runtimeclass_");
-                        pw.print(search.getUniqueId());
-                        pw.print(" = load i32, i32* @");
-                        pw.print(theClassName);
-                        pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
-                        pw.print("    %runtimeclass_");
-                        pw.print(search.getUniqueId());
-                        pw.print("_check = icmp eq i32 %runtimeclass, %runtimeclass_");
-                        pw.println(search.getUniqueId());
-                        pw.print("    br i1 %runtimeclass_");
-                        pw.print(search.getUniqueId());
-                        pw.print("_check, label %checktrue_");
-                        pw.print(search.getUniqueId());
-                        pw.print(", label %checkfalse_");
-                        pw.println(search.getUniqueId());
-
-                        pw.print("checktrue_");
-                        pw.print(search.getUniqueId());
-                        pw.println(":");
-
-                        pw.print("    %");
-                        pw.print(LLVMWriterUtils.runtimeClassVariableName(search.getClassName()));
-                        pw.print(" = ptrtoint i32(i32,i32)* @");
-                        pw.print(theClassName);
-                        pw.print(LLVMWriter.INTERFACEDISPATCHSUFFIX);
-                        pw.println(" to i32");
-
-                        pw.print("    ret i32 %");
-                        pw.println(LLVMWriterUtils.runtimeClassVariableName(search.getClassName()));
-
-                        pw.print("checkfalse_");
-                        pw.print(search.getUniqueId());
-                        pw.println(":");
-                    }
-                });
-
-                pw.println("    call void @llvm.trap()");
-                pw.println("    unreachable");
-                pw.println("}");
                 pw.println();
 
                 // Generate code for lambda vtables
