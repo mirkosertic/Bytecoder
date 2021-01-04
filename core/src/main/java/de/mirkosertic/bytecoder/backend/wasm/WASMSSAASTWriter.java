@@ -179,6 +179,7 @@ public class WASMSSAASTWriter {
     public static final String EXCEPTION_NAME = "EX";
     public static final String CLASSINITSUFFIX = "__init";
     public static final String NEWINSTANCEHELPER = "NEWINSTANCEHELPER";
+    public static final String RUNTIMECLASSRESOLVER = "RUNTIMECLASSRESOLVER";
 
     public interface Resolver {
         Global runtimeClassFor(final BytecodeObjectTypeRef aObjectType);

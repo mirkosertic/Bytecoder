@@ -29,6 +29,8 @@ install:
   - sudo chmod +x hugo
   - git clone https://github.com/matcornic/hugo-theme-learn.git ./manual/themes/hugo-theme-learn
 
+before_script:
+  - echo "MAVEN_OPTS='-Xmx2g -XX:MaxPermSize=512m'" > ~/.mavenrc
 
 script:
   - mvn -B clean package -P jvmtestsonly

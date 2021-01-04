@@ -255,8 +255,6 @@ public class JSSSAWriter {
             print((MethodTypeExpression) aValue);
         } else if (aValue instanceof LambdaWithStaticImplExpression) {
             print((LambdaWithStaticImplExpression) aValue);
-        } else if (aValue instanceof LambdaWithStaticImplExpression) {
-            print((LambdaWithStaticImplExpression) aValue);
         } else if (aValue instanceof LambdaConstructorReferenceExpression) {
             print((LambdaConstructorReferenceExpression) aValue);
         } else if (aValue instanceof LambdaInterfaceReferenceExpression) {
