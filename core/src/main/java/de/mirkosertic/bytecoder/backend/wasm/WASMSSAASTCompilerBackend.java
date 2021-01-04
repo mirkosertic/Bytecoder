@@ -293,8 +293,41 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             });
         });
 
+        // Virtual lamnda handler
         final ExportableFunction lambdaStaticResolvevtableindex = module.getFunctions().newFunction("LAMBDAWITHSTATICIMPL" + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX, Arrays.asList(param("thisRef", PrimitiveType.i32), param("methodId", PrimitiveType.i32)), PrimitiveType.i32).toTable();
-        lambdaStaticResolvevtableindex.flow.ret(i32.load(8, getLocal(lambdaStaticResolvevtableindex.localByLabel("thisRef"), null), null), null);
+        {
+            // First of all, we extract the invoked method from the thisref
+            final Local methodTypeLocal = lambdaStaticResolvevtableindex.newLocal("methodtype", PrimitiveType.i32);
+            lambdaStaticResolvevtableindex.flow.setLocal(methodTypeLocal, i32.load(16, getLocal(lambdaStaticResolvevtableindex.localByLabel("thisRef"), null), null), null);
+            final Local runtimeClassLocal = lambdaStaticResolvevtableindex.newLocal("runtimeclass", PrimitiveType.i32);
+
+            final List<WASMValue> arguments = new ArrayList<>();
+            arguments.add(i32.load(20, getLocal(methodTypeLocal, null), null));
+            lambdaStaticResolvevtableindex.flow.setLocal(
+                    runtimeClassLocal,
+                    call(weakFunctionReference(WASMSSAASTWriter.RUNTIMECLASSRESOLVER, null),arguments, null)
+                    , null);
+            final Local defaultVtableResolver = lambdaStaticResolvevtableindex.newLocal("defaultvtable", PrimitiveType.i32);
+            lambdaStaticResolvevtableindex.flow.setLocal(defaultVtableResolver, i32.load(24, getLocal(runtimeClassLocal, null), null), null);
+
+            final List<WASMValue> theOtherArguments = new ArrayList<>();
+            theOtherArguments.add(getLocal(lambdaStaticResolvevtableindex.localByLabel("thisRef"), null));
+            theOtherArguments.add(getLocal(lambdaStaticResolvevtableindex.localByLabel("methodId"), null));
+
+            final List<PrimitiveType> types = new ArrayList<>();
+            types.add(PrimitiveType.i32);
+            types.add(PrimitiveType.i32);
+            final WASMType theCalledFunction = module.getTypes().typeFor(types, PrimitiveType.i32);
+
+            final Local defaulthandlermethod = lambdaStaticResolvevtableindex.newLocal("defaulthandlermethod", PrimitiveType.i32);
+            lambdaStaticResolvevtableindex.flow.setLocal(defaulthandlermethod, call(theCalledFunction, theOtherArguments, getLocal(defaultVtableResolver, null), null), null);
+
+            final Iff check = lambdaStaticResolvevtableindex.flow.iff("check",
+                    i32.eq(getLocal(defaulthandlermethod, null), i32.c(-1, null), null), null);
+            check.flow.ret(i32.load(8, getLocal(lambdaStaticResolvevtableindex.localByLabel("thisRef"), null), null), null);
+            check.falseFlow.ret(getLocal(defaulthandlermethod, null), null);
+            lambdaStaticResolvevtableindex.flow.unreachable(null);
+        }
 
         final ExportableFunction lambdaConstructorRef = module.getFunctions().newFunction("LAMBDACONSTRUCTORREF" + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX, Arrays.asList(param("thisRef", PrimitiveType.i32), param("methodId", PrimitiveType.i32)), PrimitiveType.i32).toTable();
         lambdaConstructorRef.flow.ret(i32.load(8, getLocal(lambdaConstructorRef.localByLabel("thisRef"), null), null), null);
@@ -583,117 +616,115 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             final BytecodeResolvedMethods theMethodMap = theLinkedClass.resolvedMethods();
             final String theClassName = WASMWriterUtils.toClassName(aEntry.targetNode().getClassName());
 
-            if (!theLinkedClass.getBytecodeClass().getAccessFlags().isInterface() && !theLinkedClass.getBytecodeClass().getAccessFlags().isAbstract()) {
+            final ExportableFunction instanceOf = module.getFunctions()
+                    .newFunction(theClassName + WASMSSAASTWriter.INSTANCEOFSUFFIX,
+                            Arrays.asList(param("thisRef", PrimitiveType.i32), param("p1", PrimitiveType.i32)), PrimitiveType.i32).toTable();
 
-                final ExportableFunction instanceOf = module.getFunctions()
-                        .newFunction(theClassName + WASMSSAASTWriter.INSTANCEOFSUFFIX,
-                                Arrays.asList(param("thisRef", PrimitiveType.i32), param("p1", PrimitiveType.i32)), PrimitiveType.i32).toTable();
-
-                for (final BytecodeLinkedClass theType : theLinkedClass.getImplementingTypes()) {
-                    final Iff b = instanceOf.flow.iff("b" + theType.getUniqueId(), i32.eq(getLocal(instanceOf.localByLabel("p1"), null), i32.c(theType.getUniqueId(), null), null), null);
-                    b.flow.ret(i32.c(1, null), null);
-                }
-                instanceOf.flow.ret(i32.c(0, null), null);
-
-                final ExportableFunction resolveTableIndex = module.getFunctions()
-                        .newFunction(theClassName + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX,
-                                Arrays.asList(param("thisRef", PrimitiveType.i32), param("p1", PrimitiveType.i32)), PrimitiveType.i32).toTable();
-
-                // First of all, we collect the list of implementation methods
-                final Map<Integer, WeakFunctionTableReference> theImplementedMethods = new HashMap<>();
-
-                // The instanceof method is also part of the vtable
-                theImplementedMethods.put(WASMSSAASTWriter.GENERATED_INSTANCEOF_METHOD_ID,
-                        weakFunctionTableReference(instanceOf.getLabel(), null));
-
-                // Collect all virtual methods and create function references
-                final List<BytecodeResolvedMethods.MethodEntry> theEntries = theMethodMap.stream().collect(Collectors.toList());
-                final Set<BytecodeVirtualMethodIdentifier> theVisitedMethods = new HashSet<>();
-                for (int i = theEntries.size() - 1; 0 <= i; i--) {
-                    final BytecodeResolvedMethods.MethodEntry aMethodMapEntry = theEntries.get(i);
-                    final BytecodeMethod theMethod = aMethodMapEntry.getValue();
-
-                    if (!theMethod.getAccessFlags().isStatic() &&
-                            !theMethod.isConstructor() &&
-                            !theMethod.getAccessFlags().isAbstract() &&
-                            !"desiredAssertionStatus".equals(theMethod.getName().stringValue()) &&
-                            !"getEnumConstants".equals(theMethod.getName().stringValue()) &&
-                            theMethod.getAttributes().getAnnotationByType(Substitutes.class.getName()) == null) {
-
-                        final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
-                                .identifierFor(theMethod);
-
-                        if (theVisitedMethods.add(theMethodIdentifier)) {
-
-                            final String theFullMethodName = WASMWriterUtils
-                                    .toMethodName(aMethodMapEntry.getProvidingClass().getClassName(),
-                                            theMethod.getName(),
-                                            theMethod.getSignature());
-
-                            theImplementedMethods.put(theMethodIdentifier.getIdentifier(), weakFunctionTableReference(theFullMethodName, null));
-                        }
-                    }
-                }
-
-                final int binary_search_threshold = 8;
-
-                // Now, we have to check
-                // If there are only a few implementation methods,
-                // we can use a simple linear comparison chain to find the right method
-                // if there are many, we implement a binary search strategy
-                if (theImplementedMethods.size() < binary_search_threshold) {
-                    Expressions theContainerToAdd = resolveTableIndex.flow;
-                    for (final Map.Entry<Integer, WeakFunctionTableReference> theEntry : theImplementedMethods.entrySet()) {
-
-                        final Iff iff = theContainerToAdd.iff("b" + theEntry.getKey(), i32.eq(getLocal(resolveTableIndex.localByLabel("p1"), null), i32.c(theEntry.getKey(), null), null), null);
-                        iff.flow.ret(theEntry.getValue(), null);
-                        theContainerToAdd = iff.falseFlow;
-                    }
-                } else {
-                    final List<Integer> theSorted = theImplementedMethods.keySet().stream().sorted().collect(Collectors.toList());
-                    final Stack<List<Integer>> theWorkList = new Stack<>();
-                    theWorkList.push(theSorted);
-
-                    final Stack<Expressions> theContainer = new Stack<>();
-                    theContainer.push(resolveTableIndex.flow);
-
-                    int stepCounter = 1;
-                    while (!theWorkList.isEmpty()) {
-                        final List<Integer> theStackTop = theWorkList.pop();
-                        Expressions theContainerToAdd = theContainer.pop();
-                        if (theStackTop.size() < binary_search_threshold) {
-                            for (final int theMethodIdentifier : theStackTop) {
-                                final WeakFunctionTableReference theEntry = theImplementedMethods
-                                        .get(theMethodIdentifier);
-
-                                // Do we need some sanity check here?
-                                final Iff iff = theContainerToAdd.iff("b" + stepCounter++,
-                                        i32.eq(getLocal(resolveTableIndex.localByLabel("p1"), null),
-                                                i32.c(theMethodIdentifier, null), null), null);
-                                iff.flow.ret(theEntry, null);
-                                theContainerToAdd = iff.falseFlow;
-                            }
-                            // We can trap here if nothing was found
-                            theContainerToAdd.unreachable(null);
-                        } else {
-                            final int half = theStackTop.size() / 2;
-                            final int theSplitPoint = theStackTop.get(half);
-                            final List<Integer> theLowerBound = theStackTop.subList(0, half);
-                            final List<Integer> theUpperBound = theStackTop.subList(half, theStackTop.size());
-
-                            final Iff iff = theContainerToAdd.iff("b" + stepCounter++, i32.lt_s(getLocal(resolveTableIndex.localByLabel("p1"), null), i32.c(theSplitPoint, null), null), null);
-                            theWorkList.push(theUpperBound);
-                            theContainer.push(iff.falseFlow);
-
-                            theWorkList.push(theLowerBound);
-                            theContainer.push(iff.flow);
-                        }
-                    }
-                }
-
-                // Nothing wa found, so we trap
-                resolveTableIndex.flow.unreachable(null);
+            for (final BytecodeLinkedClass theType : theLinkedClass.getImplementingTypes()) {
+                final Iff b = instanceOf.flow.iff("b" + theType.getUniqueId(), i32.eq(getLocal(instanceOf.localByLabel("p1"), null), i32.c(theType.getUniqueId(), null), null), null);
+                b.flow.ret(i32.c(1, null), null);
             }
+            instanceOf.flow.ret(i32.c(0, null), null);
+
+            final ExportableFunction resolveTableIndex = module.getFunctions()
+                    .newFunction(theClassName + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX,
+                            Arrays.asList(param("thisRef", PrimitiveType.i32), param("p1", PrimitiveType.i32)), PrimitiveType.i32).toTable();
+
+            // First of all, we collect the list of implementation methods
+            final Map<Integer, WeakFunctionTableReference> theImplementedMethods = new HashMap<>();
+
+            // The instanceof method is also part of the vtable
+            theImplementedMethods.put(WASMSSAASTWriter.GENERATED_INSTANCEOF_METHOD_ID,
+                    weakFunctionTableReference(instanceOf.getLabel(), null));
+
+            // Collect all virtual methods and create function references
+            final List<BytecodeResolvedMethods.MethodEntry> theEntries = theMethodMap.stream().collect(Collectors.toList());
+            final Set<BytecodeVirtualMethodIdentifier> theVisitedMethods = new HashSet<>();
+            for (int i = theEntries.size() - 1; 0 <= i; i--) {
+                final BytecodeResolvedMethods.MethodEntry aMethodMapEntry = theEntries.get(i);
+                final BytecodeMethod theMethod = aMethodMapEntry.getValue();
+
+                if (!theMethod.getAccessFlags().isStatic() &&
+                        !theMethod.isConstructor() &&
+                        !theMethod.getAccessFlags().isAbstract() &&
+                        !"desiredAssertionStatus".equals(theMethod.getName().stringValue()) &&
+                        !"getEnumConstants".equals(theMethod.getName().stringValue()) &&
+                        theMethod.getAttributes().getAnnotationByType(Substitutes.class.getName()) == null) {
+
+                    final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection()
+                            .identifierFor(theMethod);
+
+                    if (theVisitedMethods.add(theMethodIdentifier)) {
+
+                        final String theFullMethodName = WASMWriterUtils
+                                .toMethodName(aMethodMapEntry.getProvidingClass().getClassName(),
+                                        theMethod.getName(),
+                                        theMethod.getSignature());
+
+                        theImplementedMethods.put(theMethodIdentifier.getIdentifier(), weakFunctionTableReference(theFullMethodName, null));
+                    }
+                }
+            }
+
+            final int binary_search_threshold = 8;
+
+            // Now, we have to check
+            // If there are only a few implementation methods,
+            // we can use a simple linear comparison chain to find the right method
+            // if there are many, we implement a binary search strategy
+            if (theImplementedMethods.size() < binary_search_threshold) {
+                Expressions theContainerToAdd = resolveTableIndex.flow;
+                for (final Map.Entry<Integer, WeakFunctionTableReference> theEntry : theImplementedMethods.entrySet()) {
+
+                    final Iff iff = theContainerToAdd.iff("b" + theEntry.getKey(), i32.eq(getLocal(resolveTableIndex.localByLabel("p1"), null), i32.c(theEntry.getKey(), null), null), null);
+                    iff.flow.ret(theEntry.getValue(), null);
+                    theContainerToAdd = iff.falseFlow;
+                }
+            } else {
+                final List<Integer> theSorted = theImplementedMethods.keySet().stream().sorted().collect(Collectors.toList());
+                final Stack<List<Integer>> theWorkList = new Stack<>();
+                theWorkList.push(theSorted);
+
+                final Stack<Expressions> theContainer = new Stack<>();
+                theContainer.push(resolveTableIndex.flow);
+
+                int stepCounter = 1;
+                while (!theWorkList.isEmpty()) {
+                    final List<Integer> theStackTop = theWorkList.pop();
+                    Expressions theContainerToAdd = theContainer.pop();
+                    if (theStackTop.size() < binary_search_threshold) {
+                        for (final int theMethodIdentifier : theStackTop) {
+                            final WeakFunctionTableReference theEntry = theImplementedMethods
+                                    .get(theMethodIdentifier);
+
+                            // Do we need some sanity check here?
+                            final Iff iff = theContainerToAdd.iff("b" + stepCounter++,
+                                    i32.eq(getLocal(resolveTableIndex.localByLabel("p1"), null),
+                                            i32.c(theMethodIdentifier, null), null), null);
+                            iff.flow.ret(theEntry, null);
+                            theContainerToAdd = iff.falseFlow;
+                        }
+                        // We can trap here if nothing was found
+                        theContainerToAdd.unreachable(null);
+                    } else {
+                        final int half = theStackTop.size() / 2;
+                        final int theSplitPoint = theStackTop.get(half);
+                        final List<Integer> theLowerBound = theStackTop.subList(0, half);
+                        final List<Integer> theUpperBound = theStackTop.subList(half, theStackTop.size());
+
+                        final Iff iff = theContainerToAdd.iff("b" + stepCounter++, i32.lt_s(getLocal(resolveTableIndex.localByLabel("p1"), null), i32.c(theSplitPoint, null), null), null);
+                        theWorkList.push(theUpperBound);
+                        theContainer.push(iff.falseFlow);
+
+                        theWorkList.push(theLowerBound);
+                        theContainer.push(iff.flow);
+                    }
+                }
+            }
+
+            // Nothing was found
+            // We return -1 for the case the method was called by a lambda handler
+            resolveTableIndex.flow.ret(i32.c(-1, null), null);
 
             theMethodMap.stream().forEach(aMethodMapEntry -> {
 
@@ -923,6 +954,23 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             });
         });
 
+        // Convert runtime class it to runtime class
+        {
+            final ExportableFunction theInstanceOfHelper = module.getFunctions().newFunction(WASMSSAASTWriter.RUNTIMECLASSRESOLVER,
+                    Collections.singletonList(param("runtimeClass", PrimitiveType.i32)), PrimitiveType.i32);
+
+            aLinkerContext.linkedClasses().map(Edge::targetNode).forEach(search -> {
+                if (!search.emulatedByRuntime()) {
+                    final Iff theIff = theInstanceOfHelper.flow.iff(search.getClassName().name(),
+                            i32.eq(i32.c(search.getUniqueId(), null), getLocal(theInstanceOfHelper.localByLabel("runtimeClass"), null), null), null);
+
+                    theIff.flow.ret(call(weakFunctionReference(WASMWriterUtils.toClassName(search.getClassName()) + WASMSSAASTWriter.CLASSINITSUFFIX, null), Collections.emptyList(), null), null);
+                }
+            });
+
+            theInstanceOfHelper.flow.unreachable(null);
+        }
+
         // NewInstance reflection helper
         {
             final ExportableFunction theInstanceOfHelper = module.getFunctions().newFunction(WASMSSAASTWriter.NEWINSTANCEHELPER,
@@ -989,7 +1037,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         final ExportableFunction newRuntimeClassFunction;
         {
             final String mallocFunctionName = WASMWriterUtils.toClassName(theMemoryManagerClass.getClassName()) + "_INTnewObjectINTINTINT";
-            newRuntimeClassFunction = module.getFunctions().newFunction("newRuntimeClass", Arrays.asList(param("type", PrimitiveType.i32),param("staticSize", PrimitiveType.i32),param("enumValuesOffset", PrimitiveType.i32),param("nameStringPoolIndex", PrimitiveType.i32)), PrimitiveType.i32);
+            newRuntimeClassFunction = module.getFunctions().newFunction("newRuntimeClass", Arrays.asList(param("type", PrimitiveType.i32),param("staticSize", PrimitiveType.i32),param("enumValuesOffset", PrimitiveType.i32),param("nameStringPoolIndex", PrimitiveType.i32),param("vtableFunctionIndex", PrimitiveType.i32)), PrimitiveType.i32);
             final Local newRef = newRuntimeClassFunction.newLocal("newRef", PrimitiveType.i32);
             newRuntimeClassFunction.flow.setLocal(newRef,
                     call(module.functionIndex().firstByLabel(mallocFunctionName),
@@ -999,7 +1047,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     i32.add(getLocal(newRef, null), getLocal(newRuntimeClassFunction.localByLabel("enumValuesOffset"), null), null), null);
             newRuntimeClassFunction.flow.i32.store(16, getLocal(newRef, null), getLocal(newRuntimeClassFunction.localByLabel("nameStringPoolIndex"), null), null);
             newRuntimeClassFunction.flow.i32.store(20, getLocal(newRef, null), getLocal(newRuntimeClassFunction.localByLabel("type"), null), null);
+            newRuntimeClassFunction.flow.i32.store(24, getLocal(newRef, null), getLocal(newRuntimeClassFunction.localByLabel("vtableFunctionIndex"), null), null);
             newRuntimeClassFunction.flow.ret(getLocal(newRef, null), null);
+
         }
 
         {
@@ -1036,6 +1086,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 final StringValue theName = new StringValue(theLinkedClass.getClassName().name());
                 final Global theGlobal = theResolver.globalForStringFromPool(theName);
                 initArguments.add(i32.c(theConstantPool.register(theName), null));
+                initArguments.add(weakFunctionTableReference(WASMWriterUtils.toClassName(aEntry.targetNode().getClassName()) + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX, null));
 
                 bootstrap.flow.setGlobal(runtimeClassGlobal,
                         call(newRuntimeClassFunction, initArguments, null), null);
@@ -1144,10 +1195,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             final Local newRef = newLambdaImplFunction.newLocal("newRef", PrimitiveType.i32);
             newLambdaImplFunction.flow.setLocal(newRef,
                     call(module.functionIndex().firstByLabel(mallocFunctionName),
-                            Arrays.asList(i32.c(0, null), i32.c(16, null),
+                            Arrays.asList(i32.c(0, null), i32.c(20, null),
                                     getLocal(newLambdaImplFunction.localByLabel("type"), null), i32.c(module.getTables().funcTable().indexOf(lambdaStaticResolvevtableindex), null)), null), null);
             newLambdaImplFunction.flow.i32.store(8, getLocal(newRef, null), getLocal(newLambdaImplFunction.localByLabel("implMethodNumber"), null), null);
             newLambdaImplFunction.flow.i32.store(12, getLocal(newRef, null), getLocal(newLambdaImplFunction.localByLabel("staticArguments"), null), null);
+            newLambdaImplFunction.flow.i32.store(16, getLocal(newRef, null), getLocal(newLambdaImplFunction.localByLabel("type"), null), null);
             newLambdaImplFunction.flow.ret(getLocal(newRef, null), null);
         }
 
@@ -1217,7 +1269,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     theSignatureParams.add(theSignatureType);
                 }
 
-                final WASMType theCalledFunction = module.getTypes().typeFor(theSignatureParams);
+
 
                 final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(theDelegateMethod);
 
@@ -1237,6 +1289,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                     theOtherArguments.add(getLocal(theFunction.localByLabel("param" + i), null));
                 }
 
+                final WASMType theCalledFunction = module.getTypes().typeFor(theSignatureParams);
                 theFunction.flow.voidCallIndirect(theCalledFunction, theOtherArguments, theIndex, null);
 
                 theFunction.exportAs(theFunctionName);

@@ -71,7 +71,8 @@
                 <executions>
                     <execution>
                         <id>compile</id>
-                        <goals> <goal>compile</goal> </goals>
+                        <goals>
+                            <goal>compile</goal> </goals>
                         <configuration>
                             <sourceDirs>
                                 <sourceDir>${project.basedir}/src/main/kotlin</sourceDir>
@@ -81,7 +82,8 @@
                     </execution>
                     <execution>
                         <id>test-compile</id>
-                        <goals> <goal>test-compile</goal> </goals>
+                        <goals>
+                            <goal>test-compile</goal> </goals>
                         <configuration>
                             <sourceDirs>
                                 <sourceDir>${project.basedir}/src/test/kotlin</sourceDir>
@@ -150,9 +152,6 @@
                 <groupId>de.mirkosertic.bytecoder</groupId>
                 <artifactId>bytecoder-mavenplugin</artifactId>
                 <version>${project.version}</version>
-                <configuration>
-                    <debugOutput>false</debugOutput>
-                </configuration>
                 <executions>
                     <execution>
                         <id>javascript</id>
@@ -165,6 +164,7 @@
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <minifyCompileResult>true</minifyCompileResult>
                             <filenamePrefix>jbox2d_js</filenamePrefix>
+                            <debugOutput>false</debugOutput>
                         </configuration>
                     </execution>
                     <execution>
@@ -179,6 +179,7 @@
                             <preferStackifier>true</preferStackifier>
                             <minifyCompileResult>true</minifyCompileResult>
                             <filenamePrefix>jbox2d_js_stackified</filenamePrefix>
+                            <debugOutput>false</debugOutput>
                         </configuration>
                     </execution>
                     <execution>
@@ -192,6 +193,7 @@
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <minifyCompileResult>true</minifyCompileResult>
                             <filenamePrefix>jbox2d_kotlin_js</filenamePrefix>
+                            <debugOutput>false</debugOutput>
                         </configuration>
                     </execution>
                     <execution>
@@ -204,6 +206,7 @@
                             <backend>wasm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <filenamePrefix>jbox2d_wasm</filenamePrefix>
+                            <debugOutput>false</debugOutput>
                         </configuration>
                     </execution>
                     <execution>
@@ -217,6 +220,7 @@
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <preferStackifier>true</preferStackifier>
                             <filenamePrefix>jbox2d_wasm_stackified</filenamePrefix>
+                            <debugOutput>false</debugOutput>
                         </configuration>
                     </execution>
                     <execution>
@@ -229,7 +233,7 @@
                             <backend>wasm_llvm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <filenamePrefix>jbox2d_wasmllvm</filenamePrefix>
-                            <escapeAnalysisEnabled>true</escapeAnalysisEnabled>
+                            <debugOutput>false</debugOutput>
                         </configuration>
                     </execution>
                     <execution>
@@ -242,6 +246,7 @@
                             <backend>wasm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <filenamePrefix>jbox2d_wasm_kotlin</filenamePrefix>
+                            <debugOutput>false</debugOutput>
                         </configuration>
                     </execution>
                     <execution>
@@ -254,6 +259,7 @@
                             <backend>wasm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <filenamePrefix>vue_wasm</filenamePrefix>
+                            <debugOutput>false</debugOutput>
                         </configuration>
                     </execution>
                     <execution>
@@ -266,7 +272,7 @@
                             <backend>wasm_llvm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <filenamePrefix>vue_wasmllvm</filenamePrefix>
-                            <escapeAnalysisEnabled>true</escapeAnalysisEnabled>
+                            <debugOutput>false</debugOutput>
                         </configuration>
                     </execution>
                     <execution>
@@ -280,6 +286,7 @@
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <minifyCompileResult>true</minifyCompileResult>
                             <filenamePrefix>lua_js</filenamePrefix>
+                            <debugOutput>false</debugOutput>
                         </configuration>
                     </execution>
                     <execution>
@@ -292,6 +299,7 @@
                             <backend>wasm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <filenamePrefix>lua_wasm</filenamePrefix>
+                            <debugOutput>false</debugOutput>
                         </configuration>
                     </execution>
                     <execution>
@@ -304,7 +312,7 @@
                             <backend>wasm_llvm</backend>
                             <enableExceptionHandling>false</enableExceptionHandling>
                             <filenamePrefix>lua_wasmllvm</filenamePrefix>
-                            <escapeAnalysisEnabled>true</escapeAnalysisEnabled>
+                            <debugOutput>false</debugOutput>
                         </configuration>
                     </execution>
                 </executions>
