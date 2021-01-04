@@ -1243,12 +1243,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                             .assign().text("function(").text(theArguments.toString()).text(")").space().text("{").newLine();
                 }
 
-                if (aOptions.isDebugOutput()) {
-                    theWriter.tab(2).text("/**").newLine();
-                    //theWriter.tab(2).text(theSSAProgram.getControlFlowGraph().toDOT()).newLine();
-                    theWriter.tab(2).text("**/").newLine();
-                }
-
                 theWriter.flush();
 
                 // Perform register allocation

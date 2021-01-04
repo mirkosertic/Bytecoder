@@ -35,6 +35,7 @@ import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
 
 import java.io.FileDescriptor;
+import java.io.IOException;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
@@ -42,6 +43,7 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -85,6 +87,19 @@ public class CompileTarget {
     public CompileResult compile(
             final CompileOptions aOptions, final Class aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(bytecodeLoader, aOptions.getLogger());
+
+        // We try to load all available reflection configuration
+        // from the classpath
+        try {
+            final Enumeration<URL> reflectionConfigs = getClass().getClassLoader().getResources("bytecoder-reflection.json");
+            while(reflectionConfigs.hasMoreElements()) {
+                final URL url = reflectionConfigs.nextElement();
+                aOptions.getLogger().info("Loading reflection configuration : {}", url);
+                theLinkerContext.reflectionConfiguration().mergeWithConfigFrom(url);
+            }
+        } catch (final IOException e) {
+            aOptions.getLogger().warn("Failed to load reflection configuration files : {}", e.getMessage());
+        }
 
         final BytecodeLinkedClass theClassLinkedCass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Class.class));
         theClassLinkedCass.resolveConstructorInvocation(new BytecodeMethodSignature(
@@ -139,18 +154,32 @@ public class CompileTarget {
 
         // We have to link character set implementations
         // to make them available via reflection API
-        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/UTF_8")))
-                .resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
-        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/UTF_16"))).resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
-        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/ISO_8859_1"))).resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
-        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/US_ASCII"))).resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
+        final BytecodeLinkedClass utf8 = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/UTF_8")));
+        utf8.reflectiveClass().supportsClassForName(true);
+        utf8.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
 
-        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("java/lang/CharacterDataLatin1"))).resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
+        final BytecodeLinkedClass utf16 = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/UTF_16")));
+        utf16.reflectiveClass().supportsClassForName(true);
+        utf16.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
+
+        final BytecodeLinkedClass iso88591 = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/ISO_8859_1")));
+        iso88591.reflectiveClass().supportsClassForName(true);
+        iso88591.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
+
+        final BytecodeLinkedClass usAscii = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/US_ASCII")));
+        usAscii.reflectiveClass().supportsClassForName(true);
+        usAscii.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
+
+        final BytecodeLinkedClass characterDataLatin1 = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("java/lang/CharacterDataLatin1")));
+        characterDataLatin1.reflectiveClass().supportsClassForName(true);
+        characterDataLatin1.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
 
         // Additional classes
         if (aOptions.getAdditionalClassesToLink() != null) {
             for (final String theClassname : aOptions.getAdditionalClassesToLink()) {
-                theLinkerContext.resolveClass(new BytecodeObjectTypeRef(theClassname)).resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
+                final BytecodeLinkedClass theClass = theLinkerContext.resolveClass(new BytecodeObjectTypeRef(theClassname));
+                theClass.reflectiveClass().supportsClassForName(true);
+                theClass.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
             }
         }
 

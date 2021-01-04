@@ -96,6 +96,9 @@ public class JavaLangClassIntrinsic extends Intrinsic {
                                 final String theClassName = ((StringValue) theArgumentValue).getStringValue();
                                 if (aProgram.getLinkerContext() != null) {
                                     aProgram.getLinkerContext().getLogger().warn("Class {} is used by reflection!", theClassName);
+
+                                    // We register the class to the reflection configuration
+                                    aProgram.getLinkerContext().reflectionConfiguration().register(theClassName).supportsClassForName(true);
                                 }
 
                                 break checkblock;
@@ -107,6 +110,9 @@ public class JavaLangClassIntrinsic extends Intrinsic {
                                         final String theClassName = ((StringValue) theValue).getStringValue();
                                         if (aProgram.getLinkerContext() != null) {
                                             aProgram.getLinkerContext().getLogger().warn("Class {} is used by reflection!", theClassName);
+
+                                            // We register the class to the reflection configuration
+                                            aProgram.getLinkerContext().reflectionConfiguration().register(theClassName).supportsClassForName(true);
                                         }
 
                                         break checkblock;

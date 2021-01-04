@@ -15,13 +15,13 @@
  */
 package de.mirkosertic.bytecoder.optimizer;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.js.JSSSACompilerBackend;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public enum KnownOptimizer implements Optimizer {
 
@@ -79,7 +79,7 @@ public enum KnownOptimizer implements Optimizer {
                 theOptimizer.optimize(aBackend, aGraph, aLinkerContext);
             }
         } catch (final RuntimeException e) {
-            throw new RuntimeException("Error optimizing cfg : " + aGraph.toDOT(), e);
+            throw new RuntimeException("Error optimizing control flow graph", e);
         }
     }
 }
