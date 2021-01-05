@@ -30,8 +30,12 @@ public class ReflectionConfiguration {
             this.name = name;
         }
 
-        public void supportsClassForName(final boolean status) {
+        public void setSupportsClassForName(final boolean status) {
             supportsClassForName = status;
+        }
+
+        public boolean supportsClassForName() {
+            return supportsClassForName;
         }
     }
 
@@ -41,7 +45,7 @@ public class ReflectionConfiguration {
         reflectiveClasses = new HashMap<>();
     }
 
-    public ReflectiveClass register(final String className) {
+    public ReflectiveClass resolve(final String className) {
         return reflectiveClasses.computeIfAbsent(className, ReflectiveClass::new);
     }
 

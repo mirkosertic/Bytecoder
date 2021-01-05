@@ -941,7 +941,11 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             // Framework-Specific methods
             theWriter.tab().text("C.").text(theMinifier.toSymbol("__runtimeclass")).assign().text("new ").symbol("RuntimeClass", null).text("(");
             // Classname index
-            theWriter.text("" + thePool.register(new StringValue(theLinkedClass.getClassName().name())));
+            if (aLinkerContext.reflectionConfiguration().resolve(theLinkedClass.getClassName().name()).supportsClassForName()) {
+                theWriter.text("" + thePool.register(new StringValue(theLinkedClass.getClassName().name())));
+            } else {
+                theWriter.text("-1");
+            }
             theWriter.text(",");
             // Superclass reference
             if (!theLinkedClass.getClassName().name().equals(Object.class.getName())) {
@@ -1133,7 +1137,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                         theWriter.tab(2).text("var jsClassName").assign().text("bytecoder.toJSString(className);").newLine();
 
                         // We search for all non abstract non interface classes
-                        theOrderedClasses.getClassesInOrder().stream().forEach(search -> {
+                        theOrderedClasses.getClassesInOrder().stream().filter(t -> aLinkerContext.reflectionConfiguration().resolve(t.getClassName().name()).supportsClassForName()).forEach(search -> {
                             if (!search.getBytecodeClass().getAccessFlags().isAbstract() && !search.getBytecodeClass().getAccessFlags().isInterface()) {
                                 final String theSearchClassName = theMinifier.toClassName(search.getClassName());
                                 theWriter.tab(2).text("if").space().text("(jsClassName").space().text("===").space().text("'").text(search.getClassName().name()).text("') return ").text(theSearchClassName).text(".").text(theMinifier.toSymbol("__runtimeclass")).text(";").newLine();

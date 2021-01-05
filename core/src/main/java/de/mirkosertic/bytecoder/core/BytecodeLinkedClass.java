@@ -509,6 +509,6 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
     }
 
     public ReflectionConfiguration.ReflectiveClass reflectiveClass() {
-        return linkerContext.reflectionConfiguration().register(getClassName().name());
+        return linkerContext.reflectionConfiguration().resolve(getClassName().name());
     }
 }

@@ -98,7 +98,7 @@ public class JavaLangClassIntrinsic extends Intrinsic {
                                     aProgram.getLinkerContext().getLogger().warn("Class {} is used by reflection!", theClassName);
 
                                     // We register the class to the reflection configuration
-                                    aProgram.getLinkerContext().reflectionConfiguration().register(theClassName).supportsClassForName(true);
+                                    aProgram.getLinkerContext().reflectionConfiguration().resolve(theClassName).setSupportsClassForName(true);
                                 }
 
                                 break checkblock;
@@ -112,7 +112,7 @@ public class JavaLangClassIntrinsic extends Intrinsic {
                                             aProgram.getLinkerContext().getLogger().warn("Class {} is used by reflection!", theClassName);
 
                                             // We register the class to the reflection configuration
-                                            aProgram.getLinkerContext().reflectionConfiguration().register(theClassName).supportsClassForName(true);
+                                            aProgram.getLinkerContext().reflectionConfiguration().resolve(theClassName).setSupportsClassForName(true);
                                         }
 
                                         break checkblock;
