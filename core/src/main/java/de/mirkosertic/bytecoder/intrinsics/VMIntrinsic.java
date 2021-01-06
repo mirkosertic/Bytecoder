@@ -35,14 +35,16 @@ import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 import de.mirkosertic.bytecoder.ssa.ArrayEntryExpression;
 import de.mirkosertic.bytecoder.ssa.ByteValue;
 import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
+import de.mirkosertic.bytecoder.ssa.GetReflectiveFieldExpression;
+import de.mirkosertic.bytecoder.ssa.GetReflectiveStaticFieldExpression;
 import de.mirkosertic.bytecoder.ssa.LambdaConstructorReferenceExpression;
 import de.mirkosertic.bytecoder.ssa.LambdaInterfaceReferenceExpression;
 import de.mirkosertic.bytecoder.ssa.LambdaSpecialReferenceExpression;
 import de.mirkosertic.bytecoder.ssa.LambdaVirtualReferenceExpression;
 import de.mirkosertic.bytecoder.ssa.LambdaWithStaticImplExpression;
 import de.mirkosertic.bytecoder.ssa.MethodTypeArgumentCheckExpression;
-import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceAndConstructExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
 import de.mirkosertic.bytecoder.ssa.ParsingHelper;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
@@ -270,6 +272,18 @@ public class VMIntrinsic extends Intrinsic {
             if ("arrayEntryAsByte".equals(aMethodName)) {
                 final ArrayEntryExpression theExpression = new ArrayEntryExpression(aProgram, aInstruction.getOpcodeAddress(),
                         TypeRef.Native.BYTE, aArguments.get(0), aArguments.get(1));
+                aHelper.push(aInstruction.getOpcodeAddress(), theExpression);
+                return true;
+            }
+            if ("getObjectFromStaticField".equals(aMethodName)) {
+                final GetReflectiveStaticFieldExpression theExpression = new GetReflectiveStaticFieldExpression(aProgram, aInstruction.getOpcodeAddress(),
+                        TypeRef.Native.REFERENCE, aArguments.get(1), aArguments.get(0));
+                aHelper.push(aInstruction.getOpcodeAddress(), theExpression);
+                return true;
+            }
+            if ("getObjectFromInstanceField".equals(aMethodName)) {
+                final GetReflectiveFieldExpression theExpression = new GetReflectiveFieldExpression(aProgram, aInstruction.getOpcodeAddress(),
+                        TypeRef.Native.REFERENCE, aArguments.get(1), aArguments.get(0));
                 aHelper.push(aInstruction.getOpcodeAddress(), theExpression);
                 return true;
             }

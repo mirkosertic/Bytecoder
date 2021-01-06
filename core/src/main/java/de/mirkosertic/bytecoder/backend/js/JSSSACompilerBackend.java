@@ -52,9 +52,11 @@ import de.mirkosertic.bytecoder.stackifier.Stackifier;
 
 import java.io.StringWriter;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
@@ -85,6 +87,19 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 String.class), new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}));
         theVMClass.resolveStaticMethod("newByteArray", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
         theVMClass.resolveStaticMethod("setByteArrayEntry", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.BYTE}));
+
+        // We need this class and constructor to build reflective metadata
+        final BytecodeMethodSignature theFieldClassConstructorSignature = new BytecodeMethodSignature(
+                BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {
+                BytecodeObjectTypeRef.fromRuntimeClass(Class.class),
+                BytecodeObjectTypeRef.fromRuntimeClass(String.class),
+                BytecodePrimitiveTypeRef.INT,
+                BytecodeObjectTypeRef.fromRuntimeClass(Class.class),
+                BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
+                BytecodeObjectTypeRef.fromRuntimeClass(Object.class)
+        });
+        final BytecodeLinkedClass theFieldClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Field.class));
+        theFieldClass.resolveConstructorInvocation(theFieldClassConstructorSignature);
 
         // We need this package-private constructor in String.class for bootstrap
         aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(String.class))
@@ -856,6 +871,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         final String theGetConstructorMethodName = theMinifier.toMethodName("getConstructor", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
                 Constructor.class), new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Class.class), 1)}));
         final String theGetSimpleNameMethodName = theMinifier.toMethodName("getSimpleName", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(String.class), new BytecodeTypeRef[0]));
+        final String theGetFieldNameMethodName = theMinifier.toMethodName("getField", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Field.class), new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(String.class)}));
+        final String theGetDeclaredFieldsNameMethodName = theMinifier.toMethodName("getDeclaredFields", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Field.class), 1), new BytecodeTypeRef[] {}));
 
         // We need the runtimeclass logic
         theWriter.text("var ").text(theMinifier.toSymbol("RuntimeClass")).assign().text("function()").space().text("{").newLine();
@@ -864,6 +881,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(2).text("this.superClass").assign().text("superClass;").newLine();
         theWriter.tab(2).text("this.implementedTypes").assign().text("implementedTypes;").newLine();
         theWriter.tab(2).text("this.staticCallSites").assign().text("[];").newLine();
+        theWriter.tab(2).text("this.declaredFields").assign().text("undefined;").newLine();
         theWriter.tab(1).text("};").newLine();
         theWriter.tab(1).text("C.prototype.").text(theGetNameMethodName).assign().text("function()").space().text("{").newLine();
         theWriter.tab(2).text("return bytecoder.stringpool[this.classNameIndex];").newLine();
@@ -904,6 +922,14 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         theWriter.tab().text("C.prototype.").text(theGetSimpleNameMethodName).assign().text("function(args)").space().text("{").newLine();
         theWriter.tab(2).text("return ").text(theMinifier.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))).text(".prototype.").text(theGetSimpleNameMethodName).text(".call(this, args);").newLine();
+        theWriter.tab().text("};").newLine();
+
+        theWriter.tab().text("C.prototype.").text(theGetFieldNameMethodName).assign().text("function(args)").space().text("{").newLine();
+        theWriter.tab(2).text("return ").text(theMinifier.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))).text(".prototype.").text(theGetFieldNameMethodName).text(".call(this, args);").newLine();
+        theWriter.tab().text("};").newLine();
+
+        theWriter.tab().text("C.prototype.").text(theGetDeclaredFieldsNameMethodName).assign().text("function(args)").space().text("{").newLine();
+        theWriter.tab(2).text("return this.declaredFields;").newLine();
         theWriter.tab().text("};").newLine();
 
         theWriter.tab(1).text("return C;").newLine();
@@ -977,6 +1003,74 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.tab().text("C.").text(theMinifier.toSymbol("init")).assign().text("function()").space().text("{").newLine();
             theWriter.tab(2).text("if").space().text("(!").text(theMinifier.toSymbol("$INITIALIZED")).text(")").space().text("{").newLine();
             theWriter.tab(3).text(theMinifier.toSymbol("$INITIALIZED")).assign().text("true;").newLine();
+
+            if (aLinkerContext.reflectionConfiguration().resolve(theLinkedClass.getClassName().name()).supportsClassForName()) {
+                final List<BytecodeResolvedFields.FieldEntry> declaredFields = theLinkedClass.resolvedFields().stream().filter(
+                        t -> t.getProvidingClass() == theLinkedClass
+                ).collect(Collectors.toList());
+
+                theWriter.tab(3).text("var ").text("fields").assign().text("bytecoder.newArray(").text(Integer.toString(declaredFields.size())).text(",null);").newLine();
+                for (int i=0;i<declaredFields.size();i++) {
+                    final BytecodeResolvedFields.FieldEntry theFieldEntry = declaredFields.get(i);
+                    theWriter.tab(3).text("fields.data[").text(Integer.toString(i)).text("]").assign();
+
+                    theWriter.text(theMinifier.toClassName(theFieldClass.getClassName())).text(".").text(theMinifier.toSymbol("__runtimeclass")).text(".").text(theMinifier.toMethodName("$newInstance", theFieldClassConstructorSignature)).text("(");
+                    // Declared class
+                    theWriter.text(theMinifier.toClassName(theFieldEntry.getProvidingClass().getClassName())).text(".").text(theMinifier.toSymbol("init")).text("()")
+                            .text(".").text(theMinifier.toSymbol("__runtimeclass"));
+                    theWriter.text(",");
+
+                    // Name
+                    final int theIndex = thePool.register(new StringValue(theFieldEntry.getValue().getName().stringValue()));
+                    theWriter.text("bytecoder.stringpool[").text("" + theIndex).text("]");
+                    theWriter.text(",");
+
+                    // Modifier
+                    theWriter.text(Integer.toString(theFieldEntry.getValue().getAccessFlags().getModifiers()));
+                    theWriter.text(",");
+
+                    // Type
+                    if (theFieldEntry.getValue().getTypeRef().isPrimitive()) {
+                        theWriter.text("'");
+                        theWriter.text(theFieldEntry.getValue().getTypeRef().name());
+                        theWriter.text("'");
+                    } else if (theFieldEntry.getValue().getTypeRef().isArray()) {
+                        theWriter.text(theMinifier.toClassName(theArrayType)).text(".").text(theMinifier.toSymbol("init")).text("()")
+                                .text(".").text(theMinifier.toSymbol("__runtimeclass"));
+                    } else {
+                        final BytecodeObjectTypeRef typeRef = (BytecodeObjectTypeRef) theFieldEntry.getValue().getTypeRef();
+                        theWriter.text(theMinifier.toClassName(typeRef)).text(".").text(theMinifier.toSymbol("init")).text("()")
+                                .text(".").text(theMinifier.toSymbol("__runtimeclass"));
+                    }
+                    theWriter.text(",");
+
+                    // Access method
+                    theWriter.newLine();
+                    theWriter.text("function(target) {");
+                    if (theFieldEntry.getValue().getAccessFlags().isStatic()) {
+                        // Static access
+                        theWriter.text("return C.").text(theMinifier.toSymbol("init")).text("()")
+                                .text(".").text(theMinifier.toSymbol("__runtimeclass"))
+                                .text(".").text(theMinifier.toSymbol(theFieldEntry.getValue().getName().stringValue()))
+                                .text(";");
+                    } else {
+                        // Instance access
+                        theWriter.text("return target.").text(theMinifier.toSymbol(theFieldEntry.getValue().getName().stringValue())).text(";");
+                    }
+                    theWriter.text("},");
+
+                    // Mutation method
+                    theWriter.newLine();
+                    theWriter.text("function(target,newValue) {}");
+
+                    theWriter.text(");").newLine();
+                }
+            } else {
+                // Empty field list
+                theWriter.tab(3).text("var ").text("fields").assign().text("bytecoder.newArray(0,null);").newLine();
+            }
+
+            theWriter.tab(3).text("C.").text(theMinifier.toSymbol("__runtimeclass")).text(".declaredFields").assign().text("fields;").newLine();
 
             // Constructors
             theMethods.stream().forEach(aEntry -> {

@@ -63,7 +63,9 @@ import de.mirkosertic.bytecoder.ssa.FloatingPointCeilExpression;
 import de.mirkosertic.bytecoder.ssa.FloatingPointFloorExpression;
 import de.mirkosertic.bytecoder.ssa.FloorExpression;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
+import de.mirkosertic.bytecoder.ssa.GetReflectiveFieldExpression;
 import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
+import de.mirkosertic.bytecoder.ssa.GetReflectiveStaticFieldExpression;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.HeapBaseExpression;
 import de.mirkosertic.bytecoder.ssa.IFElseExpression;
@@ -301,9 +303,33 @@ public class JSSSAWriter {
             print((DataEndExpression) aValue);
         } else if (aValue instanceof SystemHasStackExpression) {
             print((SystemHasStackExpression) aValue);
+        } else if (aValue instanceof GetReflectiveStaticFieldExpression) {
+            print((GetReflectiveStaticFieldExpression) aValue);
+        } else if (aValue instanceof GetReflectiveFieldExpression) {
+            print((GetReflectiveFieldExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
+    }
+
+    private void print(final GetReflectiveFieldExpression aExpression) {
+        final Value field = aExpression.getField();
+        final Value target = aExpression.getTarget();
+        print(field);
+        writer.text(".").text(minifier.toSymbol("accessorMethod"));
+        writer.text(".call(null,");
+        print(target);
+        writer.text(")");
+    }
+
+    private void print(final GetReflectiveStaticFieldExpression aExpression) {
+        final Value field = aExpression.getField();
+        final Value target = aExpression.getTarget();
+        print(field);
+        writer.text(".").text(minifier.toSymbol("accessorMethod"));
+        writer.text(".call(null,");
+        print(target);
+        writer.text(")");
     }
 
     private void print(final SystemHasStackExpression aExpression) {

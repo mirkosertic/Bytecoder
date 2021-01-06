@@ -25,6 +25,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.net.URL;
 import java.security.ProtectionDomain;
@@ -195,9 +196,19 @@ public class TClass {
         return false;
     }
 
-    @EmulatedByRuntime
-    public Field getField(final String name) {
-        return null;
+    public Field getField(final String name) throws NoSuchFieldException {
+        System.out.println("Getting field");
+        for (final Field f : getDeclaredFields()) {
+            System.out.println("Getting field : " + f.getName());
+            if (Modifier.isPublic(f.getModifiers()) && name.equals(f.getName())) {
+                return f;
+            }
+        }
+        final Class superClass = getSuperclass();
+        if (superClass != null) {
+            return superClass.getField(name);
+        }
+        throw new NoSuchFieldException(name);
     }
 
     @EmulatedByRuntime
