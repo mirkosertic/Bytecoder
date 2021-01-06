@@ -21,6 +21,7 @@ import de.mirkosertic.bytecoder.api.Export;
 import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
+import java.lang.reflect.Field;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 
@@ -85,7 +86,7 @@ public class VM {
             '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
             '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
             '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-    } ;
+    };
 
     public static abstract class ImplementingCallsite extends ConstantCallSite {
 
@@ -306,4 +307,16 @@ public class VM {
 
     @EmulatedByRuntime
     public static native byte arrayEntryAsByte(final Object[] aObject, final int index);
+
+    @EmulatedByRuntime
+    public static native Object getObjectFromStaticField(final Class declaredClass, final Field field);
+
+    @EmulatedByRuntime
+    public static native Object getObjectFromInstanceField(final Object o, final Field field);
+
+    @EmulatedByRuntime
+    public static native void putObjectToStaticField(final Class declaredClass, final Field field);
+
+    @EmulatedByRuntime
+    public static native void putObjectToInstanceField(final Object o, final Field field);
 }

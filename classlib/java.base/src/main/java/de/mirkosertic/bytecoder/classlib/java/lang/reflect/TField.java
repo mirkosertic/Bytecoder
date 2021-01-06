@@ -16,15 +16,58 @@
 package de.mirkosertic.bytecoder.classlib.java.lang.reflect;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.VM;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 
 @SubstitutesInClass(completeReplace = true)
 public class TField {
 
+    private final Class declaredClass;
+    private final String name;
+    private final int modifiers;
+    private final Class type;
+    private final Object accessorMethod;
+    private final Object mutationMethod;
+
+    public TField(final Class declaredClass, final String name, final int modifiers, final Class type, final Object accessorMethod, final Object mutationMethod) {
+        this.declaredClass = declaredClass;
+        this.name = name;
+        this.modifiers = modifiers;
+        this.type = type;
+        this.accessorMethod = accessorMethod;
+        this.mutationMethod = mutationMethod;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Class getDeclaringClass() {
+        return declaredClass;
+    }
+
+    public int getModifiers() {
+        return modifiers;
+    }
+
     public Object get(final Object o) {
-        return null;
+        if (Modifier.isStatic(modifiers)) {
+            return VM.getObjectFromStaticField(declaredClass, (Field) (Object) this);
+        }
+        return VM.getObjectFromInstanceField(o, (Field) (Object) this);
+    }
+
+    public void set(final Object o, final Object value) {
+        if (Modifier.isStatic(modifiers)) {
+            VM.putObjectToStaticField(declaredClass, (Field) (Object) this);
+        } else {
+            VM.putObjectToInstanceField(o, (Field) (Object) this);
+        }
     }
 
     public Class getType() {
-        return null;
+        return type;
     }
 }
