@@ -198,9 +198,6 @@ public class VM {
         return null;
     }
 
-    public static void setClassMember(final Class clz, final String name, final Object value) {
-    }
-
     public static final char NEWLINE = '\n';
 
     public static long stringToLong(final String aString) {
@@ -315,8 +312,8 @@ public class VM {
     public static native Object getObjectFromInstanceField(final Object o, final Field field);
 
     @EmulatedByRuntime
-    public static native void putObjectToStaticField(final Class declaredClass, final Field field);
+    public static native void putObjectToStaticField(final Class declaredClass, final Field field, final Object value);
 
     @EmulatedByRuntime
-    public static native void putObjectToInstanceField(final Object o, final Field field);
+    public static native void putObjectToInstanceField(final Object o, final Field field, final Object value);
 }

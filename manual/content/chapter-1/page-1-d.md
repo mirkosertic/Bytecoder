@@ -46,8 +46,10 @@ the JavaScript backend has support for reflective field access:
 ```
 Field fields[] = ReflectionTarget.class.getDeclaredFields();
 Field f = BaseClass.class.getField("staticField"); // Get field by name
+f.getName(); // Retrieve field name
 f.getModifiers(); // Retrieve modifiers
-f.get(BaseClass.class); // Get static or instance value 
+f.get(BaseClass.class); // Get static or instance value
+f.put(BaseClass.class, "newvalue"); // Put static or instance value 
 ```
 
 ### Reflection/AOT Configuration for all compiler backends

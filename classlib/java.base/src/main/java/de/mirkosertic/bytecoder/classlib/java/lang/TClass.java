@@ -197,9 +197,7 @@ public class TClass {
     }
 
     public Field getField(final String name) throws NoSuchFieldException {
-        System.out.println("Getting field");
         for (final Field f : getDeclaredFields()) {
-            System.out.println("Getting field : " + f.getName());
             if (Modifier.isPublic(f.getModifiers()) && name.equals(f.getName())) {
                 return f;
             }
@@ -269,6 +267,7 @@ public class TClass {
     }
 
     public <T> T cast(final Object obj) {
+        //noinspection unchecked
         return (T) obj;
     }
 }

@@ -1047,7 +1047,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     // Access method
                     theWriter.newLine();
                     theWriter.text("function(target) {");
-                    String readConversionFunction = null;
+                    String readBoxingFunction = null;
+                    String writeUnboxingFunction = null;
                     if (theFieldEntry.getValue().getTypeRef().isPrimitive()) {
                         // We need some conversion logic here
                         final BytecodePrimitiveTypeRef primitiveTypeRef = (BytecodePrimitiveTypeRef) theFieldEntry.getValue().getTypeRef();
@@ -1058,7 +1059,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                                         new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.BYTE});
                                 theByteClass.resolveStaticMethod("valueOf", theByteClassValueOfSignature);
 
-                                readConversionFunction = theMinifier.toClassName(theByteClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theByteClassValueOfSignature);
+                                readBoxingFunction = theMinifier.toClassName(theByteClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theByteClassValueOfSignature);
+                                writeUnboxingFunction = theMinifier.toMethodName("byteValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BYTE, new BytecodeTypeRef[0]));
                                 break;
                             }
                             case INT: {
@@ -1067,7 +1069,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                                         new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT});
                                 theIntegerClass.resolveStaticMethod("valueOf", theIntegerClassValueOfSignature);
 
-                                readConversionFunction = theMinifier.toClassName(theIntegerClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theIntegerClassValueOfSignature);
+                                readBoxingFunction = theMinifier.toClassName(theIntegerClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theIntegerClassValueOfSignature);
+                                writeUnboxingFunction = theMinifier.toMethodName("intValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
                                 break;
                             }
                             case CHAR: {
@@ -1076,7 +1079,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                                         new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.CHAR});
                                 theCharacterClass.resolveStaticMethod("valueOf", theCharacterClassValueOfSignature);
 
-                                readConversionFunction = theMinifier.toClassName(theCharacterClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theCharacterClassValueOfSignature);
+                                readBoxingFunction = theMinifier.toClassName(theCharacterClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theCharacterClassValueOfSignature);
+                                writeUnboxingFunction = theMinifier.toMethodName("charValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.CHAR, new BytecodeTypeRef[0]));
                                 break;
                             }
                             case BOOLEAN: {
@@ -1085,7 +1089,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                                         new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.BOOLEAN});
                                 theBooleanClass.resolveStaticMethod("valueOf", theBooleanClassValueOfSignature);
 
-                                readConversionFunction = theMinifier.toClassName(theBooleanClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theBooleanClassValueOfSignature);
+                                readBoxingFunction = theMinifier.toClassName(theBooleanClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theBooleanClassValueOfSignature);
+                                writeUnboxingFunction = theMinifier.toMethodName("booleanValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BOOLEAN, new BytecodeTypeRef[0]));
                                 break;
                             }
                             case FLOAT: {
@@ -1094,7 +1099,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                                         new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.FLOAT});
                                 theFloatClass.resolveStaticMethod("valueOf", theFloatClassValueOfSignature);
 
-                                readConversionFunction = theMinifier.toClassName(theFloatClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theFloatClassValueOfSignature);
+                                readBoxingFunction = theMinifier.toClassName(theFloatClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theFloatClassValueOfSignature);
+                                writeUnboxingFunction = theMinifier.toMethodName("floatValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.FLOAT, new BytecodeTypeRef[0]));
                                 break;
                             }
                             case DOUBLE: {
@@ -1103,7 +1109,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                                         new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.DOUBLE});
                                 theDoubleClass.resolveStaticMethod("valueOf", theDoubleClassValueOfSignature);
 
-                                readConversionFunction = theMinifier.toClassName(theDoubleClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theDoubleClassValueOfSignature);
+                                readBoxingFunction = theMinifier.toClassName(theDoubleClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theDoubleClassValueOfSignature);
+                                writeUnboxingFunction = theMinifier.toMethodName("doubleValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.DOUBLE, new BytecodeTypeRef[0]));
                                 break;
                             }
                             case LONG: {
@@ -1112,7 +1119,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                                         new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.LONG});
                                 theLongClass.resolveStaticMethod("valueOf", theLongClassValueOfSignature);
 
-                                readConversionFunction = theMinifier.toClassName(theLongClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theLongClassValueOfSignature);
+                                readBoxingFunction = theMinifier.toClassName(theLongClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theLongClassValueOfSignature);
+                                writeUnboxingFunction = theMinifier.toMethodName("longValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.LONG, new BytecodeTypeRef[0]));
                                 break;
                             }
                             case SHORT: {
@@ -1121,7 +1129,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                                         new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.SHORT});
                                 theShortClass.resolveStaticMethod("valueOf", theShortClassValueOfSignature);
 
-                                readConversionFunction = theMinifier.toClassName(theShortClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theShortClassValueOfSignature);
+                                readBoxingFunction = theMinifier.toClassName(theShortClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theShortClassValueOfSignature);
+                                writeUnboxingFunction = theMinifier.toMethodName("shortValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.SHORT, new BytecodeTypeRef[0]));
                                 break;
                             }
                             default:
@@ -1131,25 +1140,25 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     if (theFieldEntry.getValue().getAccessFlags().isStatic()) {
                         // Static access
                         theWriter.text("return ");
-                        if (readConversionFunction != null) {
-                            theWriter.text(readConversionFunction).text("(");
+                        if (readBoxingFunction != null) {
+                            theWriter.text(readBoxingFunction).text("(");
                         }
                         theWriter.text("C.").text(theMinifier.toSymbol("init")).text("()")
                                 .text(".").text(theMinifier.toSymbol("__runtimeclass"))
                                 .text(".").text(theMinifier.toSymbol(theFieldEntry.getValue().getName().stringValue()));
 
-                        if (readConversionFunction != null) {
+                        if (readBoxingFunction != null) {
                             theWriter.text(")");
                         }
                         theWriter.text(";");
                     } else {
                         // Instance access
                         theWriter.text("return ");
-                        if (readConversionFunction != null) {
-                            theWriter.text(readConversionFunction).text("(");
+                        if (readBoxingFunction != null) {
+                            theWriter.text(readBoxingFunction).text("(");
                         }
                         theWriter.text("target.").text(theMinifier.toSymbol(theFieldEntry.getValue().getName().stringValue()));
-                        if (readConversionFunction != null) {
+                        if (readBoxingFunction != null) {
                             theWriter.text(")");
                         }
                         theWriter.text(";");
@@ -1158,9 +1167,33 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                     // Mutation method
                     theWriter.newLine();
-                    theWriter.text("function(target,newValue) {}");
+                    theWriter.text("function(target,newValue) {");
 
-                    theWriter.text(");").newLine();
+                    if (theFieldEntry.getValue().getAccessFlags().isStatic()) {
+                        theWriter.text("C.").text(theMinifier.toSymbol("init")).text("()")
+                                .text(".").text(theMinifier.toSymbol("__runtimeclass"))
+                                .text(".").text(theMinifier.toSymbol(theFieldEntry.getValue().getName().stringValue()));
+
+                        theWriter.assign().text("newValue");
+
+                        if (writeUnboxingFunction != null) {
+                            theWriter.text(".").text(writeUnboxingFunction).text("()");
+                        }
+                        theWriter.text(";");
+                    } else {
+                        theWriter.text("target.").text(theMinifier.toSymbol(theFieldEntry.getValue().getName().stringValue()));
+                        theWriter.assign().text("newValue");
+
+                        if (writeUnboxingFunction != null) {
+                            theWriter.text(".").text(writeUnboxingFunction).text("()");
+                        }
+
+
+                        theWriter.text(";");
+                    }
+                    theWriter.text("}").newLine();
+
+                    theWriter.text(");");
                 }
             } else {
                 // Empty field list

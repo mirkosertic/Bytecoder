@@ -28,7 +28,9 @@ public class TField {
     private final String name;
     private final int modifiers;
     private final Class type;
+    @SuppressWarnings("FieldCanBeLocal")
     private final Object accessorMethod;
+    @SuppressWarnings("FieldCanBeLocal")
     private final Object mutationMethod;
 
     public TField(final Class declaredClass, final String name, final int modifiers, final Class type, final Object accessorMethod, final Object mutationMethod) {
@@ -61,9 +63,9 @@ public class TField {
 
     public void set(final Object o, final Object value) {
         if (Modifier.isStatic(modifiers)) {
-            VM.putObjectToStaticField(declaredClass, (Field) (Object) this);
+            VM.putObjectToStaticField(declaredClass, (Field) (Object) this, value);
         } else {
-            VM.putObjectToInstanceField(o, (Field) (Object) this);
+            VM.putObjectToInstanceField(o, (Field) (Object) this, value);
         }
     }
 

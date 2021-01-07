@@ -64,8 +64,8 @@ import de.mirkosertic.bytecoder.ssa.FloatingPointFloorExpression;
 import de.mirkosertic.bytecoder.ssa.FloorExpression;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
 import de.mirkosertic.bytecoder.ssa.GetReflectiveFieldExpression;
-import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
 import de.mirkosertic.bytecoder.ssa.GetReflectiveStaticFieldExpression;
+import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.HeapBaseExpression;
 import de.mirkosertic.bytecoder.ssa.IFElseExpression;
@@ -93,14 +93,16 @@ import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
 import de.mirkosertic.bytecoder.ssa.MinExpression;
 import de.mirkosertic.bytecoder.ssa.NegatedExpression;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
-import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
-import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceAndConstructExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
+import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
+import de.mirkosertic.bytecoder.ssa.PutReflectiveFieldExpression;
+import de.mirkosertic.bytecoder.ssa.PutReflectiveStaticFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.ResolveCallsiteInstanceExpression;
@@ -307,9 +309,39 @@ public class JSSSAWriter {
             print((GetReflectiveStaticFieldExpression) aValue);
         } else if (aValue instanceof GetReflectiveFieldExpression) {
             print((GetReflectiveFieldExpression) aValue);
+        } else if (aValue instanceof PutReflectiveFieldExpression) {
+            print((PutReflectiveFieldExpression) aValue);
+        } else if (aValue instanceof PutReflectiveStaticFieldExpression) {
+            print((PutReflectiveStaticFieldExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
+    }
+
+    private void print(final PutReflectiveStaticFieldExpression aExpression) {
+        final Value field = aExpression.getField();
+        final Value target = aExpression.getTarget();
+        final Value value = aExpression.getValue();
+        print(field);
+        writer.text(".").text(minifier.toSymbol("mutationMethod"));
+        writer.text(".call(null,");
+        print(target);
+        writer.text(",");
+        print(value);
+        writer.text(")");
+    }
+
+    private void print(final PutReflectiveFieldExpression aExpression) {
+        final Value field = aExpression.getField();
+        final Value target = aExpression.getTarget();
+        final Value value = aExpression.getValue();
+        print(field);
+        writer.text(".").text(minifier.toSymbol("mutationMethod"));
+        writer.text(".call(null,");
+        print(target);
+        writer.text(",");
+        print(value);
+        writer.text(")");
     }
 
     private void print(final GetReflectiveFieldExpression aExpression) {

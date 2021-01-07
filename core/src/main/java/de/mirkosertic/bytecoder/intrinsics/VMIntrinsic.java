@@ -17,24 +17,13 @@ package de.mirkosertic.bytecoder.intrinsics;
 
 import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeClassIndex;
-import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
-import de.mirkosertic.bytecoder.core.BytecodeDescriptorIndex;
-import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
-import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeIndex;
-import de.mirkosertic.bytecoder.core.BytecodeNameIndex;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 import de.mirkosertic.bytecoder.ssa.ArrayEntryExpression;
 import de.mirkosertic.bytecoder.ssa.ByteValue;
-import de.mirkosertic.bytecoder.ssa.ClassReferenceValue;
 import de.mirkosertic.bytecoder.ssa.GetReflectiveFieldExpression;
 import de.mirkosertic.bytecoder.ssa.GetReflectiveStaticFieldExpression;
 import de.mirkosertic.bytecoder.ssa.LambdaConstructorReferenceExpression;
@@ -47,9 +36,9 @@ import de.mirkosertic.bytecoder.ssa.NewInstanceAndConstructExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
 import de.mirkosertic.bytecoder.ssa.ParsingHelper;
 import de.mirkosertic.bytecoder.ssa.Program;
-import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
+import de.mirkosertic.bytecoder.ssa.PutReflectiveFieldExpression;
+import de.mirkosertic.bytecoder.ssa.PutReflectiveStaticFieldExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
-import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Value;
 import de.mirkosertic.bytecoder.ssa.Variable;
@@ -113,85 +102,6 @@ public class VMIntrinsic extends Intrinsic {
                         .newVariable(aInstruction.getOpcodeAddress(), theStringType, new NewInstanceAndConstructExpression(aProgram, aInstruction.getOpcodeAddress(),
                                 theStringRef, theConstructorSignature, theArguments));
                 aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
-                return true;
-            }
-            if ("setClassMember".equalsIgnoreCase(aMethodName)) {
-                final Value v1 = aArguments.get(0);
-                ClassReferenceValue theClassReference = null;
-                StringValue theName = null;
-                if (v1 instanceof ClassReferenceValue) {
-                    theClassReference = (ClassReferenceValue) v1;
-                } else if (v1 instanceof Variable) {
-                    theClassReference = (ClassReferenceValue) v1.incomingDataFlows().get(0);
-                } else {
-                    throw new IllegalStateException("Cannot extract class reference for setClassMember");
-                }
-                final Value v2 = aArguments.get(1);
-                if (v2 instanceof StringValue) {
-                    theName = (StringValue) v2;
-                } else if (v2 instanceof Variable) {
-                    theName = (StringValue) v2.incomingDataFlows().get(0);
-                } else {
-                    throw new IllegalStateException("Cannot extract field name for setClassMember");
-                }
-                final Value v3 = aArguments.get(2);
-
-                final BytecodeLinkedClass theLinkedClass = aProgram.getLinkerContext().resolveClass(theClassReference.getType());
-                final BytecodeResolvedFields theFields = theLinkedClass.resolvedFields();
-                final BytecodeResolvedFields.FieldEntry theField = theFields.fieldByName(theName.getStringValue());
-
-                final StringValue theFinalName = theName;
-                aTargetBlock.getExpressions().add(
-                    new PutStaticExpression(aProgram,aInstruction.getOpcodeAddress(),
-                            new BytecodeFieldRefConstant(null, null) {
-                                @Override
-                                public BytecodeClassIndex getClassIndex() {
-                                    return new BytecodeClassIndex(0, null) {
-                                        @Override
-                                        public BytecodeClassinfoConstant getClassConstant() {
-                                            return new BytecodeClassinfoConstant(0, null, null) {
-                                                @Override
-                                                public BytecodeUtf8Constant getConstant() {
-                                                    return new BytecodeUtf8Constant(theLinkedClass.getClassName().name());
-                                                }
-                                            };
-                                        }
-                                    };
-                                }
-
-                                @Override
-                                public BytecodeNameAndTypeIndex getNameAndTypeIndex() {
-                                    return new BytecodeNameAndTypeIndex(0, null) {
-                                        @Override
-                                        public BytecodeNameAndTypeConstant getNameAndType() {
-                                            return new BytecodeNameAndTypeConstant(null, null) {
-                                                @Override
-                                                public BytecodeNameIndex getNameIndex() {
-                                                    return new BytecodeNameIndex(0, null) {
-                                                        @Override
-                                                        public BytecodeUtf8Constant getName() {
-                                                            return new BytecodeUtf8Constant(theFinalName.getStringValue());
-                                                        }
-                                                    };
-                                                }
-
-                                                @Override
-                                                public BytecodeDescriptorIndex getDescriptorIndex() {
-                                                    return new BytecodeDescriptorIndex(0, null, null) {
-                                                        @Override
-                                                        public BytecodeTypeRef fieldType() {
-                                                            return theField.getValue().getTypeRef();
-                                                        }
-                                                    };
-                                                }
-                                            };
-                                        }
-                                    };
-                                }
-                            }
-                            , v3)
-                );
-
                 return true;
             }
             if ("isChar".equals(aMethodName)) {
@@ -284,6 +194,18 @@ public class VMIntrinsic extends Intrinsic {
             if ("getObjectFromInstanceField".equals(aMethodName)) {
                 final GetReflectiveFieldExpression theExpression = new GetReflectiveFieldExpression(aProgram, aInstruction.getOpcodeAddress(),
                         TypeRef.Native.REFERENCE, aArguments.get(1), aArguments.get(0));
+                aHelper.push(aInstruction.getOpcodeAddress(), theExpression);
+                return true;
+            }
+            if ("putObjectToStaticField".equals(aMethodName)) {
+                final PutReflectiveStaticFieldExpression theExpression = new PutReflectiveStaticFieldExpression(aProgram, aInstruction.getOpcodeAddress(),
+                        TypeRef.Native.REFERENCE, aArguments.get(1), aArguments.get(0), aArguments.get(2));
+                aHelper.push(aInstruction.getOpcodeAddress(), theExpression);
+                return true;
+            }
+            if ("putObjectToInstanceField".equals(aMethodName)) {
+                final PutReflectiveFieldExpression theExpression = new PutReflectiveFieldExpression(aProgram, aInstruction.getOpcodeAddress(),
+                        TypeRef.Native.REFERENCE, aArguments.get(1), aArguments.get(0), aArguments.get(2));
                 aHelper.push(aInstruction.getOpcodeAddress(), theExpression);
                 return true;
             }

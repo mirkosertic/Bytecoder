@@ -179,41 +179,49 @@ public class CompileTarget {
         final BytecodeMethodSignature theByteClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Byte.class),
                 new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.BYTE});
         theByteClass.resolveStaticMethod("valueOf", theByteClassValueOfSignature);
+        theByteClass.resolveVirtualMethod("byteValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BYTE, new BytecodeTypeRef[0]));
 
         final BytecodeLinkedClass theIntegerClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Integer.class));
         final BytecodeMethodSignature theIntegerClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Integer.class),
                 new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT});
         theIntegerClass.resolveStaticMethod("valueOf", theIntegerClassValueOfSignature);
+        theIntegerClass.resolveVirtualMethod("intValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
 
         final BytecodeLinkedClass theCharacterClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Character.class));
         final BytecodeMethodSignature theCharacterClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Character.class),
                 new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.CHAR});
         theCharacterClass.resolveStaticMethod("valueOf", theCharacterClassValueOfSignature);
+        theCharacterClass.resolveVirtualMethod("charValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.CHAR, new BytecodeTypeRef[0]));
 
         final BytecodeLinkedClass theBooleanClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Boolean.class));
         final BytecodeMethodSignature theBooleanClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Boolean.class),
                 new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.BOOLEAN});
         theBooleanClass.resolveStaticMethod("valueOf", theBooleanClassValueOfSignature);
+        theBooleanClass.resolveVirtualMethod("booleanValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BOOLEAN, new BytecodeTypeRef[0]));
 
         final BytecodeLinkedClass theFloatClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Float.class));
         final BytecodeMethodSignature theFloatClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Float.class),
                 new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.FLOAT});
         theFloatClass.resolveStaticMethod("valueOf", theFloatClassValueOfSignature);
+        theFloatClass.resolveVirtualMethod("floatValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.FLOAT, new BytecodeTypeRef[0]));
 
         final BytecodeLinkedClass theDoubleClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Double.class));
         final BytecodeMethodSignature theDoubleClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Double.class),
                 new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.DOUBLE});
         theDoubleClass.resolveStaticMethod("valueOf", theDoubleClassValueOfSignature);
+        theDoubleClass.resolveVirtualMethod("doubleValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.DOUBLE, new BytecodeTypeRef[0]));
 
         final BytecodeLinkedClass theLongClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Long.class));
         final BytecodeMethodSignature theLongClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Long.class),
                 new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.LONG});
         theLongClass.resolveStaticMethod("valueOf", theLongClassValueOfSignature);
+        theLongClass.resolveVirtualMethod("longValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.LONG, new BytecodeTypeRef[0]));
 
         final BytecodeLinkedClass theShortClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Short.class));
         final BytecodeMethodSignature theShortClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Short.class),
                 new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.SHORT});
         theShortClass.resolveStaticMethod("valueOf", theShortClassValueOfSignature);
+        theShortClass.resolveVirtualMethod("shortValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.SHORT, new BytecodeTypeRef[0]));
 
         // Additional classes
         if (aOptions.getAdditionalClassesToLink() != null) {
