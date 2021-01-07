@@ -29,13 +29,31 @@ Only zero-arg constructors are supported yet.
 
 ## Support for the Java Reflection API
 
-The following APIs are supported by Bytecoder:
+### Supported by all backends
+
+The following APIs are supported by Bytecoder by all backends:
 
 ```
 Class runtimeClass = Class.forName("FullQualifiedClassNameHere");
 Object instance = runtimeClass.newInstance(); // Method 1 to instantiate a class
 cl.getConstructor(new Class[0]).newInstance(); // Method 2 to instantiate a class
 ```
+
+### Additional support for JavaScript backend
+
+the JavaScript backend has support for reflective field access:
+
+```
+Field fields[] = ReflectionTarget.class.getDeclaredFields();
+Field f = BaseClass.class.getField("staticField"); // Get field by name
+f.getModifiers(); // Retrieve modifiers
+f.get(BaseClass.class); // Get static or instance value 
+```
+
+### Reflection/AOT Configuration for all compiler backends
+
+TODO: Describe reflection configuration here
+
 
 {{% notice warning %}}
 The ServiceLocator API is currently not supported!

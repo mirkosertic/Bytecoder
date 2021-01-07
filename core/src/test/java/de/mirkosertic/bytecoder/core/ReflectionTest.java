@@ -32,11 +32,20 @@ import static org.junit.Assert.assertTrue;
 @RunWith(BytecoderUnitTestRunner.class)
 @BytecoderTestOptions(additionalClassesToLink = {"de.mirkosertic.bytecoder.core.ReflectionTest$ReflectionTarget",
         "de.mirkosertic.bytecoder.core.ReflectionTest$BaseClass"},
-    value = {@BytecoderTestOption(backend = CompileTarget.BackendType.js)})
+    value = {@BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = true),
+            @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = false)})
 public class ReflectionTest {
 
     public static class BaseClass {
         public static String staticField = "staticFieldValue";
+        public static boolean booleanField = true;
+        public static byte byteField = (byte) 10;
+        public static char charField = 'c';
+        public static double doubleField = 1d;
+        public static float floatField = 1f;
+        public static long longField = 1L;
+        public static short shortField = (short) 1;
+        public static int intField = 1;
     }
 
     public static class ReflectionTarget extends BaseClass  {
@@ -47,6 +56,14 @@ public class ReflectionTest {
     public void testClassForName() throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         final Object o = Class.forName("de.mirkosertic.bytecoder.core.ReflectionTest$ReflectionTarget").newInstance();
         assertTrue(o instanceof ReflectionTarget);
+    }
+
+    @Test
+    public void testGetDeclaredFields() {
+        final Field[] f = ReflectionTarget.class.getDeclaredFields();
+        assertEquals(1, f.length);
+        assertEquals("objectField", f[0].getName());
+        assertTrue(Modifier.isPublic(f[0].getModifiers()));
     }
 
     @Test
@@ -66,5 +83,69 @@ public class ReflectionTest {
         assertFalse(Modifier.isStatic(f.getModifiers()));
         final Object value = f.get(o);
         assertEquals("objectFieldValue", value);
+    }
+
+    @Test
+    public void testStaticFieldAccessBooleanBoxing() throws NoSuchFieldException, IllegalAccessException {
+        final Field f = BaseClass.class.getField("booleanField");
+        final Object value = f.get(BaseClass.class);
+        assertTrue(value instanceof Boolean);
+        assertTrue(((Boolean) value).booleanValue());
+    }
+
+    @Test
+    public void testStaticFieldAccessByteBoxing() throws NoSuchFieldException, IllegalAccessException {
+        final Field f = BaseClass.class.getField("byteField");
+        final Object value = f.get(BaseClass.class);
+        assertTrue(value instanceof Byte);
+        assertEquals(10, ((Byte) value).byteValue());
+    }
+
+    @Test
+    public void testStaticFieldAccessCharBoxing() throws NoSuchFieldException, IllegalAccessException {
+        final Field f = BaseClass.class.getField("charField");
+        final Object value = f.get(BaseClass.class);
+        assertTrue(value instanceof Character);
+        assertEquals('c', ((Character) value).charValue());
+    }
+
+    @Test
+    public void testStaticFieldAccessDoubleBoxing() throws NoSuchFieldException, IllegalAccessException {
+        final Field f = BaseClass.class.getField("doubleField");
+        final Object value = f.get(BaseClass.class);
+        assertTrue(value instanceof Double);
+        assertEquals(1d, ((Double) value).doubleValue(), 0);
+    }
+
+    @Test
+    public void testStaticFieldAccessFloatBoxing() throws NoSuchFieldException, IllegalAccessException {
+        final Field f = BaseClass.class.getField("floatField");
+        final Object value = f.get(BaseClass.class);
+        assertTrue(value instanceof Float);
+        assertEquals(1f, ((Float) value).floatValue(), 0);
+    }
+
+    @Test
+    public void testStaticFieldAccessLongBoxing() throws NoSuchFieldException, IllegalAccessException {
+        final Field f = BaseClass.class.getField("longField");
+        final Object value = f.get(BaseClass.class);
+        assertTrue(value instanceof Long);
+        assertEquals(1L, ((Long) value).longValue());
+    }
+
+    @Test
+    public void testStaticFieldAccessShortBoxing() throws NoSuchFieldException, IllegalAccessException {
+        final Field f = BaseClass.class.getField("shortField");
+        final Object value = f.get(BaseClass.class);
+        assertTrue(value instanceof Short);
+        assertEquals((short) 1, ((Short) value).shortValue());
+    }
+
+    @Test
+    public void testStaticFieldAccessIntBoxing() throws NoSuchFieldException, IllegalAccessException {
+        final Field f = BaseClass.class.getField("intField");
+        final Object value = f.get(BaseClass.class);
+        assertTrue(value instanceof Integer);
+        assertEquals(1, ((Integer) value).intValue());
     }
 }

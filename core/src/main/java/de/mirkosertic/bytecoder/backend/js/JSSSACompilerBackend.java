@@ -1047,15 +1047,112 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     // Access method
                     theWriter.newLine();
                     theWriter.text("function(target) {");
+                    String readConversionFunction = null;
+                    if (theFieldEntry.getValue().getTypeRef().isPrimitive()) {
+                        // We need some conversion logic here
+                        final BytecodePrimitiveTypeRef primitiveTypeRef = (BytecodePrimitiveTypeRef) theFieldEntry.getValue().getTypeRef();
+                        switch (primitiveTypeRef) {
+                            case BYTE: {
+                                final BytecodeLinkedClass theByteClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Byte.class));
+                                final BytecodeMethodSignature theByteClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Byte.class),
+                                        new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.BYTE});
+                                theByteClass.resolveStaticMethod("valueOf", theByteClassValueOfSignature);
+
+                                readConversionFunction = theMinifier.toClassName(theByteClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theByteClassValueOfSignature);
+                                break;
+                            }
+                            case INT: {
+                                final BytecodeLinkedClass theIntegerClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Integer.class));
+                                final BytecodeMethodSignature theIntegerClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Integer.class),
+                                        new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT});
+                                theIntegerClass.resolveStaticMethod("valueOf", theIntegerClassValueOfSignature);
+
+                                readConversionFunction = theMinifier.toClassName(theIntegerClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theIntegerClassValueOfSignature);
+                                break;
+                            }
+                            case CHAR: {
+                                final BytecodeLinkedClass theCharacterClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Character.class));
+                                final BytecodeMethodSignature theCharacterClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Character.class),
+                                        new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.CHAR});
+                                theCharacterClass.resolveStaticMethod("valueOf", theCharacterClassValueOfSignature);
+
+                                readConversionFunction = theMinifier.toClassName(theCharacterClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theCharacterClassValueOfSignature);
+                                break;
+                            }
+                            case BOOLEAN: {
+                                final BytecodeLinkedClass theBooleanClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Boolean.class));
+                                final BytecodeMethodSignature theBooleanClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Boolean.class),
+                                        new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.BOOLEAN});
+                                theBooleanClass.resolveStaticMethod("valueOf", theBooleanClassValueOfSignature);
+
+                                readConversionFunction = theMinifier.toClassName(theBooleanClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theBooleanClassValueOfSignature);
+                                break;
+                            }
+                            case FLOAT: {
+                                final BytecodeLinkedClass theFloatClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Float.class));
+                                final BytecodeMethodSignature theFloatClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Float.class),
+                                        new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.FLOAT});
+                                theFloatClass.resolveStaticMethod("valueOf", theFloatClassValueOfSignature);
+
+                                readConversionFunction = theMinifier.toClassName(theFloatClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theFloatClassValueOfSignature);
+                                break;
+                            }
+                            case DOUBLE: {
+                                final BytecodeLinkedClass theDoubleClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Double.class));
+                                final BytecodeMethodSignature theDoubleClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Double.class),
+                                        new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.DOUBLE});
+                                theDoubleClass.resolveStaticMethod("valueOf", theDoubleClassValueOfSignature);
+
+                                readConversionFunction = theMinifier.toClassName(theDoubleClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theDoubleClassValueOfSignature);
+                                break;
+                            }
+                            case LONG: {
+                                final BytecodeLinkedClass theLongClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Long.class));
+                                final BytecodeMethodSignature theLongClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Long.class),
+                                        new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.LONG});
+                                theLongClass.resolveStaticMethod("valueOf", theLongClassValueOfSignature);
+
+                                readConversionFunction = theMinifier.toClassName(theLongClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theLongClassValueOfSignature);
+                                break;
+                            }
+                            case SHORT: {
+                                final BytecodeLinkedClass theShortClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Short.class));
+                                final BytecodeMethodSignature theShortClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Short.class),
+                                        new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.SHORT});
+                                theShortClass.resolveStaticMethod("valueOf", theShortClassValueOfSignature);
+
+                                readConversionFunction = theMinifier.toClassName(theShortClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theShortClassValueOfSignature);
+                                break;
+                            }
+                            default:
+                                throw new IllegalStateException("Type conversion to " + primitiveTypeRef + " for reflective accessor not supported!");
+                        }
+                    }
                     if (theFieldEntry.getValue().getAccessFlags().isStatic()) {
                         // Static access
-                        theWriter.text("return C.").text(theMinifier.toSymbol("init")).text("()")
+                        theWriter.text("return ");
+                        if (readConversionFunction != null) {
+                            theWriter.text(readConversionFunction).text("(");
+                        }
+                        theWriter.text("C.").text(theMinifier.toSymbol("init")).text("()")
                                 .text(".").text(theMinifier.toSymbol("__runtimeclass"))
-                                .text(".").text(theMinifier.toSymbol(theFieldEntry.getValue().getName().stringValue()))
-                                .text(";");
+                                .text(".").text(theMinifier.toSymbol(theFieldEntry.getValue().getName().stringValue()));
+
+                        if (readConversionFunction != null) {
+                            theWriter.text(")");
+                        }
+                        theWriter.text(";");
                     } else {
                         // Instance access
-                        theWriter.text("return target.").text(theMinifier.toSymbol(theFieldEntry.getValue().getName().stringValue())).text(";");
+                        theWriter.text("return ");
+                        if (readConversionFunction != null) {
+                            theWriter.text(readConversionFunction).text("(");
+                        }
+                        theWriter.text("target.").text(theMinifier.toSymbol(theFieldEntry.getValue().getName().stringValue()));
+                        if (readConversionFunction != null) {
+                            theWriter.text(")");
+                        }
+                        theWriter.text(";");
                     }
                     theWriter.text("},");
 
@@ -1174,7 +1271,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
             // then we add class specific static fields
             final BytecodeResolvedFields theStaticFields = theLinkedClass.resolvedFields();
-            theStaticFields.streamForStaticFields().forEach(
+            theStaticFields.streamForStaticFields().filter(t -> t.getProvidingClass() == theLinkedClass).forEach(
                     aFieldEntry -> {
                         if (!"$assertionsDisabled".equals(aFieldEntry.getValue().getName().stringValue())) {
                             final BytecodeTypeRef theFieldType = aFieldEntry.getValue().getTypeRef();

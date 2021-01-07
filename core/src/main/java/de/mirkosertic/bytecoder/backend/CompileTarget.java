@@ -174,6 +174,47 @@ public class CompileTarget {
         characterDataLatin1.reflectiveClass().setSupportsClassForName(true);
         characterDataLatin1.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
 
+        // Helper methods for Boxing/Unboxing
+        final BytecodeLinkedClass theByteClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Byte.class));
+        final BytecodeMethodSignature theByteClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Byte.class),
+                new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.BYTE});
+        theByteClass.resolveStaticMethod("valueOf", theByteClassValueOfSignature);
+
+        final BytecodeLinkedClass theIntegerClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Integer.class));
+        final BytecodeMethodSignature theIntegerClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Integer.class),
+                new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT});
+        theIntegerClass.resolveStaticMethod("valueOf", theIntegerClassValueOfSignature);
+
+        final BytecodeLinkedClass theCharacterClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Character.class));
+        final BytecodeMethodSignature theCharacterClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Character.class),
+                new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.CHAR});
+        theCharacterClass.resolveStaticMethod("valueOf", theCharacterClassValueOfSignature);
+
+        final BytecodeLinkedClass theBooleanClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Boolean.class));
+        final BytecodeMethodSignature theBooleanClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Boolean.class),
+                new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.BOOLEAN});
+        theBooleanClass.resolveStaticMethod("valueOf", theBooleanClassValueOfSignature);
+
+        final BytecodeLinkedClass theFloatClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Float.class));
+        final BytecodeMethodSignature theFloatClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Float.class),
+                new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.FLOAT});
+        theFloatClass.resolveStaticMethod("valueOf", theFloatClassValueOfSignature);
+
+        final BytecodeLinkedClass theDoubleClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Double.class));
+        final BytecodeMethodSignature theDoubleClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Double.class),
+                new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.DOUBLE});
+        theDoubleClass.resolveStaticMethod("valueOf", theDoubleClassValueOfSignature);
+
+        final BytecodeLinkedClass theLongClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Long.class));
+        final BytecodeMethodSignature theLongClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Long.class),
+                new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.LONG});
+        theLongClass.resolveStaticMethod("valueOf", theLongClassValueOfSignature);
+
+        final BytecodeLinkedClass theShortClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Short.class));
+        final BytecodeMethodSignature theShortClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Short.class),
+                new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.SHORT});
+        theShortClass.resolveStaticMethod("valueOf", theShortClassValueOfSignature);
+
         // Additional classes
         if (aOptions.getAdditionalClassesToLink() != null) {
             for (final String theClassname : aOptions.getAdditionalClassesToLink()) {
