@@ -15,12 +15,28 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.mirkosertic.bytecoder.api.Logger;
+
 import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
 public class ReflectionConfiguration {
+
+    public static class ExternalClassConfig {
+        private boolean enableClassForName = true;
+
+        public boolean isEnableClassForName() {
+            return enableClassForName;
+        }
+
+        public void setEnableClassForName(final boolean enableClassForName) {
+            this.enableClassForName = enableClassForName;
+        }
+    }
 
     public static class ReflectiveClass {
         private final String name;
@@ -39,6 +55,8 @@ public class ReflectionConfiguration {
         }
     }
 
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
     private final Map<String, ReflectiveClass> reflectiveClasses;
 
     public ReflectionConfiguration() {
@@ -49,6 +67,13 @@ public class ReflectionConfiguration {
         return reflectiveClasses.computeIfAbsent(className, ReflectiveClass::new);
     }
 
-    public void mergeWithConfigFrom(final URL url) throws IOException {
+    public void mergeWithConfigFrom(final URL url, final Logger logger) throws IOException {
+        final TypeReference<HashMap<String, ExternalClassConfig>> typeToRead
+                = new TypeReference<HashMap<String, ExternalClassConfig>>() {};
+        final Map<String, ExternalClassConfig> configurationData = MAPPER.readValue(url, typeToRead);
+        for (final Map.Entry<String, ExternalClassConfig> entry : configurationData.entrySet()) {
+            logger.info("Configuring reflective access for class {}", entry.getKey());
+            resolve(entry.getKey()).setSupportsClassForName(entry.getValue().isEnableClassForName());
+        }
     }
 }

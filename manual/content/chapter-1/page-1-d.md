@@ -49,12 +49,26 @@ Field f = BaseClass.class.getField("staticField"); // Get field by name
 f.getName(); // Retrieve field name
 f.getModifiers(); // Retrieve modifiers
 f.get(BaseClass.class); // Get static or instance value
-f.put(BaseClass.class, "newvalue"); // Put static or instance value 
+f.put(BaseClass.class, "newvalue"); // Put static or instance value
 ```
 
-### Reflection/AOT Configuration for all compiler backends
+### Reflection/AOT configuration for all compiler backends
 
-TODO: Describe reflection configuration here
+Classes available to the reflection API can be configured by placing a `bytecoder-reflection.json` file into the 
+root of the classpath. The syntax of the configuration file is shown in the follwing example:
+
+```
+{
+  "sun.nio.cs.UTF_8": {  // The full-qualified class name is used as a key here
+                         // Please note that you have to include subclasses
+                         // and innerclasses of this class explicitly
+                         
+    "enableClassForName": true   // The class is available by Class.forName()
+                                 // This also includes reflective read and write
+                                 // field access for all declared fields
+  },
+}
+```
 
 
 {{% notice warning %}}

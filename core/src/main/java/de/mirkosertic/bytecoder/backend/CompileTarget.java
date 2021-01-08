@@ -95,7 +95,7 @@ public class CompileTarget {
             while(reflectionConfigs.hasMoreElements()) {
                 final URL url = reflectionConfigs.nextElement();
                 aOptions.getLogger().info("Loading reflection configuration : {}", url);
-                theLinkerContext.reflectionConfiguration().mergeWithConfigFrom(url);
+                theLinkerContext.reflectionConfiguration().mergeWithConfigFrom(url, aOptions.getLogger());
             }
         } catch (final IOException e) {
             aOptions.getLogger().warn("Failed to load reflection configuration files : {}", e.getMessage());
