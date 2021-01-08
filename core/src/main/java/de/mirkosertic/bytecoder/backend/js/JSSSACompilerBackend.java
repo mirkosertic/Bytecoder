@@ -873,6 +873,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         final String theGetSimpleNameMethodName = theMinifier.toMethodName("getSimpleName", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(String.class), new BytecodeTypeRef[0]));
         final String theGetFieldNameMethodName = theMinifier.toMethodName("getField", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Field.class), new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(String.class)}));
         final String theGetDeclaredFieldsNameMethodName = theMinifier.toMethodName("getDeclaredFields", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Field.class), 1), new BytecodeTypeRef[] {}));
+        final String theIsPrimitiveMethodName = theMinifier.toMethodName("isPrimitive", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BOOLEAN, new BytecodeTypeRef[] {}));
 
         // We need the runtimeclass logic
         theWriter.text("var ").text(theMinifier.toSymbol("RuntimeClass")).assign().text("function()").space().text("{").newLine();
@@ -930,6 +931,10 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         theWriter.tab().text("C.prototype.").text(theGetDeclaredFieldsNameMethodName).assign().text("function(args)").space().text("{").newLine();
         theWriter.tab(2).text("return this.declaredFields;").newLine();
+        theWriter.tab().text("};").newLine();
+
+        theWriter.tab().text("C.prototype.").text(theIsPrimitiveMethodName).assign().text("function(args)").space().text("{").newLine();
+        theWriter.tab(2).text("return false;").newLine();
         theWriter.tab().text("};").newLine();
 
         theWriter.tab(1).text("return C;").newLine();

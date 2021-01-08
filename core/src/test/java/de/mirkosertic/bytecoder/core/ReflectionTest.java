@@ -19,6 +19,7 @@ import de.mirkosertic.bytecoder.backend.CompileTarget;
 import de.mirkosertic.bytecoder.unittest.BytecoderTestOption;
 import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -219,5 +220,10 @@ public class ReflectionTest {
         final Field f = BaseClass.class.getField("intField");
         f.set(BaseClass.class, Integer.valueOf(2));
         assertEquals(2, BaseClass.intField);
+    }
+
+    @Test
+    public void testIsPrimitive() {
+        assertFalse(String.class.isPrimitive());
     }
 }
