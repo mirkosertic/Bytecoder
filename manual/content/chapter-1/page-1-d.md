@@ -1,6 +1,6 @@
 ---
 title: "Reflection API"
-date: 2019-10-25T14:49:24+02:00
+date: 2021-01-11T00:00:00+02:00
 draft: false
 weight: 4
 ---
@@ -29,13 +29,48 @@ Only zero-arg constructors are supported yet.
 
 ## Support for the Java Reflection API
 
-The following APIs are supported by Bytecoder:
+### Supported by all backends
+
+The following APIs are supported by Bytecoder by all backends:
 
 ```
 Class runtimeClass = Class.forName("FullQualifiedClassNameHere");
 Object instance = runtimeClass.newInstance(); // Method 1 to instantiate a class
 cl.getConstructor(new Class[0]).newInstance(); // Method 2 to instantiate a class
 ```
+
+### Additional support for JavaScript backend
+
+the JavaScript backend has support for reflective field access:
+
+```
+Field fields[] = ReflectionTarget.class.getDeclaredFields();
+Field f = BaseClass.class.getField("staticField"); // Get field by name
+f.getName(); // Retrieve field name
+f.getModifiers(); // Retrieve modifiers
+f.get(BaseClass.class); // Get static or instance value
+f.put(BaseClass.class, "newvalue"); // Put static or instance value
+Class.isPrimitive() // Check if the class represents a primitive value
+```
+
+### Reflection/AOT configuration for all compiler backends
+
+Classes available to the reflection API can be configured by placing a `bytecoder-reflection.json` file into the 
+root of the classpath. The syntax of the configuration file is shown in the follwing example:
+
+```
+{
+  "sun.nio.cs.UTF_8": {  // The full-qualified class name is used as a key here
+                         // Please note that you have to include subclasses
+                         // and innerclasses of this class explicitly
+                         
+    "enableClassForName": true   // The class is available by Class.forName()
+                                 // This also includes reflective read and write
+                                 // field access for all declared fields
+  },
+}
+```
+
 
 {{% notice warning %}}
 The ServiceLocator API is currently not supported!

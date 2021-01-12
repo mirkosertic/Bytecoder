@@ -52,9 +52,11 @@ import de.mirkosertic.bytecoder.stackifier.Stackifier;
 
 import java.io.StringWriter;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
@@ -85,6 +87,19 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 String.class), new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}));
         theVMClass.resolveStaticMethod("newByteArray", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
         theVMClass.resolveStaticMethod("setByteArrayEntry", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.BYTE}));
+
+        // We need this class and constructor to build reflective metadata
+        final BytecodeMethodSignature theFieldClassConstructorSignature = new BytecodeMethodSignature(
+                BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {
+                BytecodeObjectTypeRef.fromRuntimeClass(Class.class),
+                BytecodeObjectTypeRef.fromRuntimeClass(String.class),
+                BytecodePrimitiveTypeRef.INT,
+                BytecodeObjectTypeRef.fromRuntimeClass(Class.class),
+                BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
+                BytecodeObjectTypeRef.fromRuntimeClass(Object.class)
+        });
+        final BytecodeLinkedClass theFieldClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Field.class));
+        theFieldClass.resolveConstructorInvocation(theFieldClassConstructorSignature);
 
         // We need this package-private constructor in String.class for bootstrap
         aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(String.class))
@@ -856,14 +871,20 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         final String theGetConstructorMethodName = theMinifier.toMethodName("getConstructor", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
                 Constructor.class), new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Class.class), 1)}));
         final String theGetSimpleNameMethodName = theMinifier.toMethodName("getSimpleName", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(String.class), new BytecodeTypeRef[0]));
+        final String theGetFieldNameMethodName = theMinifier.toMethodName("getField", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Field.class), new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(String.class)}));
+        final String theGetDeclaredFieldsNameMethodName = theMinifier.toMethodName("getDeclaredFields", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Field.class), 1), new BytecodeTypeRef[] {}));
+        final String theIsPrimitiveMethodName = theMinifier.toMethodName("isPrimitive", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BOOLEAN, new BytecodeTypeRef[] {}));
 
         // We need the runtimeclass logic
         theWriter.text("var ").text(theMinifier.toSymbol("RuntimeClass")).assign().text("function()").space().text("{").newLine();
-        theWriter.tab(1).text("var C").assign().text("function(classNameIndex,superClass,implementedTypes)").space().text("{").newLine();
+        theWriter.tab(1).text("var C").assign().text("function(classNameIndex,superClass,implementedTypes,primitive)").space().text("{").newLine();
         theWriter.tab(2).text("this.classNameIndex").assign().text("classNameIndex;").newLine();
         theWriter.tab(2).text("this.superClass").assign().text("superClass;").newLine();
         theWriter.tab(2).text("this.implementedTypes").assign().text("implementedTypes;").newLine();
         theWriter.tab(2).text("this.staticCallSites").assign().text("[];").newLine();
+        theWriter.tab(2).text("this.declaredFields").assign().text("undefined;").newLine();
+        theWriter.tab(2).text("this.declaredFields").assign().text("undefined;").newLine();
+        theWriter.tab(2).text("this.primitive").assign().text("primitive;").newLine();
         theWriter.tab(1).text("};").newLine();
         theWriter.tab(1).text("C.prototype.").text(theGetNameMethodName).assign().text("function()").space().text("{").newLine();
         theWriter.tab(2).text("return bytecoder.stringpool[this.classNameIndex];").newLine();
@@ -906,7 +927,53 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(2).text("return ").text(theMinifier.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))).text(".prototype.").text(theGetSimpleNameMethodName).text(".call(this, args);").newLine();
         theWriter.tab().text("};").newLine();
 
+        theWriter.tab().text("C.prototype.").text(theGetFieldNameMethodName).assign().text("function(args)").space().text("{").newLine();
+        theWriter.tab(2).text("return ").text(theMinifier.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))).text(".prototype.").text(theGetFieldNameMethodName).text(".call(this, args);").newLine();
+        theWriter.tab().text("};").newLine();
+
+        theWriter.tab().text("C.prototype.").text(theGetDeclaredFieldsNameMethodName).assign().text("function(args)").space().text("{").newLine();
+        theWriter.tab(2).text("return this.declaredFields;").newLine();
+        theWriter.tab().text("};").newLine();
+
+        theWriter.tab().text("C.prototype.").text(theIsPrimitiveMethodName).assign().text("function(args)").space().text("{").newLine();
+        theWriter.tab(2).text("return this.primitive;").newLine();
+        theWriter.tab().text("};").newLine();
+
         theWriter.tab(1).text("return C;").newLine();
+        theWriter.text("}();").newLine();
+
+        // We need runtime classes for Primitives
+        theWriter.text("var ").text(theMinifier.toSymbol("CharPrimitiveRuntimeClass")).assign().text("function()").space().text("{").newLine();
+        theWriter.tab(1).text("return new ").text(theMinifier.toSymbol("RuntimeClass"));
+        theWriter.text("(-3,undefined,[],true);");
+        theWriter.text("}();").newLine();
+        theWriter.text("var ").text(theMinifier.toSymbol("IntPrimitiveRuntimeClass")).assign().text("function()").space().text("{").newLine();
+        theWriter.tab(1).text("return new ").text(theMinifier.toSymbol("RuntimeClass"));
+        theWriter.text("(-4,undefined,[],true);");
+        theWriter.text("}();").newLine();
+        theWriter.text("var ").text(theMinifier.toSymbol("LongPrimitiveRuntimeClass")).assign().text("function()").space().text("{").newLine();
+        theWriter.tab(1).text("return new ").text(theMinifier.toSymbol("RuntimeClass"));
+        theWriter.text("(-5,undefined,[],true);");
+        theWriter.text("}();").newLine();
+        theWriter.text("var ").text(theMinifier.toSymbol("BytePrimitiveRuntimeClass")).assign().text("function()").space().text("{").newLine();
+        theWriter.tab(1).text("return new ").text(theMinifier.toSymbol("RuntimeClass"));
+        theWriter.text("(-6,undefined,[],true);");
+        theWriter.text("}();").newLine();
+        theWriter.text("var ").text(theMinifier.toSymbol("FloatPrimitiveRuntimeClass")).assign().text("function()").space().text("{").newLine();
+        theWriter.tab(1).text("return new ").text(theMinifier.toSymbol("RuntimeClass"));
+        theWriter.text("(-7,undefined,[],true);");
+        theWriter.text("}();").newLine();
+        theWriter.text("var ").text(theMinifier.toSymbol("BooleanPrimitiveRuntimeClass")).assign().text("function()").space().text("{").newLine();
+        theWriter.tab(1).text("return new ").text(theMinifier.toSymbol("RuntimeClass"));
+        theWriter.text("(-8,undefined,[],true);");
+        theWriter.text("}();").newLine();
+        theWriter.text("var ").text(theMinifier.toSymbol("ShortPrimitiveRuntimeClass")).assign().text("function()").space().text("{").newLine();
+        theWriter.tab(1).text("return new ").text(theMinifier.toSymbol("RuntimeClass"));
+        theWriter.text("(-9,undefined,[],true);");
+        theWriter.text("}();").newLine();
+        theWriter.text("var ").text(theMinifier.toSymbol("DoublePrimitiveRuntimeClass")).assign().text("function()").space().text("{").newLine();
+        theWriter.tab(1).text("return new ").text(theMinifier.toSymbol("RuntimeClass"));
+        theWriter.text("(-10,undefined,[],true);");
         theWriter.text("}();").newLine();
 
         final ConstantPool thePool = new ConstantPool();
@@ -941,7 +1008,11 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             // Framework-Specific methods
             theWriter.tab().text("C.").text(theMinifier.toSymbol("__runtimeclass")).assign().text("new ").symbol("RuntimeClass", null).text("(");
             // Classname index
-            theWriter.text("" + thePool.register(new StringValue(theLinkedClass.getClassName().name())));
+            if (aLinkerContext.reflectionConfiguration().resolve(theLinkedClass.getClassName().name()).supportsClassForName()) {
+                theWriter.text("" + thePool.register(new StringValue(theLinkedClass.getClassName().name())));
+            } else {
+                theWriter.text("-1");
+            }
             theWriter.text(",");
             // Superclass reference
             if (!theLinkedClass.getClassName().name().equals(Object.class.getName())) {
@@ -965,7 +1036,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 }
             }
 
-            theWriter.text("]);").newLine();
+            theWriter.text("],false);").newLine();
 
             theWriter.tab().text("var ").text(theMinifier.toSymbol("$INITIALIZED")).assign().text("false;").newLine();
 
@@ -973,6 +1044,204 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             theWriter.tab().text("C.").text(theMinifier.toSymbol("init")).assign().text("function()").space().text("{").newLine();
             theWriter.tab(2).text("if").space().text("(!").text(theMinifier.toSymbol("$INITIALIZED")).text(")").space().text("{").newLine();
             theWriter.tab(3).text(theMinifier.toSymbol("$INITIALIZED")).assign().text("true;").newLine();
+
+            if (aLinkerContext.reflectionConfiguration().resolve(theLinkedClass.getClassName().name()).supportsClassForName()) {
+                final List<BytecodeResolvedFields.FieldEntry> declaredFields = theLinkedClass.resolvedFields().stream().filter(
+                        t -> t.getProvidingClass() == theLinkedClass
+                ).collect(Collectors.toList());
+
+                theWriter.tab(3).text("var ").text("fields").assign().text("bytecoder.newArray(").text(Integer.toString(declaredFields.size())).text(",null);").newLine();
+                for (int i=0;i<declaredFields.size();i++) {
+                    final BytecodeResolvedFields.FieldEntry theFieldEntry = declaredFields.get(i);
+                    theWriter.tab(3).text("fields.data[").text(Integer.toString(i)).text("]").assign();
+
+                    theWriter.text(theMinifier.toClassName(theFieldClass.getClassName())).text(".").text(theMinifier.toSymbol("__runtimeclass")).text(".").text(theMinifier.toMethodName("$newInstance", theFieldClassConstructorSignature)).text("(");
+                    // Declared class
+                    theWriter.text(theMinifier.toClassName(theFieldEntry.getProvidingClass().getClassName())).text(".").text(theMinifier.toSymbol("init")).text("()")
+                            .text(".").text(theMinifier.toSymbol("__runtimeclass"));
+                    theWriter.text(",");
+
+                    // Name
+                    final int theIndex = thePool.register(new StringValue(theFieldEntry.getValue().getName().stringValue()));
+                    theWriter.text("bytecoder.stringpool[").text("" + theIndex).text("]");
+                    theWriter.text(",");
+
+                    // Modifier
+                    theWriter.text(Integer.toString(theFieldEntry.getValue().getAccessFlags().getModifiers()));
+                    theWriter.text(",");
+
+                    // Type
+                    if (theFieldEntry.getValue().getTypeRef().isPrimitive()) {
+                        theWriter.text("'");
+                        theWriter.text(theFieldEntry.getValue().getTypeRef().name());
+                        theWriter.text("'");
+                    } else if (theFieldEntry.getValue().getTypeRef().isArray()) {
+                        theWriter.text(theMinifier.toClassName(theArrayType)).text(".").text(theMinifier.toSymbol("init")).text("()")
+                                .text(".").text(theMinifier.toSymbol("__runtimeclass"));
+                    } else {
+                        final BytecodeObjectTypeRef typeRef = (BytecodeObjectTypeRef) theFieldEntry.getValue().getTypeRef();
+                        theWriter.text(theMinifier.toClassName(typeRef)).text(".").text(theMinifier.toSymbol("init")).text("()")
+                                .text(".").text(theMinifier.toSymbol("__runtimeclass"));
+                    }
+                    theWriter.text(",");
+
+                    // Access method
+                    theWriter.newLine();
+                    theWriter.text("function(target) {");
+                    String readBoxingFunction = null;
+                    String writeUnboxingFunction = null;
+                    if (theFieldEntry.getValue().getTypeRef().isPrimitive()) {
+                        // We need some conversion logic here
+                        final BytecodePrimitiveTypeRef primitiveTypeRef = (BytecodePrimitiveTypeRef) theFieldEntry.getValue().getTypeRef();
+                        switch (primitiveTypeRef) {
+                            case BYTE: {
+                                final BytecodeLinkedClass theByteClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Byte.class));
+                                final BytecodeMethodSignature theByteClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Byte.class),
+                                        new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.BYTE});
+                                theByteClass.resolveStaticMethod("valueOf", theByteClassValueOfSignature);
+
+                                readBoxingFunction = theMinifier.toClassName(theByteClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theByteClassValueOfSignature);
+                                writeUnboxingFunction = theMinifier.toMethodName("byteValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BYTE, new BytecodeTypeRef[0]));
+                                break;
+                            }
+                            case INT: {
+                                final BytecodeLinkedClass theIntegerClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Integer.class));
+                                final BytecodeMethodSignature theIntegerClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Integer.class),
+                                        new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT});
+                                theIntegerClass.resolveStaticMethod("valueOf", theIntegerClassValueOfSignature);
+
+                                readBoxingFunction = theMinifier.toClassName(theIntegerClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theIntegerClassValueOfSignature);
+                                writeUnboxingFunction = theMinifier.toMethodName("intValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
+                                break;
+                            }
+                            case CHAR: {
+                                final BytecodeLinkedClass theCharacterClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Character.class));
+                                final BytecodeMethodSignature theCharacterClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Character.class),
+                                        new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.CHAR});
+                                theCharacterClass.resolveStaticMethod("valueOf", theCharacterClassValueOfSignature);
+
+                                readBoxingFunction = theMinifier.toClassName(theCharacterClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theCharacterClassValueOfSignature);
+                                writeUnboxingFunction = theMinifier.toMethodName("charValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.CHAR, new BytecodeTypeRef[0]));
+                                break;
+                            }
+                            case BOOLEAN: {
+                                final BytecodeLinkedClass theBooleanClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Boolean.class));
+                                final BytecodeMethodSignature theBooleanClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Boolean.class),
+                                        new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.BOOLEAN});
+                                theBooleanClass.resolveStaticMethod("valueOf", theBooleanClassValueOfSignature);
+
+                                readBoxingFunction = theMinifier.toClassName(theBooleanClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theBooleanClassValueOfSignature);
+                                writeUnboxingFunction = theMinifier.toMethodName("booleanValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BOOLEAN, new BytecodeTypeRef[0]));
+                                break;
+                            }
+                            case FLOAT: {
+                                final BytecodeLinkedClass theFloatClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Float.class));
+                                final BytecodeMethodSignature theFloatClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Float.class),
+                                        new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.FLOAT});
+                                theFloatClass.resolveStaticMethod("valueOf", theFloatClassValueOfSignature);
+
+                                readBoxingFunction = theMinifier.toClassName(theFloatClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theFloatClassValueOfSignature);
+                                writeUnboxingFunction = theMinifier.toMethodName("floatValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.FLOAT, new BytecodeTypeRef[0]));
+                                break;
+                            }
+                            case DOUBLE: {
+                                final BytecodeLinkedClass theDoubleClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Double.class));
+                                final BytecodeMethodSignature theDoubleClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Double.class),
+                                        new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.DOUBLE});
+                                theDoubleClass.resolveStaticMethod("valueOf", theDoubleClassValueOfSignature);
+
+                                readBoxingFunction = theMinifier.toClassName(theDoubleClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theDoubleClassValueOfSignature);
+                                writeUnboxingFunction = theMinifier.toMethodName("doubleValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.DOUBLE, new BytecodeTypeRef[0]));
+                                break;
+                            }
+                            case LONG: {
+                                final BytecodeLinkedClass theLongClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Long.class));
+                                final BytecodeMethodSignature theLongClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Long.class),
+                                        new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.LONG});
+                                theLongClass.resolveStaticMethod("valueOf", theLongClassValueOfSignature);
+
+                                readBoxingFunction = theMinifier.toClassName(theLongClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theLongClassValueOfSignature);
+                                writeUnboxingFunction = theMinifier.toMethodName("longValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.LONG, new BytecodeTypeRef[0]));
+                                break;
+                            }
+                            case SHORT: {
+                                final BytecodeLinkedClass theShortClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Short.class));
+                                final BytecodeMethodSignature theShortClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Short.class),
+                                        new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.SHORT});
+                                theShortClass.resolveStaticMethod("valueOf", theShortClassValueOfSignature);
+
+                                readBoxingFunction = theMinifier.toClassName(theShortClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theShortClassValueOfSignature);
+                                writeUnboxingFunction = theMinifier.toMethodName("shortValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.SHORT, new BytecodeTypeRef[0]));
+                                break;
+                            }
+                            default:
+                                throw new IllegalStateException("Type conversion to " + primitiveTypeRef + " for reflective accessor not supported!");
+                        }
+                    }
+                    if (theFieldEntry.getValue().getAccessFlags().isStatic()) {
+                        // Static access
+                        theWriter.text("return ");
+                        if (readBoxingFunction != null) {
+                            theWriter.text(readBoxingFunction).text("(");
+                        }
+                        theWriter.text("C.").text(theMinifier.toSymbol("init")).text("()")
+                                .text(".").text(theMinifier.toSymbol("__runtimeclass"))
+                                .text(".").text(theMinifier.toSymbol(theFieldEntry.getValue().getName().stringValue()));
+
+                        if (readBoxingFunction != null) {
+                            theWriter.text(")");
+                        }
+                        theWriter.text(";");
+                    } else {
+                        // Instance access
+                        theWriter.text("return ");
+                        if (readBoxingFunction != null) {
+                            theWriter.text(readBoxingFunction).text("(");
+                        }
+                        theWriter.text("target.").text(theMinifier.toSymbol(theFieldEntry.getValue().getName().stringValue()));
+                        if (readBoxingFunction != null) {
+                            theWriter.text(")");
+                        }
+                        theWriter.text(";");
+                    }
+                    theWriter.text("},");
+
+                    // Mutation method
+                    theWriter.newLine();
+                    theWriter.text("function(target,newValue) {");
+
+                    if (theFieldEntry.getValue().getAccessFlags().isStatic()) {
+                        theWriter.text("C.").text(theMinifier.toSymbol("init")).text("()")
+                                .text(".").text(theMinifier.toSymbol("__runtimeclass"))
+                                .text(".").text(theMinifier.toSymbol(theFieldEntry.getValue().getName().stringValue()));
+
+                        theWriter.assign().text("newValue");
+
+                        if (writeUnboxingFunction != null) {
+                            theWriter.text(".").text(writeUnboxingFunction).text("()");
+                        }
+                        theWriter.text(";");
+                    } else {
+                        theWriter.text("target.").text(theMinifier.toSymbol(theFieldEntry.getValue().getName().stringValue()));
+                        theWriter.assign().text("newValue");
+
+                        if (writeUnboxingFunction != null) {
+                            theWriter.text(".").text(writeUnboxingFunction).text("()");
+                        }
+
+
+                        theWriter.text(";");
+                    }
+                    theWriter.text("}").newLine();
+
+                    theWriter.text(");");
+                }
+            } else {
+                // Empty field list
+                theWriter.tab(3).text("var ").text("fields").assign().text("bytecoder.newArray(0,null);").newLine();
+            }
+
+            theWriter.tab(3).text("C.").text(theMinifier.toSymbol("__runtimeclass")).text(".declaredFields").assign().text("fields;").newLine();
 
             // Constructors
             theMethods.stream().forEach(aEntry -> {
@@ -1076,7 +1345,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
             // then we add class specific static fields
             final BytecodeResolvedFields theStaticFields = theLinkedClass.resolvedFields();
-            theStaticFields.streamForStaticFields().forEach(
+            theStaticFields.streamForStaticFields().filter(t -> t.getProvidingClass() == theLinkedClass).forEach(
                     aFieldEntry -> {
                         if (!"$assertionsDisabled".equals(aFieldEntry.getValue().getName().stringValue())) {
                             final BytecodeTypeRef theFieldType = aFieldEntry.getValue().getTypeRef();
@@ -1133,7 +1402,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                         theWriter.tab(2).text("var jsClassName").assign().text("bytecoder.toJSString(className);").newLine();
 
                         // We search for all non abstract non interface classes
-                        theOrderedClasses.getClassesInOrder().stream().forEach(search -> {
+                        theOrderedClasses.getClassesInOrder().stream().filter(t -> aLinkerContext.reflectionConfiguration().resolve(t.getClassName().name()).supportsClassForName()).forEach(search -> {
                             if (!search.getBytecodeClass().getAccessFlags().isAbstract() && !search.getBytecodeClass().getAccessFlags().isInterface()) {
                                 final String theSearchClassName = theMinifier.toClassName(search.getClassName());
                                 theWriter.tab(2).text("if").space().text("(jsClassName").space().text("===").space().text("'").text(search.getClassName().name()).text("') return ").text(theSearchClassName).text(".").text(theMinifier.toSymbol("__runtimeclass")).text(";").newLine();
@@ -1241,12 +1510,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 } else {
                     theWriter.tab().text("p.").text(theMinifier.toMethodName(theMethod.getName().stringValue(), theCurrentMethodSignature))
                             .assign().text("function(").text(theArguments.toString()).text(")").space().text("{").newLine();
-                }
-
-                if (aOptions.isDebugOutput()) {
-                    theWriter.tab(2).text("/**").newLine();
-                    //theWriter.tab(2).text(theSSAProgram.getControlFlowGraph().toDOT()).newLine();
-                    theWriter.tab(2).text("**/").newLine();
                 }
 
                 theWriter.flush();

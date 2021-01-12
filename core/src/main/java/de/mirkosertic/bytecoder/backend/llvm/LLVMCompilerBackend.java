@@ -957,7 +957,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                 pw.println("define internal i32 @jlClass_jlClassforNamejlStringBOOLEANjlClassLoader(i32 %thisRef, i32 %name, i32 %initialize, i32 %classloader) {");
                 pw.println("entry:");
-                aLinkerContext.linkedClasses().forEach(aEntry -> {
+                aLinkerContext.linkedClasses().filter(t -> aLinkerContext.reflectionConfiguration().resolve(t.targetNode().getClassName().name()).supportsClassForName()).forEach(aEntry -> {
 
                     final BytecodeLinkedClass theLinkedClass = aEntry.targetNode();
 

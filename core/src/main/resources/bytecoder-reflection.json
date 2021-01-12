@@ -1,0 +1,32 @@
+{
+  "sun.nio.cs.UTF_8": {
+    "enableClassForName": true
+  },
+  "sun.nio.cs.UTF_16": {
+    "enableClassForName": true
+  },
+  "sun.nio.cs.ISO_8859_1": {
+    "enableClassForName": true
+  },
+  "java.lang.CharacterDataLatin1": {
+    "enableClassForName": true
+  },
+  "java.lang.CharacterData00": {
+    "enableClassForName": true
+  },
+  "java.lang.CharacterData01": {
+    "enableClassForName": true
+  },
+  "java.lang.CharacterData02": {
+    "enableClassForName": true
+  },
+  "java.lang.CharacterData0E": {
+    "enableClassForName": true
+  },
+  "java.lang.CharacterDataPrivateUse": {
+    "enableClassForName": true
+  },
+  "java.lang.CharacterDataUndefined": {
+    "enableClassForName": true
+  }
+}

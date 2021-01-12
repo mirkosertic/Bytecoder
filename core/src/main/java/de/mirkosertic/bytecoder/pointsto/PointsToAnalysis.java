@@ -51,6 +51,7 @@ import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
+import de.mirkosertic.bytecoder.ssa.PrimitiveClassReferenceValue;
 import de.mirkosertic.bytecoder.ssa.ProgramDescriptor;
 import de.mirkosertic.bytecoder.ssa.ProgramDescriptorProvider;
 import de.mirkosertic.bytecoder.ssa.PtrOfExpression;
@@ -244,7 +245,7 @@ public class PointsToAnalysis {
                     // String constants are also in static scope
                     final Symbol valueSymbol = GlobalSymbols.staticScope;
                     aAnalysisResult.alias(varSymbol, valueSymbol);
-                } else if (value instanceof ClassReferenceValue) {
+                } else if (value instanceof ClassReferenceValue || value instanceof PrimitiveClassReferenceValue) {
                     // Class references are always in static scope
                     final Symbol valueSymbol = GlobalSymbols.staticScope;
                     aAnalysisResult.alias(varSymbol, valueSymbol);

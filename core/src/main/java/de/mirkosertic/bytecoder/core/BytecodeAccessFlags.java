@@ -17,53 +17,57 @@ package de.mirkosertic.bytecoder.core;
 
 public class BytecodeAccessFlags {
 
-    private final int value;
+    private final int modifiers;
 
-    public BytecodeAccessFlags(int aValue) {
-        value = aValue;
+    public BytecodeAccessFlags(final int aValue) {
+        modifiers = aValue;
     }
 
     public boolean isStatic() {
-        return (value & 0x0008) > 0;
+        return (modifiers & 0x0008) > 0;
     }
 
     public boolean isInterface() {
-        return (value & 0x0200) > 0;
+        return (modifiers & 0x0200) > 0;
     }
 
     public boolean isPublic() {
-        return (value & 0x0001) > 0;
+        return (modifiers & 0x0001) > 0;
     }
 
     public boolean isPrivate() {
-        return (value & 0x0002) > 0;
+        return (modifiers & 0x0002) > 0;
     }
 
     public boolean isProtected() {
-        return (value & 0x0004) > 0;
+        return (modifiers & 0x0004) > 0;
     }
 
     public boolean isFinal() {
-        return (value & 0x0010) > 0;
+        return (modifiers & 0x0010) > 0;
     }
 
     public boolean isAbstract() {
-        return (value & 0x0400) > 0;
+        return (modifiers & 0x0400) > 0;
     }
 
     public boolean isSyntetic() {
-        return (value & 0x1000) > 0;
+        return (modifiers & 0x1000) > 0;
     }
 
     public boolean isAnnotation() {
-        return (value & 0x2000) > 0;
+        return (modifiers & 0x2000) > 0;
     }
 
     public boolean isEnum() {
-        return (value & 0x4000) > 0;
+        return (modifiers & 0x4000) > 0;
     }
 
     public boolean isNative() {
-        return (value & 0x00000100) > 0;
+        return (modifiers & 0x00000100) > 0;
+    }
+
+    public int getModifiers() {
+        return modifiers;
     }
 }

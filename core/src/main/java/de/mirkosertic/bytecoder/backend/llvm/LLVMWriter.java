@@ -92,6 +92,7 @@ import de.mirkosertic.bytecoder.ssa.NewInstanceAndConstructExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
+import de.mirkosertic.bytecoder.ssa.PrimitiveClassReferenceValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PtrOfExpression;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
@@ -1042,11 +1043,6 @@ public class LLVMWriter implements AutoCloseable {
         } else if (v instanceof NewInstanceFromDefaultConstructorExpression) {
 
             // Nothing to be done here
-
-        } else if (v instanceof NewInstanceAndConstructExpression) {
-
-            // Nothing to be done here
-
         }
     }
 
@@ -1800,9 +1796,16 @@ public class LLVMWriter implements AutoCloseable {
             write((MethodHandleExpression) aValue);
         } else if (aValue instanceof PtrOfExpression) {
             write((PtrOfExpression) aValue);
+        } else if (aValue instanceof PrimitiveClassReferenceValue) {
+            write((PrimitiveClassReferenceValue) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue.getClass());
         }
+    }
+
+    private void write(final PrimitiveClassReferenceValue aValue) {
+        target.print("add i32 0, ");
+        target.print(aValue.getClazz().ordinal());
     }
 
     private void write(final PtrOfExpression aValue) {

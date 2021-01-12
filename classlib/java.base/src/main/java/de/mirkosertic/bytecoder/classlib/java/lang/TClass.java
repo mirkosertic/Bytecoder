@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 import de.mirkosertic.bytecoder.api.AnyTypeMatches;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.classlib.java.lang.reflect.TConstructor;
 
 import java.io.InputStream;
@@ -25,6 +26,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
 import java.net.URL;
 import java.security.ProtectionDomain;
@@ -115,28 +117,28 @@ public class TClass {
 
     public static Class<?> getPrimitiveClass(final String aName) {
         if ("byte".equals(aName)) {
-            return Byte.class;
+            return VM.bytePrimitiveClass();
         }
         if ("char".equals(aName)) {
-            return Character.class;
+            return VM.charPrimitiveClass();
         }
         if ("short".equals(aName)) {
-            return Short.class;
+            return VM.shortPrimitiveClass();
         }
         if ("int".equals(aName)) {
-            return Integer.class;
+            return VM.intPrimitiveClass();
         }
         if ("float".equals(aName)) {
-            return Float.class;
+            return VM.floatPrimitiveClass();
         }
         if ("double".equals(aName)) {
-            return Double.class;
+            return VM.doublePrimitiveClass();
         }
         if ("long".equals(aName)) {
-            return Long.class;
+            return VM.longPrimitiveClass();
         }
         if ("boolean".equals(aName)) {
-            return Boolean.class;
+            return VM.booleanPrimitiveClass();
         }
         throw new RuntimeException(aName);
     }
@@ -195,9 +197,17 @@ public class TClass {
         return false;
     }
 
-    @EmulatedByRuntime
-    public Field getField(final String name) {
-        return null;
+    public Field getField(final String name) throws NoSuchFieldException {
+        for (final Field f : getDeclaredFields()) {
+            if (Modifier.isPublic(f.getModifiers()) && name.equals(f.getName())) {
+                return f;
+            }
+        }
+        final Class superClass = getSuperclass();
+        if (superClass != null) {
+            return superClass.getField(name);
+        }
+        throw new NoSuchFieldException(name);
     }
 
     @EmulatedByRuntime
@@ -258,6 +268,7 @@ public class TClass {
     }
 
     public <T> T cast(final Object obj) {
+        //noinspection unchecked
         return (T) obj;
     }
 }
