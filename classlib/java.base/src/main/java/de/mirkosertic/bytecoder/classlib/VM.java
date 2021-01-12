@@ -316,4 +316,29 @@ public class VM {
 
     @EmulatedByRuntime
     public static native void putObjectToInstanceField(final Object o, final Field field, final Object value);
+
+    @EmulatedByRuntime
+    public static native Class<?> bytePrimitiveClass();
+
+    @EmulatedByRuntime
+    public static native Class<?> charPrimitiveClass();
+
+    @EmulatedByRuntime
+    public static native Class<?> shortPrimitiveClass();
+
+    @EmulatedByRuntime
+    public static native Class<?> intPrimitiveClass();
+
+    @EmulatedByRuntime
+    public static native Class<?> floatPrimitiveClass();
+
+    @EmulatedByRuntime
+    public static native Class<?> doublePrimitiveClass();
+
+    @EmulatedByRuntime
+    public static native Class<?> longPrimitiveClass();
+
+    @EmulatedByRuntime
+    public static native Class<?> booleanPrimitiveClass();
+
 }

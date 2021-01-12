@@ -99,6 +99,7 @@ import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
 import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
+import de.mirkosertic.bytecoder.ssa.PrimitiveClassReferenceValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutReflectiveFieldExpression;
@@ -313,8 +314,41 @@ public class JSSSAWriter {
             print((PutReflectiveFieldExpression) aValue);
         } else if (aValue instanceof PutReflectiveStaticFieldExpression) {
             print((PutReflectiveStaticFieldExpression) aValue);
+        } else if (aValue instanceof PrimitiveClassReferenceValue) {
+            print((PrimitiveClassReferenceValue) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
+        }
+    }
+
+    private void print(final PrimitiveClassReferenceValue aExpression) {
+        switch (aExpression.getClazz()) {
+            case CHAR:
+                writer.text(minifier.toSymbol("CharPrimitiveRuntimeClass"));
+                break;
+            case INT:
+                writer.text(minifier.toSymbol("IntPrimitiveRuntimeClass"));
+                break;
+            case LONG:
+                writer.text(minifier.toSymbol("LongPrimitiveRuntimeClass"));
+                break;
+            case BYTE:
+                writer.text(minifier.toSymbol("BytePrimitiveRuntimeClass"));
+                break;
+            case FLOAT:
+                writer.text(minifier.toSymbol("FloatPrimitiveRuntimeClass"));
+                break;
+            case BOOLEAN:
+                writer.text(minifier.toSymbol("BooleanPrimitiveRuntimeClass"));
+                break;
+            case SHORT:
+                writer.text(minifier.toSymbol("ShortPrimitiveRuntimeClass"));
+                break;
+            case DOUBLE:
+                writer.text(minifier.toSymbol("DoublePrimitiveRuntimeClass"));
+                break;
+            default:
+                throw new IllegalArgumentException("Not supported primitive type : " + aExpression.getClazz());
         }
     }
 

@@ -877,12 +877,14 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         // We need the runtimeclass logic
         theWriter.text("var ").text(theMinifier.toSymbol("RuntimeClass")).assign().text("function()").space().text("{").newLine();
-        theWriter.tab(1).text("var C").assign().text("function(classNameIndex,superClass,implementedTypes)").space().text("{").newLine();
+        theWriter.tab(1).text("var C").assign().text("function(classNameIndex,superClass,implementedTypes,primitive)").space().text("{").newLine();
         theWriter.tab(2).text("this.classNameIndex").assign().text("classNameIndex;").newLine();
         theWriter.tab(2).text("this.superClass").assign().text("superClass;").newLine();
         theWriter.tab(2).text("this.implementedTypes").assign().text("implementedTypes;").newLine();
         theWriter.tab(2).text("this.staticCallSites").assign().text("[];").newLine();
         theWriter.tab(2).text("this.declaredFields").assign().text("undefined;").newLine();
+        theWriter.tab(2).text("this.declaredFields").assign().text("undefined;").newLine();
+        theWriter.tab(2).text("this.primitive").assign().text("primitive;").newLine();
         theWriter.tab(1).text("};").newLine();
         theWriter.tab(1).text("C.prototype.").text(theGetNameMethodName).assign().text("function()").space().text("{").newLine();
         theWriter.tab(2).text("return bytecoder.stringpool[this.classNameIndex];").newLine();
@@ -934,10 +936,44 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab().text("};").newLine();
 
         theWriter.tab().text("C.prototype.").text(theIsPrimitiveMethodName).assign().text("function(args)").space().text("{").newLine();
-        theWriter.tab(2).text("return false;").newLine();
+        theWriter.tab(2).text("return this.primitive;").newLine();
         theWriter.tab().text("};").newLine();
 
         theWriter.tab(1).text("return C;").newLine();
+        theWriter.text("}();").newLine();
+
+        // We need runtime classes for Primitives
+        theWriter.text("var ").text(theMinifier.toSymbol("CharPrimitiveRuntimeClass")).assign().text("function()").space().text("{").newLine();
+        theWriter.tab(1).text("return new ").text(theMinifier.toSymbol("RuntimeClass"));
+        theWriter.text("(-3,undefined,[],true);");
+        theWriter.text("}();").newLine();
+        theWriter.text("var ").text(theMinifier.toSymbol("IntPrimitiveRuntimeClass")).assign().text("function()").space().text("{").newLine();
+        theWriter.tab(1).text("return new ").text(theMinifier.toSymbol("RuntimeClass"));
+        theWriter.text("(-4,undefined,[],true);");
+        theWriter.text("}();").newLine();
+        theWriter.text("var ").text(theMinifier.toSymbol("LongPrimitiveRuntimeClass")).assign().text("function()").space().text("{").newLine();
+        theWriter.tab(1).text("return new ").text(theMinifier.toSymbol("RuntimeClass"));
+        theWriter.text("(-5,undefined,[],true);");
+        theWriter.text("}();").newLine();
+        theWriter.text("var ").text(theMinifier.toSymbol("BytePrimitiveRuntimeClass")).assign().text("function()").space().text("{").newLine();
+        theWriter.tab(1).text("return new ").text(theMinifier.toSymbol("RuntimeClass"));
+        theWriter.text("(-6,undefined,[],true);");
+        theWriter.text("}();").newLine();
+        theWriter.text("var ").text(theMinifier.toSymbol("FloatPrimitiveRuntimeClass")).assign().text("function()").space().text("{").newLine();
+        theWriter.tab(1).text("return new ").text(theMinifier.toSymbol("RuntimeClass"));
+        theWriter.text("(-7,undefined,[],true);");
+        theWriter.text("}();").newLine();
+        theWriter.text("var ").text(theMinifier.toSymbol("BooleanPrimitiveRuntimeClass")).assign().text("function()").space().text("{").newLine();
+        theWriter.tab(1).text("return new ").text(theMinifier.toSymbol("RuntimeClass"));
+        theWriter.text("(-8,undefined,[],true);");
+        theWriter.text("}();").newLine();
+        theWriter.text("var ").text(theMinifier.toSymbol("ShortPrimitiveRuntimeClass")).assign().text("function()").space().text("{").newLine();
+        theWriter.tab(1).text("return new ").text(theMinifier.toSymbol("RuntimeClass"));
+        theWriter.text("(-9,undefined,[],true);");
+        theWriter.text("}();").newLine();
+        theWriter.text("var ").text(theMinifier.toSymbol("DoublePrimitiveRuntimeClass")).assign().text("function()").space().text("{").newLine();
+        theWriter.tab(1).text("return new ").text(theMinifier.toSymbol("RuntimeClass"));
+        theWriter.text("(-10,undefined,[],true);");
         theWriter.text("}();").newLine();
 
         final ConstantPool thePool = new ConstantPool();
@@ -1000,7 +1036,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 }
             }
 
-            theWriter.text("]);").newLine();
+            theWriter.text("],false);").newLine();
 
             theWriter.tab().text("var ").text(theMinifier.toSymbol("$INITIALIZED")).assign().text("false;").newLine();
 

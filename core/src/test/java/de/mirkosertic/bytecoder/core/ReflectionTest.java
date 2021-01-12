@@ -19,7 +19,6 @@ import de.mirkosertic.bytecoder.backend.CompileTarget;
 import de.mirkosertic.bytecoder.unittest.BytecoderTestOption;
 import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -223,7 +222,47 @@ public class ReflectionTest {
     }
 
     @Test
-    public void testIsPrimitive() {
+    public void testIsNotAPrimitive() {
         assertFalse(String.class.isPrimitive());
+    }
+
+    @Test
+    public void testIsPrimitiveByte() {
+        assertTrue(byte.class.isPrimitive());
+    }
+
+    @Test
+    public void testIsPrimitiveShort() {
+        assertTrue(short.class.isPrimitive());
+    }
+
+    @Test
+    public void testIsPrimitiveChar() {
+        assertTrue(char.class.isPrimitive());
+    }
+
+    @Test
+    public void testIsPrimitiveBoolean() {
+        assertTrue(boolean.class.isPrimitive());
+    }
+
+    @Test
+    public void testIsPrimitiveInt() {
+        assertTrue(int.class.isPrimitive());
+    }
+
+    @Test
+    public void testIsPrimitiveLong() {
+        assertTrue(long.class.isPrimitive());
+    }
+
+    @Test
+    public void testIsPrimitiveFloat() {
+        assertTrue(float.class.isPrimitive());
+    }
+
+    @Test
+    public void testIsPrimitiveDouble() {
+        assertTrue(double.class.isPrimitive());
     }
 }

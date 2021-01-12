@@ -1,6 +1,6 @@
 ---
 title: "Reflection API"
-date: 2019-10-25T14:49:24+02:00
+date: 2021-01-11T00:00:00+02:00
 draft: false
 weight: 4
 ---
@@ -50,6 +50,7 @@ f.getName(); // Retrieve field name
 f.getModifiers(); // Retrieve modifiers
 f.get(BaseClass.class); // Get static or instance value
 f.put(BaseClass.class, "newvalue"); // Put static or instance value
+Class.isPrimitive() // Check if the class represents a primitive value
 ```
 
 ### Reflection/AOT configuration for all compiler backends

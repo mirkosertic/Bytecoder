@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 import de.mirkosertic.bytecoder.api.AnyTypeMatches;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.classlib.java.lang.reflect.TConstructor;
 
 import java.io.InputStream;
@@ -116,28 +117,28 @@ public class TClass {
 
     public static Class<?> getPrimitiveClass(final String aName) {
         if ("byte".equals(aName)) {
-            return Byte.class;
+            return VM.bytePrimitiveClass();
         }
         if ("char".equals(aName)) {
-            return Character.class;
+            return VM.charPrimitiveClass();
         }
         if ("short".equals(aName)) {
-            return Short.class;
+            return VM.shortPrimitiveClass();
         }
         if ("int".equals(aName)) {
-            return Integer.class;
+            return VM.intPrimitiveClass();
         }
         if ("float".equals(aName)) {
-            return Float.class;
+            return VM.floatPrimitiveClass();
         }
         if ("double".equals(aName)) {
-            return Double.class;
+            return VM.doublePrimitiveClass();
         }
         if ("long".equals(aName)) {
-            return Long.class;
+            return VM.longPrimitiveClass();
         }
         if ("boolean".equals(aName)) {
-            return Boolean.class;
+            return VM.booleanPrimitiveClass();
         }
         throw new RuntimeException(aName);
     }

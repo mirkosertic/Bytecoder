@@ -35,6 +35,7 @@ import de.mirkosertic.bytecoder.ssa.MethodTypeArgumentCheckExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceAndConstructExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
 import de.mirkosertic.bytecoder.ssa.ParsingHelper;
+import de.mirkosertic.bytecoder.ssa.PrimitiveClassReferenceValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutReflectiveFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutReflectiveStaticFieldExpression;
@@ -136,7 +137,6 @@ public class VMIntrinsic extends Intrinsic {
                 aHelper.push(aInstruction.getOpcodeAddress(), new MethodTypeArgumentCheckExpression(aProgram, aInstruction.getOpcodeAddress(), aArguments.get(0), aArguments.get(1), TypeRef.Native.BYTE));
                 return true;
             }
-
             if ("arrayEntryAsLong".equals(aMethodName)) {
                 final ArrayEntryExpression theExpression = new ArrayEntryExpression(aProgram, aInstruction.getOpcodeAddress(),
                         TypeRef.Native.LONG, aArguments.get(0), aArguments.get(1));
@@ -207,6 +207,39 @@ public class VMIntrinsic extends Intrinsic {
                 final PutReflectiveFieldExpression theExpression = new PutReflectiveFieldExpression(aProgram, aInstruction.getOpcodeAddress(),
                         TypeRef.Native.REFERENCE, aArguments.get(1), aArguments.get(0), aArguments.get(2));
                 aHelper.push(aInstruction.getOpcodeAddress(), theExpression);
+                return true;
+            }
+
+            if ("bytePrimitiveClass".equals(aMethodName)) {
+                aHelper.push(aInstruction.getOpcodeAddress(), new PrimitiveClassReferenceValue(TypeRef.Native.BYTE));
+                return true;
+            }
+            if ("charPrimitiveClass".equals(aMethodName)) {
+                aHelper.push(aInstruction.getOpcodeAddress(), new PrimitiveClassReferenceValue(TypeRef.Native.CHAR));
+                return true;
+            }
+            if ("shortPrimitiveClass".equals(aMethodName)) {
+                aHelper.push(aInstruction.getOpcodeAddress(), new PrimitiveClassReferenceValue(TypeRef.Native.SHORT));
+                return true;
+            }
+            if ("intPrimitiveClass".equals(aMethodName)) {
+                aHelper.push(aInstruction.getOpcodeAddress(), new PrimitiveClassReferenceValue(TypeRef.Native.INT));
+                return true;
+            }
+            if ("floatPrimitiveClass".equals(aMethodName)) {
+                aHelper.push(aInstruction.getOpcodeAddress(), new PrimitiveClassReferenceValue(TypeRef.Native.FLOAT));
+                return true;
+            }
+            if ("doublePrimitiveClass".equals(aMethodName)) {
+                aHelper.push(aInstruction.getOpcodeAddress(), new PrimitiveClassReferenceValue(TypeRef.Native.DOUBLE));
+                return true;
+            }
+            if ("longPrimitiveClass".equals(aMethodName)) {
+                aHelper.push(aInstruction.getOpcodeAddress(), new PrimitiveClassReferenceValue(TypeRef.Native.LONG));
+                return true;
+            }
+            if ("booleanPrimitiveClass".equals(aMethodName)) {
+                aHelper.push(aInstruction.getOpcodeAddress(), new PrimitiveClassReferenceValue(TypeRef.Native.BOOLEAN));
                 return true;
             }
         }
