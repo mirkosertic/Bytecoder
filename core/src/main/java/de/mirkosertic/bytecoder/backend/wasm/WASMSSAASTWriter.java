@@ -107,12 +107,13 @@ import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
 import de.mirkosertic.bytecoder.ssa.MinExpression;
 import de.mirkosertic.bytecoder.ssa.NegatedExpression;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
-import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
-import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceAndConstructExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
+import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
+import de.mirkosertic.bytecoder.ssa.PrimitiveClassReferenceValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PtrOfExpression;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
@@ -844,7 +845,14 @@ public class WASMSSAASTWriter {
         if (aValue instanceof SystemHasStackExpression) {
             return systemmHasStackExpression((SystemHasStackExpression) aValue);
         }
+        if (aValue instanceof PrimitiveClassReferenceValue) {
+            return primitiveClassReferenceValue((PrimitiveClassReferenceValue) aValue);
+        }
         throw new IllegalStateException("Not supported : " + aValue);
+    }
+
+    private WASMValue primitiveClassReferenceValue(final PrimitiveClassReferenceValue aValue) {
+        return i32.c(aValue.getClazz().ordinal(), null);
     }
 
     private WASMValue systemmHasStackExpression(final SystemHasStackExpression aValue) {

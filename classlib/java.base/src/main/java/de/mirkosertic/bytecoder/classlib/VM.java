@@ -21,6 +21,7 @@ import de.mirkosertic.bytecoder.api.Export;
 import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
+import java.lang.reflect.Field;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 
@@ -85,7 +86,7 @@ public class VM {
             '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
             '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
             '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
-    } ;
+    };
 
     public static abstract class ImplementingCallsite extends ConstantCallSite {
 
@@ -197,9 +198,6 @@ public class VM {
         return null;
     }
 
-    public static void setClassMember(final Class clz, final String name, final Object value) {
-    }
-
     public static final char NEWLINE = '\n';
 
     public static long stringToLong(final String aString) {
@@ -306,4 +304,41 @@ public class VM {
 
     @EmulatedByRuntime
     public static native byte arrayEntryAsByte(final Object[] aObject, final int index);
+
+    @EmulatedByRuntime
+    public static native Object getObjectFromStaticField(final Class declaredClass, final Field field);
+
+    @EmulatedByRuntime
+    public static native Object getObjectFromInstanceField(final Object o, final Field field);
+
+    @EmulatedByRuntime
+    public static native void putObjectToStaticField(final Class declaredClass, final Field field, final Object value);
+
+    @EmulatedByRuntime
+    public static native void putObjectToInstanceField(final Object o, final Field field, final Object value);
+
+    @EmulatedByRuntime
+    public static native Class<?> bytePrimitiveClass();
+
+    @EmulatedByRuntime
+    public static native Class<?> charPrimitiveClass();
+
+    @EmulatedByRuntime
+    public static native Class<?> shortPrimitiveClass();
+
+    @EmulatedByRuntime
+    public static native Class<?> intPrimitiveClass();
+
+    @EmulatedByRuntime
+    public static native Class<?> floatPrimitiveClass();
+
+    @EmulatedByRuntime
+    public static native Class<?> doublePrimitiveClass();
+
+    @EmulatedByRuntime
+    public static native Class<?> longPrimitiveClass();
+
+    @EmulatedByRuntime
+    public static native Class<?> booleanPrimitiveClass();
+
 }

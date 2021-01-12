@@ -529,7 +529,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         final String theStringEqualsClass = WASMWriterUtils.toMethodName(BytecodeObjectTypeRef.fromRuntimeClass(String.class), "equals", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BOOLEAN, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Object.class)}));
 
                         // We search for all non abstract non interface classes
-                        aLinkerContext.linkedClasses().map(Edge::targetNode).forEach(search -> {
+                        aLinkerContext.linkedClasses().map(Edge::targetNode).filter(c -> aLinkerContext.reflectionConfiguration().resolve(c.getClassName().name()).supportsClassForName()).forEach(search -> {
                             if (!search.getBytecodeClass().getAccessFlags().isAbstract() && !search.getBytecodeClass().getAccessFlags().isInterface()) {
                                 // Only if the class has a zero arg constructor
                                 final BytecodeResolvedMethods theResolved = search.resolvedMethods();

@@ -31,6 +31,7 @@ public class BytecodeLinkerContext {
     private final Logger logger;
     private int classIdCounter;
     private final Statistics statistics;
+    private final ReflectionConfiguration reflectionConfiguration;
 
     public BytecodeLinkerContext(final BytecodeLoader aLoader, final Logger aLogger) {
         rootNode = new RootNode();
@@ -39,6 +40,7 @@ public class BytecodeLinkerContext {
         logger = aLogger;
         classIdCounter = 0;
         statistics = new Statistics();
+        reflectionConfiguration= new ReflectionConfiguration();
     }
 
     public Statistics getStatistics() {
@@ -157,5 +159,9 @@ public class BytecodeLinkerContext {
             // New classes were added, we maybe have to resolve them as well
             resolveAbstractMethodsInSubclasses();
         }
+    }
+
+    public ReflectionConfiguration reflectionConfiguration() {
+        return reflectionConfiguration;
     }
 }

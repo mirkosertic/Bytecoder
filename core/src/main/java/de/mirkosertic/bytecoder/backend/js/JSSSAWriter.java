@@ -63,6 +63,8 @@ import de.mirkosertic.bytecoder.ssa.FloatingPointCeilExpression;
 import de.mirkosertic.bytecoder.ssa.FloatingPointFloorExpression;
 import de.mirkosertic.bytecoder.ssa.FloorExpression;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
+import de.mirkosertic.bytecoder.ssa.GetReflectiveFieldExpression;
+import de.mirkosertic.bytecoder.ssa.GetReflectiveStaticFieldExpression;
 import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.HeapBaseExpression;
@@ -91,14 +93,17 @@ import de.mirkosertic.bytecoder.ssa.MethodTypeExpression;
 import de.mirkosertic.bytecoder.ssa.MinExpression;
 import de.mirkosertic.bytecoder.ssa.NegatedExpression;
 import de.mirkosertic.bytecoder.ssa.NewArrayExpression;
-import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
-import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceAndConstructExpression;
 import de.mirkosertic.bytecoder.ssa.NewInstanceExpression;
+import de.mirkosertic.bytecoder.ssa.NewInstanceFromDefaultConstructorExpression;
+import de.mirkosertic.bytecoder.ssa.NewMultiArrayExpression;
 import de.mirkosertic.bytecoder.ssa.NullValue;
 import de.mirkosertic.bytecoder.ssa.PHIValue;
+import de.mirkosertic.bytecoder.ssa.PrimitiveClassReferenceValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
+import de.mirkosertic.bytecoder.ssa.PutReflectiveFieldExpression;
+import de.mirkosertic.bytecoder.ssa.PutReflectiveStaticFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.ResolveCallsiteInstanceExpression;
@@ -301,9 +306,96 @@ public class JSSSAWriter {
             print((DataEndExpression) aValue);
         } else if (aValue instanceof SystemHasStackExpression) {
             print((SystemHasStackExpression) aValue);
+        } else if (aValue instanceof GetReflectiveStaticFieldExpression) {
+            print((GetReflectiveStaticFieldExpression) aValue);
+        } else if (aValue instanceof GetReflectiveFieldExpression) {
+            print((GetReflectiveFieldExpression) aValue);
+        } else if (aValue instanceof PutReflectiveFieldExpression) {
+            print((PutReflectiveFieldExpression) aValue);
+        } else if (aValue instanceof PutReflectiveStaticFieldExpression) {
+            print((PutReflectiveStaticFieldExpression) aValue);
+        } else if (aValue instanceof PrimitiveClassReferenceValue) {
+            print((PrimitiveClassReferenceValue) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue);
         }
+    }
+
+    private void print(final PrimitiveClassReferenceValue aExpression) {
+        switch (aExpression.getClazz()) {
+            case CHAR:
+                writer.text(minifier.toSymbol("CharPrimitiveRuntimeClass"));
+                break;
+            case INT:
+                writer.text(minifier.toSymbol("IntPrimitiveRuntimeClass"));
+                break;
+            case LONG:
+                writer.text(minifier.toSymbol("LongPrimitiveRuntimeClass"));
+                break;
+            case BYTE:
+                writer.text(minifier.toSymbol("BytePrimitiveRuntimeClass"));
+                break;
+            case FLOAT:
+                writer.text(minifier.toSymbol("FloatPrimitiveRuntimeClass"));
+                break;
+            case BOOLEAN:
+                writer.text(minifier.toSymbol("BooleanPrimitiveRuntimeClass"));
+                break;
+            case SHORT:
+                writer.text(minifier.toSymbol("ShortPrimitiveRuntimeClass"));
+                break;
+            case DOUBLE:
+                writer.text(minifier.toSymbol("DoublePrimitiveRuntimeClass"));
+                break;
+            default:
+                throw new IllegalArgumentException("Not supported primitive type : " + aExpression.getClazz());
+        }
+    }
+
+    private void print(final PutReflectiveStaticFieldExpression aExpression) {
+        final Value field = aExpression.getField();
+        final Value target = aExpression.getTarget();
+        final Value value = aExpression.getValue();
+        print(field);
+        writer.text(".").text(minifier.toSymbol("mutationMethod"));
+        writer.text(".call(null,");
+        print(target);
+        writer.text(",");
+        print(value);
+        writer.text(")");
+    }
+
+    private void print(final PutReflectiveFieldExpression aExpression) {
+        final Value field = aExpression.getField();
+        final Value target = aExpression.getTarget();
+        final Value value = aExpression.getValue();
+        print(field);
+        writer.text(".").text(minifier.toSymbol("mutationMethod"));
+        writer.text(".call(null,");
+        print(target);
+        writer.text(",");
+        print(value);
+        writer.text(")");
+    }
+
+    private void print(final GetReflectiveFieldExpression aExpression) {
+        final Value field = aExpression.getField();
+        final Value target = aExpression.getTarget();
+        print(field);
+        writer.text(".").text(minifier.toSymbol("accessorMethod"));
+        writer.text(".call(null,");
+        print(target);
+        writer.text(")");
+    }
+
+    private void print(final GetReflectiveStaticFieldExpression aExpression) {
+        final Value field = aExpression.getField();
+        final Value target = aExpression.getTarget();
+        print(field);
+        writer.text(".").text(minifier.toSymbol("accessorMethod"));
+        writer.text(".call(null,");
+        print(target);
+        writer.text(")");
     }
 
     private void print(final SystemHasStackExpression aExpression) {

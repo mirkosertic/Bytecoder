@@ -74,11 +74,11 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
         for (final BytecodeLinkedClass theClass : theImplementingTypes) {
             if (theClass.getClassName().name().equals(OpaqueReferenceType.class.getName())) {
                 opaque = true;
-                return opaque;
+                return true;
             }
         }
         opaque = false;
-        return opaque;
+        return false;
     }
 
     public boolean isCallback() {
@@ -89,11 +89,11 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
         for (final BytecodeLinkedClass theClass : theImplementingTypes) {
             if (theClass.getClassName().name().equals(Callback.class.getName())) {
                 callback = true;
-                return callback;
+                return true;
             }
         }
         callback = false;
-        return callback;
+        return false;
     }
 
     public boolean isEvent() {
@@ -104,11 +104,11 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
         for (final BytecodeLinkedClass theClass : theImplementingTypes) {
             if (theClass.getClassName().name().equals(Event.class.getName())) {
                 event = true;
-                return event;
+                return true;
             }
         }
         event = false;
-        return event;
+        return false;
     }
 
     public boolean emulatedByRuntime() {
@@ -506,5 +506,9 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
     @Override
     public String toString() {
         return className.name();
+    }
+
+    public ReflectionConfiguration.ReflectiveClass reflectiveClass() {
+        return linkerContext.reflectionConfiguration().resolve(getClassName().name());
     }
 }

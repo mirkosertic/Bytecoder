@@ -110,6 +110,5 @@ public class NaiveProgramGeneratorTest {
         assertEquals(4, theCFG.dominators().getPreOrder().size());
         final RegionNode theSingleNode = theCFG.startNode();
         assertEquals(8, theSingleNode.getExpressions().size());
-        System.out.println(theCFG.toDOT());
     }
 }
