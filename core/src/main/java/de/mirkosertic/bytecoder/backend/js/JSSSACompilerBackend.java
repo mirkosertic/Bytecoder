@@ -96,7 +96,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 BytecodePrimitiveTypeRef.INT,
                 BytecodeObjectTypeRef.fromRuntimeClass(Class.class),
                 BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
-                BytecodeObjectTypeRef.fromRuntimeClass(Object.class)
+                BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
+                BytecodePrimitiveTypeRef.INT
         });
         final BytecodeLinkedClass theFieldClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Field.class));
         theFieldClass.resolveConstructorInvocation(theFieldClassConstructorSignature);
@@ -1234,7 +1235,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                     }
                     theWriter.text("}").newLine();
 
-                    theWriter.text(");");
+                    theWriter.text(",-1);");
                 }
             } else {
                 // Empty field list

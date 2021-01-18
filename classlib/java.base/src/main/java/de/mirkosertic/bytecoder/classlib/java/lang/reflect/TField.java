@@ -32,14 +32,16 @@ public class TField {
     private final Object accessorMethod;
     @SuppressWarnings("FieldCanBeLocal")
     private final Object mutationMethod;
+    private final int offset;
 
-    public TField(final Class declaredClass, final String name, final int modifiers, final Class type, final Object accessorMethod, final Object mutationMethod) {
+    public TField(final Class declaredClass, final String name, final int modifiers, final Class type, final Object accessorMethod, final Object mutationMethod, final int offset) {
         this.declaredClass = declaredClass;
         this.name = name;
         this.modifiers = modifiers;
         this.type = type;
         this.accessorMethod = accessorMethod;
         this.mutationMethod = mutationMethod;
+        this.offset = offset;
     }
 
     public String getName() {

@@ -81,6 +81,7 @@ public class TClass {
         return false;
     }
 
+    @EmulatedByRuntime
     public boolean isPrimitive() {
         return false;
     }

@@ -28,7 +28,7 @@ import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 
 public class NativeMemoryLayouter {
 
-    public static final int CLASS_HEADER_SIZE = 28; // Object header plus initialization status + enum values offset + classname + typeid + vtable function index
+    public static final int CLASS_HEADER_SIZE = 36; // Object header plus initialization status + enum values offset + classname + typeid + vtable function index + primitive flag + declared field list
     public static final int OBJECT_HEADER_SIZE = 8;
 
     public interface MemoryLayout {

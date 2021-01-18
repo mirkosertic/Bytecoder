@@ -60,6 +60,8 @@ import de.mirkosertic.bytecoder.ssa.FloatingPointCeilExpression;
 import de.mirkosertic.bytecoder.ssa.FloatingPointFloorExpression;
 import de.mirkosertic.bytecoder.ssa.FloorExpression;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
+import de.mirkosertic.bytecoder.ssa.GetReflectiveFieldExpression;
+import de.mirkosertic.bytecoder.ssa.GetReflectiveStaticFieldExpression;
 import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.HeapBaseExpression;
@@ -96,6 +98,8 @@ import de.mirkosertic.bytecoder.ssa.PrimitiveClassReferenceValue;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.PtrOfExpression;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
+import de.mirkosertic.bytecoder.ssa.PutReflectiveFieldExpression;
+import de.mirkosertic.bytecoder.ssa.PutReflectiveStaticFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.ResolveCallsiteInstanceExpression;
@@ -1798,14 +1802,92 @@ public class LLVMWriter implements AutoCloseable {
             write((PtrOfExpression) aValue);
         } else if (aValue instanceof PrimitiveClassReferenceValue) {
             write((PrimitiveClassReferenceValue) aValue);
+        } else if (aValue instanceof GetReflectiveStaticFieldExpression) {
+            write((GetReflectiveStaticFieldExpression) aValue);
+        } else if (aValue instanceof GetReflectiveFieldExpression) {
+            write((GetReflectiveFieldExpression) aValue);
+        } else if (aValue instanceof PutReflectiveStaticFieldExpression) {
+            write((PutReflectiveStaticFieldExpression) aValue);
+        } else if (aValue instanceof PutReflectiveFieldExpression) {
+            write((PutReflectiveFieldExpression) aValue);
         } else {
             throw new IllegalStateException("Not implemented : " + aValue.getClass());
         }
     }
 
+    private void write(final GetReflectiveStaticFieldExpression aValue) {
+        target.print("call i32 @bytecoder.getfieldvalue(i32 ");
+        write(aValue.getTarget(), true);
+        target.print(",i32 ");
+        write(aValue.getField(), true);
+        target.print(")");
+    }
+
+    private void write(final GetReflectiveFieldExpression aValue) {
+        target.print("call i32 @bytecoder.getfieldvalue(i32 ");
+        write(aValue.getTarget(), true);
+        target.print(",i32 ");
+        write(aValue.getField(), true);
+        target.print(")");
+    }
+
+    private void write(final PutReflectiveStaticFieldExpression aValue) {
+        target.print("call i32 @bytecoder.putfieldvalue(i32 ");
+        write(aValue.getTarget(), true);
+        target.print(",i32 ");
+        write(aValue.getField(), true);
+        target.print(",i32 ");
+        write(aValue.getValue(), true);
+        target.print(")");
+    }
+
+    private void write(final PutReflectiveFieldExpression aValue) {
+        target.print("call i32 @bytecoder.putfieldvalue(i32 ");
+        write(aValue.getTarget(), true);
+        target.print(",i32 ");
+        write(aValue.getField(), true);
+        target.print(",i32 ");
+        write(aValue.getValue(), true);
+        target.print(")");
+    }
+
     private void write(final PrimitiveClassReferenceValue aValue) {
-        target.print("add i32 0, ");
-        target.print(aValue.getClazz().ordinal());
+        switch (aValue.getClazz()) {
+            case DOUBLE:
+                target.print("load i32, i32* @DoublePrimitive");
+                target.print(RUNTIMECLASSSUFFIX);
+                break;
+            case BYTE:
+                target.print("load i32, i32* @BytePrimitive");
+                target.print(RUNTIMECLASSSUFFIX);
+                break;
+            case CHAR:
+                target.print("load i32, i32* @CharPrimitive");
+                target.print(RUNTIMECLASSSUFFIX);
+                break;
+            case LONG:
+                target.print("load i32, i32* @LongPrimitive");
+                target.print(RUNTIMECLASSSUFFIX);
+                break;
+            case FLOAT:
+                target.print("load i32, i32* @FloatPrimitive");
+                target.print(RUNTIMECLASSSUFFIX);
+                break;
+            case INT:
+                target.print("load i32, i32* @IntPrimitive");
+                target.print(RUNTIMECLASSSUFFIX);
+                break;
+            case SHORT:
+                target.print("load i32, i32* @ShortPrimitive");
+                target.print(RUNTIMECLASSSUFFIX);
+                break;
+            case BOOLEAN:
+                target.print("load i32, i32* @BooleanPrimitive");
+                target.print(RUNTIMECLASSSUFFIX);
+                break;
+            default:
+                throw new IllegalArgumentException("Not supported primitive class " + aValue.getClazz());
+        }
     }
 
     private void write(final PtrOfExpression aValue) {

@@ -44,7 +44,10 @@ jobs:
          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
          restore-keys: |
            ${{ runner.os }}-maven-
-     - run: sudo apt-get install -y ocl-icd-opencl-dev
+     - run: wget https://apt.llvm.org/llvm.sh
+     - run: chmod +x llvm.sh
+     - run: sudo ./llvm.sh 10
+     - run: sudo apt-get install -y ocl-icd-opencl-dev clang-10 lldb-10 lld-10 clangd-10
      - run: mvn verify -P jstestsonly
   build_wasm_stackify_backend:
     runs-on: 'ubuntu-latest'
