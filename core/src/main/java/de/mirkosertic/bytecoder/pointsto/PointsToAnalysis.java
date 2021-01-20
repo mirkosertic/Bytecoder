@@ -28,6 +28,8 @@ import de.mirkosertic.bytecoder.ssa.Expression;
 import de.mirkosertic.bytecoder.ssa.ExpressionList;
 import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
 import de.mirkosertic.bytecoder.ssa.GetFieldExpression;
+import de.mirkosertic.bytecoder.ssa.GetReflectiveFieldExpression;
+import de.mirkosertic.bytecoder.ssa.GetReflectiveStaticFieldExpression;
 import de.mirkosertic.bytecoder.ssa.GetStaticExpression;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
@@ -56,6 +58,8 @@ import de.mirkosertic.bytecoder.ssa.ProgramDescriptor;
 import de.mirkosertic.bytecoder.ssa.ProgramDescriptorProvider;
 import de.mirkosertic.bytecoder.ssa.PtrOfExpression;
 import de.mirkosertic.bytecoder.ssa.PutFieldExpression;
+import de.mirkosertic.bytecoder.ssa.PutReflectiveFieldExpression;
+import de.mirkosertic.bytecoder.ssa.PutReflectiveStaticFieldExpression;
 import de.mirkosertic.bytecoder.ssa.PutStaticExpression;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.ResolveCallsiteInstanceExpression;
@@ -245,6 +249,10 @@ public class PointsToAnalysis {
                     // String constants are also in static scope
                     final Symbol valueSymbol = GlobalSymbols.staticScope;
                     aAnalysisResult.alias(varSymbol, valueSymbol);
+                } else if (value instanceof GetReflectiveFieldExpression || value instanceof GetReflectiveStaticFieldExpression) {
+                    // Reflective access escapes always to static scope, we give up here
+                    final Symbol valueSymbol = GlobalSymbols.staticScope;
+                    aAnalysisResult.alias(varSymbol, valueSymbol);
                 } else if (value instanceof ClassReferenceValue || value instanceof PrimitiveClassReferenceValue) {
                     // Class references are always in static scope
                     final Symbol valueSymbol = GlobalSymbols.staticScope;
@@ -343,6 +351,16 @@ public class PointsToAnalysis {
                 } else if (value instanceof NewInstanceFromDefaultConstructorExpression) {
                     final AllocationSymbol alloc = aAnalysisResult.allocation(value);
                     aAnalysisResult.assign(varSymbol, alloc);
+                } else if (value instanceof PutReflectiveStaticFieldExpression) {
+                    // Reflective write always escapes to static scope, we give up here
+                    final List<Value> incoming = value.incomingDataFlows();
+                    final Symbol valueSymbol = resolve(incoming.get(2), aSymbolCache);
+                    aAnalysisResult.writeInto(GlobalSymbols.staticScope, valueSymbol);
+                } else if (value instanceof PutReflectiveFieldExpression) {
+                    // Reflective write always escapes to static scope, we give up here
+                    final List<Value> incoming = value.incomingDataFlows();
+                    final Symbol valueSymbol = resolve(incoming.get(2), aSymbolCache);
+                    aAnalysisResult.writeInto(GlobalSymbols.staticScope, valueSymbol);
                 } else if (value instanceof LambdaWithStaticImplExpression ||
                            value instanceof LambdaConstructorReferenceExpression ||
                            value instanceof LambdaInterfaceReferenceExpression ||
