@@ -33,7 +33,8 @@ import static org.junit.Assert.assertTrue;
 @BytecoderTestOptions(additionalClassesToLink = {"de.mirkosertic.bytecoder.core.ReflectionTest$ReflectionTarget",
         "de.mirkosertic.bytecoder.core.ReflectionTest$BaseClass"},
     value = {@BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = true),
-            @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = false)})
+            @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = false),
+            @BytecoderTestOption(backend = CompileTarget.BackendType.wasm_llvm, minify = false)})
 public class ReflectionTest {
 
     public static class BaseClass {

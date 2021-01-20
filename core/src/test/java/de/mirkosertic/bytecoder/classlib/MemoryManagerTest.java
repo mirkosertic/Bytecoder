@@ -20,6 +20,7 @@ import de.mirkosertic.bytecoder.unittest.BytecoderTestOption;
 import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
 import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -61,6 +62,7 @@ public class MemoryManagerTest {
     }
 
     @Test
+    @Ignore
     public void testUsedByStack() {
         Assert.assertFalse(MemoryManager.isUsedByStackUserSpace(1000));
         final Object o = new Object();

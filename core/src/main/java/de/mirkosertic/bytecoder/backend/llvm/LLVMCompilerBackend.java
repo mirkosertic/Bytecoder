@@ -71,6 +71,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -160,6 +161,20 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
         theMemoryManagerClass.resolveStaticMethod("initStackObject", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
         theMemoryManagerClass.resolveStaticMethod("initStackArray", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+
+        // We need this class and constructor to build reflective metadata
+        final BytecodeMethodSignature theFieldClassConstructorSignature = new BytecodeMethodSignature(
+                BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {
+                BytecodeObjectTypeRef.fromRuntimeClass(Class.class),
+                BytecodeObjectTypeRef.fromRuntimeClass(String.class),
+                BytecodePrimitiveTypeRef.INT,
+                BytecodeObjectTypeRef.fromRuntimeClass(Class.class),
+                BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
+                BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
+                BytecodePrimitiveTypeRef.INT
+        });
+        final BytecodeLinkedClass theFieldClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Field.class));
+        theFieldClass.resolveConstructorInvocation(theFieldClassConstructorSignature);
 
         final LLVMCompileResult theCompileResult = new LLVMCompileResult();
         final List<OpaqueReferenceMethod> opaqueReferenceMethods = new ArrayList<>();
@@ -481,6 +496,334 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 });
 
                 // Some utility function
+                final NativeMemoryLayouter.MemoryLayout theFieldMemoryLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromRuntimeClass(Field.class));
+                final int theOffsetOffset = theFieldMemoryLayout.offsetForInstanceMember("offset");
+                pw.println("define internal i32 @bytecoder.getObjectFieldValueAsObject(i32 %object, i32 %field) {");
+                pw.println("entry:");
+                pw.print("    %offset = add i32 %field, ");
+                pw.println(theOffsetOffset);
+                pw.println("  %ptr = inttoptr i32 %offset to i32*");
+                pw.println("  %offsetvalue = load i32, i32* %ptr");
+
+                pw.println("  %data = add i32 %object, %offsetvalue");
+                pw.println("  %dataptr = inttoptr i32 %data to i32*");
+                pw.println("  %result = load i32, i32* %dataptr");
+                pw.println("  ret i32 %result");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal void @bytecoder.putObjectFieldValueFromObject(i32 %object, i32 %field, i32 %value) {");
+                pw.println("entry:");
+                pw.print("    %offset = add i32 %field, ");
+                pw.println(theOffsetOffset);
+                pw.println("  %ptr = inttoptr i32 %offset to i32*");
+                pw.println("  %offsetvalue = load i32, i32* %ptr");
+
+                pw.println("  %data = add i32 %object, %offsetvalue");
+                pw.println("  %dataptr = inttoptr i32 %data to i32*");
+                pw.println("  store i32 %value, i32* %dataptr");
+                pw.println("  ret void");
+                pw.println("}");
+                pw.println();
+
+                // boolean
+                pw.println("define internal i32 @bytecoder.getBooleanFieldValueAsObject(i32 %object, i32 %field) {");
+                pw.println("entry:");
+                pw.print("    %offset = add i32 %field, ");
+                pw.println(theOffsetOffset);
+                pw.println("  %ptr = inttoptr i32 %offset to i32*");
+                pw.println("  %offsetvalue = load i32, i32* %ptr");
+
+                pw.println("  %data = add i32 %object, %offsetvalue");
+                pw.println("  %dataptr = inttoptr i32 %data to i32*");
+                pw.println("  %result = load i32, i32* %dataptr");
+                pw.println("  %class = call i32 @jlBoolean__init()");
+                pw.println("  %converted = call i32 @jlBoolean_jlBooleanvalueOfBOOLEAN(i32 %class, i32 %result);");
+                pw.println("  ret i32 %converted");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal void @bytecoder.putBooleanFieldValueFromObject(i32 %object, i32 %field, i32 %value) {");
+                pw.println("entry:");
+                pw.print("    %offset = add i32 %field, ");
+                pw.println(theOffsetOffset);
+                pw.println("  %ptr = inttoptr i32 %offset to i32*");
+                pw.println("  %offsetvalue = load i32, i32* %ptr");
+
+                pw.println("  %data = add i32 %object, %offsetvalue");
+                pw.println("  %dataptr = inttoptr i32 %data to i32*");
+
+                pw.println("  %class = call i32 @jlBoolean__init()");
+                pw.println("  %converted = call i32 @jlBoolean_BOOLEANbooleanValue(i32 %value)");
+                pw.println("  store i32 %converted, i32* %dataptr");
+                pw.println("  ret void");
+                pw.println("}");
+                pw.println();
+
+                // integer
+                pw.println("define internal i32 @bytecoder.getIntegerFieldValueAsObject(i32 %object, i32 %field) {");
+                pw.println("entry:");
+                pw.print("    %offset = add i32 %field, ");
+                pw.println(theOffsetOffset);
+                pw.println("  %ptr = inttoptr i32 %offset to i32*");
+                pw.println("  %offsetvalue = load i32, i32* %ptr");
+
+                pw.println("  %data = add i32 %object, %offsetvalue");
+                pw.println("  %dataptr = inttoptr i32 %data to i32*");
+                pw.println("  %result = load i32, i32* %dataptr");
+                pw.println("  %class = call i32 @jlInteger__init()");
+                pw.println("  %converted = call i32 @jlInteger_jlIntegervalueOfINT(i32 %class, i32 %result);");
+                pw.println("  ret i32 %converted");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal void @bytecoder.putIntegerFieldValueFromObject(i32 %object, i32 %field, i32 %value) {");
+                pw.println("entry:");
+                pw.print("    %offset = add i32 %field, ");
+                pw.println(theOffsetOffset);
+                pw.println("  %ptr = inttoptr i32 %offset to i32*");
+                pw.println("  %offsetvalue = load i32, i32* %ptr");
+
+                pw.println("  %data = add i32 %object, %offsetvalue");
+                pw.println("  %dataptr = inttoptr i32 %data to i32*");
+
+                pw.println("  %class = call i32 @jlInteger__init()");
+                pw.println("  %converted = call i32 @jlInteger_INTintValue(i32 %value)");
+                pw.println("  store i32 %converted, i32* %dataptr");
+                pw.println("  ret void");
+                pw.println("}");
+                pw.println();
+
+                // byte
+                pw.println("define internal i32 @bytecoder.getByteFieldValueAsObject(i32 %object, i32 %field) {");
+                pw.println("entry:");
+                pw.print("    %offset = add i32 %field, ");
+                pw.println(theOffsetOffset);
+                pw.println("  %ptr = inttoptr i32 %offset to i32*");
+                pw.println("  %offsetvalue = load i32, i32* %ptr");
+
+                pw.println("  %data = add i32 %object, %offsetvalue");
+                pw.println("  %dataptr = inttoptr i32 %data to i32*");
+                pw.println("  %result = load i32, i32* %dataptr");
+                pw.println("  %class = call i32 @jlByte__init()");
+                pw.println("  %converted = call i32 @jlByte_jlBytevalueOfBYTE(i32 %class, i32 %result);");
+                pw.println("  ret i32 %converted");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal void @bytecoder.putByteFieldValueFromObject(i32 %object, i32 %field, i32 %value) {");
+                pw.println("entry:");
+                pw.print("    %offset = add i32 %field, ");
+                pw.println(theOffsetOffset);
+                pw.println("  %ptr = inttoptr i32 %offset to i32*");
+                pw.println("  %offsetvalue = load i32, i32* %ptr");
+
+                pw.println("  %data = add i32 %object, %offsetvalue");
+                pw.println("  %dataptr = inttoptr i32 %data to i32*");
+
+                pw.println("  %class = call i32 @jlByte__init()");
+                pw.println("  %converted = call i32 @jlByte_BYTEbyteValue(i32 %value)");
+                pw.println("  store i32 %converted, i32* %dataptr");
+                pw.println("  ret void");
+                pw.println("}");
+                pw.println();
+
+                // char
+                pw.println("define internal i32 @bytecoder.getCharFieldValueAsObject(i32 %object, i32 %field) {");
+                pw.println("entry:");
+                pw.print("    %offset = add i32 %field, ");
+                pw.println(theOffsetOffset);
+                pw.println("  %ptr = inttoptr i32 %offset to i32*");
+                pw.println("  %offsetvalue = load i32, i32* %ptr");
+
+                pw.println("  %data = add i32 %object, %offsetvalue");
+                pw.println("  %dataptr = inttoptr i32 %data to i32*");
+                pw.println("  %result = load i32, i32* %dataptr");
+                pw.println("  %class = call i32 @jlCharacter__init()");
+                pw.println("  %converted = call i32 @jlCharacter_jlCharactervalueOfCHAR(i32 %class, i32 %result);");
+                pw.println("  ret i32 %converted");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal void @bytecoder.putCharFieldValueFromObject(i32 %object, i32 %field, i32 %value) {");
+                pw.println("entry:");
+                pw.print("    %offset = add i32 %field, ");
+                pw.println(theOffsetOffset);
+                pw.println("  %ptr = inttoptr i32 %offset to i32*");
+                pw.println("  %offsetvalue = load i32, i32* %ptr");
+
+                pw.println("  %data = add i32 %object, %offsetvalue");
+                pw.println("  %dataptr = inttoptr i32 %data to i32*");
+
+                pw.println("  %class = call i32 @jlCharacter__init()");
+                pw.println("  %converted = call i32 @jlCharacter_CHARcharValue(i32 %value)");
+                pw.println("  store i32 %converted, i32* %dataptr");
+                pw.println("  ret void");
+                pw.println("}");
+                pw.println();
+
+                // short
+                pw.println("define internal i32 @bytecoder.getShortFieldValueAsObject(i32 %object, i32 %field) {");
+                pw.println("entry:");
+                pw.print("    %offset = add i32 %field, ");
+                pw.println(theOffsetOffset);
+                pw.println("  %ptr = inttoptr i32 %offset to i32*");
+                pw.println("  %offsetvalue = load i32, i32* %ptr");
+
+                pw.println("  %data = add i32 %object, %offsetvalue");
+                pw.println("  %dataptr = inttoptr i32 %data to i32*");
+                pw.println("  %result = load i32, i32* %dataptr");
+                pw.println("  %class = call i32 @jlShort__init()");
+                pw.println("  %converted = call i32 @jlShort_jlShortvalueOfSHORT(i32 %class, i32 %result);");
+                pw.println("  ret i32 %converted");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal void @bytecoder.putShortFieldValueFromObject(i32 %object, i32 %field, i32 %value) {");
+                pw.println("entry:");
+                pw.print("    %offset = add i32 %field, ");
+                pw.println(theOffsetOffset);
+                pw.println("  %ptr = inttoptr i32 %offset to i32*");
+                pw.println("  %offsetvalue = load i32, i32* %ptr");
+
+                pw.println("  %data = add i32 %object, %offsetvalue");
+                pw.println("  %dataptr = inttoptr i32 %data to i32*");
+
+                pw.println("  %class = call i32 @jlShort__init()");
+                pw.println("  %converted = call i32 @jlShort_SHORTshortValue(i32 %value)");
+                pw.println("  store i32 %converted, i32* %dataptr");
+                pw.println("  ret void");
+                pw.println("}");
+                pw.println();
+
+                // float
+                pw.println("define internal i32 @bytecoder.getFloatFieldValueAsObject(i32 %object, i32 %field) {");
+                pw.println("entry:");
+                pw.print("    %offset = add i32 %field, ");
+                pw.println(theOffsetOffset);
+                pw.println("  %ptr = inttoptr i32 %offset to i32*");
+                pw.println("  %offsetvalue = load i32, i32* %ptr");
+
+                pw.println("  %data = add i32 %object, %offsetvalue");
+                pw.println("  %dataptr = inttoptr i32 %data to float*");
+                pw.println("  %result = load float, float* %dataptr");
+                pw.println("  %class = call i32 @jlFloat__init()");
+                pw.println("  %converted = call i32 @jlFloat_jlFloatvalueOfFLOAT(i32 %class, float %result);");
+                pw.println("  ret i32 %converted");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal void @bytecoder.putFloatFieldValueFromObject(i32 %object, i32 %field, i32 %value) {");
+                pw.println("entry:");
+                pw.print("    %offset = add i32 %field, ");
+                pw.println(theOffsetOffset);
+                pw.println("  %ptr = inttoptr i32 %offset to i32*");
+                pw.println("  %offsetvalue = load i32, i32* %ptr");
+
+                pw.println("  %data = add i32 %object, %offsetvalue");
+                pw.println("  %dataptr = inttoptr i32 %data to float*");
+
+                pw.println("  %class = call i32 @jlFloat__init()");
+                pw.println("  %converted = call float @jlFloat_FLOATfloatValue(i32 %value)");
+                pw.println("  store float %converted, float* %dataptr");
+                pw.println("  ret void");
+                pw.println("}");
+                pw.println();
+
+                // double
+                pw.println("define internal i32 @bytecoder.getDoubleFieldValueAsObject(i32 %object, i32 %field) {");
+                pw.println("entry:");
+                pw.print("    %offset = add i32 %field, ");
+                pw.println(theOffsetOffset);
+                pw.println("  %ptr = inttoptr i32 %offset to i32*");
+                pw.println("  %offsetvalue = load i32, i32* %ptr");
+
+                pw.println("  %data = add i32 %object, %offsetvalue");
+                pw.println("  %dataptr = inttoptr i32 %data to double*");
+                pw.println("  %result = load double, double* %dataptr");
+                pw.println("  %class = call i32 @jlDouble__init()");
+                pw.println("  %converted = call i32 @jlDouble_jlDoublevalueOfDOUBLE(i32 %class, double %result);");
+                pw.println("  ret i32 %converted");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal void @bytecoder.putDoubleFieldValueFromObject(i32 %object, i32 %field, i32 %value) {");
+                pw.println("entry:");
+                pw.print("    %offset = add i32 %field, ");
+                pw.println(theOffsetOffset);
+                pw.println("  %ptr = inttoptr i32 %offset to i32*");
+                pw.println("  %offsetvalue = load i32, i32* %ptr");
+
+                pw.println("  %data = add i32 %object, %offsetvalue");
+                pw.println("  %dataptr = inttoptr i32 %data to double*");
+
+                pw.println("  %class = call i32 @jlDouble__init()");
+                pw.println("  %converted = call double @jlDouble_DOUBLEdoubleValue(i32 %value)");
+                pw.println("  store double %converted, double* %dataptr");
+                pw.println("  ret void");
+                pw.println("}");
+                pw.println();
+
+                // long
+                pw.println("define internal i32 @bytecoder.getLongFieldValueAsObject(i32 %object, i32 %field) {");
+                pw.println("entry:");
+                pw.print("    %offset = add i32 %field, ");
+                pw.println(theOffsetOffset);
+                pw.println("  %ptr = inttoptr i32 %offset to i32*");
+                pw.println("  %offsetvalue = load i32, i32* %ptr");
+
+                pw.println("  %data = add i32 %object, %offsetvalue");
+                pw.println("  %dataptr = inttoptr i32 %data to i64*");
+                pw.println("  %result = load i64, i64* %dataptr");
+                pw.println("  %class = call i32 @jlLong__init()");
+                pw.println("  %converted = call i32 @jlLong_jlLongvalueOfLONG(i32 %class, i64 %result);");
+                pw.println("  ret i32 %converted");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal void @bytecoder.putLongFieldValueFromObject(i32 %object, i32 %field, i32 %value) {");
+                pw.println("entry:");
+                pw.print("    %offset = add i32 %field, ");
+                pw.println(theOffsetOffset);
+                pw.println("  %ptr = inttoptr i32 %offset to i32*");
+                pw.println("  %offsetvalue = load i32, i32* %ptr");
+
+                pw.println("  %data = add i32 %object, %offsetvalue");
+                pw.println("  %dataptr = inttoptr i32 %data to i64*");
+
+                pw.println("  %class = call i32 @jlLong__init()");
+                pw.println("  %converted = call i64 @jlLong_LONGlongValue(i32 %value)");
+                pw.println("  store i64 %converted, i64* %dataptr");
+                pw.println("  ret void");
+                pw.println("}");
+                pw.println();
+
+                final int theAccessorMethod = theFieldMemoryLayout.offsetForInstanceMember("accessorMethod");
+                pw.println("define internal i32 @bytecoder.getfieldvalue(i32 %target,i32 %field) inlinehint {");
+                pw.println("entry:");
+                pw.print("    %offset = add i32 %field,");
+                pw.println(theAccessorMethod);
+                pw.println("  %offsetptr = inttoptr i32 %offset to i32*");
+                pw.println("  %method = load i32, i32* %offsetptr");
+                pw.println("  %methodptr = inttoptr i32 %method to i32(i32,i32)*");
+                pw.println("  %result = call i32(i32,i32) %methodptr(i32 %target, i32 %field)");
+                pw.println("  ret i32 %result");
+                pw.println("}");
+                pw.println();
+
+                final int theMutatorMethod = theFieldMemoryLayout.offsetForInstanceMember("mutationMethod");
+                pw.println("define internal i32 @bytecoder.putfieldvalue(i32 %target,i32 %field,i32 %value) inlinehint {");
+                pw.println("entry:");
+                pw.print("    %offset = add i32 %field,");
+                pw.println(theMutatorMethod);
+                pw.println("  %offsetptr = inttoptr i32 %offset to i32*");
+                pw.println("  %method = load i32, i32* %offsetptr");
+                pw.println("  %methodptr = inttoptr i32 %method to void(i32,i32,i32)*");
+                pw.println("  call void(i32,i32,i32) %methodptr(i32 %target, i32 %field, i32 %value)");
+                pw.println("  ret i32 0");
+                pw.println("}");
+                pw.println();
+
                 pw.println("define internal i32 @bytecoder.instanceof(i32 %object, i32 %typeid) inlinehint {");
                 pw.println("entry:");
                 pw.println("    %nulltest = icmp eq i32 %object, 0");
@@ -937,6 +1280,24 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
+                pw.println("define internal i32 @jlClass_BOOLEANisPrimitive(i32 %thisRef) {");
+                pw.println("entry:");
+                pw.println("    %offset = add i32 %thisRef, 28");
+                pw.println("    %ptr = inttoptr i32 %offset to i32*");
+                pw.println("    %status = load i32, i32* %ptr");
+                pw.println("    ret i32 %status");
+                pw.println("}");
+                pw.println();
+
+                pw.println("define internal i32 @jlClass_A1jlrFieldgetDeclaredFields(i32 %thisRef) {");
+                pw.println("entry:");
+                pw.println("    %offset = add i32 %thisRef, 32");
+                pw.println("    %ptr = inttoptr i32 %offset to i32*");
+                pw.println("    %status = load i32, i32* %ptr");
+                pw.println("    ret i32 %status");
+                pw.println("}");
+                pw.println();
+
                 pw.println("define internal i32 @jlClass_BOOLEANdesiredAssertionStatus(i32 %thisRef) {");
                 pw.println("entry:");
                 pw.println("    ret i32 0");
@@ -1018,7 +1379,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                pw.println("define internal i32 @bytecoder.newRuntimeClass(i32 %type, i32 %staticSize, i32 %enumValuesOffset, i32 %nameStringPoolIndex, i32 %interfaceDispatchPtr) {");
+                pw.println("define internal i32 @bytecoder.newRuntimeClass(i32 %type, i32 %staticSize, i32 %enumValuesOffset, i32 %nameStringPoolIndex, i32 %interfaceDispatchPtr, i32 %primitiveFlag, i32 %declaredFieldList) {");
                 pw.println("entry:");
                 pw.println("    %vtableptr = ptrtoint %jlClass__vtable__type* @jlClass__vtable to i32");
                 pw.println("    %allocated = call i32 @dmbcMemoryManager_INTnewObjectINTINTINT(i32 0, i32 %staticSize, i32 -1, i32 %vtableptr)");
@@ -1035,8 +1396,59 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("    %interfaceDispatchPtrpos_ptr = inttoptr i32 %interfaceDispatchPtrpos to i32*");
                 pw.println("    store i32 %interfaceDispatchPtr, i32* %interfaceDispatchPtrpos_ptr");
 
+                pw.println("    %primitiveFlagPos = add i32 %allocated, 28");
+                pw.println("    %primitiveFlagPos_ptr = inttoptr i32 %primitiveFlagPos to i32*");
+                pw.println("    store i32 %primitiveFlag, i32* %primitiveFlagPos_ptr");
+
+                pw.println("    %declaredFieldListPos = add i32 %allocated, 32");
+                pw.println("    %declaredFieldListPos_ptr = inttoptr i32 %declaredFieldListPos to i32*");
+                pw.println("    store i32 %declaredFieldList, i32* %declaredFieldListPos_ptr");
+
                 pw.println("    ret i32 %allocated");
                 pw.println("}");
+                pw.println();
+
+                // Runtime classes for primitives
+                pw.print("@CharPrimitive");
+                pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
+                pw.println(" = private global i32 0");
+                pw.println();
+
+                pw.print("@IntPrimitive");
+                pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
+                pw.println(" = private global i32 0");
+                pw.println();
+
+                pw.print("@LongPrimitive");
+                pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
+                pw.println(" = private global i32 0");
+                pw.println();
+
+                pw.print("@BytePrimitive");
+                pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
+                pw.println(" = private global i32 0");
+                pw.println();
+
+                pw.print("@FloatPrimitive");
+                pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
+                pw.println(" = private global i32 0");
+                pw.println();
+
+                pw.print("@BooleanPrimitive");
+                pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
+                pw.println(" = private global i32 0");
+                pw.println();
+
+                pw.print("@ShortPrimitive");
+                pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
+                pw.println(" = private global i32 0");
+                pw.println();
+
+                pw.print("@DoublePrimitive");
+                pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
+                pw.println(" = private global i32 0");
+                pw.println();
+
                 pw.println();
 
                 // Now, we can continue to write implementation code
@@ -1169,6 +1581,205 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.print("    store i32 1,i32* @");
                         pw.print(theClassName);
                         pw.println(LLVMWriter.RUNTIMECLASSINITSTATUSSUFFIX);
+
+                        // We create the array for the declared fields
+                        pw.println("    %arrayvtableptr = ptrtoint %dmbcArray__vtable__type* @dmbcArray__vtable to i32");
+                        pw.println("    %arrayclassinit = call i32 @dmbcArray__init()");
+
+                        if (aLinkerContext.reflectionConfiguration().resolve(theLinkedClass.getClassName().name()).supportsClassForName()) {
+
+                            // Collect all declared fields
+                            final List<BytecodeResolvedFields.FieldEntry> declaredFields = theLinkedClass.resolvedFields().stream().filter(
+                                    t -> t.getProvidingClass() == theLinkedClass
+                            ).collect(Collectors.toList());
+
+                            final NativeMemoryLayouter.MemoryLayout theMemoryLayout = memoryLayouter.layoutFor(theLinkedClass.getClassName());
+
+                            pw.println("   %bytecoder_getObjectFieldValueAsObject_ptr = ptrtoint i32(i32,i32)* @bytecoder.getObjectFieldValueAsObject to i32");
+                            pw.println("   %bytecoder_putObjectFieldValueFromObject_ptr = ptrtoint void(i32,i32,i32)* @bytecoder.putObjectFieldValueFromObject to i32");
+
+                            pw.println("   %bytecoder_getBooleanFieldValueAsObject_ptr = ptrtoint i32(i32,i32)* @bytecoder.getBooleanFieldValueAsObject to i32");
+                            pw.println("   %bytecoder_putBooleanFieldValueFromObject_ptr = ptrtoint void(i32,i32,i32)* @bytecoder.putBooleanFieldValueFromObject to i32");
+
+                            pw.println("   %bytecoder_getIntegerFieldValueAsObject_ptr = ptrtoint i32(i32,i32)* @bytecoder.getIntegerFieldValueAsObject to i32");
+                            pw.println("   %bytecoder_putIntegerFieldValueFromObject_ptr = ptrtoint void(i32,i32,i32)* @bytecoder.putIntegerFieldValueFromObject to i32");
+
+                            pw.println("   %bytecoder_getByteFieldValueAsObject_ptr = ptrtoint i32(i32,i32)* @bytecoder.getByteFieldValueAsObject to i32");
+                            pw.println("   %bytecoder_putByteFieldValueFromObject_ptr = ptrtoint void(i32,i32,i32)* @bytecoder.putByteFieldValueFromObject to i32");
+
+                            pw.println("   %bytecoder_getCharFieldValueAsObject_ptr = ptrtoint i32(i32,i32)* @bytecoder.getCharFieldValueAsObject to i32");
+                            pw.println("   %bytecoder_putCharFieldValueFromObject_ptr = ptrtoint void(i32,i32,i32)* @bytecoder.putCharFieldValueFromObject to i32");
+
+                            pw.println("   %bytecoder_getShortFieldValueAsObject_ptr = ptrtoint i32(i32,i32)* @bytecoder.getShortFieldValueAsObject to i32");
+                            pw.println("   %bytecoder_putShortFieldValueFromObject_ptr = ptrtoint void(i32,i32,i32)* @bytecoder.putShortFieldValueFromObject to i32");
+
+                            pw.println("   %bytecoder_getFloatFieldValueAsObject_ptr = ptrtoint i32(i32,i32)* @bytecoder.getFloatFieldValueAsObject to i32");
+                            pw.println("   %bytecoder_putFloatFieldValueFromObject_ptr = ptrtoint void(i32,i32,i32)* @bytecoder.putFloatFieldValueFromObject to i32");
+
+                            pw.println("   %bytecoder_getDoubleFieldValueAsObject_ptr = ptrtoint i32(i32,i32)* @bytecoder.getDoubleFieldValueAsObject to i32");
+                            pw.println("   %bytecoder_putDoubleFieldValueFromObject_ptr = ptrtoint void(i32,i32,i32)* @bytecoder.putDoubleFieldValueFromObject to i32");
+
+                            pw.println("   %bytecoder_getLongFieldValueAsObject_ptr = ptrtoint i32(i32,i32)* @bytecoder.getLongFieldValueAsObject to i32");
+                            pw.println("   %bytecoder_putLongFieldValueFromObject_ptr = ptrtoint void(i32,i32,i32)* @bytecoder.putLongFieldValueFromObject to i32");
+
+                            pw.print("    %declaredfields = call i32 @dmbcMemoryManager_INTnewArrayINTINTINT(i32 0,i32 ");
+                            pw.print(declaredFields.size());
+                            pw.println(",i32 %arrayclassinit,i32 %arrayvtableptr)");
+
+                            for (int i=0;i < declaredFields.size();i++) {
+                                final BytecodeResolvedFields.FieldEntry field = declaredFields.get(i);
+
+                                String accessorMethod = "i32 undef";
+                                String mutatorMethod = "i32 undef";
+
+                                final String fieldName = theSymbolResolver.globalFromStringPool(field.getValue().getName().stringValue());
+                                pw.print("    %field");
+                                pw.print(i);
+                                pw.print("_name = load i32,i32* @");
+                                pw.println(fieldName);
+
+                                if (field.getValue().getTypeRef().isPrimitive()) {
+                                    final BytecodePrimitiveTypeRef primitiveTypeRef = (BytecodePrimitiveTypeRef) field.getValue().getTypeRef();
+
+                                    pw.print("    %field");
+                                    pw.print(i);
+                                    pw.print("_type = load i32, i32* @");
+
+                                    switch (primitiveTypeRef) {
+                                        case SHORT:
+                                            pw.print("ShortPrimitive");
+                                            pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+
+                                            accessorMethod = "i32 %bytecoder_getShortFieldValueAsObject_ptr";
+                                            mutatorMethod = "i32 %bytecoder_putShortFieldValueFromObject_ptr";
+
+                                            break;
+                                        case CHAR:
+                                            pw.print("CharPrimitive");
+                                            pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+
+                                            accessorMethod = "i32 %bytecoder_getCharFieldValueAsObject_ptr";
+                                            mutatorMethod = "i32 %bytecoder_putCharFieldValueFromObject_ptr";
+
+                                            break;
+                                        case BOOLEAN:
+                                            pw.print("BooleanPrimitive");
+                                            pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+
+                                            accessorMethod = "i32 %bytecoder_getBooleanFieldValueAsObject_ptr";
+                                            mutatorMethod = "i32 %bytecoder_putBooleanFieldValueFromObject_ptr";
+
+                                            break;
+                                        case BYTE:
+                                            pw.print("BytePrimitive");
+                                            pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+
+                                            accessorMethod = "i32 %bytecoder_getByteFieldValueAsObject_ptr";
+                                            mutatorMethod = "i32 %bytecoder_putByteFieldValueFromObject_ptr";
+
+                                            break;
+                                        case DOUBLE:
+                                            pw.print("DoublePrimitive");
+                                            pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+
+                                            accessorMethod = "i32 %bytecoder_getDoubleFieldValueAsObject_ptr";
+                                            mutatorMethod = "i32 %bytecoder_putDoubleFieldValueFromObject_ptr";
+
+                                            break;
+                                        case INT:
+                                            pw.print("IntPrimitive");
+                                            pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+
+                                            accessorMethod = "i32 %bytecoder_getIntegerFieldValueAsObject_ptr";
+                                            mutatorMethod = "i32 %bytecoder_putIntegerFieldValueFromObject_ptr";
+
+                                            break;
+                                        case LONG:
+                                            pw.print("LongPrimitive");
+                                            pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+
+                                            accessorMethod = "i32 %bytecoder_getLongFieldValueAsObject_ptr";
+                                            mutatorMethod = "i32 %bytecoder_putLongFieldValueFromObject_ptr";
+
+                                            break;
+                                        case FLOAT:
+                                            pw.print("FloatPrimitive");
+                                            pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+
+                                            accessorMethod = "i32 %bytecoder_getFloatFieldValueAsObject_ptr";
+                                            mutatorMethod = "i32 %bytecoder_putFloatFieldValueFromObject_ptr";
+
+                                            break;
+                                        default:
+                                            throw new IllegalArgumentException("Not supported primitive type" + primitiveTypeRef);
+                                    }
+
+                                } else {
+
+                                    accessorMethod = "i32 %bytecoder_getObjectFieldValueAsObject_ptr";
+                                    mutatorMethod = "i32 %bytecoder_putObjectFieldValueFromObject_ptr";
+
+                                    pw.print("    %field");
+                                    pw.print(i);
+                                    pw.print("_type = call i32 @");
+                                    if (field.getValue().getTypeRef().isArray()) {
+                                        pw.print("dmbcArray__init()");
+                                    } else {
+                                        final BytecodeObjectTypeRef objectTypeRef = (BytecodeObjectTypeRef) field.getValue().getTypeRef();
+                                        pw.print(LLVMWriterUtils.toClassName(objectTypeRef));
+                                        pw.print(LLVMWriter.CLASSINITSUFFIX);
+                                        pw.println("()");
+                                    }
+                                }
+
+                                pw.print("    %field");
+                                pw.print(i);
+                                pw.print(" = call i32 @jlrField_VOID$newInstancejlClassjlStringINTjlClassjlObjectjlObjectINT(i32 %class,i32 %class,i32 %field");
+                                pw.print(i);
+                                pw.println("_name,i32 ");
+                                pw.print(field.getValue().getAccessFlags().getModifiers());
+                                pw.print(",i32 %field"); // Type
+                                pw.print(i);
+                                pw.print("_type,");
+                                pw.print(accessorMethod); // Accessor
+                                pw.print(",");
+                                pw.print(mutatorMethod); // mutator
+
+                                // Offset
+                                pw.print(",i32 ");
+                                if (field.getValue().getAccessFlags().isStatic()) {
+                                    pw.print(theMemoryLayout.offsetForClassMember(field.getValue().getName().stringValue()));
+                                } else {
+                                    pw.print(theMemoryLayout.offsetForInstanceMember(field.getValue().getName().stringValue()));
+                                }
+
+                                pw.println(")");
+
+                                pw.print("    %field");
+                                pw.print(i);
+                                pw.print("_offset = add i32 %declaredfields, ");
+                                pw.println(20 + 8 * i);
+
+                                pw.print("    %field");
+                                pw.print(i);
+                                pw.print("_ptr = inttoptr i32 %field");
+                                pw.print(i);
+                                pw.println("_offset to i32*");
+
+                                pw.print("    store i32 %field");
+                                pw.print(i);
+                                pw.print(",i32* %field");
+                                pw.print(i);
+                                pw.println("_ptr");
+                            }
+
+                        } else {
+                            pw.println("    %declaredfields = call i32 @dmbcMemoryManager_INTnewArrayINTINTINT(i32 0,i32 0,i32 %arrayclassinit,i32 %arrayvtableptr)");
+                        }
+
+                        pw.println("    %declaredfields_offset = add i32 32, %class");
+                        pw.println("    %declaredfields_ptr = inttoptr i32 %declaredfields_offset to i32*");
+                        pw.println("    store i32 %declaredfields, i32* %declaredfields_ptr");
 
                         // Call superclass init
                         if (!theLinkedClass.getClassName().name().equals(Object.class.getName())) {
@@ -1823,6 +2434,62 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println(" {");
                 pw.println("entry:");
 
+                final String thePrimitiveClassName = LLVMWriterUtils.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(Class.class));
+                final NativeMemoryLayouter.MemoryLayout thePrimitiveMemoryLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromRuntimeClass(Class.class));
+
+                pw.print("    %primitiveclass_interfacedispatchptr = ptrtoint i32(i32,i32)* @");
+                pw.print(thePrimitiveClassName);
+                pw.print(LLVMWriter.INTERFACEDISPATCHSUFFIX);
+                pw.println(" to i32");
+
+                pw.print("    %charprimitiveruntimeClass_allocated = call i32(i32,i32,i32,i32,i32,i32,i32) @bytecoder.newRuntimeClass(i32 -1,i32 ");
+                pw.print(thePrimitiveMemoryLayout.classSize());
+                pw.println(",i32 -1 ,i32 -1 ,i32 %primitiveclass_interfacedispatchptr,i32 1,i32 0)");
+                pw.print("    store i32 %charprimitiveruntimeClass_allocated, i32* @CharPrimitive");
+                pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+
+                pw.print("    %intprimitiveruntimeclass_allocated = call i32(i32,i32,i32,i32,i32,i32,i32) @bytecoder.newRuntimeClass(i32 -1,i32 ");
+                pw.print(thePrimitiveMemoryLayout.classSize());
+                pw.println(",i32 -1 ,i32 -1 ,i32 %primitiveclass_interfacedispatchptr,i32 1,i32 0)");
+                pw.print("    store i32 %intprimitiveruntimeclass_allocated, i32* @IntPrimitive");
+                pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+
+                pw.print("    %longprimitiveruntimeclass_allocated = call i32(i32,i32,i32,i32,i32,i32,i32) @bytecoder.newRuntimeClass(i32 -1,i32 ");
+                pw.print(thePrimitiveMemoryLayout.classSize());
+                pw.println(",i32 -1 ,i32 -1 ,i32 %primitiveclass_interfacedispatchptr,i32 1,i32 0)");
+                pw.print("    store i32 %longprimitiveruntimeclass_allocated, i32* @LongPrimitive");
+                pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+
+                pw.print("    %byteprimitiveruntimeclass_allocated = call i32(i32,i32,i32,i32,i32,i32,i32) @bytecoder.newRuntimeClass(i32 -1,i32 ");
+                pw.print(thePrimitiveMemoryLayout.classSize());
+                pw.println(",i32 -1 ,i32 -1 ,i32 %primitiveclass_interfacedispatchptr,i32 1,i32 0)");
+                pw.print("    store i32 %byteprimitiveruntimeclass_allocated, i32* @BytePrimitive");
+                pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+
+                pw.print("    %floatprimitiveruntimeclass_allocated = call i32(i32,i32,i32,i32,i32,i32,i32) @bytecoder.newRuntimeClass(i32 -1,i32 ");
+                pw.print(thePrimitiveMemoryLayout.classSize());
+                pw.println(",i32 -1 ,i32 -1 ,i32 %primitiveclass_interfacedispatchptr,i32 1,i32 0)");
+                pw.print("    store i32 %floatprimitiveruntimeclass_allocated, i32* @FloatPrimitive");
+                pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+
+                pw.print("    %booleanprimitiveruntimeclass_allocated = call i32(i32,i32,i32,i32,i32,i32,i32) @bytecoder.newRuntimeClass(i32 -1,i32 ");
+                pw.print(thePrimitiveMemoryLayout.classSize());
+                pw.println(",i32 -1 ,i32 -1 ,i32 %primitiveclass_interfacedispatchptr,i32 1,i32 0)");
+                pw.print("    store i32 %booleanprimitiveruntimeclass_allocated, i32* @BooleanPrimitive");
+                pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+
+                pw.print("    %shortprimitiveruntimeclass_allocated = call i32(i32,i32,i32,i32,i32,i32,i32) @bytecoder.newRuntimeClass(i32 -1,i32 ");
+                pw.print(thePrimitiveMemoryLayout.classSize());
+                pw.println(",i32 -1 ,i32 -1 ,i32 %primitiveclass_interfacedispatchptr,i32 1,i32 0)");
+                pw.print("    store i32 %shortprimitiveruntimeclass_allocated, i32* @ShortPrimitive");
+                pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+
+                pw.print("    %doubleprimitiveruntimeclass_allocated = call i32(i32,i32,i32,i32,i32,i32,i32) @bytecoder.newRuntimeClass(i32 -1,i32 ");
+                pw.print(thePrimitiveMemoryLayout.classSize());
+                pw.println(",i32 -1 ,i32 -1 ,i32 %primitiveclass_interfacedispatchptr,i32 1,i32 0)");
+                pw.print("    store i32 %doubleprimitiveruntimeclass_allocated, i32* @DoublePrimitive");
+                pw.println(LLVMWriter.RUNTIMECLASSSUFFIX);
+
                 aLinkerContext.linkedClasses().forEach(aEntry -> {
                     final BytecodeLinkedClass theLinkedClass = aEntry.targetNode();
 
@@ -1856,7 +2523,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.print("    %");
                     pw.print(theClassName);
                     pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
-                    pw.print("_allocated = call i32(i32,i32,i32,i32,i32) @bytecoder.newRuntimeClass(i32 ");
+                    pw.print("_allocated = call i32(i32,i32,i32,i32,i32,i32,i32) @bytecoder.newRuntimeClass(i32 ");
                     pw.print(theLinkedClass.getUniqueId());
                     pw.print(",i32 ");
                     pw.print(theMemoryLayout.classSize());
@@ -1875,7 +2542,15 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     pw.print(",i32 %");
                     pw.print(theClassName);
                     pw.print(LLVMWriter.RUNTIMECLASSSUFFIX);
-                    pw.println("_interfacedispatchptr)");
+                    pw.print("_interfacedispatchptr");
+
+                    // Is Primitive flag
+                    pw.print(",i32 0");
+
+                    // Declared field reference array, created in init method of class
+                    pw.print(",i32 0");
+
+                    pw.println(")");
 
                     // Store the runtime class itself
                     pw.print("    store i32 %");

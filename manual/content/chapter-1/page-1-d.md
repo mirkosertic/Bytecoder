@@ -39,7 +39,7 @@ Object instance = runtimeClass.newInstance(); // Method 1 to instantiate a class
 cl.getConstructor(new Class[0]).newInstance(); // Method 2 to instantiate a class
 ```
 
-### Additional support for JavaScript backend
+### Additional support for JavaScript and Wasm-LLVM backend
 
 the JavaScript backend has support for reflective field access:
 
