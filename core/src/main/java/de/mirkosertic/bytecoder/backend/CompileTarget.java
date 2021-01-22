@@ -22,6 +22,7 @@ import de.mirkosertic.bytecoder.backend.wasm.WASMSSAASTCompilerBackend;
 import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
+import de.mirkosertic.bytecoder.core.BytecodeField;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeLoader;
@@ -31,6 +32,7 @@ import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+import de.mirkosertic.bytecoder.core.ReflectionConfiguration;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
 
@@ -91,7 +93,7 @@ public class CompileTarget {
         // We try to load all available reflection configuration
         // from the classpath
         try {
-            final Enumeration<URL> reflectionConfigs = getClass().getClassLoader().getResources("bytecoder-reflection.json");
+            final Enumeration<URL> reflectionConfigs = classLoader.getResources("bytecoder-reflection.json");
             while(reflectionConfigs.hasMoreElements()) {
                 final URL url = reflectionConfigs.nextElement();
                 aOptions.getLogger().info("Loading reflection configuration : {}", url);
@@ -229,6 +231,26 @@ public class CompileTarget {
                 final BytecodeLinkedClass theClass = theLinkerContext.resolveClass(new BytecodeObjectTypeRef(theClassname));
                 theClass.reflectiveClass().setSupportsClassForName(true);
                 theClass.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
+
+                for (final BytecodeField field : theClass.getBytecodeClass().fields()) {
+                    if (field.getAccessFlags().isStatic()) {
+                        theClass.resolveStaticField(field.getName());
+                    } else {
+                        theClass.resolveInstanceField(field.getName());
+                    }
+                }
+            }
+        }
+
+        // Reflective classes are also fully linked, including all fields
+        for (final ReflectionConfiguration.ReflectiveClass reflectiveClass : theLinkerContext.reflectionConfiguration().configuredClasses()) {
+            final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(new BytecodeObjectTypeRef(reflectiveClass.getName()));
+            for (final BytecodeField field : theLinkedClass.getBytecodeClass().fields()) {
+                if (field.getAccessFlags().isStatic()) {
+                    theLinkedClass.resolveStaticField(field.getName());
+                } else {
+                    theLinkedClass.resolveInstanceField(field.getName());
+                }
             }
         }
 

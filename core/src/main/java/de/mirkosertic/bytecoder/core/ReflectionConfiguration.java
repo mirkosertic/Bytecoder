@@ -22,7 +22,9 @@ import de.mirkosertic.bytecoder.api.Logger;
 import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class ReflectionConfiguration {
 
@@ -44,6 +46,10 @@ public class ReflectionConfiguration {
 
         public ReflectiveClass(final String name) {
             this.name = name;
+        }
+
+        public String getName() {
+            return name;
         }
 
         public void setSupportsClassForName(final boolean status) {
@@ -75,5 +81,9 @@ public class ReflectionConfiguration {
             logger.info("Configuring reflective access for class {}", entry.getKey());
             resolve(entry.getKey()).setSupportsClassForName(entry.getValue().isEnableClassForName());
         }
+    }
+
+    public Set<ReflectiveClass> configuredClasses() {
+        return new HashSet<>(reflectiveClasses.values());
     }
 }
