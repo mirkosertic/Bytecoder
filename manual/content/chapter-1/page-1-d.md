@@ -41,7 +41,7 @@ cl.getConstructor(new Class[0]).newInstance(); // Method 2 to instantiate a clas
 
 ### Additional support for JavaScript and Wasm-LLVM backend
 
-the JavaScript backend has support for reflective field access:
+The JavaScript and Wasm-LLVM backends provide support for reflective field access:
 
 ```
 Field fields[] = ReflectionTarget.class.getDeclaredFields();
