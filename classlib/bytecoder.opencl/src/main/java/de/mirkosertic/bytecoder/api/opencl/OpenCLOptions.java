@@ -128,7 +128,7 @@ public class OpenCLOptions {
         /**
          * The device that compares highest is chosen by the {@link PlatformFactory}, unless explicitly 
          * overridden by system property {@code OPENCL_DEVICE}.  
-         * @param preferredPlatformComparator
+         * @param preferredDeviceComparator
          */
         public OpenCLOptionsBuilder preferredDeviceComparator(Comparator<DeviceProperties> preferredDeviceComparator) {
             Objects.requireNonNull(preferredDeviceComparator);

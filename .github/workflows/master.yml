@@ -21,7 +21,7 @@ jobs:
           chmod +x llvm.sh
           sudo ./llvm.sh 10
           sudo apt-get install -y ocl-icd-opencl-dev clang-10 lldb-10 lld-10 clangd-10
-      - run: mvn --settings .mvn/settings.xml clean javadoc:jar deploy -P notest -P signed
+      - run: mvn --no-transfer-progress --batch-mode --settings .mvn/settings.xml clean javadoc:jar deploy -P notest -P signed
         env:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
