@@ -21,9 +21,15 @@ jobs:
           chmod +x llvm.sh
           sudo ./llvm.sh 10
           sudo apt-get install -y ocl-icd-opencl-dev clang-10 lldb-10 lld-10 clangd-10
+      - run: |
+          wget https://github.com/gohugoio/hugo/releases/download/v0.59.0/hugo_0.59.0_Linux-64bit.tar.gz
+          tar xzf hugo_0.59.0_Linux-64bit.tar.gz
+          sudo chmod +x hugo
+          git clone https://github.com/matcornic/hugo-theme-learn.git ./manual/themes/hugo-theme-learn
       - run: mvn --no-transfer-progress --batch-mode --settings .mvn/settings.xml clean javadoc:jar deploy -P notest -P signed
         env:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           GPG_KEY_PASSPHRASE: ${{ secrets.GPG_KEY_PASSPHRASE }}
+      - run: ./hugo -s ./manual -d ../integrationtest/target/bytecoder-integrationtest
 
