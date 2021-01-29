@@ -6,6 +6,10 @@ jobs:
   build:
     environment: ci
     runs-on: 'ubuntu-latest'
+    env:
+      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+      GPG_KEY_PASSPHRASE: ${{ secrets.GPG_KEY_PASSPHRASE }}
     steps:
       - uses: actions/checkout@v1
       - uses: joschi/setup-jdk@v1

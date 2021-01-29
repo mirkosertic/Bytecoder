@@ -5,19 +5,19 @@
     <servers>
         <server>
             <id>maven-snapshots</id>
-            <username>${env.secrets.SONATYPE_USERNAME}</username>
-            <password>${env.secrets.SONATYPE_PASSWORD}</password>
+            <username>${env.SONATYPE_USERNAME}</username>
+            <password>${env.SONATYPE_PASSWORD}</password>
         </server>
 
         <server>
             <id>maven-releases</id>
-            <username>${env.secrets.SONATYPE_USERNAME}</username>
-            <password>${env.secrets.SONATYPE_PASSWORD}</password>
+            <username>${env.SONATYPE_USERNAME}</username>
+            <password>${env.SONATYPE_PASSWORD}</password>
         </server>
 
         <server>
             <id>gpg.passphrase</id>
-            <passphrase>${env.secrets.GPG_KEY_PASSPHRASE}</passphrase>
+            <passphrase>${env.GPG_KEY_PASSPHRASE}</passphrase>
         </server>
     </servers>
 
