@@ -21,4 +21,4 @@ jobs:
           chmod +x llvm.sh
           sudo ./llvm.sh 10
           sudo apt-get install -y ocl-icd-opencl-dev clang-10 lldb-10 lld-10 clangd-10
-      - run: mvn -Dsettings.security=.mvn/settings-security.xml --settings .mvn/settings.xml clean javadoc:jar deploy -P notest -P signed
+      - run: mvn --settings .mvn/settings.xml -Dgpg.passphrase=${{ secrets.GPG_KEY_PASSPHRASE }} clean javadoc:jar deploy -P notest -P signed
