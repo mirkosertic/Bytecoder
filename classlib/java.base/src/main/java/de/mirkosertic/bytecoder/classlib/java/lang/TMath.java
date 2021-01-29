@@ -294,4 +294,25 @@ public class TMath {
                 (42-1))
                 & 2139095040);
     }
+
+    public static float signum(final float value) {
+        if (value < 0) {
+            return -1f;
+        }
+        if (value > 0) {
+            return 1f;
+        }
+        return 0f;
+    }
+
+    public static double signum(final double value) {
+        if (value < 0) {
+            return -1d;
+        }
+        if (value > 0) {
+            return 1d;
+        }
+        return 0d;
+    }
+
 }
