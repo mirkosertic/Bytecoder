@@ -3,7 +3,7 @@
 Bytecoder is a Rich Domain Model for Java Bytecode and Framework to interpret and transpile it to other 
 languages such as JavaScript, OpenCL or WebAssembly.
 
-Current Build status: ![Build Status](https://github.com/mirkosertic/Bytecoder/workflows/Build/badge.svg) [![Build Status](https://travis-ci.org/mirkosertic/Bytecoder.svg?branch=master)](https://travis-ci.org/mirkosertic/Bytecoder) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.mirkosertic.bytecoder/bytecoder-parent/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.mirkosertic.bytecoder/bytecoder-parent/badge.svg)
+Current Build status: ![Build Status](https://github.com/mirkosertic/Bytecoder/workflows/Build/badge.svg) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/de.mirkosertic.bytecoder/bytecoder-parent/badge.svg)](https://maven-badges.herokuapp.com/maven-central/de.mirkosertic.bytecoder/bytecoder-parent/badge.svg)
 
 ## High Level Goals
 
