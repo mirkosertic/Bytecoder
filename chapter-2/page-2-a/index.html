@@ -1,0 +1,1995 @@
+<!DOCTYPE html>
+<html lang="en" class="js csstransforms3d">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="Hugo 0.59.0" />
+    <meta name="description" content="">
+<meta name="author" content="Mirko Sertic">
+
+    <link rel="icon" href="/Bytecoder/images/favicon.png" type="image/png">
+
+    <title>Compiling OpenCL Kernels :: Bytecoder - JVM to JavaScript and WebAssembly Transpiler</title>
+
+    
+    <link href="/Bytecoder/css/nucleus.css?1611965052" rel="stylesheet">
+    <link href="/Bytecoder/css/fontawesome-all.min.css?1611965052" rel="stylesheet">
+    <link href="/Bytecoder/css/hybrid.css?1611965052" rel="stylesheet">
+    <link href="/Bytecoder/css/featherlight.min.css?1611965052" rel="stylesheet">
+    <link href="/Bytecoder/css/perfect-scrollbar.min.css?1611965052" rel="stylesheet">
+    <link href="/Bytecoder/css/auto-complete.css?1611965052" rel="stylesheet">
+    <link href="/Bytecoder/css/atom-one-dark-reasonable.css?1611965052" rel="stylesheet">
+    <link href="/Bytecoder/css/theme.css?1611965052" rel="stylesheet">
+    <link href="/Bytecoder/css/hugo-theme.css?1611965052" rel="stylesheet">
+    
+    
+
+    <script src="/Bytecoder/js/jquery-3.3.1.min.js?1611965052"></script>
+
+    <style>
+      :root #header + #content > #left > #rlblock_left{
+          display:none !important;
+      }
+      
+    </style>
+    
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'UA-33614060-5', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+  </head>
+  <body class="" data-url="/Bytecoder/chapter-2/page-2-a/">
+    <nav id="sidebar" class="">
+
+
+
+  <div id="header-wrapper">
+    <div id="header">
+      <div><strong>Bytecoder</strong></div>
+<div><strong>The JVM Bytecode Transpiler</strong></div>
+<div>Documentation</div>
+    </div>
+    
+        <div class="searchbox">
+    <label for="search-by"><i class="fas fa-search"></i></label>
+    <input data-search-input id="search-by" type="search" placeholder="Search...">
+    <span data-search-clear=""><i class="fas fa-times"></i></span>
+</div>
+
+<script type="text/javascript" src="/Bytecoder/js/lunr.min.js?1611965052"></script>
+<script type="text/javascript" src="/Bytecoder/js/auto-complete.js?1611965052"></script>
+<script type="text/javascript">
+    
+        var baseurl = "https:\/\/mirkosertic.github.io\/Bytecoder";
+    
+</script>
+<script type="text/javascript" src="/Bytecoder/js/search.js?1611965052"></script>
+
+    
+  </div>
+  
+    <section id="homelinks">
+      <ul>
+        <li>
+            <a class="padding" href='/'><i class='fas fa-home'></i> Home</a>
+        </li>
+      </ul>
+    </section>
+  
+
+    <div class="highlightable">
+    <ul class="topics">
+
+        
+          
+          
+
+
+
+
+ 
+  
+    
+    <li data-nav-id="/Bytecoder/chapter-1/" title="Compiling JVM Bytecode" class="dd-item
+        
+        
+        
+        ">
+      <a href="/Bytecoder/chapter-1/">
+          <b>1. </b>Compiling JVM Bytecode
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+            
+          
+          
+
+        
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/Bytecoder/chapter-1/page-1-a/" title="The Command-Line Interface (CLI)" class="dd-item ">
+        <a href="/Bytecoder/chapter-1/page-1-a/">
+        The Command-Line Interface (CLI)
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/Bytecoder/chapter-1/page-1-b/" title="The Maven Plugin" class="dd-item ">
+        <a href="/Bytecoder/chapter-1/page-1-b/">
+        The Maven Plugin
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/Bytecoder/chapter-1/page-1-c/" title="JRE Emulation" class="dd-item ">
+        <a href="/Bytecoder/chapter-1/page-1-c/">
+        JRE Emulation
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/Bytecoder/chapter-1/page-1-d/" title="Reflection API" class="dd-item ">
+        <a href="/Bytecoder/chapter-1/page-1-d/">
+        Reflection API
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/Bytecoder/chapter-1/page-1-f/" title="Interoperability" class="dd-item ">
+        <a href="/Bytecoder/chapter-1/page-1-f/">
+        Interoperability
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/Bytecoder/chapter-1/page-1-e/" title="Unit Testing" class="dd-item ">
+        <a href="/Bytecoder/chapter-1/page-1-e/">
+        Unit Testing
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/Bytecoder/chapter-1/page-1-g/" title="Extending the JRE" class="dd-item ">
+        <a href="/Bytecoder/chapter-1/page-1-g/">
+        Extending the JRE
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+    <li data-nav-id="/Bytecoder/chapter-1/chapter-1-1/" title="Examples" class="dd-item
+        
+        
+        
+        ">
+      <a href="/Bytecoder/chapter-1/chapter-1-1/">
+          Examples
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+
+        
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/Bytecoder/chapter-1/chapter-1-1/page-1-1-a/" title="Java Box2D simulation" class="dd-item ">
+        <a href="/Bytecoder/chapter-1/chapter-1-1/page-1-1-a/">
+        Java Box2D simulation
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/Bytecoder/chapter-1/chapter-1-1/page-1-1-b/" title="Kotlin JBox2D simulation" class="dd-item ">
+        <a href="/Bytecoder/chapter-1/chapter-1-1/page-1-1-b/">
+        Kotlin JBox2D simulation
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/Bytecoder/chapter-1/chapter-1-1/page-1-1-c/" title="Lua4J interpreter" class="dd-item ">
+        <a href="/Bytecoder/chapter-1/chapter-1-1/page-1-1-c/">
+        Lua4J interpreter
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/Bytecoder/chapter-1/chapter-1-1/page-1-1-d/" title="Vue.js WebAssembly integration" class="dd-item ">
+        <a href="/Bytecoder/chapter-1/chapter-1-1/page-1-1-d/">
+        Vue.js WebAssembly integration
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/Bytecoder/chapter-1/chapter-1-1/page-1-1-e/" title="Gamecomposer Gameengine" class="dd-item ">
+        <a href="/Bytecoder/chapter-1/chapter-1-1/page-1-1-e/">
+        Gamecomposer Gameengine
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+      
+    </li>
+  
+ 
+
+            
+          
+        
+        </ul>
+      
+    </li>
+  
+ 
+
+          
+          
+
+
+
+
+ 
+  
+    
+    <li data-nav-id="/Bytecoder/chapter-2/" title="Using the OpenCL backend" class="dd-item
+        parent
+        
+        
+        ">
+      <a href="/Bytecoder/chapter-2/">
+          <b>2. </b>Using the OpenCL backend
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+            
+          
+          
+
+        
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/Bytecoder/chapter-2/page-2-a/" title="Compiling OpenCL Kernels" class="dd-item active">
+        <a href="/Bytecoder/chapter-2/page-2-a/">
+        Compiling OpenCL Kernels
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+    <li data-nav-id="/Bytecoder/chapter-2/chapter-2-1/" title="Examples" class="dd-item
+        
+        
+        
+        ">
+      <a href="/Bytecoder/chapter-2/chapter-2-1/">
+          Examples
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+
+        
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/Bytecoder/chapter-2/chapter-2-1/page-2-1-a/" title="Zoomable Mandelbrot set" class="dd-item ">
+        <a href="/Bytecoder/chapter-2/chapter-2-1/page-2-1-a/">
+        Zoomable Mandelbrot set
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+      
+    </li>
+  
+ 
+
+            
+          
+        
+        </ul>
+      
+    </li>
+  
+ 
+
+          
+          
+
+
+
+
+ 
+  
+    
+    <li data-nav-id="/Bytecoder/chapter-3/" title="Internals" class="dd-item
+        
+        
+        
+        ">
+      <a href="/Bytecoder/chapter-3/">
+          <b>3. </b>Internals
+          
+      </a>
+      
+      
+        <ul>
+          
+          
+          
+
+        
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/Bytecoder/chapter-3/page-3-a/" title="Intermediate Representation" class="dd-item ">
+        <a href="/Bytecoder/chapter-3/page-3-a/">
+        Intermediate Representation
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/Bytecoder/chapter-3/page-3-b/" title="WebAssembly Memory Management" class="dd-item ">
+        <a href="/Bytecoder/chapter-3/page-3-b/">
+        WebAssembly Memory Management
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+            
+            
+
+
+
+
+ 
+  
+    
+      <li data-nav-id="/Bytecoder/chapter-3/page-3-c/" title="Optimizer effectiveness" class="dd-item ">
+        <a href="/Bytecoder/chapter-3/page-3-c/">
+        Optimizer effectiveness
+        
+        </a>
+    </li>
+     
+  
+ 
+
+            
+          
+        
+        </ul>
+      
+    </li>
+  
+ 
+
+          
+        
+    </ul>
+
+    
+    
+      <section id="shortcuts">
+        <h3>More</h3>
+        <ul>
+          
+              <li>
+                  <a class="padding" href="https://github.com/mirkosertic/Bytecoder"><i class='fab fa-github'></i> Github repo</a>
+              </li>
+          
+        </ul>
+      </section>
+    
+
+    
+    <section id="footer">
+      <p>Built with <a href="https://github.com/matcornic/hugo-theme-learn"><i class="fas fa-heart"></i></a> from <a href="https://getgrav.org">Grav</a> and <a href="https://gohugo.io/">Hugo</a></p>
+
+    </section>
+  </div>
+</nav>
+
+
+
+
+        <section id="body">
+        <div id="overlay"></div>
+        <div class="padding highlightable">
+              
+              <div>
+                <div id="top-bar">
+                
+                  
+                  
+                  
+                  <div id="top-github-link">
+                    <a class="github-link" title='Edit this page' href="https://github.com/mirkosertic/Bytecoder/tree/master/manual/content/chapter-2/page-2-a.md" target="blank">
+                      <i class="fas fa-code-branch"></i>
+                      <span id="top-github-link-text">Edit this page</span>
+                    </a>
+                  </div>
+                  
+                
+                
+                <div id="breadcrumbs" itemscope="" itemtype="http://data-vocabulary.org/Breadcrumb">
+                    <span id="sidebar-toggle-span">
+                        <a href="#" id="sidebar-toggle" data-sidebar-toggle="">
+                          <i class="fas fa-bars"></i>
+                        </a>
+                    </span>
+                  
+                  <span id="toc-menu"><i class="fas fa-list-alt"></i></span>
+                  
+                  <span class="links">
+                 
+                 
+                    
+          
+          
+            
+            
+          
+          
+            
+            
+          
+          
+            <a href='/Bytecoder/'>Bytecoder User Manual</a> > <a href='/Bytecoder/chapter-2/'>Using the OpenCL backend</a> > Compiling OpenCL Kernels
+          
+        
+          
+        
+          
+        
+                 
+                  </span>
+                </div>
+                
+                    <div class="progress">
+    <div class="wrapper">
+<nav id="TableOfContents">
+<ul>
+<li>
+<ul>
+<li><a href="#compiling-jvm-bytecode-kernels-to-opencl">Compiling JVM Bytecode Kernels to OpenCL</a></li>
+</ul></li>
+</ul>
+</nav>
+    </div>
+</div>
+
+                
+              </div>
+            </div>
+            
+        <div id="head-tags">
+        
+        </div>
+        
+        <div id="body-inner">
+          
+            <h1>
+              
+              Compiling OpenCL Kernels
+            </h1>
+          
+
+        
+
+
+
+
+<h2 id="compiling-jvm-bytecode-kernels-to-opencl">Compiling JVM Bytecode Kernels to OpenCL</h2>
+
+
+<div class="notices warning" ><p>OpenCL Integration is highly experimental</p>
+</div>
+
+
+<p>First of all, make sure to include the following dependencies:</p>
+
+<pre><code>&lt;dependencies&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;de.mirkosertic.bytecoder&lt;/groupId&gt;
+        &lt;artifactId&gt;bytecoder.opencl&lt;/artifactId&gt;
+        &lt;version&gt;2021-01-26&lt;/version&gt;
+    &lt;/dependency&gt;
+    &lt;dependency&gt;
+        &lt;groupId&gt;de.mirkosertic.bytecoder&lt;/groupId&gt;
+        &lt;artifactId&gt;bytecoder-core&lt;/artifactId&gt;
+        &lt;version&gt;2021-01-26&lt;/version&gt;
+    &lt;/dependency&gt;
+&lt;/dependency&gt;
+</code></pre>
+
+<p>Before we can use the OpenCL integration, we have to setup the whole OpenCL environment.
+An OpenCL environment can be obtained by the following code:</p>
+
+<pre><code>import de.mirkosertic.bytecoder.api.opencl.PlatformFactory;
+import de.mirkosertic.bytecoder.api.opencl.Platform;
+
+PlatformFactory theFactory = PlatformFactory.resolve();
+Platform thePlatform = theFactory.createPlatform(logger,options);
+</code></pre>
+
+<p>The <code>Platform</code> instance must only be obtained once and can be cached.</p>
+
+<p>If you have multiple GPUs or a system with NVIDIA Optimus technology, you
+have multiple OpenCL platform available. One for the NVIDIA GPU, and another
+for the embedded Intel GPU on your CPU. By default Bytecoder logs the available
+platforms at startup and selects the OpenCL platform with the highest number.
+If this does not fit, you can always add a <code>OPENCL_PLATFORM=x</code> to your JVM properties
+to set the OpenCL platform to number x.</p>
+
+<p>Every OpenCL computation is done within an OpenCL <code>Context</code>. This context
+keeps references to compiled OpenCL programs and allocated memory per <code>Kernel</code>.
+It definitely makes sense to cache a created context. Closing and reopening
+of context instances forces the OpenCL runtime to recompile Kernels, which will
+cause a huge performance impact. <code>Context</code> instances are auto-closable, so they
+can be used with Java try-with-resource blocks.</p>
+
+<p>OpenCL <code>Kernel</code> instances are the workhorse of the system. They can be created
+by sub classing <code>de.mirkosertic.bytecoder.api.opencl.Kernel</code> and adding a single
+method to it. Here is a simple example of the whole workflow:</p>
+
+<pre><code>PlatformFactory theFactory = PlatformFactory.resolve();
+Platform thePlatform = theFactory.createPlatform(logger,options);
+
+final float[] theA = {10f, 20f, 30f, 40f};
+final float[] theB = {100f, 200f, 300f, 400f};
+final float[] theResult = new float[4];
+
+try (Context theContext = thePlatform.createContext()) {
+    theContext.compute(4, new Kernel() {
+        public void processWorkItem() {
+            int id = get_global_id(0);
+            float a = theA[id];
+            float b = theB[id];
+            theResult[id] = a + b;
+        }
+    });
+}
+
+for (int i=0; i&lt;theResult.length;i++) {
+    System.out.println(theResult[i]);
+}
+</code></pre>
+
+<p>This will print the numbers 110,220,330 and 440 at command line.</p>
+
+<p>Here is an example of the OpenCL C-Code generated for the Java Kernel from above:</p>
+
+<pre><code>__kernel void BytecoderKernel(__global const float* val$theA, 
+                              __global const float* val$theB, 
+                              __global float* val$theResult) {
+    int var1 = get_global_id(0);
+    float var4 = val$theA[var1];
+    float var7 = val$theB[var1];
+    float var9 = var4 + var7;
+    val$theResult[var1] = var9;
+    return;
+}
+</code></pre>
+
+
+<footer class="footline">
+	
+</footer>
+
+        
+        </div>
+        
+
+      </div>
+
+    <div id="navigation">
+        
+        
+
+        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                        
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                        
+                        
+                    
+                
+                
+
+                    
+                    
+                        
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                        
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                        
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                        
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                        
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                        
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                        
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                        
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                        
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                    
+                
+                
+
+                    
+                    
+                        
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                        
+                        
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+                        
+            
+            
+                
+                    
+                
+                
+
+                    
+                    
+                    
+
+                    
+            
+        
+                    
+            
+        
+                    
+            
+        
+
+        
+
+
+	 
+	 
+		
+			<a class="nav nav-prev" href="/Bytecoder/chapter-2/" title="Using the OpenCL backend"> <i class="fa fa-chevron-left"></i></a>
+		
+		
+			<a class="nav nav-next" href="/Bytecoder/chapter-2/chapter-2-1/" title="Examples" style="margin-right: 0px;"><i class="fa fa-chevron-right"></i></a>
+		
+	
+    </div>
+
+    </section>
+
+    <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
+      <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
+    </div>
+    <script src="/Bytecoder/js/clipboard.min.js?1611965052"></script>
+    <script src="/Bytecoder/js/perfect-scrollbar.min.js?1611965052"></script>
+    <script src="/Bytecoder/js/perfect-scrollbar.jquery.min.js?1611965052"></script>
+    <script src="/Bytecoder/js/jquery.sticky.js?1611965052"></script>
+    <script src="/Bytecoder/js/featherlight.min.js?1611965052"></script>
+    <script src="/Bytecoder/js/highlight.pack.js?1611965052"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+    <script src="/Bytecoder/js/modernizr.custom-3.6.0.js?1611965052"></script>
+    <script src="/Bytecoder/js/learn.js?1611965052"></script>
+    <script src="/Bytecoder/js/hugo-learn.js?1611965052"></script>
+    
+        
+            <script src="/Bytecoder/mermaid/mermaid.js?1611965052"></script>
+        
+        <script>
+            mermaid.initialize({ startOnLoad: true });
+        </script>
+    
+    
+
+  </body>
+</html>
+

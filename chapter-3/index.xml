@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Internals on Bytecoder - JVM to JavaScript and WebAssembly Transpiler</title>
+    <link>https://mirkosertic.github.io/Bytecoder/chapter-3/</link>
+    <description>Recent content in Internals on Bytecoder - JVM to JavaScript and WebAssembly Transpiler</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Fri, 25 Oct 2019 14:42:16 +0200</lastBuildDate>
+    
+	<atom:link href="https://mirkosertic.github.io/Bytecoder/chapter-3/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Intermediate Representation</title>
+      <link>https://mirkosertic.github.io/Bytecoder/chapter-3/page-3-a/</link>
+      <pubDate>Fri, 25 Oct 2019 14:49:24 +0200</pubDate>
+      
+      <guid>https://mirkosertic.github.io/Bytecoder/chapter-3/page-3-a/</guid>
+      <description>The Bytecoder internal intermediate representation is basically a directed graph. The key idea behind this is described in this paper.
+Given this Java source code:
+@Test public void testSimpleLoop() { for (int i=0;i&amp;lt;10;i++) { } }  the following intermediate representation graph is generated (in its first, unoptimized form):
+This graph combines data flow analysis and control flow into one big graph. Using this graph makes data and control flow dependencies explicit and lays foundation for a variety of optimizations that can be performed on it to either reduce code size or improve execution speed.</description>
+    </item>
+    
+    <item>
+      <title>WebAssembly Memory Management</title>
+      <link>https://mirkosertic.github.io/Bytecoder/chapter-3/page-3-b/</link>
+      <pubDate>Fri, 25 Oct 2019 14:49:24 +0200</pubDate>
+      
+      <guid>https://mirkosertic.github.io/Bytecoder/chapter-3/page-3-b/</guid>
+      <description>The WebAssembly backend emulates high level data types using WebAssembly primitives. At the moment only i32 and f32 types. All other data types are composed using data blocks in the linear memory and pointers, which are basically also i32. This Backend does not use Wasm64.
+Memory The memory is managed. It is dynamically allocated and automatically freed using a Mark-and-Sweep garbage collector. All memory is directly mapped to the Wasm linear memory.</description>
+    </item>
+    
+    <item>
+      <title>Optimizer effectiveness</title>
+      <link>https://mirkosertic.github.io/Bytecoder/chapter-3/page-3-c/</link>
+      <pubDate>Fri, 25 Oct 2019 14:49:24 +0200</pubDate>
+      
+      <guid>https://mirkosertic.github.io/Bytecoder/chapter-3/page-3-c/</guid>
+      <description>Step JBox2D JS Demo JBox2D Wasm Demo     Unoptimized 2.051.489 bytes 1.226.186 bytes   Linear Register Allocation 1.582.659 bytes 1.081.372 bytes   Constant Inlining 1.487.327 bytes 1.010.403 bytes   Inefficient If-Conditions 1.473.286 bytes 1.001.294 bytes   Inefficient Field-Read 1.401.204 bytes 929.177 bytes   Inefficient Field-Write 1.370.353 bytes 909.742 bytes   Inefficient Invocations 1.261.180 bytes 857.123 bytes   Inefficient Array-Access 1.</description>
+    </item>
+    
+  </channel>
+</rss>

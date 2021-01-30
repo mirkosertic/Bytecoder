@@ -1,0 +1,102 @@
+<html>
+    <head>
+        <title>Bytecoder JBox2D JavaScript-Backend Performance Test</title>
+        <script type="application/javascript">
+            var doNotTrack = false;
+            if (!doNotTrack) {
+                (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+                    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+                })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+                ga('create', 'UA-33614060-5', 'auto');
+
+                ga('send', 'pageview');
+            }
+        </script>
+    </head>
+    <body>
+        <canvas id="benchmark-canvas" width="600" height="600"></canvas>
+        <script type="text/javascript" src="stats.min.js"></script>
+        <script type="text/javascript" src="jbox2d_js_stackified.js"></script>
+        <button id="button" value="Click me" style="display: none">Click Me</button>
+        <div id="versioninfo"></div>
+        <table border="1">
+            <tr>
+                <td>Avg ms / Frame</td>
+                <td>50%</td>
+                <td>75%</td>
+                <td>95%</td>
+                <td>98%</td>
+                <td>99%</td>
+            </tr>
+            <tr>
+                <td id="stats_avg"></td>
+                <td id="stats_50"></td>
+                <td id="stats_75"></td>
+                <td id="stats_95"></td>
+                <td id="stats_98"></td>
+                <td id="stats_99"></td>
+            </tr>
+        </table>
+        <a href="https://github.com/mirkosertic/Bytecoder">Go to Bytecoder @ Github</a>
+
+        <script type="text/javascript">
+
+            function sortNumber(a,b) {
+                return a - b;
+            }
+
+            function quantile(array, percentile) {
+                array.sort(sortNumber);
+                var index = percentile/100. * (array.length-1);
+                if (Math.floor(index) == index) {
+                    return array[index];
+                }
+                var i = Math.floor(index);
+                var fraction = index - i;
+                return array[i] + (array[i+1] - array[i]) * fraction;
+            }
+
+            var stats = new Stats();
+            stats.showPanel( 0 ); // 0: fps, 1: ms, 2: mb, 3+: custom
+            document.body.appendChild(stats.dom);
+
+            var lastRuntime = 0;
+            var lastRuntimeTimeSeries = [];
+
+            // dynamic linking
+            bytecoder.imports.debug = {
+                logRuntime : function(a) {
+                    lastRuntimeTimeSeries.push(a);
+                    if (lastRuntimeTimeSeries.length > 500) {
+                        lastRuntimeTimeSeries.shift();
+                    }
+                    lastRuntime = (lastRuntime + a) / 2;
+                    document.getElementById("stats_avg").innerText = '' + lastRuntime.toFixed(2) + " ms";
+
+                    [50, 75, 95, 98, 99].forEach(function (element, index, array) {
+                        var q = quantile(lastRuntimeTimeSeries, element).toFixed(2) + " ms";
+                        document.getElementById("stats_" + element).innerText = q;
+
+                    });
+                }
+            };
+            bytecoder.imports.stats = {
+                begin: function() {
+                    stats.begin();
+                },
+                end: function() {
+                    stats.end();
+                }
+            };
+
+            console.log("Init");
+            bytecoder.bootstrap();
+
+            bytecoder.exports.main();
+            console.log("Ready");
+
+            document.getElementById("button").style.display = "block";
+        </script>
+    </body>
+</html>

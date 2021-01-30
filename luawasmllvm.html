@@ -1,0 +1,97 @@
+<html>
+    <head>
+        <title>Bytecoder Lua WebAssembly-LLVM-Backend Test</title>
+        <script type="application/javascript">
+            var doNotTrack = false;
+            if (!doNotTrack) {
+                (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+                    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+                })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+                ga('create', 'UA-33614060-5', 'auto');
+
+                ga('send', 'pageview');
+            }
+        </script>
+    </head>
+    <body>
+        <h1>Bytecoder Lua Demo</h1>
+        <p>See Lua4J compiled to WebAssembly in action!</p>
+        <div class="codingarea">
+            <h2>Lua Code</h2>
+            <textarea id="luainput" rows="10" cols="10">function add(a,b)
+    return a+b
+end
+
+return add(1,2)</textarea>
+            <h2>Response</h2>
+            <pre id="luaoutput">
+Run Lua to see the output!
+            </pre>
+        </div>
+        <style>
+            .codingarea {
+                display: flex;
+                flex-direction: column;
+                flex-grow: 1;
+                padding-bottom: 2rem;
+            }
+        </style>
+        <button id="runlua" value="Run Lua!" style="display: none">Run Lua!</button>
+        <script type="text/javascript" src="lua_wasmllvm.js"></script>
+        <script type="text/javascript">
+            // dynamic linking
+
+            var instantiated = function(result) {
+                bytecoder.init(result.instance);
+
+                bytecoder.exports.initMemory(0);
+                console.log("Memory initialized");
+                bytecoder.exports.bootstrap(0);
+                bytecoder.initializeFileIO();
+                console.log("Bootstrapped");
+                bytecoder.exports.main(0);
+                console.log("Ready for action!");
+
+                // We have to activate the garbage collector!
+                var gcInterval = 200;
+                var gcMaxObjectsPerRun = 30;
+                var gcRunning = false;
+                var runcounter = 0;
+
+                setInterval(function() {
+                    if (!gcRunning) {
+                        gcRunning = true;
+                        var freed = bytecoder.exports.IncrementalGC(0, gcMaxObjectsPerRun);
+                        if (runcounter++ % 10 === 0) {
+                            var freemem = bytecoder.exports.freeMem(0);
+                            var epoch = bytecoder.exports.GCEpoch(0);
+                            console.log(freemem + " bytes free memory after GC, epoch = " + epoch);
+                        }
+                        gcRunning = false;
+                    }
+                }, gcInterval);
+
+                document.getElementById("runlua").style.display = "block";
+            };
+
+            // Try to load the WASM file
+            WebAssembly.instantiateStreaming(fetch('lua_wasmllvm.wasm'), bytecoder.imports)
+                .then(instantiated)
+                .catch(function(error) {
+                    console.log("Using fallback method to load WebAssembly! Check if mime types for WebAssembly are configured correctly!");
+                    var request = new XMLHttpRequest();
+                    request.open('GET', 'lua_wasmllvm.wasm');
+                    request.responseType = 'arraybuffer';
+                    request.send();
+
+                    request.onload = function() {
+                        var bytes = request.response;
+                        WebAssembly.instantiate(bytes, bytecoder.imports).then(instantiated);
+                    };
+                });
+
+        </script>
+        <a href="https://github.com/mirkosertic/Bytecoder">Go to Bytecoder @ Github</a>
+    </body>
+</html>

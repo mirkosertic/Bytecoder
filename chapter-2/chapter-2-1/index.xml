@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Examples on Bytecoder - JVM to JavaScript and WebAssembly Transpiler</title>
+    <link>https://mirkosertic.github.io/Bytecoder/chapter-2/chapter-2-1/</link>
+    <description>Recent content in Examples on Bytecoder - JVM to JavaScript and WebAssembly Transpiler</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Fri, 25 Oct 2019 14:42:16 +0200</lastBuildDate>
+    
+	<atom:link href="https://mirkosertic.github.io/Bytecoder/chapter-2/chapter-2-1/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Zoomable Mandelbrot set</title>
+      <link>https://mirkosertic.github.io/Bytecoder/chapter-2/chapter-2-1/page-2-1-a/</link>
+      <pubDate>Fri, 25 Oct 2019 14:49:24 +0200</pubDate>
+      
+      <guid>https://mirkosertic.github.io/Bytecoder/chapter-2/chapter-2-1/page-2-1-a/</guid>
+      <description>Mandelbrot set compiled to OpenCL   The following code will render a zoomable Mandelbrot set computed via OpenCL:
+public class MandelbrotKernel extends Kernel { private final int maxIterations; private final int width; private final int height; private float x_min; private float y_min; private float x_max; private float y_max; private final int[] imageData; private float cellSize_width; private float cellSize_height; public MandelbrotKernel(final int aWidth, final int aHeight, final int aMaxIterations) { width = aWidth; height = aHeight; imageData = new int[width * height]; maxIterations = aMaxIterations; x_min = -2f; x_max = 2f; y_min = -1.</description>
+    </item>
+    
+  </channel>
+</rss>

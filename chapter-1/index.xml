@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Compiling JVM Bytecode on Bytecoder - JVM to JavaScript and WebAssembly Transpiler</title>
+    <link>https://mirkosertic.github.io/Bytecoder/chapter-1/</link>
+    <description>Recent content in Compiling JVM Bytecode on Bytecoder - JVM to JavaScript and WebAssembly Transpiler</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Fri, 25 Oct 2019 14:42:08 +0200</lastBuildDate>
+    
+	<atom:link href="https://mirkosertic.github.io/Bytecoder/chapter-1/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>The Command-Line Interface (CLI)</title>
+      <link>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-a/</link>
+      <pubDate>Fri, 22 Nov 2019 14:49:24 +0200</pubDate>
+      
+      <guid>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-a/</guid>
+      <description>Jump-Start Lets assume we have the following Java class, and we want to compile it to JavaScript and run it in the Browser:
+package bytecodertest; public class HelloWorld { public static void main(String[] args) { System.out.println(&amp;quot;Hello World!&amp;quot;); } }  First of all, we need to compile the Java sources to a JVM class file. This is done by using the javac tool from the JDK:
+javac HelloWorld.java  Now, we have the compiled .</description>
+    </item>
+    
+    <item>
+      <title>The Maven Plugin</title>
+      <link>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-b/</link>
+      <pubDate>Fri, 25 Oct 2019 14:49:24 +0200</pubDate>
+      
+      <guid>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-b/</guid>
+      <description>Maven Plugin usage Bytecoder comes with a handy Maven plugin. This plugins supports the JavaScript and WebAssembly backends and can compile JVM Bytecode as part of the Maven project lifecycle without any third party or command-line tools.
+Configuration options The following configuration options are available:
+ buildDirectory&#39;: The build target directory. Defaults to${project.build.outputDirectory}`
+ mainClass The Classname with the main class to be compiled. Required.
+ backend: The Backend to be used.</description>
+    </item>
+    
+    <item>
+      <title>JRE Emulation</title>
+      <link>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-c/</link>
+      <pubDate>Fri, 25 Oct 2019 14:49:24 +0200</pubDate>
+      
+      <guid>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-c/</guid>
+      <description>JRE Emulation Bytecoder comes with a JRE emulation layer which is based on OpenJDK and also a set of additional libraries for browser interaction, vue.js and OpenCL integration.
+Bytecoder comes with a set of JPMS modules like java.base etc. Please note that Bytecoder does not support the JPMS in general. From the compiler and runtime view, all classes are exported to the ALL-UNNAMED module by default, module-info declarations are completely ignored.</description>
+    </item>
+    
+    <item>
+      <title>Reflection API</title>
+      <link>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-d/</link>
+      <pubDate>Mon, 11 Jan 2021 00:00:00 +0200</pubDate>
+      
+      <guid>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-d/</guid>
+      <description>Overview Bytecoder is an AOT (Ahead-of-time) compiler. As this, it has to determine the set of classes at compile time. It does this by running a statical dependency analysis which starts at a class implementing a public static void main(String[] args) method and builds a dependency tree from there resulting in the final set of classes and methods that must be included to make the program valid.
+However, things start to get tricky once we use the Java Reflection API.</description>
+    </item>
+    
+    <item>
+      <title>Interoperability</title>
+      <link>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-f/</link>
+      <pubDate>Fri, 25 Oct 2019 14:49:24 +0200</pubDate>
+      
+      <guid>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-f/</guid>
+      <description>Hello World, extended edition! Let&amp;rsquo;s see how a simple Java program can be written that changes the document title in the Browser. Here it is:
+import de.mirkosertic.bytecoder.api.web.Event; import de.mirkosertic.bytecoder.api.web.EventListener; import de.mirkosertic.bytecoder.api.web.HTMLDocument; import de.mirkosertic.bytecoder.api.web.Window; public class OpaqueReferenceTest { public static void main(String[] args) { final Window w = Window.window(); w.document().addEventListener(&amp;quot;click&amp;quot;, new EventListener&amp;lt;ClickEvent&amp;gt;() { @Override public void run(final ClickEvent aValue) { w.document().title(&amp;quot;clicked!&amp;quot;); } }); } }  I&amp;rsquo;ll try to explain the basics behind this and how it can be compiled to JavaScript or WebAssembly in the following sections.</description>
+    </item>
+    
+    <item>
+      <title>Unit Testing</title>
+      <link>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-e/</link>
+      <pubDate>Mon, 16 Dec 2019 14:49:24 +0200</pubDate>
+      
+      <guid>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-e/</guid>
+      <description>Testing code generation Bytecoder comes with built in JUnit Testing support using a specialized test runner. This test runner compiles the body of the test method to a target language and executes this code. For instance, the following JUnit Test
+@RunWith(de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner.class) public class SimpleMathTest { public static int sum(int a, int b) { return a + b; } @Test public void testAdd() throws Exception { int c = sum(10, 20); Assert.</description>
+    </item>
+    
+    <item>
+      <title>Extending the JRE</title>
+      <link>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-g/</link>
+      <pubDate>Fri, 25 Oct 2019 14:49:24 +0200</pubDate>
+      
+      <guid>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-g/</guid>
+      <description>Extending existing classes Sometimes the methods or properties you want aren&amp;rsquo;t there, but it&amp;rsquo;s very simple to add them.
+public abstract class CustomCanvas extends de.mirkosertic.bytecoder.api.web.HTMLCanvasElement { // The following two methods are setters and getters for the canvas.width property. @de.mirkosertic.bytecoder.api.OpaqueProperty public abstract void width(float value); @de.mirkosertic.bytecoder.api.OpaqueProperty public abstract float width(); }  To use your custom methods or properties simply cast a HTMLCanvasElement to CustomCanvas.
+((CustomCanvas) Window.window().document().getElementById(&amp;quot;canvas&amp;quot;)).width(1000);  Implementing bridges for JavaScript objects and classes Explanation of JavaScript data types in this page:</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Examples on Bytecoder - JVM to JavaScript and WebAssembly Transpiler</title>
+    <link>https://mirkosertic.github.io/Bytecoder/chapter-1/chapter-1-1/</link>
+    <description>Recent content in Examples on Bytecoder - JVM to JavaScript and WebAssembly Transpiler</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <lastBuildDate>Fri, 25 Oct 2019 14:42:16 +0200</lastBuildDate>
+    
+	<atom:link href="https://mirkosertic.github.io/Bytecoder/chapter-1/chapter-1-1/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Java Box2D simulation</title>
+      <link>https://mirkosertic.github.io/Bytecoder/chapter-1/chapter-1-1/page-1-1-a/</link>
+      <pubDate>Fri, 25 Oct 2019 14:49:24 +0200</pubDate>
+      
+      <guid>https://mirkosertic.github.io/Bytecoder/chapter-1/chapter-1-1/page-1-1-a/</guid>
+      <description>A JBox2D simulation transpiled to JavaScript and WebAssembly JBox2D Demo compiled from Java to JavaScript Relooper Codegen vs. Stackifier Codegen
+JBox2D Demo compiled from Java to WebAssembly Relooper Codegen vs. Stackifier Codegen
+JBox2D Demo compiled from Java to WebAssembly with LLVM Codegen</description>
+    </item>
+    
+    <item>
+      <title>Kotlin JBox2D simulation</title>
+      <link>https://mirkosertic.github.io/Bytecoder/chapter-1/chapter-1-1/page-1-1-b/</link>
+      <pubDate>Fri, 25 Oct 2019 14:49:24 +0200</pubDate>
+      
+      <guid>https://mirkosertic.github.io/Bytecoder/chapter-1/chapter-1-1/page-1-1-b/</guid>
+      <description>A JBox2D/Kotlin simulation transpiled to JavaScript and WebAssembly JBox2D Demo compiled from Kotlin to JavaScript
+JBox2D Demo compiled from Kotlin to WebAssembly</description>
+    </item>
+    
+    <item>
+      <title>Lua4J interpreter</title>
+      <link>https://mirkosertic.github.io/Bytecoder/chapter-1/chapter-1-1/page-1-1-c/</link>
+      <pubDate>Fri, 25 Oct 2019 14:49:24 +0200</pubDate>
+      
+      <guid>https://mirkosertic.github.io/Bytecoder/chapter-1/chapter-1-1/page-1-1-c/</guid>
+      <description>The Lua4J interpreter transpiled to JavaScript and WebAssembly Lua4J Demo compiled to JavaScript
+Lua4J Demo compiled to WebAssembly
+Lua4J Demo compiled to WebAssembly with LLVM</description>
+    </item>
+    
+    <item>
+      <title>Vue.js WebAssembly integration</title>
+      <link>https://mirkosertic.github.io/Bytecoder/chapter-1/chapter-1-1/page-1-1-d/</link>
+      <pubDate>Fri, 25 Oct 2019 14:49:24 +0200</pubDate>
+      
+      <guid>https://mirkosertic.github.io/Bytecoder/chapter-1/chapter-1-1/page-1-1-d/</guid>
+      <description>An example showing vue.js and WebAssembly integration vue.js integration Demo compiled to WebAssembly
+vue.js integration Demo compiled to WebAssembly with LLVM</description>
+    </item>
+    
+    <item>
+      <title>Gamecomposer Gameengine</title>
+      <link>https://mirkosertic.github.io/Bytecoder/chapter-1/chapter-1-1/page-1-1-e/</link>
+      <pubDate>Fri, 25 Oct 2019 14:49:24 +0200</pubDate>
+      
+      <guid>https://mirkosertic.github.io/Bytecoder/chapter-1/chapter-1-1/page-1-1-e/</guid>
+      <description>A complex gameengine compiled to JavaScript and WebAssembly GameComposer Physics Game Example compiled to WebAssembly. GameComposer is available here
+GameComposer Physics Game Example compiled to JavaScript. GameComposer is available here</description>
+    </item>
+    
+  </channel>
+</rss>
