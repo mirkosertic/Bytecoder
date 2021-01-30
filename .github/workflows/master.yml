@@ -32,4 +32,10 @@ jobs:
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
           GPG_KEY_PASSPHRASE: ${{ secrets.GPG_KEY_PASSPHRASE }}
       - run: ./hugo -s ./manual -d ../integrationtest/target/bytecoder-integrationtest
+      - uses: JamesIves/github-pages-deploy-action@3.7.1
+        with:
+          GITHUB_TOKEN: ${{ secrets.PAGES_DEPLOY_TOKEN }}
+          BRANCH: gh-pages
+          FOLDER: ./integrationtest/target/bytecoder-integrationtest
+          CLEAN: true
 
