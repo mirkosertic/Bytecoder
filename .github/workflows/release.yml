@@ -1,0 +1,36 @@
+name: Release Workflow
+on:
+  push:
+    tags:
+      - '*'
+jobs:
+  build:
+    if: github.event.base_ref == 'refs/heads/master'
+    environment: ci
+    runs-on: 'ubuntu-latest'
+    steps:
+      - uses: actions/checkout@v1
+      - uses: joschi/setup-jdk@v1
+        env:
+          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+        with:
+          java-version: 8
+      - run: |
+          cat <(echo -e "${{ secrets.OSSRH_GPG_SECRET_KEY }}") | gpg --batch --import
+          gpg --list-secret-keys --keyid-format LONG
+      - run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 10
+          sudo apt-get install -y ocl-icd-opencl-dev clang-10 lldb-10 lld-10 clangd-10
+      - name: Get tag
+        id: tag
+        uses: dawidd6/action-get-tag@v1
+      - run: |
+          echo "on a tag -> set pom.xml <version> to ${{steps.tag.outputs.tag}}"
+          mvn --settings .mvn/settings.xml org.codehaus.mojo:versions-maven-plugin:set -DnewVersion=${{steps.tag.outputs.tag}}
+          mvn --no-transfer-progress --batch-mode --settings .mvn/settings.xml clean javadoc:jar deploy -P notest -P signed
+        env:
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          GPG_KEY_PASSPHRASE: ${{ secrets.GPG_KEY_PASSPHRASE }}
