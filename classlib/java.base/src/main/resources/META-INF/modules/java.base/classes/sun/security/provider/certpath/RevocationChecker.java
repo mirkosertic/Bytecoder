@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -46,6 +46,7 @@ import static sun.security.provider.certpath.PKIX.*;
 import sun.security.x509.*;
 import static sun.security.x509.PKIXExtensions.*;
 import sun.security.util.Debug;
+import sun.security.util.KnownOIDs;
 
 class RevocationChecker extends PKIXRevocationChecker {
 
@@ -722,7 +723,7 @@ class RevocationChecker extends PKIXRevocationChecker {
                 // verify the response
                 byte[] nonce = null;
                 for (Extension ext : ocspExtensions) {
-                    if (ext.getId().equals("1.3.6.1.5.5.7.48.1.2")) {
+                    if (ext.getId().equals(KnownOIDs.OCSPNonceExt.value())) {
                         nonce = ext.getValue();
                     }
                 }
@@ -881,10 +882,10 @@ class RevocationChecker extends PKIXRevocationChecker {
      * only CRLs signed with a different key (but the same issuer
      * name) as the certificate being checked.
      *
-     * @param currCert the <code>X509Certificate</code> to be checked
+     * @param cert the <code>X509Certificate</code> to be checked
      * @param prevKey the <code>PublicKey</code> that failed
      * @param signFlag <code>true</code> if that key was trusted to sign CRLs
-     * @param stackedCerts a <code>Set</code> of <code>X509Certificate</code>s>
+     * @param stackedCerts a <code>Set</code> of <code>X509Certificate</code>s
      *                     whose revocation status depends on the
      *                     non-revoked status of this cert. To avoid
      *                     circular dependencies, we assume they're

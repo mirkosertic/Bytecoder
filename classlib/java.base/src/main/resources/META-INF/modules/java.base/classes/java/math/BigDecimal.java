@@ -104,7 +104,7 @@ import java.util.Objects;
  * determines how any discarded trailing digits affect the returned
  * result.
  *
- * <p>For all arithmetic operators , the operation is carried out as
+ * <p>For all arithmetic operators, the operation is carried out as
  * though an exact intermediate result were first calculated and then
  * rounded to the number of digits specified by the precision setting
  * (if necessary), using the selected rounding mode.  If the exact
@@ -3025,9 +3025,9 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      * this one but with any trailing zeros removed from the
      * representation.  For example, stripping the trailing zeros from
      * the {@code BigDecimal} value {@code 600.0}, which has
-     * [{@code BigInteger}, {@code scale}] components equals to
+     * [{@code BigInteger}, {@code scale}] components equal to
      * [6000, 1], yields {@code 6E2} with [{@code BigInteger},
-     * {@code scale}] components equals to [6, -2].  If
+     * {@code scale}] components equal to [6, -2].  If
      * this BigDecimal is numerically equal to zero, then
      * {@code BigDecimal.ZERO} is returned.
      *
@@ -3455,7 +3455,7 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      * This conversion is analogous to the
      * <i>narrowing primitive conversion</i> from {@code double} to
      * {@code long} as defined in
-     * <cite>The Java&trade; Language Specification</cite>:
+     * <cite>The Java Language Specification</cite>:
      * any fractional part of this
      * {@code BigDecimal} will be discarded.  Note that this
      * conversion can lose information about the precision of the
@@ -3493,7 +3493,7 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      * This conversion is analogous to the
      * <i>narrowing primitive conversion</i> from {@code double} to
      * {@code short} as defined in
-     * <cite>The Java&trade; Language Specification</cite>:
+     * <cite>The Java Language Specification</cite>:
      * any fractional part of this
      * {@code BigDecimal} will be discarded, and if the resulting
      * "{@code BigInteger}" is too big to fit in a
@@ -3591,7 +3591,7 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      * This conversion is analogous to the
      * <i>narrowing primitive conversion</i> from {@code double} to
      * {@code short} as defined in
-     * <cite>The Java&trade; Language Specification</cite>:
+     * <cite>The Java Language Specification</cite>:
      * any fractional part of this
      * {@code BigDecimal} will be discarded, and if the resulting
      * "{@code BigInteger}" is too big to fit in an
@@ -3675,7 +3675,7 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      * This conversion is similar to the
      * <i>narrowing primitive conversion</i> from {@code double} to
      * {@code float} as defined in
-     * <cite>The Java&trade; Language Specification</cite>:
+     * <cite>The Java Language Specification</cite>:
      * if this {@code BigDecimal} has too great a
      * magnitude to represent as a {@code float}, it will be
      * converted to {@link Float#NEGATIVE_INFINITY} or {@link
@@ -3720,7 +3720,7 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      * This conversion is similar to the
      * <i>narrowing primitive conversion</i> from {@code double} to
      * {@code float} as defined in
-     * <cite>The Java&trade; Language Specification</cite>:
+     * <cite>The Java Language Specification</cite>:
      * if this {@code BigDecimal} has too great a
      * magnitude represent as a {@code double}, it will be
      * converted to {@link Double#NEGATIVE_INFINITY} or {@link
@@ -4323,7 +4323,7 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
         return asInt;
     }
 
-   /**
+    /**
      * Returns the compact value for given {@code BigInteger}, or
      * INFLATED if too big. Relies on internal representation of
      * {@code BigInteger}.

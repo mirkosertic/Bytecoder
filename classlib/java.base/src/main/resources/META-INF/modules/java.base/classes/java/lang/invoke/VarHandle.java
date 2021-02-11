@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -454,6 +454,16 @@ public abstract class VarHandle implements Constable {
     RuntimeException unsupported() {
         return new UnsupportedOperationException();
     }
+
+    boolean isDirect() {
+        return true;
+    }
+
+    VarHandle asDirect() {
+        return this;
+    }
+
+    VarHandle target() { return null; }
 
     // Plain accessors
 
@@ -1882,7 +1892,7 @@ public abstract class VarHandle implements Constable {
      *
      * @return the variable type of variables referenced by this VarHandle
      */
-    public final Class<?> varType() {
+    public Class<?> varType() {
         MethodType typeSet = accessModeType(AccessMode.SET);
         return typeSet.parameterType(typeSet.parameterCount() - 1);
     }
@@ -1893,7 +1903,7 @@ public abstract class VarHandle implements Constable {
      * @return the coordinate types for this VarHandle. The returned
      * list is unmodifiable
      */
-    public final List<Class<?>> coordinateTypes() {
+    public List<Class<?>> coordinateTypes() {
         MethodType typeGet = accessModeType(AccessMode.GET);
         return typeGet.parameterList();
     }
@@ -1958,7 +1968,7 @@ public abstract class VarHandle implements Constable {
      * signature-polymorphic method of the same name
      * @return a method handle bound to this VarHandle and the given access mode
      */
-    public final MethodHandle toMethodHandle(AccessMode accessMode) {
+    public MethodHandle toMethodHandle(AccessMode accessMode) {
         MemberName mn = AccessMode.getMemberName(accessMode.ordinal(), vform);
         if (mn != null) {
             MethodHandle mh = getMethodHandle(accessMode.ordinal());
@@ -2008,7 +2018,7 @@ public abstract class VarHandle implements Constable {
     }
 
     @ForceInline
-    final MethodHandle getMethodHandle(int mode) {
+    MethodHandle getMethodHandle(int mode) {
         TypesAndInvokers tis = getTypesAndInvokers();
         MethodHandle mh = tis.methodHandle_table[mode];
         if (mh == null) {
@@ -2021,7 +2031,7 @@ public abstract class VarHandle implements Constable {
                 insertParameterTypes(0, VarHandle.class);
         MemberName mn = vform.getMemberName(mode);
         DirectMethodHandle dmh = DirectMethodHandle.make(mn);
-        // Such a method handle must not be publically exposed directly
+        // Such a method handle must not be publicly exposed directly
         // otherwise it can be cracked, it must be transformed or rebound
         // before exposure
         MethodHandle mh = dmh.copyWith(mt, dmh.form);
@@ -2181,7 +2191,7 @@ public abstract class VarHandle implements Constable {
          * Returns a {@linkplain VarHandleDesc} corresponding to a {@link VarHandle}
          * for an instance field.
          *
-         * @param name the unqualifed name of the field
+         * @param name the unqualified name of the field
          * @param declaringClass a {@link ClassDesc} describing the declaring class,
          *                       for field var handles
          * @param fieldType a {@link ClassDesc} describing the type of the field

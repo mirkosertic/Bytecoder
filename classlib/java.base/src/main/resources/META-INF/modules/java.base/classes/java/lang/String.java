@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -90,7 +90,7 @@ import static java.util.function.Predicate.not;
  * The Java language provides special support for the string
  * concatenation operator (&nbsp;+&nbsp;), and for conversion of
  * other objects to strings. For additional information on string
- * concatenation and conversion, see <i>The Java&trade; Language Specification</i>.
+ * concatenation and conversion, see <i>The Java Language Specification</i>.
  *
  * <p> Unless otherwise noted, passing a {@code null} argument to a constructor
  * or method in this class will cause a {@link NullPointerException} to be
@@ -113,7 +113,7 @@ import static java.util.function.Predicate.not;
  *
  * @implNote The implementation of the string concatenation operator is left to
  * the discretion of a Java compiler, as long as the compiler ultimately conforms
- * to <i>The Java&trade; Language Specification</i>. For example, the {@code javac} compiler
+ * to <i>The Java Language Specification</i>. For example, the {@code javac} compiler
  * may implement the operator with {@code StringBuffer}, {@code StringBuilder},
  * or {@code java.lang.invoke.StringConcatFactory} depending on the JDK version. The
  * implementation of string conversion is typically through the method {@code toString},
@@ -462,7 +462,7 @@ public final class String
      *
      * @param  length
      *         The number of bytes to decode
-
+     *
      * @param  charsetName
      *         The name of a supported {@linkplain java.nio.charset.Charset
      *         charset}
@@ -684,6 +684,7 @@ public final class String
      *
      * @since 1.6
      */
+    @Override
     public boolean isEmpty() {
         return value.length == 0;
     }
@@ -1383,7 +1384,7 @@ public final class String
      * integer <i>k</i> less than {@code len} such that:
      * <blockquote><pre>
      * Character.toLowerCase(Character.toUpperCase(this.charAt(toffset+k))) !=
-     Character.toLowerCase(Character.toUpperCase(other.charAt(ooffset+k)))
+     * Character.toLowerCase(Character.toUpperCase(other.charAt(ooffset+k)))
      * </pre></blockquote>
      * </ul>
      *
@@ -1819,7 +1820,7 @@ public final class String
      * @param   src         the characters being searched.
      * @param   srcCoder    coder handles the mapping between bytes/chars
      * @param   srcCount    count of the source string.
-     * @param   tgt         the characters being searched for.
+     * @param   tgtStr      the characters being searched for.
      * @param   fromIndex   the index to begin searching from.
      */
     static int lastIndexOf(byte[] src, byte srcCoder, int srcCount,
@@ -1900,10 +1901,10 @@ public final class String
     public String substring(int beginIndex, int endIndex) {
         int length = length();
         checkBoundsBeginEnd(beginIndex, endIndex, length);
-        int subLen = endIndex - beginIndex;
         if (beginIndex == 0 && endIndex == length) {
             return this;
         }
+        int subLen = endIndex - beginIndex;
         return isLatin1() ? StringLatin1.newString(value, beginIndex, subLen)
                           : StringUTF16.newString(value, beginIndex, subLen);
     }
@@ -2063,9 +2064,9 @@ public final class String
      * <blockquote>
      * <code>
      * {@link java.util.regex.Pattern}.{@link
-     * java.util.regex.Pattern#compile compile}(<i>regex</i>).{@link
+     * java.util.regex.Pattern#compile(String) compile}(<i>regex</i>).{@link
      * java.util.regex.Pattern#matcher(java.lang.CharSequence) matcher}(<i>str</i>).{@link
-     * java.util.regex.Matcher#replaceFirst replaceFirst}(<i>repl</i>)
+     * java.util.regex.Matcher#replaceFirst(String) replaceFirst}(<i>repl</i>)
      * </code>
      * </blockquote>
      *
@@ -2108,9 +2109,9 @@ public final class String
      * <blockquote>
      * <code>
      * {@link java.util.regex.Pattern}.{@link
-     * java.util.regex.Pattern#compile compile}(<i>regex</i>).{@link
+     * java.util.regex.Pattern#compile(String) compile}(<i>regex</i>).{@link
      * java.util.regex.Pattern#matcher(java.lang.CharSequence) matcher}(<i>str</i>).{@link
-     * java.util.regex.Matcher#replaceAll replaceAll}(<i>repl</i>)
+     * java.util.regex.Matcher#replaceAll(String) replaceAll}(<i>repl</i>)
      * </code>
      * </blockquote>
      *
@@ -2186,7 +2187,7 @@ public final class String
                 resultLen = Math.addExact(thisLen, Math.multiplyExact(
                         Math.addExact(thisLen, 1), replLen));
             } catch (ArithmeticException ignored) {
-                throw new OutOfMemoryError();
+                throw new OutOfMemoryError("Required length exceeds implementation limit");
             }
 
             StringBuilder sb = new StringBuilder(resultLen);
@@ -2275,7 +2276,7 @@ public final class String
      * <blockquote>
      * <code>
      * {@link java.util.regex.Pattern}.{@link
-     * java.util.regex.Pattern#compile compile}(<i>regex</i>).{@link
+     * java.util.regex.Pattern#compile(String) compile}(<i>regex</i>).{@link
      * java.util.regex.Pattern#split(java.lang.CharSequence,int) split}(<i>str</i>,&nbsp;<i>n</i>)
      * </code>
      * </blockquote>
@@ -2300,10 +2301,10 @@ public final class String
      */
     public String[] split(String regex, int limit) {
         /* fastpath if the regex is a
-         (1)one-char String and this character is not one of the
-            RegEx's meta characters ".$|()[{^?*+\\", or
-         (2)two-char String and the first char is the backslash and
-            the second is not the ascii digit or ascii letter.
+         * (1) one-char String and this character is not one of the
+         *     RegEx's meta characters ".$|()[{^?*+\\", or
+         * (2) two-char String and the first char is the backslash and
+         *     the second is not the ascii digit or ascii letter.
          */
         char ch = 0;
         if (((regex.length() == 1 &&
@@ -2445,12 +2446,12 @@ public final class String
      * <pre>{@code
      *     List<String> strings = List.of("Java", "is", "cool");
      *     String message = String.join(" ", strings);
-     *     //message returned is: "Java is cool"
+     *     // message returned is: "Java is cool"
      *
      *     Set<String> strings =
      *         new LinkedHashSet<>(List.of("Java", "is", "very", "cool"));
      *     String message = String.join("-", strings);
-     *     //message returned is: "Java-is-very-cool"
+     *     // message returned is: "Java-is-very-cool"
      * }</pre></blockquote>
      *
      * Note that if an individual element is {@code null}, then {@code "null"} is added.
@@ -2888,15 +2889,6 @@ public final class String
     }
 
     /**
-     * {@preview Associated with text blocks, a preview feature of
-     *           the Java language.
-     *
-     *           This method is associated with <i>text blocks</i>, a preview
-     *           feature of the Java language. Programs can only use this
-     *           method when preview features are enabled. Preview features
-     *           may be removed in a future release, or upgraded to permanent
-     *           features of the Java language.}
-     *
      * Returns a string whose value is this string, with incidental
      * {@linkplain Character#isWhitespace(int) white space} removed from
      * the beginning and end of every line.
@@ -2925,22 +2917,34 @@ public final class String
      * |    &lt;/body&gt;
      * |&lt;/html&gt;
      * </pre></blockquote>
-     * First, the individual lines of this string are extracted as if by using
-     * {@link String#lines()}.
+     * First, the individual lines of this string are extracted. A <i>line</i>
+     * is a sequence of zero or more characters followed by either a line
+     * terminator or the end of the string.
+     * If the string has at least one line terminator, the last line consists
+     * of the characters between the last terminator and the end of the string.
+     * Otherwise, if the string has no terminators, the last line is the start
+     * of the string to the end of the string, in other words, the entire
+     * string.
+     * A line does not include the line terminator.
      * <p>
-     * Then, the <i>minimum indentation</i> (min) is determined as follows.
-     * For each non-blank line (as defined by {@link String#isBlank()}), the
-     * leading {@linkplain Character#isWhitespace(int) white space} characters are
-     * counted. The leading {@linkplain Character#isWhitespace(int) white space}
-     * characters on the last line are also counted even if
-     * {@linkplain String#isBlank() blank}. The <i>min</i> value is the smallest
-     * of these counts.
+     * Then, the <i>minimum indentation</i> (min) is determined as follows:
+     * <ul>
+     *   <li><p>For each non-blank line (as defined by {@link String#isBlank()}),
+     *   the leading {@linkplain Character#isWhitespace(int) white space}
+     *   characters are counted.</p>
+     *   </li>
+     *   <li><p>The leading {@linkplain Character#isWhitespace(int) white space}
+     *   characters on the last line are also counted even if
+     *   {@linkplain String#isBlank() blank}.</p>
+     *   </li>
+     * </ul>
+     * <p>The <i>min</i> value is the smallest of these counts.
      * <p>
      * For each {@linkplain String#isBlank() non-blank} line, <i>min</i> leading
-     * {@linkplain Character#isWhitespace(int) white space} characters are removed,
-     * and any trailing {@linkplain Character#isWhitespace(int) white space}
-     * characters are removed. {@linkplain String#isBlank() Blank} lines are
-     * replaced with the empty string.
+     * {@linkplain Character#isWhitespace(int) white space} characters are
+     * removed, and any trailing {@linkplain Character#isWhitespace(int) white
+     * space} characters are removed. {@linkplain String#isBlank() Blank} lines
+     * are replaced with the empty string.
      *
      * <p>
      * Finally, the lines are joined into a new string, using the LF character
@@ -2951,12 +2955,11 @@ public final class String
      * possible to the left, while preserving relative indentation. Lines
      * that were indented the least will thus have no leading
      * {@linkplain Character#isWhitespace(int) white space}.
-     * The line count of the result will be the same as line count of this
-     * string.
+     * The result will have the same number of line terminators as this string.
      * If this string ends with a line terminator then the result will end
      * with a line terminator.
      *
-     * @implNote
+     * @implSpec
      * This method treats all {@linkplain Character#isWhitespace(int) white space}
      * characters as having equal width. As long as the indentation on every
      * line is consistently composed of the same character sequences, then the
@@ -2970,11 +2973,9 @@ public final class String
      * @see String#indent(int)
      * @see Character#isWhitespace(int)
      *
-     * @since 13
+     * @since 15
      *
      */
-    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.TEXT_BLOCKS,
-                                 essentialAPI=true)
     public String stripIndent() {
         int length = length();
         if (length == 0) {
@@ -3013,15 +3014,6 @@ public final class String
     }
 
     /**
-     * {@preview Associated with text blocks, a preview feature of
-     *           the Java language.
-     *
-     *           This method is associated with <i>text blocks</i>, a preview
-     *           feature of the Java language. Programs can only use this
-     *           method when preview features are enabled. Preview features
-     *           may be removed in a future release, or upgraded to permanent
-     *           features of the Java language.}
-     *
      * Returns a string whose value is this string, with escape sequences
      * translated as if in a string literal.
      * <p>
@@ -3105,10 +3097,8 @@ public final class String
      *
      * @jls 3.10.7 Escape Sequences
      *
-     * @since 13
+     * @since 15
      */
-    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.TEXT_BLOCKS,
-                                 essentialAPI=true)
     public String translateEscapes() {
         if (isEmpty()) {
             return "";
@@ -3279,7 +3269,7 @@ public final class String
      *         extra arguments are ignored.  The number of arguments is
      *         variable and may be zero.  The maximum number of arguments is
      *         limited by the maximum dimension of a Java array as defined by
-     *         <cite>The Java&trade; Virtual Machine Specification</cite>.
+     *         <cite>The Java Virtual Machine Specification</cite>.
      *         The behaviour on a
      *         {@code null} argument depends on the <a
      *         href="../util/Formatter.html#syntax">conversion</a>.
@@ -3320,7 +3310,7 @@ public final class String
      *         extra arguments are ignored.  The number of arguments is
      *         variable and may be zero.  The maximum number of arguments is
      *         limited by the maximum dimension of a Java array as defined by
-     *         <cite>The Java&trade; Virtual Machine Specification</cite>.
+     *         <cite>The Java Virtual Machine Specification</cite>.
      *         The behaviour on a
      *         {@code null} argument depends on the
      *         <a href="../util/Formatter.html#syntax">conversion</a>.
@@ -3344,15 +3334,6 @@ public final class String
     }
 
     /**
-     * {@preview Associated with text blocks, a preview feature of
-     *           the Java language.
-     *
-     *           This method is associated with <i>text blocks</i>, a preview
-     *           feature of the Java language. Programs can only use this
-     *           method when preview features are enabled. Preview features
-     *           may be removed in a future release, or upgraded to permanent
-     *           features of the Java language.}
-     *
      * Formats using this string as the format string, and the supplied
      * arguments.
      *
@@ -3366,11 +3347,9 @@ public final class String
      * @see  java.lang.String#format(String,Object...)
      * @see  java.util.Formatter
      *
-     * @since 13
+     * @since 15
      *
      */
-    @jdk.internal.PreviewFeature(feature=jdk.internal.PreviewFeature.Feature.TEXT_BLOCKS,
-                                 essentialAPI=true)
     public String formatted(Object... args) {
         return new Formatter().format(this, args).toString();
     }
@@ -3555,7 +3534,7 @@ public final class String
      * <p>
      * All literal strings and string-valued constant expressions are
      * interned. String literals are defined in section 3.10.5 of the
-     * <cite>The Java&trade; Language Specification</cite>.
+     * <cite>The Java Language Specification</cite>.
      *
      * @return  a string that has the same contents as this string, but is
      *          guaranteed to be from a pool of unique strings.
@@ -3592,14 +3571,13 @@ public final class String
         if (len == 0 || count == 0) {
             return "";
         }
+        if (Integer.MAX_VALUE / count < len) {
+            throw new OutOfMemoryError("Required length exceeds implementation limit");
+        }
         if (len == 1) {
             final byte[] single = new byte[count];
             Arrays.fill(single, value[0]);
             return new String(single, coder);
-        }
-        if (Integer.MAX_VALUE / count < len) {
-            throw new OutOfMemoryError("Repeating " + len + " bytes String " + count +
-                    " times will produce a String exceeding maximum size.");
         }
         final int limit = len * count;
         final byte[] multiple = new byte[limit];

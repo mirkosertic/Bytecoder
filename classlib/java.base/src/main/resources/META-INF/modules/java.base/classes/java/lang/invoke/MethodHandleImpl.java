@@ -27,7 +27,6 @@ package java.lang.invoke;
 
 import jdk.internal.access.JavaLangInvokeAccess;
 import jdk.internal.access.SharedSecrets;
-import jdk.internal.org.objectweb.asm.AnnotationVisitor;
 import jdk.internal.org.objectweb.asm.ClassWriter;
 import jdk.internal.org.objectweb.asm.MethodVisitor;
 import jdk.internal.reflect.CallerSensitive;
@@ -40,6 +39,7 @@ import sun.invoke.util.ValueConversions;
 import sun.invoke.util.VerifyType;
 import sun.invoke.util.Wrapper;
 
+import java.lang.invoke.MethodHandles.Lookup;
 import java.lang.reflect.Array;
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -1157,10 +1157,24 @@ abstract class MethodHandleImpl {
             return restoreToType(bccInvoker.bindTo(vamh), mh, hostClass);
         }
 
-        private static MethodHandle makeInjectedInvoker(Class<?> hostClass) {
+        private static MethodHandle makeInjectedInvoker(Class<?> targetClass) {
             try {
-                Class<?> invokerClass = UNSAFE.defineAnonymousClass(hostClass, INJECTED_INVOKER_TEMPLATE, null);
-                assert checkInjectedInvoker(hostClass, invokerClass);
+                /*
+                 * The invoker class defined to the same class loader as the lookup class
+                 * but in an unnamed package so that the class bytes can be cached and
+                 * reused for any @CSM.
+                 *
+                 * @CSM must be public and exported if called by any module.
+                 */
+                String name = targetClass.getName() + "$$InjectedInvoker";
+                if (targetClass.isHidden()) {
+                    // use the original class name
+                    name = name.replace('/', '_');
+                }
+                Class<?> invokerClass = new Lookup(targetClass)
+                        .makeHiddenClassDefiner(name, INJECTED_INVOKER_TEMPLATE)
+                        .defineClass(true);
+                assert checkInjectedInvoker(targetClass, invokerClass);
                 return IMPL_LOOKUP.findStatic(invokerClass, "invoke_V", INVOKER_MT);
             } catch (ReflectiveOperationException ex) {
                 throw uncaughtException(ex);
@@ -1255,10 +1269,6 @@ abstract class MethodHandleImpl {
             MethodVisitor mv = cw.visitMethod(ACC_STATIC, "invoke_V",
                           "(Ljava/lang/invoke/MethodHandle;[Ljava/lang/Object;)Ljava/lang/Object;",
                           null, null);
-
-            // Suppress invoker method in stack traces.
-            AnnotationVisitor av0 = mv.visitAnnotation(InvokerBytecodeGenerator.HIDDEN_SIG, true);
-            av0.visitEnd();
 
             mv.visitCode();
             mv.visitVarInsn(ALOAD, 0);
@@ -1792,42 +1802,90 @@ abstract class MethodHandleImpl {
             }
 
             @Override
-            public VarHandle memoryAddressViewVarHandle(Class<?> carrier, long alignmentMask,
-                                                        ByteOrder order, long offset, long[] strides) {
+            public VarHandle memoryAccessVarHandle(Class<?> carrier, long alignmentMask,
+                                                   ByteOrder order, long offset, long[] strides) {
                 return VarHandles.makeMemoryAddressViewHandle(carrier, alignmentMask, order, offset, strides);
             }
 
             @Override
             public Class<?> memoryAddressCarrier(VarHandle handle) {
-                return checkMemAccessHandle(handle).carrier();
+                return checkMemoryAccessHandle(handle).carrier();
             }
 
             @Override
             public long memoryAddressAlignmentMask(VarHandle handle) {
-                return checkMemAccessHandle(handle).alignmentMask;
+                return checkMemoryAccessHandle(handle).alignmentMask;
             }
 
             @Override
             public ByteOrder memoryAddressByteOrder(VarHandle handle) {
-                return checkMemAccessHandle(handle).be ?
+                return checkMemoryAccessHandle(handle).be ?
                         ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN;
             }
 
             @Override
             public long memoryAddressOffset(VarHandle handle) {
-                return checkMemAccessHandle(handle).offset;
+                return checkMemoryAccessHandle(handle).offset;
             }
 
             @Override
             public long[] memoryAddressStrides(VarHandle handle) {
-                return checkMemAccessHandle(handle).strides();
+                return checkMemoryAccessHandle(handle).strides();
             }
 
-            private VarHandleMemoryAddressBase checkMemAccessHandle(VarHandle handle) {
-                if (!(handle instanceof VarHandleMemoryAddressBase)) {
+            @Override
+            public boolean isMemoryAccessVarHandle(VarHandle handle) {
+                return asMemoryAccessVarHandle(handle) != null;
+            }
+
+            @Override
+            public VarHandle filterValue(VarHandle target, MethodHandle filterToTarget, MethodHandle filterFromTarget) {
+                return VarHandles.filterValue(target, filterToTarget, filterFromTarget);
+            }
+
+            @Override
+            public VarHandle filterCoordinates(VarHandle target, int pos, MethodHandle... filters) {
+                return VarHandles.filterCoordinates(target, pos, filters);
+            }
+
+            @Override
+            public VarHandle dropCoordinates(VarHandle target, int pos, Class<?>... valueTypes) {
+                return VarHandles.dropCoordinates(target, pos, valueTypes);
+            }
+
+            @Override
+            public VarHandle permuteCoordinates(VarHandle target, List<Class<?>> newCoordinates, int... reorder) {
+                return VarHandles.permuteCoordinates(target, newCoordinates, reorder);
+            }
+
+            @Override
+            public VarHandle collectCoordinates(VarHandle target, int pos, MethodHandle filter) {
+                return VarHandles.collectCoordinates(target, pos, filter);
+            }
+
+            @Override
+            public VarHandle insertCoordinates(VarHandle target, int pos, Object... values) {
+                return VarHandles.insertCoordinates(target, pos, values);
+            }
+
+            private MemoryAccessVarHandleBase asMemoryAccessVarHandle(VarHandle handle) {
+                if (handle instanceof MemoryAccessVarHandleBase) {
+                    return (MemoryAccessVarHandleBase)handle;
+                } else if (handle.target() instanceof MemoryAccessVarHandleBase) {
+                    // skip first adaptation, since we have to step over MemoryAddressProxy
+                    // see JDK-8237349
+                    return (MemoryAccessVarHandleBase)handle.target();
+                } else {
+                    return null;
+                }
+            }
+
+            private MemoryAccessVarHandleBase checkMemoryAccessHandle(VarHandle handle) {
+                MemoryAccessVarHandleBase base = asMemoryAccessVarHandle(handle);
+                if (base == null) {
                     throw new IllegalArgumentException("Not a memory access varhandle: " + handle);
                 }
-                return (VarHandleMemoryAddressBase) handle;
+                return base;
             }
         });
     }

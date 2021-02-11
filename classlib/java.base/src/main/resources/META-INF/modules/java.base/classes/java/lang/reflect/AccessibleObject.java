@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -175,6 +175,18 @@ public class AccessibleObject implements AnnotatedElement {
      * protected constructors when the declaring class is in a different module
      * to the caller and the package containing the declaring class is not open
      * to the caller's module. </p>
+     *
+     * <p> This method cannot be used to enable {@linkplain Field#set <em>write</em>}
+     * access to a <em>non-modifiable</em> final field.  The following fields
+     * are non-modifiable:
+     * <ul>
+     * <li>static final fields declared in any class or interface</li>
+     * <li>final fields declared in a {@linkplain Class#isHidden() hidden class}</li>
+     * <li>final fields declared in a {@linkplain Class#isRecord() record}</li>
+     * </ul>
+     * <p> The {@code accessible} flag when {@code true} suppresses Java language access
+     * control checks to only enable {@linkplain Field#get <em>read</em>} access to
+     * these non-modifiable final fields.
      *
      * <p> If there is a security manager, its
      * {@code checkPermission} method is first called with a
@@ -428,7 +440,7 @@ public class AccessibleObject implements AnnotatedElement {
      * <p> This method returns {@code true} if the {@code accessible} flag
      * is set to {@code true}, i.e. the checks for Java language access control
      * are suppressed, or if the caller can access the member as
-     * specified in <cite>The Java&trade; Language Specification</cite>,
+     * specified in <cite>The Java Language Specification</cite>,
      * with the variation noted in the class description. </p>
      *
      * @param obj an instance object of the declaring class of this reflected
@@ -509,15 +521,22 @@ public class AccessibleObject implements AnnotatedElement {
             new ReflectionFactory.GetReflectionFactoryAction());
 
     /**
+     * {@inheritDoc}
+     *
+     * <p> Note that any annotation returned by this method is a
+     * declaration annotation.
+     *
      * @throws NullPointerException {@inheritDoc}
      * @since 1.5
      */
+    @Override
     public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
         throw new AssertionError("All subclasses should override this method");
     }
 
     /**
      * {@inheritDoc}
+     *
      * @throws NullPointerException {@inheritDoc}
      * @since 1.5
      */
@@ -527,6 +546,11 @@ public class AccessibleObject implements AnnotatedElement {
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * <p> Note that any annotations returned by this method are
+     * declaration annotations.
+     *
      * @throws NullPointerException {@inheritDoc}
      * @since 1.8
      */
@@ -536,13 +560,24 @@ public class AccessibleObject implements AnnotatedElement {
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * <p> Note that any annotations returned by this method are
+     * declaration annotations.
+     *
      * @since 1.5
      */
+    @Override
     public Annotation[] getAnnotations() {
         return getDeclaredAnnotations();
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * <p> Note that any annotation returned by this method is a
+     * declaration annotation.
+     *
      * @throws NullPointerException {@inheritDoc}
      * @since 1.8
      */
@@ -555,6 +590,11 @@ public class AccessibleObject implements AnnotatedElement {
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * <p> Note that any annotations returned by this method are
+     * declaration annotations.
+     *
      * @throws NullPointerException {@inheritDoc}
      * @since 1.8
      */
@@ -567,8 +607,14 @@ public class AccessibleObject implements AnnotatedElement {
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * <p> Note that any annotations returned by this method are
+     * declaration annotations.
+     *
      * @since 1.5
      */
+    @Override
     public Annotation[] getDeclaredAnnotations()  {
         throw new AssertionError("All subclasses should override this method");
     }

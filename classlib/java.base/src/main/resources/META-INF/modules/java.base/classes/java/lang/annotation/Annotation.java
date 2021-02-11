@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2013, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,7 +32,7 @@ package java.lang.annotation;
  * define an annotation type.
  *
  * More information about annotation types can be found in section 9.6 of
- * <cite>The Java&trade; Language Specification</cite>.
+ * <cite>The Java Language Specification</cite>.
  *
  * The {@link java.lang.reflect.AnnotatedElement} interface discusses
  * compatibility concerns when evolving an annotation type from being
@@ -101,7 +101,7 @@ public interface Annotation {
      *     {@link Long}, {@link Short}, or {@link Boolean}).
      *
      * <li>The hash code of a string, enum, class, or annotation member-value
-     I     <i>{@code v}</i> is computed as by calling
+     *     <i>{@code v}</i> is computed as by calling
      *     <code><i>v</i>.hashCode()</code>.  (In the case of annotation
      *     member values, this is a recursive definition.)
      *

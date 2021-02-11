@@ -402,9 +402,9 @@ public class PassThruRegisterAllocatorTest {
         final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
                 HashMap.class));
         final BytecodeObjectTypeRef theNodeType = BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("java.util.HashMap$Node"));
-        theLinkedClass.resolveVirtualMethod("getNode", new BytecodeMethodSignature(theNodeType, new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT, BytecodeObjectTypeRef.fromRuntimeClass(Object.class)}));
+        theLinkedClass.resolveVirtualMethod("getNode", new BytecodeMethodSignature(theNodeType, new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(Object.class)}));
 
-        final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("getNode", new BytecodeMethodSignature(theNodeType, new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT, BytecodeObjectTypeRef.fromRuntimeClass(Object.class)}));
+        final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("getNode", new BytecodeMethodSignature(theNodeType, new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(Object.class)}));
         final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
 
         final List<Variable> vars = p.getVariables();
@@ -412,11 +412,11 @@ public class PassThruRegisterAllocatorTest {
             System.out.println(String.format("%s Def at %d, LastUsedAt %d", v.getName(), v.liveRange().getDefinedAt(), v.liveRange().getLastUsedAt()));
         }
 
-        assertEquals(48, vars.size());
+        assertEquals(49, vars.size());
 
         final AbstractAllocator theAllocator = Allocator.passthru.allocate(p, Variable::resolveType, theLinkerContext);
 
-        assertEquals(47, theAllocator.assignedRegister().size());
+        assertEquals(48, theAllocator.assignedRegister().size());
 
         final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), true, KnownOptimizer.NONE, false, "ks", 100, 100, false, true, Allocator.passthru, new String[0], new String[0], null, false);
         final JSMinifier theMinifier = new JSMinifier(theOptions);

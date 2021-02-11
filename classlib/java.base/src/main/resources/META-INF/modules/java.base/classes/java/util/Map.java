@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -732,8 +732,7 @@ public interface Map<K, V> {
      * {@code null}, else returns the current value.
      *
      * @implSpec
-     * The default implementation is equivalent to, for this {@code
-     * map}:
+     * The default implementation is equivalent to, for this {@code map}:
      *
      * <pre> {@code
      * V v = map.get(key);
@@ -830,7 +829,7 @@ public interface Map<K, V> {
      * The default implementation is equivalent to, for this {@code map}:
      *
      * <pre> {@code
-     * if (map.containsKey(key) && Objects.equals(map.get(key), value)) {
+     * if (map.containsKey(key) && Objects.equals(map.get(key), oldValue)) {
      *     map.put(key, newValue);
      *     return true;
      * } else
@@ -1288,7 +1287,7 @@ public interface Map<K, V> {
      */
     @SuppressWarnings("unchecked")
     static <K, V> Map<K, V> of() {
-        return (Map<K,V>) ImmutableCollections.MapN.EMPTY_MAP;
+        return (Map<K,V>) ImmutableCollections.EMPTY_MAP;
     }
 
     /**
@@ -1606,7 +1605,7 @@ public interface Map<K, V> {
     static <K, V> Map<K, V> ofEntries(Entry<? extends K, ? extends V>... entries) {
         if (entries.length == 0) { // implicit null check of entries array
             @SuppressWarnings("unchecked")
-            var map = (Map<K,V>) ImmutableCollections.MapN.EMPTY_MAP;
+            var map = (Map<K,V>) ImmutableCollections.EMPTY_MAP;
             return map;
         } else if (entries.length == 1) {
             // implicit null check of the array slot

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -395,7 +395,7 @@ import jdk.internal.util.ArraysSupport;
  *
  * <p> Backslashes within string literals in Java source code are interpreted
  * as required by
- * <cite>The Java&trade; Language Specification</cite>
+ * <cite>The Java Language Specification</cite>
  * as either Unicode escapes (section 3.3) or other character escapes (section 3.10.6)
  * It is therefore necessary to double backslashes in string
  * literals that represent regular expressions to protect them from
@@ -544,7 +544,7 @@ import jdk.internal.util.ArraysSupport;
  * <p>
  * <b>Unicode escape sequences</b> such as <code>&#92;u2014</code> in Java source code
  * are processed as described in section 3.3 of
- * <cite>The Java&trade; Language Specification</cite>.
+ * <cite>The Java Language Specification</cite>.
  * Such escape sequences are also implemented directly by the regular-expression
  * parser so that Unicode escapes can be used in expressions that are read from
  * files or from the keyboard.  Thus the strings <code>"&#92;u2014"</code> and
@@ -760,7 +760,7 @@ import jdk.internal.util.ArraysSupport;
  *
  * <p> For a more precise description of the behavior of regular expression
  * constructs, please see <a href="http://www.oreilly.com/catalog/regex3/">
- * <i>Mastering Regular Expressions, 3nd Edition</i>, Jeffrey E. F. Friedl,
+ * <i>Mastering Regular Expressions, 3rd Edition</i>, Jeffrey E. F. Friedl,
  * O'Reilly and Associates, 2006.</a>
  * </p>
  *
@@ -778,14 +778,13 @@ public final class Pattern
     implements java.io.Serializable
 {
 
-    /**
+    /*
      * Regular expression modifier values.  Instead of being passed as
      * arguments, they can also be passed as inline modifiers.
      * For example, the following statements have the same effect.
-     * <pre>
-     * Pattern p1 = Pattern.compile("abc", Pattern.CASE_INSENSITIVE|Pattern.MULTILINE);
-     * Pattern p2 = Pattern.compile("(?im)abc", 0);
-     * </pre>
+     *
+     *   Pattern p1 = Pattern.compile("abc", Pattern.CASE_INSENSITIVE|Pattern.MULTILINE);
+     *   Pattern p2 = Pattern.compile("(?im)abc", 0);
      */
 
     /**
@@ -1682,7 +1681,7 @@ loop:   for(int x=0, offset=0; x<nCodePoints; x++, offset+=len) {
         try {
             newTempLen = Math.addExact(j + 2, Math.multiplyExact(3, pLen - i));
         } catch (ArithmeticException ae) {
-            throw new OutOfMemoryError();
+            throw new OutOfMemoryError("Required pattern length too large");
         }
         int[] newtemp = new int[newTempLen];
         System.arraycopy(temp, 0, newtemp, 0, j);
@@ -2064,7 +2063,7 @@ loop:   for(int x=0, offset=0; x<nCodePoints; x++, offset+=len) {
         Node prev = null;
         Node firstTail = null;
         Branch branch = null;
-        Node branchConn = null;
+        BranchConn branchConn = null;
 
         for (;;) {
             Node node = sequence(end);
@@ -2212,7 +2211,24 @@ loop:   for(int x=0, offset=0; x<nCodePoints; x++, offset+=len) {
                 break;
             }
 
-            node = closure(node);
+            if (node instanceof LineEnding) {
+                LineEnding le = (LineEnding)node;
+                node = closureOfLineEnding(le);
+
+                if (node != le) {
+                    // LineEnding was replaced with an anonymous group
+                    if (head == null)
+                        head = node;
+                    else
+                        tail.next = node;
+                    // Double return: Tail was returned in root
+                    tail = root;
+                    continue;
+                }
+            } else {
+                node = closure(node);
+            }
+
             /* save the top dot-greedy nodes (.*, .+) as well
             if (node instanceof GreedyCharProperty &&
                 ((GreedyCharProperty)node).cp instanceof Dot) {
@@ -2887,7 +2903,7 @@ loop:   for(int x=0, offset=0; x<nCodePoints; x++, offset+=len) {
                     break;
                 case "gc":
                 case "general_category":
-                    p = CharPredicates.forProperty(value);
+                    p = CharPredicates.forProperty(value, has(CASE_INSENSITIVE));
                     break;
                 default:
                     break;
@@ -2903,17 +2919,16 @@ loop:   for(int x=0, offset=0; x<nCodePoints; x++, offset+=len) {
             } else if (name.startsWith("Is")) {
                 // \p{IsGeneralCategory} and \p{IsScriptName}
                 String shortName = name.substring(2);
-                p = CharPredicates.forUnicodeProperty(shortName);
+                p = CharPredicates.forUnicodeProperty(shortName, has(CASE_INSENSITIVE));
                 if (p == null)
-                    p = CharPredicates.forProperty(shortName);
+                    p = CharPredicates.forProperty(shortName, has(CASE_INSENSITIVE));
                 if (p == null)
                     p = CharPredicates.forUnicodeScript(shortName);
             } else {
-                if (has(UNICODE_CHARACTER_CLASS)) {
-                    p = CharPredicates.forPOSIXName(name);
-                }
+                if (has(UNICODE_CHARACTER_CLASS))
+                    p = CharPredicates.forPOSIXName(name, has(CASE_INSENSITIVE));
                 if (p == null)
-                    p = CharPredicates.forProperty(name);
+                    p = CharPredicates.forProperty(name, has(CASE_INSENSITIVE));
             }
             if (p == null)
                 throw error("Unknown character property name {" + name + "}");
@@ -3079,18 +3094,31 @@ loop:   for(int x=0, offset=0; x<nCodePoints; x++, offset+=len) {
         if (saveTCNCount < topClosureNodes.size())
             topClosureNodes.subList(saveTCNCount, topClosureNodes.size()).clear();
 
+        return groupWithClosure(node, head, tail, capturingGroup);
+    }
+
+    /**
+     * Transforms a Group with quantifiers into some special constructs
+     * (such as Branch or Loop/GroupCurly), if necessary.
+     *
+     * This method is applied either to actual groups or to the Unicode
+     * linebreak (aka \\R) represented as an anonymous group.
+     */
+    private Node groupWithClosure(Node node, Node head, Node tail,
+                                  boolean capturingGroup)
+    {
         if (node instanceof Ques) {
             Ques ques = (Ques) node;
             if (ques.type == Qtype.POSSESSIVE) {
                 root = node;
                 return node;
             }
-            tail.next = new BranchConn();
-            tail = tail.next;
+            BranchConn branchConn = new BranchConn();
+            tail = tail.next = branchConn;
             if (ques.type == Qtype.GREEDY) {
-                head = new Branch(head, null, tail);
+                head = new Branch(head, null, branchConn);
             } else { // Reluctant quantifier
-                head = new Branch(null, head, tail);
+                head = new Branch(null, head, branchConn);
             }
             root = tail;
             return head;
@@ -3243,21 +3271,53 @@ loop:   for(int x=0, offset=0; x<nCodePoints; x++, offset+=len) {
         GREEDY, LAZY, POSSESSIVE, INDEPENDENT
     }
 
-    private Node curly(Node prev, int cmin) {
+    private Qtype qtype() {
         int ch = next();
         if (ch == '?') {
             next();
-            return new Curly(prev, cmin, MAX_REPS, Qtype.LAZY);
+            return Qtype.LAZY;
         } else if (ch == '+') {
             next();
-            return new Curly(prev, cmin, MAX_REPS, Qtype.POSSESSIVE);
+            return Qtype.POSSESSIVE;
         }
-        if (prev instanceof BmpCharProperty) {
-            return new BmpCharPropertyGreedy((BmpCharProperty)prev, cmin);
-        } else if (prev instanceof CharProperty) {
-            return new CharPropertyGreedy((CharProperty)prev, cmin);
+        return Qtype.GREEDY;
+    }
+
+    private Node curly(Node prev, int cmin) {
+        Qtype qtype = qtype();
+        if (qtype == Qtype.GREEDY) {
+            if (prev instanceof BmpCharProperty) {
+                return new BmpCharPropertyGreedy((BmpCharProperty)prev, cmin);
+            } else if (prev instanceof CharProperty) {
+                return new CharPropertyGreedy((CharProperty)prev, cmin);
+            }
         }
-        return new Curly(prev, cmin, MAX_REPS, Qtype.GREEDY);
+        return new Curly(prev, cmin, MAX_REPS, qtype);
+    }
+
+    /**
+     * Processing repetition of a Unicode linebreak \\R.
+     */
+    private Node closureOfLineEnding(LineEnding le) {
+        int ch = peek();
+        if (ch != '?' && ch != '*' && ch != '+' && ch != '{') {
+            return le;
+        }
+
+        // Replace the LineEnding with an anonymous group
+        // (?:\\u000D\\u000A|[\\u000A\\u000B\\u000C\\u000D\\u0085\\u2028\\u2029])
+        Node grHead = createGroup(true);
+        Node grTail = root;
+        BranchConn branchConn = new BranchConn();
+        branchConn.next = grTail;
+        Node slice = new Slice(new int[] {0x0D, 0x0A});
+        slice.next = branchConn;
+        Node chClass = newCharProperty(x -> x == 0x0A || x == 0x0B ||
+                x == 0x0C || x == 0x0D || x == 0x85 || x == 0x2028 ||
+                x == 0x2029);
+        chClass.next = branchConn;
+        grHead.next = new Branch(slice, chClass, branchConn);
+        return groupWithClosure(closure(grHead), grHead, grTail, false);
     }
 
     /**
@@ -3269,15 +3329,7 @@ loop:   for(int x=0, offset=0; x<nCodePoints; x++, offset+=len) {
         int ch = peek();
         switch (ch) {
         case '?':
-            ch = next();
-            if (ch == '?') {
-                next();
-                return new Ques(prev, Qtype.LAZY);
-            } else if (ch == '+') {
-                next();
-                return new Ques(prev, Qtype.POSSESSIVE);
-            }
-            return new Ques(prev, Qtype.GREEDY);
+            return new Ques(prev, qtype());
         case '*':
             return curly(prev, 0);
         case '+':
@@ -3314,16 +3366,10 @@ loop:   for(int x=0, offset=0; x<nCodePoints; x++, offset+=len) {
                     throw error("Unclosed counted closure");
                 if (cmax < cmin)
                     throw error("Illegal repetition range");
-                ch = peek();
-                if (ch == '?') {
-                    next();
-                    return new Curly(prev, cmin, cmax, Qtype.LAZY);
-                } else if (ch == '+') {
-                    next();
-                    return new Curly(prev, cmin, cmax, Qtype.POSSESSIVE);
-                } else {
-                    return new Curly(prev, cmin, cmax, Qtype.GREEDY);
-                }
+                unread();
+                return (cmin == 0 && cmax == 1)
+                        ? new Ques(prev, qtype())
+                        : new Curly(prev, cmin, cmax, qtype());
             } else {
                 throw error("Illegal repetition");
             }
@@ -3989,17 +4035,8 @@ loop:   for(int x=0, offset=0; x<nCodePoints; x++, offset+=len) {
             if (i < matcher.to) {
                 int ch0 = Character.codePointAt(seq, i);
                 int n = Character.charCount(ch0);
-                int j = i + n;
-                // Fast check if it's necessary to call Normalizer;
-                // testing Grapheme.isBoundary is enough for this case
-                while (j < matcher.to) {
-                    int ch1 = Character.codePointAt(seq, j);
-                    if (Grapheme.isBoundary(ch0, ch1))
-                        break;
-                    ch0 = ch1;
-                    j += Character.charCount(ch1);
-                }
-                if (i + n == j) {    // single, assume nfc cp
+                int j = Grapheme.nextBoundary(seq, i, matcher.to);
+                if (i + n == j) { // single cp grapheme, assume nfc
                     if (predicate.is(ch0))
                         return next.match(matcher, j, seq);
                 } else {
@@ -4063,13 +4100,12 @@ loop:   for(int x=0, offset=0; x<nCodePoints; x++, offset+=len) {
                 endIndex = matcher.getTextLength();
             }
             if (i == startIndex) {
-                return next.match(matcher, i, seq);
-            }
-            if (i < endIndex) {
-                if (Character.isSurrogatePair(seq.charAt(i-1), seq.charAt(i)) ||
-                    Grapheme.nextBoundary(seq,
-                        i - Character.charCount(Character.codePointBefore(seq, i)),
-                        i + Character.charCount(Character.codePointAt(seq, i))) > i) {
+                // continue with return below
+            } else if (i < endIndex) {
+                if (Character.isSurrogatePair(seq.charAt(i - 1), seq.charAt(i))) {
+                    return false;
+                }
+                if (Grapheme.nextBoundary(seq, matcher.last, endIndex) > i) {
                     return false;
                 }
             } else {
@@ -4294,14 +4330,22 @@ loop:   for(int x=0, offset=0; x<nCodePoints; x++, offset+=len) {
             this.cmin = cmin;
         }
         boolean match(Matcher matcher, int i, CharSequence seq) {
+            int starti = i;
             int n = 0;
             int to = matcher.to;
             // greedy, all the way down
             while (i < to) {
                 int ch = Character.codePointAt(seq, i);
+                int len = Character.charCount(ch);
+                if (i + len > to) {
+                    // the region cut off the high half of a surrogate pair
+                    matcher.hitEnd = true;
+                    ch = seq.charAt(i);
+                    len = 1;
+                }
                 if (!predicate.is(ch))
-                   break;
-                i += Character.charCount(ch);
+                    break;
+                i += len;
                 n++;
             }
             if (i >= to) {
@@ -4312,9 +4356,10 @@ loop:   for(int x=0, offset=0; x<nCodePoints; x++, offset+=len) {
                     return true;
                 if (n == cmin)
                     return false;
-                 // backing off if match fails
+                // backing off if match fails
                 int ch = Character.codePointBefore(seq, i);
-                i -= Character.charCount(ch);
+                // check if the region cut off the low half of a surrogate pair
+                i = Math.max(starti, i - Character.charCount(ch));
                 n--;
             }
             return false;
@@ -4730,8 +4775,8 @@ loop:   for(int x=0, offset=0; x<nCodePoints; x++, offset+=len) {
     static final class Branch extends Node {
         Node[] atoms = new Node[2];
         int size = 2;
-        Node conn;
-        Branch(Node first, Node second, Node branchConn) {
+        BranchConn conn;
+        Branch(Node first, Node second, BranchConn branchConn) {
             conn = branchConn;
             atoms[0] = first;
             atoms[1] = second;
@@ -4739,9 +4784,10 @@ loop:   for(int x=0, offset=0; x<nCodePoints; x++, offset+=len) {
 
         void add(Node node) {
             if (size >= atoms.length) {
-                Node[] tmp = new Node[atoms.length*2];
-                System.arraycopy(atoms, 0, tmp, 0, atoms.length);
-                atoms = tmp;
+                int len = ArraysSupport.newLength(size,
+                        1,    /* minimum growth */
+                        size  /* preferred growth */);
+                atoms = Arrays.copyOf(atoms, len);
             }
             atoms[size++] = node;
         }
@@ -5626,7 +5672,7 @@ NEXT:       while (i <= last) {
             return ch -> is(ch) || p.is(ch);
         }
         default CharPredicate union(CharPredicate p1,
-                                    CharPredicate p2 ) {
+                                    CharPredicate p2) {
             return ch -> is(ch) || p1.is(ch) || p2.is(ch);
         }
         default CharPredicate negate() {

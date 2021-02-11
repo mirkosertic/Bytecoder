@@ -124,20 +124,13 @@ import javax.swing.event.EventListenerList;
  * <a href="https://docs.oracle.com/javase/tutorial/uiswing/misc/timer.html"
  * target = "_top">How to Use Timers</a>,
  * a section in <em>The Java Tutorial.</em>
- * For more examples and help in choosing between
- * this <code>Timer</code> class and
- * <code>java.util.Timer</code>,
- * see
- * <a href="http://java.sun.com/products/jfc/tsc/articles/timer/"
- * target="_top">Using Timers in Swing Applications</a>,
- * an article in <em>The Swing Connection.</em>
  * <p>
  * <strong>Warning:</strong>
  * Serialized objects of this class will not be compatible with
  * future Swing releases. The current serialization support is
  * appropriate for short term storage or RMI between applications running
  * the same version of Swing.  As of 1.4, support for long term storage
- * of all JavaBeans&trade;
+ * of all JavaBeans
  * has been added to the <code>java.beans</code> package.
  * Please see {@link java.beans.XMLEncoder}.
  *

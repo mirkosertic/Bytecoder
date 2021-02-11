@@ -843,6 +843,20 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
+                pw.println("define internal i32 @jlClass_BOOLEANisInstancejlObject(i32 %thisRef, i32 %instance) {");
+                pw.println("entry:");
+                pw.println("    %nulltest = icmp eq i32 %instance, 0");
+                pw.println("    br i1 %nulltest, label %isnull, label %notnull");
+                pw.println("notnull:");
+                pw.println("    %ptr = inttoptr i32 %instance to i32*");
+                pw.println("    %type = load i32, i32* %ptr");
+                pw.println("    %assignable = call i32 @jlClass_BOOLEANisAssignableFromjlClass(i32 %thisRef, i32 %type)");
+                pw.println("    ret i32 %assignable");
+                pw.println("isnull:");
+                pw.println("    ret i32 0");
+                pw.println("}");
+                pw.println();
+
                 pw.println("define internal i32 @jlClass_BOOLEANisAssignableFromjlClass(i32 %thisRef, i32 %otherType) {");
                 pw.println("entry:");
 
