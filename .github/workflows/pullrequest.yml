@@ -7,7 +7,7 @@ jobs:
     runs-on: 'ubuntu-latest'
     strategy:
       matrix:
-        java: [8,10,11,12,13,14]
+        java: [8,10,11,12,13,14,15]
     steps:
       - uses: actions/checkout@v1
       - uses: joschi/setup-jdk@v1
@@ -26,12 +26,12 @@ jobs:
           chmod +x llvm.sh
           sudo ./llvm.sh 10
           sudo apt-get install -y ocl-icd-opencl-dev clang-10 lldb-10 lld-10 clangd-10
-      - run: mvn verify -P jvmtestsonly
+      - run: mvn --no-transfer-progress --batch-mode verify -P jvmtestsonly
   build_js_backend:
     runs-on: 'ubuntu-latest'
     strategy:
       matrix:
-        java: [8,10,11,12,13,14]
+        java: [8,10,11,12,13,14,15]
     steps:
      - uses: actions/checkout@v1
      - uses: joschi/setup-jdk@v1
@@ -50,12 +50,12 @@ jobs:
           chmod +x llvm.sh
           sudo ./llvm.sh 10
           sudo apt-get install -y ocl-icd-opencl-dev clang-10 lldb-10 lld-10 clangd-10
-     - run: mvn verify -P jstestsonly
+     - run: mvn --no-transfer-progress --batch-mode verify -P jstestsonly
   build_wasm_stackify_backend:
     runs-on: 'ubuntu-latest'
     strategy:
       matrix:
-        java: [8,10,11,12,13,14]
+        java: [8,10,11,12,13,14,15]
     steps:
       - uses: actions/checkout@v1
       - uses: joschi/setup-jdk@v1
@@ -74,12 +74,12 @@ jobs:
           chmod +x llvm.sh
           sudo ./llvm.sh 10
           sudo apt-get install -y ocl-icd-opencl-dev clang-10 lldb-10 lld-10 clangd-10
-      - run: mvn verify -P wasmtestsonly_stackify
+      - run: mvn --no-transfer-progress --batch-mode verify -P wasmtestsonly_stackify
   build_wasm_reloop_backend:
     runs-on: 'ubuntu-latest'
     strategy:
       matrix:
-        java: [8,10,11,12,13,14]
+        java: [8,10,11,12,13,14,15]
     steps:
       - uses: actions/checkout@v1
       - uses: joschi/setup-jdk@v1
@@ -98,12 +98,12 @@ jobs:
           chmod +x llvm.sh
           sudo ./llvm.sh 10
           sudo apt-get install -y ocl-icd-opencl-dev clang-10 lldb-10 lld-10 clangd-10
-      - run: mvn verify -P wasmtestsonly_reloop
+      - run: mvn --no-transfer-progress --batch-mode verify -P wasmtestsonly_reloop
   build_wasmllvm_backend:
     runs-on: 'ubuntu-latest'
     strategy:
       matrix:
-        java: [8,10,11,12,13,14]
+        java: [8,10,11,12,13,14,15]
     steps:
       - uses: actions/checkout@v1
       - uses: joschi/setup-jdk@v1
@@ -122,4 +122,4 @@ jobs:
           chmod +x llvm.sh
           sudo ./llvm.sh 10
           sudo apt-get install -y ocl-icd-opencl-dev clang-10 lldb-10 lld-10 clangd-10
-      - run: mvn verify -P wasmllvmtestsonly
+      - run: mvn --no-transfer-progress --batch-mode verify -P wasmllvmtestsonly
