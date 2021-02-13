@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -362,7 +362,7 @@ public final class Float extends Number
      * <i>HexNumeral</i>, <i>HexDigits</i>, <i>SignedInteger</i> and
      * <i>FloatTypeSuffix</i> are as defined in the lexical structure
      * sections of
-     * <cite>The Java&trade; Language Specification</cite>,
+     * <cite>The Java Language Specification</cite>,
      * except that underscores are not accepted between digits.
      * If {@code s} does not have the form of
      * a <i>FloatValue</i>, then a {@code NumberFormatException}
@@ -694,7 +694,6 @@ public final class Float extends Number
     }
 
     /**
-
      * Compares this object against the specified object.  The result
      * is {@code true} if and only if the argument is not
      * {@code null} and is a {@code Float} object that

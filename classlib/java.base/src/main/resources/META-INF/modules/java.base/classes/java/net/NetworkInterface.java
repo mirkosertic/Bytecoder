@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -523,6 +523,9 @@ public final class NetworkInterface {
                 }
             }
         }
+        if (isLoopback0(name, index)) {
+            return null;
+        }
         for (InetAddress addr : addrs) {
             if (addr instanceof Inet4Address) {
                 return getMacAddr0(((Inet4Address)addr).getAddress(), name, index);
@@ -573,7 +576,13 @@ public final class NetworkInterface {
      * as this object.
      * <p>
      * Two instances of {@code NetworkInterface} represent the same
-     * NetworkInterface if both name and addrs are the same for both.
+     * NetworkInterface if both the name and the set of {@code InetAddress}es
+     * bound to the interfaces are equal.
+     *
+     * @apiNote two {@code NetworkInterface} objects referring to the same
+     * underlying interface may not compare equal if the addresses
+     * of the underlying interface are being dynamically updated by
+     * the system.
      *
      * @param   obj   the object to compare against.
      * @return  {@code true} if the objects are the same;

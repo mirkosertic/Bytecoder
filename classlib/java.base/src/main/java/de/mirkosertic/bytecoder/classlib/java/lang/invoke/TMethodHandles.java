@@ -17,10 +17,16 @@ package de.mirkosertic.bytecoder.classlib.java.lang.invoke;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+import java.lang.invoke.MethodHandles;
+
 @SubstitutesInClass(completeReplace = true)
 public class TMethodHandles {
 
     @SubstitutesInClass(completeReplace = true)
     public static class Lookup {
+    }
+
+    public static MethodHandles.Lookup lookup() {
+        return null;
     }
 }

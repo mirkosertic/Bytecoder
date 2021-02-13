@@ -185,4 +185,8 @@ public class TVM {
 
     public static void initializeFromArchive(final Class<?> c) {
     }
+
+    public static long getRandomSeedForCDSDump() {
+        return 0L;
+    }
 }

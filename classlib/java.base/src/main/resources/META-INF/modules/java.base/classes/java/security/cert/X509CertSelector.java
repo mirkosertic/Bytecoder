@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,11 +31,7 @@ import java.security.PublicKey;
 import java.util.*;
 import javax.security.auth.x500.X500Principal;
 
-import sun.security.util.HexDumpEncoder;
-import sun.security.util.Debug;
-import sun.security.util.DerInputStream;
-import sun.security.util.DerValue;
-import sun.security.util.ObjectIdentifier;
+import sun.security.util.*;
 import sun.security.x509.*;
 
 /**
@@ -88,7 +84,7 @@ public class X509CertSelector implements CertSelector {
     private static final Debug debug = Debug.getInstance("certpath");
 
     private static final ObjectIdentifier ANY_EXTENDED_KEY_USAGE =
-        ObjectIdentifier.newInternal(new int[] {2, 5, 29, 37, 0});
+        ObjectIdentifier.of(KnownOIDs.anyExtendedKeyUsage);
 
     static {
         CertPathHelperImpl.initialize();
@@ -120,22 +116,6 @@ public class X509CertSelector implements CertSelector {
     private boolean matchAllSubjectAltNames = true;
 
     private static final Boolean FALSE = Boolean.FALSE;
-
-    private static final int PRIVATE_KEY_USAGE_ID = 0;
-    private static final int SUBJECT_ALT_NAME_ID = 1;
-    private static final int NAME_CONSTRAINTS_ID = 2;
-    private static final int CERT_POLICIES_ID = 3;
-    private static final int EXTENDED_KEY_USAGE_ID = 4;
-    private static final int NUM_OF_EXTENSIONS = 5;
-    private static final String[] EXTENSION_OIDS = new String[NUM_OF_EXTENSIONS];
-
-    static {
-        EXTENSION_OIDS[PRIVATE_KEY_USAGE_ID]  = "2.5.29.16";
-        EXTENSION_OIDS[SUBJECT_ALT_NAME_ID]   = "2.5.29.17";
-        EXTENSION_OIDS[NAME_CONSTRAINTS_ID]   = "2.5.29.30";
-        EXTENSION_OIDS[CERT_POLICIES_ID]      = "2.5.29.32";
-        EXTENSION_OIDS[EXTENDED_KEY_USAGE_ID] = "2.5.29.37";
-    };
 
     /* Constants representing the GeneralName types */
     static final int NAME_ANY = 0;
@@ -506,7 +486,7 @@ public class X509CertSelector implements CertSelector {
         if (oid == null) {
             subjectPublicKeyAlgID = null;
         } else {
-            subjectPublicKeyAlgID = new ObjectIdentifier(oid);
+            subjectPublicKeyAlgID = ObjectIdentifier.of(oid);
         }
     }
 
@@ -622,7 +602,7 @@ public class X509CertSelector implements CertSelector {
                 Collections.unmodifiableSet(new HashSet<>(keyPurposeSet));
             keyPurposeOIDSet = new HashSet<>();
             for (String s : this.keyPurposeSet) {
-                keyPurposeOIDSet.add(new ObjectIdentifier(s));
+                keyPurposeOIDSet.add(ObjectIdentifier.of(s));
             }
         }
     }
@@ -1105,8 +1085,8 @@ public class X509CertSelector implements CertSelector {
                 if (!(o instanceof String)) {
                     throw new IOException("non String in certPolicySet");
                 }
-                polIdVector.add(new CertificatePolicyId(new ObjectIdentifier(
-                  (String)o)));
+                polIdVector.add(new CertificatePolicyId
+                        (ObjectIdentifier.of((String)o)));
             }
             // If everything went OK, make the changes
             policySet = tempSet;
@@ -1944,48 +1924,48 @@ public class X509CertSelector implements CertSelector {
      * object with the extension encoding retrieved from the passed in
      * {@code X509Certificate}.
      */
-    private static Extension getExtensionObject(X509Certificate cert, int extId)
+    private static Extension getExtensionObject(X509Certificate cert, KnownOIDs extId)
             throws IOException {
         if (cert instanceof X509CertImpl) {
-            X509CertImpl impl = (X509CertImpl)cert;
+            X509CertImpl impl = (X509CertImpl) cert;
             switch (extId) {
-            case PRIVATE_KEY_USAGE_ID:
-                return impl.getPrivateKeyUsageExtension();
-            case SUBJECT_ALT_NAME_ID:
-                return impl.getSubjectAlternativeNameExtension();
-            case NAME_CONSTRAINTS_ID:
-                return impl.getNameConstraintsExtension();
-            case CERT_POLICIES_ID:
-                return impl.getCertificatePoliciesExtension();
-            case EXTENDED_KEY_USAGE_ID:
-                return impl.getExtendedKeyUsageExtension();
-            default:
-                return null;
+                case PrivateKeyUsage:
+                    return impl.getPrivateKeyUsageExtension();
+                case SubjectAlternativeName:
+                    return impl.getSubjectAlternativeNameExtension();
+                case NameConstraints:
+                    return impl.getNameConstraintsExtension();
+                case CertificatePolicies:
+                    return impl.getCertificatePoliciesExtension();
+                case extendedKeyUsage:
+                    return impl.getExtendedKeyUsageExtension();
+                default:
+                    return null;
             }
         }
-        byte[] rawExtVal = cert.getExtensionValue(EXTENSION_OIDS[extId]);
+        byte[] rawExtVal = cert.getExtensionValue(extId.value());
         if (rawExtVal == null) {
             return null;
         }
         DerInputStream in = new DerInputStream(rawExtVal);
         byte[] encoded = in.getOctetString();
         switch (extId) {
-        case PRIVATE_KEY_USAGE_ID:
-            try {
-                return new PrivateKeyUsageExtension(FALSE, encoded);
-            } catch (CertificateException ex) {
-                throw new IOException(ex.getMessage());
-            }
-        case SUBJECT_ALT_NAME_ID:
-            return new SubjectAlternativeNameExtension(FALSE, encoded);
-        case NAME_CONSTRAINTS_ID:
-            return new NameConstraintsExtension(FALSE, encoded);
-        case CERT_POLICIES_ID:
-            return new CertificatePoliciesExtension(FALSE, encoded);
-        case EXTENDED_KEY_USAGE_ID:
-            return new ExtendedKeyUsageExtension(FALSE, encoded);
-        default:
-            return null;
+            case PrivateKeyUsage:
+                try {
+                    return new PrivateKeyUsageExtension(FALSE, encoded);
+                } catch (CertificateException ex) {
+                    throw new IOException(ex.getMessage());
+                }
+            case SubjectAlternativeName:
+                return new SubjectAlternativeNameExtension(FALSE, encoded);
+            case NameConstraints:
+                return new NameConstraintsExtension(FALSE, encoded);
+            case CertificatePolicies:
+                return new CertificatePoliciesExtension(FALSE, encoded);
+            case extendedKeyUsage:
+                return new ExtendedKeyUsageExtension(FALSE, encoded);
+            default:
+                return null;
         }
     }
 
@@ -2175,7 +2155,7 @@ public class X509CertSelector implements CertSelector {
         PrivateKeyUsageExtension ext = null;
         try {
             ext = (PrivateKeyUsageExtension)
-                getExtensionObject(xcert, PRIVATE_KEY_USAGE_ID);
+                getExtensionObject(xcert, KnownOIDs.PrivateKeyUsage);
             if (ext != null) {
                 ext.valid(privateKeyValid);
             }
@@ -2287,7 +2267,7 @@ public class X509CertSelector implements CertSelector {
         try {
             ExtendedKeyUsageExtension ext =
                 (ExtendedKeyUsageExtension)getExtensionObject(xcert,
-                                                EXTENDED_KEY_USAGE_ID);
+                                                KnownOIDs.extendedKeyUsage);
             if (ext != null) {
                 Vector<ObjectIdentifier> certKeyPurposeVector =
                     ext.get(ExtendedKeyUsageExtension.USAGES);
@@ -2317,8 +2297,8 @@ public class X509CertSelector implements CertSelector {
         }
         try {
             SubjectAlternativeNameExtension sanExt =
-                (SubjectAlternativeNameExtension) getExtensionObject(xcert,
-                                                      SUBJECT_ALT_NAME_ID);
+                (SubjectAlternativeNameExtension) getExtensionObject(
+                        xcert, KnownOIDs.SubjectAlternativeName);
             if (sanExt == null) {
                 if (debug != null) {
                   debug.println("X509CertSelector.match: "
@@ -2387,7 +2367,7 @@ public class X509CertSelector implements CertSelector {
         }
         try {
             CertificatePoliciesExtension ext = (CertificatePoliciesExtension)
-                getExtensionObject(xcert, CERT_POLICIES_ID);
+                getExtensionObject(xcert, KnownOIDs.CertificatePolicies);
             if (ext == null) {
                 if (debug != null) {
                   debug.println("X509CertSelector.match: "
@@ -2452,7 +2432,7 @@ public class X509CertSelector implements CertSelector {
         }
         try {
             NameConstraintsExtension ext = (NameConstraintsExtension)
-                getExtensionObject(xcert, NAME_CONSTRAINTS_ID);
+                getExtensionObject(xcert, KnownOIDs.NameConstraints);
             if (ext == null) {
                 return true;
             }
