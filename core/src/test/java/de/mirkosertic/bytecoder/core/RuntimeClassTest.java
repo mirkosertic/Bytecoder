@@ -99,4 +99,14 @@ public class RuntimeClassTest {
     public void testGetSuperclassNull() {
         Assert.assertNull(superClassOf(Object.class));
     }
+
+    @Test
+    public void testIsInstanceTrue() {
+        Assert.assertTrue(String.class.isInstance("Hello world!"));
+    }
+
+    @Test
+    public void testIsNotInstance() {
+        Assert.assertFalse(RuntimeClassTest.class.isInstance("Hello world!"));
+    }
 }

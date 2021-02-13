@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -35,6 +35,7 @@ import java.security.cert.X509Certificate;
 import java.security.cert.X509CRLEntry;
 import java.security.cert.CRLException;
 import java.security.*;
+import java.security.spec.AlgorithmParameterSpec;
 import java.util.*;
 
 import javax.security.auth.x500.X500Principal;
@@ -99,7 +100,6 @@ public class X509CRLImpl extends X509CRL implements DerEncoder {
     private List<X509CRLEntry> revokedList = new LinkedList<>();
     private CRLExtensions    extensions = null;
     private static final boolean isExplicit = true;
-    private static final long YR_2050 = 2524636800000L;
 
     private boolean readOnly = false;
 
@@ -286,13 +286,13 @@ public class X509CRLImpl extends X509CRL implements DerEncoder {
                 throw new CRLException("Null Issuer DN not allowed in v1 CRL");
             issuer.encode(tmp);
 
-            if (thisUpdate.getTime() < YR_2050)
+            if (thisUpdate.getTime() < CertificateValidity.YR_2050)
                 tmp.putUTCTime(thisUpdate);
             else
                 tmp.putGeneralizedTime(thisUpdate);
 
             if (nextUpdate != null) {
-                if (nextUpdate.getTime() < YR_2050)
+                if (nextUpdate.getTime() < CertificateValidity.YR_2050)
                     tmp.putUTCTime(nextUpdate);
                 else
                     tmp.putGeneralizedTime(nextUpdate);
@@ -496,10 +496,20 @@ public class X509CRLImpl extends X509CRL implements DerEncoder {
             else
                 sigEngine = Signature.getInstance(algorithm, provider);
 
-            sigEngine.initSign(key);
+            AlgorithmParameterSpec params = AlgorithmId
+                    .getDefaultAlgorithmParameterSpec(algorithm, key);
+            try {
+                SignatureUtil.initSignWithParam(sigEngine, key, params, null);
+            } catch (InvalidAlgorithmParameterException e) {
+                throw new SignatureException(e);
+            }
 
-            // in case the name is reset
-            sigAlgId = AlgorithmId.get(sigEngine.getAlgorithm());
+            if (params != null) {
+                sigAlgId = AlgorithmId.get(sigEngine.getParameters());
+            } else {
+                // in case the name is reset
+                sigAlgId = AlgorithmId.get(sigEngine.getAlgorithm());
+            }
             infoSigAlgId = sigAlgId;
 
             DerOutputStream out = new DerOutputStream();
@@ -1026,11 +1036,11 @@ public class X509CRLImpl extends X509CRL implements DerEncoder {
         if (extensions == null)
             return null;
         try {
-            String extAlias = OIDMap.getName(new ObjectIdentifier(oid));
+            String extAlias = OIDMap.getName(ObjectIdentifier.of(oid));
             Extension crlExt = null;
 
             if (extAlias == null) { // may be unknown
-                ObjectIdentifier findOID = new ObjectIdentifier(oid);
+                ObjectIdentifier findOID = ObjectIdentifier.of(oid);
                 Extension ex = null;
                 ObjectIdentifier inCertOID;
                 for (Enumeration<Extension> e = extensions.getElements();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -77,8 +77,8 @@ public final class StringJoiner {
     private int len;
 
     /**
-     * When overridden by the user to be non-null via {@link setEmptyValue}, the
-     * string returned by toString() when no elements have yet been added.
+     * When overridden by the user to be non-null via {@link #setEmptyValue(CharSequence)},
+     * the string returned by toString() when no elements have yet been added.
      * When null, prefix + suffix is used as the empty value.
      */
     private String emptyValue;
@@ -125,6 +125,7 @@ public final class StringJoiner {
         this.prefix = prefix.toString();
         this.delimiter = delimiter.toString();
         this.suffix = suffix.toString();
+        checkAddLength(0, 0);
     }
 
     /**
@@ -202,11 +203,20 @@ public final class StringJoiner {
         } else {
             if (size == elts.length)
                 elts = Arrays.copyOf(elts, 2 * size);
-            len += delimiter.length();
+            len = checkAddLength(len, delimiter.length());
         }
-        len += elt.length();
+        len = checkAddLength(len, elt.length());
         elts[size++] = elt;
         return this;
+    }
+
+    private int checkAddLength(int oldLen, int inc) {
+        long newLen = (long)oldLen + (long)inc;
+        long tmpLen = newLen + (long)prefix.length() + (long)suffix.length();
+        if (tmpLen != (int)tmpLen) {
+            throw new OutOfMemoryError("Requested array size exceeds VM limit");
+        }
+        return (int)newLen;
     }
 
     /**

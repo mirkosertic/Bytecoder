@@ -444,6 +444,18 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             classIsAssignableFrom.flow.ret(i32.c(0, null), null);
         }
 
+        final ExportableFunction classIsInstance = module.getFunctions().newFunction("jlClass_BOOLEANisInstancejlObject", Arrays.asList(param("thisRef", PrimitiveType.i32), param("instance", PrimitiveType.i32)), PrimitiveType.i32).toTable();
+        {
+            final Local instance = classIsInstance.localByLabel("instance");
+            final Iff iff = classIsInstance.flow.iff("nullcheck", i32.eq(i32.c(0, null), getLocal(instance, null), null), null);
+            iff.flow.ret(i32.c(0, null), null);
+            iff.falseFlow.ret(call(classIsAssignableFrom, Arrays.asList(
+                    getLocal(classIsInstance.localByLabel("thisRef"), null),
+                    i32.load(0, getLocal(instance, null), null)
+            ), null), null);
+            classIsInstance.flow.unreachable(null);
+        }
+
         {
             final ExportableFunction theMethod = module.getFunctions()
                     .newFunction("jlClass_BOOLEANdesiredAssertionStatus",
@@ -1129,9 +1141,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 final Function theMallocFunction = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(theMemoryManagerClass.getClassName()) + "_INTnewObjectINTINTINT");
                 final Function theStringVTable = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(theStringClass.getClassName())+ WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX);
 
+                final Global runtimeClassGlobal = module.globalsIndex().globalByLabel(WASMWriterUtils.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(String.class)) + WASMSSAASTWriter.RUNTIMECLASSSUFFIX);
+
                 bootstrap.flow.setGlobal(theStringPool,
                         call(theMallocFunction, Arrays.asList(i32.c(0, null), i32.c(theStringMemoryLayout.instanceSize(), null),
-                                i32.c(theStringClass.getUniqueId(), null),
+                                getGlobal(runtimeClassGlobal, null),
                                 i32.c(module.getTables().funcTable().indexOf(theStringVTable), null)), null), null);
 
                 final Function theStringConstructor = module.functionIndex().firstByLabel(WASMWriterUtils.toClassName(theStringClass.getClassName())+ "_VOID$init$A1BYTEBYTE");

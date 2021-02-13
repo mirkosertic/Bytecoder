@@ -667,6 +667,9 @@ public final class SunGraphics2D
             }
         }
 
+        info.nonInvertibleTx =
+            (Math.abs(textAt.getDeterminant()) <= Double.MIN_VALUE);
+
         info.font2D = FontUtilities.getFont2D(font);
 
         int fmhint = fractionalMetricsHint;
@@ -770,6 +773,11 @@ public final class SunGraphics2D
                         aahint == SunHints.INTVAL_TEXT_ANTIALIAS_LCD_HRGB;
                 }
             }
+        }
+        if (FontUtilities.isMacOSX14 &&
+            (aahint == SunHints.INTVAL_TEXT_ANTIALIAS_OFF))
+        {
+             aahint =  SunHints.INTVAL_TEXT_ANTIALIAS_ON;
         }
         info.aaHint = aahint;
         info.fontStrike = info.font2D.getStrike(font, devAt, textAt,

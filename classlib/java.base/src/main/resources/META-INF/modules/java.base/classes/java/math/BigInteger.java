@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -42,6 +42,7 @@ import jdk.internal.math.DoubleConsts;
 import jdk.internal.math.FloatConsts;
 import jdk.internal.HotSpotIntrinsicCandidate;
 import jdk.internal.vm.annotation.Stable;
+import jdk.internal.vm.annotation.ForceInline;
 
 /**
  * Immutable arbitrary-precision integers.  All operations behave as if
@@ -53,7 +54,7 @@ import jdk.internal.vm.annotation.Stable;
  * and a few other miscellaneous operations.
  *
  * <p>Semantics of arithmetic operations exactly mimic those of Java's integer
- * arithmetic operators, as defined in <i>The Java&trade; Language Specification</i>.
+ * arithmetic operators, as defined in <i>The Java Language Specification</i>.
  * For example, division by zero throws an {@code ArithmeticException}, and
  * division of a negative by a positive yields a negative (or zero) remainder.
  *
@@ -79,8 +80,8 @@ import jdk.internal.vm.annotation.Stable;
  * inclusive.
  *
  * <p>Bit operations operate on a single bit of the two's-complement
- * representation of their operand.  If necessary, the operand is sign-
- * extended so that it contains the designated bit.  None of the single-bit
+ * representation of their operand.  If necessary, the operand is sign-extended
+ * so that it contains the designated bit.  None of the single-bit
  * operations can produce a BigInteger with a different sign from the
  * BigInteger being operated on, as they affect only a single bit, and the
  * arbitrarily large abstraction provided by this class ensures that conceptually
@@ -2621,12 +2622,8 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
 
     // shifts a up to len right n bits assumes no leading zeros, 0<n<32
     static void primitiveRightShift(int[] a, int len, int n) {
-        int n2 = 32 - n;
-        for (int i=len-1, c=a[i]; i > 0; i--) {
-            int b = c;
-            c = a[i-1];
-            a[i] = (c << n2) | (b >>> n);
-        }
+        Objects.checkFromToIndex(0, len, a.length);
+        shiftRightImplWorker(a, a, 1, n, len-1);
         a[0] >>>= n;
     }
 
@@ -2634,13 +2631,8 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
     static void primitiveLeftShift(int[] a, int len, int n) {
         if (len == 0 || n == 0)
             return;
-
-        int n2 = 32 - n;
-        for (int i=0, c=a[i], m=i+len-1; i < m; i++) {
-            int b = c;
-            c = a[i+1];
-            a[i] = (b << n) | (c >>> n2);
-        }
+        Objects.checkFromToIndex(0, len, a.length);
+        shiftLeftImplWorker(a, a, 0, n, len-1);
         a[len-1] <<= n;
     }
 
@@ -3353,12 +3345,23 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
             } else {
                 newMag = new int[magLen + nInts];
             }
-            int j=0;
-            while (j < magLen-1)
-                newMag[i++] = mag[j++] << nBits | mag[j] >>> nBits2;
-            newMag[i] = mag[j] << nBits;
+            int numIter = magLen - 1;
+            Objects.checkFromToIndex(0, numIter + 1, mag.length);
+            Objects.checkFromToIndex(i, numIter + i + 1, newMag.length);
+            shiftLeftImplWorker(newMag, mag, i, nBits, numIter);
+            newMag[numIter + i] = mag[numIter] << nBits;
         }
         return newMag;
+    }
+
+    @ForceInline
+    @HotSpotIntrinsicCandidate
+    private static void shiftLeftImplWorker(int[] newArr, int[] oldArr, int newIdx, int shiftCount, int numIter) {
+        int shiftCountRight = 32 - shiftCount;
+        int oldIdx = 0;
+        while (oldIdx < numIter) {
+            newArr[newIdx++] = (oldArr[oldIdx++] << shiftCount) | (oldArr[oldIdx] >>> shiftCountRight);
+        }
     }
 
     /**
@@ -3415,11 +3418,10 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
             } else {
                 newMag = new int[magLen - nInts -1];
             }
-
-            int nBits2 = 32 - nBits;
-            int j=0;
-            while (j < magLen - nInts - 1)
-                newMag[i++] = (mag[j++] << nBits2) | (mag[j] >>> nBits);
+            int numIter = magLen - nInts - 1;
+            Objects.checkFromToIndex(0, numIter + 1, mag.length);
+            Objects.checkFromToIndex(i, numIter + i, newMag.length);
+            shiftRightImplWorker(newMag, mag, i, nBits, numIter);
         }
 
         if (signum < 0) {
@@ -3435,6 +3437,17 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
         }
 
         return new BigInteger(newMag, signum);
+    }
+
+    @ForceInline
+    @HotSpotIntrinsicCandidate
+    private static void shiftRightImplWorker(int[] newArr, int[] oldArr, int newIdx, int shiftCount, int numIter) {
+        int shiftCountLeft = 32 - shiftCount;
+        int idx = numIter;
+        int nidx = (newIdx == 0) ? numIter - 1 : numIter;
+        while (nidx >= newIdx) {
+            newArr[nidx--] = (oldArr[idx--] >>> shiftCount) | (oldArr[idx] << shiftCountLeft);
+        }
     }
 
     int[] javaIncrement(int[] val) {
@@ -4139,7 +4152,7 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
      * conversion is analogous to a
      * <i>narrowing primitive conversion</i> from {@code long} to
      * {@code int} as defined in
-     * <cite>The Java&trade; Language Specification</cite>:
+     * <cite>The Java Language Specification</cite>:
      * if this BigInteger is too big to fit in an
      * {@code int}, only the low-order 32 bits are returned.
      * Note that this conversion can lose information about the
@@ -4161,7 +4174,7 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
      * conversion is analogous to a
      * <i>narrowing primitive conversion</i> from {@code long} to
      * {@code int} as defined in
-     * <cite>The Java&trade; Language Specification</cite>:
+     * <cite>The Java Language Specification</cite>:
      * if this BigInteger is too big to fit in a
      * {@code long}, only the low-order 64 bits are returned.
      * Note that this conversion can lose information about the
@@ -4185,7 +4198,7 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
      * conversion is similar to the
      * <i>narrowing primitive conversion</i> from {@code double} to
      * {@code float} as defined in
-     * <cite>The Java&trade; Language Specification</cite>:
+     * <cite>The Java Language Specification</cite>:
      * if this BigInteger has too great a magnitude
      * to represent as a {@code float}, it will be converted to
      * {@link Float#NEGATIVE_INFINITY} or {@link
@@ -4270,7 +4283,7 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
      * conversion is similar to the
      * <i>narrowing primitive conversion</i> from {@code double} to
      * {@code float} as defined in
-     * <cite>The Java&trade; Language Specification</cite>:
+     * <cite>The Java Language Specification</cite>:
      * if this BigInteger has too great a magnitude
      * to represent as a {@code double}, it will be converted to
      * {@link Double#NEGATIVE_INFINITY} or {@link
@@ -4582,13 +4595,13 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
     }
 
     /**
-    * Returns the index of the int that contains the first nonzero int in the
-    * little-endian binary representation of the magnitude (int 0 is the
-    * least significant). If the magnitude is zero, return value is undefined.
-    *
-    * <p>Note: never used for a BigInteger with a magnitude of zero.
-    * @see #getInt.
-    */
+     * Returns the index of the int that contains the first nonzero int in the
+     * little-endian binary representation of the magnitude (int 0 is the
+     * least significant). If the magnitude is zero, return value is undefined.
+     *
+     * <p>Note: never used for a BigInteger with a magnitude of zero.
+     * @see #getInt.
+     */
     private int firstNonzeroIntNum() {
         int fn = firstNonzeroIntNumPlusTwo - 2;
         if (fn == -2) { // firstNonzeroIntNum not initialized yet

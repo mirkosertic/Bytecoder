@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,13 +27,11 @@ package sun.security.ssl;
 import sun.security.x509.X509CertImpl;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.security.Principal;
 import java.security.PrivateKey;
-import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -76,11 +74,6 @@ import javax.net.ssl.SSLSessionContext;
  * @author David Brownell
  */
 final class SSLSessionImpl extends ExtendedSSLSession {
-
-    /*
-     * we only really need a single null session
-     */
-    static final SSLSessionImpl         nullSession = new SSLSessionImpl();
 
     /*
      * The state of a single session, as described in section 7.1
@@ -153,7 +146,7 @@ final class SSLSessionImpl extends ExtendedSSLSession {
      * be used either by a client or by a server, as a connection is
      * first opened and before handshaking begins.
      */
-    private SSLSessionImpl() {
+    SSLSessionImpl() {
         this.protocolVersion = ProtocolVersion.NONE;
         this.cipherSuite = CipherSuite.C_NULL;
         this.sessionId = new SessionId(false, null);
@@ -312,7 +305,7 @@ final class SSLSessionImpl extends ExtendedSSLSession {
      *     < 1 byte >
      * < 4 bytes > maximumPacketSize
      * < 4 bytes > negotiatedMaxFragSize
-    */
+     */
 
     SSLSessionImpl(HandshakeContext hc, ByteBuffer buf) throws IOException {
         int i = 0;
@@ -322,13 +315,9 @@ final class SSLSessionImpl extends ExtendedSSLSession {
         this.protocolVersion =
                 ProtocolVersion.valueOf(Short.toUnsignedInt(buf.getShort()));
 
-        if (protocolVersion.useTLS13PlusSpec()) {
-            this.sessionId = new SessionId(false, null);
-        } else {
-            // The CH session id may reset this if it's provided
-            this.sessionId = new SessionId(true,
-                    hc.sslContext.getSecureRandom());
-        }
+        // The CH session id may reset this if it's provided
+        this.sessionId = new SessionId(true,
+                hc.sslContext.getSecureRandom());
 
         this.cipherSuite =
                 CipherSuite.valueOf(Short.toUnsignedInt(buf.getShort()));
@@ -401,8 +390,8 @@ final class SSLSessionImpl extends ExtendedSSLSession {
             identificationProtocol = null;
         } else {
             b = new byte[i];
-            identificationProtocol =
-                    buf.get(b, 0, i).asCharBuffer().toString();
+            buf.get(b);
+            identificationProtocol = new String(b);
         }
 
         // SNI
@@ -457,7 +446,8 @@ final class SSLSessionImpl extends ExtendedSSLSession {
             this.host = new String();
         } else {
             b = new byte[i];
-            this.host = buf.get(b).toString();
+            buf.get(b, 0, i);
+            this.host = new String(b);
         }
         this.port = Short.toUnsignedInt(buf.getShort());
 
@@ -505,7 +495,8 @@ final class SSLSessionImpl extends ExtendedSSLSession {
                 // Length of pre-shared key algorithm  (one byte)
                 i = buf.get();
                 b = new byte[i];
-                String alg = buf.get(b, 0, i).asCharBuffer().toString();
+                buf.get(b, 0 , i);
+                String alg = new String(b);
                 // Get length of encoding
                 i = Short.toUnsignedInt(buf.getShort());
                 // Get encoding
@@ -527,11 +518,7 @@ final class SSLSessionImpl extends ExtendedSSLSession {
 
     // Some situations we cannot provide a stateless ticket, but after it
     // has been negotiated
-    boolean isStatelessable(HandshakeContext hc) {
-        if (!hc.statelessResumption) {
-            return false;
-        }
-
+    boolean isStatelessable() {
         // If there is no getMasterSecret with TLS1.2 or under, do not resume.
         if (!protocolVersion.useTLS13PlusSpec() &&
                 getMasterSecret().getEncoded() == null) {
@@ -541,6 +528,7 @@ final class SSLSessionImpl extends ExtendedSSLSession {
             }
             return false;
         }
+
         if (boundValues != null && boundValues.size() > 0) {
             if (SSLLogger.isOn && SSLLogger.isOn("ssl,handshake")) {
                 SSLLogger.finest("There are boundValues, cannot make" +
@@ -548,6 +536,7 @@ final class SSLSessionImpl extends ExtendedSSLSession {
             }
             return false;
         }
+
         return true;
     }
 
@@ -632,8 +621,8 @@ final class SSLSessionImpl extends ExtendedSSLSession {
         // List of SNIServerName
         hos.putInt16(requestedServerNames.size());
         if (requestedServerNames.size() > 0) {
-            for (SNIServerName host : requestedServerNames) {
-                b = host.getEncoded();
+            for (SNIServerName sn : requestedServerNames) {
+                b = sn.getEncoded();
                 hos.putInt8(b.length);
                 hos.write(b, 0, b.length);
             }
@@ -1072,50 +1061,6 @@ final class SSLSessionImpl extends ExtendedSSLSession {
     }
 
     /**
-     * Return the cert chain presented by the peer in the
-     * javax.security.cert format.
-     * Note: This method can be used only when using certificate-based
-     * cipher suites; using it with non-certificate-based cipher suites
-     * will throw an SSLPeerUnverifiedException.
-     *
-     * @return array of peer X.509 certs, with the peer's own cert
-     *  first in the chain, and with the "root" CA last.
-     *
-     * @deprecated This method returns the deprecated
-     *  {@code javax.security.cert.X509Certificate} type.
-     *  Use {@code getPeerCertificates()} instead.
-     */
-    @Override
-    @SuppressWarnings("removal")
-    @Deprecated(since="9", forRemoval=true)
-    public javax.security.cert.X509Certificate[] getPeerCertificateChain()
-            throws SSLPeerUnverifiedException {
-        //
-        // clone to preserve integrity of session ... caller can't
-        // change record of peer identity even by accident, much
-        // less do it intentionally.
-        //
-        if (peerCerts == null) {
-            throw new SSLPeerUnverifiedException("peer not authenticated");
-        }
-        javax.security.cert.X509Certificate[] certs;
-        certs = new javax.security.cert.X509Certificate[peerCerts.length];
-        for (int i = 0; i < peerCerts.length; i++) {
-            byte[] der = null;
-            try {
-                der = peerCerts[i].getEncoded();
-                certs[i] = javax.security.cert.X509Certificate.getInstance(der);
-            } catch (CertificateEncodingException e) {
-                throw new SSLPeerUnverifiedException(e.getMessage());
-            } catch (javax.security.cert.CertificateException e) {
-                throw new SSLPeerUnverifiedException(e.getMessage());
-            }
-        }
-
-        return certs;
-    }
-
-    /**
      * Return the cert chain presented by the peer.
      * Note: This method can be used only when using certificate-based
      * cipher suites; using it with non-certificate-based cipher suites
@@ -1266,15 +1211,6 @@ final class SSLSessionImpl extends ExtendedSSLSession {
     public void invalidate() {
         sessionLock.lock();
         try {
-            //
-            // Can't invalidate the NULL session -- this would be
-            // attempted when we get a handshaking error on a brand
-            // new connection, with no "real" session yet.
-            //
-            if (this == nullSession) {
-                return;
-            }
-
             if (context != null) {
                 context.remove(sessionId);
                 context = null;
