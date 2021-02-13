@@ -49,8 +49,6 @@ import sun.security.ssl.SSLCipher.SSLWriteCipher;
 import sun.security.ssl.SSLHandshake.HandshakeMessage;
 import sun.security.ssl.SupportedVersionsExtension.SHSupportedVersionsSpec;
 
-import static sun.security.ssl.SSLExtension.SH_SESSION_TICKET;
-
 /**
  * Pack of the ServerHello/HelloRetryRequest handshake message.
  */
@@ -279,6 +277,7 @@ final class ServerHello {
                 if (shc.localSupportedSignAlgs == null) {
                     shc.localSupportedSignAlgs =
                         SignatureScheme.getSupportedAlgorithms(
+                                shc.sslConfig,
                                 shc.algorithmConstraints, shc.activeProtocols);
                 }
 
@@ -519,6 +518,7 @@ final class ServerHello {
                 if (shc.localSupportedSignAlgs == null) {
                     shc.localSupportedSignAlgs =
                         SignatureScheme.getSupportedAlgorithms(
+                                shc.sslConfig,
                                 shc.algorithmConstraints, shc.activeProtocols);
                 }
 

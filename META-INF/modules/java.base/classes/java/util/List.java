@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -104,6 +104,8 @@ import java.util.function.UnaryOperator;
  * <li>They are serializable if all elements are serializable.
  * <li>The order of elements in the list is the same as the order of the
  * provided arguments, or of the elements in the provided array.
+ * <li>The lists and their {@link #subList(int, int) subList} views implement the
+ * {@link RandomAccess} interface.
  * <li>They are <a href="../lang/doc-files/ValueBased.html">value-based</a>.
  * Callers should make no assumptions about the identity of the returned instances.
  * Factories are free to create new instances or reuse existing ones. Therefore,
@@ -789,7 +791,7 @@ public interface List<E> extends Collection<E> {
      */
     @SuppressWarnings("unchecked")
     static <E> List<E> of() {
-        return (List<E>) ImmutableCollections.ListN.EMPTY_LIST;
+        return (List<E>) ImmutableCollections.EMPTY_LIST;
     }
 
     /**
@@ -1033,7 +1035,7 @@ public interface List<E> extends Collection<E> {
         switch (elements.length) { // implicit null check of elements
             case 0:
                 @SuppressWarnings("unchecked")
-                var list = (List<E>) ImmutableCollections.ListN.EMPTY_LIST;
+                var list = (List<E>) ImmutableCollections.EMPTY_LIST;
                 return list;
             case 1:
                 return new ImmutableCollections.List12<>(elements[0]);

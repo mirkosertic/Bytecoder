@@ -120,7 +120,7 @@ public final class RecordComponent implements AnnotatedElement {
      *         this record component
      * @throws GenericSignatureFormatError if the generic record component
      *         signature does not conform to the format specified in
-     *         <cite>The Java&trade; Virtual Machine Specification</cite>
+     *         <cite>The Java Virtual Machine Specification</cite>
      * @throws TypeNotPresentException if the generic type
      *         signature of the underlying record component refers to a non-existent
      *         type declaration
@@ -180,6 +180,9 @@ public final class RecordComponent implements AnnotatedElement {
     }
 
     /**
+     * {@inheritDoc}
+     * <p>Note that any annotation returned by this method is a
+     * declaration annotation.
      * @throws NullPointerException {@inheritDoc}
      */
     @Override
@@ -215,6 +218,8 @@ public final class RecordComponent implements AnnotatedElement {
 
     /**
      * {@inheritDoc}
+     * <p>Note that any annotations returned by this method are
+     * declaration annotations.
      */
     @Override
     public Annotation[] getAnnotations() {
@@ -223,6 +228,8 @@ public final class RecordComponent implements AnnotatedElement {
 
     /**
      * {@inheritDoc}
+     * <p>Note that any annotations returned by this method are
+     * declaration annotations.
      */
     @Override
     public Annotation[] getDeclaredAnnotations() { return AnnotationParser.toArray(declaredAnnotations()); }
@@ -233,7 +240,7 @@ public final class RecordComponent implements AnnotatedElement {
      * of the record component.
      * For example:
      * <pre>
-     *    String name
+     *    java.lang.String name
      *    int age
      * </pre>
      *

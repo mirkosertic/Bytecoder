@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,9 +29,12 @@ import jdk.internal.HotSpotIntrinsicCandidate;
 import jdk.internal.access.JavaNioAccess;
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.access.foreign.MemorySegmentProxy;
+import jdk.internal.access.foreign.UnmapperProxy;
 import jdk.internal.misc.Unsafe;
+import jdk.internal.misc.VM.BufferPool;
 import jdk.internal.vm.annotation.ForceInline;
 
+import java.io.FileDescriptor;
 import java.util.Spliterator;
 
 /**
@@ -361,8 +364,8 @@ public abstract class Buffer {
         if (newLimit > capacity | newLimit < 0)
             throw createLimitException(newLimit);
         limit = newLimit;
-        if (position > limit) position = limit;
-        if (mark > limit) mark = -1;
+        if (position > newLimit) position = newLimit;
+        if (mark > newLimit) mark = -1;
         return this;
     }
 
@@ -686,16 +689,18 @@ public abstract class Buffer {
      * @return  The current position value, before it is incremented
      */
     final int nextGetIndex() {                          // package-private
-        if (position >= limit)
+        int p = position;
+        if (p >= limit)
             throw new BufferUnderflowException();
-        return position++;
+        position = p + 1;
+        return p;
     }
 
     final int nextGetIndex(int nb) {                    // package-private
-        if (limit - position < nb)
-            throw new BufferUnderflowException();
         int p = position;
-        position += nb;
+        if (limit - p < nb)
+            throw new BufferUnderflowException();
+        position = p + nb;
         return p;
     }
 
@@ -707,16 +712,18 @@ public abstract class Buffer {
      * @return  The current position value, before it is incremented
      */
     final int nextPutIndex() {                          // package-private
-        if (position >= limit)
+        int p = position;
+        if (p >= limit)
             throw new BufferOverflowException();
-        return position++;
+        position = p + 1;
+        return p;
     }
 
     final int nextPutIndex(int nb) {                    // package-private
-        if (limit - position < nb)
-            throw new BufferOverflowException();
         int p = position;
-        position += nb;
+        if (limit - p < nb)
+            throw new BufferOverflowException();
+        position = p + nb;
         return p;
     }
 
@@ -758,13 +765,18 @@ public abstract class Buffer {
         SharedSecrets.setJavaNioAccess(
             new JavaNioAccess() {
                 @Override
-                public JavaNioAccess.BufferPool getDirectBufferPool() {
+                public BufferPool getDirectBufferPool() {
                     return Bits.BUFFER_POOL;
                 }
 
                 @Override
                 public ByteBuffer newDirectByteBuffer(long addr, int cap, Object obj, MemorySegmentProxy segment) {
                     return new DirectByteBuffer(addr, cap, obj, segment);
+                }
+
+                @Override
+                public ByteBuffer newMappedByteBuffer(UnmapperProxy unmapperProxy, long address, int cap, Object obj, MemorySegmentProxy segment) {
+                    return new DirectByteBuffer(address, cap, obj, unmapperProxy.fileDescriptor(), unmapperProxy.isSync(), segment);
                 }
 
                 @Override
@@ -783,8 +795,37 @@ public abstract class Buffer {
                 }
 
                 @Override
-                public void checkSegment(Buffer buffer) {
-                    buffer.checkSegment();
+                public UnmapperProxy unmapper(ByteBuffer bb) {
+                    if (bb instanceof MappedByteBuffer) {
+                        return ((MappedByteBuffer)bb).unmapper();
+                    } else {
+                        return null;
+                    }
+                }
+
+                @Override
+                public MemorySegmentProxy bufferSegment(Buffer buffer) {
+                    return buffer.segment;
+                }
+
+                @Override
+                public void force(FileDescriptor fd, long address, boolean isSync, long offset, long size) {
+                    MappedMemoryUtils.force(fd, address, isSync, offset, size);
+                }
+
+                @Override
+                public void load(long address, boolean isSync, long size) {
+                    MappedMemoryUtils.load(address, isSync, size);
+                }
+
+                @Override
+                public void unload(long address, boolean isSync, long size) {
+                    MappedMemoryUtils.unload(address, isSync, size);
+                }
+
+                @Override
+                public boolean isLoaded(long address, boolean isSync, long size) {
+                    return MappedMemoryUtils.isLoaded(address, isSync, size);
                 }
             });
     }

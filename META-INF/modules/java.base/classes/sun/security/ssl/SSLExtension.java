@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -113,7 +113,6 @@ enum SSLExtension implements SSLStringizer {
                                 null,
                                 null,
                                 CertStatusExtension.certStatusReqStringizer),
-
     CR_STATUS_REQUEST       (0x0005, "status_request"),
     CT_STATUS_REQUEST       (0x0005, "status_request",
                                 SSLHandshake.CERTIFICATE,
@@ -124,6 +123,7 @@ enum SSLExtension implements SSLStringizer {
                                 null,
                                 null,
                                 CertStatusExtension.certStatusRespStringizer),
+
     // extensions defined in RFC 4681
     USER_MAPPING            (0x0006, "user_mapping"),
 
@@ -142,7 +142,7 @@ enum SSLExtension implements SSLStringizer {
                                 SupportedGroupsExtension.chOnLoadConsumer,
                                 null,
                                 null,
-                                null,
+                                SupportedGroupsExtension.chOnTradAbsence,
                                 SupportedGroupsExtension.sgsStringizer),
     EE_SUPPORTED_GROUPS     (0x000A, "supported_groups",
                                 SSLHandshake.ENCRYPTED_EXTENSIONS,
@@ -407,7 +407,27 @@ enum SSLExtension implements SSLStringizer {
                                 null,
                                 PskKeyExchangeModesExtension.chOnTradeAbsence,
                                 PskKeyExchangeModesExtension.pkemStringizer),
-    CERTIFICATE_AUTHORITIES (0x002F, "certificate_authorities"),
+
+    CH_CERTIFICATE_AUTHORITIES (0x002F, "certificate_authorities",
+                                SSLHandshake.CLIENT_HELLO,
+                                ProtocolVersion.PROTOCOLS_OF_13,
+                                CertificateAuthoritiesExtension.chNetworkProducer,
+                                CertificateAuthoritiesExtension.chOnLoadConsumer,
+                                null,
+                                null,
+                                null,
+                                CertificateAuthoritiesExtension.ssStringizer),
+
+    CR_CERTIFICATE_AUTHORITIES (0x002F, "certificate_authorities",
+                                SSLHandshake.CERTIFICATE_REQUEST,
+                                ProtocolVersion.PROTOCOLS_OF_13,
+                                CertificateAuthoritiesExtension.crNetworkProducer,
+                                CertificateAuthoritiesExtension.crOnLoadConsumer,
+                                null,
+                                null,
+                                null,
+                                CertificateAuthoritiesExtension.ssStringizer),
+
     OID_FILTERS             (0x0030, "oid_filters"),
     POST_HANDSHAKE_AUTH     (0x0030, "post_handshake_auth"),
 
@@ -416,7 +436,9 @@ enum SSLExtension implements SSLStringizer {
                                 ProtocolVersion.PROTOCOLS_OF_13,
                                 KeyShareExtension.chNetworkProducer,
                                 KeyShareExtension.chOnLoadConsumer,
-                                null, null, null,
+                                null,
+                                null,
+                                KeyShareExtension.chOnTradAbsence,
                                 KeyShareExtension.chStringizer),
     SH_KEY_SHARE            (0x0033, "key_share",
                                 SSLHandshake.SERVER_HELLO,
@@ -469,7 +491,7 @@ enum SSLExtension implements SSLStringizer {
                                 PreSharedKeyExtension.chOnLoadConsumer,
                                 PreSharedKeyExtension.chOnLoadAbsence,
                                 PreSharedKeyExtension.chOnTradeConsumer,
-                                null,
+                                PreSharedKeyExtension.chOnTradAbsence,
                                 PreSharedKeyExtension.chStringizer),
     SH_PRE_SHARED_KEY       (0x0029, "pre_shared_key",
                                 SSLHandshake.SERVER_HELLO,
@@ -554,6 +576,16 @@ enum SSLExtension implements SSLStringizer {
         return null;
     }
 
+    static String nameOf(int extensionType) {
+        for (SSLExtension ext : SSLExtension.values()) {
+            if (ext.id == extensionType) {
+                return ext.name;
+            }
+        }
+
+        return "unknown extension";
+    }
+
     static boolean isConsumable(int extensionType) {
         for (SSLExtension ext : SSLExtension.values()) {
             if (ext.id == extensionType &&
@@ -631,7 +663,8 @@ enum SSLExtension implements SSLStringizer {
     }
 
     @Override
-    public String toString(ByteBuffer byteBuffer) {
+    public String toString(
+            HandshakeContext handshakeContext, ByteBuffer byteBuffer) {
         MessageFormat messageFormat = new MessageFormat(
             "\"{0} ({1})\": '{'\n" +
             "{2}\n" +
@@ -644,7 +677,7 @@ enum SSLExtension implements SSLStringizer {
             String encoded = hexEncoder.encode(byteBuffer.duplicate());
             extData = encoded;
         } else {
-            extData = stringizer.toString(byteBuffer);
+            extData = stringizer.toString(handshakeContext, byteBuffer);
         }
 
         Object[] messageFields = {
@@ -710,6 +743,50 @@ enum SSLExtension implements SSLStringizer {
                         "jsse.enableMFLExtension", false);
             if (!enableExtension) {
                 extensions.remove(CH_MAX_FRAGMENT_LENGTH);
+            }
+
+            // To switch on certificate_authorities extension in ClientHello.
+            //
+            // Note: Please be careful to enable this extension in ClientHello.
+            //
+            // In practice, if the server certificate cannot be validated by
+            // the underlying programs, the user may manually check the
+            // certificate in order to access the service.  The certificate
+            // could be accepted manually, and the handshake continues.  For
+            // example, the browsers provide the manual option to accept
+            // untrusted server certificate. If this extension is enabled in
+            // the ClientHello handshake message, and the server's certificate
+            // does not chain back to any of the CAs in the extension, then the
+            // server will terminate the handshake and close the connection.
+            // There is no chance for the client to perform the manual check.
+            // Therefore, enabling this extension in ClientHello may lead to
+            // unexpected compatibility issues for such cases.
+            //
+            // According to TLS 1.3 specification [RFC 8446] the maximum size
+            // of the certificate_authorities extension is 2^16 bytes.  The
+            // maximum TLS record size is 2^14 bytes.  If the handshake
+            // message is bigger than maximum TLS record size, it should be
+            // splitted into several records.  In fact, some server
+            // implementations do not allow ClientHello messages bigger than
+            // the maximum TLS record size and will immediately abort the
+            // connection with a fatal alert.  Therefore, if the client trusts
+            // too many certificate authorities, there may be unexpected
+            // interoperability issues.
+            //
+            // Furthermore, if the client trusts more CAs such that it exceeds
+            // the size limit of the extension, enabling this extension in
+            // client side does not really make sense any longer as there is
+            // no way to indicate the server certificate selection accurately.
+            //
+            // In general, a server does not use multiple certificates issued
+            // from different CAs.  It is not expected to use this extension a
+            // lot in practice.  When there is a need to use this extension
+            // in ClientHello handshake message, please take care of the
+            // potential compatibility and interoperability issues above.
+            enableExtension = Utilities.getBooleanProperty(
+                    "jdk.tls.client.enableCAExtension", false);
+            if (!enableExtension) {
+                extensions.remove(CH_CERTIFICATE_AUTHORITIES);
             }
 
             defaults = Collections.unmodifiableCollection(extensions);
