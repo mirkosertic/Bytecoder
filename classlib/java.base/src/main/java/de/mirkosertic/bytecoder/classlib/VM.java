@@ -200,11 +200,11 @@ public class VM {
 
     public static final char NEWLINE = '\n';
 
-    public static long stringToLong(final String aString) {
+    public static long stringToLong(final CharSequence aString) {
         return stringToLong(aString,10);
     }
 
-    public static long stringToLong(final String aString, final int aRadix) {
+    public static long stringToLong(final CharSequence aString, final int aRadix) {
         long theResult = 0;
         long theMultiplier = 1;
         for (int k=aString.length()-1;k>=0;k--) {
