@@ -101,9 +101,13 @@ public class TLong extends Number {
     }
 
     public static String toString(final long aValue, final int aBase) {
-        final StringBuilder theBuffer = new StringBuilder();
-        theBuffer.append(aValue);
-        return theBuffer.toString();
+        if (aBase == 10) {
+            final StringBuilder theBuffer = new StringBuilder();
+            theBuffer.append(aValue);
+            return theBuffer.toString();
+        } else {
+            return toHexString(aValue);
+        }
     }
 
     public static String toHexString(final long aValue) {
