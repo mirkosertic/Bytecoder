@@ -90,6 +90,10 @@ public class TLong extends Number {
         return VM.stringToLong(aString, radix);
     }
 
+    public static long parseLong(final CharSequence aString, final int beginIndex, final int endIndex, final int radix) {
+        return VM.stringToLong(aString.subSequence(beginIndex, endIndex), radix);
+    }
+
     public static String toString(final long aValue) {
         final StringBuilder theBuffer = new StringBuilder();
         theBuffer.append(aValue);
@@ -206,4 +210,6 @@ public class TLong extends Number {
         }
         return 0;
     }
+
+
 }
