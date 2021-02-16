@@ -125,4 +125,10 @@ public class LongTest {
         assertEquals(1, Long.compare(20L, 10L));
         assertEquals(-1, Long.compare(10L, 20L));
     }
+
+    @Test
+    public void testParseLongSubString() {
+        final long a = Long.parseLong("aa121", 16);
+        assertEquals(696609L, a);
+    }
 }
