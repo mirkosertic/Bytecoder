@@ -131,4 +131,18 @@ public class LongTest {
         final long a = Long.parseLong("aa121", 16);
         assertEquals(696609L, a);
     }
+
+    @Test
+    public void testToStringHex() {
+        final String result = Long.toString(32, 16);
+        System.out.println(result);
+        assertEquals("20", result);
+    }
+
+    @Test
+    public void testToStringNegativeHex() {
+        final String result = Long.toString(-32, 16);
+        System.out.println(result);
+        assertEquals("-20", result);
+    }
 }
