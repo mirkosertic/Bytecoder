@@ -21,8 +21,8 @@ jobs:
       - run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh 10
-          sudo apt-get install -y ocl-icd-opencl-dev clang-10 lldb-10 lld-10 clangd-10
+          sudo ./llvm.sh 11
+          sudo apt-get install -y ocl-icd-opencl-dev clang-11 lldb-11 lld-11 clangd-11
       - name: Get tag
         id: tag
         uses: dawidd6/action-get-tag@v1
