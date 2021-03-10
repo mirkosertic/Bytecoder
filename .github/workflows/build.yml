@@ -19,8 +19,8 @@ jobs:
       - run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh 10
-          sudo apt-get install -y ocl-icd-opencl-dev clang-10 lldb-10 lld-10 clangd-10
+          sudo ./llvm.sh 11
+          sudo apt-get install -y ocl-icd-opencl-dev clang-11 lldb-11 lld-11 clangd-11
       - run: |
           wget https://github.com/gohugoio/hugo/releases/download/v0.59.0/hugo_0.59.0_Linux-64bit.tar.gz
           tar xzf hugo_0.59.0_Linux-64bit.tar.gz

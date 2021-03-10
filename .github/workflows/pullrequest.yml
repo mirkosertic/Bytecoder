@@ -24,8 +24,8 @@ jobs:
       - run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh 10
-          sudo apt-get install -y ocl-icd-opencl-dev clang-10 lldb-10 lld-10 clangd-10
+          sudo ./llvm.sh 11
+          sudo apt-get install -y ocl-icd-opencl-dev clang-11 lldb-11 lld-11 clangd-11
       - run: mvn --no-transfer-progress --batch-mode verify -P jvmtestsonly
   build_js_backend:
     runs-on: 'ubuntu-latest'
@@ -46,10 +46,10 @@ jobs:
          restore-keys: |
            ${{ runner.os }}-maven-
      - run: |
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 10
-          sudo apt-get install -y ocl-icd-opencl-dev clang-10 lldb-10 lld-10 clangd-10
+         wget https://apt.llvm.org/llvm.sh
+         chmod +x llvm.sh
+         sudo ./llvm.sh 11
+         sudo apt-get install -y ocl-icd-opencl-dev clang-11 lldb-11 lld-11 clangd-11
      - run: mvn --no-transfer-progress --batch-mode verify -P jstestsonly
   build_wasm_stackify_backend:
     runs-on: 'ubuntu-latest'
@@ -72,8 +72,8 @@ jobs:
       - run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh 10
-          sudo apt-get install -y ocl-icd-opencl-dev clang-10 lldb-10 lld-10 clangd-10
+          sudo ./llvm.sh 11
+          sudo apt-get install -y ocl-icd-opencl-dev clang-11 lldb-11 lld-11 clangd-11
       - run: mvn --no-transfer-progress --batch-mode verify -P wasmtestsonly_stackify
   build_wasm_reloop_backend:
     runs-on: 'ubuntu-latest'
@@ -96,8 +96,8 @@ jobs:
       - run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh 10
-          sudo apt-get install -y ocl-icd-opencl-dev clang-10 lldb-10 lld-10 clangd-10
+          sudo ./llvm.sh 11
+          sudo apt-get install -y ocl-icd-opencl-dev clang-11 lldb-11 lld-11 clangd-11
       - run: mvn --no-transfer-progress --batch-mode verify -P wasmtestsonly_reloop
   build_wasmllvm_backend:
     runs-on: 'ubuntu-latest'
@@ -120,6 +120,6 @@ jobs:
       - run: |
           wget https://apt.llvm.org/llvm.sh
           chmod +x llvm.sh
-          sudo ./llvm.sh 10
-          sudo apt-get install -y ocl-icd-opencl-dev clang-10 lldb-10 lld-10 clangd-10
+          sudo ./llvm.sh 11
+          sudo apt-get install -y ocl-icd-opencl-dev clang-11 lldb-11 lld-11 clangd-11
       - run: mvn --no-transfer-progress --batch-mode verify -P wasmllvmtestsonly

@@ -3684,7 +3684,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theLLCommand.add("wsl");
             }
             final String theObjectFileName = theLLFile.getName() + ".o";
-            theLLCommand.add("llc-10");
+            theLLCommand.add("llc-11");
             theLLCommand.add("-" + aOptions.getLlvmOptimizationLevel().name());
             //theLLCommand.add("--stats");
             //theLLCommand.add("--time-passes");
@@ -3726,7 +3726,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theLinkerCommand.add("wsl");
             }
             final String theWASMFileName = theLLFile.getName() + ".wasm";
-            theLinkerCommand.add("wasm-ld-10");
+            theLinkerCommand.add("wasm-ld-11");
             theLinkerCommand.add(theObjectFileName);
             theLinkerCommand.add("-o");
             theLinkerCommand.add(theWASMFileName);

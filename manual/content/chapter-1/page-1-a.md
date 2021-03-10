@@ -80,7 +80,7 @@ Bytecoder has two backends for WebAssembly generation. The older one
 is called `wasm` and is a handcrafted one. The newer one is called `wasm_llvm`, is based on `LLVM`
 and uses the whole LLVM toolchain for compilation, optimization and code generation.
 The LLVM backend is based on LLVM Release 10. Please make sure to have
-the `lld-10` and `wasm-ld-10` binaries in the current `PATH`.
+the `lld-11` and `wasm-ld-11` binaries in the current `PATH`.
 {{% /notice %}}
 
 However, you need a different style of
