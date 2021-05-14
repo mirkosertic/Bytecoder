@@ -223,6 +223,13 @@ public class ReflectionTest {
     }
 
     @Test
+    public void testGetDeclaredField() throws NoSuchFieldException, IllegalAccessException {
+        final Field f = BaseClass.class.getDeclaredField("intField");
+        f.set(BaseClass.class, Integer.valueOf(2));
+        assertEquals(2, BaseClass.intField);
+    }
+
+    @Test
     public void testIsNotAPrimitive() {
         assertFalse(String.class.isPrimitive());
     }
