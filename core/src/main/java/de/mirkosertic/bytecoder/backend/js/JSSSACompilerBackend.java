@@ -874,6 +874,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         final String theGetSimpleNameMethodName = theMinifier.toMethodName("getSimpleName", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(String.class), new BytecodeTypeRef[0]));
         final String theGetFieldNameMethodName = theMinifier.toMethodName("getField", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Field.class), new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(String.class)}));
         final String theGetDeclaredFieldsNameMethodName = theMinifier.toMethodName("getDeclaredFields", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Field.class), 1), new BytecodeTypeRef[] {}));
+        final String theGetDeclaredFieldNameMethodName = theMinifier.toMethodName("getDeclaredField", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Field.class), new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(String.class)}));
         final String theIsPrimitiveMethodName = theMinifier.toMethodName("isPrimitive", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BOOLEAN, new BytecodeTypeRef[] {}));
         final String theIsInstanceMethodName = theMinifier.toMethodName("isInstance", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BOOLEAN, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Object.class)}));
 
@@ -951,6 +952,10 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
         theWriter.tab().text("C.prototype.").text(theGetDeclaredFieldsNameMethodName).assign().text("function(args)").space().text("{").newLine();
         theWriter.tab(2).text("return this.declaredFields;").newLine();
+        theWriter.tab().text("};").newLine();
+
+        theWriter.tab().text("C.prototype.").text(theGetDeclaredFieldNameMethodName).assign().text("function(args)").space().text("{").newLine();
+        theWriter.tab(2).text("return ").text(theMinifier.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))).text(".prototype.").text(theGetDeclaredFieldNameMethodName).text(".call(this, args);").newLine();
         theWriter.tab().text("};").newLine();
 
         theWriter.tab().text("C.prototype.").text(theIsPrimitiveMethodName).assign().text("function(args)").space().text("{").newLine();
