@@ -211,6 +211,15 @@ public class TClass {
         throw new NoSuchFieldException(name);
     }
 
+    public Field getDeclaredField(final String name) throws NoSuchFieldException {
+        for (final Field f : getDeclaredFields()) {
+            if (name.equals(f.getName())) {
+                return f;
+            }
+        }
+        throw new NoSuchFieldException(name);
+    }
+
     @EmulatedByRuntime
     public Field[] getDeclaredFields() {
         return new Field[0];
