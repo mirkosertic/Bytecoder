@@ -33,6 +33,7 @@ import de.mirkosertic.bytecoder.ssa.ExpressionListContainer;
 import de.mirkosertic.bytecoder.ssa.GotoExpression;
 import de.mirkosertic.bytecoder.ssa.IFElseExpression;
 import de.mirkosertic.bytecoder.ssa.IFExpression;
+import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 
 public class Stackifier {
@@ -200,6 +201,10 @@ public class Stackifier {
             }
         }
         flow = builder.build();
+    }
+
+    public Program program() {
+        return controlFlowGraph.getProgram();
     }
 
     public void writeStructuredControlFlow(final StackifierStructuredControlFlowWriter writer) {

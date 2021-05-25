@@ -24,6 +24,8 @@ import de.mirkosertic.bytecoder.api.OpaqueProperty;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
 import de.mirkosertic.bytecoder.classlib.Array;
+import de.mirkosertic.bytecoder.classlib.VM;
+import de.mirkosertic.bytecoder.classlib.java.util.Quicksort;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
@@ -115,6 +117,7 @@ import de.mirkosertic.bytecoder.ssa.SetMemoryLocationExpression;
 import de.mirkosertic.bytecoder.ssa.ShortValue;
 import de.mirkosertic.bytecoder.ssa.SqrtExpression;
 import de.mirkosertic.bytecoder.ssa.StackTopExpression;
+import de.mirkosertic.bytecoder.ssa.StaticDependencies;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.SuperTypeOfExpression;
 import de.mirkosertic.bytecoder.ssa.SystemHasStackExpression;
@@ -139,6 +142,9 @@ import java.util.stream.Collectors;
 import static java.util.Comparator.comparingLong;
 
 public class JSSSAWriter {
+
+    public static final String CLASSINIT_METHOD_NAME = "init";
+    public static final String RUNTIMECLASS_SUFFIX = "__runtimeclass";
 
     interface IDResolver {
 
@@ -460,7 +466,8 @@ public class JSSSAWriter {
     }
 
     private void print(final NewInstanceAndConstructExpression aValue) {
-        writer.text(minifier.toClassName(aValue.getClazz())).text(".").text(minifier.toSymbol("__runtimeclass")).text(".").text(minifier.toMethodName("$newInstance", aValue.getSignature())).text("(");
+        writer.text(minifier.toSymbol(runtimeClassVariableName(aValue.getClazz())))
+                .text(".").text(minifier.toSymbol(RUNTIMECLASS_SUFFIX)).text(".").text(minifier.toMethodName("$newInstance", aValue.getSignature())).text("(");
         final List<Value> theArguments = aValue.incomingDataFlows();
         for (int i=0;i<theArguments.size();i++) {
             if (i>0) {
@@ -502,7 +509,7 @@ public class JSSSAWriter {
     private void print(final TypeOfExpression aValue) {
         print(aValue.incomingDataFlows().get(0));
         writer.text(".").text("constructor");
-        writer.text(".").text(minifier.toSymbol("__runtimeclass"));
+        writer.text(".").text(minifier.toSymbol(RUNTIMECLASS_SUFFIX));
     }
 
     private void print(final StackTopExpression aValue) {
@@ -539,6 +546,8 @@ public class JSSSAWriter {
         final JSSSAWriter theNested = new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier, theAllocator, idResolver);
 
         theNested.printRegisterDeclarations();
+
+        theNested.initializeStaticDependencies(theProgram);
 
         theNested.writeExpressions(theBootstrapCode.getExpressions());
 
@@ -706,8 +715,8 @@ public class JSSSAWriter {
     }
 
     private void print(final ClassReferenceValue aValue) {
-        writer.text(minifier.toClassName(aValue.getType())).text(".").text(minifier.toSymbol("init")).text("()")
-        .text(".").text(minifier.toSymbol("__runtimeclass"));
+        writer.text(minifier.toSymbol(runtimeClassVariableName(aValue.getType())))
+                .text(".").text(minifier.toSymbol(RUNTIMECLASS_SUFFIX));
     }
 
     private void print(final InstanceOfExpression aValue) {
@@ -716,7 +725,7 @@ public class JSSSAWriter {
         print(theValue);
         writer.space().text("==").space().text("null").space().text("?").space().text("false").space().text(":");
         print(theValue);
-        writer.text(".constructor.").text(minifier.toSymbol("__runtimeclass")).text(".iof(");
+        writer.text(".constructor.").text(minifier.toSymbol(RUNTIMECLASS_SUFFIX)).text(".iof(");
 
         final BytecodeUtf8Constant theConstant = aValue.getType().getConstant();
         if (!theConstant.stringValue().startsWith("[")) {
@@ -1072,7 +1081,8 @@ public class JSSSAWriter {
                 writer.text(")");
             }
         } else {
-            writer.text(minifier.toClassName(aValue.getInvokedClass())).text(".").text(minifier.toSymbol("init")).text("().").text(minifier.toMethodName(theMethodName, theSignature)).text("(");
+            writer.text(minifier.toSymbol(runtimeClassVariableName(aValue.getInvokedClass()))).text(".")
+                    .text(minifier.toMethodName(theMethodName, theSignature)).text("(");
 
             final List<Value> theVariables = aValue.incomingDataFlows();
 
@@ -1311,9 +1321,8 @@ public class JSSSAWriter {
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aField.getClassIndex().getClassConstant().getConstant()));
         final BytecodeResolvedFields theFields = theLinkedClass.resolvedFields();
         final BytecodeResolvedFields.FieldEntry theField = theFields.fieldByName(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
-        writer.text(minifier.toClassName(theField.getProvidingClass().getClassName()))
-                .text(".").text(minifier.toSymbol("init")).text("().")
-                .text(minifier.toSymbol("__runtimeclass")).text(".")
+        writer.text(minifier.toSymbol(runtimeClassVariableName(theField.getProvidingClass().getClassName())))
+                .text(".").text(minifier.toSymbol(RUNTIMECLASS_SUFFIX)).text(".")
                 .symbol(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(), aPosition);
     }
 
@@ -1617,6 +1626,11 @@ public class JSSSAWriter {
         }
     }
 
+    public void printReloopedStart(final Program program, final Relooper.Block block) {
+        initializeStaticDependencies(program);
+        printRelooped(block);
+    }
+
     public void printRelooped(final Relooper.Block aBlock) {
         labelRequired = aBlock.containsMultipleBlock();
         if (labelRequired) {
@@ -1769,7 +1783,7 @@ public class JSSSAWriter {
                     theGuard.writer.space().text("||").space();
                 }
                 final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theInstanceCheck));
-                theGuard.writer.text("CURRENTEXCEPTION.exception.constructor.").text(minifier.toSymbol("__runtimeclass")).text(".iof(").text(minifier.toClassName(theLinkedClass.getClassName())).text(")");
+                theGuard.writer.text("CURRENTEXCEPTION.exception.constructor.").text(minifier.toSymbol(RUNTIMECLASS_SUFFIX)).text(".iof(").text(minifier.toClassName(theLinkedClass.getClassName())).text(")");
                 first = false;
             }
 
@@ -1797,7 +1811,36 @@ public class JSSSAWriter {
         print(aTryBlock.next());
     }
 
+    private void initializeStaticDependencies(final Program program) {
+        // We calculate the static dependencies that should only be initialized once for this method
+        final StaticDependencies staticDependencies = new StaticDependencies(program);
+        // And we call the class initializers
+        for (final BytecodeLinkedClass theClass : staticDependencies.list()) {
+            final JSPrintWriter pw = startLine().text("var ").text(minifier.toSymbol(runtimeClassVariableName(theClass.getClassName()))).assign();
+            // We know the following JVM classes were initialized by the bootstrap,
+            // so we can safely access them without init invocation
+            if (theClass.getClassName().name().equals(String.class.getName()) ||
+                    theClass.getClassName().name().equals(Array.class.getName()) ||
+                    theClass.getClassName().name().equals(VM.class.getName()) ||
+                    theClass.getClassName().name().equals(Quicksort.class.getName())) {
+
+                program.getLinkerContext().getStatistics().context("ClassInitialization")
+                        .counter("Avoided initializations").increment();
+
+                pw.text(minifier.toClassName(theClass.getClassName())).text(";").newLine();
+
+            } else {
+                pw.text(minifier.toClassName(theClass.getClassName())).text(".").text(minifier.toSymbol(CLASSINIT_METHOD_NAME)).text("();").newLine();
+            }
+        }
+
+    }
+
     public void printStackified(final Stackifier stackifier) {
+
+        // We calculate the static dependencies that should only be initialized once for this method
+        initializeStaticDependencies(stackifier.program());
+
         final Stack<JSSSAWriter> writerStack = new Stack<>();
         writerStack.push(this);
         final Stackifier.StackifierStructuredControlFlowWriter writer = new Stackifier.StackifierStructuredControlFlowWriter(stackifier) {
@@ -1836,5 +1879,9 @@ public class JSSSAWriter {
             }
         };
         stackifier.writeStructuredControlFlow(writer);
+    }
+
+    public static String runtimeClassVariableName(final BytecodeObjectTypeRef aType) {
+        return "runtimeclass_" + aType.name().replace('.', '_').replace('$','_');
     }
 }
