@@ -22,7 +22,6 @@ import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.graph.Edge;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -68,7 +67,6 @@ public class ClassHierarchyAnalysis {
             // We have to check the whole type hierarchy
             final Set<BytecodeLinkedClass> theResult = new HashSet<>();
             linkerContext.linkedClasses()
-                    .map(Edge::targetNode)
                     .filter(aClassFilter)
                     .filter(t -> {
                         final Set<BytecodeLinkedClass> theImplementingTypes = t.getImplementingTypes();

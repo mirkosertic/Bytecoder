@@ -20,7 +20,7 @@ public class BytecodeInstructionNEW extends BytecodeInstruction {
     private final int index;
     private final BytecodeConstantPool constantPool;
 
-    public BytecodeInstructionNEW(BytecodeOpcodeAddress aOpcodeIndex, int aIndex, BytecodeConstantPool aConstantPool) {
+    public BytecodeInstructionNEW(final BytecodeOpcodeAddress aOpcodeIndex, final int aIndex, final BytecodeConstantPool aConstantPool) {
         super(aOpcodeIndex);
         index = aIndex;
         constantPool = aConstantPool;
@@ -31,8 +31,10 @@ public class BytecodeInstructionNEW extends BytecodeInstruction {
     }
 
     @Override
-    public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
-        BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(getClassInfoForObjectToCreate().getConstant());
-        aLinkerContext.resolveClass(theObjectType);
+    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext) {
+        final BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(getClassInfoForObjectToCreate().getConstant());
+
+        final BytecodeLinkedClass createdType = aLinkerContext.resolveClass(theObjectType);
+        createdType.tagWith(BytecodeLinkedClass.Tag.INSTANTIATED);
     }
 }

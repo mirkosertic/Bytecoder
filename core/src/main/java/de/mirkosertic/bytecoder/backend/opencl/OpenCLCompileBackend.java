@@ -35,6 +35,7 @@ import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
+import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.stackifier.HeadToHeadControlFlowException;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
 
@@ -65,11 +66,13 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
 
         theKernelClass.resolveVirtualMethod(aEntryPointMethodName, aEntryPointSignatue);
 
-        final BytecodeResolvedMethods theMethodMap = theKernelClass.resolvedMethods();
-
         final StringWriter theStrWriter = new StringWriter();
 
         final OpenCLInputOutputs theInputOutputs;
+
+        theLinkerContext.finalizeLinkage();
+
+        final BytecodeResolvedMethods theMethodMap = aLinkerContext.resolveMethods(theKernelClass);
 
         // First of all, we link the kernel method
         final BytecodeMethod theKernelMethod = theKernelClass.getBytecodeClass().methodByNameAndSignatureOrNull("processWorkItem", new BytecodeMethodSignature(
@@ -82,7 +85,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         aOptions.getOptimizer().optimize(this, theSSAProgram.getControlFlowGraph(), aLinkerContext);
 
         // Perform register allocation
-        final AbstractAllocator theKernelAllocator = aOptions.getAllocator().allocate(theSSAProgram, t -> t.resolveType(), aLinkerContext);
+        final AbstractAllocator theKernelAllocator = aOptions.getAllocator().allocate(theSSAProgram, Variable::resolveType, aLinkerContext);
 
 
         // Ok, at this point we have to map kernel arguments
@@ -114,7 +117,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
                 aOptions.getOptimizer().optimize(this, theSSAProgram1.getControlFlowGraph(), aLinkerContext);
 
                 // Perform register allocation
-                final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram1, t -> t.resolveType(), aLinkerContext);
+                final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram1, Variable::resolveType, aLinkerContext);
 
                 // Write the method to the output
                 // Try to reloop it!

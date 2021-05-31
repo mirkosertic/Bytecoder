@@ -359,7 +359,7 @@ public class LLVMWriter implements AutoCloseable {
         if (!theInvokedClassName.isPrimitive() && !theInvokedClassName.isArray()) {
             final BytecodeLinkedClass theInvokedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) theInvokedClassName);
             if (theInvokedClass.isOpaqueType()) {
-                final BytecodeResolvedMethods theMethods = theInvokedClass.resolvedMethods();
+                final BytecodeResolvedMethods theMethods = linkerContext.resolveMethods(theInvokedClass);
                 final List<BytecodeResolvedMethods.MethodEntry> theImplMethods = theMethods.stream().filter(
                         t -> t.getValue().getName().stringValue().equals(e.getMethodName()) &&
                                 t.getValue().getSignature().matchesExactlyTo(e.getSignature()))
@@ -1363,7 +1363,7 @@ public class LLVMWriter implements AutoCloseable {
         if (!theInvokedClassName.isPrimitive() && !theInvokedClassName.isArray()) {
             final BytecodeLinkedClass theInvokedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) theInvokedClassName);
             if (theInvokedClass.isOpaqueType()) {
-                final BytecodeResolvedMethods theMethods = theInvokedClass.resolvedMethods();
+                final BytecodeResolvedMethods theMethods = linkerContext.resolveMethods(theInvokedClass);
                 final List<BytecodeResolvedMethods.MethodEntry> theImplMethods = theMethods.stream().filter(
                         t -> t.getValue().getName().stringValue().equals(e.getMethodName()) &&
                                 t.getValue().getSignature().matchesExactlyTo(e.getSignature()))
@@ -1446,7 +1446,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print(LLVMWriterUtils.toSignature(theSignature));
         target.print(" @");
         if (!e.getMethodName().equals("<init>")) {
-            final BytecodeResolvedMethods theResolvedMethods = theTargetClass.resolvedMethods();
+            final BytecodeResolvedMethods theResolvedMethods = linkerContext.resolveMethods(theTargetClass);
             final BytecodeResolvedMethods.MethodEntry theEntry = theResolvedMethods.implementingClassOf(theMethodName, theSignature);
 
             target.print(LLVMWriterUtils.toMethodName(theEntry.getProvidingClass().getClassName(), theMethodName, theSignature));
@@ -1528,8 +1528,7 @@ public class LLVMWriter implements AutoCloseable {
 
     private void write(final IFExpression expression) {
         final Set<BytecodeOpcodeAddress> forwardNodes = currentNode.outgoingEdges()
-                .filter((Predicate<Edge<? extends EdgeType, ? extends Node>>) edge -> RegionNode.ALL_SUCCCESSORS_REGULAR_FLOW_ONLY
-                        .test((Edge<EdgeType, RegionNode>) edge))
+                .filter((Predicate<Edge<? extends EdgeType, ? extends Node>>) RegionNode.ALL_SUCCCESSORS_REGULAR_FLOW_ONLY::test)
                 .map(t -> t.targetNode().getStartAddress()).collect(Collectors.toSet());
         if (forwardNodes.size() == 2) {
             target.print("    br i1 ");
