@@ -30,8 +30,9 @@ public class BytecodeInstructionINVOKESTATIC extends BytecodeInstructionGenericI
         final BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
         final BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
 
-        if (!aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassConstant.getConstant()))
-                .resolveStaticMethod(theName.stringValue(), theSig)) {
+        final BytecodeLinkedClass invokedType = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassConstant.getConstant()));
+        invokedType.tagWith(BytecodeLinkedClass.Tag.INVOKESTATIC_TARGET);
+        if (!invokedType.resolveStaticMethod(theName.stringValue(), theSig)) {
             throw new IllegalStateException("Cannot find static method " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue() + " with signature " +theSig.toString());
         }
 

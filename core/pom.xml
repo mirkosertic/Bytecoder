@@ -125,6 +125,11 @@
             <artifactId>selenium</artifactId>
             <version>1.15.3</version>
         </dependency>
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-analysis</artifactId>
+            <version>9.1</version>
+        </dependency>
     </dependencies>
 
     <build>

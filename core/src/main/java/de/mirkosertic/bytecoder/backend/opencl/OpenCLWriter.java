@@ -73,11 +73,6 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.jocl.Pointer;
-import org.jocl.Sizeof;
-
-import static org.jocl.CL.clSetKernelArg;
-
 public class OpenCLWriter extends IndentSSAWriter {
 
     private final OpenCLInputOutputs inputOutputs;
@@ -726,7 +721,7 @@ public class OpenCLWriter extends IndentSSAWriter {
 
     private void printInvokeStatic(final InvokeStaticMethodExpression aValue) {
         final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aValue.getInvokedClass());
-        final BytecodeResolvedMethods theMethods = theLinkedClass.resolvedMethods();
+        final BytecodeResolvedMethods theMethods = linkerContext.resolveMethods(theLinkedClass);
         final AtomicBoolean theFound = new AtomicBoolean(false);
         theMethods.stream().forEach(aMethodMapsEntry -> {
             final BytecodeMethod theMethod = aMethodMapsEntry.getValue();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2021 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,16 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.asm;
 
-import java.util.function.Predicate;
+import org.objectweb.asm.tree.MethodNode;
 
-import de.mirkosertic.bytecoder.graph.EdgeType;
+public class ResolvedMethod {
 
-public enum BytecodeSubclassOfEdgeType implements EdgeType {
-    instance;
+    final MethodNode methodNode;
 
-    public static Predicate<EdgeType> filter() {
-        return edgeType -> edgeType == instance;
+    public ResolvedMethod(final MethodNode methodNode) {
+        this.methodNode = methodNode;
     }
 }

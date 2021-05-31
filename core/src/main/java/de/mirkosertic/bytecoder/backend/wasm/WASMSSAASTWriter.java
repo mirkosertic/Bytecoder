@@ -1215,7 +1215,7 @@ public class WASMSSAASTWriter {
         if (!theInvokedClassName.isPrimitive() && !theInvokedClassName.isArray()) {
             final BytecodeLinkedClass theInvokedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) theInvokedClassName);
             if (theInvokedClass.isOpaqueType()) {
-                final BytecodeResolvedMethods theMethods = theInvokedClass.resolvedMethods();
+                final BytecodeResolvedMethods theMethods = linkerContext.resolveMethods(theInvokedClass);
                 final List<BytecodeResolvedMethods.MethodEntry> theImplMethods = theMethods.stream().filter(
                         t -> t.getValue().getName().stringValue().equals(aValue.getMethodName()) &&
                                 t.getValue().getSignature().matchesExactlyTo(aValue.getSignature()))
@@ -1481,7 +1481,7 @@ public class WASMSSAASTWriter {
             return call(function, arguments, aValue);
         }
 
-        final BytecodeResolvedMethods theResolvedMethods = theTargetClass.resolvedMethods();
+        final BytecodeResolvedMethods theResolvedMethods = linkerContext.resolveMethods(theTargetClass);
         final BytecodeResolvedMethods.MethodEntry theEntry = theResolvedMethods.implementingClassOf(theMethodName, theSignature);
         final Function function = module.functionIndex().firstByLabel(WASMWriterUtils
                 .toMethodName(theEntry.getProvidingClass().getClassName(),

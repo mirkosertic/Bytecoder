@@ -15,16 +15,16 @@
  */
 package de.mirkosertic.bytecoder.backend;
 
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
+import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
+import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeResolvedFields;
 
 public class NativeMemoryLayouter {
 
@@ -48,7 +48,7 @@ public class NativeMemoryLayouter {
     public NativeMemoryLayouter(final BytecodeLinkerContext aLinkerContext, final int aFieldSize) {
         fields = new HashMap<>();
         fieldSize = aFieldSize;
-        aLinkerContext.linkedClasses().forEach(aEntry -> registerClass(aEntry.targetNode()));
+        aLinkerContext.linkedClasses().forEach(this::registerClass);
     }
 
     private void registerClass(final BytecodeLinkedClass aClass) {

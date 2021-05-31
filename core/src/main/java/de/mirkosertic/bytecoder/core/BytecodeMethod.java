@@ -20,15 +20,22 @@ import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.graph.EdgeType;
 import de.mirkosertic.bytecoder.graph.Node;
 
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 public class BytecodeMethod extends Node<Node, EdgeType> {
+
+    public enum Tag {
+        IMPLEMENTATION_USED
+    }
 
     private final BytecodeAccessFlags accessFlags;
     private final BytecodeUtf8Constant name;
     private final BytecodeAttributeInfo[] attributes;
     private final BytecodeMethodSignature signature;
     private final BytecodeAttributes mappedAttributes;
+    private final Set<Tag> tags;
 
     public BytecodeMethod(final BytecodeAccessFlags aAccessFlags, final BytecodeUtf8Constant aName, final BytecodeMethodSignature aSignature, final BytecodeAttributeInfo[] aAttributes) {
         accessFlags = aAccessFlags;
@@ -36,6 +43,16 @@ public class BytecodeMethod extends Node<Node, EdgeType> {
         signature = aSignature;
         attributes = aAttributes;
         mappedAttributes = new BytecodeAttributes(attributes);
+        tags = new HashSet<>();
+    }
+
+    public BytecodeMethod tagWith(final Tag tag) {
+        tags.add(tag);
+        return this;
+    }
+
+    public boolean hasTag(final Tag tag) {
+        return tags.contains(tag);
     }
 
     public BytecodeMethod replaceAndFlagsFrom(final BytecodeMethod aOtherMethod) {

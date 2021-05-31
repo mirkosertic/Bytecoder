@@ -90,10 +90,14 @@ public class BytecodeInstructionINVOKEDYNAMIC extends BytecodeInstruction implem
 
                         final BytecodeObjectTypeRef theClass = BytecodeObjectTypeRef.fromUtf8Constant(theImplementingMethodRef.getClassIndex().getClassConstant().getConstant());
                         final BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(theClass);
+                        theLinkedClass.tagWith(BytecodeLinkedClass.Tag.POSSIBLE_USE_IN_LAMBDA);
                         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull(
                                 theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
                                 theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature()
                         );
+                        if ("<init>".equals(theMethod.getName().stringValue())) {
+                            theLinkedClass.tagWith(BytecodeLinkedClass.Tag.INSTANTIATED);
+                        }
                         if (theMethod.getAccessFlags().isStatic()) {
                             theLinkedClass.resolveStaticMethod(theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
                                     theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature());

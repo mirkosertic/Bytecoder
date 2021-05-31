@@ -27,7 +27,7 @@ public class BytecodeClassTopologicOrder {
 
     public BytecodeClassTopologicOrder(final BytecodeLinkerContext linkerContext) {
         knownClasses = new ArrayList<>();
-        linkerContext.linkedClasses().forEach(t -> knownClasses.add(t.targetNode()));
+        linkerContext.linkedClasses().forEach(knownClasses::add);
         knownClasses.sort(Comparator.comparingInt(this::topo).thenComparing(o -> o.getClassName().name()));
     }
 

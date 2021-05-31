@@ -49,10 +49,11 @@ public class BytecodeInstructionINVOKEVIRTUAL extends BytecodeInstructionGeneric
                 }
             }
         } else {
-            final BytecodeLinkedClass theClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theConstant));
-            if (!theClass
+            final BytecodeLinkedClass invokedType = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theConstant));
+            invokedType.tagWith(BytecodeLinkedClass.Tag.INVOKEVIRTUAL_TARGET);
+            if (!invokedType
                     .resolveVirtualMethod(theName.stringValue(), theSig)) {
-                if (!theClass.getBytecodeClass().getAccessFlags().isAbstract()) {
+                if (!invokedType.getBytecodeClass().getAccessFlags().isAbstract()) {
                     throw new IllegalStateException("Cannot find virtual method " + theName.stringValue() + " in non-abstract class " + theClassConstant.getConstant().stringValue() + " with signature " + theSig.toString());
                 }
             }

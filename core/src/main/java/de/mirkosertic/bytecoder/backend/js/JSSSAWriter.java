@@ -985,7 +985,7 @@ public class JSSSAWriter {
                 print(aValue);
             } else if (theLinkedClass.isCallback()) {
 
-                final BytecodeResolvedMethods theMethods = theLinkedClass.resolvedMethods();
+                final BytecodeResolvedMethods theMethods = linkerContext.resolveMethods(theLinkedClass);
                 final List<BytecodeMethod> availableCallbacks = theMethods.stream().filter(t -> !t.getValue().isConstructor() && !t.getValue().isClassInitializer()
                         && !t.getProvidingClass().getClassName().name().equals(Object.class.getName())).map(BytecodeResolvedMethods.MethodEntry::getValue).collect(Collectors.toList());
                 if (availableCallbacks.size() != 1) {
@@ -1115,7 +1115,7 @@ public class JSSSAWriter {
                 }
                 writer.text(")");
             } else {
-                final BytecodeResolvedMethods theResolvedMethods = theTargetClass.resolvedMethods();
+                final BytecodeResolvedMethods theResolvedMethods = linkerContext.resolveMethods(theTargetClass);
                 final BytecodeResolvedMethods.MethodEntry theEntry = theResolvedMethods.implementingClassOf(theMethodName, theSignature);
                 writer.text(minifier.toClassName(theEntry.getProvidingClass().getClassName()));
 
@@ -1250,7 +1250,7 @@ public class JSSSAWriter {
         if (!theInvokedClassName.isPrimitive() && !theInvokedClassName.isArray()) {
             final BytecodeLinkedClass theInvokedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) theInvokedClassName);
             if (theInvokedClass.isOpaqueType()) {
-                final BytecodeResolvedMethods theMethods = theInvokedClass.resolvedMethods();
+                final BytecodeResolvedMethods theMethods = linkerContext.resolveMethods(theInvokedClass);
                 final List<BytecodeResolvedMethods.MethodEntry> theImplMethods = theMethods.stream().filter(
                         t -> t.getValue().getName().stringValue().equals(theMethodName) &&
                         t.getValue().getSignature().matchesExactlyTo(theSignature))
