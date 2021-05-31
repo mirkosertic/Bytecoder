@@ -33,7 +33,6 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
 import de.mirkosertic.bytecoder.core.ReflectionConfiguration;
-import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
 
 import java.io.FileDescriptor;
@@ -113,6 +112,7 @@ public class CompileTarget {
                 new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Object.class), 1)}));
 
         theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.LambdaStaticImplCallsite.class))
+            .tagWith(BytecodeLinkedClass.Tag.INSTANTIATED)
             .resolveConstructorInvocation(new BytecodeMethodSignature(
                         BytecodePrimitiveTypeRef.VOID,
                         new BytecodeTypeRef[]{
@@ -122,6 +122,7 @@ public class CompileTarget {
                         }
                 ));
         theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.LambdaConstructorRefCallsite.class))
+                .tagWith(BytecodeLinkedClass.Tag.INSTANTIATED)
                 .resolveConstructorInvocation(new BytecodeMethodSignature(
                         BytecodePrimitiveTypeRef.VOID,
                         new BytecodeTypeRef[]{
@@ -130,6 +131,7 @@ public class CompileTarget {
                         }
                 ));
         theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.InvokeInterfaceCallsite.class))
+                .tagWith(BytecodeLinkedClass.Tag.INSTANTIATED)
                 .resolveConstructorInvocation(new BytecodeMethodSignature(
                         BytecodePrimitiveTypeRef.VOID,
                         new BytecodeTypeRef[]{
@@ -138,6 +140,7 @@ public class CompileTarget {
                         }
                 ));
         theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.InvokeVirtualCallsite.class))
+                .tagWith(BytecodeLinkedClass.Tag.INSTANTIATED)
                 .resolveConstructorInvocation(new BytecodeMethodSignature(
                         BytecodePrimitiveTypeRef.VOID,
                         new BytecodeTypeRef[]{
@@ -146,6 +149,7 @@ public class CompileTarget {
                         }
                 ));
         theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.InvokeSpecialCallsite.class))
+                .tagWith(BytecodeLinkedClass.Tag.INSTANTIATED)
                 .resolveConstructorInvocation(new BytecodeMethodSignature(
                         BytecodePrimitiveTypeRef.VOID,
                         new BytecodeTypeRef[]{
@@ -229,6 +233,7 @@ public class CompileTarget {
         if (aOptions.getAdditionalClassesToLink() != null) {
             for (final String theClassname : aOptions.getAdditionalClassesToLink()) {
                 final BytecodeLinkedClass theClass = theLinkerContext.resolveClass(new BytecodeObjectTypeRef(theClassname));
+                theClass.tagWith(BytecodeLinkedClass.Tag.INSTANTIATED);
                 theClass.reflectiveClass().setSupportsClassForName(true);
                 theClass.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
 
@@ -245,6 +250,7 @@ public class CompileTarget {
         // Reflective classes are also fully linked, including all fields
         for (final ReflectionConfiguration.ReflectiveClass reflectiveClass : theLinkerContext.reflectionConfiguration().configuredClasses()) {
             final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(new BytecodeObjectTypeRef(reflectiveClass.getName()));
+            theLinkedClass.tagWith(BytecodeLinkedClass.Tag.INSTANTIATED);
             for (final BytecodeField field : theLinkedClass.getBytecodeClass().fields()) {
                 if (field.getAccessFlags().isStatic()) {
                     theLinkedClass.resolveStaticField(field.getName());
@@ -259,6 +265,7 @@ public class CompileTarget {
         theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(FileDescriptor.class)).resolveStaticMethod("initDefaultFileHandles", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
         final BytecodeLinkedClass theClass = theLinkerContext.resolveClass(theTypeRef);
+        theClass.tagWith(BytecodeLinkedClass.Tag.INSTANTIATED);
         final BytecodeMethod theMethod = theClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
         if (theMethod == null) {
             throw new IllegalStateException("No method named " + aMethodName + " with signature " + aSignature + "found in " + theClass.getClassName().name());
@@ -281,8 +288,7 @@ public class CompileTarget {
             // We have to link all callback implementations. They are not part of the dependency yet as
             // they are not invoked by the bytecode, but from the outside world. By adding them to the
             // dependency tree, we make sure they are available for invocation.
-            final List<BytecodeLinkedClass> theLinkedClasses = theLinkerContext.linkedClasses().map(Edge::targetNode)
-                    .collect(Collectors.toList());
+            final List<BytecodeLinkedClass> theLinkedClasses = theLinkerContext.linkedClasses().collect(Collectors.toList());
             for (final BytecodeLinkedClass theLinkedClass : theLinkedClasses) {
                 if (theLinkedClass.isCallback()) {
                     if (theAlreadySeen.add(theLinkedClass)) {

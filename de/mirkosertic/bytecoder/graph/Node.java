@@ -17,9 +17,7 @@ package de.mirkosertic.bytecoder.graph;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Node<V extends Node, E extends EdgeType> {
@@ -57,16 +55,5 @@ public class Node<V extends Node, E extends EdgeType> {
 
     public <T extends Edge<E, V>> Stream<T> incomingEdges() {
         return (Stream<T>) incomingEdges.stream();
-    }
-
-    public <T extends Node> Optional<T> singleOutgoingNodeMatching(final Predicate<E> aPredicate) {
-        final List<Edge> theEdges = outgoingEdges(aPredicate).collect(Collectors.toList());
-        if (theEdges.isEmpty()) {
-            return Optional.empty();
-        }
-        if (theEdges.size() > 1) {
-            throw new IllegalStateException("Too many edges found!");
-        }
-        return Optional.of((T) theEdges.get(0).targetNode());
     }
 }

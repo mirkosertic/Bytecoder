@@ -21,7 +21,7 @@ public class BytecodeInstructionINVOKEINTERFACE extends BytecodeInstruction impl
     private final int count;
     private final BytecodeConstantPool constantPool;
 
-    public BytecodeInstructionINVOKEINTERFACE(BytecodeOpcodeAddress aOpcodeIndex, int aMethodIndex, int aCount, BytecodeConstantPool aConstantPool) {
+    public BytecodeInstructionINVOKEINTERFACE(final BytecodeOpcodeAddress aOpcodeIndex, final int aMethodIndex, final int aCount, final BytecodeConstantPool aConstantPool) {
         super(aOpcodeIndex);
         methodIndex = aMethodIndex;
         count = aCount;
@@ -33,15 +33,18 @@ public class BytecodeInstructionINVOKEINTERFACE extends BytecodeInstruction impl
     }
 
     @Override
-    public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
-        BytecodeInterfaceRefConstant theMethodRefConstant = getMethodDescriptor();
-        BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
-        BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
+    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext) {
+        final BytecodeInterfaceRefConstant theMethodRefConstant = getMethodDescriptor();
+        final BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
+        final BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
 
-        BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
-        BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
+        final BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
+        final BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
 
-        BytecodeUtf8Constant theConstant = theClassConstant.getConstant();
-        aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theConstant)).resolveVirtualMethod(theName.stringValue(), theSig);
+        final BytecodeUtf8Constant theConstant = theClassConstant.getConstant();
+
+        final BytecodeLinkedClass invokedType = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theConstant));
+        invokedType.tagWith(BytecodeLinkedClass.Tag.INVOKEINTERFACE_TARGET);
+        invokedType.resolveVirtualMethod(theName.stringValue(), theSig);
     }
 }

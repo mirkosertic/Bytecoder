@@ -416,14 +416,14 @@ var bytecoder = {
                bytecoder.referenceTable[target].disabled=arg0;
              },
          },
-         promise: {
-             thenPromise$Handler: function(target,arg0) {
-               bytecoder.referenceTable[target].then(bytecoder.registerCallback(arg0,function (farg0) {var marg0=bytecoder.toBytecoderReference(farg0);bytecoder.exports.dmbawPromise$Handler_VOIDhandleObjectdmbaOpaqueReferenceType(arg0,marg0);}));
-             },
-         },
          parentnode: {
              getElementByIdString: function(target,arg0) {
                return bytecoder.toBytecoderReference(bytecoder.referenceTable[target].getElementById(bytecoder.toJSString(arg0)));
+             },
+         },
+         promise: {
+             thenPromise$Handler: function(target,arg0) {
+               bytecoder.referenceTable[target].then(bytecoder.registerCallback(arg0,function (farg0) {var marg0=bytecoder.toBytecoderReference(farg0);bytecoder.exports.dmbawPromise$Handler_VOIDhandleObjectdmbaOpaqueReferenceType(arg0,marg0);}));
              },
          },
          window: {
@@ -434,14 +434,14 @@ var bytecoder = {
                bytecoder.referenceTable[target].requestAnimationFrame(bytecoder.registerCallback(arg0,function (farg0) {var marg0=farg0;bytecoder.exports.dmbawAnimationFrameCallback_VOIDrunINT(arg0,marg0);}));
              },
          },
-         body: {
-             text: function(target) {
-               return bytecoder.toBytecoderReference(bytecoder.referenceTable[target].text());
-             },
-         },
          eventtarget: {
              addEventListenerStringEventListener: function(target,arg0,arg1) {
                bytecoder.referenceTable[target].addEventListener(bytecoder.toJSString(arg0),bytecoder.registerCallback(arg1,function (farg0) {var marg0=bytecoder.toBytecoderReference(farg0);bytecoder.exports.dmbawEventListener_VOIDrundmbawEvent(arg1,marg0);delete bytecoder.referenceTable[marg0];}));
+             },
+         },
+         body: {
+             text: function(target) {
+               return bytecoder.toBytecoderReference(bytecoder.referenceTable[target].text());
              },
          },
          windoworworkerglobalscope: {

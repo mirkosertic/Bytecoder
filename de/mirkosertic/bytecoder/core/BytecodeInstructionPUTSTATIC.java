@@ -20,7 +20,7 @@ public class BytecodeInstructionPUTSTATIC extends BytecodeInstruction {
     private final int index;
     private final BytecodeConstantPool constantPool;
 
-    public BytecodeInstructionPUTSTATIC(BytecodeOpcodeAddress aIndex, int aConstantPoolIndex, BytecodeConstantPool aConstantPool) {
+    public BytecodeInstructionPUTSTATIC(final BytecodeOpcodeAddress aIndex, final int aConstantPoolIndex, final BytecodeConstantPool aConstantPool) {
         super(aIndex);
         index = aConstantPoolIndex;
         constantPool = aConstantPool;
@@ -31,14 +31,15 @@ public class BytecodeInstructionPUTSTATIC extends BytecodeInstruction {
     }
 
     @Override
-    public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
-        BytecodeFieldRefConstant theConstant = getConstant();
-        BytecodeClassinfoConstant theClass = theConstant.getClassIndex().getClassConstant();
-        BytecodeNameIndex theName = theConstant.getNameAndTypeIndex().getNameAndType().getNameIndex();
+    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext) {
+        final BytecodeFieldRefConstant theConstant = getConstant();
+        final BytecodeClassinfoConstant theClass = theConstant.getClassIndex().getClassConstant();
+        final BytecodeNameIndex theName = theConstant.getNameAndTypeIndex().getNameAndType().getNameIndex();
 
-        BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClass.getConstant()));
-        if (!theLinkedClass.resolveStaticField(theName.getName())) {
-            throw new IllegalStateException("Cannot link static field " + theName.getName().stringValue() + " in " + theLinkedClass.getClassName().name());
+        final BytecodeLinkedClass accessedType = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClass.getConstant()));
+        accessedType.tagWith(BytecodeLinkedClass.Tag.STATIC_READ_WRITE_ACCESS);
+        if (!accessedType.resolveStaticField(theName.getName())) {
+            throw new IllegalStateException("Cannot link static field " + theName.getName().stringValue() + " in " + accessedType.getClassName().name());
         }
     }
 }

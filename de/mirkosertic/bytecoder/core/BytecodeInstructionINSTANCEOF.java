@@ -20,7 +20,7 @@ public class BytecodeInstructionINSTANCEOF extends BytecodeInstruction {
     private final int constantIndex;
     private final BytecodeConstantPool constantPool;
 
-    public BytecodeInstructionINSTANCEOF(BytecodeOpcodeAddress aOpcodeIndex, int aConstantIndex, BytecodeConstantPool aConstantPool) {
+    public BytecodeInstructionINSTANCEOF(final BytecodeOpcodeAddress aOpcodeIndex, final int aConstantIndex, final BytecodeConstantPool aConstantPool) {
         super(aOpcodeIndex);
         constantIndex = aConstantIndex;
         constantPool = aConstantPool;
@@ -31,14 +31,18 @@ public class BytecodeInstructionINSTANCEOF extends BytecodeInstruction {
     }
 
     @Override
-    public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
-        BytecodeClassinfoConstant theType = getTypeRef();
-        BytecodeUtf8Constant theName = theType.getConstant();
+    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext) {
+        final BytecodeClassinfoConstant theType = getTypeRef();
+        final BytecodeUtf8Constant theName = theType.getConstant();
         if (theName.stringValue().startsWith("[")) {
-            BytecodeTypeRef theTypeRef = aLinkerContext.getSignatureParser().toFieldType(theName);
-            aLinkerContext.resolveTypeRef(theTypeRef);
+            final BytecodeTypeRef theTypeRef = aLinkerContext.getSignatureParser().toFieldType(theName);
+            final BytecodeLinkedClass checkedType = aLinkerContext.resolveTypeRef(theTypeRef);
+            if (checkedType != null) {
+                checkedType.tagWith(BytecodeLinkedClass.Tag.INSTANCEOF_CHECKED);
+            }
         } else {
-            aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theName));
+            final BytecodeLinkedClass checkedType = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theName));
+            checkedType.tagWith(BytecodeLinkedClass.Tag.INSTANCEOF_CHECKED);
         }
     }
 }

@@ -31,17 +31,18 @@ public class BytecodeInstructionINVOKESPECIAL extends BytecodeInstructionGeneric
         final BytecodeUtf8Constant theClassName = theClassConstant.getConstant();
 
         final BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
-        final BytecodeLinkedClass theTarget = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassName));
+        final BytecodeLinkedClass invokedType = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassName));
+        invokedType.tagWith(BytecodeLinkedClass.Tag.INVOKESPECIAL_TARGET);
         if ("<init>".equals(theName.stringValue())) {
-            if (!theTarget.resolveConstructorInvocation(theSig)) {
-                throw new IllegalStateException("Cannot find constructor " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue() + " with signature " + theSig + " in class " + theTarget.getClassName().name());
+            if (!invokedType.resolveConstructorInvocation(theSig)) {
+                throw new IllegalStateException("Cannot find constructor " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue() + " with signature " + theSig + " in class " + invokedType.getClassName().name());
             }
         } else {
-            if (!theTarget.resolvePrivateMethod(theName.stringValue(), theSig)) {
-                if (!theTarget.resolveVirtualMethod(theName.stringValue(), theSig)) {
+            if (!invokedType.resolvePrivateMethod(theName.stringValue(), theSig)) {
+                if (!invokedType.resolveVirtualMethod(theName.stringValue(), theSig)) {
                     throw new IllegalStateException(
                             "Cannot find private or virtual method " + theName.stringValue() + " in " + theClassConstant.getConstant()
-                                    .stringValue() + " with signature " + theSig + " in class " + theTarget.getClassName().name());
+                                    .stringValue() + " with signature " + theSig + " in class " + invokedType.getClassName().name());
                 }
             }
         }

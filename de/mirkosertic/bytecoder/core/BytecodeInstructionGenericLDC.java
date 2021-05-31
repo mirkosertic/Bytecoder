@@ -46,18 +46,28 @@ public class BytecodeInstructionGenericLDC extends BytecodeInstruction {
         if (theConstant instanceof BytecodeClassinfoConstant) {
             final BytecodeClassinfoConstant theClassInfo = (BytecodeClassinfoConstant) theConstant;
             if (theClassInfo.getConstant().stringValue().startsWith("[")) {
-                final BytecodeTypeRef theType = aLinkerContext.getSignatureParser().toFieldType(theClassInfo.getConstant());
-                aLinkerContext.resolveTypeRef(theType);
+                final BytecodeTypeRef fieldType = aLinkerContext.getSignatureParser().toFieldType(theClassInfo.getConstant());
+                final BytecodeLinkedClass resolvedFieldType = aLinkerContext.resolveTypeRef(fieldType);
+                if (resolvedFieldType != null) {
+                    resolvedFieldType.tagWith(BytecodeLinkedClass.Tag.REFERENCED_AS_CONSTANT);
+                }
             } else {
-                aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassInfo.getConstant()));
+                final BytecodeLinkedClass type = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassInfo.getConstant()));
+                type.tagWith(BytecodeLinkedClass.Tag.REFERENCED_AS_CONSTANT);
             }
         }
         if (theConstant instanceof BytecodeMethodTypeConstant) {
             final BytecodeMethodTypeConstant m = (BytecodeMethodTypeConstant) theConstant;
             final BytecodeMethodSignature theSignature = m.getDescriptorIndex().methodSignature();
-            aLinkerContext.resolveTypeRef(theSignature.getReturnType());
+            final BytecodeLinkedClass resolvedReturnType = aLinkerContext.resolveTypeRef(theSignature.getReturnType());
+            if (resolvedReturnType != null) {
+                resolvedReturnType.tagWith(BytecodeLinkedClass.Tag.POSSIBLE_USE_IN_LAMBDA);
+            }
             for (final BytecodeTypeRef ref : theSignature.getArguments()) {
-                aLinkerContext.resolveTypeRef(ref);
+                final BytecodeLinkedClass resolvedArgumentType = aLinkerContext.resolveTypeRef(ref);
+                if (resolvedArgumentType != null) {
+                    resolvedArgumentType.tagWith(BytecodeLinkedClass.Tag.POSSIBLE_USE_IN_LAMBDA);
+                }
             }
         }
     }
