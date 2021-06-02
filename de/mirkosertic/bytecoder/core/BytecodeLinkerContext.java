@@ -162,11 +162,17 @@ public class BytecodeLinkerContext {
 
     public void finalizeLinkage() {
         linkedClasses()
-                .filter(t -> t.hasTag(BytecodeLinkedClass.Tag.INSTANTIATED) ||
-                             t.hasTag(BytecodeLinkedClass.Tag.HAS_CLASS_INITIALIZER) ||
-                             t.hasTag(BytecodeLinkedClass.Tag.POSSIBLE_USE_IN_LAMBDA))
-                .map(this::resolveMethods)
-                .forEach(methods -> methods.stream().map(BytecodeResolvedMethods.MethodEntry::getValue)
-                                                    .forEach(method -> method.tagWith(BytecodeMethod.Tag.IMPLEMENTATION_USED)));
+                .filter(t -> t.hasTags() || t.getBytecodeClass().getAccessFlags().isInterface())
+                .forEach(t -> {
+                    final BytecodeResolvedMethods resolvedMethods = t.resolvedMethods();
+                    resolvedMethods.stream()
+                            .filter(entry -> !entry.getValue().getAccessFlags().isAbstract())
+                            .forEach(entry -> {
+                                if (entry.getProvidingClass().getBytecodeClass().getAccessFlags().isInterface()) {
+                                    entry.getProvidingClass().tagWith(BytecodeLinkedClass.Tag.PROVIDES_DEFAULT_IMPLEMENTATION);
+                                }
+                                entry.getValue().tagWith(BytecodeMethod.Tag.IMPLEMENTATION_USED);
+                            });
+                });
     }
 }
