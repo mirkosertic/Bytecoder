@@ -44,7 +44,8 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
         INSTANTIATED,
         REFERENCED_AS_CONSTANT,
         POSSIBLE_USE_IN_LAMBDA,
-        HAS_CLASS_INITIALIZER
+        HAS_CLASS_INITIALIZER,
+        PROVIDES_DEFAULT_IMPLEMENTATION
     }
 
     public static final BytecodeMethodSignature GET_CLASS_SIGNATURE = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Class.class), new BytecodeTypeRef[0]);
@@ -112,6 +113,10 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
 
     public boolean hasTag(final Tag tag) {
         return tags.contains(tag);
+    }
+
+    public boolean hasTags() {
+        return !tags.isEmpty();
     }
 
     public boolean isOpaqueType() {
@@ -441,6 +446,7 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
                 throw new IllegalStateException("Method " + aMethodName + " is not static in " + className.name());
             }
 
+            theMethod.tagWith(BytecodeMethod.Tag.IMPLEMENTATION_USED);
             resolvedMethods.add(new MethodLink(this, theMethod));
 
             resolveMethodSignatureAndBody(theMethod);

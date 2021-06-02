@@ -102,7 +102,11 @@ public class CompileTarget {
             aOptions.getLogger().warn("Failed to load reflection configuration files : {}", e.getMessage());
         }
 
-        final BytecodeLinkedClass theClassLinkedCass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Class.class));
+        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(SecurityManager.class))
+                .tagWith(BytecodeLinkedClass.Tag.INSTANTIATED);
+
+        final BytecodeLinkedClass theClassLinkedCass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))
+            .tagWith(BytecodeLinkedClass.Tag.INSTANTIATED);
         theClassLinkedCass.resolveConstructorInvocation(new BytecodeMethodSignature(
                 BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {}));
 
@@ -161,22 +165,27 @@ public class CompileTarget {
         // We have to link character set implementations
         // to make them available via reflection API
         final BytecodeLinkedClass utf8 = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/UTF_8")));
+        utf8.tagWith(BytecodeLinkedClass.Tag.INSTANTIATED);
         utf8.reflectiveClass().setSupportsClassForName(true);
         utf8.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
 
         final BytecodeLinkedClass utf16 = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/UTF_16")));
+        utf16.tagWith(BytecodeLinkedClass.Tag.INSTANTIATED);
         utf16.reflectiveClass().setSupportsClassForName(true);
         utf16.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
 
         final BytecodeLinkedClass iso88591 = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/ISO_8859_1")));
+        iso88591.tagWith(BytecodeLinkedClass.Tag.INSTANTIATED);
         iso88591.reflectiveClass().setSupportsClassForName(true);
         iso88591.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
 
         final BytecodeLinkedClass usAscii = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("sun/nio/cs/US_ASCII")));
+        usAscii.tagWith(BytecodeLinkedClass.Tag.INSTANTIATED);
         usAscii.reflectiveClass().setSupportsClassForName(true);
         usAscii.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
 
         final BytecodeLinkedClass characterDataLatin1 = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("java/lang/CharacterDataLatin1")));
+        characterDataLatin1.tagWith(BytecodeLinkedClass.Tag.INSTANTIATED);
         characterDataLatin1.reflectiveClass().setSupportsClassForName(true);
         characterDataLatin1.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
 
@@ -262,7 +271,9 @@ public class CompileTarget {
 
         final BytecodeObjectTypeRef theTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(aClass);
 
-        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(FileDescriptor.class)).resolveStaticMethod("initDefaultFileHandles", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+        theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(FileDescriptor.class))
+                .tagWith(BytecodeLinkedClass.Tag.INSTANTIATED)
+                .resolveStaticMethod("initDefaultFileHandles", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
         final BytecodeLinkedClass theClass = theLinkerContext.resolveClass(theTypeRef);
         theClass.tagWith(BytecodeLinkedClass.Tag.INSTANTIATED);
