@@ -1690,25 +1690,16 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         // We build the dynamic signature here
         final List<String> theDelegateArgs = new ArrayList<>();
         final List<String> theCallingArgs = new ArrayList<>();
-        final List<BytecodeTypeRef> theEffectiveArguments = new ArrayList<>();
         for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
             final String theArgName = "linkArg" + k;
             theDelegateArgs.add(theArgName);
             theCallingArgs.add(theArgName);
-            theEffectiveArguments.add(theAdapterAnnotation.getLinkageSignature().getArguments()[k]);
         }
         for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
             final String theArgName = "captureArg" + k;
             theDelegateArgs.add(theArgName);
             theCallingArgs.add(theArgName);
-
-            theEffectiveArguments.add(theAdapterAnnotation.getCaptureSignature().getArguments()[k]);
         }
-
-        final BytecodeMethodSignature theEffectiveSignature = new BytecodeMethodSignature(
-                aMethodHandle.getImplementationSignature().getReturnType(),
-                theEffectiveArguments.toArray(new BytecodeTypeRef[0])
-        );
 
         for (int j=0;j<theDelegateArgs.size();j++) {
             if (j>0) {
@@ -1721,7 +1712,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         aWriter.tab(1).text("return ");
         aWriter.text(aMinifier.toClassName(aMethodHandle.getClassName()));
         aWriter.text(".").text(aMinifier.toSymbol("init")).text("().");
-        aWriter.text(aMinifier.toMethodName(aMethodHandle.getMethodName(), theEffectiveSignature));
+        aWriter.text(aMinifier.toMethodName(aMethodHandle.getMethodName(), aMethodHandle.getImplementationSignature()));
 
         aWriter.text("(");
         for (int j=0;j<theCallingArgs.size();j++) {
@@ -1744,29 +1735,21 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         // We build the dynamic signature here
         final List<String> theDelegateArgs = new ArrayList<>();
         final List<String> theCallingArgs = new ArrayList<>();
-        final List<BytecodeTypeRef> theEffectiveArguments = new ArrayList<>();
         for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
             // We ignore the first static arg, as this is passed as "this" to the function
             final String theArgName = "linkArg" + k;
             theDelegateArgs.add(theArgName);
             theCallingArgs.add(theArgName);
-            theEffectiveArguments.add(theAdapterAnnotation.getLinkageSignature().getArguments()[k]);
         }
         for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
             final String theArgName = "captureArg" + k;
             if (k>0) {
                 theDelegateArgs.add(theArgName);
                 theCallingArgs.add(theArgName);
-                theEffectiveArguments.add(theAdapterAnnotation.getCaptureSignature().getArguments()[k]);
             } else {
                 theCallingArgs.add("this");
             }
         }
-
-        final BytecodeMethodSignature theEffectiveSignature = new BytecodeMethodSignature(
-                aMethodHandle.getImplementationSignature().getReturnType(),
-                theEffectiveArguments.toArray(new BytecodeTypeRef[0])
-        );
 
         for (int j=0;j<theDelegateArgs.size();j++) {
             if (j>0) {
@@ -1777,7 +1760,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         aWriter.text(") {").newLine();
 
         aWriter.tab(1).text("return this.");
-        aWriter.text(aMinifier.toMethodName(aMethodHandle.getMethodName(), theEffectiveSignature));
+        aWriter.text(aMinifier.toMethodName(aMethodHandle.getMethodName(), aMethodHandle.getImplementationSignature()));
 
         aWriter.text("(");
         for (int j=0;j<theCallingArgs.size();j++) {
@@ -1800,7 +1783,6 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         // We build the dynamic signature here
         final List<String> theDelegateArgs = new ArrayList<>();
         final List<String> theCallingArgs = new ArrayList<>();
-        final List<BytecodeTypeRef> theEffectiveArguments = new ArrayList<>();
         for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
             // We ignore the first static arg, as this is passed as "this" to the function
             final String theArgName = "linkArg" + k;
@@ -1810,20 +1792,12 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
             } else {
                 theCallingArgs.add("this");
             }
-            theEffectiveArguments.add(theAdapterAnnotation.getLinkageSignature().getArguments()[k]);
         }
         for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
             final String theArgName = "captureArg" + k;
             theDelegateArgs.add(theArgName);
             theCallingArgs.add(theArgName);
-
-            theEffectiveArguments.add(theAdapterAnnotation.getCaptureSignature().getArguments()[k]);
         }
-
-        final BytecodeMethodSignature theEffectiveSignature = new BytecodeMethodSignature(
-                aMethodHandle.getImplementationSignature().getReturnType(),
-                theEffectiveArguments.toArray(new BytecodeTypeRef[0])
-        );
 
         for (int j=0;j<theDelegateArgs.size();j++) {
             if (j>0) {
@@ -1837,7 +1811,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         aWriter.text(aMinifier.toClassName(aMethodHandle.getClassName()));
         aWriter.text(".").text(aMinifier.toSymbol("init")).text("()");
         aWriter.text(".").text(aMinifier.toSymbol("__runtimeclass"));
-        aWriter.text(".").text(aMinifier.toMethodName("$newInstance", theEffectiveSignature));
+        aWriter.text(".").text(aMinifier.toMethodName("$newInstance", aMethodHandle.getImplementationSignature()));
 
         aWriter.text("(");
         for (int j=0;j<theCallingArgs.size();j++) {
@@ -1860,27 +1834,19 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         // We build the dynamic signature here
         final List<String> theDelegateArgs = new ArrayList<>();
         final List<String> theCallingArgs = new ArrayList<>();
-        final List<BytecodeTypeRef> theEffectiveArguments = new ArrayList<>();
         for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
             // We ignore the first static arg, as this is passed as "this" to the function
             final String theArgName = "linkArg" + k;
             if (k>0) {
                 theDelegateArgs.add(theArgName);
                 theCallingArgs.add(theArgName);
-                theEffectiveArguments.add(theAdapterAnnotation.getLinkageSignature().getArguments()[k]);
             }
         }
         for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
             final String theArgName = "captureArg" + k;
             theDelegateArgs.add(theArgName);
             theCallingArgs.add(theArgName);
-            theEffectiveArguments.add(theAdapterAnnotation.getCaptureSignature().getArguments()[k]);
         }
-
-        final BytecodeMethodSignature theEffectiveSignature = new BytecodeMethodSignature(
-                aMethodHandle.getImplementationSignature().getReturnType(),
-                theEffectiveArguments.toArray(new BytecodeTypeRef[0])
-        );
 
         for (int j=0;j<theDelegateArgs.size();j++) {
             if (j>0) {
@@ -1891,7 +1857,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         aWriter.text(") {").newLine();
 
         aWriter.tab(1).text("return this.");
-        aWriter.text(aMinifier.toMethodName(aMethodHandle.getMethodName(), theEffectiveSignature));
+        aWriter.text(aMinifier.toMethodName(aMethodHandle.getMethodName(), aMethodHandle.getImplementationSignature()));
 
         aWriter.text("(");
         for (int j=0;j<theCallingArgs.size();j++) {
@@ -1914,27 +1880,19 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         // We build the dynamic signature here
         final List<String> theDelegateArgs = new ArrayList<>();
         final List<String> theCallingArgs = new ArrayList<>();
-        final List<BytecodeTypeRef> theEffectiveArguments = new ArrayList<>();
         for (int k=0;k<theAdapterAnnotation.getLinkageSignature().getArguments().length;k++) {
             // We ignore the first static arg, as this is passed as "this" to the function
             final String theArgName = "linkArg" + k;
             if (k>0) {
                 theDelegateArgs.add(theArgName);
                 theCallingArgs.add(theArgName);
-                theEffectiveArguments.add(theAdapterAnnotation.getLinkageSignature().getArguments()[k]);
             }
         }
         for (int k=0;k<theAdapterAnnotation.getCaptureSignature().getArguments().length;k++) {
             final String theArgName = "captureArg" + k;
             theDelegateArgs.add(theArgName);
             theCallingArgs.add(theArgName);
-            theEffectiveArguments.add(theAdapterAnnotation.getCaptureSignature().getArguments()[k]);
         }
-
-        final BytecodeMethodSignature theEffectiveSignature = new BytecodeMethodSignature(
-                aMethodHandle.getImplementationSignature().getReturnType(),
-                theEffectiveArguments.toArray(new BytecodeTypeRef[0])
-        );
 
         for (int j=0;j<theDelegateArgs.size();j++) {
             if (j>0) {
@@ -1947,7 +1905,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         aWriter.tab(1).text("return ");
         aWriter.text(aMinifier.toClassName(aMethodHandle.getClassName()));
         aWriter.text(".");
-        aWriter.text(aMinifier.toMethodName(aMethodHandle.getMethodName(), theEffectiveSignature));
+        aWriter.text(aMinifier.toMethodName(aMethodHandle.getMethodName(), aMethodHandle.getImplementationSignature()));
         aWriter.text(".call(this");
         for (final String theCallingArg : theCallingArgs) {
             aWriter.text(",");
