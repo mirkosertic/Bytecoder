@@ -869,6 +869,8 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         final String theGetClassLoaderMethodName = theMinifier.toMethodName("getClassLoader", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(ClassLoader.class), new BytecodeTypeRef[0]));
         final String theGetClassLoaderMethodName0 = theMinifier.toMethodName("getClassLoader0", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(ClassLoader.class), new BytecodeTypeRef[0]));
         final String theHashCodeMethodName = theMinifier.toMethodName("hashCode", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
+        final String theEqualsMethodName = theMinifier.toMethodName("equals", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BOOLEAN, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Object.class)}));
+
         final String theIsAssignableFromMethodName = theMinifier.toMethodName("isAssignableFrom", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BOOLEAN, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Class.class)}));
         final String theGetConstructorMethodName = theMinifier.toMethodName("getConstructor", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
                 Constructor.class), new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(Class.class), 1)}));
@@ -890,12 +892,18 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(2).text("this.declaredFields").assign().text("undefined;").newLine();
         theWriter.tab(2).text("this.primitive").assign().text("primitive;").newLine();
         theWriter.tab(1).text("};").newLine();
+        theWriter.tab(1).text("C.").text(theMinifier.toSymbol("__runtimeclass")).assign().text("new C(-1,null,[],false);").newLine();
         theWriter.tab(1).text("C.prototype.").text(theGetNameMethodName).assign().text("function()").space().text("{").newLine();
         theWriter.tab(2).text("return bytecoder.stringpool[this.classNameIndex];").newLine();
         theWriter.tab(1).text("};").newLine();
+
         theWriter.tab(1).text("C.prototype.").text(theHashCodeMethodName).assign().text("function()").space().text("{").newLine();
-        theWriter.tab(2).text("return this.").text(theGetNameMethodName).text("().").text(theHashCodeMethodName).text("();").newLine();
+        theWriter.tab(2).text("return 42;").newLine();
         theWriter.tab(1).text("};").newLine();
+
+        theWriter.tab().text("C.prototype.").text(theEqualsMethodName).assign().text("function(args)").space().text("{").newLine();
+        theWriter.tab(2).text("return ").text(theMinifier.toClassName(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))).text(".prototype.").text(theEqualsMethodName).text(".call(this, args);").newLine();
+        theWriter.tab().text("};").newLine();
 
         theWriter.tab(1).text("C.prototype.").text(theIsAssignableFromMethodName).assign().text("function(aOtherType)").space().text("{").newLine();
         theWriter.tab(2).text("for (var i=0;i<aOtherType.implementedTypes.length;i++) {").newLine();
@@ -914,6 +922,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(1).text("};").newLine();
 
         theWriter.tab().text("C.prototype.").text("iof").assign().text("function(aType)").space().text("{").newLine();
+        theWriter.tab(2).text("if (aType === ").text(theMinifier.toSymbol("jlClass")).text(") return true;").newLine();
         theWriter.tab(2).text("for (var i=0;i<this.implementedTypes.length;i++) {").newLine();
         theWriter.tab(3).text("if (this.implementedTypes[i].").text(theMinifier.toSymbol("__runtimeclass")).text("===aType.").text(theMinifier.toSymbol("__runtimeclass")).text(") {").newLine();
         theWriter.tab(4).text("return true;").newLine();

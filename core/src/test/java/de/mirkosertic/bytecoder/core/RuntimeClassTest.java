@@ -109,4 +109,20 @@ public class RuntimeClassTest {
     public void testIsNotInstance() {
         Assert.assertFalse(RuntimeClassTest.class.isInstance("Hello world!"));
     }
+
+    @Test
+    public void testInstanceOf() {
+        final Class clazz = String.class;
+        Assert.assertTrue(clazz instanceof Class);
+    }
+
+    @Test
+    public void testHashCode() {
+        Assert.assertEquals(42, String.class.hashCode());
+    }
+
+    @Test
+    public void testEquals() {
+        Assert.assertEquals(String.class, String.class);
+    }
 }

@@ -274,7 +274,7 @@ public class TClass {
 
     @Override
     public int hashCode() {
-        return getName().hashCode();
+        return 42;
     }
 
     public <T> T cast(final Object obj) {
