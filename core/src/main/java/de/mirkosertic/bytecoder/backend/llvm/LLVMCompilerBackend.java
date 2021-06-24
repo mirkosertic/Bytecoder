@@ -1267,8 +1267,8 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.print(LLVMWriterUtils.toClassName(theClassLinkedCass.getClassName()));
                 pw.print(LLVMWriter.VTABLETYPESUFFIX);
                 pw.println(" {");
-                pw.println("    i1(i32,i32)* undef,");
-                pw.println("    i32(i32,i32)* undef");
+                pw.println("    i1(i32,i32)* @jlClass__instanceof,");
+                pw.println("    i32(i32,i32)* @jlClass__interfacedispatch");
                 for (final BytecodeVTable.Slot slot : theClassSlots) {
                     final BytecodeVTable.VPtr ptr = theClassVTable.slot(slot);
                     if (ptr.getImplementingClass() != null) {

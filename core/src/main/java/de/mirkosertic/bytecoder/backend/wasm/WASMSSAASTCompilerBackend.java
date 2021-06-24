@@ -15,33 +15,6 @@
  */
 package de.mirkosertic.bytecoder.backend.wasm;
 
-import static de.mirkosertic.bytecoder.backend.wasm.WASMSSAASTWriter.toType;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.f32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
-import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.Stack;
-import java.util.stream.Collectors;
-
 import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
 import de.mirkosertic.bytecoder.allocator.Register;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
@@ -103,6 +76,33 @@ import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.stackifier.HeadToHeadControlFlowException;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.Stack;
+import java.util.stream.Collectors;
+
+import static de.mirkosertic.bytecoder.backend.wasm.WASMSSAASTWriter.toType;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.call;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.currentMemory;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.f32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getGlobal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.getLocal;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.i32;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.param;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionReference;
+import static de.mirkosertic.bytecoder.backend.wasm.ast.ConstExpressions.weakFunctionTableReference;
 
 public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResult> {
 
@@ -476,15 +476,29 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             theMethod.flow.ret(i32.c(0, null), null);
         }
 
+        final ExportableFunction runtimeInstanceOf = module.getFunctions().newFunction("RUNTIMECLASS" + WASMSSAASTWriter.INSTANCEOFSUFFIX, Arrays.asList(param("thisRef", PrimitiveType.i32), param("otherType", PrimitiveType.i32)), PrimitiveType.i32).toTable();
+        {
+            final BytecodeLinkedClass theClassLinkedCass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Class.class));
+            final Block checkblock = runtimeInstanceOf.flow.block("check", null);
+            checkblock.flow.branchIff(checkblock, i32.ne(getLocal(runtimeInstanceOf.localByLabel("otherType"), null), i32.c(theClassLinkedCass.getUniqueId(), null), null), null);
+            checkblock.flow.ret(i32.c(1, null), null);
+
+            runtimeInstanceOf.flow.ret(i32.c(0, null), null);
+        }
+
         final ExportableFunction runtimeResolvevtableindex = module.getFunctions().newFunction("RUNTIMECLASS" + WASMSSAASTWriter.VTABLEFUNCTIONSUFFIX, Arrays.asList(param("thisRef", PrimitiveType.i32), param("methodId", PrimitiveType.i32)), PrimitiveType.i32).toTable();
         {
+            final Block instanceOfBlock = runtimeResolvevtableindex.flow.block("instanceof", null);
+            instanceOfBlock.flow.branchIff(instanceOfBlock, i32.ne(getLocal(runtimeResolvevtableindex.localByLabel("methodId"), null), i32.c(WASMSSAASTWriter.GENERATED_INSTANCEOF_METHOD_ID, null), null), null);
+            instanceOfBlock.flow.ret(weakFunctionTableReference("RUNTIMECLASS" + WASMSSAASTWriter.INSTANCEOFSUFFIX, null), null);
+
             final BytecodeLinkedClass theClassLinkedCass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Class.class));
             final BytecodeResolvedMethods theRuntimeMethodMap = aLinkerContext.resolveMethods(theClassLinkedCass);
             theRuntimeMethodMap.stream().forEach(aMethodMapEntry -> {
                 final BytecodeMethod theMethod = aMethodMapEntry.getValue();
 
                 if (!theMethod.getAccessFlags().isStatic() && !theMethod.isConstructor() && !theMethod.isClassInitializer() &&
-                    aMethodMapEntry.getProvidingClass().getClassName().equals(BytecodeObjectTypeRef.fromRuntimeClass(Class.class))) {
+                        (aMethodMapEntry.getProvidingClass().getClassName().equals(BytecodeObjectTypeRef.fromRuntimeClass(Class.class)) || (theMethod.getName().stringValue().equals("equals")))) {
 
                     final BytecodeVirtualMethodIdentifier theMethodIdentifier = aLinkerContext.getMethodCollection().identifierFor(theMethod);
                     final Block block = runtimeResolvevtableindex.flow.block("m" + theMethodIdentifier.getIdentifier(), null);
