@@ -19,7 +19,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import de.mirkosertic.bytecoder.api.web.ClickEvent;
+import de.mirkosertic.bytecoder.api.web.MouseEvent;
 import de.mirkosertic.bytecoder.api.web.EventListener;
 import de.mirkosertic.bytecoder.api.web.EventTarget;
 import de.mirkosertic.bytecoder.api.web.Window;
@@ -34,10 +34,10 @@ import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 }, includeJVM = false)
 public class GCTest {
 
-    private static EventListener<ClickEvent> registerClicklistenerOn(final EventTarget target) {
-        final EventListener<ClickEvent> listener = new EventListener<ClickEvent>() {
+    private static EventListener<MouseEvent> registerClicklistenerOn(final EventTarget target) {
+        final EventListener<MouseEvent> listener = new EventListener<MouseEvent>() {
             @Override
-            public void run(ClickEvent aEvent) {
+            public void run(MouseEvent aEvent) {
 
             }
         };
@@ -48,7 +48,7 @@ public class GCTest {
     @Test
     public void testListenerGC() {
         final Window w = Window.window();
-        final EventListener<ClickEvent> listener = registerClicklistenerOn(w);
+        final EventListener<MouseEvent> listener = registerClicklistenerOn(w);
         final int ptr = Address.ptrOf(listener);
         Assert.assertTrue(MemoryManager.isUsedAsCallback(ptr));
         Assert.assertFalse(MemoryManager.isUsedByHeapUserSpace(ptr));
