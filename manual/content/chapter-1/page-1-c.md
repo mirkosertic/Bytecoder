@@ -31,7 +31,7 @@ by default.
         <artifactId>bytecoder-core</artifactId>
         <version>{{% siteparam "bytecoderversion" %}}</version>
     </dependency>
-</dependency>
+</dependencies>
 ```
 
 ### bytecoder.api
@@ -46,7 +46,7 @@ do its job.
         <artifactId>bytecoder.api</artifactId>
         <version>{{% siteparam "bytecoderversion" %}}</version>
     </dependency>
-</dependency>
+</dependencies>
 ```
 
 ### java.base
@@ -60,7 +60,7 @@ Java.base contains the `java.base` JPMS Module.
         <artifactId>java.base</artifactId>
         <version>{{% siteparam "bytecoderversion" %}}</version>
     </dependency>
-</dependency>
+</dependencies>
 ```
 
 ### java.logging
@@ -74,7 +74,7 @@ Java.base contains the `java.logging` JPMS Module.
         <artifactId>java.logging</artifactId>
         <version>{{% siteparam "bytecoderversion" %}}</version>
     </dependency>
-</dependency>
+</dependencies>
 ```
 
 ### java.xml
@@ -88,13 +88,12 @@ Java.xml contains the `java.xml` JPMS Module.
         <artifactId>java.xml</artifactId>
         <version>{{% siteparam "bytecoderversion" %}}</version>
     </dependency>
-</dependency>
+</dependencies>
 ```
 
 ### java.datatransfer
 
 Java.datatransfer contains the `java.datatransfer` JPMS Module.
-
 
 ```
 <dependencies>
@@ -103,7 +102,7 @@ Java.datatransfer contains the `java.datatransfer` JPMS Module.
         <artifactId>java.datatransfer</artifactId>
         <version>{{% siteparam "bytecoderversion" %}}</version>
     </dependency>
-</dependency>
+</dependencies>
 ```
 
 ### java.desktop
@@ -117,7 +116,7 @@ Java.desktop contains the `java.desktop` JPMS Module.
         <artifactId>java.desktop</artifactId>
         <version>{{% siteparam "bytecoderversion" %}}</version>
     </dependency>
-</dependency>
+</dependencies>
 ```
 
 ### bytecoder.web
@@ -131,7 +130,7 @@ Bytecoder.web contains APIs to interact with the Browser.
         <artifactId>bytecoder.web</artifactId>
         <version>{{% siteparam "bytecoderversion" %}}</version>
     </dependency>
-</dependency>
+</dependencies>
 ```
 
 ### bytecoder.vue
@@ -145,7 +144,7 @@ Bytecoder.vue allows vue.js enabled frontends using Bytecoder.
         <artifactId>bytecoder.vue</artifactId>
         <version>{{% siteparam "bytecoderversion" %}}</version>
     </dependency>
-</dependency>
+</dependencies>
 ```
 
 ### bytecoder.opencl
@@ -159,5 +158,5 @@ Bytecoder.opencl is required if you want to use the `OpenCL` integration.
         <artifactId>bytecoder.opencl</artifactId>
         <version>{{% siteparam "bytecoderversion" %}}</version>
     </dependency>
-</dependency>
+</dependencies>
 ```
