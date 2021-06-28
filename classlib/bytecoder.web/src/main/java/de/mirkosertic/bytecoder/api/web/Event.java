@@ -21,6 +21,6 @@ import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 public interface Event extends OpaqueReferenceType {
 
     @OpaqueProperty
-    String getType();
+    String type();
 
 }
