@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.api.web;
 
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
 
-public interface ClickEvent extends Event {
+public interface MouseEvent extends Event {
 
     @OpaqueProperty
     float clientX();
