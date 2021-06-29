@@ -32,4 +32,11 @@ public class TConstructor {
     public Object newInstance(final Object[] constructorArgs) {
         return VM.newInstanceFromDefaultConstructor(clz);
     }
+
+    public void setAccessible(final boolean a){
+    }
+
+    public boolean isAccessible() {
+        return true;
+    }
 }
