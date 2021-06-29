@@ -20,7 +20,7 @@ import de.mirkosertic.bytecoder.api.Import
 import de.mirkosertic.bytecoder.api.web.AnimationFrameCallback
 import de.mirkosertic.bytecoder.api.web.CanvasRenderingContext2D
 import de.mirkosertic.bytecoder.api.web.EventListener
-import de.mirkosertic.bytecoder.api.web.ClickEvent
+import de.mirkosertic.bytecoder.api.web.MouseEvent
 import de.mirkosertic.bytecoder.api.web.HTMLButton
 import de.mirkosertic.bytecoder.api.web.HTMLCanvasElement
 import de.mirkosertic.bytecoder.api.web.Window
@@ -189,7 +189,7 @@ object JBox2DSimulationKotlin {
         }
 
         val button = document.getElementById<HTMLButton>("button")
-        button.addEventListener("click", EventListener<ClickEvent> {
+        button.addEventListener("click", EventListener<MouseEvent> {
             button.disabled(true)
             window!!.requestAnimationFrame(animationCallback)
         })
