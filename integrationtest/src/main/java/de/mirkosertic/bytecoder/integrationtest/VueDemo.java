@@ -20,7 +20,7 @@ import de.mirkosertic.bytecoder.api.vue.Vue;
 import de.mirkosertic.bytecoder.api.vue.VueBuilder;
 import de.mirkosertic.bytecoder.api.vue.VueEventListener;
 import de.mirkosertic.bytecoder.api.vue.VueInstance;
-import de.mirkosertic.bytecoder.api.web.ClickEvent;
+import de.mirkosertic.bytecoder.api.web.MouseEvent;
 
 public class VueDemo {
 
@@ -35,9 +35,9 @@ public class VueDemo {
         final VueBuilder<MyVueInstance> theBuilder = Vue.builder();
         theBuilder.bindToTemplateSelector("#vuetemplate");
         theBuilder.data().setProperty("welcomemessage", "hello world!");
-        theBuilder.addEventListener("clicked", new VueEventListener<MyVueInstance, ClickEvent>() {
+        theBuilder.addEventListener("clicked", new VueEventListener<MyVueInstance, MouseEvent>() {
             @Override
-            public void handle(final MyVueInstance instance, final ClickEvent event) {
+            public void handle(final MyVueInstance instance, final MouseEvent event) {
                 instance.welcomemessage(String.format("hello world, you have clicked. Timestamp is %s", System.currentTimeMillis()));
             }
         });

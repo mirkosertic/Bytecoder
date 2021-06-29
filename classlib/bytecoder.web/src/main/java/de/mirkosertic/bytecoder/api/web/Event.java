@@ -15,7 +15,12 @@
  */
 package de.mirkosertic.bytecoder.api.web;
 
+import de.mirkosertic.bytecoder.api.OpaqueProperty;
 import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
 public interface Event extends OpaqueReferenceType {
+
+    @OpaqueProperty
+    String type();
+
 }

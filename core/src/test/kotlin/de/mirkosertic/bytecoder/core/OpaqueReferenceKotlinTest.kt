@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core
 
-import de.mirkosertic.bytecoder.api.web.ClickEvent
+import de.mirkosertic.bytecoder.api.web.MouseEvent
 import de.mirkosertic.bytecoder.api.web.EventListener
 import de.mirkosertic.bytecoder.api.web.HTMLDocument
 import de.mirkosertic.bytecoder.api.web.Window
@@ -35,7 +35,7 @@ class OpaqueReferenceKotlinTest {
     fun setTitleTest() {
         val w = Window.window()
         val d = w.document()
-        d.addEventListener("click", EventListener<ClickEvent> {
+        d.addEventListener("click", EventListener<MouseEvent> {
             d.title("Hello world!!")
         })
     }
@@ -44,7 +44,7 @@ class OpaqueReferenceKotlinTest {
     fun setTitleTestMember() {
         window = Window.window()
         document = window!!.document()
-        document!!.addEventListener("click", EventListener<ClickEvent> {
+        document!!.addEventListener("click", EventListener<MouseEvent> {
             document!!.title("Hello world!!")
         })
     }

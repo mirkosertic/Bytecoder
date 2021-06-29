@@ -15,11 +15,10 @@
  */
 package de.mirkosertic.bytecoder.integrationtest;
 
-import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.Import;
 import de.mirkosertic.bytecoder.api.web.AnimationFrameCallback;
 import de.mirkosertic.bytecoder.api.web.CanvasRenderingContext2D;
-import de.mirkosertic.bytecoder.api.web.ClickEvent;
+import de.mirkosertic.bytecoder.api.web.MouseEvent;
 import de.mirkosertic.bytecoder.api.web.Document;
 import de.mirkosertic.bytecoder.api.web.EventListener;
 import de.mirkosertic.bytecoder.api.web.HTMLButton;
@@ -202,9 +201,9 @@ public class JBox2DSimulation {
         };
 
         final HTMLButton button = document.getElementById("button");
-        button.addEventListener("click", new EventListener<ClickEvent>() {
+        button.addEventListener("click", new EventListener<MouseEvent>() {
             @Override
-            public void run(final ClickEvent aValue) {
+            public void run(final MouseEvent aValue) {
                 button.disabled(true);
                 window.requestAnimationFrame(animationCallback);
             }
