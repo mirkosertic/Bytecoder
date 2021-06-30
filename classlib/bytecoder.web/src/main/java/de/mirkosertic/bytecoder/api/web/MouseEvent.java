@@ -20,6 +20,9 @@ import de.mirkosertic.bytecoder.api.OpaqueProperty;
 public interface MouseEvent extends Event {
 
     @OpaqueProperty
+    int button();
+
+    @OpaqueProperty
     float clientX();
 
     @OpaqueProperty
