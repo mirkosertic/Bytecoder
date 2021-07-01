@@ -16,13 +16,21 @@
 package de.mirkosertic.bytecoder.api.web;
 
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
-import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-public interface KeyEvent extends Event {
-
-    @OpaqueProperty
-    OpaqueReferenceType getWhich();
+public interface KeyboardEvent extends Event {
 
     @OpaqueProperty
-    float keyCode();
+    int keyCode();
+
+    @OpaqueProperty
+    int charCode();
+
+    @OpaqueProperty
+    String key();
+
+    @OpaqueProperty
+    String code();
+
+    @OpaqueProperty
+    int location();
 }
