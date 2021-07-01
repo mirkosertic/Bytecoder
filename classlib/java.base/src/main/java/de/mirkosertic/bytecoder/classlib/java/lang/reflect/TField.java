@@ -20,6 +20,7 @@ import de.mirkosertic.bytecoder.classlib.VM;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 
 @SubstitutesInClass(completeReplace = true)
 public class TField {
@@ -73,5 +74,16 @@ public class TField {
 
     public Class getType() {
         return type;
+    }
+
+    public boolean isAccessible() {
+        return true;
+    }
+
+    public void setAccessible(final boolean a){
+    }
+
+    public Type getGenericType() {
+        return null;
     }
 }
