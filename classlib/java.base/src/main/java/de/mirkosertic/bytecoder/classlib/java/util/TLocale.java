@@ -19,6 +19,10 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 import de.mirkosertic.bytecoder.classlib.VM;
 
 import java.util.Locale;
+import java.util.Locale.Category;
+
+import sun.util.locale.BaseLocale;
+import sun.util.locale.LocaleExtensions;
 
 @SubstitutesInClass(completeReplace = true)
 public class TLocale {
@@ -26,10 +30,14 @@ public class TLocale {
     public static final Locale ROOT = new Locale("", "");
 
     public static final Locale ENGLISH = new Locale("en");
+    public static final Locale JAPANESE = new Locale("ja");
+    public static final Locale KOREAN = new Locale("ko");
 
     public static final Locale US = new Locale("en", "US");
-
     public static final Locale JAPAN = new Locale("ja", "JP");
+    public static final Locale KOREA = new Locale("ko", "KR");
+    private transient BaseLocale baseLocale;
+    private transient LocaleExtensions localeExtensions;
 
     public static Locale getDefault() {
         return VM.defaultLocale();
@@ -71,5 +79,62 @@ public class TLocale {
 
     public String getVariant() {
         return variant;
+    }
+
+    public String getDisplayName(){
+        return getDisplayName(getDefault(Category.DISPLAY));
+    }
+
+    public String getDisplayName(Locale inLocale) {
+        return "Locale display name. (Hack)";
+    }
+
+    public boolean hasExtensions(){
+        return false;
+    }
+
+    public String getUnicodeLocaleType(String key) {
+        return null;
+    }
+
+    private static LocaleExtensions getCompatibilityExtensions(String language,
+                                                               String script,
+                                                               String country,
+                                                               String variant) {
+        return null;
+    }
+
+    static Locale getInstance(String language, String country, String variant) {
+        return getInstance(language, "", country, variant, null);
+    }
+
+    static Locale getInstance(String language, String script, String country,
+                                      String variant, LocaleExtensions extensions) {
+        if (language== null || script == null || country == null || variant == null) {
+            throw new NullPointerException();
+        }
+
+        if (extensions == null) {
+            extensions = getCompatibilityExtensions(language, script, country, variant);
+        }
+
+        BaseLocale baseloc = BaseLocale.getInstance(language, script, country, variant);
+        return getInstance(baseloc, extensions);
+    }
+
+    static Locale getInstance(BaseLocale baseloc, LocaleExtensions extensions) {
+        return null;
+    }
+
+    public String toLanguageTag() {
+        return null;
+    }
+
+    public static Locale forLanguageTag(String languageTag) {
+        return VM.defaultLocale();
+    }
+
+    public Locale stripExtensions() {
+        return VM.defaultLocale();
     }
 }
