@@ -5,11 +5,11 @@ import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
 public abstract class WebGLActiveInfo implements OpaqueReferenceType {
     @OpaqueProperty("size")
-    abstract int getSize();
+    public abstract int getSize();
 
     @OpaqueProperty("name")
-    abstract String getName();
+    public abstract String getName();
 
     @OpaqueProperty("type")
-    abstract int getType();
+    public abstract int getType();
 }
