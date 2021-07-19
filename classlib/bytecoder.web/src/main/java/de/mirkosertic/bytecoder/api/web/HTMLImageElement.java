@@ -16,7 +16,34 @@
 package de.mirkosertic.bytecoder.api.web;
 
 
+import de.mirkosertic.bytecoder.api.OpaqueProperty;
 import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
 public interface HTMLImageElement extends CanvasImageSource, OpaqueReferenceType {
+    @OpaqueProperty("alt")
+    String getAlt();
+
+    @OpaqueProperty("height")
+    int getHeight();
+
+    @OpaqueProperty("width")
+    int getWidth();
+
+    @OpaqueProperty("height")
+    void setHeight(int height);
+
+    @OpaqueProperty("width")
+    int setWidth(int width);
+
+    @OpaqueProperty("src")
+    void setSrc(String url);
+
+    @OpaqueProperty("src")
+    String getSrc();
+
+    @OpaqueProperty("isMap")
+    boolean isMap();
+
+    @OpaqueProperty("crossOrigin")
+    void setCrossOrigin(String crossOrigin);
 }
