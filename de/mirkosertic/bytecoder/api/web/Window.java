@@ -33,4 +33,8 @@ public abstract class Window implements EventTarget, WindowOrWorkerGlobalScope {
 
     @OpaqueProperty
     public abstract float innerHeight();
+
+    @OpaqueProperty
+    public abstract float devicePixelRatio();
+
 }
