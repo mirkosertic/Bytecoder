@@ -19,7 +19,7 @@ package de.mirkosertic.bytecoder.api.web;
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
 import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-public interface HTMLImageElement extends CanvasImageSource, OpaqueReferenceType {
+public interface HTMLImageElement extends CanvasImageSource, HTMLElement {
     @OpaqueProperty("alt")
     String getAlt();
 
