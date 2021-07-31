@@ -20,6 +20,12 @@ import de.mirkosertic.bytecoder.api.OpaqueProperty;
 public interface Element extends Node, ParentNode {
 
     @OpaqueProperty
+    int clientWidth();
+
+    @OpaqueProperty
+    int clientHeight();
+    
+    @OpaqueProperty
     String innerHTML();
 
     @OpaqueProperty
