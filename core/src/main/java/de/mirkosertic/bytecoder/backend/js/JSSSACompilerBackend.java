@@ -243,6 +243,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab().text("},").newLine();
 
         theWriter.tab().text("imports").colon().text("{").newLine();
+
         theWriter.tab(2).text("stringutf16").colon().text("{").newLine();
         theWriter.tab(3).text("isBigEndian").colon().text("function()").space().text("{").newLine();
         theWriter.tab(4).text("return 1;").newLine();
@@ -529,6 +530,29 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(3).text("nanoTime").colon().text("function()").space().text("{").newLine();
         theWriter.tab(4).text("return Date.now() * 1000000;").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("cds").colon().text("{").newLine();
+        theWriter.tab(3).text("isDumpingClassList0").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(4).text("return false;").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("isDumpingArchive0").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(4).text("return false;").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("isSharingEnabled0").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(4).text("return false;").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("initializeFromArchiveClass").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(4).text("").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(3).text("getRandomSeedForDumping").colon().text("function()").space().text("{").newLine();
+        theWriter.tab(4).text("return 0;").newLine();
+        theWriter.tab(3).text("},").newLine();
+        theWriter.tab(2).text("},").newLine();
+
+        theWriter.tab(2).text("scopedmemoryaccess").colon().text("{").newLine();
+        theWriter.tab(3).text("registerNatives").colon().text("function()").space().text("{").newLine();
         theWriter.tab(3).text("},").newLine();
         theWriter.tab(2).text("},").newLine();
 

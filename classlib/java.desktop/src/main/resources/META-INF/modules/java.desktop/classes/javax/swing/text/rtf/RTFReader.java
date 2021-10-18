@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -133,6 +133,7 @@ class RTFReader extends RTFParser
   static boolean useNeXTForAnsi = false;
   static {
       characterSets = new Hashtable<String, char[]>();
+      defineCharacterSet("ansicpg", latin1TranslationTable);
   }
 
 /* TODO: per-font font encodings ( \fcharset control word ) ? */
@@ -487,6 +488,11 @@ public boolean handleKeyword(String keyword, int parameter)
         keyword.equals("private"))
         ignoreGroupIfUnknownKeywordSave = true;
 
+     if (keyword.contains("ansicpg")) {
+         setCharacterSet("ansicpg");
+         return true;
+     }
+
     if (rtfDestination != null) {
         if(rtfDestination.handleKeyword(keyword, parameter))
             return true;
@@ -561,6 +567,7 @@ getCharacterSet(final String name)
 {
     char[] set = characterSets.get(name);
     if (set == null) {
+        @SuppressWarnings("removal")
         InputStream charsetStream = AccessController.doPrivileged(
                 new PrivilegedAction<InputStream>() {
                     public InputStream run() {

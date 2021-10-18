@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -86,8 +86,14 @@ public class JPEGImageReader extends ImageReader {
     private int numImages = 0;
 
     static {
+        initStatic();
+    }
+
+    @SuppressWarnings("removal")
+    private static void initStatic() {
         java.security.AccessController.doPrivileged(
             new java.security.PrivilegedAction<Void>() {
+                @Override
                 public Void run() {
                     System.loadLibrary("javajpeg");
                     return null;
@@ -278,6 +284,7 @@ public class JPEGImageReader extends ImageReader {
         }
     }
 
+    @Override
     public void setInput(Object input,
                          boolean seekForwardOnly,
                          boolean ignoreMetadata)
@@ -384,6 +391,7 @@ public class JPEGImageReader extends ImageReader {
         tablesOnlyChecked = true;
     }
 
+    @Override
     public int getNumImages(boolean allowSearch) throws IOException {
         setThreadLock();
         try { // locked thread
@@ -830,6 +838,7 @@ public class JPEGImageReader extends ImageReader {
         }
     }
 
+    @Override
     public int getWidth(int imageIndex) throws IOException {
         setThreadLock();
         try {
@@ -843,6 +852,7 @@ public class JPEGImageReader extends ImageReader {
         }
     }
 
+    @Override
     public int getHeight(int imageIndex) throws IOException {
         setThreadLock();
         try {
@@ -871,6 +881,7 @@ public class JPEGImageReader extends ImageReader {
         return ret;
     }
 
+    @Override
     public ImageTypeSpecifier getRawImageType(int imageIndex)
         throws IOException {
         setThreadLock();
@@ -888,6 +899,7 @@ public class JPEGImageReader extends ImageReader {
         }
     }
 
+    @Override
     public Iterator<ImageTypeSpecifier> getImageTypes(int imageIndex)
         throws IOException {
         setThreadLock();
@@ -944,6 +956,7 @@ public class JPEGImageReader extends ImageReader {
 
             if (iccCS != null) {
                 list.add(new ImageTypeProducer() {
+                    @Override
                     protected ImageTypeSpecifier produce() {
                         return ImageTypeSpecifier.createInterleaved
                          (iccCS,
@@ -1039,7 +1052,7 @@ public class JPEGImageReader extends ImageReader {
                        (!cs.isCS_sRGB()) &&
                        (cm.getNumComponents() == numComponents)) {
                 // Target isn't sRGB, so convert from sRGB to the target
-                convert = new ColorConvertOp(JPEG.JCS.sRGB, cs, null);
+                convert = new ColorConvertOp(JPEG.sRGB, cs, null);
             } else if (csType != ColorSpace.TYPE_RGB) {
                 throw new IIOException("Incompatible color conversion");
             }
@@ -1058,10 +1071,12 @@ public class JPEGImageReader extends ImageReader {
 
     /////// End of Color Conversion & Image Types
 
+    @Override
     public ImageReadParam getDefaultReadParam() {
         return new JPEGImageReadParam();
     }
 
+    @Override
     public IIOMetadata getStreamMetadata() throws IOException {
         setThreadLock();
         try {
@@ -1075,6 +1090,7 @@ public class JPEGImageReader extends ImageReader {
         }
     }
 
+    @Override
     public IIOMetadata getImageMetadata(int imageIndex)
         throws IOException {
         setThreadLock();
@@ -1101,6 +1117,7 @@ public class JPEGImageReader extends ImageReader {
         }
     }
 
+    @Override
     public BufferedImage read(int imageIndex, ImageReadParam param)
         throws IOException {
         setThreadLock();
@@ -1493,6 +1510,7 @@ public class JPEGImageReader extends ImageReader {
      */
     private native void clearNativeReadAbortFlag(long structPointer);
 
+    @Override
     public void abort() {
         setThreadLock();
         try {
@@ -1514,10 +1532,12 @@ public class JPEGImageReader extends ImageReader {
     /** Resets library state when an exception occurred during a read. */
     private native void resetLibraryState(long structPointer);
 
+    @Override
     public boolean canReadRaster() {
         return true;
     }
 
+    @Override
     public Raster readRaster(int imageIndex, ImageReadParam param)
         throws IOException {
         setThreadLock();
@@ -1556,10 +1576,12 @@ public class JPEGImageReader extends ImageReader {
         return retval;
     }
 
+    @Override
     public boolean readerSupportsThumbnails() {
         return true;
     }
 
+    @Override
     public int getNumThumbnails(int imageIndex) throws IOException {
         setThreadLock();
         try {
@@ -1581,6 +1603,7 @@ public class JPEGImageReader extends ImageReader {
         }
     }
 
+    @Override
     public int getThumbnailWidth(int imageIndex, int thumbnailIndex)
         throws IOException {
         setThreadLock();
@@ -1601,6 +1624,7 @@ public class JPEGImageReader extends ImageReader {
         }
     }
 
+    @Override
     public int getThumbnailHeight(int imageIndex, int thumbnailIndex)
         throws IOException {
         setThreadLock();
@@ -1621,6 +1645,7 @@ public class JPEGImageReader extends ImageReader {
         }
     }
 
+    @Override
     public BufferedImage readThumbnail(int imageIndex,
                                        int thumbnailIndex)
         throws IOException {
@@ -1665,6 +1690,7 @@ public class JPEGImageReader extends ImageReader {
         initProgressData();
     }
 
+    @Override
     public void reset() {
         setThreadLock();
         try {
@@ -1677,6 +1703,7 @@ public class JPEGImageReader extends ImageReader {
 
     private native void resetReader(long structPointer);
 
+    @Override
     public void dispose() {
         setThreadLock();
         try {
@@ -1700,6 +1727,7 @@ public class JPEGImageReader extends ImageReader {
             this.pData = pData;
         }
 
+        @Override
         public synchronized void dispose() {
             if (pData != 0) {
                 disposeReader(pData);
@@ -1787,6 +1815,7 @@ class ImageTypeIterator implements Iterator<ImageTypeSpecifier> {
          this.producers = producers;
      }
 
+     @Override
      public boolean hasNext() {
          if (theNext != null) {
              return true;
@@ -1800,7 +1829,7 @@ class ImageTypeIterator implements Iterator<ImageTypeSpecifier> {
 
          return (theNext != null);
      }
-
+     @Override
      public ImageTypeSpecifier next() {
          if (theNext != null || hasNext()) {
              ImageTypeSpecifier t = theNext;
@@ -1811,6 +1840,7 @@ class ImageTypeIterator implements Iterator<ImageTypeSpecifier> {
          }
      }
 
+     @Override
      public void remove() {
          producers.remove();
      }
@@ -1873,7 +1903,7 @@ class ImageTypeProducer {
             case JPEG.JCS_YCbCr:
             //there is no YCbCr raw type so by default we assume it as RGB
             case JPEG.JCS_RGB:
-                return ImageTypeSpecifier.createInterleaved(JPEG.JCS.sRGB,
+                return ImageTypeSpecifier.createInterleaved(JPEG.sRGB,
                         JPEG.bOffsRGB,
                         DataBuffer.TYPE_BYTE,
                         false,

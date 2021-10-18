@@ -1089,12 +1089,15 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 Collections.reverse(theArguments);
 
                 final Value theTarget = aHelper.pop();
-                final InvokeVirtualMethodExpression theExpression = new InvokeVirtualMethodExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getMethodDescriptor().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments, true, theInvokedClass);
-                if (theSignature.getReturnType().isVoid()) {
-                    aTargetBlock.getExpressions().add(theExpression);
-                } else {
-                    final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theExpression);
-                    aHelper.push(theINS.getOpcodeAddress(), theNewVariable);
+
+                if (!intrinsics.intrinsify(aProgram, theINS, theTarget, theArguments, theInvokedClass, aTargetBlock, aHelper)) {
+                    final InvokeVirtualMethodExpression theExpression = new InvokeVirtualMethodExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getMethodDescriptor().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments, true, theInvokedClass);
+                    if (theSignature.getReturnType().isVoid()) {
+                        aTargetBlock.getExpressions().add(theExpression);
+                    } else {
+                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theExpression);
+                        aHelper.push(theINS.getOpcodeAddress(), theNewVariable);
+                    }
                 }
 
             } else if (theInstruction instanceof BytecodeInstructionINVOKESTATIC) {

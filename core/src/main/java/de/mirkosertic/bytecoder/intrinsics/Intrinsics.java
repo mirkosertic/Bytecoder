@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGETSTATIC;
+import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEINTERFACE;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEVIRTUAL;
@@ -46,6 +47,7 @@ public class Intrinsics {
         intrinsics.add(new JavaLangEnumIntrinsic());
         intrinsics.add(new JavaLangFloatIntrinsic());
         intrinsics.add(new JavaLangDoubleIntrinsic());
+        intrinsics.add(new JdkInternalAccessJavaLangAccessIntrinsic());
     }
 
     public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKESTATIC aInstruction, final List<Value> aArguments,
@@ -104,4 +106,21 @@ public class Intrinsics {
         }
         return false;
     }
+
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionINVOKEINTERFACE aInstruction,
+                              final Value aInvocationTarget,
+                              final List<Value> aArguments,
+                              final BytecodeObjectTypeRef aObjectType,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper) {
+        final String theMethodName = aInstruction.getMethodDescriptor().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
+        for (final Intrinsic intrinsic : intrinsics) {
+            if (intrinsic.intrinsify(aProgram, aInstruction, theMethodName, aInvocationTarget, aArguments, aObjectType, aTargetBlock, aHelper)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

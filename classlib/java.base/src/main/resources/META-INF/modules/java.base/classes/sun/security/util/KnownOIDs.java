@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -116,20 +116,31 @@ public enum KnownOIDs {
     AES_128$CBC$NoPadding("2.16.840.1.101.3.4.1.2", "AES_128/CBC/NoPadding"),
     AES_128$OFB$NoPadding("2.16.840.1.101.3.4.1.3", "AES_128/OFB/NoPadding"),
     AES_128$CFB$NoPadding("2.16.840.1.101.3.4.1.4", "AES_128/CFB/NoPadding"),
-    AESWRAP_128("2.16.840.1.101.3.4.1.5"),
+    AES_128$KW$NoPadding("2.16.840.1.101.3.4.1.5", "AES_128/KW/NoPadding",
+            "AESWrap_128"),
     AES_128$GCM$NoPadding("2.16.840.1.101.3.4.1.6", "AES_128/GCM/NoPadding"),
+    AES_128$KWP$NoPadding("2.16.840.1.101.3.4.1.8", "AES_128/KWP/NoPadding",
+            "AESWrapPad_128"),
+
     AES_192$ECB$NoPadding("2.16.840.1.101.3.4.1.21", "AES_192/ECB/NoPadding"),
     AES_192$CBC$NoPadding("2.16.840.1.101.3.4.1.22", "AES_192/CBC/NoPadding"),
     AES_192$OFB$NoPadding("2.16.840.1.101.3.4.1.23", "AES_192/OFB/NoPadding"),
     AES_192$CFB$NoPadding("2.16.840.1.101.3.4.1.24", "AES_192/CFB/NoPadding"),
-    AESWRAP_192("2.16.840.1.101.3.4.1.25"),
+    AES_192$KW$NoPadding("2.16.840.1.101.3.4.1.25", "AES_192/KW/NoPadding",
+            "AESWrap_192"),
     AES_192$GCM$NoPadding("2.16.840.1.101.3.4.1.26", "AES_192/GCM/NoPadding"),
+    AES_192$KWP$NoPadding("2.16.840.1.101.3.4.1.28", "AES_192/KWP/NoPadding",
+            "AESWrapPad_192"),
+
     AES_256$ECB$NoPadding("2.16.840.1.101.3.4.1.41", "AES_256/ECB/NoPadding"),
     AES_256$CBC$NoPadding("2.16.840.1.101.3.4.1.42", "AES_256/CBC/NoPadding"),
     AES_256$OFB$NoPadding("2.16.840.1.101.3.4.1.43", "AES_256/OFB/NoPadding"),
     AES_256$CFB$NoPadding("2.16.840.1.101.3.4.1.44", "AES_256/CFB/NoPadding"),
-    AESWRAP_256("2.16.840.1.101.3.4.1.45"),
+    AES_256$KW$NoPadding("2.16.840.1.101.3.4.1.45", "AES_256/KW/NoPadding",
+            "AESWrap_256"),
     AES_256$GCM$NoPadding("2.16.840.1.101.3.4.1.46", "AES_256/GCM/NoPadding"),
+    AES_256$KWP$NoPadding("2.16.840.1.101.3.4.1.48", "AES_256/KWP/NoPadding",
+            "AESWrapPad_256"),
 
     // hashAlgs 2.16.840.1.101.3.4.2.*
     SHA_256("2.16.840.1.101.3.4.2.1", "SHA-256", "SHA256"),
@@ -148,12 +159,22 @@ public enum KnownOIDs {
     HmacSHA3_256("2.16.840.1.101.3.4.2.14", "HmacSHA3-256"),
     HmacSHA3_384("2.16.840.1.101.3.4.2.15", "HmacSHA3-384"),
     HmacSHA3_512("2.16.840.1.101.3.4.2.16", "HmacSHA3-512"),
+    SHAKE128_LEN("2.16.840.1.101.3.4.2.17", "SHAKE128-LEN"),
+    SHAKE256_LEN("2.16.840.1.101.3.4.2.18", "SHAKE256-LEN"),
 
     // sigAlgs 2.16.840.1.101.3.4.3.*
     SHA224withDSA("2.16.840.1.101.3.4.3.1"),
     SHA256withDSA("2.16.840.1.101.3.4.3.2"),
     SHA384withDSA("2.16.840.1.101.3.4.3.3"),
     SHA512withDSA("2.16.840.1.101.3.4.3.4"),
+    SHA3_224withDSA("2.16.840.1.101.3.4.3.5", "SHA3-224withDSA"),
+    SHA3_256withDSA("2.16.840.1.101.3.4.3.6", "SHA3-256withDSA"),
+    SHA3_384withDSA("2.16.840.1.101.3.4.3.7", "SHA3-384withDSA"),
+    SHA3_512withDSA("2.16.840.1.101.3.4.3.8", "SHA3-512withDSA"),
+    SHA3_224withECDSA("2.16.840.1.101.3.4.3.9", "SHA3-224withECDSA"),
+    SHA3_256withECDSA("2.16.840.1.101.3.4.3.10", "SHA3-256withECDSA"),
+    SHA3_384withECDSA("2.16.840.1.101.3.4.3.11", "SHA3-384withECDSA"),
+    SHA3_512withECDSA("2.16.840.1.101.3.4.3.12", "SHA3-512withECDSA"),
     SHA3_224withRSA("2.16.840.1.101.3.4.3.13", "SHA3-224withRSA"),
     SHA3_256withRSA("2.16.840.1.101.3.4.3.14", "SHA3-256withRSA"),
     SHA3_384withRSA("2.16.840.1.101.3.4.3.15", "SHA3-384withRSA"),
@@ -173,7 +194,7 @@ public enum KnownOIDs {
     OAEP("1.2.840.113549.1.1.7"),
     MGF1("1.2.840.113549.1.1.8"),
     PSpecified("1.2.840.113549.1.1.9"),
-    RSASSA_PSS("1.2.840.113549.1.1.10", "RSASSA-PSS"),
+    RSASSA_PSS("1.2.840.113549.1.1.10", "RSASSA-PSS", "PSS"),
     SHA256withRSA("1.2.840.113549.1.1.11"),
     SHA384withRSA("1.2.840.113549.1.1.12"),
     SHA512withRSA("1.2.840.113549.1.1.13"),
@@ -223,6 +244,7 @@ public enum KnownOIDs {
     FriendlyName("1.2.840.113549.1.9.20"),
     LocalKeyID("1.2.840.113549.1.9.21"),
     CertTypeX509("1.2.840.113549.1.9.22.1"),
+    CMSAlgorithmProtection("1.2.840.113549.1.9.52"),
 
     // PKCS12 1.2.840.113549.1.12.*
     PBEWithSHA1AndRC4_128("1.2.840.113549.1.12.1.1"),
@@ -343,7 +365,7 @@ public enum KnownOIDs {
     ECDH("1.3.132.1.12"),
 
     // OIW secsig 1.3.14.3.*
-    OIW_DES_CBC("1.3.14.3.2.7", "DES/CBC"),
+    OIW_DES_CBC("1.3.14.3.2.7", "DES/CBC", "DES"),
 
     OIW_DSA("1.3.14.3.2.12", "DSA") {
         @Override
@@ -359,6 +381,8 @@ public enum KnownOIDs {
         @Override
         boolean registerNames() { return false; }
     },
+
+    DESede("1.3.14.3.2.17", "DESede"),
 
     SHA_1("1.3.14.3.2.26", "SHA-1", "SHA", "SHA1"),
 
@@ -429,9 +453,9 @@ public enum KnownOIDs {
         if (debug != null) {
             debug.println("Setting up name2enum:");
         }
-        List.of(KnownOIDs.values()).forEach(o -> {
+        for (KnownOIDs o : KnownOIDs.values()) {
             register(o);
-        });
+        };
     }
 
     private static void register(KnownOIDs o) {

@@ -4,7 +4,9 @@
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 only, as
- * published by the Free Software Foundation.
+ * published by the Free Software Foundation.  Oracle designates this
+ * particular file as subject to the "Classpath" exception as provided
+ * by Oracle in the LICENSE file that accompanied this code.
  *
  * This code is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
@@ -24,31 +26,9 @@
 package java.lang.invoke;
 
 import jdk.internal.loader.BuiltinClassLoader;
-import jdk.internal.misc.VM;
+import jdk.internal.misc.CDS;
 
 final class LambdaProxyClassArchive {
-    private static final boolean dumpArchive;
-    private static final boolean sharingEnabled;
-
-    static {
-        dumpArchive = VM.isCDSDumpingEnabled();
-        sharingEnabled = VM.isCDSSharingEnabled();
-    }
-
-    /**
-     * Check if CDS dynamic dump is enabled.
-     */
-    static boolean isDumpArchive() {
-        return dumpArchive;
-    }
-
-    /**
-     * Check if CDS sharing is enabled.
-     */
-    static boolean isSharingEnabled() {
-        return sharingEnabled;
-    }
-
     /**
      * Check if the class is loaded by a built-in class loader.
      */
@@ -58,20 +38,19 @@ final class LambdaProxyClassArchive {
     }
 
     private static native void addToArchive(Class<?> caller,
-                                            String invokedName,
-                                            MethodType invokedType,
-                                            MethodType samMethodType,
-                                            MemberName implMethod,
-                                            MethodType instantiatedMethodType,
+                                            String interfaceMethodName,
+                                            MethodType factoryType,
+                                            MethodType interfaceMethodType,
+                                            MemberName implementationMember,
+                                            MethodType dynamicMethodType,
                                             Class<?> lambdaProxyClass);
 
     private static native Class<?> findFromArchive(Class<?> caller,
-                                                   String invokedName,
-                                                   MethodType invokedType,
-                                                   MethodType samMethodType,
-                                                   MemberName implMethod,
-                                                   MethodType instantiatedMethodType,
-                                                   boolean initialize);
+                                                   String interfaceMethodName,
+                                                   MethodType factoryType,
+                                                   MethodType interfaceMethodType,
+                                                   MemberName implementationMember,
+                                                   MethodType dynamicMethodType);
 
     /**
      * Registers the lambdaProxyClass into CDS archive.
@@ -83,22 +62,22 @@ final class LambdaProxyClassArchive {
      * loaded by a built-in class loader.
      */
     static boolean register(Class<?> caller,
-                            String invokedName,
-                            MethodType invokedType,
-                            MethodType samMethodType,
-                            MethodHandle implMethod,
-                            MethodType instantiatedMethodType,
+                            String interfaceMethodName,
+                            MethodType factoryType,
+                            MethodType interfaceMethodType,
+                            MethodHandle implementation,
+                            MethodType dynamicMethodType,
                             boolean isSerializable,
-                            Class<?>[] markerInterfaces,
-                            MethodType[] additionalBridges,
+                            Class<?>[] altInterfaces,
+                            MethodType[] altMethods,
                             Class<?> lambdaProxyClass) {
-        if (!isDumpArchive())
+        if (!CDS.isDumpingArchive())
             throw new IllegalStateException("should only register lambda proxy class at dump time");
 
         if (loadedByBuiltinLoader(caller) &&
-            !isSerializable && markerInterfaces.length == 0 && additionalBridges.length == 0) {
-            addToArchive(caller, invokedName, invokedType, samMethodType,
-                         implMethod.internalMemberName(), instantiatedMethodType,
+            !isSerializable && altInterfaces.length == 0 && altMethods.length == 0) {
+            addToArchive(caller, interfaceMethodName, factoryType, interfaceMethodType,
+                         implementation.internalMemberName(), dynamicMethodType,
                          lambdaProxyClass);
             return true;
         }
@@ -114,23 +93,22 @@ final class LambdaProxyClassArchive {
      * loaded by a built-in class loader.
      */
     static Class<?> find(Class<?> caller,
-                         String invokedName,
-                         MethodType invokedType,
-                         MethodType samMethodType,
-                         MethodHandle implMethod,
-                         MethodType instantiatedMethodType,
+                         String interfaceMethodName,
+                         MethodType factoryType,
+                         MethodType interfaceMethodType,
+                         MethodHandle implementation,
+                         MethodType dynamicMethodType,
                          boolean isSerializable,
-                         Class<?>[] markerInterfaces,
-                         MethodType[] additionalBridges,
-                         boolean initialize) {
-        if (isDumpArchive())
+                         Class<?>[] altInterfaces,
+                         MethodType[] altMethods) {
+        if (CDS.isDumpingArchive())
             throw new IllegalStateException("cannot load class from CDS archive at dump time");
 
         if (!loadedByBuiltinLoader(caller) ||
-            !isSharingEnabled() || isSerializable || markerInterfaces.length > 0 || additionalBridges.length > 0)
+            !CDS.isSharingEnabled() || isSerializable || altInterfaces.length > 0 || altMethods.length > 0)
             return null;
 
-        return findFromArchive(caller, invokedName, invokedType, samMethodType,
-                               implMethod.internalMemberName(), instantiatedMethodType, initialize);
+        return findFromArchive(caller, interfaceMethodName, factoryType, interfaceMethodType,
+                               implementation.internalMemberName(), dynamicMethodType);
     }
 }
