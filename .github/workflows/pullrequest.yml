@@ -9,10 +9,8 @@ jobs:
       matrix:
         java: [8,11,17]
     steps:
-      - uses: actions/checkout@v1
-      - uses: joschi/setup-jdk@v1
-        env:
-          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+      - uses: actions/checkout@v2
+      - uses: joschi/setup-jdk@v2
         with:
           java-version: ${{ matrix.java }}
       - uses: actions/cache@v1
@@ -33,10 +31,8 @@ jobs:
       matrix:
         java: [8,11,17]
     steps:
-     - uses: actions/checkout@v1
-     - uses: joschi/setup-jdk@v1
-       env:
-          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+     - uses: actions/checkout@v2
+     - uses: joschi/setup-jdk@v2
        with:
            java-version: ${{ matrix.java }}
      - uses: actions/cache@v1
@@ -57,10 +53,8 @@ jobs:
       matrix:
         java: [8,11,17]
     steps:
-      - uses: actions/checkout@v1
-      - uses: joschi/setup-jdk@v1
-        env:
-          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+      - uses: actions/checkout@v2
+      - uses: joschi/setup-jdk@v2
         with:
           java-version: ${{ matrix.java }}
       - uses: actions/cache@v1
@@ -81,10 +75,8 @@ jobs:
       matrix:
         java: [8,11,17]
     steps:
-      - uses: actions/checkout@v1
-      - uses: joschi/setup-jdk@v1
-        env:
-          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+      - uses: actions/checkout@v2
+      - uses: joschi/setup-jdk@v2
         with:
           java-version: ${{ matrix.java }}
       - uses: actions/cache@v1
@@ -105,10 +97,8 @@ jobs:
       matrix:
         java: [8,11,17]
     steps:
-      - uses: actions/checkout@v1
-      - uses: joschi/setup-jdk@v1
-        env:
-          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+      - uses: actions/checkout@v2
+      - uses: joschi/setup-jdk@v2
         with:
           java-version: ${{ matrix.java }}
       - uses: actions/cache@v1
