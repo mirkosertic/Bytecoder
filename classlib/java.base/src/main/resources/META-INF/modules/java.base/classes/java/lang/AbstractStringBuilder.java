@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -157,8 +157,8 @@ abstract class AbstractStringBuilder implements Appendable, CharSequence {
             return 0;
         }
 
-        byte val1[] = value;
-        byte val2[] = another.value;
+        byte[] val1 = value;
+        byte[] val2 = another.value;
         int count1 = this.count;
         int count2 = another.count;
 
@@ -585,7 +585,12 @@ abstract class AbstractStringBuilder implements Appendable, CharSequence {
         return this;
     }
 
-    // Documentation in subclasses because of synchro difference
+    /**
+     * Appends the specified {@code StringBuffer} to this sequence.
+     *
+     * @param   sb   the {@code StringBuffer} to append.
+     * @return  a reference to this object.
+     */
     public AbstractStringBuilder append(StringBuffer sb) {
         return this.append((AbstractStringBuilder)sb);
     }
@@ -729,7 +734,7 @@ abstract class AbstractStringBuilder implements Appendable, CharSequence {
      *         if {@code offset < 0} or {@code len < 0}
      *         or {@code offset+len > str.length}
      */
-    public AbstractStringBuilder append(char str[], int offset, int len) {
+    public AbstractStringBuilder append(char[] str, int offset, int len) {
         int end = offset + len;
         checkRange(offset, end, str.length);
         ensureCapacityInternal(count + len);
@@ -1023,12 +1028,12 @@ abstract class AbstractStringBuilder implements Appendable, CharSequence {
      * <p> An invocation of this method of the form
      *
      * <pre>{@code
-     * sb.subSequence(begin,&nbsp;end)}</pre>
+     * sb.subSequence(begin, end)}</pre>
      *
      * behaves in exactly the same way as the invocation
      *
      * <pre>{@code
-     * sb.substring(begin,&nbsp;end)}</pre>
+     * sb.substring(begin, end)}</pre>
      *
      * This method is provided so that this class can
      * implement the {@link CharSequence} interface.
@@ -1041,7 +1046,6 @@ abstract class AbstractStringBuilder implements Appendable, CharSequence {
      *          if {@code start} or {@code end} are negative,
      *          if {@code end} is greater than {@code length()},
      *          or if {@code start} is greater than {@code end}
-     * @spec JSR-51
      */
     @Override
     public CharSequence subSequence(int start, int end) {
@@ -1234,9 +1238,6 @@ abstract class AbstractStringBuilder implements Appendable, CharSequence {
         if (s == null) {
             s = "null";
         }
-        if (s instanceof String) {
-            return this.insert(dstOffset, (String)s);
-        }
         return this.insert(dstOffset, s, 0, s.length());
     }
 
@@ -1296,7 +1297,11 @@ abstract class AbstractStringBuilder implements Appendable, CharSequence {
         ensureCapacityInternal(count + len);
         shift(dstOffset, len);
         count += len;
-        putCharsAt(dstOffset, s, start, end);
+        if (s instanceof String) {
+            putStringAt(dstOffset, (String) s, start, end);
+        } else {
+            putCharsAt(dstOffset, s, start, end);
+        }
         return this;
     }
 
@@ -1554,9 +1559,8 @@ abstract class AbstractStringBuilder implements Appendable, CharSequence {
     public AbstractStringBuilder reverse() {
         byte[] val = this.value;
         int count = this.count;
-        int coder = this.coder;
         int n = count - 1;
-        if (COMPACT_STRINGS && coder == LATIN1) {
+        if (isLatin1()) {
             for (int j = (n-1) >> 1; j >= 0; j--) {
                 int k = n - j;
                 byte cj = val[j];
@@ -1644,7 +1648,7 @@ abstract class AbstractStringBuilder implements Appendable, CharSequence {
      * @param dstBegin  the char index, not offset of byte[]
      * @param coder     the coder of dst[]
      */
-    void getBytes(byte dst[], int dstBegin, byte coder) {
+    void getBytes(byte[] dst, int dstBegin, byte coder) {
         if (this.coder == coder) {
             System.arraycopy(value, 0, dst, dstBegin << coder, count << coder);
         } else {        // this.coder == LATIN && coder == UTF16
@@ -1709,11 +1713,15 @@ abstract class AbstractStringBuilder implements Appendable, CharSequence {
         }
     }
 
-    private final void putStringAt(int index, String str) {
+    private void putStringAt(int index, String str, int off, int end) {
         if (getCoder() != str.coder()) {
             inflate();
         }
-        str.getBytes(value, index, coder);
+        str.getBytes(value, off, index, coder, end - off);
+    }
+
+    private void putStringAt(int index, String str) {
+        putStringAt(index, str, 0, str.length());
     }
 
     private final void appendChars(char[] s, int off, int end) {

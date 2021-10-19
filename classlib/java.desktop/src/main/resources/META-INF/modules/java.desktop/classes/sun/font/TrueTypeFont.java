@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -244,9 +244,10 @@ public class TrueTypeFont extends FileFont {
                                      throws FontFormatException {
         if (disposerRecord.channel == null) {
             if (FontUtilities.isLogging()) {
-                FontUtilities.getLogger().info("open TTF: " + platName);
+                FontUtilities.logInfo("open TTF: " + platName);
             }
             try {
+                @SuppressWarnings("removal")
                 RandomAccessFile raf = AccessController.doPrivileged(
                     new PrivilegedExceptionAction<RandomAccessFile>() {
                         public RandomAccessFile run() throws FileNotFoundException {
@@ -310,9 +311,9 @@ public class TrueTypeFont extends FileFont {
                          */
                         if (FontUtilities.isLogging()) {
                             String msg = "Read offset is " + offset +
-                                " file size is " + fileSize+
-                                " file is " + platName;
-                            FontUtilities.getLogger().severe(msg);
+                                    " file size is " + fileSize+
+                                    " file is " + platName;
+                            FontUtilities.logSevere(msg);
                         }
                         return -1;
                     } else {
@@ -331,7 +332,7 @@ public class TrueTypeFont extends FileFont {
                                 " and now is " + currSize;
                         }
                         if (FontUtilities.isLogging()) {
-                            FontUtilities.getLogger().severe(msg);
+                            FontUtilities.logSevere(msg);
                         }
                         // We could still flip() the buffer here because
                         // it's possible that we did read some data in
@@ -346,9 +347,8 @@ public class TrueTypeFont extends FileFont {
                         if (bread > length/2 || bread > 16384) {
                             buffer.flip();
                             if (FontUtilities.isLogging()) {
-                                msg = "Returning " + bread +
-                                    " bytes instead of " + length;
-                                FontUtilities.getLogger().severe(msg);
+                                msg = "Returning " + bread + " bytes instead of " + length;
+                                FontUtilities.logSevere(msg);
                             }
                         } else {
                             bread = -1;
@@ -364,8 +364,7 @@ public class TrueTypeFont extends FileFont {
             }
         } catch (FontFormatException e) {
             if (FontUtilities.isLogging()) {
-                FontUtilities.getLogger().severe(
-                                       "While reading " + platName, e);
+                FontUtilities.getLogger().severe("While reading " + platName, e);
             }
             bread = -1; // signal EOF
             deregisterFontAndClearStrikeCache();
@@ -385,8 +384,7 @@ public class TrueTypeFont extends FileFont {
              * file are handled as a FontFormatException.
              */
             if (FontUtilities.isLogging()) {
-                FontUtilities.getLogger().severe(
-                                       "While reading " + platName, e);
+                FontUtilities.getLogger().severe("While reading " + platName, e);
             }
             if (bread == 0) {
                 bread = -1; // signal EOF
@@ -520,10 +518,14 @@ public class TrueTypeFont extends FileFont {
                     && getDirectoryEntry(hheaTag) == null) {
                 throw new FontFormatException("missing hhea table");
             }
+            ByteBuffer maxpTable = getTableBuffer(maxpTag);
+            if (maxpTable.getChar(4) == 0) {
+                throw new FontFormatException("zero glyphs");
+            }
             initNames();
         } catch (Exception e) {
             if (FontUtilities.isLogging()) {
-                FontUtilities.getLogger().severe(e.toString());
+                FontUtilities.logSevere(e.toString());
             }
             if (e instanceof FontFormatException) {
                 throw (FontFormatException)e;
@@ -663,6 +665,7 @@ public class TrueTypeFont extends FileFont {
     };
 
     private static String defaultCodePage = null;
+    @SuppressWarnings("removal")
     static String getCodePage() {
 
         if (defaultCodePage != null) {
@@ -982,24 +985,36 @@ public class TrueTypeFont extends FileFont {
 
     private void setStrikethroughMetrics(ByteBuffer os_2Table, int upem) {
         if (os_2Table == null || os_2Table.capacity() < 30 || upem < 0) {
-            stSize = .05f;
-            stPos = -.4f;
+            stSize = 0.05f;
+            stPos = -0.4f;
             return;
         }
         ShortBuffer sb = os_2Table.asShortBuffer();
         stSize = sb.get(13) / (float)upem;
         stPos = -sb.get(14) / (float)upem;
+        if (stSize < 0f) {
+            stSize = 0.05f;
+        }
+        if (Math.abs(stPos) > 2.0f) {
+            stPos = -0.4f;
+        }
     }
 
     private void setUnderlineMetrics(ByteBuffer postTable, int upem) {
         if (postTable == null || postTable.capacity() < 12 || upem < 0) {
-            ulSize = .05f;
-            ulPos = .1f;
+            ulSize = 0.05f;
+            ulPos = 0.1f;
             return;
         }
         ShortBuffer sb = postTable.asShortBuffer();
         ulSize = sb.get(5) / (float)upem;
         ulPos = -sb.get(4) / (float)upem;
+        if (ulSize < 0f) {
+            ulSize = 0.05f;
+        }
+        if (Math.abs(ulPos) > 2.0f) {
+            ulPos = 0.1f;
+        }
     }
 
     @Override
@@ -1073,7 +1088,7 @@ public class TrueTypeFont extends FileFont {
             return new String(bytes, 0, len, charset);
         } catch (UnsupportedEncodingException e) {
             if (FontUtilities.isLogging()) {
-                FontUtilities.getLogger().warning(e + " EncodingID=" + encoding);
+                FontUtilities.logWarning(e + " EncodingID=" + encoding);
             }
             return new String(bytes, 0, len);
         } catch (Throwable t) {

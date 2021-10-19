@@ -46,13 +46,14 @@ import sun.security.x509.*;
  * getBasicConstraints} method). Therefore, the {@link #match match}
  * method would return {@code true} for any {@code X509Certificate}.
  * Typically, several criteria are enabled (by calling
- * {@link #setIssuer setIssuer} or
+ * {@link #setIssuer(X500Principal)} or
  * {@link #setKeyUsage setKeyUsage}, for instance) and then the
  * {@code X509CertSelector} is passed to
  * {@link CertStore#getCertificates CertStore.getCertificates} or some similar
  * method.
  * <p>
- * Several criteria can be enabled (by calling {@link #setIssuer setIssuer}
+ * Several criteria can be enabled (by calling
+ * {@link #setIssuer(X500Principal)}
  * and {@link #setSerialNumber setSerialNumber},
  * for example) such that the {@code match} method
  * usually uniquely matches a single {@code X509Certificate}. We say
@@ -184,25 +185,25 @@ public class X509CertSelector implements CertSelector {
     }
 
     /**
-     * <strong>Denigrated</strong>, use {@linkplain #setIssuer(X500Principal)}
-     * or {@linkplain #setIssuer(byte[])} instead. This method should not be
-     * relied on as it can fail to match some certificates because of a loss of
-     * encoding information in the
-     * <a href="http://www.ietf.org/rfc/rfc2253.txt">RFC 2253</a> String form
-     * of some distinguished names.
-     * <p>
      * Sets the issuer criterion. The specified distinguished name
      * must match the issuer distinguished name in the
      * {@code X509Certificate}. If {@code null}, any issuer
      * distinguished name will do.
      * <p>
      * If {@code issuerDN} is not {@code null}, it should contain a
-     * distinguished name, in RFC 2253 format.
+     * distinguished name, in
+     * <a href="http://www.ietf.org/rfc/rfc2253.txt">RFC 2253</a> format.
      *
      * @param issuerDN a distinguished name in RFC 2253 format
      *                 (or {@code null})
      * @throws IOException if a parsing error occurs (incorrect form for DN)
+     *
+     * @deprecated Use {@link #setIssuer(X500Principal)} or
+     * {@link #setIssuer(byte[])} instead. This method should not be relied on
+     * as it can fail to match some certificates because of a loss of encoding
+     * information in the RFC 2253 String form of some distinguished names.
      */
+    @Deprecated(since="16")
     public void setIssuer(String issuerDN) throws IOException {
         if (issuerDN == null) {
             issuer = null;
@@ -276,24 +277,26 @@ public class X509CertSelector implements CertSelector {
     }
 
     /**
-     * <strong>Denigrated</strong>, use {@linkplain #setSubject(X500Principal)}
-     * or {@linkplain #setSubject(byte[])} instead. This method should not be
-     * relied on as it can fail to match some certificates because of a loss of
-     * encoding information in the RFC 2253 String form of some distinguished
-     * names.
-     * <p>
      * Sets the subject criterion. The specified distinguished name
      * must match the subject distinguished name in the
      * {@code X509Certificate}. If {@code null}, any subject
      * distinguished name will do.
      * <p>
      * If {@code subjectDN} is not {@code null}, it should contain a
-     * distinguished name, in RFC 2253 format.
+     * distinguished name, in
+     * <a href="http://www.ietf.org/rfc/rfc2253.txt">RFC 2253</a> format.
      *
      * @param subjectDN a distinguished name in RFC 2253 format
      *                  (or {@code null})
      * @throws IOException if a parsing error occurs (incorrect form for DN)
+     *
+     * @deprecated Use {@link #setSubject(X500Principal)} or
+     * {@link #setSubject(byte[])} instead. This method should not be relied
+     * on as it can fail to match some certificates because of a loss of
+     * encoding information in the RFC 2253 String form of some distinguished
+     * names.
      */
+    @Deprecated(since="16")
     public void setSubject(String subjectDN) throws IOException {
         if (subjectDN == null) {
             subject = null;
@@ -310,8 +313,7 @@ public class X509CertSelector implements CertSelector {
      * <p>
      * If {@code subjectDN} is not {@code null}, it should contain a
      * single DER encoded distinguished name, as defined in X.501. For the ASN.1
-     * notation for this structure, see
-     * {@link #setIssuer(byte [] issuerDN) setIssuer(byte [] issuerDN)}.
+     * notation for this structure, see {@link #setIssuer(byte[])}.
      *
      * @param subjectDN a byte array containing the distinguished name in
      *                  ASN.1 DER format (or {@code null})
@@ -711,7 +713,8 @@ public class X509CertSelector implements CertSelector {
      * the restrictions included in RFC 5280). IPv4 address names are
      * supplied using dotted quad notation. OID address names are represented
      * as a series of nonnegative integers separated by periods. And
-     * directory names (distinguished names) are supplied in RFC 2253 format.
+     * directory names (distinguished names) are supplied in
+     * <a href="http://www.ietf.org/rfc/rfc2253.txt">RFC 2253</a> format.
      * No standard string format is defined for otherNames, X.400 names,
      * EDI party names, IPv6 address names, or any other type of names. They
      * should be specified using the
@@ -831,10 +834,9 @@ public class X509CertSelector implements CertSelector {
                 throw new IOException("name list size not 2");
             }
             Object o =  nameList.get(0);
-            if (!(o instanceof Integer)) {
+            if (!(o instanceof Integer nameType)) {
                 throw new IOException("expected an Integer");
             }
-            int nameType = ((Integer)o).intValue();
             o = nameList.get(1);
             genNames.add(makeGeneralNameInterface(nameType, o));
         }
@@ -882,29 +884,29 @@ public class X509CertSelector implements CertSelector {
                 + type + ")...");
         }
 
-        if (name instanceof String) {
+        if (name instanceof String nameAsString) {
             if (debug != null) {
                 debug.println("X509CertSelector.makeGeneralNameInterface() "
-                    + "name is String: " + name);
+                    + "name is String: " + nameAsString);
             }
             switch (type) {
             case NAME_RFC822:
-                result = new RFC822Name((String)name);
+                result = new RFC822Name(nameAsString);
                 break;
             case NAME_DNS:
-                result = new DNSName((String)name);
+                result = new DNSName(nameAsString);
                 break;
             case NAME_DIRECTORY:
-                result = new X500Name((String)name);
+                result = new X500Name(nameAsString);
                 break;
             case NAME_URI:
-                result = new URIName((String)name);
+                result = new URIName(nameAsString);
                 break;
             case NAME_IP:
-                result = new IPAddressName((String)name);
+                result = new IPAddressName(nameAsString);
                 break;
             case NAME_OID:
-                result = new OIDName((String)name);
+                result = new OIDName(nameAsString);
                 break;
             default:
                 throw new IOException("unable to parse String names of type "
@@ -1299,23 +1301,24 @@ public class X509CertSelector implements CertSelector {
     }
 
     /**
-     * <strong>Denigrated</strong>, use {@linkplain #getIssuer()} or
-     * {@linkplain #getIssuerAsBytes()} instead. This method should not be
-     * relied on as it can fail to match some certificates because of a loss of
-     * encoding information in the RFC 2253 String form of some distinguished
-     * names.
-     * <p>
      * Returns the issuer criterion as a {@code String}. This
      * distinguished name must match the issuer distinguished name in the
      * {@code X509Certificate}. If {@code null}, the issuer criterion
      * is disabled and any issuer distinguished name will do.
      * <p>
      * If the value returned is not {@code null}, it is a
-     * distinguished name, in RFC 2253 format.
+     * distinguished name, in
+     * <a href="http://www.ietf.org/rfc/rfc2253.txt">RFC 2253</a> format.
      *
      * @return the required issuer distinguished name in RFC 2253 format
      *         (or {@code null})
+     *
+     * @deprecated Use {@link #getIssuer()} or {@link #getIssuerAsBytes()}
+     * instead. This method should not be relied on as it can fail to match
+     * some certificates because of a loss of encoding information in the
+     * RFC 2253 String form of some distinguished names.
      */
+    @Deprecated(since="16")
     public String getIssuerAsString() {
         return (issuer == null ? null : issuer.getName());
     }
@@ -1329,8 +1332,7 @@ public class X509CertSelector implements CertSelector {
      * If the value returned is not {@code null}, it is a byte
      * array containing a single DER encoded distinguished name, as defined in
      * X.501. The ASN.1 notation for this structure is supplied in the
-     * documentation for
-     * {@link #setIssuer(byte [] issuerDN) setIssuer(byte [] issuerDN)}.
+     * documentation for {@link #setIssuer(byte[])}.
      * <p>
      * Note that the byte array returned is cloned to protect against
      * subsequent modifications.
@@ -1358,23 +1360,24 @@ public class X509CertSelector implements CertSelector {
     }
 
     /**
-     * <strong>Denigrated</strong>, use {@linkplain #getSubject()} or
-     * {@linkplain #getSubjectAsBytes()} instead. This method should not be
-     * relied on as it can fail to match some certificates because of a loss of
-     * encoding information in the RFC 2253 String form of some distinguished
-     * names.
-     * <p>
      * Returns the subject criterion as a {@code String}. This
      * distinguished name must match the subject distinguished name in the
      * {@code X509Certificate}. If {@code null}, the subject criterion
      * is disabled and any subject distinguished name will do.
      * <p>
      * If the value returned is not {@code null}, it is a
-     * distinguished name, in RFC 2253 format.
+     * distinguished name, in
+     * <a href="http://www.ietf.org/rfc/rfc2253.txt">RFC 2253</a> format.
      *
      * @return the required subject distinguished name in RFC 2253 format
      *         (or {@code null})
+     *
+     * @deprecated Use {@link #getSubject()} or {@link #getSubjectAsBytes()}
+     * instead. This method should not be relied on as it can fail to match
+     * some certificates because of a loss of encoding information in the
+     * RFC 2253 String form of some distinguished names.
      */
+    @Deprecated(since="16")
     public String getSubjectAsString() {
         return (subject == null ? null : subject.getName());
     }
@@ -1388,8 +1391,7 @@ public class X509CertSelector implements CertSelector {
      * If the value returned is not {@code null}, it is a byte
      * array containing a single DER encoded distinguished name, as defined in
      * X.501. The ASN.1 notation for this structure is supplied in the
-     * documentation for
-     * {@link #setSubject(byte [] subjectDN) setSubject(byte [] subjectDN)}.
+     * documentation for {@link #setSubject(byte[])}.
      * <p>
      * Note that the byte array returned is cloned to protect against
      * subsequent modifications.
@@ -1665,10 +1667,9 @@ public class X509CertSelector implements CertSelector {
                 throw new IOException("name list size not 2");
             }
             Object o = nameList.get(0);
-            if (!(o instanceof Integer)) {
+            if (!(o instanceof Integer nameType)) {
                 throw new IOException("expected an Integer");
             }
-            int nameType = ((Integer)o).intValue();
             if ((nameType < 0) || (nameType > 8)) {
                 throw new IOException("name type not 0-8");
             }
@@ -1926,8 +1927,7 @@ public class X509CertSelector implements CertSelector {
      */
     private static Extension getExtensionObject(X509Certificate cert, KnownOIDs extId)
             throws IOException {
-        if (cert instanceof X509CertImpl) {
-            X509CertImpl impl = (X509CertImpl) cert;
+        if (cert instanceof X509CertImpl impl) {
             switch (extId) {
                 case PrivateKeyUsage:
                     return impl.getPrivateKeyUsageExtension();
@@ -1977,15 +1977,14 @@ public class X509CertSelector implements CertSelector {
      *         selected, {@code false} otherwise
      */
     public boolean match(Certificate cert) {
-        if (!(cert instanceof X509Certificate)) {
+        if (!(cert instanceof X509Certificate xcert)) {
             return false;
         }
-        X509Certificate xcert = (X509Certificate)cert;
 
         if (debug != null) {
             debug.println("X509CertSelector.match(SN: "
                 + (xcert.getSerialNumber()).toString(16) + "\n  Issuer: "
-                + xcert.getIssuerDN() + "\n  Subject: " + xcert.getSubjectDN()
+                + xcert.getIssuerX500Principal() + "\n  Subject: " + xcert.getSubjectX500Principal()
                 + ")");
         }
 

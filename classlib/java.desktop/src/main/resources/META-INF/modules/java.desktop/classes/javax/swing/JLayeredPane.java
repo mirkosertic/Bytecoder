@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -95,7 +95,7 @@ import javax.accessibility.*;
  * <PRE>
  *     layeredPane.add(child, JLayeredPane.DEFAULT_LAYER);
  * or
- *     layeredPane.add(child, Integer.valueOf.valueOf(10));
+ *     layeredPane.add(child, Integer.valueOf(10));
  * </PRE>
  * The layer attribute can also be set on a Component by calling<PRE>
  *     layeredPaneParent.setLayer(child, 10)</PRE>
@@ -765,6 +765,11 @@ public class JLayeredPane extends JComponent implements Accessible {
      */
     @SuppressWarnings("serial")
     protected class AccessibleJLayeredPane extends AccessibleJComponent {
+
+        /**
+         * Constructs an {@code AccessibleJLayeredPane}.
+         */
+        protected AccessibleJLayeredPane() {}
 
         /**
          * Get the role of this object.
