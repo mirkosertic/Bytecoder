@@ -46,4 +46,11 @@ public class TReference<T> {
 
     public static void reachabilityFence(final Object value) {
     }
+
+    public Object getFromInactiveFinalReference() {
+        return this;
+    }
+
+    public void clearInactiveFinalReference() {
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,14 +29,14 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.text.MessageFormat;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import javax.net.ssl.SSLProtocolException;
-import sun.security.ssl.KeyShareExtension.CHKeyShareSpec;
+import sun.security.ssl.NamedGroup.NamedGroupSpec;
 import sun.security.ssl.SSLExtension.ExtensionConsumer;
 import sun.security.ssl.SSLExtension.SSLExtensionSpec;
 import sun.security.ssl.SSLHandshake.HandshakeMessage;
@@ -235,7 +235,7 @@ final class KeyShareExtension {
             List<NamedGroup> namedGroups;
             if (chc.serverSelectedNamedGroup != null) {
                 // Response to HelloRetryRequest
-                namedGroups = Arrays.asList(chc.serverSelectedNamedGroup);
+                namedGroups = List.of(chc.serverSelectedNamedGroup);
             } else {
                 namedGroups = chc.clientRequestedNamedGroups;
                 if (namedGroups == null || namedGroups.isEmpty()) {
@@ -248,33 +248,23 @@ final class KeyShareExtension {
                 }
             }
 
+            // Go through the named groups and take the most-preferred
+            // group from two categories (i.e. XDH and ECDHE).  Once we have
+            // the most preferred group from two types we can exit the loop.
             List<KeyShareEntry> keyShares = new LinkedList<>();
+            EnumSet<NamedGroupSpec> ngTypes =
+                    EnumSet.noneOf(NamedGroupSpec.class);
+            byte[] keyExchangeData;
             for (NamedGroup ng : namedGroups) {
-                SSLKeyExchange ke = SSLKeyExchange.valueOf(ng);
-                if (ke == null) {
-                    if (SSLLogger.isOn && SSLLogger.isOn("ssl,handshake")) {
-                        SSLLogger.warning(
-                            "No key exchange for named group " + ng.name);
+                if (!ngTypes.contains(ng.spec)) {
+                    if ((keyExchangeData = getShare(chc, ng)) != null) {
+                        keyShares.add(new KeyShareEntry(ng.id,
+                                keyExchangeData));
+                        ngTypes.add(ng.spec);
+                        if (ngTypes.size() == 2) {
+                            break;
+                        }
                     }
-                    continue;
-                }
-
-                SSLPossession[] poses = ke.createPossessions(chc);
-                for (SSLPossession pos : poses) {
-                    // update the context
-                    chc.handshakePossessions.add(pos);
-                    if (!(pos instanceof NamedGroupPossession)) {
-                        // May need more possesion types in the future.
-                        continue;
-                    }
-
-                    keyShares.add(new KeyShareEntry(ng.id, pos.encode()));
-                }
-
-                // One key share entry only.  Too much key share entries makes
-                // the ClientHello handshake message really big.
-                if (!keyShares.isEmpty()) {
-                    break;
                 }
             }
 
@@ -294,6 +284,28 @@ final class KeyShareExtension {
                     new CHKeyShareSpec(keyShares));
 
             return extData;
+        }
+
+        private static byte[] getShare(ClientHandshakeContext chc,
+                NamedGroup ng) {
+            SSLKeyExchange ke = SSLKeyExchange.valueOf(ng);
+            if (ke == null) {
+                if (SSLLogger.isOn && SSLLogger.isOn("ssl,handshake")) {
+                    SSLLogger.warning(
+                        "No key exchange for named group " + ng.name);
+                }
+            } else {
+                SSLPossession[] poses = ke.createPossessions(chc);
+                for (SSLPossession pos : poses) {
+                    // update the context
+                    chc.handshakePossessions.add(pos);
+                    // May need more possesion types in the future.
+                    if (pos instanceof NamedGroupPossession) {
+                        return pos.encode();
+                    }
+                }
+            }
+            return null;
         }
     }
 
@@ -822,12 +834,10 @@ final class KeyShareExtension {
                     spec.clientShares.size() == 1) {
                 int namedGroupId = spec.clientShares.get(0).namedGroupId;
 
-                byte[] extdata = new byte[] {
+                return new byte[] {
                         (byte)((namedGroupId >> 8) & 0xFF),
                         (byte)(namedGroupId & 0xFF)
                     };
-
-                return extdata;
             }
 
             return null;
@@ -873,10 +883,32 @@ final class KeyShareExtension {
                                 NamedGroup.nameOf(spec.selectedGroup));
             }
 
+            // The server-selected named group from a HelloRetryRequest must
+            // meet the following criteria:
+            // 1. It must be one of the named groups in the supported_groups
+            //    extension in the client hello.
+            // 2. It cannot be one of the groups in the key_share extension
+            //    from the client hello.
             if (!chc.clientRequestedNamedGroups.contains(serverGroup)) {
                 throw chc.conContext.fatal(Alert.ILLEGAL_PARAMETER,
                         "Unexpected HelloRetryRequest selected group: " +
                                 serverGroup.name);
+            }
+            CHKeyShareSpec chKsSpec = (CHKeyShareSpec)
+                    chc.handshakeExtensions.get(SSLExtension.CH_KEY_SHARE);
+            if (chKsSpec != null) {
+                for (KeyShareEntry kse : chKsSpec.clientShares) {
+                    if (serverGroup.id == kse.namedGroupId) {
+                        throw chc.conContext.fatal(Alert.ILLEGAL_PARAMETER,
+                                "Illegal HelloRetryRequest selected group: " +
+                                        serverGroup.name);
+                    }
+                }
+            } else {
+                // Something has gone very wrong if we're here.
+                throw chc.conContext.fatal(Alert.INTERNAL_ERROR,
+                        "Unable to retrieve ClientHello key_share extension " +
+                                "during HRR processing");
             }
 
             // update the context

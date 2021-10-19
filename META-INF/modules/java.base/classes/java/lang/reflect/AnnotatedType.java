@@ -37,6 +37,14 @@ import java.lang.annotation.Annotation;
  * <em>type annotations</em> (JLS {@jls 9.7.4}) as the entity being
  * potentially annotated is a type.
  *
+ * @jls 4.1 The Kinds of Types and Values
+ * @jls 4.2 Primitive Types and Values
+ * @jls 4.3 Reference Types and Values
+ * @jls 4.4 Type Variables
+ * @jls 4.5 Parameterized Types
+ * @jls 4.8 Raw Types
+ * @jls 4.9 Intersection Types
+ * @jls 10.1 Array Types
  * @since 1.8
  */
 public interface AnnotatedType extends AnnotatedElement {
@@ -47,8 +55,8 @@ public interface AnnotatedType extends AnnotatedElement {
      * {@code @TA O<T>.I<S>}, return a representation of {@code @TA O<T>}.
      *
      * <p>Returns {@code null} if this {@code AnnotatedType} represents a
-     *     top-level type, or a local or anonymous class, or a primitive type, or
-     *     void.
+     *     top-level class or interface, or a local or anonymous class, or
+     *     a primitive type, or void.
      *
      * <p>Returns {@code null} if this {@code AnnotatedType} is an instance of
      *     {@code AnnotatedArrayType}, {@code AnnotatedTypeVariable}, or
@@ -61,7 +69,7 @@ public interface AnnotatedType extends AnnotatedElement {
      * @return an {@code AnnotatedType} object representing the potentially
      *     annotated type that this type is a member of, or {@code null}
      * @throws TypeNotPresentException if the owner type
-     *     refers to a non-existent type declaration
+     *     refers to a non-existent class or interface declaration
      * @throws MalformedParameterizedTypeException if the owner type
      *     refers to a parameterized type that cannot be instantiated
      *     for any reason

@@ -35,6 +35,11 @@ public class TThrowable {
         cause = aCause;
     }
 
+    protected TThrowable(final String aMessage, final Throwable aCause, final boolean enableSupression, final boolean writeableStackTrace) {
+        message = aMessage;
+        cause = aCause;
+    }
+
     public TThrowable(final Throwable aCause) {
         message = null;
         cause = aCause;

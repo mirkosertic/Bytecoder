@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,7 +29,6 @@ import jdk.internal.access.SharedSecrets;
 import jdk.internal.access.JavaUtilZipFileAccess;
 import sun.security.action.GetPropertyAction;
 import sun.security.util.ManifestEntryVerifier;
-import sun.security.util.SignatureFileVerifier;
 
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
@@ -152,6 +151,8 @@ public class JarFile extends ZipFile {
     private static final boolean MULTI_RELEASE_ENABLED;
     private static final boolean MULTI_RELEASE_FORCED;
     private static final ThreadLocal<Boolean> isInitializing = new ThreadLocal<>();
+    // The maximum size of array to allocate. Some VMs reserve some header words in an array.
+    private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 
     private SoftReference<Manifest> manRef;
     private JarEntry manEntry;
@@ -189,19 +190,18 @@ public class JarFile extends ZipFile {
         String enableMultiRelease = GetPropertyAction
                 .privilegedGetProperty("jdk.util.jar.enableMultiRelease", "true");
         switch (enableMultiRelease) {
-            case "true":
-            default:
-                MULTI_RELEASE_ENABLED = true;
-                MULTI_RELEASE_FORCED = false;
-                break;
-            case "false":
+            case "false" -> {
                 MULTI_RELEASE_ENABLED = false;
                 MULTI_RELEASE_FORCED = false;
-                break;
-            case "force":
+            }
+            case "force" -> {
                 MULTI_RELEASE_ENABLED = true;
                 MULTI_RELEASE_FORCED = true;
-                break;
+            }
+            default -> {
+                MULTI_RELEASE_ENABLED = true;
+                MULTI_RELEASE_FORCED = false;
+            }
         }
     }
 
@@ -419,11 +419,19 @@ public class JarFile extends ZipFile {
                 if (verify) {
                     byte[] b = getBytes(manEntry);
                     if (!jvInitialized) {
-                        jv = new JarVerifier(b);
+                        if (JUZFA.getManifestNum(this) == 1) {
+                            jv = new JarVerifier(manEntry.getName(), b);
+                        } else {
+                            if (JarVerifier.debug != null) {
+                                JarVerifier.debug.println("Multiple MANIFEST.MF found. Treat JAR file as unsigned");
+                            }
+                        }
                     }
                     man = new Manifest(jv, new ByteArrayInputStream(b), getName());
                 } else {
-                    man = new Manifest(super.getInputStream(manEntry), getName());
+                    try (InputStream is = super.getInputStream(manEntry)) {
+                        man = new Manifest(is, getName());
+                    }
                 }
                 manRef = new SoftReference<>(man);
             }
@@ -735,6 +743,7 @@ public class JarFile extends ZipFile {
             List<String> names = JUZFA.getManifestAndSignatureRelatedFiles(this);
             for (String name : names) {
                 JarEntry e = getJarEntry(name);
+                byte[] b;
                 if (e == null) {
                     throw new JarException("corrupted jar file");
                 }
@@ -742,7 +751,11 @@ public class JarFile extends ZipFile {
                     mev = new ManifestEntryVerifier
                         (getManifestFromReference());
                 }
-                byte[] b = getBytes(e);
+                if (name.equalsIgnoreCase(MANIFEST_NAME)) {
+                    b = jv.manifestRawBytes;
+                } else {
+                    b = getBytes(e);
+                }
                 if (b != null && b.length > 0) {
                     jv.beginEntry(e, mev);
                     jv.update(b.length, b, 0, b.length, mev);
@@ -786,7 +799,11 @@ public class JarFile extends ZipFile {
      */
     private byte[] getBytes(ZipEntry ze) throws IOException {
         try (InputStream is = super.getInputStream(ze)) {
-            int len = (int)ze.getSize();
+            long uncompressedSize = ze.getSize();
+            if (uncompressedSize > MAX_ARRAY_SIZE) {
+                throw new OutOfMemoryError("Required array size too large");
+            }
+            int len = (int)uncompressedSize;
             int bytesRead;
             byte[] b;
             // trust specified entry sizes when reasonably small

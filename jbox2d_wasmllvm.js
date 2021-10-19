@@ -119,7 +119,7 @@ var bytecoder = {
      },
 
      toJSString: function(value) {
-         var theByteArray = bytecoder.intInMemory(value + 16);
+         var theByteArray = bytecoder.intInMemory(value + 8);
          var theData = bytecoder.byteArraytoJSString(theByteArray);
          return theData;
      },
@@ -175,12 +175,22 @@ var bytecoder = {
              currentTimeMillis: function() {return Date.now();},
              nanoTime: function() {return Date.now() * 1000000;},
          },
+         cds: {
+             isDumpingClassList0: function() {return 0;},
+             isDumpingArchive0: function() {return 0;},
+             isSharingEnabled0: function() {return 0;},
+             initializeFromArchiveClass: function() {},
+             getRandomSeedForDumping: function() {return 0;},
+         },
          vm: {
              newLambdaStaticInvocationStringMethodTypeMethodHandleObject: function() {},
              newLambdaConstructorInvocationMethodTypeMethodHandleObject: function() {},
              newLambdaInterfaceInvocationMethodTypeMethodHandleObject: function() {},
              newLambdaVirtualInvocationMethodTypeMethodHandleObject: function() {},
              newLambdaSpecialInvocationMethodTypeMethodHandleObject: function() {},
+         },
+         scopedmemoryaccess: {
+             registerNatives: function() {},
          },
          memorymanager: {
              logINT: function(thisref, value) {

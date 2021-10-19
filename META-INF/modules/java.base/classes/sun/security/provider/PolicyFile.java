@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -44,6 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import jdk.internal.access.JavaSecurityAccess;
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.util.StaticProperty;
+import sun.nio.fs.DefaultFileSystemProvider;
 import sun.security.util.*;
 import sun.net.www.ParseUtil;
 
@@ -238,6 +239,7 @@ import static jdk.internal.access.JavaSecurityAccess.ProtectionDomainCache;
  * @see java.security.Permissions
  * @see java.security.ProtectionDomain
  */
+@SuppressWarnings("removal")
 public class PolicyFile extends java.security.Policy {
 
     private static final Debug debug = Debug.getInstance("policy");
@@ -274,6 +276,13 @@ public class PolicyFile extends java.security.Policy {
      */
     private static Set<URL> badPolicyURLs =
         Collections.newSetFromMap(new ConcurrentHashMap<URL,Boolean>());
+
+    /**
+     * Use the platform's default file system to avoid recursive initialization
+     * issues when the VM is configured to use a custom file system provider.
+     */
+    private static final java.nio.file.FileSystem builtInFS =
+        DefaultFileSystemProvider.theFileSystem();
 
     /**
      * Initializes the Policy object and reads the default policy
@@ -474,7 +483,7 @@ public class PolicyFile extends java.security.Policy {
     }
 
     private void initDefaultPolicy(PolicyInfo newInfo) {
-        Path defaultPolicy = Path.of(StaticProperty.javaHome(),
+        Path defaultPolicy = builtInFS.getPath(StaticProperty.javaHome(),
                                      "lib",
                                      "security",
                                      "default.policy");
@@ -765,7 +774,7 @@ public class PolicyFile extends java.security.Policy {
                     }
                 } catch (java.lang.reflect.InvocationTargetException ite) {
                     Object[] source = {pe.permission,
-                                       ite.getTargetException().toString()};
+                                       ite.getCause().toString()};
                     System.err.println(
                         LocalizedMessage.getNonlocalized(
                             POLICY + ".error.adding.Permission.perm.message",
@@ -1555,8 +1564,8 @@ public class PolicyFile extends java.security.Policy {
         while (i < certs.length) {
             count++;
             while (((i+1) < certs.length)
-                   && ((X509Certificate)certs[i]).getIssuerDN().equals(
-                           ((X509Certificate)certs[i+1]).getSubjectDN())) {
+                   && ((X509Certificate)certs[i]).getIssuerX500Principal().equals(
+                           ((X509Certificate)certs[i+1]).getSubjectX500Principal())) {
                 i++;
             }
             i++;
@@ -1570,8 +1579,8 @@ public class PolicyFile extends java.security.Policy {
         while (i < certs.length) {
             userCertList.add(certs[i]);
             while (((i+1) < certs.length)
-                   && ((X509Certificate)certs[i]).getIssuerDN().equals(
-                           ((X509Certificate)certs[i+1]).getSubjectDN())) {
+                   && ((X509Certificate)certs[i]).getIssuerX500Principal().equals(
+                           ((X509Certificate)certs[i+1]).getSubjectX500Principal())) {
                 i++;
             }
             i++;
@@ -2017,8 +2026,8 @@ public class PolicyFile extends java.security.Policy {
                     while (i < certs.length) {
                         count++;
                         while (((i+1) < certs.length) &&
-                            ((X509Certificate)certs[i]).getIssuerDN().equals(
-                            ((X509Certificate)certs[i+1]).getSubjectDN())) {
+                            ((X509Certificate)certs[i]).getIssuerX500Principal().equals(
+                            ((X509Certificate)certs[i+1]).getSubjectX500Principal())) {
                             i++;
                         }
                         i++;
@@ -2036,8 +2045,8 @@ public class PolicyFile extends java.security.Policy {
                         while (i < certs.length) {
                             signerCerts.add(certs[i]);
                             while (((i+1) < certs.length) &&
-                                ((X509Certificate)certs[i]).getIssuerDN().equals(
-                                ((X509Certificate)certs[i+1]).getSubjectDN())) {
+                                ((X509Certificate)certs[i]).getIssuerX500Principal().equals(
+                                ((X509Certificate)certs[i+1]).getSubjectX500Principal())) {
                                 i++;
                             }
                             i++;
