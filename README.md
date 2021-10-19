@@ -10,7 +10,7 @@ Current Build status: ![Build Workflow](https://github.com/mirkosertic/Bytecoder
 * Ability to cross-compile JVM Bytecode to JavaScript, WebAssembly, OpenCL and other languages
 * Primary compile targets are JavaScript and WebAssembly
 * Act as a JVM Bytecode frontend for LLVM
-* Supports Java 8, 9, 10, 11, 12, 13, 14 and 15
+* Supports Java 8, 9, 10, 11, 12, 13, 14, 15, 16 and 17
 * Work well with Debugger Toolchains and SourceMaps
 * Allow integration with other UI-Frameworks such as vue.js
 * Backed by OpenJDK 15 as JRE Classlib

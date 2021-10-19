@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,10 +26,6 @@
 package sun.font;
 
 import java.awt.Font;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
 import java.lang.ref.SoftReference;
 import java.util.concurrent.ConcurrentHashMap;
 import java.security.AccessController;
@@ -42,6 +38,7 @@ import sun.util.logging.PlatformLogger;
 /**
  * A collection of utility methods.
  */
+@SuppressWarnings("removal")
 public final class FontUtilities {
 
     public static boolean isLinux;
@@ -112,10 +109,6 @@ public final class FontUtilities {
                     } else if (debugLevel.equals("severe")) {
                         logger.setLevel(PlatformLogger.Level.SEVERE);
                     }
-                }
-
-                if (debugFonts) {
-                    logger = PlatformLogger.getLogger("sun.java2d");
                     logging = logger.isEnabled();
                 }
 
@@ -324,6 +317,17 @@ public final class FontUtilities {
         return debugFonts;
     }
 
+    public static void logWarning(String s) {
+        getLogger().warning(s);
+    }
+
+    public static void logInfo(String s) {
+        getLogger().info(s);
+    }
+
+    public static void logSevere(String s) {
+        getLogger().severe(s);
+    }
 
     // The following methods are used by Swing.
 

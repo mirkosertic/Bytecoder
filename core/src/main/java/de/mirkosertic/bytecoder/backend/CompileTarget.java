@@ -238,6 +238,17 @@ public class CompileTarget {
         theShortClass.resolveStaticMethod("valueOf", theShortClassValueOfSignature);
         theShortClass.resolveVirtualMethod("shortValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.SHORT, new BytecodeTypeRef[0]));
 
+        final BytecodeLinkedClass theStringClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(String.class));
+        theStringClass.resolveStaticMethod("decodeASCII",
+                new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT,
+                        new BytecodeTypeRef[] {
+                                new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1),
+                                BytecodePrimitiveTypeRef.INT,
+                                new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.CHAR, 1),
+                                BytecodePrimitiveTypeRef.INT,
+                                BytecodePrimitiveTypeRef.INT,
+                        }));
+
         // Additional classes
         if (aOptions.getAdditionalClassesToLink() != null) {
             for (final String theClassname : aOptions.getAdditionalClassesToLink()) {

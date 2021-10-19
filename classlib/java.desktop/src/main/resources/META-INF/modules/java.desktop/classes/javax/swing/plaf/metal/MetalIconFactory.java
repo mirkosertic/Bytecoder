@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998, 2014, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,16 +25,33 @@
 
 package javax.swing.plaf.metal;
 
-import javax.swing.*;
-import javax.swing.plaf.UIResource;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GraphicsConfiguration;
+import java.awt.Image;
+import java.awt.Polygon;
+import java.awt.Rectangle;
+import java.awt.Transparency;
 import java.awt.image.BufferedImage;
 import java.io.Serializable;
-import java.util.Enumeration;
 import java.util.Vector;
+
+import javax.swing.ButtonModel;
+import javax.swing.Icon;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
+import javax.swing.JRadioButton;
+import javax.swing.plaf.UIResource;
+
 import sun.swing.CachedPainter;
-import static sun.swing.SwingUtilities2.setAntialiasingHintForScaledGraphics;
+
 import static sun.swing.SwingUtilities2.getAndSetAntialisingHintForScaledGraphics;
+import static sun.swing.SwingUtilities2.setAntialiasingHintForScaledGraphics;
 
 /**
  * Factory object that vends <code>Icon</code>s for
@@ -101,6 +118,11 @@ public class MetalIconFactory implements Serializable {
      * {@code LIGHT} is used for the property {@code Tree.collapsedIcon}.
      */
     public static final boolean LIGHT = true;
+
+    /**
+     * Constructs a {@code MetalIconFactory}.
+     */
+    public MetalIconFactory() {}
 
     // Accessor functions for Icons. Does the caching work.
     /**
@@ -644,6 +666,11 @@ public class MetalIconFactory implements Serializable {
      */
     public static class PaletteCloseIcon implements Icon, UIResource, Serializable{
         int iconSize = 7;
+
+        /**
+         * Constructs a {@code PaletteCloseIcon}.
+         */
+        public PaletteCloseIcon() {}
 
         public void paintIcon(Component c, Graphics g, int x, int y) {
             JButton parentButton = (JButton)c;
@@ -1648,6 +1675,11 @@ public class MetalIconFactory implements Serializable {
 
         ImageCacher imageCacher;
 
+        /**
+         * Constructs a {@code FolderIcon16}.
+         */
+        public FolderIcon16() {}
+
         public void paintIcon(Component c, Graphics g, int x, int y) {
             GraphicsConfiguration gc = c.getGraphicsConfiguration();
             if (imageCacher == null) {
@@ -1739,6 +1771,11 @@ public class MetalIconFactory implements Serializable {
      */
     @SuppressWarnings("serial") // Same-version serialization only
     public static class TreeFolderIcon extends FolderIcon16 {
+        /**
+         * Constructs a {@code TreeFolderIcon}.
+         */
+        public TreeFolderIcon() {}
+
         public int getShift() { return -1; }
         public int getAdditionalHeight() { return 2; }
     }
@@ -1761,6 +1798,11 @@ public class MetalIconFactory implements Serializable {
     public static class FileIcon16 implements Icon, Serializable {
 
         ImageCacher imageCacher;
+
+        /**
+         * Constructs a {@code FileIcon16}.
+         */
+        public FileIcon16() {}
 
         public void paintIcon(Component c, Graphics g, int x, int y) {
             GraphicsConfiguration gc = c.getGraphicsConfiguration();
@@ -1839,6 +1881,10 @@ public class MetalIconFactory implements Serializable {
      * The class represents a tree leaf icon.
      */
     public static class TreeLeafIcon extends FileIcon16 {
+        /**
+         * Constructs a {@code TreeLeafIcon}.
+         */
+        public TreeLeafIcon() {}
         public int getShift() { return 2; }
         public int getAdditionalHeight() { return 4; }
     }
@@ -2372,6 +2418,8 @@ private static class VerticalSliderThumbIcon implements Icon, Serializable, UIRe
         boolean leftToRight = MetalUtils.isLeftToRight(c);
 
         g.translate( x, y );
+        Rectangle clip = g.getClipBounds();
+        g.clipRect(0, 0, getIconWidth(), getIconHeight());
 
         // Draw the frame
         if ( c.hasFocus() ) {
@@ -2450,6 +2498,7 @@ private static class VerticalSliderThumbIcon implements Icon, Serializable, UIRe
             }
         }
 
+        g.setClip(clip);
         g.translate( -x, -y );
     }
 
@@ -2479,6 +2528,8 @@ private static class HorizontalSliderThumbIcon implements Icon, Serializable, UI
 
     public void paintIcon( Component c, Graphics g, int x, int y ) {
         g.translate( x, y );
+        Rectangle clip = g.getClipBounds();
+        g.clipRect(0, 0, getIconWidth(), getIconHeight());
 
         // Draw the frame
         if ( c.hasFocus() ) {
@@ -2529,6 +2580,7 @@ private static class HorizontalSliderThumbIcon implements Icon, Serializable, UI
             g.drawLine( 1, 1, 1, 8 );
         }
 
+        g.setClip(clip);
         g.translate( -x, -y );
     }
 

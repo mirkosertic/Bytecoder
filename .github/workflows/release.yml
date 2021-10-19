@@ -9,10 +9,8 @@ jobs:
     environment: ci
     runs-on: 'ubuntu-latest'
     steps:
-      - uses: actions/checkout@v1
-      - uses: joschi/setup-jdk@v1
-        env:
-          ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+      - uses: actions/checkout@v2
+      - uses: joschi/setup-jdk@v2
         with:
           java-version: 8
       - run: |
