@@ -13,7 +13,7 @@ Current Build status: ![Build Workflow](https://github.com/mirkosertic/Bytecoder
 * Supports Java 8, 9, 10, 11, 12, 13, 14, 15, 16 and 17
 * Work well with Debugger Toolchains and SourceMaps
 * Allow integration with other UI-Frameworks such as vue.js
-* Backed by OpenJDK 15 as JRE Classlib
+* Backed by OpenJDK 17 as JRE Classlib
 
 ## Compiling strategies
 
