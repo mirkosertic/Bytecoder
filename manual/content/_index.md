@@ -1,6 +1,6 @@
 +++
 title = "Bytecoder User Manual"
-date = 2019-10-25T14:42:16+02:00
+date = 2021-11-02T00:00:00+02:00
 weight = 2
 +++
 
@@ -17,7 +17,7 @@ Its key features are:
 * Primary compile targets are **JavaScript** and **WebAssembly**
 * Act as a **JVM Bytecode frontend for LLVM**
 * **Work well with Debugger Toolchains and SourceMaps**
-* **Use OpenJDK 15 as Java Classlib**
+* **Use OpenJDK 17 as Java Classlib**
 
 The JVM Bytecode is parsed and transformed into an intermediate representation. This intermediate representation is passed thru 
 optimizer stages and sent to a backend implementation for target code generation.
