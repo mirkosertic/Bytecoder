@@ -20,7 +20,7 @@ public class BytecodeInstructionPUTFIELD extends BytecodeInstruction {
     private final int poolIndex;
     private final BytecodeConstantPool constantPool;
 
-    public BytecodeInstructionPUTFIELD(BytecodeOpcodeAddress aOpcodeIndex, int aPoolIndex, BytecodeConstantPool aConstantPool) {
+    public BytecodeInstructionPUTFIELD(final BytecodeOpcodeAddress aOpcodeIndex, final int aPoolIndex, final BytecodeConstantPool aConstantPool) {
         super(aOpcodeIndex);
         poolIndex = aPoolIndex;
         constantPool = aConstantPool;
@@ -31,15 +31,21 @@ public class BytecodeInstructionPUTFIELD extends BytecodeInstruction {
     }
 
     @Override
-    public void performLinking(BytecodeClass aOwningClass, BytecodeLinkerContext aLinkerContext) {
-        BytecodeFieldRefConstant theFieldRef = getFieldRefConstant();
+    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext, final AnalysisStack analysisStack) {
+        final BytecodeFieldRefConstant theFieldRef = getFieldRefConstant();
 
-        BytecodeClassinfoConstant theClass = theFieldRef.getClassIndex().getClassConstant();
-        BytecodeNameIndex theName = theFieldRef.getNameAndTypeIndex().getNameAndType().getNameIndex();
+        final BytecodeClassinfoConstant theClass = theFieldRef.getClassIndex().getClassConstant();
+        final BytecodeNameIndex theName = theFieldRef.getNameAndTypeIndex().getNameAndType().getNameIndex();
 
-        BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClass.getConstant()));
-        if (!theLinkedClass.resolveInstanceField(theName.getName())) {
-            throw new IllegalStateException("Cannot link field " + theName.getName().stringValue() + " in " + theLinkedClass.getClassName().name());
+        final BytecodeObjectTypeRef className = BytecodeObjectTypeRef.fromUtf8Constant(theClass.getConstant());
+        final AnalysisStack.Frame currentFrame = analysisStack.fieldAccess(className, theName.getName().stringValue());
+        try {
+            final BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(className, analysisStack);
+            if (!theLinkedClass.resolveInstanceField(theName.getName(), analysisStack)) {
+                throw new MissingLinkException("Cannot find instance field. Analysis stack is \n" + analysisStack.toDebugOutput());
+            }
+        } finally {
+            currentFrame.close();
         }
     }
 }

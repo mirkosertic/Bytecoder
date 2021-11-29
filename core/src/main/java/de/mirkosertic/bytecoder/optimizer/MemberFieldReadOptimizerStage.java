@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.optimizer;
 
 import de.mirkosertic.bytecoder.backend.CompileBackend;
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 import de.mirkosertic.bytecoder.ssa.Expression;
@@ -28,8 +29,14 @@ import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 public class MemberFieldReadOptimizerStage implements OptimizerStage{
 
     @Override
-    public Expression optimize(final CompileBackend aBackend, final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext, final RegionNode aCurrentNode,
-                               final ExpressionList aExpressionList, final Expression aExpression) {
+    public Expression optimize(final CompileBackend aBackend,
+                               final ControlFlowGraph aGraph,
+                               final BytecodeLinkerContext aLinkerContext,
+                               final RegionNode aCurrentNode,
+                               final ExpressionList aExpressionList,
+                               final Expression aExpression,
+                               final AnalysisStack analysisStack) {
+
         if (aExpression instanceof VariableAssignmentExpression) {
             final VariableAssignmentExpression theFieldReadAssignment = (VariableAssignmentExpression) aExpression;
             final Value theRightSide = theFieldReadAssignment.incomingDataFlows().get(0);

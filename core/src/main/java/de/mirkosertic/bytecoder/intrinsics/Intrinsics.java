@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.intrinsics;
 import java.util.ArrayList;
 import java.util.List;
 
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGETSTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEINTERFACE;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
@@ -50,57 +51,80 @@ public class Intrinsics {
         intrinsics.add(new JdkInternalAccessJavaLangAccessIntrinsic());
     }
 
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKESTATIC aInstruction, final List<Value> aArguments,
-                              final BytecodeObjectTypeRef aObjectType, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
-        final String theMethodName = aInstruction.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
-        for (final Intrinsic intrinsic : intrinsics) {
-            if (intrinsic.intrinsify(aProgram, aInstruction, theMethodName, aArguments, aObjectType, aTargetBlock, aHelper)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKESPECIAL aInstruction,
-                              final BytecodeObjectTypeRef aType, final List<Value> aArguments,
-                              final Variable aTarget, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
-        final String theMethodName = aInstruction.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
-        for (final Intrinsic intrinsic : intrinsics) {
-            if (intrinsic.intrinsify(aProgram, aInstruction, theMethodName, aType, aArguments, aTarget, aTargetBlock, aHelper)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKEVIRTUAL aInstruction,
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionINVOKESTATIC aInstruction,
                               final List<Value> aArguments,
-                              final Value aTarget, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+                              final BytecodeObjectTypeRef aObjectType,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
         final String theMethodName = aInstruction.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
         for (final Intrinsic intrinsic : intrinsics) {
-            if (intrinsic.intrinsify(aProgram, aInstruction, theMethodName, aArguments, aTarget, aTargetBlock, aHelper)) {
+            if (intrinsic.intrinsify(aProgram, aInstruction, theMethodName, aArguments, aObjectType, aTargetBlock, aHelper, analysisStack)) {
                 return true;
             }
         }
         return false;
     }
 
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionGETSTATIC aInstruction, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
-        final String theFieldName = aInstruction.getConstant().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
-        final BytecodeObjectTypeRef theTargetType = BytecodeObjectTypeRef.fromUtf8Constant(aInstruction.getConstant().getClassIndex().getClassConstant().getConstant());
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionINVOKESPECIAL aInstruction,
+                              final BytecodeObjectTypeRef aType,
+                              final List<Value> aArguments,
+                              final Variable aTarget,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
+        final String theMethodName = aInstruction.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
         for (final Intrinsic intrinsic : intrinsics) {
-            if (intrinsic.intrinsify(aProgram, aInstruction, theFieldName, theTargetType, aTargetBlock, aHelper)) {
+            if (intrinsic.intrinsify(aProgram, aInstruction, theMethodName, aType, aArguments, aTarget, aTargetBlock, aHelper, analysisStack)) {
                 return true;
             }
         }
         return false;
     }
 
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionPUTSTATIC aInstruction, final Value aValue, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionINVOKEVIRTUAL aInstruction,
+                              final List<Value> aArguments,
+                              final Value aTarget,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
+        final String theMethodName = aInstruction.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
+        for (final Intrinsic intrinsic : intrinsics) {
+            if (intrinsic.intrinsify(aProgram, aInstruction, theMethodName, aArguments, aTarget, aTargetBlock, aHelper, analysisStack)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionGETSTATIC aInstruction,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
         final String theFieldName = aInstruction.getConstant().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
         final BytecodeObjectTypeRef theTargetType = BytecodeObjectTypeRef.fromUtf8Constant(aInstruction.getConstant().getClassIndex().getClassConstant().getConstant());
         for (final Intrinsic intrinsic : intrinsics) {
-            if (intrinsic.intrinsify(aProgram, aInstruction, theFieldName, theTargetType, aValue, aTargetBlock, aHelper)) {
+            if (intrinsic.intrinsify(aProgram, aInstruction, theFieldName, theTargetType, aTargetBlock, aHelper, analysisStack)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionPUTSTATIC aInstruction,
+                              final Value aValue,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
+        final String theFieldName = aInstruction.getConstant().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
+        final BytecodeObjectTypeRef theTargetType = BytecodeObjectTypeRef.fromUtf8Constant(aInstruction.getConstant().getClassIndex().getClassConstant().getConstant());
+        for (final Intrinsic intrinsic : intrinsics) {
+            if (intrinsic.intrinsify(aProgram, aInstruction, theFieldName, theTargetType, aValue, aTargetBlock, aHelper, analysisStack)) {
                 return true;
             }
         }
@@ -113,10 +137,11 @@ public class Intrinsics {
                               final List<Value> aArguments,
                               final BytecodeObjectTypeRef aObjectType,
                               final RegionNode aTargetBlock,
-                              final ParsingHelper aHelper) {
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
         final String theMethodName = aInstruction.getMethodDescriptor().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue();
         for (final Intrinsic intrinsic : intrinsics) {
-            if (intrinsic.intrinsify(aProgram, aInstruction, theMethodName, aInvocationTarget, aArguments, aObjectType, aTargetBlock, aHelper)) {
+            if (intrinsic.intrinsify(aProgram, aInstruction, theMethodName, aInvocationTarget, aArguments, aObjectType, aTargetBlock, aHelper, analysisStack)) {
                 return true;
             }
         }

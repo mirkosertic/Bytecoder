@@ -67,13 +67,14 @@ public class BytecodeLinkerContext {
         return linkedClasses.get(theTypeRef);
     }
 
-    public BytecodeLinkedClass resolveClass(final BytecodeObjectTypeRef aTypeRef) {
+    public BytecodeLinkedClass resolveClass(final BytecodeObjectTypeRef aTypeRef, final AnalysisStack analysisStack) {
 
         final BytecodeLinkedClass existing = linkedClasses.get(aTypeRef);
         if (existing != null) {
             return existing;
         }
 
+        final AnalysisStack.Frame analysisFrame = analysisStack.startClassInitialization(aTypeRef);
         try {
             final BytecodeClass theLoadedClass = loader.loadByteCode(aTypeRef);
 
@@ -81,7 +82,7 @@ public class BytecodeLinkerContext {
             final BytecodeClassinfoConstant theSuperClass = theLoadedClass.getSuperClass();
             if (theSuperClass != BytecodeClassinfoConstant.OBJECT_CLASS) {
                 final BytecodeUtf8Constant theSuperClassName = theSuperClass.getConstant();
-                theParentClass = resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theSuperClassName));
+                theParentClass = resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theSuperClassName), analysisStack);
             }
 
             final BytecodeLinkedClass theLinkedClass = new BytecodeLinkedClass(theParentClass, classIdCounter++, this, aTypeRef, theLoadedClass);
@@ -92,16 +93,16 @@ public class BytecodeLinkerContext {
                 if (theAnnotation != null) {
                     // The method should be exported
                     if (theMethod.getAccessFlags().isStatic()) {
-                        theLinkedClass.resolveStaticMethod(theMethod.getName().stringValue(), theMethod.getSignature());
+                        theLinkedClass.resolveStaticMethod(theMethod.getName().stringValue(), theMethod.getSignature(), analysisStack);
                     } else {
-                        theLinkedClass.resolveVirtualMethod(theMethod.getName().stringValue(), theMethod.getSignature());
+                        theLinkedClass.resolveVirtualMethod(theMethod.getName().stringValue(), theMethod.getSignature(), analysisStack);
                     }
                 }
             }
 
             for (final BytecodeInterface implementedInterface : theLoadedClass.getInterfaces()) {
                 final BytecodeUtf8Constant interfaceClassName = implementedInterface.getClassinfoConstant().getConstant();
-                final BytecodeLinkedClass implementedInterfaceClass = resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(interfaceClassName));
+                final BytecodeLinkedClass implementedInterfaceClass = resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(interfaceClassName), analysisStack);
 
                 theLinkedClass.addImplementedInterface(implementedInterfaceClass);
             }
@@ -109,16 +110,20 @@ public class BytecodeLinkerContext {
             final BytecodeMethod classInitializerMethodOrNull = theLoadedClass.classInitializerOrNull();
             if (classInitializerMethodOrNull != null) {
                 theLinkedClass.tagWith(BytecodeLinkedClass.Tag.HAS_CLASS_INITIALIZER);
-                theLinkedClass.resolveClassInitializer(classInitializerMethodOrNull);
+                theLinkedClass.resolveClassInitializer(classInitializerMethodOrNull, analysisStack);
             }
 
-            logger.info("Linked {}" ,theLinkedClass.getClassName().name());
+            logger.info("Linked {}", theLinkedClass.getClassName().name());
 
             statistics.context("Linker context").counter("Loaded classes").increment();
 
             return theLinkedClass;
+        } catch (final MissingLinkException e) {
+            throw e;
         } catch (final Exception e) {
-            throw new RuntimeException("Error linking class " + aTypeRef.name(), e);
+            throw new RuntimeException("Error linking class " + aTypeRef.name() + ". Analysis stack is \n" + analysisStack.toDebugOutput(), e);
+        } finally {
+            analysisFrame.close();
         }
     }
 
@@ -126,7 +131,7 @@ public class BytecodeLinkerContext {
         return linkedClasses.values().stream();
     }
 
-    public BytecodeLinkedClass resolveTypeRef(final BytecodeTypeRef aTypeRef) {
+    public BytecodeLinkedClass resolveTypeRef(final BytecodeTypeRef aTypeRef, final AnalysisStack analysisStack) {
         if (aTypeRef.isVoid()) {
             return null;
         }
@@ -135,20 +140,20 @@ public class BytecodeLinkerContext {
         }
         if (aTypeRef.isArray()) {
             final BytecodeArrayTypeRef theArray = (BytecodeArrayTypeRef) aTypeRef;
-            return resolveTypeRef(theArray.getType());
+            return resolveTypeRef(theArray.getType(), analysisStack);
         }
         final BytecodeObjectTypeRef theTypeRef = (BytecodeObjectTypeRef) aTypeRef;
-        return resolveClass(theTypeRef);
+        return resolveClass(theTypeRef, analysisStack);
     }
 
-    public void resolveAbstractMethodsInSubclasses() {
+    public void resolveAbstractMethodsInSubclasses(final AnalysisStack analysisStack) {
         final List<BytecodeLinkedClass> theLinkedClasses = linkedClasses().collect(Collectors.toList());
         for (final BytecodeLinkedClass theLinked : theLinkedClasses) {
-            theLinked.resolveInheritedOverriddenMethods();
+            theLinked.resolveInheritedOverriddenMethods(analysisStack);
         }
         if (linkedClasses().count() != theLinkedClasses.size()) {
             // New classes were added, we maybe have to resolve them as well
-            resolveAbstractMethodsInSubclasses();
+            resolveAbstractMethodsInSubclasses(analysisStack);
         }
     }
 

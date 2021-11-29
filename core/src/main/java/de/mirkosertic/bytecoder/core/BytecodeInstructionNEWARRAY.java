@@ -35,7 +35,7 @@ public class BytecodeInstructionNEWARRAY extends BytecodeInstruction {
     }
 
     @Override
-    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext) {
-        aLinkerContext.resolveClass(getObjectType());
+    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext, final AnalysisStack analysisStack) {
+        aLinkerContext.resolveClass(getObjectType(), analysisStack);
     }
 }

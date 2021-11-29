@@ -21,6 +21,7 @@ import de.mirkosertic.bytecoder.api.opencl.OpenCLFunction;
 import de.mirkosertic.bytecoder.api.opencl.OpenCLType;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.IndentSSAWriter;
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
@@ -66,11 +67,11 @@ import de.mirkosertic.bytecoder.stackifier.Block;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
 
 import java.io.PrintWriter;
+import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.Stack;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class OpenCLWriter extends IndentSSAWriter {
@@ -80,21 +81,38 @@ public class OpenCLWriter extends IndentSSAWriter {
     private final AtomicBoolean stackifierOutout;
     private final Set<Label> recordedNextLabels;
     private AbstractAllocator allocator;
+    private final AnalysisStack analysisStack;
 
     public OpenCLWriter(
-            final BytecodeLinkedClass aKernelClass, final CompileOptions aOptions, final Program aProgram, final PrintWriter aWriter, final BytecodeLinkerContext aLinkerContext, final OpenCLInputOutputs aInputOutputs) {
-        this(aKernelClass, aOptions, aProgram, "", aWriter, aLinkerContext, aInputOutputs, new AtomicBoolean(false), new HashSet<>(), null);
+            final BytecodeLinkedClass aKernelClass,
+            final CompileOptions aOptions,
+            final Program aProgram,
+            final PrintWriter aWriter,
+            final BytecodeLinkerContext aLinkerContext,
+            final OpenCLInputOutputs aInputOutputs,
+            final AnalysisStack analysisStack) {
+        this(aKernelClass, aOptions, aProgram, "", aWriter, aLinkerContext, aInputOutputs, new AtomicBoolean(false), new HashSet<>(), null, analysisStack);
     }
 
     private OpenCLWriter(
-            final BytecodeLinkedClass aKernelClass, final CompileOptions aOptions, final Program aProgram, final String aIndent, final PrintWriter aWriter, final BytecodeLinkerContext aLinkerContext, final OpenCLInputOutputs aInputOutputs, final AtomicBoolean aStackifierOutout, final Set<Label> aRecordedNextLabels,
-            final AbstractAllocator aRegisterAllocator) {
+            final BytecodeLinkedClass aKernelClass,
+            final CompileOptions aOptions,
+            final Program aProgram,
+            final String aIndent,
+            final PrintWriter aWriter,
+            final BytecodeLinkerContext aLinkerContext,
+            final OpenCLInputOutputs aInputOutputs,
+            final AtomicBoolean aStackifierOutout,
+            final Set<Label> aRecordedNextLabels,
+            final AbstractAllocator aRegisterAllocator,
+            final AnalysisStack aAnalysisStack) {
         super(aOptions, aProgram, aIndent, aWriter, aLinkerContext);
         inputOutputs = aInputOutputs;
         kernelClass = aKernelClass;
         stackifierOutout = aStackifierOutout;
         recordedNextLabels = aRecordedNextLabels;
         allocator = aRegisterAllocator;
+        analysisStack = aAnalysisStack;
     }
 
     public void printReloopedKernel(final Relooper.Block aBlock, final AbstractAllocator registerAllocator) {
@@ -290,7 +308,7 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private OpenCLWriter withDeeperIndent() {
-        return new OpenCLWriter(kernelClass, options, program, indent + "    ", writer, linkerContext, inputOutputs, stackifierOutout, recordedNextLabels, allocator);
+        return new OpenCLWriter(kernelClass, options, program, indent + "    ", writer, linkerContext, inputOutputs, stackifierOutout, recordedNextLabels, allocator, analysisStack);
     }
 
     private void printInstanceFieldReference(final BytecodeFieldRefConstant aField) {
@@ -416,7 +434,7 @@ public class OpenCLWriter extends IndentSSAWriter {
             // which is not used
             return "int";
         }
-        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aObjectType);
+        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aObjectType, analysisStack);
         final BytecodeClass theBytecodeClass = theLinkedClass.getBytecodeClass();
         final BytecodeAnnotation theAnnotation = theBytecodeClass.getAttributes().getAnnotationByType(OpenCLType.class.getName());
         if (theAnnotation == null) {
@@ -720,7 +738,7 @@ public class OpenCLWriter extends IndentSSAWriter {
     }
 
     private void printInvokeStatic(final InvokeStaticMethodExpression aValue) {
-        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aValue.getInvokedClass());
+        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aValue.getInvokedClass(), analysisStack);
         final BytecodeResolvedMethods theMethods = linkerContext.resolveMethods(theLinkedClass);
         final AtomicBoolean theFound = new AtomicBoolean(false);
         theMethods.stream().forEach(aMethodMapsEntry -> {
@@ -831,8 +849,8 @@ public class OpenCLWriter extends IndentSSAWriter {
 
         theDeeper.printProgramVariablesDeclaration(program);
 
-        final Stack<OpenCLWriter> writerStack = new Stack<>();
-        final Stack<Label> labels = new Stack<>();
+        final ArrayDeque<OpenCLWriter> writerStack = new ArrayDeque<>();
+        final ArrayDeque<Label> labels = new ArrayDeque<>();
         writerStack.push(theDeeper);
 
         stackifier.writeStructuredControlFlow(new Stackifier.StackifierStructuredControlFlowWriter(stackifier) {
@@ -923,8 +941,8 @@ public class OpenCLWriter extends IndentSSAWriter {
 
         printProgramVariablesDeclaration(program);
 
-        final Stack<OpenCLWriter> writerStack = new Stack<>();
-        final Stack<Label> labels = new Stack<>();
+        final ArrayDeque<OpenCLWriter> writerStack = new ArrayDeque<>();
+        final ArrayDeque<Label> labels = new ArrayDeque<>();
         writerStack.push(theDeeper);
 
         stackifier.writeStructuredControlFlow(new Stackifier.StackifierStructuredControlFlowWriter(stackifier) {

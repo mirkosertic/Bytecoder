@@ -24,42 +24,47 @@ public class BytecodeLoaderTest {
 
     @Test
     public void testLoadRuntime1() {
-        BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
-        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE);
-        theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Object.class.getName()));
+        final AnalysisStack analysisStack = new AnalysisStack();
+        final BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE);
+        theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Object.class.getName()), analysisStack);
     }
 
     @Test
     public void testLoadRuntime2() {
-        BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
-        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE);
-        theLinkerContext.resolveClass(new BytecodeObjectTypeRef(String.class.getName()));
+        final AnalysisStack analysisStack = new AnalysisStack();
+        final BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE);
+        theLinkerContext.resolveClass(new BytecodeObjectTypeRef(String.class.getName()), analysisStack);
     }
 
     @Test
     public void testLoadRuntime3() {
-        BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
-        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE);
-        theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Math.class.getName()));
+        final AnalysisStack analysisStack = new AnalysisStack();
+        final BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE);
+        theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Math.class.getName()), analysisStack);
     }
 
     @Test
     public void testLoadRuntime4() {
-        BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
-        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE);
-        theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Class.class.getName()));
+        final AnalysisStack analysisStack = new AnalysisStack();
+        final BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE);
+        theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Class.class.getName()), analysisStack);
     }
 
     @Test
     public void testLoadRuntime5() {
-        BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
-        BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE);
-        theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Object.class.getName()));
+        final AnalysisStack analysisStack = new AnalysisStack();
+        final BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE);
+        theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Object.class.getName()), analysisStack);
     }
 
     @Test
     public void testLoadInterface() throws IOException, ClassNotFoundException {
-        BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
+        final BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
         theLoader.loadByteCode(new BytecodeObjectTypeRef(SimpleInterface.class.getName()));
     }
 }

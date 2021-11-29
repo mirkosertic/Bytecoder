@@ -51,6 +51,7 @@ import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.ExceptionManager;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.classlib.VM;
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
@@ -81,6 +82,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -90,7 +92,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.Stack;
 import java.util.stream.Collectors;
 
 import static de.mirkosertic.bytecoder.backend.wasm.WASMSSAASTWriter.toType;
@@ -143,53 +144,58 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
     @Override
     public WASMCompileResult generateCodeFor(
-            final CompileOptions aOptions, final BytecodeLinkerContext aLinkerContext, final Class aEntryPointClass, final String aEntryPointMethodName, final BytecodeMethodSignature aEntryPointSignatue) {
+            final CompileOptions aOptions,
+            final BytecodeLinkerContext aLinkerContext,
+            final Class aEntryPointClass,
+            final String aEntryPointMethodName,
+            final BytecodeMethodSignature aEntryPointSignatue,
+            final AnalysisStack analysisStack) {
 
         final WASMMinifier theMinifier = new WASMMinifier();
 
         // Link required mamory management code
-        final BytecodeLinkedClass theArrayClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
+        final BytecodeLinkedClass theArrayClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class), analysisStack);
 
-        final BytecodeLinkedClass theMemoryManagerClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class));
+        final BytecodeLinkedClass theMemoryManagerClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class), analysisStack);
 
-        theMemoryManagerClass.resolveStaticMethod("logAllocations", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
+        theMemoryManagerClass.resolveStaticMethod("logAllocations", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]), analysisStack);
 
-        theMemoryManagerClass.resolveStaticMethod("freeMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
-        theMemoryManagerClass.resolveStaticMethod("usedMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
+        theMemoryManagerClass.resolveStaticMethod("freeMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]), analysisStack);
+        theMemoryManagerClass.resolveStaticMethod("usedMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]), analysisStack);
 
-        theMemoryManagerClass.resolveStaticMethod("free", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
-        theMemoryManagerClass.resolveStaticMethod("malloc", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
-        theMemoryManagerClass.resolveStaticMethod("newObject", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
-        theMemoryManagerClass.resolveStaticMethod("newArray", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
-        theMemoryManagerClass.resolveStaticMethod("newArray", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+        theMemoryManagerClass.resolveStaticMethod("free", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}), analysisStack);
+        theMemoryManagerClass.resolveStaticMethod("malloc", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}), analysisStack);
+        theMemoryManagerClass.resolveStaticMethod("newObject", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}), analysisStack);
+        theMemoryManagerClass.resolveStaticMethod("newArray", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}), analysisStack);
+        theMemoryManagerClass.resolveStaticMethod("newArray", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}), analysisStack);
 
-        final BytecodeLinkedClass theVMClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.class));
+        final BytecodeLinkedClass theVMClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.class), analysisStack);
         theVMClass.resolveStaticMethod("newStringUTF8", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                String.class), new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}));
-        theVMClass.resolveStaticMethod("newByteArray", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
-        theVMClass.resolveStaticMethod("setByteArrayEntry", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.BYTE}));
+                String.class), new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}), analysisStack);
+        theVMClass.resolveStaticMethod("newByteArray", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}), analysisStack);
+        theVMClass.resolveStaticMethod("setByteArrayEntry", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.BYTE}), analysisStack);
 
         // We need this package-private constructor in String.class for bootstrap
-        aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(String.class))
+        aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(String.class), analysisStack)
                 .resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
-                        new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1),BytecodePrimitiveTypeRef.BYTE}));
+                        new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1),BytecodePrimitiveTypeRef.BYTE}), analysisStack);
 
         final BytecodeMethodSignature pushExceptionSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class)});
         final BytecodeMethodSignature popExceptionSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class), new BytecodeTypeRef[0]);
 
         if (aOptions.isEnableExceptions()) {
             final BytecodeLinkedClass theExceptionManager = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
-                    ExceptionManager.class));
-            theExceptionManager.resolveStaticMethod("push", pushExceptionSignature);
-            theExceptionManager.resolveStaticMethod("pop", popExceptionSignature);
-            theExceptionManager.resolveStaticMethod("lastExceptionOrNull", popExceptionSignature);
+                    ExceptionManager.class), analysisStack);
+            theExceptionManager.resolveStaticMethod("push", pushExceptionSignature, analysisStack);
+            theExceptionManager.resolveStaticMethod("pop", popExceptionSignature, analysisStack);
+            theExceptionManager.resolveStaticMethod("lastExceptionOrNull", popExceptionSignature, analysisStack);
         }
 
-        final BytecodeLinkedClass theStringClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(String.class));
-        if (!theStringClass.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}))) {
+        final BytecodeLinkedClass theStringClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(String.class), analysisStack);
+        if (!theStringClass.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}), analysisStack)) {
             throw new IllegalStateException("No matching constructor!");
         }
-        if (!theStringClass.resolveVirtualMethod("equals", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BOOLEAN, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Object.class)}))) {
+        if (!theStringClass.resolveVirtualMethod("equals", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BOOLEAN, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Object.class)}), analysisStack)) {
             throw new IllegalStateException("No matching stringequals method!");
         }
 
@@ -478,7 +484,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
         final ExportableFunction runtimeInstanceOf = module.getFunctions().newFunction("RUNTIMECLASS" + WASMSSAASTWriter.INSTANCEOFSUFFIX, Arrays.asList(param("thisRef", PrimitiveType.i32), param("otherType", PrimitiveType.i32)), PrimitiveType.i32).toTable();
         {
-            final BytecodeLinkedClass theClassLinkedCass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Class.class));
+            final BytecodeLinkedClass theClassLinkedCass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Class.class), analysisStack);
             final Block checkblock = runtimeInstanceOf.flow.block("check", null);
             checkblock.flow.branchIff(checkblock, i32.ne(getLocal(runtimeInstanceOf.localByLabel("otherType"), null), i32.c(theClassLinkedCass.getUniqueId(), null), null), null);
             checkblock.flow.ret(i32.c(1, null), null);
@@ -492,7 +498,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             instanceOfBlock.flow.branchIff(instanceOfBlock, i32.ne(getLocal(runtimeResolvevtableindex.localByLabel("methodId"), null), i32.c(WASMSSAASTWriter.GENERATED_INSTANCEOF_METHOD_ID, null), null), null);
             instanceOfBlock.flow.ret(weakFunctionTableReference("RUNTIMECLASS" + WASMSSAASTWriter.INSTANCEOFSUFFIX, null), null);
 
-            final BytecodeLinkedClass theClassLinkedCass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Class.class));
+            final BytecodeLinkedClass theClassLinkedCass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Class.class), analysisStack);
             final BytecodeResolvedMethods theRuntimeMethodMap = aLinkerContext.resolveMethods(theClassLinkedCass);
             theRuntimeMethodMap.stream().forEach(aMethodMapEntry -> {
                 final BytecodeMethod theMethod = aMethodMapEntry.getValue();
@@ -705,10 +711,10 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 }
             } else {
                 final List<Integer> theSorted = theImplementedMethods.keySet().stream().sorted().collect(Collectors.toList());
-                final Stack<List<Integer>> theWorkList = new Stack<>();
+                final ArrayDeque<List<Integer>> theWorkList = new ArrayDeque<>();
                 theWorkList.push(theSorted);
 
-                final Stack<Expressions> theContainer = new Stack<>();
+                final ArrayDeque<Expressions> theContainer = new ArrayDeque<>();
                 theContainer.push(resolveTableIndex.flow);
 
                 int stepCounter = 1;
@@ -872,10 +878,10 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 }
 
                 final ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext, new WASMIntrinsics());
-                final Program theSSAProgram = theGenerator.generateFrom(aMethodMapEntry.getProvidingClass().getBytecodeClass(), theMethod);
+                final Program theSSAProgram = theGenerator.generateFrom(aMethodMapEntry.getProvidingClass().getBytecodeClass(), theMethod, analysisStack);
 
                 //Run optimizer
-                aOptions.getOptimizer().optimize(this, theSSAProgram.getControlFlowGraph(), aLinkerContext);
+                aOptions.getOptimizer().optimize(this, theSSAProgram.getControlFlowGraph(), aLinkerContext, analysisStack);
 
                 // Perform register allocation
                 final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram, variable -> {
@@ -946,7 +952,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         theParam.renameTo(theVariable.getName());
                     }
 
-                    final WASMSSAASTWriter writer = new WASMSSAASTWriter(theResolver, aLinkerContext, module, aOptions, theSSAProgram, theMemoryLayout, instanceFunction, theAllocator);
+                    final WASMSSAASTWriter writer = new WASMSSAASTWriter(theResolver, aLinkerContext, module, aOptions, theSSAProgram, theMemoryLayout, instanceFunction, theAllocator, analysisStack);
 
                     if (aOptions.isPreferStackifier()) {
                         try {
@@ -1051,7 +1057,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 theFunction.newLocal(WASMSSAASTWriter.registerName(r), toType(r.getType()));
             }
 
-            final WASMSSAASTWriter writer = new WASMSSAASTWriter(theResolver, aLinkerContext, module, aOptions, theSSAProgram, theMemoryLayout, theFunction, theAllocator);
+            final WASMSSAASTWriter writer = new WASMSSAASTWriter(theResolver, aLinkerContext, module, aOptions, theSSAProgram, theMemoryLayout, theFunction, theAllocator, analysisStack);
 
             writer.stackEnter();
             writer.writeExpressionList(theEntry.getValue().bootstrapMethod.getExpressions());
@@ -1242,19 +1248,19 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
             switch (theMethodHandle.getReferenceKind()) {
                 case REF_invokeStatic:
-                    writeMethodHandleDelegateInvokeStatic(aLinkerContext, theMethodHandle, theDelegateMethodName, module);
+                    writeMethodHandleDelegateInvokeStatic(aLinkerContext, theMethodHandle, theDelegateMethodName, module, analysisStack);
                     break;
                 case REF_invokeVirtual:
-                    writeMethodHandleDelegateInvokeVirtual(aLinkerContext, theMethodHandle, theDelegateMethodName, module);
+                    writeMethodHandleDelegateInvokeVirtual(aLinkerContext, theMethodHandle, theDelegateMethodName, module, analysisStack);
                     break;
                 case REF_invokeInterface:
-                    writeMethodHandleDelegateInvokeInterface(aLinkerContext, theMethodHandle, theDelegateMethodName, module);
+                    writeMethodHandleDelegateInvokeInterface(aLinkerContext, theMethodHandle, theDelegateMethodName, module, analysisStack);
                     break;
                 case REF_invokeSpecial:
-                    writeMethodHandleDelegateInvokeSpecial(aLinkerContext, theMethodHandle, theDelegateMethodName, module);
+                    writeMethodHandleDelegateInvokeSpecial(aLinkerContext, theMethodHandle, theDelegateMethodName, module, analysisStack);
                     break;
                 case REF_newInvokeSpecial:
-                    writeMethodHandleDelegateNewInvokeSpecial(aLinkerContext, theMethodHandle, theDelegateMethodName, module);
+                    writeMethodHandleDelegateNewInvokeSpecial(aLinkerContext, theMethodHandle, theDelegateMethodName, module, analysisStack);
                     break;
                 default:
                     throw new IllegalArgumentException("Not supported refkind for method handle " + theMethodHandle.getReferenceKind());
@@ -1758,7 +1764,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                             theWriter.print("bytecoder.referenceTable[target]");
                             theWriter.print("[arg0]");
 
-                            final String theConversionFunction = conversionFunctionToJSForOpaqueType(aLinkerContext, theSignature.getArguments()[1]);
+                            final String theConversionFunction = conversionFunctionToJSForOpaqueType(aLinkerContext, theSignature.getArguments()[1], analysisStack);
                             if (theConversionFunction != null) {
                                 theWriter.print("=");
                                 theWriter.print(theConversionFunction);
@@ -1771,7 +1777,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
                             boolean theWriteClosingBraces = false;
 
-                            final String theConversionFunction = conversionFunctionToWASMForOpaqueType(aLinkerContext, theSignature.getReturnType());
+                            final String theConversionFunction = conversionFunctionToWASMForOpaqueType(aLinkerContext, theSignature.getReturnType(), analysisStack);
                             if (theConversionFunction != null) {
                                 theWriter.print(theConversionFunction);
                                 theWriter.print("(");
@@ -1810,7 +1816,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                             theWriter.print("bytecoder.referenceTable[target].");
                             theWriter.print(theOpaquePropertyName);
 
-                            final String theConversionFunction = conversionFunctionToJSForOpaqueType(aLinkerContext, theSignature.getArguments()[0]);
+                            final String theConversionFunction = conversionFunctionToJSForOpaqueType(aLinkerContext, theSignature.getArguments()[0], analysisStack);
                             if (theConversionFunction != null) {
                                 theWriter.print("=");
                                 theWriter.print(theConversionFunction);
@@ -1823,7 +1829,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
 
                             boolean theWriteClosingBraces = false;
 
-                            final String theConversionFunction = conversionFunctionToWASMForOpaqueType(aLinkerContext, theSignature.getReturnType());
+                            final String theConversionFunction = conversionFunctionToWASMForOpaqueType(aLinkerContext, theSignature.getReturnType(), analysisStack);
                             if (theConversionFunction != null) {
                                 theWriter.print(theConversionFunction);
                                 theWriter.print("(");
@@ -1851,7 +1857,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                         if (!theSignature.getReturnType().isVoid()) {
                             theWriter.print("               return ");
 
-                            final String theConversionFunction = conversionFunctionToWASMForOpaqueType(aLinkerContext, theSignature.getReturnType());
+                            final String theConversionFunction = conversionFunctionToWASMForOpaqueType(aLinkerContext, theSignature.getReturnType(), analysisStack);
                             if (theConversionFunction != null) {
                                 theWriter.print(theConversionFunction);
                                 theWriter.print("(");
@@ -1882,7 +1888,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                 theWriter.print(")");
                             } else {
                                 final BytecodeObjectTypeRef theObjectType = (BytecodeObjectTypeRef) theRef;
-                                final BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(theObjectType);
+                                final BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(theObjectType, analysisStack);
                                 if (theLinkedClass.isOpaqueType()) {
                                     theWriter.print("bytecoder.toJSReference(");
                                     theWriter.print("arg");
@@ -1927,7 +1933,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                             theWriter.print(")");
                                         } else {
                                             final BytecodeObjectTypeRef theArgObjectType = (BytecodeObjectTypeRef) theTypeRef;
-                                            final BytecodeLinkedClass theArgLinkedClass = aLinkerContext.resolveClass(theArgObjectType);
+                                            final BytecodeLinkedClass theArgLinkedClass = aLinkerContext.resolveClass(theArgObjectType, analysisStack);
                                             if (!theArgLinkedClass.isOpaqueType()) {
                                                 throw new IllegalStateException("Type conversion from " + theTypeRef.name() + " is not supported!");
 
@@ -1962,7 +1968,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                                         } else if (theTypeRef.matchesExactlyTo(BytecodeObjectTypeRef.fromRuntimeClass(String.class))) {
                                             // Nothinng to clean up
                                         } else {
-                                            final BytecodeLinkedClass theLinkedType = aLinkerContext.resolveClass((BytecodeObjectTypeRef) theTypeRef);
+                                            final BytecodeLinkedClass theLinkedType = aLinkerContext.resolveClass((BytecodeObjectTypeRef) theTypeRef, analysisStack);
                                             if (theLinkedType.isEvent()) {
                                                 // Cleanup object reference
                                                 theWriter.print("delete bytecoder.referenceTable[marg");
@@ -2003,7 +2009,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 new WASMCompileResult.WASMSourcemapCompileResult(theBinarySourceMap.toString(), aOptions.getFilenamePrefix()));
     }
 
-    private String conversionFunctionToJSForOpaqueType(final BytecodeLinkerContext alinkerContext, final BytecodeTypeRef aTypeRef) {
+    private String conversionFunctionToJSForOpaqueType(final BytecodeLinkerContext alinkerContext,
+                                                       final BytecodeTypeRef aTypeRef,
+                                                       final AnalysisStack analysisStack) {
         if (aTypeRef.isPrimitive()) {
             return null;
         } else if (aTypeRef.isArray()) {
@@ -2012,7 +2020,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             return "bytecoder.toJSString";
         } else {
             final BytecodeObjectTypeRef theObjectType = (BytecodeObjectTypeRef) aTypeRef;
-            final BytecodeLinkedClass theLinkedClass = alinkerContext.resolveClass(theObjectType);
+            final BytecodeLinkedClass theLinkedClass = alinkerContext.resolveClass(theObjectType, analysisStack);
             if (theLinkedClass.isOpaqueType()) {
                 return "bytecoder.toJSReference";
             } else {
@@ -2021,7 +2029,9 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         }
     }
 
-    private String conversionFunctionToWASMForOpaqueType(final BytecodeLinkerContext alinkerContext, final BytecodeTypeRef aTypeRef) {
+    private String conversionFunctionToWASMForOpaqueType(final BytecodeLinkerContext alinkerContext,
+                                                         final BytecodeTypeRef aTypeRef,
+                                                         final AnalysisStack analysisStack) {
         if (aTypeRef.isPrimitive()) {
             return null;
         } else if (aTypeRef.isArray()) {
@@ -2030,7 +2040,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             return "bytecoder.toBytecoderString";
         } else {
             final BytecodeObjectTypeRef theObjectType = (BytecodeObjectTypeRef) aTypeRef;
-            final BytecodeLinkedClass theLinkedClass = alinkerContext.resolveClass(theObjectType);
+            final BytecodeLinkedClass theLinkedClass = alinkerContext.resolveClass(theObjectType, analysisStack);
             if (theLinkedClass.isOpaqueType()) {
                 return "bytecoder.toBytecoderReference";
             }
@@ -2038,7 +2048,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         }
     }
 
-    private void writeMethodHandleDelegateInvokeStatic(final BytecodeLinkerContext aLinkerContext, final MethodHandleExpression aMethodHandle, final String aDelegateMethodName, final Module aModule) {
+    private void writeMethodHandleDelegateInvokeStatic(final BytecodeLinkerContext aLinkerContext,
+                                                       final MethodHandleExpression aMethodHandle,
+                                                       final String aDelegateMethodName,
+                                                       final Module aModule,
+                                                       final AnalysisStack analysisStack) {
 
         final BytecodeMethodSignature theSignature = aMethodHandle.getImplementationSignature();
 
@@ -2127,7 +2141,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         }
     }
 
-    private void writeMethodHandleDelegateInvokeVirtual(final BytecodeLinkerContext aLinkerContext, final MethodHandleExpression aMethodHandle, final String aDelegateMethodName, final Module aModule) {
+    private void writeMethodHandleDelegateInvokeVirtual(final BytecodeLinkerContext aLinkerContext,
+                                                        final MethodHandleExpression aMethodHandle,
+                                                        final String aDelegateMethodName,
+                                                        final Module aModule,
+                                                        final AnalysisStack analysisStack) {
 
         final BytecodeMethodSignature theSignature = aMethodHandle.getImplementationSignature();
 
@@ -2233,7 +2251,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         }
     }
 
-    private void writeMethodHandleDelegateNewInvokeSpecial(final BytecodeLinkerContext aLinkerContext, final MethodHandleExpression aMethodHandle, final String aDelegateMethodName, final Module aModule) {
+    private void writeMethodHandleDelegateNewInvokeSpecial(final BytecodeLinkerContext aLinkerContext,
+                                                           final MethodHandleExpression aMethodHandle,
+                                                           final String aDelegateMethodName,
+                                                           final Module aModule,
+                                                           final AnalysisStack analysisStack) {
         final BytecodeMethodSignature theSignature = aMethodHandle.getImplementationSignature();
 
         // We compile the list of arguments
@@ -2309,7 +2331,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         theAdapter.flow.ret(call(theCallee, theArguments, null),null);
     }
 
-    private void writeMethodHandleDelegateInvokeSpecial(final BytecodeLinkerContext aLinkerContext, final MethodHandleExpression aMethodHandle, final String aDelegateMethodName, final Module aModule) {
+    private void writeMethodHandleDelegateInvokeSpecial(final BytecodeLinkerContext aLinkerContext,
+                                                        final MethodHandleExpression aMethodHandle,
+                                                        final String aDelegateMethodName,
+                                                        final Module aModule,
+                                                        final AnalysisStack analysisStack) {
 
         final BytecodeMethodSignature theSignature = aMethodHandle.getImplementationSignature();
 
@@ -2397,7 +2423,11 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         }
     }
 
-    private void writeMethodHandleDelegateInvokeInterface(final BytecodeLinkerContext aLinkerContext, final MethodHandleExpression aMethodHandle, final String aDelegateMethodName, final Module aModule) {
+    private void writeMethodHandleDelegateInvokeInterface(final BytecodeLinkerContext aLinkerContext,
+                                                          final MethodHandleExpression aMethodHandle,
+                                                          final String aDelegateMethodName,
+                                                          final Module aModule,
+                                                          final AnalysisStack analysisStack) {
         final BytecodeMethodSignature theSignature = aMethodHandle.getImplementationSignature();
 
         // We compile the list of arguments

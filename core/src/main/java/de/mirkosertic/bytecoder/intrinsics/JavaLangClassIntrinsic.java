@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.intrinsics;
 
 import java.util.List;
 
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGETSTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
@@ -40,8 +41,15 @@ import de.mirkosertic.bytecoder.ssa.Variable;
 public class JavaLangClassIntrinsic extends Intrinsic {
 
     @Override
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKESPECIAL aInstruction, final String aMethodName,
-                              final BytecodeObjectTypeRef aType, final List<Value> aArguments, final Variable aTarget, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionINVOKESPECIAL aInstruction,
+                              final String aMethodName,
+                              final BytecodeObjectTypeRef aType,
+                              final List<Value> aArguments,
+                              final Variable aTarget,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
         final BytecodeMethodSignature theSignature = aInstruction.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
         final BytecodeObjectTypeRef theCalledClass = BytecodeObjectTypeRef.fromUtf8Constant(aInstruction.getMethodReference().getClassIndex().getClassConstant().getConstant());
 
@@ -78,9 +86,14 @@ public class JavaLangClassIntrinsic extends Intrinsic {
     }
 
     @Override
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKESTATIC aInstruction,
-            final String aMethodName, final List<Value> aArguments, final BytecodeObjectTypeRef aTargetClass,
-            final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionINVOKESTATIC aInstruction,
+                              final String aMethodName,
+                              final List<Value> aArguments,
+                              final BytecodeObjectTypeRef aTargetClass,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
         final BytecodeMethodSignature theSignature = aInstruction.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
         final BytecodeObjectTypeRef theCalledClass = BytecodeObjectTypeRef.fromUtf8Constant(aInstruction.getMethodReference().getClassIndex().getClassConstant().getConstant());
 
@@ -129,11 +142,18 @@ public class JavaLangClassIntrinsic extends Intrinsic {
             }
         }
 
-        return super.intrinsify(aProgram, aInstruction, aMethodName, aArguments, aTargetClass, aTargetBlock, aHelper);
+        return super.intrinsify(aProgram, aInstruction, aMethodName, aArguments, aTargetClass, aTargetBlock, aHelper, analysisStack);
     }
 
     @Override
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKEVIRTUAL aInstruction, final String aMethodName, final List<Value> aArguments, final Value aTarget, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionINVOKEVIRTUAL aInstruction,
+                              final String aMethodName,
+                              final List<Value> aArguments,
+                              final Value aTarget,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
         final BytecodeMethodSignature theSignature = aInstruction.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
         final BytecodeObjectTypeRef theCalledClass = BytecodeObjectTypeRef.fromUtf8Constant(aInstruction.getMethodReference().getClassIndex().getClassConstant().getConstant());
 
@@ -167,7 +187,13 @@ public class JavaLangClassIntrinsic extends Intrinsic {
     }
 
     @Override
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionGETSTATIC aInstruction, final String aFieldName, final BytecodeObjectTypeRef aTtargetType, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionGETSTATIC aInstruction,
+                              final String aFieldName,
+                              final BytecodeObjectTypeRef aTargetType,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
         if ("$assertionsDisabled".equals(aFieldName)) {
             aHelper.push(aInstruction.getOpcodeAddress(), new IntegerValue(1));
             return true;
@@ -176,7 +202,14 @@ public class JavaLangClassIntrinsic extends Intrinsic {
     }
 
     @Override
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionPUTSTATIC aInstruction, final String aFieldName, final BytecodeObjectTypeRef aTtargetType, final Value aValue, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionPUTSTATIC aInstruction,
+                              final String aFieldName,
+                              final BytecodeObjectTypeRef aTargetType,
+                              final Value aValue,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
         if ("$assertionsDisabled".equals(aFieldName)) {
             return true;
         }

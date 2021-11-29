@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.text;
 
+import de.mirkosertic.bytecoder.api.AnyTypeMatches;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 import de.mirkosertic.bytecoder.classlib.VM;
 
@@ -29,6 +30,10 @@ public class TNumberFormat {
 
     public static NumberFormat getInstance() {
         return NumberFormat.getInstance(VM.defaultLocale());
+    }
+
+    public static NumberFormat getInstance(final Locale aLocale, final AnyTypeMatches aStyle, final int choice) {
+        return getInstance(aLocale);
     }
 
     public static NumberFormat getInstance(final Locale aLocale) {
@@ -48,6 +53,14 @@ public class TNumberFormat {
         final DecimalFormat theFormat = new DecimalFormat(bundle.getString("numberformat.integer"), theSymbols);
         theFormat.setParseIntegerOnly(true);
         return theFormat;
+    }
+
+    public static NumberFormat getNumberInstance() {
+        return NumberFormat.getNumberInstance(VM.defaultLocale());
+    }
+
+    public static NumberFormat getNumberInstance(final Locale locale) {
+        return NumberFormat.getIntegerInstance(locale);
     }
 
     public static NumberFormat getCurrencyInstance() {

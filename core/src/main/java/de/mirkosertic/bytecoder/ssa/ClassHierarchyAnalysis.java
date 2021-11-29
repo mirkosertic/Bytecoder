@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.classlib.Array;
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
@@ -41,12 +42,13 @@ public class ClassHierarchyAnalysis {
                                                                        final BytecodeTypeRef aInvocationTarget,
                                                                        final Value aReceiver,
                                                                        final Predicate<BytecodeLinkedClass> aClassFilter,
-                                                                       final Predicate<BytecodeMethod> aMethodFilter) {
+                                                                       final Predicate<BytecodeMethod> aMethodFilter,
+                                                                       final AnalysisStack analysisStack) {
         final BytecodeLinkedClass theInvocationTarget;
         if (aInvocationTarget.isArray()) {
-            theInvocationTarget = linkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
+            theInvocationTarget = linkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class), analysisStack);
         } else {
-            theInvocationTarget = linkerContext.resolveClass((BytecodeObjectTypeRef) aInvocationTarget);
+            theInvocationTarget = linkerContext.resolveClass((BytecodeObjectTypeRef) aInvocationTarget, analysisStack);
         }
 
         if (aClassFilter.test(theInvocationTarget)) {

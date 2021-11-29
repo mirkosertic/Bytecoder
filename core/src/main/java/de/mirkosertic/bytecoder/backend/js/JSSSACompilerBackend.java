@@ -26,6 +26,7 @@ import de.mirkosertic.bytecoder.backend.SourceMapWriter;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.ExceptionManager;
 import de.mirkosertic.bytecoder.classlib.VM;
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeClassTopologicOrder;
@@ -71,22 +72,27 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
     }
 
     @Override
-    public JSCompileResult generateCodeFor(final CompileOptions aOptions, final BytecodeLinkerContext aLinkerContext, final Class aEntryPointClass, final String aEntryPointMethodName, final BytecodeMethodSignature aEntryPointSignatue) {
+    public JSCompileResult generateCodeFor(final CompileOptions aOptions,
+                                           final BytecodeLinkerContext aLinkerContext,
+                                           final Class aEntryPointClass,
+                                           final String aEntryPointMethodName,
+                                           final BytecodeMethodSignature aEntryPointSignatue,
+                                           final AnalysisStack analysisStack) {
 
         final SourceMapWriter theSourceMapWriter = new SourceMapWriter();
         final JSMinifier theMinifier = new JSMinifier(aOptions);
 
         final BytecodeLinkedClass theExceptionManager = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
-                ExceptionManager.class));
-        theExceptionManager.resolveStaticMethod("push", pushExceptionSignature);
-        theExceptionManager.resolveStaticMethod("pop", popExceptionSignature);
-        theExceptionManager.resolveStaticMethod("lastExceptionOrNull", popExceptionSignature);
+                ExceptionManager.class), analysisStack);
+        theExceptionManager.resolveStaticMethod("push", pushExceptionSignature, analysisStack);
+        theExceptionManager.resolveStaticMethod("pop", popExceptionSignature, analysisStack);
+        theExceptionManager.resolveStaticMethod("lastExceptionOrNull", popExceptionSignature, analysisStack);
 
-        final BytecodeLinkedClass theVMClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.class));
+        final BytecodeLinkedClass theVMClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(VM.class), analysisStack);
         theVMClass.resolveStaticMethod("newStringUTF8", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(
-                String.class), new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}));
-        theVMClass.resolveStaticMethod("newByteArray", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
-        theVMClass.resolveStaticMethod("setByteArrayEntry", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.BYTE}));
+                String.class), new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}), analysisStack);
+        theVMClass.resolveStaticMethod("newByteArray", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}), analysisStack);
+        theVMClass.resolveStaticMethod("setByteArrayEntry", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1), BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.BYTE}), analysisStack);
 
         // We need this class and constructor to build reflective metadata
         final BytecodeMethodSignature theFieldClassConstructorSignature = new BytecodeMethodSignature(
@@ -99,14 +105,14 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
                 BytecodePrimitiveTypeRef.INT
         });
-        final BytecodeLinkedClass theFieldClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Field.class));
+        final BytecodeLinkedClass theFieldClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Field.class), analysisStack);
         theFieldClass.tagWith(BytecodeLinkedClass.Tag.INSTANTIATED);
-        theFieldClass.resolveConstructorInvocation(theFieldClassConstructorSignature);
+        theFieldClass.resolveConstructorInvocation(theFieldClassConstructorSignature, analysisStack);
 
         // We need this package-private constructor in String.class for bootstrap
-        aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(String.class))
+        aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(String.class), analysisStack)
                 .resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
-                        new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1),BytecodePrimitiveTypeRef.BYTE}));
+                        new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1),BytecodePrimitiveTypeRef.BYTE}), analysisStack);
 
         final StringWriter theStrWriter = new StringWriter();
         final JSPrintWriter theWriter = new JSPrintWriter(theStrWriter, theMinifier, theSourceMapWriter);
@@ -1033,14 +1039,14 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
         theWriter.text("(-10,undefined,[],true);").newLine();
         theWriter.text("}();").newLine();
 
-        final BytecodeLinkedClass theByteClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Byte.class));
-        final BytecodeLinkedClass theIntegerClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Integer.class));
-        final BytecodeLinkedClass theCharacterClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Character.class));
-        final BytecodeLinkedClass theBooleanClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Boolean.class));
-        final BytecodeLinkedClass theFloatClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Float.class));
-        final BytecodeLinkedClass theDoubleClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Double.class));
-        final BytecodeLinkedClass theLongClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Long.class));
-        final BytecodeLinkedClass theShortClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Short.class));
+        final BytecodeLinkedClass theByteClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Byte.class), analysisStack);
+        final BytecodeLinkedClass theIntegerClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Integer.class), analysisStack);
+        final BytecodeLinkedClass theCharacterClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Character.class), analysisStack);
+        final BytecodeLinkedClass theBooleanClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Boolean.class), analysisStack);
+        final BytecodeLinkedClass theFloatClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Float.class), analysisStack);
+        final BytecodeLinkedClass theDoubleClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Double.class), analysisStack);
+        final BytecodeLinkedClass theLongClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Long.class), analysisStack);
+        final BytecodeLinkedClass theShortClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Short.class), analysisStack);
 
         aLinkerContext.finalizeLinkage();
 
@@ -1165,7 +1171,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                             case BYTE: {
                                 final BytecodeMethodSignature theByteClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Byte.class),
                                         new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.BYTE});
-                                theByteClass.resolveStaticMethod("valueOf", theByteClassValueOfSignature);
+                                theByteClass.resolveStaticMethod("valueOf", theByteClassValueOfSignature, analysisStack);
 
                                 readBoxingFunction = theMinifier.toClassName(theByteClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theByteClassValueOfSignature);
                                 writeUnboxingFunction = theMinifier.toMethodName("byteValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BYTE, new BytecodeTypeRef[0]));
@@ -1174,7 +1180,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                             case INT: {
                                 final BytecodeMethodSignature theIntegerClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Integer.class),
                                         new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT});
-                                theIntegerClass.resolveStaticMethod("valueOf", theIntegerClassValueOfSignature);
+                                theIntegerClass.resolveStaticMethod("valueOf", theIntegerClassValueOfSignature, analysisStack);
 
                                 readBoxingFunction = theMinifier.toClassName(theIntegerClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theIntegerClassValueOfSignature);
                                 writeUnboxingFunction = theMinifier.toMethodName("intValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
@@ -1183,7 +1189,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                             case CHAR: {
                                 final BytecodeMethodSignature theCharacterClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Character.class),
                                         new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.CHAR});
-                                theCharacterClass.resolveStaticMethod("valueOf", theCharacterClassValueOfSignature);
+                                theCharacterClass.resolveStaticMethod("valueOf", theCharacterClassValueOfSignature, analysisStack);
 
                                 readBoxingFunction = theMinifier.toClassName(theCharacterClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theCharacterClassValueOfSignature);
                                 writeUnboxingFunction = theMinifier.toMethodName("charValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.CHAR, new BytecodeTypeRef[0]));
@@ -1192,7 +1198,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                             case BOOLEAN: {
                                 final BytecodeMethodSignature theBooleanClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Boolean.class),
                                         new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.BOOLEAN});
-                                theBooleanClass.resolveStaticMethod("valueOf", theBooleanClassValueOfSignature);
+                                theBooleanClass.resolveStaticMethod("valueOf", theBooleanClassValueOfSignature, analysisStack);
 
                                 readBoxingFunction = theMinifier.toClassName(theBooleanClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theBooleanClassValueOfSignature);
                                 writeUnboxingFunction = theMinifier.toMethodName("booleanValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.BOOLEAN, new BytecodeTypeRef[0]));
@@ -1201,7 +1207,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                             case FLOAT: {
                                 final BytecodeMethodSignature theFloatClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Float.class),
                                         new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.FLOAT});
-                                theFloatClass.resolveStaticMethod("valueOf", theFloatClassValueOfSignature);
+                                theFloatClass.resolveStaticMethod("valueOf", theFloatClassValueOfSignature, analysisStack);
 
                                 readBoxingFunction = theMinifier.toClassName(theFloatClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theFloatClassValueOfSignature);
                                 writeUnboxingFunction = theMinifier.toMethodName("floatValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.FLOAT, new BytecodeTypeRef[0]));
@@ -1210,7 +1216,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                             case DOUBLE: {
                                 final BytecodeMethodSignature theDoubleClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Double.class),
                                         new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.DOUBLE});
-                                theDoubleClass.resolveStaticMethod("valueOf", theDoubleClassValueOfSignature);
+                                theDoubleClass.resolveStaticMethod("valueOf", theDoubleClassValueOfSignature, analysisStack);
 
                                 readBoxingFunction = theMinifier.toClassName(theDoubleClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theDoubleClassValueOfSignature);
                                 writeUnboxingFunction = theMinifier.toMethodName("doubleValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.DOUBLE, new BytecodeTypeRef[0]));
@@ -1219,7 +1225,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                             case LONG: {
                                 final BytecodeMethodSignature theLongClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Long.class),
                                         new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.LONG});
-                                theLongClass.resolveStaticMethod("valueOf", theLongClassValueOfSignature);
+                                theLongClass.resolveStaticMethod("valueOf", theLongClassValueOfSignature, analysisStack);
 
                                 readBoxingFunction = theMinifier.toClassName(theLongClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theLongClassValueOfSignature);
                                 writeUnboxingFunction = theMinifier.toMethodName("longValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.LONG, new BytecodeTypeRef[0]));
@@ -1228,7 +1234,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                             case SHORT: {
                                 final BytecodeMethodSignature theShortClassValueOfSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Short.class),
                                         new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.SHORT});
-                                theShortClass.resolveStaticMethod("valueOf", theShortClassValueOfSignature);
+                                theShortClass.resolveStaticMethod("valueOf", theShortClassValueOfSignature, analysisStack);
 
                                 readBoxingFunction = theMinifier.toClassName(theShortClass.getClassName()) + "." + theMinifier.toMethodName("valueOf", theShortClassValueOfSignature);
                                 writeUnboxingFunction = theMinifier.toMethodName("shortValue", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.SHORT, new BytecodeTypeRef[0]));
@@ -1520,11 +1526,11 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 aLinkerContext.getLogger().info("Compiling {}.{}", theLinkedClass.getClassName().name(), theMethod.getName().stringValue());
 
                 final ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext, new JSIntrinsics());
-                final Program theSSAProgram = theGenerator.generateFrom(aEntry.getProvidingClass().getBytecodeClass(), theMethod);
+                final Program theSSAProgram = theGenerator.generateFrom(aEntry.getProvidingClass().getBytecodeClass(), theMethod, analysisStack);
 
                 //Run optimizer
                 if (!theMethod.getAccessFlags().isAbstract() && !theMethod.getAccessFlags().isNative()) {
-                    aOptions.getOptimizer().optimize(this, theSSAProgram.getControlFlowGraph(), aLinkerContext);
+                    aOptions.getOptimizer().optimize(this, theSSAProgram.getControlFlowGraph(), aLinkerContext, analysisStack);
                 }
 
                 final StringBuilder theArguments = new StringBuilder();
@@ -1581,7 +1587,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                 // Perform register allocation
                 final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram, Variable::resolveType, aLinkerContext);
 
-                final JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram, 2, theWriter, aLinkerContext, thePool, false, theMinifier, theAllocator, theResolver);
+                final JSSSAWriter theVariablesWriter = new JSSSAWriter(aOptions, theSSAProgram, 2, theWriter, aLinkerContext, thePool, false, theMinifier, theAllocator, theResolver, analysisStack);
                 theVariablesWriter.printRegisterDeclarations();
 
                 // Try to reloop it or stackify it!

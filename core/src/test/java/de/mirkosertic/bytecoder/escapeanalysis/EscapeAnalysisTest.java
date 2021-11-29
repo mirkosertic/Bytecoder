@@ -20,12 +20,12 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.FileDescriptor;
 import java.io.FileOutputStream;
-import java.io.FilterOutputStream;
 import java.io.PrintStream;
 import java.util.Collection;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import org.junit.Test;
 
 import de.mirkosertic.bytecoder.backend.llvm.LLVMIntrinsics;
@@ -83,14 +83,15 @@ public class EscapeAnalysisTest {
     }
 
     private PointsToAnalysisResult analyzeVirtualMethod(final BytecodeObjectTypeRef aClazz, final String aMethodName, final BytecodeMethodSignature aSignature) {
+        final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new LLVMIntrinsics());
-        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(aClazz);
+        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(aClazz, analysisStack);
 
-        theLinkedClass.resolveVirtualMethod(aMethodName, aSignature);
+        theLinkedClass.resolveVirtualMethod(aMethodName, aSignature, analysisStack);
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
-        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
-        KnownOptimizer.LLVM.optimize(null, p.getControlFlowGraph(), theLinkerContext);
+        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod, analysisStack);
+        KnownOptimizer.LLVM.optimize(null, p.getControlFlowGraph(), theLinkerContext, analysisStack);
 
         return analyzeMethod(theLinkerContext, new ProgramDescriptor(theLinkedClass, theMethod, p));
     }
@@ -100,25 +101,26 @@ public class EscapeAnalysisTest {
     }
 
     private PointsToAnalysisResult analyzeStaticMethod(final BytecodeObjectTypeRef aClazz, final String aMethodName, final BytecodeMethodSignature aSignature) {
+        final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new LLVMIntrinsics());
-        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(aClazz);
+        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(aClazz, analysisStack);
 
-        theLinkedClass.resolveStaticMethod(aMethodName, aSignature);
+        theLinkedClass.resolveStaticMethod(aMethodName, aSignature, analysisStack);
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
-        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
-        KnownOptimizer.LLVM.optimize(null, p.getControlFlowGraph(), theLinkerContext);
+        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod, analysisStack);
+        KnownOptimizer.LLVM.optimize(null, p.getControlFlowGraph(), theLinkerContext, analysisStack);
 
         return analyzeMethod(theLinkerContext, new ProgramDescriptor(theLinkedClass, theMethod, p));
     }
 
     private PointsToAnalysisResult analyzeMethod(final BytecodeLinkerContext aLinkercontext, final ProgramDescriptor aProgramDescriptor) {
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(aLinkercontext, new LLVMIntrinsics());
-
+        final AnalysisStack analysisStack = new AnalysisStack();
         final PointsToAnalysis analysis = new PointsToAnalysis(new ProgramDescriptorProvider() {
             @Override
             public ProgramDescriptor resolveStaticInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
-                BytecodeLinkedClass theRequestedClass = aLinkercontext.resolveClass(aClass);
+                BytecodeLinkedClass theRequestedClass = aLinkercontext.resolveClass(aClass, analysisStack);
                 BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
                 while (theRequestedMethod == null) {
                     theRequestedClass = theRequestedClass.getSuperClass();
@@ -127,29 +129,29 @@ public class EscapeAnalysisTest {
                 if (theRequestedMethod.getAccessFlags().isNative()) {
                     return new ProgramDescriptor(theRequestedClass, theRequestedMethod, null);
                 }
-                final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
-                KnownOptimizer.LLVM.optimize(null, theProgram.getControlFlowGraph(), aLinkercontext);
+                final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod, analysisStack);
+                KnownOptimizer.LLVM.optimize(null, theProgram.getControlFlowGraph(), aLinkercontext, analysisStack);
                 return new ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
             }
 
             @Override
             public ProgramDescriptor resolveConstructorInvocation(final BytecodeObjectTypeRef aClass, final BytecodeMethodSignature aSignature) {
-                final BytecodeLinkedClass theRequestedClass = aLinkercontext.resolveClass(aClass);
+                final BytecodeLinkedClass theRequestedClass = aLinkercontext.resolveClass(aClass, analysisStack);
                 final BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull("<init>", aSignature);
-                final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
-                KnownOptimizer.LLVM.optimize(null, theProgram.getControlFlowGraph(), aLinkercontext);
+                final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod, analysisStack);
+                KnownOptimizer.LLVM.optimize(null, theProgram.getControlFlowGraph(), aLinkercontext, analysisStack);
                 return new ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
             }
 
             @Override
             public ProgramDescriptor resolveDirectInvocation(final BytecodeObjectTypeRef aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
-                final BytecodeLinkedClass theRequestedClass = aLinkercontext.resolveClass(aClass);
+                final BytecodeLinkedClass theRequestedClass = aLinkercontext.resolveClass(aClass, analysisStack);
                 final BytecodeMethod theRequestedMethod = theRequestedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
                 if (theRequestedMethod.getAccessFlags().isNative()) {
                     return new ProgramDescriptor(theRequestedClass, theRequestedMethod, null);
                 }
-                final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod);
-                KnownOptimizer.LLVM.optimize(null, theProgram.getControlFlowGraph(), aLinkercontext);
+                final Program theProgram = theGenerator.generateFrom(theRequestedClass.getBytecodeClass(), theRequestedMethod, analysisStack);
+                KnownOptimizer.LLVM.optimize(null, theProgram.getControlFlowGraph(), aLinkercontext, analysisStack);
                 return new ProgramDescriptor(theRequestedClass, theRequestedMethod, theProgram);
             }
         }, aLinkercontext.getLogger());
@@ -235,7 +237,7 @@ public class EscapeAnalysisTest {
     }
 
     private Object method5(final Object a, final int b1, final Object k) {
-        A x = new A(null);
+        final A x = new A(null);
         return null;
     }
 
@@ -250,7 +252,7 @@ public class EscapeAnalysisTest {
     }
 
     private Object method6(final Object a, final int b1, final Object k) {
-        A y = (A) a;
+        final A y = (A) a;
         y.o = new A(null);
         y.o = new A(null);
         return null;
@@ -303,7 +305,7 @@ public class EscapeAnalysisTest {
     }
 
 
-    private static <T> T requireNonNull(T obj) {
+    private static <T> T requireNonNull(final T obj) {
         if (obj == null)
             throw new NullPointerException();
         return obj;

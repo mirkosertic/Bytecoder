@@ -24,7 +24,7 @@ public class BytecodeInstructionINVOKEVIRTUAL extends BytecodeInstructionGeneric
     }
 
     @Override
-    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext) {
+    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext, final AnalysisStack analysisStack) {
         final BytecodeMethodRefConstant theMethodRefConstant = getMethodReference();
         final BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
         final BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
@@ -38,23 +38,24 @@ public class BytecodeInstructionINVOKEVIRTUAL extends BytecodeInstructionGeneric
 
             final BytecodeTypeRef[] theTypes = aLinkerContext.getSignatureParser().toTypes(theClassName);
             final BytecodeTypeRef theSingleType = theTypes[0];
-            aLinkerContext.resolveTypeRef(theSingleType);
+            aLinkerContext.resolveTypeRef(theSingleType, analysisStack);
 
             // We are linking an Array here, so mark the corresponding name
-            final BytecodeObjectTypeRef theTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(Array.class);
-            final BytecodeLinkedClass theClass = aLinkerContext.resolveClass(theTypeRef);
-            if (!theClass.resolveVirtualMethod(theName.stringValue(), theSig)) {
+            final BytecodeObjectTypeRef className = BytecodeObjectTypeRef.fromRuntimeClass(Array.class);
+            final BytecodeLinkedClass theClass = aLinkerContext.resolveClass(className, analysisStack);
+            if (!theClass.resolveVirtualMethod(theName.stringValue(), theSig, analysisStack)) {
                 if (!theClass.getBytecodeClass().getAccessFlags().isAbstract()) {
-                    throw new IllegalStateException("Cannot find virtual method " + theName.stringValue() + " in non-abstract class " + theClassConstant.getConstant().stringValue() + " with signature " + theSig.toString());
+                    throw new MissingLinkException("Cannot find virtual method " + className.name() + "." + theName.stringValue() + "(" + theSig + "). Analysis stack is \n" + analysisStack.toDebugOutput());
                 }
             }
         } else {
-            final BytecodeLinkedClass invokedType = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theConstant));
+            final BytecodeObjectTypeRef className = BytecodeObjectTypeRef.fromUtf8Constant(theConstant);
+            final BytecodeLinkedClass invokedType = aLinkerContext.resolveClass(className, analysisStack);
             invokedType.tagWith(BytecodeLinkedClass.Tag.INVOKEVIRTUAL_TARGET);
             if (!invokedType
-                    .resolveVirtualMethod(theName.stringValue(), theSig)) {
+                    .resolveVirtualMethod(theName.stringValue(), theSig, analysisStack)) {
                 if (!invokedType.getBytecodeClass().getAccessFlags().isAbstract()) {
-                    throw new IllegalStateException("Cannot find virtual method " + theName.stringValue() + " in non-abstract class " + theClassConstant.getConstant().stringValue() + " with signature " + theSig.toString());
+                    throw new MissingLinkException("Cannot find virtual method " + className.name() + "." + theName.stringValue() + "(" + theSig + "). Analysis stack is \n" + analysisStack.toDebugOutput());
                 }
             }
         }

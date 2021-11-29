@@ -31,10 +31,10 @@ public class BytecodeInstructionNEW extends BytecodeInstruction {
     }
 
     @Override
-    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext) {
+    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext, final AnalysisStack analysisStack) {
         final BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(getClassInfoForObjectToCreate().getConstant());
 
-        final BytecodeLinkedClass createdType = aLinkerContext.resolveClass(theObjectType);
+        final BytecodeLinkedClass createdType = aLinkerContext.resolveClass(theObjectType, analysisStack);
         createdType.tagWith(BytecodeLinkedClass.Tag.INSTANTIATED);
     }
 }

@@ -20,6 +20,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Scanner;
+
 @RunWith(BytecoderUnitTestRunner.class)
 public class SystemTest {
 
@@ -30,6 +32,7 @@ public class SystemTest {
 
     @Test
     public void testPrintString() {
+        //final Scanner scanner = new Scanner(System.in);
         System.out.println("Hello world!");
     }
 

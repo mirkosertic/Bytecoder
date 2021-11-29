@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.optimizer;
 
 import de.mirkosertic.bytecoder.backend.CompileBackend;
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.ArrayLengthExpression;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
@@ -33,8 +34,13 @@ public class ArrayReadLengthOptimizerStage implements OptimizerStage {
     }
 
     @Override
-    public Expression optimize(final CompileBackend aBackend, final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext, final RegionNode aCurrentNode,
-                               final ExpressionList aExpressionList, final Expression aExpression) {
+    public Expression optimize(final CompileBackend aBackend,
+                               final ControlFlowGraph aGraph,
+                               final BytecodeLinkerContext aLinkerContext,
+                               final RegionNode aCurrentNode,
+                               final ExpressionList aExpressionList,
+                               final Expression aExpression,
+                               final AnalysisStack analysisStack) {
         if (aExpression instanceof VariableAssignmentExpression) {
             final VariableAssignmentExpression theAssignment = (VariableAssignmentExpression) aExpression;
             final Value theValue = theAssignment.incomingDataFlows().get(0);

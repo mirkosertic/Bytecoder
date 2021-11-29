@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.optimizer;
 
 import de.mirkosertic.bytecoder.backend.CompileBackend;
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.BlockState;
 import de.mirkosertic.bytecoder.ssa.Constant;
@@ -35,7 +36,10 @@ import java.util.Set;
 public class InlineConstVariablesOptimizer implements Optimizer {
 
     @Override
-    public void optimize(final CompileBackend aBackend, final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
+    public void optimize(final CompileBackend aBackend,
+                         final ControlFlowGraph aGraph,
+                         final BytecodeLinkerContext aLinkerContext,
+                         final AnalysisStack analysisStack) {
         final Program theProgram = aGraph.getProgram();
         final Map<Variable, Value> theConstantMappings = new HashMap<>();
 
@@ -64,7 +68,7 @@ public class InlineConstVariablesOptimizer implements Optimizer {
         // Now, we have to delete the no longer needed assignments
         if (!theConstantMappings.isEmpty()) {
             final SinglePassOptimizer theSinglePass = new SinglePassOptimizer(new OptimizerStage[]{
-                    (aCompileBackend1, aGraph1, aLinkerContext1, aCurrentNode, aExpressionList, aExpression) -> {
+                    (aCompileBackend1, aGraph1, aLinkerContext1, aCurrentNode, aExpressionList, aExpression, stack) -> {
                         if (aExpression instanceof VariableAssignmentExpression) {
                             final VariableAssignmentExpression theVarAssign = (VariableAssignmentExpression) aExpression;
                             if (theConstantMappings.containsKey(theVarAssign.getVariable())) {
@@ -74,7 +78,7 @@ public class InlineConstVariablesOptimizer implements Optimizer {
                         return aExpression;
                     }
             });
-            theSinglePass.optimize(aBackend, aGraph, aLinkerContext);
+            theSinglePass.optimize(aBackend, aGraph, aLinkerContext, analysisStack);
 
             // And finally we can delete the variables
             for (final Variable v : theConstantMappings.keySet()) {

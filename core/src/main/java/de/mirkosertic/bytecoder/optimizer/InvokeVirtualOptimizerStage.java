@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.optimizer;
 
 import de.mirkosertic.bytecoder.backend.CompileBackend;
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
@@ -37,32 +38,42 @@ import java.util.Optional;
 public class InvokeVirtualOptimizerStage implements OptimizerStage {
 
     @Override
-    public Expression optimize(final CompileBackend aBackend, final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext, final RegionNode aCurrentNode,
-                               final ExpressionList aExpressionList, final Expression aExpression) {
+    public Expression optimize(final CompileBackend aBackend,
+                               final ControlFlowGraph aGraph,
+                               final BytecodeLinkerContext aLinkerContext,
+                               final RegionNode aCurrentNode,
+                               final ExpressionList aExpressionList,
+                               final Expression aExpression,
+                               final AnalysisStack analysisStack) {
 
         if (aExpression instanceof InvokeVirtualMethodExpression) {
-            return visit(aExpressionList, (InvokeVirtualMethodExpression) aExpression, aLinkerContext);
+            return visit(aExpressionList, (InvokeVirtualMethodExpression) aExpression, aLinkerContext, analysisStack);
         }
 
         if (aExpression instanceof VariableAssignmentExpression) {
-            return visit((VariableAssignmentExpression) aExpression, aLinkerContext);
+            return visit((VariableAssignmentExpression) aExpression, aLinkerContext, analysisStack);
         }
 
         return aExpression;
     }
 
-    private Expression visit(final VariableAssignmentExpression aExpression, final BytecodeLinkerContext aLinkerContext) {
+    private Expression visit(final VariableAssignmentExpression aExpression,
+                             final BytecodeLinkerContext aLinkerContext,
+                             final AnalysisStack analysisStack) {
         final Value theValue = aExpression.incomingDataFlows().get(0);
         if (theValue instanceof InvokeVirtualMethodExpression) {
-            final Optional<InvokeDirectMethodExpression> theNewExpression = visit((InvokeVirtualMethodExpression) theValue, aLinkerContext);
+            final Optional<InvokeDirectMethodExpression> theNewExpression = visit((InvokeVirtualMethodExpression) theValue, aLinkerContext, analysisStack);
             theNewExpression.ifPresent(
                     directInvokeMethodExpression -> aExpression.replaceIncomingDataEdge(theValue, directInvokeMethodExpression));
         }
         return aExpression;
     }
 
-    private Expression visit(final ExpressionList aExpressions, final InvokeVirtualMethodExpression aExpression, final BytecodeLinkerContext aLinkerContext) {
-        final Optional<InvokeDirectMethodExpression> theNewExpression = visit(aExpression, aLinkerContext);
+    private Expression visit(final ExpressionList aExpressions,
+                             final InvokeVirtualMethodExpression aExpression,
+                             final BytecodeLinkerContext aLinkerContext,
+                             final AnalysisStack analysisStack) {
+        final Optional<InvokeDirectMethodExpression> theNewExpression = visit(aExpression, aLinkerContext, analysisStack);
         if (theNewExpression.isPresent()) {
             final Expression theNew = theNewExpression.get();
             aExpressions.replace(aExpression, theNew);
@@ -71,7 +82,9 @@ public class InvokeVirtualOptimizerStage implements OptimizerStage {
         return aExpression;
     }
 
-    private Optional<InvokeDirectMethodExpression> visit(final InvokeVirtualMethodExpression aExpression, final BytecodeLinkerContext aLinkerContext) {
+    private Optional<InvokeDirectMethodExpression> visit(final InvokeVirtualMethodExpression aExpression,
+                                                         final BytecodeLinkerContext aLinkerContext,
+                                                         final AnalysisStack analysisStack) {
         // Do not optimize interface invocation as they might be used for lambda expressions
         if (aExpression.isInterfaceInvocation()) {
             return Optional.empty();
@@ -88,7 +101,7 @@ public class InvokeVirtualOptimizerStage implements OptimizerStage {
         final Optional<BytecodeLinkedClass> theClassToInvoke = theAnalysis.classProvidingInvokableMethod(theMethodName, theSignature, aExpression.getInvokedClass(),
                 aExpression.incomingDataFlows().get(0),
                 aClass -> !aClass.emulatedByRuntime() && !aClass.getClassName().name().equals(Class.class.getName()),
-                aMethod -> !aMethod.getAccessFlags().isAbstract() && !aMethod.getAccessFlags().isStatic());
+                aMethod -> !aMethod.getAccessFlags().isAbstract() && !aMethod.getAccessFlags().isStatic(), analysisStack);
 
         if (theClassToInvoke.isPresent()) {
 
