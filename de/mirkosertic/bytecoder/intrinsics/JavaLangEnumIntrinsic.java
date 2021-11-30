@@ -23,7 +23,14 @@ import java.util.List;
 public class JavaLangEnumIntrinsic extends Intrinsic {
 
     @Override
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKEVIRTUAL aInstruction, final String aMethodName, final List<Value> aArguments, final Value aTarget, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionINVOKEVIRTUAL aInstruction,
+                              final String aMethodName,
+                              final List<Value> aArguments,
+                              final Value aTarget,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
         final BytecodeMethodSignature theSignature = aInstruction.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
         if ("getEnumConstants".equals(aMethodName) && theSignature.matchesExactlyTo(BytecodeLinkedClass.GET_ENUM_CONSTANTS_SIGNATURE)) {
             final Value theValue = new EnumConstantsExpression(aProgram, aInstruction.getOpcodeAddress(), aTarget);
@@ -35,7 +42,13 @@ public class JavaLangEnumIntrinsic extends Intrinsic {
     }
 
     @Override
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionGETSTATIC aInstruction, final String aFieldName, final BytecodeObjectTypeRef aTtargetType, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionGETSTATIC aInstruction,
+                              final String aFieldName,
+                              final BytecodeObjectTypeRef aTtargetType,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
         if ("$VALUES".equals(aFieldName)) {
             final Value theValue = new EnumConstantsExpression(aProgram, aInstruction.getOpcodeAddress(), new ClassReferenceValue(aTtargetType));
             aHelper.push(aInstruction.getOpcodeAddress(), theValue);
@@ -45,9 +58,16 @@ public class JavaLangEnumIntrinsic extends Intrinsic {
     }
 
     @Override
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionPUTSTATIC aInstruction, final String aFieldName, final BytecodeObjectTypeRef aTtargetType, final Value aValue, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionPUTSTATIC aInstruction,
+                              final String aFieldName,
+                              final BytecodeObjectTypeRef aTargetType,
+                              final Value aValue,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
         if ("$VALUES".equals(aFieldName)) {
-            aTargetBlock.getExpressions().add(new SetEnumConstantsExpression(aProgram, aInstruction.getOpcodeAddress(), new ClassReferenceValue(aTtargetType), aValue));
+            aTargetBlock.getExpressions().add(new SetEnumConstantsExpression(aProgram, aInstruction.getOpcodeAddress(), new ClassReferenceValue(aTargetType), aValue));
             return true;
         }
         return false;

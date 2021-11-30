@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.intrinsics;
 
 import de.mirkosertic.bytecoder.classlib.VM;
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
@@ -51,7 +52,14 @@ import java.util.Objects;
 public class VMIntrinsic extends Intrinsic {
 
     @Override
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKESTATIC aInstruction, final String aMethodName, final List<Value> aArguments, final BytecodeObjectTypeRef aTargetClass, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionINVOKESTATIC aInstruction,
+                              final String aMethodName,
+                              final List<Value> aArguments,
+                              final BytecodeObjectTypeRef aTargetClass,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
         if (Objects.equals(aTargetClass.name(), VM.class.getName())) {
             if ("newLambdaStaticInvocation".equals(aMethodName)) {
                 final LambdaWithStaticImplExpression theValue = new LambdaWithStaticImplExpression(aProgram, aInstruction.getOpcodeAddress(), aArguments.get(1), aArguments.get(2), aArguments.get(3), aArguments.get(0));

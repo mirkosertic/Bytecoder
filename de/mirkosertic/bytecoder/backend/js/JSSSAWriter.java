@@ -24,6 +24,7 @@ import de.mirkosertic.bytecoder.api.OpaqueProperty;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
 import de.mirkosertic.bytecoder.classlib.Array;
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeFieldRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
@@ -130,10 +131,10 @@ import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.stackifier.Block;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
 
+import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Stack;
 import java.util.stream.Collectors;
 
 import static java.util.Comparator.comparingLong;
@@ -155,9 +156,19 @@ public class JSSSAWriter {
     private final int indent;
     private final AbstractAllocator allocator;
     private final IDResolver idResolver;
+    private final AnalysisStack analysisStack;
 
-    public JSSSAWriter(final CompileOptions aOptions, final Program aProgram, final int aIndent, final JSPrintWriter aWriter, final BytecodeLinkerContext aLinkerContext,
-                       final ConstantPool aConstantPool, final boolean aLabelRequired, final JSMinifier aMinifier, final AbstractAllocator aAllocator, final IDResolver aIdResolver) {
+    public JSSSAWriter(final CompileOptions aOptions,
+                       final Program aProgram,
+                       final int aIndent,
+                       final JSPrintWriter aWriter,
+                       final BytecodeLinkerContext aLinkerContext,
+                       final ConstantPool aConstantPool,
+                       final boolean aLabelRequired,
+                       final JSMinifier aMinifier,
+                       final AbstractAllocator aAllocator,
+                       final IDResolver aIdResolver,
+                       final AnalysisStack aAnalysisStack) {
         program = aProgram;
         linkerContext = aLinkerContext;
         writer = aWriter;
@@ -168,10 +179,11 @@ public class JSSSAWriter {
         indent = aIndent;
         allocator = aAllocator;
         idResolver = aIdResolver;
+        analysisStack = aAnalysisStack;
     }
 
     public JSSSAWriter withDeeperIndent() {
-        return new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier, allocator, idResolver);
+        return new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier, allocator, idResolver, analysisStack);
     }
 
     public JSPrintWriter startLine() {
@@ -536,7 +548,7 @@ public class JSSSAWriter {
         final RegionNode theBootstrapCode = aValue.getBootstrapMethod();
 
         final AbstractAllocator theAllocator = options.getAllocator().allocate(theProgram, Variable::resolveType, linkerContext);
-        final JSSSAWriter theNested = new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier, theAllocator, idResolver);
+        final JSSSAWriter theNested = new JSSSAWriter(options, program, indent + 1, writer, linkerContext, constantPool, labelRequired, minifier, theAllocator, idResolver, analysisStack);
 
         theNested.printRegisterDeclarations();
 
@@ -723,7 +735,7 @@ public class JSSSAWriter {
             final BytecodeLinkedClass theLinkedClass = linkerContext.isLinkedOrNull(aValue.getType().getConstant());
             writer.text(minifier.toClassName(theLinkedClass.getClassName()));
         } else {
-            final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
+            final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class), analysisStack);
             writer.text(minifier.toClassName(theLinkedClass.getClassName()));
         }
 
@@ -960,7 +972,7 @@ public class JSSSAWriter {
             return("bytecoder.toBytecoderString");
         } else {
             final BytecodeObjectTypeRef theObjectType = (BytecodeObjectTypeRef) aTypeRef;
-            final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(theObjectType);
+            final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(theObjectType, analysisStack);
             if (theLinkedClass.isOpaqueType()) {
                 return null;
             } else {
@@ -980,7 +992,7 @@ public class JSSSAWriter {
             writer.text(")");
         } else {
             final BytecodeObjectTypeRef theObjectType = (BytecodeObjectTypeRef) aTypeRef;
-            final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(theObjectType);
+            final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(theObjectType, analysisStack);
             if (theLinkedClass.isOpaqueType()) {
                 print(aValue);
             } else if (theLinkedClass.isCallback()) {
@@ -1019,7 +1031,7 @@ public class JSSSAWriter {
 
     private void print(final InvokeStaticMethodExpression aValue) {
 
-        final BytecodeLinkedClass theClass = linkerContext.resolveClass(aValue.getInvokedClass());
+        final BytecodeLinkedClass theClass = linkerContext.resolveClass(aValue.getInvokedClass(), analysisStack);
         final String theMethodName = aValue.getMethodName();
         final BytecodeMethodSignature theSignature = aValue.getSignature();
 
@@ -1088,7 +1100,7 @@ public class JSSSAWriter {
 
     private void print(final InvokeDirectMethodExpression aValue) {
 
-        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(aValue.getInvokedClass());
+        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(aValue.getInvokedClass(), analysisStack);
         final String theMethodName = aValue.getMethodName();
         final BytecodeMethodSignature theSignature = aValue.getSignature();
 
@@ -1248,7 +1260,7 @@ public class JSSSAWriter {
 
         final BytecodeTypeRef theInvokedClassName = aValue.getInvokedClass();
         if (!theInvokedClassName.isPrimitive() && !theInvokedClassName.isArray()) {
-            final BytecodeLinkedClass theInvokedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) theInvokedClassName);
+            final BytecodeLinkedClass theInvokedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) theInvokedClassName, analysisStack);
             if (theInvokedClass.isOpaqueType()) {
                 final BytecodeResolvedMethods theMethods = linkerContext.resolveMethods(theInvokedClass);
                 final List<BytecodeResolvedMethods.MethodEntry> theImplMethods = theMethods.stream().filter(
@@ -1308,7 +1320,7 @@ public class JSSSAWriter {
     }
 
     private void printStaticFieldReference(final BytecodeFieldRefConstant aField, final DebugPosition aPosition) {
-        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aField.getClassIndex().getClassConstant().getConstant()));
+        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aField.getClassIndex().getClassConstant().getConstant()), analysisStack);
         final BytecodeResolvedFields theFields = theLinkedClass.resolvedFields();
         final BytecodeResolvedFields.FieldEntry theField = theFields.fieldByName(aField.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
         writer.text(minifier.toClassName(theField.getProvidingClass().getClassName()))
@@ -1768,7 +1780,7 @@ public class JSSSAWriter {
                 if (!first) {
                     theGuard.writer.space().text("||").space();
                 }
-                final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theInstanceCheck));
+                final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theInstanceCheck), analysisStack);
                 theGuard.writer.text("CURRENTEXCEPTION.exception.constructor.").text(minifier.toSymbol("__runtimeclass")).text(".iof(").text(minifier.toClassName(theLinkedClass.getClassName())).text(")");
                 first = false;
             }
@@ -1798,7 +1810,7 @@ public class JSSSAWriter {
     }
 
     public void printStackified(final Stackifier stackifier) {
-        final Stack<JSSSAWriter> writerStack = new Stack<>();
+        final ArrayDeque<JSSSAWriter> writerStack = new ArrayDeque<>();
         writerStack.push(this);
         final Stackifier.StackifierStructuredControlFlowWriter writer = new Stackifier.StackifierStructuredControlFlowWriter(stackifier) {
 

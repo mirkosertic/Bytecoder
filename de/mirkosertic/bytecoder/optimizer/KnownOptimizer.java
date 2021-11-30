@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.optimizer;
 
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.js.JSSSACompilerBackend;
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 
@@ -27,13 +28,19 @@ public enum KnownOptimizer implements Optimizer {
 
     NONE {
         @Override
-        public void optimize(final CompileBackend aBackend, final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
+        public void optimize(final CompileBackend aBackend,
+                             final ControlFlowGraph aGraph,
+                             final BytecodeLinkerContext aLinkerContext,
+                             final AnalysisStack analysisStack) {
         }
     },
 
     ALL {
         @Override
-        public void optimize(final CompileBackend aBackend, final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
+        public void optimize(final CompileBackend aBackend,
+                             final ControlFlowGraph aGraph,
+                             final BytecodeLinkerContext aLinkerContext,
+                             final AnalysisStack analysisStack) {
             final List<Optimizer> theOptimizer = new ArrayList<>();
             theOptimizer.add(new InlineMethodParameterOptimizer());
             theOptimizer.add(new InlineConstVariablesOptimizer());
@@ -48,35 +55,45 @@ public enum KnownOptimizer implements Optimizer {
                     new ArrayReadLengthOptimizerStage(),
                     new BinaryExpressionOptimizerStage()
             }));
-            run(aBackend, aGraph, aLinkerContext, theOptimizer);
+            run(aBackend, aGraph, aLinkerContext, theOptimizer, analysisStack);
         }
     },
 
     EXPERIMENTAL {
         @Override
-        public void optimize(final CompileBackend aBackend, final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
+        public void optimize(final CompileBackend aBackend,
+                             final ControlFlowGraph aGraph,
+                             final BytecodeLinkerContext aLinkerContext,
+                             final AnalysisStack analysisStack) {
             final List<Optimizer> theOptimizer = new ArrayList<>();
             theOptimizer.add(ALL);
-            run(aBackend, aGraph, aLinkerContext, theOptimizer);
+            run(aBackend, aGraph, aLinkerContext, theOptimizer, analysisStack);
         }
     },
 
     LLVM {
         @Override
-        public void optimize(final CompileBackend aBackend, final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext) {
+        public void optimize(final CompileBackend aBackend,
+                             final ControlFlowGraph aGraph,
+                             final BytecodeLinkerContext aLinkerContext,
+                             final AnalysisStack analysisStack) {
             final List<Optimizer> theOptimizer = new ArrayList<>();
             theOptimizer.add(new SinglePassOptimizer(new OptimizerStage[] {
                     new InvokeVirtualOptimizerStage(),
                     new InefficientCompareOptimizerStage(),
             }));
-            run(aBackend, aGraph, aLinkerContext, theOptimizer);
+            run(aBackend, aGraph, aLinkerContext, theOptimizer, analysisStack);
         }
     };
 
-    private static void run(final CompileBackend aBackend, final ControlFlowGraph aGraph, final BytecodeLinkerContext aLinkerContext, final List<Optimizer> aList) {
+    private static void run(final CompileBackend aBackend,
+                            final ControlFlowGraph aGraph,
+                            final BytecodeLinkerContext aLinkerContext,
+                            final List<Optimizer> aList,
+                            final AnalysisStack analysisStack) {
         try {
             for (final Optimizer theOptimizer : aList) {
-                theOptimizer.optimize(aBackend, aGraph, aLinkerContext);
+                theOptimizer.optimize(aBackend, aGraph, aLinkerContext, analysisStack);
             }
         } catch (final RuntimeException e) {
             throw new RuntimeException("Error optimizing control flow graph", e);

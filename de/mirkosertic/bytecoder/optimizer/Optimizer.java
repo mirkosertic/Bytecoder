@@ -16,10 +16,14 @@
 package de.mirkosertic.bytecoder.optimizer;
 
 import de.mirkosertic.bytecoder.backend.CompileBackend;
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
 
 public interface Optimizer {
 
-    void optimize(CompileBackend aCompilerBackend, ControlFlowGraph aGraph, BytecodeLinkerContext aLinkerContext);
+    void optimize(CompileBackend aCompilerBackend,
+                  ControlFlowGraph aGraph,
+                  BytecodeLinkerContext aLinkerContext,
+                  AnalysisStack analysisStack);
 }

@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.backend.opencl;
 import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeLoader;
@@ -59,12 +60,17 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
 
     @Override
     public OpenCLCompileResult generateCodeFor(
-            final CompileOptions aOptions, final BytecodeLinkerContext aLinkerContext, final Class aEntryPointClass, final String aEntryPointMethodName, final BytecodeMethodSignature aEntryPointSignatue) {
+            final CompileOptions aOptions,
+            final BytecodeLinkerContext aLinkerContext,
+            final Class aEntryPointClass,
+            final String aEntryPointMethodName,
+            final BytecodeMethodSignature aEntryPointSignature,
+            final AnalysisStack analysisStack) {
 
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(loader, aOptions.getLogger());
-        final BytecodeLinkedClass theKernelClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(aEntryPointClass));
 
-        theKernelClass.resolveVirtualMethod(aEntryPointMethodName, aEntryPointSignatue);
+        final BytecodeLinkedClass theKernelClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(aEntryPointClass), analysisStack);
+        theKernelClass.resolveVirtualMethod(aEntryPointMethodName, aEntryPointSignature, analysisStack);
 
         final StringWriter theStrWriter = new StringWriter();
 
@@ -79,10 +85,10 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
                 BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
 
         final ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext, new OpenCLIntrinsics());
-        final Program theSSAProgram = theGenerator.generateFrom(theKernelClass.getBytecodeClass(), theKernelMethod);
+        final Program theSSAProgram = theGenerator.generateFrom(theKernelClass.getBytecodeClass(), theKernelMethod, analysisStack);
 
         //Run optimizer
-        aOptions.getOptimizer().optimize(this, theSSAProgram.getControlFlowGraph(), aLinkerContext);
+        aOptions.getOptimizer().optimize(this, theSSAProgram.getControlFlowGraph(), aLinkerContext, analysisStack);
 
         // Perform register allocation
         final AbstractAllocator theKernelAllocator = aOptions.getAllocator().allocate(theSSAProgram, Variable::resolveType, aLinkerContext);
@@ -97,7 +103,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         }
 
         // And then we ca pass it to the code generator to generate the kernel code
-        final OpenCLWriter theSSAWriter = new OpenCLWriter(theKernelClass, aOptions, theSSAProgram, new PrintWriter(theStrWriter), aLinkerContext, theInputOutputs);
+        final OpenCLWriter theSSAWriter = new OpenCLWriter(theKernelClass, aOptions, theSSAProgram, new PrintWriter(theStrWriter), aLinkerContext, theInputOutputs, analysisStack);
 
         theMethodMap.stream().forEach(aMethodMapEntry -> {
             final BytecodeMethod theMethod = aMethodMapEntry.getValue();
@@ -111,10 +117,10 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
             }
 
             if (theMethod != theKernelMethod) {
-                final Program theSSAProgram1 = theGenerator.generateFrom(aMethodMapEntry.getProvidingClass().getBytecodeClass(), theMethod);
+                final Program theSSAProgram1 = theGenerator.generateFrom(aMethodMapEntry.getProvidingClass().getBytecodeClass(), theMethod, analysisStack);
 
                 //Run optimizer
-                aOptions.getOptimizer().optimize(this, theSSAProgram1.getControlFlowGraph(), aLinkerContext);
+                aOptions.getOptimizer().optimize(this, theSSAProgram1.getControlFlowGraph(), aLinkerContext, analysisStack);
 
                 // Perform register allocation
                 final AbstractAllocator theAllocator = aOptions.getAllocator().allocate(theSSAProgram1, Variable::resolveType, aLinkerContext);

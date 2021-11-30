@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.intrinsics;
 import java.util.List;
 import java.util.Objects;
 
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.ssa.ParsingHelper;
@@ -29,7 +30,15 @@ import de.mirkosertic.bytecoder.ssa.Variable;
 public class ObjectConstructorCallIntrinsic extends Intrinsic {
 
     @Override
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKESPECIAL aInstruction, final String aMethodName, final BytecodeObjectTypeRef aType, final List<Value> aArguments, final Variable aTarget, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionINVOKESPECIAL aInstruction,
+                              final String aMethodName,
+                              final BytecodeObjectTypeRef aType,
+                              final List<Value> aArguments,
+                              final Variable aTarget,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
         if ("<init>".equals(aMethodName) && Objects.equals(aType.name(), Object.class.getName())) {
             return true;
         }

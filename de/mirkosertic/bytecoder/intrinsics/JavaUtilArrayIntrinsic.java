@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.intrinsics;
 
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.ssa.*;
@@ -25,7 +26,14 @@ import java.util.List;
 public class JavaUtilArrayIntrinsic extends Intrinsic {
 
     @Override
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKESTATIC aInstruction, final String aMethodName, final List<Value> aArguments, final BytecodeObjectTypeRef aTargetClass, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionINVOKESTATIC aInstruction,
+                              final String aMethodName,
+                              final List<Value> aArguments,
+                              final BytecodeObjectTypeRef aTargetClass,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
         if (Array.class.getName().equals(aTargetClass.name())) {
             if ("newInstance".equals(aMethodName)) {
 

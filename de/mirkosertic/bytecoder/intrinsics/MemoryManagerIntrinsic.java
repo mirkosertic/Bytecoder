@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.intrinsics;
 
 import de.mirkosertic.bytecoder.classlib.Address;
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.ssa.ComputedMemoryLocationReadExpression;
@@ -39,7 +40,14 @@ import java.util.Objects;
 public class MemoryManagerIntrinsic extends Intrinsic {
 
     @Override
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKESTATIC aInstruction, final String aMethodName, final List<Value> aArguments, final BytecodeObjectTypeRef aTargetClass, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionINVOKESTATIC aInstruction,
+                              final String aMethodName,
+                              final List<Value> aArguments,
+                              final BytecodeObjectTypeRef aTargetClass,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
 
         if (Objects.equals(aTargetClass.name(), Address.class.getName())) {
             switch (aMethodName) {

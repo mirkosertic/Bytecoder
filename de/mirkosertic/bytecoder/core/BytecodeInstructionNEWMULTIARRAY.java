@@ -43,13 +43,13 @@ public class BytecodeInstructionNEWMULTIARRAY extends BytecodeInstruction {
     }
 
     @Override
-    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext) {
-        aLinkerContext.resolveClass(getObjectType());
+    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext, final AnalysisStack analysisStack) {
+        aLinkerContext.resolveClass(getObjectType(), analysisStack);
 
         final BytecodeClassinfoConstant theConstant = getTypeConstant();
         final String theClassName = theConstant.getConstant().stringValue();
 
         final BytecodeTypeRef[] theTypes = aLinkerContext.getSignatureParser().toTypes(theClassName);
-        aLinkerContext.resolveTypeRef(theTypes[0]);
+        aLinkerContext.resolveTypeRef(theTypes[0], analysisStack);
     }
 }

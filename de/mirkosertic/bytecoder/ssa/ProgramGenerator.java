@@ -15,10 +15,13 @@
  */
 package de.mirkosertic.bytecoder.ssa;
 
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
 
 public interface ProgramGenerator {
 
-    Program generateFrom(BytecodeClass aBytecodeClass, BytecodeMethod aMethod);
+    Program generateFrom(BytecodeClass aBytecodeClass,
+                         BytecodeMethod aMethod,
+                         AnalysisStack analysisStack);
 }
