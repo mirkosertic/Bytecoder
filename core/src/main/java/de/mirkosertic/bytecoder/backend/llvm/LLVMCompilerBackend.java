@@ -30,6 +30,7 @@ import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.classlib.java.util.Quicksort;
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeAccessFlags;
 import de.mirkosertic.bytecoder.core.BytecodeAnnotation;
 import de.mirkosertic.bytecoder.core.BytecodeAttributeInfo;
@@ -138,29 +139,33 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
     }
 
     @Override
-    public LLVMCompileResult generateCodeFor(final CompileOptions aOptions, final BytecodeLinkerContext aLinkerContext,
-            final Class aEntryPointClass, final String aEntryPointMethodName, final BytecodeMethodSignature aEntryPointSignature) {
+    public LLVMCompileResult generateCodeFor(final CompileOptions aOptions,
+                                             final BytecodeLinkerContext aLinkerContext,
+                                             final Class aEntryPointClass,
+                                             final String aEntryPointMethodName,
+                                             final BytecodeMethodSignature aEntryPointSignature,
+                                             final AnalysisStack analysisStack) {
 
-        final BytecodeLinkedClass theArrayClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
+        final BytecodeLinkedClass theArrayClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class), analysisStack);
         theArrayClass.tagWith(BytecodeLinkedClass.Tag.INSTANTIATED);
-        theArrayClass.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
+        theArrayClass.resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]), analysisStack);
 
         // We need to link the memory manager
-        final BytecodeLinkedClass theMemoryManagerClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class));
+        final BytecodeLinkedClass theMemoryManagerClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(MemoryManager.class), analysisStack);
 
-        theMemoryManagerClass.resolveStaticMethod("logAllocations", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
+        theMemoryManagerClass.resolveStaticMethod("logAllocations", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]), analysisStack);
 
-        theMemoryManagerClass.resolveStaticMethod("freeMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
-        theMemoryManagerClass.resolveStaticMethod("usedMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]));
+        theMemoryManagerClass.resolveStaticMethod("freeMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]), analysisStack);
+        theMemoryManagerClass.resolveStaticMethod("usedMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[0]), analysisStack);
 
-        theMemoryManagerClass.resolveStaticMethod("free", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
-        theMemoryManagerClass.resolveStaticMethod("malloc", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}));
-        theMemoryManagerClass.resolveStaticMethod("newObject", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
-        theMemoryManagerClass.resolveStaticMethod("newArray", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
-        theMemoryManagerClass.resolveStaticMethod("newArray", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+        theMemoryManagerClass.resolveStaticMethod("free", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}), analysisStack);
+        theMemoryManagerClass.resolveStaticMethod("malloc", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT}), analysisStack);
+        theMemoryManagerClass.resolveStaticMethod("newObject", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}), analysisStack);
+        theMemoryManagerClass.resolveStaticMethod("newArray", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}), analysisStack);
+        theMemoryManagerClass.resolveStaticMethod("newArray", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}), analysisStack);
 
-        theMemoryManagerClass.resolveStaticMethod("initStackObject", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
-        theMemoryManagerClass.resolveStaticMethod("initStackArray", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+        theMemoryManagerClass.resolveStaticMethod("initStackObject", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}), analysisStack);
+        theMemoryManagerClass.resolveStaticMethod("initStackArray", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}), analysisStack);
 
         // We need this class and constructor to build reflective metadata
         final BytecodeMethodSignature theFieldClassConstructorSignature = new BytecodeMethodSignature(
@@ -173,9 +178,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 BytecodeObjectTypeRef.fromRuntimeClass(Object.class),
                 BytecodePrimitiveTypeRef.INT
         });
-        final BytecodeLinkedClass theFieldClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Field.class));
+        final BytecodeLinkedClass theFieldClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Field.class), analysisStack);
         theFieldClass.tagWith(BytecodeLinkedClass.Tag.INSTANTIATED);
-        theFieldClass.resolveConstructorInvocation(theFieldClassConstructorSignature);
+        theFieldClass.resolveConstructorInvocation(theFieldClassConstructorSignature, analysisStack);
 
         final LLVMCompileResult theCompileResult = new LLVMCompileResult();
         final List<OpaqueReferenceMethod> opaqueReferenceMethods = new ArrayList<>();
@@ -1244,7 +1249,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 pw.println("}");
                 pw.println();
 
-                final BytecodeLinkedClass theClassLinkedCass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Class.class));
+                final BytecodeLinkedClass theClassLinkedCass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Class.class), analysisStack);
                 final BytecodeVTable theClassVTable = theSymbolResolver.vtableFor(theClassLinkedCass);
                 final List<BytecodeVTable.Slot> theClassSlots = theClassVTable.sortedSlots();
                 pw.print("%");
@@ -1547,7 +1552,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                 pw.print(LLVMWriterUtils.toSignature(ptr.getSignature()));
                                 pw.print("* ");
                                 if (ptr.getImplementingClass() != null) {
-                                    final BytecodeLinkedClass theSlotClass = aLinkerContext.resolveClass(ptr.getImplementingClass());
+                                    final BytecodeLinkedClass theSlotClass = aLinkerContext.resolveClass(ptr.getImplementingClass(), analysisStack);
                                     final BytecodeMethod theMethod = theSlotClass.getBytecodeClass().methodByNameAndSignatureOrNull(ptr.getMethodName(), ptr.getSignature());
                                     if (theMethod != null && !theMethod.getAccessFlags().isAbstract()) {
                                         pw.print("@");
@@ -2059,7 +2064,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         }
 
                         final ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext, new LLVMIntrinsics());
-                        final Program theSSAProgram = theGenerator.generateFrom(aMethodMapEntry.getProvidingClass().getBytecodeClass(), theMethod);
+                        final Program theSSAProgram = theGenerator.generateFrom(aMethodMapEntry.getProvidingClass().getBytecodeClass(), theMethod, analysisStack);
                         final LLVMDebugInformation.CompileUnit compileUnit = debugInformation.compileUnitFor(theSSAProgram);
                         final LLVMDebugInformation.SubProgram subProgram = compileUnit.subProgram(theSSAProgram, theMethod.getName().stringValue(), theSignature);
 
@@ -2067,7 +2072,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         // We use a special LLVM optimizer, which does only stuff LLVM CANNOT do, such
                         // as virtual method invocation optimization. All other optimization work
                         // is done by LLVM!
-                        KnownOptimizer.LLVM.optimize(this, theSSAProgram.getControlFlowGraph(), aLinkerContext);
+                        KnownOptimizer.LLVM.optimize(this, theSSAProgram.getControlFlowGraph(), aLinkerContext, analysisStack);
 
                         compiledMethods.add(new CompiledMethod(theLinkedClass, theMethod, theSSAProgram, subProgram));
                     });
@@ -2286,7 +2291,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         pw.println(" {");
                     }
 
-                    try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter, aLinkerContext, theSymbolResolver, aOptions.isEscapeAnalysisEnabled())) {
+                    try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter, aLinkerContext, theSymbolResolver, aOptions.isEscapeAnalysisEnabled(), analysisStack)) {
                         theWriter.write(theLinkedClass, theSSAProgram, subProgram);
                     }
 
@@ -2398,7 +2403,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     // We use a special optimizer, which does only stuff LLVM CANNOT do, such
                     // as virtual method invocation optimization. All other optimization work
                     // is done by LLVM!
-                    KnownOptimizer.LLVM.optimize(this, theSSAProgram.getControlFlowGraph(), aLinkerContext);
+                    KnownOptimizer.LLVM.optimize(this, theSSAProgram.getControlFlowGraph(), aLinkerContext, analysisStack);
 
                     // Perform escape analysis
                     if (aOptions.isEscapeAnalysisEnabled()) {
@@ -2435,7 +2440,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     subProgram.writeDebugSuffixTo(pw);
                     pw.println(" {");
 
-                    try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter, aLinkerContext, theSymbolResolver, aOptions.isEscapeAnalysisEnabled())) {
+                    try (final LLVMWriter theWriter = new LLVMWriter(pw, memoryLayouter, aLinkerContext, theSymbolResolver, aOptions.isEscapeAnalysisEnabled(), analysisStack)) {
                         theWriter.write(theEntry.getValue().owningClass, theEntry.getValue().program, subProgram);
                     }
 
@@ -2666,7 +2671,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     if (!theReturnType.isArray() && !theReturnType.isVoid() && ! theReturnType.isPrimitive()) {
                         // Return type is object
                         final BytecodeObjectTypeRef theObjectTypeRef = (BytecodeObjectTypeRef) theReturnType;
-                        final BytecodeLinkedClass theClass = aLinkerContext.resolveClass(theObjectTypeRef);
+                        final BytecodeLinkedClass theClass = aLinkerContext.resolveClass(theObjectTypeRef, analysisStack);
                         //
                         // Maybe we can go further and generate code only for classes
                         // used by lambda expressions as described by the class tags here
@@ -2768,7 +2773,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                 pw.println(" to i32*");
 
                                 if (ptr.getImplementingClass() != null) {
-                                    final BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(ptr.getImplementingClass());
+                                    final BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(ptr.getImplementingClass(), analysisStack);
                                     final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull(ptr.getMethodName(), ptr.getSignature());
                                     if (theMethod != null && !theMethod.getAccessFlags().isAbstract()) {
                                         pw.print("    %te_");
@@ -2861,7 +2866,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                         } else {
                             // Positive number with the id of the class
                             if (aType.isArray()) {
-                                final BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
+                                final BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class), analysisStack);
                                 pw.print("    %status");
                                 pw.print(aIndex);
                                 pw.print(" = call i32 @");
@@ -2875,7 +2880,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                 pw.print(aIndex);
                                 pw.println("_ptr");
                             } else {
-                                final BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass((BytecodeObjectTypeRef) aType);
+                                final BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass((BytecodeObjectTypeRef) aType, analysisStack);
                                 pw.print("    %status");
                                 pw.print(aIndex);
                                 pw.print(" = call i32 @");
@@ -2921,19 +2926,19 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                     switch (theMethodHandle.getReferenceKind()) {
                         case REF_invokeStatic:
-                            writeMethodHandleDelegateInvokeStatic(aLinkerContext, theMethodHandle, theDelegateMethodName, pw);
+                            writeMethodHandleDelegateInvokeStatic(aLinkerContext, theMethodHandle, theDelegateMethodName, pw, analysisStack);
                             break;
                         case REF_invokeVirtual:
-                            writeMethodHandleDelegateInvokeVirtual(aLinkerContext, theMethodHandle, theDelegateMethodName, pw);
+                            writeMethodHandleDelegateInvokeVirtual(aLinkerContext, theMethodHandle, theDelegateMethodName, pw, analysisStack);
                             break;
                         case REF_invokeInterface:
-                            writeMethodHandleDelegateInvokeInterface(aLinkerContext, theMethodHandle, theDelegateMethodName, pw);
+                            writeMethodHandleDelegateInvokeInterface(aLinkerContext, theMethodHandle, theDelegateMethodName, pw, analysisStack);
                             break;
                         case REF_invokeSpecial:
-                            writeMethodHandleDelegateInvokeSpecial(aLinkerContext, theMethodHandle, theDelegateMethodName, pw);
+                            writeMethodHandleDelegateInvokeSpecial(aLinkerContext, theMethodHandle, theDelegateMethodName, pw, analysisStack);
                             break;
                         case REF_newInvokeSpecial:
-                            writeMethodHandleDelegateNewInvokeSpecial(aLinkerContext, theMethodHandle, theDelegateMethodName, pw);
+                            writeMethodHandleDelegateNewInvokeSpecial(aLinkerContext, theMethodHandle, theDelegateMethodName, pw, analysisStack);
                             break;
                         default:
                             throw new IllegalArgumentException("Not supported refkind for method handle " + theMethodHandle.getReferenceKind());
@@ -3144,7 +3149,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                 theWriter.println("                + (bytecoder.runningInstanceMemory[value + 3] * 256 * 256 * 256);");
                 theWriter.println("     },");
 
-                final BytecodeLinkedClass theStringClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(String.class));
+                final BytecodeLinkedClass theStringClass = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(String.class), analysisStack);
                 final int theStringDataOffset = memoryLayouter.layoutFor(theStringClass.getClassName()).offsetForInstanceMember("value");
 
                 theWriter.println();
@@ -3450,7 +3455,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                 theWriter.print("bytecoder.referenceTable[target]");
                                 theWriter.print("[arg0]");
 
-                                final String theConversionFunction = conversionFunctionToJSForOpaqueType(aLinkerContext, theSignature.getArguments()[1]);
+                                final String theConversionFunction = conversionFunctionToJSForOpaqueType(aLinkerContext, theSignature.getArguments()[1], analysisStack);
                                 if (theConversionFunction != null) {
                                     theWriter.print("=");
                                     theWriter.print(theConversionFunction);
@@ -3463,7 +3468,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                                 boolean theWriteClosingBraces = false;
 
-                                final String theConversionFunction = conversionFunctionToWASMForOpaqueType(aLinkerContext, theSignature.getReturnType());
+                                final String theConversionFunction = conversionFunctionToWASMForOpaqueType(aLinkerContext, theSignature.getReturnType(), analysisStack);
                                 if (theConversionFunction != null) {
                                     theWriter.print(theConversionFunction);
                                     theWriter.print("(");
@@ -3506,7 +3511,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                 if (theArguments.length != 1) {
                                     throw new IllegalStateException("OpaqueProperty setter must have exactly one argument. Property " + theEntry.getKey() + "." + theOpaquePropertyName + " has " + theArguments.length + " arguments.");
                                 }
-                                final String theConversionFunction = conversionFunctionToJSForOpaqueType(aLinkerContext, theArguments[0]);
+                                final String theConversionFunction = conversionFunctionToJSForOpaqueType(aLinkerContext, theArguments[0], analysisStack);
                                 if (theConversionFunction != null) {
                                     theWriter.print("=");
                                     theWriter.print(theConversionFunction);
@@ -3519,7 +3524,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
 
                                 boolean theWriteClosingBraces = false;
 
-                                final String theConversionFunction = conversionFunctionToWASMForOpaqueType(aLinkerContext, theSignature.getReturnType());
+                                final String theConversionFunction = conversionFunctionToWASMForOpaqueType(aLinkerContext, theSignature.getReturnType(), analysisStack);
                                 if (theConversionFunction != null) {
                                     theWriter.print(theConversionFunction);
                                     theWriter.print("(");
@@ -3547,7 +3552,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             if (!theSignature.getReturnType().isVoid()) {
                                 theWriter.print("               return ");
 
-                                final String theConversionFunction = conversionFunctionToWASMForOpaqueType(aLinkerContext, theSignature.getReturnType());
+                                final String theConversionFunction = conversionFunctionToWASMForOpaqueType(aLinkerContext, theSignature.getReturnType(), analysisStack);
                                 if (theConversionFunction != null) {
                                     theWriter.print(theConversionFunction);
                                     theWriter.print("(");
@@ -3578,7 +3583,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                     theWriter.print(")");
                                 } else {
                                     final BytecodeObjectTypeRef theObjectType = (BytecodeObjectTypeRef) theRef;
-                                    final BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(theObjectType);
+                                    final BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(theObjectType, analysisStack);
                                     if (theLinkedClass.isOpaqueType()) {
                                         theWriter.print("bytecoder.toJSReference(");
                                         theWriter.print("arg");
@@ -3623,7 +3628,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                                 theWriter.print(")");
                                             } else {
                                                 final BytecodeObjectTypeRef theArgObjectType = (BytecodeObjectTypeRef) theTypeRef;
-                                                final BytecodeLinkedClass theArgLinkedClass = aLinkerContext.resolveClass(theArgObjectType);
+                                                final BytecodeLinkedClass theArgLinkedClass = aLinkerContext.resolveClass(theArgObjectType, analysisStack);
                                                 if (!theArgLinkedClass.isOpaqueType()) {
                                                     throw new IllegalStateException("Type conversion from " + theTypeRef.name() + " is not supported!");
 
@@ -3658,7 +3663,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                                             } else if (theTypeRef.matchesExactlyTo(BytecodeObjectTypeRef.fromRuntimeClass(String.class))) {
                                                 // Nothinng to clean up
                                             } else {
-                                                final BytecodeLinkedClass theLinkedType = aLinkerContext.resolveClass((BytecodeObjectTypeRef) theTypeRef);
+                                                final BytecodeLinkedClass theLinkedType = aLinkerContext.resolveClass((BytecodeObjectTypeRef) theTypeRef, analysisStack);
                                                 if (theLinkedType.isEvent()) {
                                                     // Cleanup object reference
                                                     theWriter.print("delete bytecoder.referenceTable[marg");
@@ -3795,7 +3800,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
         }
     }
 
-    private String conversionFunctionToJSForOpaqueType(final BytecodeLinkerContext alinkerContext, final BytecodeTypeRef aTypeRef) {
+    private String conversionFunctionToJSForOpaqueType(final BytecodeLinkerContext alinkerContext,
+                                                       final BytecodeTypeRef aTypeRef,
+                                                       final AnalysisStack analysisStack) {
         if (aTypeRef.isPrimitive()) {
             return null;
         } else if (aTypeRef.isArray()) {
@@ -3804,7 +3811,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             return "bytecoder.toJSString";
         } else {
             final BytecodeObjectTypeRef theObjectType = (BytecodeObjectTypeRef) aTypeRef;
-            final BytecodeLinkedClass theLinkedClass = alinkerContext.resolveClass(theObjectType);
+            final BytecodeLinkedClass theLinkedClass = alinkerContext.resolveClass(theObjectType, analysisStack);
             if (theLinkedClass.isOpaqueType()) {
                 return "bytecoder.toJSReference";
             } else {
@@ -3813,7 +3820,9 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
         }
     }
 
-    private String conversionFunctionToWASMForOpaqueType(final BytecodeLinkerContext alinkerContext, final BytecodeTypeRef aTypeRef) {
+    private String conversionFunctionToWASMForOpaqueType(final BytecodeLinkerContext alinkerContext,
+                                                         final BytecodeTypeRef aTypeRef,
+                                                         final AnalysisStack analysisStack) {
         if (aTypeRef.isPrimitive()) {
             return null;
         } else if (aTypeRef.isArray()) {
@@ -3822,7 +3831,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             return "bytecoder.toBytecoderString";
         } else {
             final BytecodeObjectTypeRef theObjectType = (BytecodeObjectTypeRef) aTypeRef;
-            final BytecodeLinkedClass theLinkedClass = alinkerContext.resolveClass(theObjectType);
+            final BytecodeLinkedClass theLinkedClass = alinkerContext.resolveClass(theObjectType, analysisStack);
             if (theLinkedClass.isOpaqueType()) {
                 return "bytecoder.toBytecoderReference";
             }
@@ -3830,7 +3839,11 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
         }
     }
 
-    private void writeMethodHandleDelegateInvokeStatic(final BytecodeLinkerContext aLinkerContext, final MethodHandleExpression aMethodHandle, final String aDelegateMethodName, final PrintWriter aWriter) {
+    private void writeMethodHandleDelegateInvokeStatic(final BytecodeLinkerContext aLinkerContext,
+                                                       final MethodHandleExpression aMethodHandle,
+                                                       final String aDelegateMethodName,
+                                                       final PrintWriter aWriter,
+                                                       final AnalysisStack analysisStack) {
 
         final BytecodeMethodSignature theSignature = aMethodHandle.getImplementationSignature();
 
@@ -3944,7 +3957,11 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
         aWriter.println();
     }
 
-    private void writeMethodHandleDelegateInvokeVirtual(final BytecodeLinkerContext aLinkerContext, final MethodHandleExpression aMethodHandle, final String aDelegateMethodName, final PrintWriter aWriter) {
+    private void writeMethodHandleDelegateInvokeVirtual(final BytecodeLinkerContext aLinkerContext,
+                                                        final MethodHandleExpression aMethodHandle,
+                                                        final String aDelegateMethodName,
+                                                        final PrintWriter aWriter,
+                                                        final AnalysisStack analysisStack) {
 
         final BytecodeMethodSignature theSignature = aMethodHandle.getImplementationSignature();
 
@@ -4081,7 +4098,11 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
         aWriter.println();
     }
 
-    private void writeMethodHandleDelegateNewInvokeSpecial(final BytecodeLinkerContext aLinkerContext, final MethodHandleExpression aMethodHandle, final String aDelegateMethodName, final PrintWriter aWriter) {
+    private void writeMethodHandleDelegateNewInvokeSpecial(final BytecodeLinkerContext aLinkerContext,
+                                                           final MethodHandleExpression aMethodHandle,
+                                                           final String aDelegateMethodName,
+                                                           final PrintWriter aWriter,
+                                                           final AnalysisStack analysisStack) {
 
         // We compile the list of arguments
         final MethodHandleExpression.AdapterAnnotation theAdapterAnnotation = aMethodHandle.getAdapterAnnotation();
@@ -4180,7 +4201,11 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
         aWriter.println();
     }
 
-    private void writeMethodHandleDelegateInvokeSpecial(final BytecodeLinkerContext aLinkerContext, final MethodHandleExpression aMethodHandle, final String aDelegateMethodName, final PrintWriter aWriter) {
+    private void writeMethodHandleDelegateInvokeSpecial(final BytecodeLinkerContext aLinkerContext,
+                                                        final MethodHandleExpression aMethodHandle,
+                                                        final String aDelegateMethodName,
+                                                        final PrintWriter aWriter,
+                                                        final AnalysisStack analysisStack) {
 
         final BytecodeMethodSignature theSignature = aMethodHandle.getImplementationSignature();
 
@@ -4296,7 +4321,11 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
         aWriter.println();
     }
 
-    private void writeMethodHandleDelegateInvokeInterface(final BytecodeLinkerContext aLinkerContext, final MethodHandleExpression aMethodHandle, final String aDelegateMethodName, final PrintWriter aWriter) {
+    private void writeMethodHandleDelegateInvokeInterface(final BytecodeLinkerContext aLinkerContext,
+                                                          final MethodHandleExpression aMethodHandle,
+                                                          final String aDelegateMethodName,
+                                                          final PrintWriter aWriter,
+                                                          final AnalysisStack analysisStack) {
 
         final BytecodeMethodSignature theSignature = aMethodHandle.getImplementationSignature();
 

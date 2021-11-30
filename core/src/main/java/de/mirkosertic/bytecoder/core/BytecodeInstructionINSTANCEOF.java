@@ -31,17 +31,17 @@ public class BytecodeInstructionINSTANCEOF extends BytecodeInstruction {
     }
 
     @Override
-    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext) {
+    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext, final AnalysisStack analysisStack) {
         final BytecodeClassinfoConstant theType = getTypeRef();
         final BytecodeUtf8Constant theName = theType.getConstant();
         if (theName.stringValue().startsWith("[")) {
             final BytecodeTypeRef theTypeRef = aLinkerContext.getSignatureParser().toFieldType(theName);
-            final BytecodeLinkedClass checkedType = aLinkerContext.resolveTypeRef(theTypeRef);
+            final BytecodeLinkedClass checkedType = aLinkerContext.resolveTypeRef(theTypeRef, analysisStack);
             if (checkedType != null) {
                 checkedType.tagWith(BytecodeLinkedClass.Tag.INSTANCEOF_CHECKED);
             }
         } else {
-            final BytecodeLinkedClass checkedType = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theName));
+            final BytecodeLinkedClass checkedType = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theName), analysisStack);
             checkedType.tagWith(BytecodeLinkedClass.Tag.INSTANCEOF_CHECKED);
         }
     }

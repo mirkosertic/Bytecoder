@@ -31,7 +31,7 @@ public class TDecimalFormatSymbols {
     }
 
     public static DecimalFormatSymbols getInstance(final Locale aLocale) {
-        return new DecimalFormatSymbols(aLocale);
+        return (DecimalFormatSymbols) ((Object)new TDecimalFormatSymbols(aLocale));
     }
 
     public TDecimalFormatSymbols() {
@@ -63,7 +63,7 @@ public class TDecimalFormatSymbols {
         return zeroDigit;
     }
 
-    public void setZeroDigit(char zeroDigit) {
+    public void setZeroDigit(final char zeroDigit) {
         this.zeroDigit = zeroDigit;
     }
 
@@ -71,7 +71,7 @@ public class TDecimalFormatSymbols {
         return groupingSeparator;
     }
 
-    public void setGroupingSeparator(char groupingSeparator) {
+    public void setGroupingSeparator(final char groupingSeparator) {
         this.groupingSeparator = groupingSeparator;
     }
 
@@ -79,7 +79,7 @@ public class TDecimalFormatSymbols {
         return decimalSeparator;
     }
 
-    public void setDecimalSeparator(char decimalSeparator) {
+    public void setDecimalSeparator(final char decimalSeparator) {
         this.decimalSeparator = decimalSeparator;
     }
 
@@ -87,7 +87,7 @@ public class TDecimalFormatSymbols {
         return perMill;
     }
 
-    public void setPerMill(char perMill) {
+    public void setPerMill(final char perMill) {
         this.perMill = perMill;
     }
 
@@ -95,7 +95,15 @@ public class TDecimalFormatSymbols {
         return percent;
     }
 
-    public void setPercent(char percent) {
+    public String getPercentText() {
+        return "" + percent;
+    }
+
+    public String getPerMillText() {
+        return "" + perMill;
+    }
+
+    public void setPercent(final char percent) {
         this.percent = percent;
     }
 
@@ -103,7 +111,7 @@ public class TDecimalFormatSymbols {
         return digit;
     }
 
-    public void setDigit(char digit) {
+    public void setDigit(final char digit) {
         this.digit = digit;
     }
 
@@ -111,7 +119,7 @@ public class TDecimalFormatSymbols {
         return patternSeparator;
     }
 
-    public void setPatternSeparator(char patternSeparator) {
+    public void setPatternSeparator(final char patternSeparator) {
         this.patternSeparator = patternSeparator;
     }
 
@@ -119,7 +127,7 @@ public class TDecimalFormatSymbols {
         return infinity;
     }
 
-    public void setInfinity(String infinity) {
+    public void setInfinity(final String infinity) {
         this.infinity = infinity;
     }
 
@@ -127,7 +135,7 @@ public class TDecimalFormatSymbols {
         return NaN;
     }
 
-    public void setNaN(String NaN) {
+    public void setNaN(final String NaN) {
         this.NaN = NaN;
     }
 
@@ -135,7 +143,11 @@ public class TDecimalFormatSymbols {
         return minusSign;
     }
 
-    public void setMinusSign(char minusSign) {
+    public String getMinusSignText() {
+        return "" + minusSign;
+    }
+
+    public void setMinusSign(final char minusSign) {
         this.minusSign = minusSign;
     }
 
@@ -143,7 +155,7 @@ public class TDecimalFormatSymbols {
         return currencySymbol;
     }
 
-    public void setCurrencySymbol(String currency) {
+    public void setCurrencySymbol(final String currency) {
         currencySymbol = currency;
     }
 
@@ -151,7 +163,7 @@ public class TDecimalFormatSymbols {
         return intlCurrencySymbol;
     }
 
-    public void setInternationalCurrencySymbol(String currencyCode) {
+    public void setInternationalCurrencySymbol(final String currencyCode) {
         intlCurrencySymbol = currencyCode;
     }
 
@@ -159,7 +171,7 @@ public class TDecimalFormatSymbols {
         return Currency.getInstance(locale);
     }
 
-    public void setCurrency(Currency currency) {
+    public void setCurrency(final Currency currency) {
         intlCurrencySymbol = currency.getCurrencyCode();
         currencySymbol = currency.getSymbol(locale);
     }
@@ -168,7 +180,7 @@ public class TDecimalFormatSymbols {
         return monetarySeparator;
     }
 
-    public void setMonetaryDecimalSeparator(char sep) {
+    public void setMonetaryDecimalSeparator(final char sep) {
         monetarySeparator = sep;
     }
 
@@ -180,11 +192,11 @@ public class TDecimalFormatSymbols {
         return exponentialSeparator;
     }
 
-    void setExponentialSymbol(char exp) {
+    void setExponentialSymbol(final char exp) {
         exponential = exp;
     }
 
-    public void setExponentSeparator(String exp) {
+    public void setExponentSeparator(final String exp) {
         if (exp == null) {
             throw new NullPointerException();
         }
@@ -196,7 +208,7 @@ public class TDecimalFormatSymbols {
         try {
             return (DecimalFormatSymbols) super.clone();
             // other fields are bit-copied
-        } catch (CloneNotSupportedException e) {
+        } catch (final CloneNotSupportedException e) {
             throw new InternalError(e);
         }
     }

@@ -21,6 +21,7 @@ import de.mirkosertic.bytecoder.allocator.Allocator;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.opencl.OpenCLCompileBackend;
 import de.mirkosertic.bytecoder.backend.opencl.OpenCLCompileResult;
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeLoader;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
@@ -77,12 +78,12 @@ public class CompilerTest {
 
     @Test
     public void testSimpleKernel() throws IOException {
-
+        final AnalysisStack analysisStack = new AnalysisStack();
         final OpenCLCompileBackend backend = new OpenCLCompileBackend();
         final CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true, "opencl", 512, 512, false, false, Allocator.passthru, new String[0], new String[0], null, false);
 
         final Kernel theKernel = createKernel();
-        final Class theKernelClass = theKernel.getClass();
+        final Class<? extends Kernel> theKernelClass = theKernel.getClass();
         System.out.println(theKernelClass);
 
         final Method[] theMethods = theKernelClass.getDeclaredMethods();
@@ -96,7 +97,7 @@ public class CompilerTest {
 
         final BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
-        final OpenCLCompileResult compiledKernel = backend.generateCodeFor(compileOptions, theLinkerContext, theKernelClass, theMethod.getName(), theSignature);
+        final OpenCLCompileResult compiledKernel = backend.generateCodeFor(compileOptions, theLinkerContext, theKernelClass, theMethod.getName(), theSignature, analysisStack);
         final OpenCLCompileResult.OpenCLContent content = (OpenCLCompileResult.OpenCLContent) compiledKernel.getContent()[0];
 
         System.out.println(content.asString());
@@ -104,7 +105,7 @@ public class CompilerTest {
 
     @Test
     public void testKernelWithComplexType() throws IOException {
-
+        final AnalysisStack analysisStack = new AnalysisStack();
         final OpenCLCompileBackend backend = new OpenCLCompileBackend();
         final CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true, "opencl", 512, 512, false, false, Allocator.passthru, new String[0], new String[0], null, false);
 
@@ -119,7 +120,7 @@ public class CompilerTest {
                 b.s1 = a.s1;
             }
         };
-        final Class theKernelClass = theKernel.getClass();
+        final Class<? extends Kernel> theKernelClass = theKernel.getClass();
         System.out.println(theKernelClass);
 
         final Method[] theMethods = theKernelClass.getDeclaredMethods();
@@ -133,7 +134,7 @@ public class CompilerTest {
 
         final BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
-        final OpenCLCompileResult compiledKernel = backend.generateCodeFor(compileOptions, theLinkerContext, theKernelClass, theMethod.getName(), theSignature);
+        final OpenCLCompileResult compiledKernel = backend.generateCodeFor(compileOptions, theLinkerContext, theKernelClass, theMethod.getName(), theSignature, analysisStack);
         final OpenCLCompileResult.OpenCLContent content = (OpenCLCompileResult.OpenCLContent) compiledKernel.getContent()[0];
 
         System.out.println(content.asString());

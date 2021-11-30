@@ -44,6 +44,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import org.jocl.Pointer;
 import org.jocl.Sizeof;
 import org.jocl.cl_command_queue;
@@ -129,9 +130,9 @@ class OpenCLContext implements Context {
                 clCreateCommandQueue(context, aPlatform.selectedDevice.id, 0, null);
     }
 
-    private CachedKernel kernelFor(final Kernel aKernel) throws IOException {
+    private CachedKernel kernelFor(final Kernel aKernel, final AnalysisStack analysisStack) throws IOException {
 
-        final Class theKernelClass = aKernel.getClass();
+        final Class<? extends Kernel> theKernelClass = aKernel.getClass();
 
         final CachedKernel theCachedKernel = cachedKernels.get(theKernelClass);
         if (null != theCachedKernel) {
@@ -152,7 +153,7 @@ class OpenCLContext implements Context {
 
             final BytecodeLoader theLoader = new BytecodeLoader(theKernelClass.getClassLoader());
             final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
-            theResult = backend.generateCodeFor(compileOptions, theLinkerContext, aKernel.getClass(), theMethod.getName(), theSignature);
+            theResult = backend.generateCodeFor(compileOptions, theLinkerContext, aKernel.getClass(), theMethod.getName(), theSignature, analysisStack);
 
             content = (OpenCLCompileResult.OpenCLContent) theResult.getContent()[0];
 
@@ -183,8 +184,9 @@ class OpenCLContext implements Context {
     @Override
     public void compute(final int aNumberOfStreams, final Kernel aKernel) throws IOException {
 
-        final Class theKernelClass = aKernel.getClass();
-        final CachedKernel theCachedKernel = kernelFor(aKernel);
+        final Class<? extends Kernel> theKernelClass = aKernel.getClass();
+        final AnalysisStack analysisStack = new AnalysisStack();
+        final CachedKernel theCachedKernel = kernelFor(aKernel, analysisStack);
 
         // Construct the input and output elements based on object properties
         final List<OpenCLInputOutputs.KernelArgument> theArguments = theCachedKernel.inputOutputs.arguments();
@@ -248,7 +250,7 @@ class OpenCLContext implements Context {
                         theField.setAccessible(true);
                         final Object[] theData = (Object[]) theField.get(aKernel);
 
-                        final Class theObjectType = theData.getClass().getComponentType();
+                        final Class<?> theObjectType = theData.getClass().getComponentType();
 
                         theDataRef = toDataRef(theData, theObjectType);
                         break;

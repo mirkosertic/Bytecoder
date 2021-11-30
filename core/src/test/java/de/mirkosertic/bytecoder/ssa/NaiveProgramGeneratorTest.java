@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.backend.js.JSIntrinsics;
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeAccessFlags;
 import de.mirkosertic.bytecoder.core.BytecodeAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeAttributes;
@@ -49,7 +50,7 @@ import static org.mockito.Mockito.when;
 public class NaiveProgramGeneratorTest {
 
     private Program newProgramFrom(final BytecodeProgram aProgram, final BytecodeMethodSignature aSignature) {
-
+        final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLinkerContext theContext = mock(BytecodeLinkerContext.class);
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theContext, new JSIntrinsics());
 
@@ -68,7 +69,7 @@ public class NaiveProgramGeneratorTest {
         when(theCodeAttribute.getProgram()).thenReturn(aProgram);
         when(theMethod.getCode(any())).thenReturn(theCodeAttribute);
 
-        return theGenerator.generateFrom(theClass, theMethod);
+        return theGenerator.generateFrom(theClass, theMethod, analysisStack);
     }
 
     @Test

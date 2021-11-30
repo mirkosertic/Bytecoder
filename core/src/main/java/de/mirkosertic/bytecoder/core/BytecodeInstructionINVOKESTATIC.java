@@ -22,7 +22,7 @@ public class BytecodeInstructionINVOKESTATIC extends BytecodeInstructionGenericI
     }
 
     @Override
-    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext) {
+    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext, final AnalysisStack analysisStack) {
         final BytecodeMethodRefConstant theMethodRefConstant = getMethodReference();
         final BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
         final BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
@@ -30,11 +30,11 @@ public class BytecodeInstructionINVOKESTATIC extends BytecodeInstructionGenericI
         final BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
         final BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
 
-        final BytecodeLinkedClass invokedType = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassConstant.getConstant()));
+        final BytecodeObjectTypeRef className = BytecodeObjectTypeRef.fromUtf8Constant(theClassConstant.getConstant());
+        final BytecodeLinkedClass invokedType = aLinkerContext.resolveClass(className, analysisStack);
         invokedType.tagWith(BytecodeLinkedClass.Tag.INVOKESTATIC_TARGET);
-        if (!invokedType.resolveStaticMethod(theName.stringValue(), theSig)) {
-            throw new IllegalStateException("Cannot find static method " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue() + " with signature " +theSig.toString());
+        if (!invokedType.resolveStaticMethod(theName.stringValue(), theSig, analysisStack)) {
+            throw new MissingLinkException("Cannot find static method " + className.name() +"." + theName.stringValue() + "(" + theSig + "). Analysis stack is \n" + analysisStack.toDebugOutput());
         }
-
     }
 }

@@ -30,6 +30,7 @@ import java.util.Map;
 
 import javax.swing.ImageIcon;
 
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import org.junit.Test;
 
 import de.mirkosertic.bytecoder.backend.CompileOptions;
@@ -72,13 +73,14 @@ public class PassThruRegisterAllocatorTest {
 
     @Test
     public void testSimpleMethodRegisterAllocation() {
+        final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
-        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(getClass()));
-        theLinkedClass.resolveStaticMethod("simpleMethod", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(getClass()), analysisStack);
+        theLinkedClass.resolveStaticMethod("simpleMethod", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}), analysisStack);
 
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("simpleMethod", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
-        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
+        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod, analysisStack);
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
@@ -149,13 +151,14 @@ public class PassThruRegisterAllocatorTest {
 
     @Test
     public void testComplexPhiFlowRegisterAllocation() throws HeadToHeadControlFlowException {
+        final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
-        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(getClass()));
-        theLinkedClass.resolveStaticMethod("complexPhiFlow", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(getClass()), analysisStack);
+        theLinkedClass.resolveStaticMethod("complexPhiFlow", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}), analysisStack);
 
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("complexPhiFlow", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
-        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
+        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod, analysisStack);
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
@@ -172,7 +175,7 @@ public class PassThruRegisterAllocatorTest {
         final StringWriter theWriter = new StringWriter();
         final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
         final ConstantPool thePool = new ConstantPool();
-        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null);
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null, analysisStack);
         theVariablesWriter.printRegisterDeclarations();
 
         final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
@@ -191,13 +194,14 @@ public class PassThruRegisterAllocatorTest {
 
     @Test
     public void testSimplePhiFlowRegisterAllocation() throws HeadToHeadControlFlowException {
+        final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
-        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(getClass()));
-        theLinkedClass.resolveStaticMethod("simplePhiFlow", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
+        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(getClass()), analysisStack);
+        theLinkedClass.resolveStaticMethod("simplePhiFlow", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}), analysisStack);
 
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("simplePhiFlow", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
-        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
+        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod, analysisStack);
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
@@ -216,7 +220,7 @@ public class PassThruRegisterAllocatorTest {
         final StringWriter theWriter = new StringWriter();
         final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
         final ConstantPool thePool = new ConstantPool();
-        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null);
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null, analysisStack);
         theVariablesWriter.printRegisterDeclarations();
 
         final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
@@ -227,13 +231,14 @@ public class PassThruRegisterAllocatorTest {
 
     @Test
     public void testHashMapResizeRegisterAllocation() {
+        final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
-        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(HashMap.class));
-        theLinkedClass.resolveVirtualMethod("resize", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("java.util.HashMap$Node")), 1), new BytecodeTypeRef[]{}));
+        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(HashMap.class), analysisStack);
+        theLinkedClass.resolveVirtualMethod("resize", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("java.util.HashMap$Node")), 1), new BytecodeTypeRef[]{}), analysisStack);
 
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("resize", new BytecodeMethodSignature(new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("java.util.HashMap$Node")), 1), new BytecodeTypeRef[]{}));
-        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
+        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod, analysisStack);
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
@@ -249,14 +254,15 @@ public class PassThruRegisterAllocatorTest {
 
     @Test
     public void testStandardCharsetsForNameRegisterAllocation() throws HeadToHeadControlFlowException {
+        final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
         final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
-                StandardCharsets.class));
-        theLinkedClass.resolveVirtualMethod("charsetForName", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Charset.class), new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(String.class)}));
+                StandardCharsets.class), analysisStack);
+        theLinkedClass.resolveVirtualMethod("charsetForName", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Charset.class), new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(String.class)}), analysisStack);
 
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("charsetForName", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Charset.class), new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(String.class)}));
-        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
+        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod, analysisStack);
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
@@ -275,7 +281,7 @@ public class PassThruRegisterAllocatorTest {
         final StringWriter theWriter = new StringWriter();
         final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
         final ConstantPool thePool = new ConstantPool();
-        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null);
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null, analysisStack);
         theVariablesWriter.printRegisterDeclarations();
 
         final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
@@ -286,14 +292,15 @@ public class PassThruRegisterAllocatorTest {
 
     @Test
     public void testStringArrayInitRegisterAllocation() throws HeadToHeadControlFlowException {
+        final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
         final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
-                String.class));
-        theLinkedClass.resolveVirtualMethod("<init>", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.CHAR, 1)}));
+                String.class), analysisStack);
+        theLinkedClass.resolveVirtualMethod("<init>", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.CHAR, 1)}), analysisStack);
 
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("<init>", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.CHAR, 1)}));
-        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
+        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod, analysisStack);
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
@@ -312,7 +319,7 @@ public class PassThruRegisterAllocatorTest {
         final StringWriter theWriter = new StringWriter();
         final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
         final ConstantPool thePool = new ConstantPool();
-        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null);
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null, analysisStack);
         theVariablesWriter.printRegisterDeclarations();
 
         final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
@@ -323,14 +330,15 @@ public class PassThruRegisterAllocatorTest {
 
     @Test
     public void testCharsetInitRegisterAllocation() throws HeadToHeadControlFlowException {
+        final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
         final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
-                Charset.class));
-        theLinkedClass.resolveVirtualMethod("<init>", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(String.class), new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1)}));
+                Charset.class), analysisStack);
+        theLinkedClass.resolveVirtualMethod("<init>", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(String.class), new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1)}), analysisStack);
 
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("<init>", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(String.class), new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1)}));
-        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
+        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod, analysisStack);
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
@@ -349,7 +357,7 @@ public class PassThruRegisterAllocatorTest {
         final StringWriter theWriter = new StringWriter();
         final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
         final ConstantPool thePool = new ConstantPool();
-        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null);
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null, analysisStack);
         theVariablesWriter.printRegisterDeclarations();
 
         final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
@@ -360,14 +368,15 @@ public class PassThruRegisterAllocatorTest {
 
     @Test
     public void testCharsetEncoderRegisterAllocation() throws HeadToHeadControlFlowException {
+        final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
         final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
-                CharsetEncoder.class));
-        theLinkedClass.resolveVirtualMethod("encode", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(ByteBuffer.class), new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(CharBuffer.class)}));
+                CharsetEncoder.class), analysisStack);
+        theLinkedClass.resolveVirtualMethod("encode", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(ByteBuffer.class), new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(CharBuffer.class)}), analysisStack);
 
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("encode", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(ByteBuffer.class), new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(CharBuffer.class)}));
-        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
+        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod, analysisStack);
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
@@ -386,7 +395,7 @@ public class PassThruRegisterAllocatorTest {
         final StringWriter theWriter = new StringWriter();
         final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
         final ConstantPool thePool = new ConstantPool();
-        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null);
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null, analysisStack);
         theVariablesWriter.printRegisterDeclarations();
 
         final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
@@ -397,15 +406,16 @@ public class PassThruRegisterAllocatorTest {
 
     @Test
     public void testHashMapGetNodeRegisterAllocator() throws HeadToHeadControlFlowException {
+        final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
         final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
-                HashMap.class));
+                HashMap.class), analysisStack);
         final BytecodeObjectTypeRef theNodeType = BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("java.util.HashMap$Node"));
-        theLinkedClass.resolveVirtualMethod("getNode", new BytecodeMethodSignature(theNodeType, new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(Object.class)}));
+        theLinkedClass.resolveVirtualMethod("getNode", new BytecodeMethodSignature(theNodeType, new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(Object.class)}), analysisStack);
 
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("getNode", new BytecodeMethodSignature(theNodeType, new BytecodeTypeRef[]{BytecodeObjectTypeRef.fromRuntimeClass(Object.class)}));
-        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
+        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod, analysisStack);
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
@@ -424,7 +434,7 @@ public class PassThruRegisterAllocatorTest {
         final StringWriter theWriter = new StringWriter();
         final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
         final ConstantPool thePool = new ConstantPool();
-        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null);
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null, analysisStack);
         theVariablesWriter.printRegisterDeclarations();
 
         final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
@@ -439,13 +449,14 @@ public class PassThruRegisterAllocatorTest {
 
     @Test
     public void testWriteMemoryRegisterAllocator() {
+        final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new WASMIntrinsics());
-        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(getClass()));
-        theLinkedClass.resolveStaticMethod("testWriteMemory", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{}));
+        final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(getClass()), analysisStack);
+        theLinkedClass.resolveStaticMethod("testWriteMemory", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{}), analysisStack);
 
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("testWriteMemory", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{}));
-        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
+        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod, analysisStack);
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
@@ -458,14 +469,15 @@ public class PassThruRegisterAllocatorTest {
 
     @Test
     public void testFreeMemRegisterAllocator() throws HeadToHeadControlFlowException {
+        final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
         final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
-                MemoryManager.class));
-        theLinkedClass.resolveVirtualMethod("freeMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{}));
+                MemoryManager.class), analysisStack);
+        theLinkedClass.resolveVirtualMethod("freeMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{}), analysisStack);
 
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("freeMem", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{}));
-        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
+        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod, analysisStack);
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
@@ -484,7 +496,7 @@ public class PassThruRegisterAllocatorTest {
         final StringWriter theWriter = new StringWriter();
         final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
         final ConstantPool thePool = new ConstantPool();
-        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null);
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null, analysisStack);
         theVariablesWriter.printRegisterDeclarations();
 
         final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
@@ -495,14 +507,15 @@ public class PassThruRegisterAllocatorTest {
 
     @Test
     public void testMapEntryRegisterAllocator() throws HeadToHeadControlFlowException {
+        final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
         final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
-                Map.Entry.class));
-        theLinkedClass.resolveStaticMethod("comparingByKey", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Comparator.class), new BytecodeTypeRef[]{}));
+                Map.Entry.class), analysisStack);
+        theLinkedClass.resolveStaticMethod("comparingByKey", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Comparator.class), new BytecodeTypeRef[]{}), analysisStack);
 
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("comparingByKey", new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Comparator.class), new BytecodeTypeRef[]{}));
-        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
+        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod, analysisStack);
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
@@ -521,7 +534,7 @@ public class PassThruRegisterAllocatorTest {
         final StringWriter theWriter = new StringWriter();
         final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
         final ConstantPool thePool = new ConstantPool();
-        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null);
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null, analysisStack);
         theVariablesWriter.printRegisterDeclarations();
 
         final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());
@@ -532,16 +545,17 @@ public class PassThruRegisterAllocatorTest {
 
     @Test
     public void testImageIconGetNext() throws HeadToHeadControlFlowException {
+        final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
         final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
         final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
-                ImageIcon.class));
-        theLinkedClass.resolvePrivateMethod("getNextID", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{}));
+                ImageIcon.class), analysisStack);
+        theLinkedClass.resolvePrivateMethod("getNextID", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{}), analysisStack);
 
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("getNextID", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{}));
-        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod);
+        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod, analysisStack);
 
-        KnownOptimizer.ALL.optimize(null, p.getControlFlowGraph(), theLinkerContext);
+        KnownOptimizer.ALL.optimize(null, p.getControlFlowGraph(), theLinkerContext, analysisStack);
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
@@ -560,7 +574,7 @@ public class PassThruRegisterAllocatorTest {
         final StringWriter theWriter = new StringWriter();
         final JSPrintWriter theJSWriter = new JSPrintWriter(theWriter, theMinifier, theSourcemapWriter);
         final ConstantPool thePool = new ConstantPool();
-        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null);
+        final JSSSAWriter theVariablesWriter = new JSSSAWriter(theOptions, p, 2, theJSWriter, theLinkerContext, thePool, false, theMinifier, theAllocator, null, analysisStack);
         theVariablesWriter.printRegisterDeclarations();
 
         final Stackifier stackifier = new Stackifier(p.getControlFlowGraph());

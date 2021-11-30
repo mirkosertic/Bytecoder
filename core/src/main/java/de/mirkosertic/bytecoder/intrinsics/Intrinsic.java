@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.intrinsics;
 
 import java.util.List;
 
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionGETSTATIC;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEINTERFACE;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKESPECIAL;
@@ -32,32 +33,70 @@ import de.mirkosertic.bytecoder.ssa.Variable;
 
 public class Intrinsic {
 
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKESTATIC aInstruction, final String aMethodName, final List<Value> aArguments,
-                              final BytecodeObjectTypeRef aTargetClass, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
-        return false;
-    }
-
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKESPECIAL aInstruction, final String aMethodName,
-                              final BytecodeObjectTypeRef aType, final List<Value> aArguments,
-                              final Variable aTarget, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
-        return false;
-    }
-
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKEVIRTUAL aInstruction, final String aMethodName,
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionINVOKESTATIC aInstruction,
+                              final String aMethodName,
                               final List<Value> aArguments,
-                              final Value aTarget, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+                              final BytecodeObjectTypeRef aTargetClass,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
         return false;
     }
 
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionGETSTATIC aInstruction, final String aFieldName, final BytecodeObjectTypeRef aTtargetType, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionINVOKESPECIAL aInstruction,
+                              final String aMethodName,
+                              final BytecodeObjectTypeRef aType,
+                              final List<Value> aArguments,
+                              final Variable aTarget,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
         return false;
     }
 
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionPUTSTATIC aInstruction, final String aFieldName, final BytecodeObjectTypeRef aTtargetType, final Value aValue, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionINVOKEVIRTUAL aInstruction,
+                              final String aMethodName,
+                              final List<Value> aArguments,
+                              final Value aTarget,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
         return false;
     }
 
-    public boolean intrinsify(final Program aProgram, final BytecodeInstructionINVOKEINTERFACE aInstruction, final String aMethodName, final Value aInvocationTarget, final List<Value> aArguments, final BytecodeObjectTypeRef aObjectType, final RegionNode aTargetBlock, final ParsingHelper aHelper) {
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionGETSTATIC aInstruction,
+                              final String aFieldName,
+                              final BytecodeObjectTypeRef aTtargetType,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
+        return false;
+    }
+
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionPUTSTATIC aInstruction,
+                              final String aFieldName,
+                              final BytecodeObjectTypeRef aTargetType,
+                              final Value aValue,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
+        return false;
+    }
+
+    public boolean intrinsify(final Program aProgram,
+                              final BytecodeInstructionINVOKEINTERFACE aInstruction,
+                              final String aMethodName,
+                              final Value aInvocationTarget,
+                              final List<Value> aArguments,
+                              final BytecodeObjectTypeRef aObjectType,
+                              final RegionNode aTargetBlock,
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
         return false;
     }
 }

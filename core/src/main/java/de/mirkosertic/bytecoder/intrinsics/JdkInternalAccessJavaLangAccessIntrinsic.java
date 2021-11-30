@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.intrinsics;
 import java.util.List;
 import java.util.Objects;
 
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionINVOKEINTERFACE;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
@@ -40,15 +41,16 @@ public class JdkInternalAccessJavaLangAccessIntrinsic extends Intrinsic {
                               final List<Value> aArguments,
                               final BytecodeObjectTypeRef aObjectType,
                               final RegionNode aTargetBlock,
-                              final ParsingHelper aHelper) {
+                              final ParsingHelper aHelper,
+                              final AnalysisStack analysisStack) {
         final BytecodeMethodSignature theSignature = aInstruction.getMethodDescriptor().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
 
         if (Objects.equals(aObjectType.name(), "jdk.internal.access.JavaLangAccess")) {
             if (Objects.equals("inflateBytesToChars", aMethodName)) {
                 final BytecodeObjectTypeRef theClassToInvoke = BytecodeObjectTypeRef.fromUtf8Constant(new BytecodeUtf8Constant("java/lang/StringLatin1"));
-                aProgram.getLinkerContext().resolveClass(theClassToInvoke)
+                aProgram.getLinkerContext().resolveClass(theClassToInvoke, analysisStack)
                         .resolveStaticMethod("inflate",
-                                theSignature);
+                                theSignature, analysisStack);
 
                 final InvokeStaticMethodExpression theExpression = new InvokeStaticMethodExpression(aProgram, aInstruction.getOpcodeAddress(),
                         theClassToInvoke,
@@ -61,9 +63,9 @@ public class JdkInternalAccessJavaLangAccessIntrinsic extends Intrinsic {
             }
             if (Objects.equals("decodeASCII", aMethodName)) {
                 final BytecodeObjectTypeRef theClassToInvoke = BytecodeObjectTypeRef.fromRuntimeClass(String.class);
-                aProgram.getLinkerContext().resolveClass(theClassToInvoke)
+                aProgram.getLinkerContext().resolveClass(theClassToInvoke, analysisStack)
                         .resolveStaticMethod("decodeASCII",
-                                theSignature);
+                                theSignature, analysisStack);
 
                 final InvokeStaticMethodExpression theExpression = new InvokeStaticMethodExpression(aProgram, aInstruction.getOpcodeAddress(),
                         theClassToInvoke,

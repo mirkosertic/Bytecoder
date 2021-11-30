@@ -20,6 +20,7 @@ import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
 import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.classlib.java.util.Quicksort;
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
@@ -168,13 +169,20 @@ public class LLVMWriter implements AutoCloseable {
     private final BytecodeLinkerContext linkerContext;
     private final SymbolResolver symbolResolver;
     private final boolean stackAllocationEnabled;
+    private final AnalysisStack analysisStack;
 
-    public LLVMWriter(final PrintWriter output, final NativeMemoryLayouter memoryLayouter, final BytecodeLinkerContext linkerContext, final SymbolResolver symbolResolver, final boolean aEscapeAnalysisEnabled) {
+    public LLVMWriter(final PrintWriter output,
+                      final NativeMemoryLayouter memoryLayouter,
+                      final BytecodeLinkerContext linkerContext,
+                      final SymbolResolver symbolResolver,
+                      final boolean aEscapeAnalysisEnabled,
+                      final AnalysisStack analysisStack) {
         this.target = output;
         this.memoryLayouter = memoryLayouter;
         this.linkerContext = linkerContext;
         this.symbolResolver = symbolResolver;
         this.stackAllocationEnabled = aEscapeAnalysisEnabled;
+        this.analysisStack = analysisStack;
     }
 
     @Override
@@ -186,7 +194,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private BytecodeResolvedFields.FieldEntry implementingClassForStaticField(final BytecodeObjectTypeRef aClass, final String aFieldName) {
-        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aClass);
+        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aClass, analysisStack);
         final BytecodeResolvedFields theFields = theLinkedClass.resolvedFields();
         return theFields.fieldByName(aFieldName);
     }
@@ -244,7 +252,7 @@ public class LLVMWriter implements AutoCloseable {
         target.println("entry:");
 
         // We calculate the static dependencies that should only be initialized once for this method
-        final StaticDependencies staticDependencies = new StaticDependencies(aProgram);
+        final StaticDependencies staticDependencies = new StaticDependencies(aProgram, analysisStack);
         // And we call the class initializers
         for (final BytecodeLinkedClass theClass : staticDependencies.list()) {
             if (!theClass.getClassName().name().equals(MemoryManager.class.getName())) {
@@ -357,7 +365,7 @@ public class LLVMWriter implements AutoCloseable {
 
         final BytecodeTypeRef theInvokedClassName = e.getInvokedClass();
         if (!theInvokedClassName.isPrimitive() && !theInvokedClassName.isArray()) {
-            final BytecodeLinkedClass theInvokedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) theInvokedClassName);
+            final BytecodeLinkedClass theInvokedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) theInvokedClassName, analysisStack);
             if (theInvokedClass.isOpaqueType()) {
                 final BytecodeResolvedMethods theMethods = linkerContext.resolveMethods(theInvokedClass);
                 final List<BytecodeResolvedMethods.MethodEntry> theImplMethods = theMethods.stream().filter(
@@ -380,11 +388,11 @@ public class LLVMWriter implements AutoCloseable {
 
         final BytecodeVTable table;
         if (e.getInvokedClass().isArray()) {
-            final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
+            final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class), analysisStack);
             target.println("    ;; vtable of " + theLinkedClass.getClassName().name());
             table = symbolResolver.vtableFor(theLinkedClass);
         } else {
-            final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) e.getInvokedClass());
+            final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) e.getInvokedClass(), analysisStack);
             target.println("    ;; vtable of " + theLinkedClass.getClassName().name());
             table = symbolResolver.vtableFor(theLinkedClass);
         }
@@ -792,7 +800,7 @@ public class LLVMWriter implements AutoCloseable {
         write(object, true);
         target.print(",");
 
-        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(theClass);
+        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(theClass, analysisStack);
         final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theClass);
         final BytecodeResolvedFields theInstanceFields = theLinkedClass.resolvedFields();
         final BytecodeResolvedFields.FieldEntry theField = theInstanceFields.fieldByName(e.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
@@ -1323,7 +1331,7 @@ public class LLVMWriter implements AutoCloseable {
         final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theClass);
         final int theStaticOffset = theLayout.offsetForClassMember(theEntry.getValue().getName().stringValue());
 
-        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(theClass);
+        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(theClass, analysisStack);
         final BytecodeResolvedFields theStaticFields = theLinkedClass.resolvedFields();
         final BytecodeResolvedFields.FieldEntry theField = theStaticFields.fieldByName(e.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
@@ -1361,7 +1369,7 @@ public class LLVMWriter implements AutoCloseable {
 
         final BytecodeTypeRef theInvokedClassName = e.getInvokedClass();
         if (!theInvokedClassName.isPrimitive() && !theInvokedClassName.isArray()) {
-            final BytecodeLinkedClass theInvokedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) theInvokedClassName);
+            final BytecodeLinkedClass theInvokedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) theInvokedClassName, analysisStack);
             if (theInvokedClass.isOpaqueType()) {
                 final BytecodeResolvedMethods theMethods = linkerContext.resolveMethods(theInvokedClass);
                 final List<BytecodeResolvedMethods.MethodEntry> theImplMethods = theMethods.stream().filter(
@@ -1415,7 +1423,7 @@ public class LLVMWriter implements AutoCloseable {
 
     private void write(final InvokeDirectMethodExpression e) {
 
-        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(e.getInvokedClass());
+        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(e.getInvokedClass(), analysisStack);
         final String theMethodName = e.getMethodName();
         final BytecodeMethodSignature theSignature = e.getSignature();
 
@@ -1476,7 +1484,7 @@ public class LLVMWriter implements AutoCloseable {
         final Value object = expression.incomingDataFlows().get(0);
         final Value value = expression.incomingDataFlows().get(1);
 
-        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(expression.getField().getClassIndex().getClassConstant().getConstant()));
+        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(expression.getField().getClassIndex().getClassConstant().getConstant()), analysisStack);
         final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(theLinkedClass.getClassName());
         final BytecodeResolvedFields theInstanceFields = theLinkedClass.resolvedFields();
         final BytecodeResolvedFields.FieldEntry theField = theInstanceFields.fieldByName(expression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
@@ -2117,7 +2125,7 @@ public class LLVMWriter implements AutoCloseable {
     }
 
     private void write(final ResolveCallsiteInstanceExpression e) {
-        final BytecodeLinkedClass theOwningClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(e.getOwningClass().getThisInfo().getConstant()));
+        final BytecodeLinkedClass theOwningClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(e.getOwningClass().getThisInfo().getConstant()), analysisStack);
         target.print("call i32 @");
         target.print(symbolResolver.resolveCallsiteBootstrapFor(theOwningClass,
                 e.getCallsiteId(),
@@ -2303,7 +2311,7 @@ public class LLVMWriter implements AutoCloseable {
         target.print("call i32 @bytecoder.instanceof(i32 ");
         writeResolved(e.incomingDataFlows().get(0));
         target.print(",i32 ");
-        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(e.getType().getConstant()));
+        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(e.getType().getConstant()), analysisStack);
         target.print(theLinkedClass.getUniqueId());
         target.print(")");
     }

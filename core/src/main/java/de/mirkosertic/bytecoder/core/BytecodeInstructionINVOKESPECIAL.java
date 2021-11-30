@@ -22,7 +22,7 @@ public class BytecodeInstructionINVOKESPECIAL extends BytecodeInstructionGeneric
     }
 
     @Override
-    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext) {
+    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext, final AnalysisStack analysisStack) {
         final BytecodeMethodRefConstant theMethodRefConstant = getMethodReference();
         final BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
         final BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
@@ -31,18 +31,17 @@ public class BytecodeInstructionINVOKESPECIAL extends BytecodeInstructionGeneric
         final BytecodeUtf8Constant theClassName = theClassConstant.getConstant();
 
         final BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
-        final BytecodeLinkedClass invokedType = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassName));
+        final BytecodeObjectTypeRef className = BytecodeObjectTypeRef.fromUtf8Constant(theClassName);
+        final BytecodeLinkedClass invokedType = aLinkerContext.resolveClass(className, analysisStack);
         invokedType.tagWith(BytecodeLinkedClass.Tag.INVOKESPECIAL_TARGET);
         if ("<init>".equals(theName.stringValue())) {
-            if (!invokedType.resolveConstructorInvocation(theSig)) {
-                throw new IllegalStateException("Cannot find constructor " + theName.stringValue() + " in " + theClassConstant.getConstant().stringValue() + " with signature " + theSig + " in class " + invokedType.getClassName().name());
+            if (!invokedType.resolveConstructorInvocation(theSig, analysisStack)) {
+                throw new MissingLinkException("Cannot find constructor " + className.name() + "." + theName.stringValue() + "(" + theSig + "). Analysis stack is \n" + analysisStack.toDebugOutput());
             }
         } else {
-            if (!invokedType.resolvePrivateMethod(theName.stringValue(), theSig)) {
-                if (!invokedType.resolveVirtualMethod(theName.stringValue(), theSig)) {
-                    throw new IllegalStateException(
-                            "Cannot find private or virtual method " + theName.stringValue() + " in " + theClassConstant.getConstant()
-                                    .stringValue() + " with signature " + theSig + " in class " + invokedType.getClassName().name());
+            if (!invokedType.resolvePrivateMethod(theName.stringValue(), theSig, analysisStack)) {
+                if (!invokedType.resolveVirtualMethod(theName.stringValue(), theSig, analysisStack)) {
+                    throw new MissingLinkException("Cannot find private or virtual method " + className.name() + "." + theName.stringValue() + "(" + theSig + "). Analysis stack is \n" + analysisStack.toDebugOutput());
                 }
             }
         }

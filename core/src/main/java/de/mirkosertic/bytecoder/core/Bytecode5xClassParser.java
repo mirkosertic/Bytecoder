@@ -297,7 +297,7 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
             }
             theInterfaces.add(new BytecodeInterface((BytecodeClassinfoConstant) theConstant));
         }
-        return theInterfaces.toArray(new BytecodeInterface[theInterfaces.size()]);
+        return theInterfaces.toArray(new BytecodeInterface[0]);
     }
 
     private BytecodeBootstrapMethodsAttributeInfo parseBootstrapAttribute(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
@@ -313,7 +313,7 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
             theMethods.add(new BytecodeBootstrapMethod(theMethodRef, theArguments, aConstantPool));
         }
 
-        return new BytecodeBootstrapMethodsAttributeInfo(theMethods.toArray(new BytecodeBootstrapMethod[theMethods.size()]));
+        return new BytecodeBootstrapMethodsAttributeInfo(theMethods.toArray(new BytecodeBootstrapMethod[0]));
     }
 
     private BytecodeSourceFileAttributeInfo parseSourceFileAttribute(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
@@ -347,7 +347,7 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
             theEntries.add(new BytecodeLocalVariableTableEntry(theStartPC, theLength, theNameIndex, theTypeRef, theIndex));
         }
 
-        return new BytecodeLocalVariableTableAttributeInfo(aConstantPool, theEntries.toArray(new BytecodeLocalVariableTableEntry[theEntries.size()]));
+        return new BytecodeLocalVariableTableAttributeInfo(aConstantPool, theEntries.toArray(new BytecodeLocalVariableTableEntry[0]));
     }
 
     private BytecodeAnnotation.ElementValue readAnnotationElementValueFrom(final DataInput aDis, final BytecodeConstantPool aConstantPool)
@@ -399,7 +399,7 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
             theAnnotations.add(readSingleAnnotation(aDis, aConstantPool));
         }
 
-        return new BytecodeAnnotationAttributeInfo(theAnnotations.toArray(new BytecodeAnnotation[theAnnotations.size()]));
+        return new BytecodeAnnotationAttributeInfo(theAnnotations.toArray(new BytecodeAnnotation[0]));
     }
 
     private BytecodeAnnotation readSingleAnnotation(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
@@ -415,7 +415,7 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
                     aConstantPool));
         }
 
-        return new BytecodeAnnotation(theTypeIndex, theElementValuePairs.toArray(new BytecodeAnnotation.ElementValuePair[theElementValuePairs.size()]), aConstantPool, signatureParser);
+        return new BytecodeAnnotation(theTypeIndex, theElementValuePairs.toArray(new BytecodeAnnotation.ElementValuePair[0]), aConstantPool, signatureParser);
     }
 
     private BytecodeCodeAttributeInfo parseCodeAttribute(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
@@ -480,7 +480,7 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
                 break;
             }
         }
-        return theAttributes.toArray(new BytecodeAttributeInfo[theAttributes.size()]);
+        return theAttributes.toArray(new BytecodeAttributeInfo[0]);
     }
 
     private BytecodeField[] parseFields(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
@@ -510,7 +510,7 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
                     theTypeRef,
                     theAttributes));
         }
-        return theFields.toArray(new BytecodeField[theFields.size()]);
+        return theFields.toArray(new BytecodeField[0]);
     }
 
     private BytecodeMethod[] parseMethods(final DataInput aDis, final BytecodeConstantPool aConstantPool) throws IOException {
@@ -539,6 +539,6 @@ public class Bytecode5xClassParser implements BytecodeClassParser {
                     signatureParser.toMethodSignature((BytecodeUtf8Constant) theDescriptor),
                     theAttributes));
         }
-        return theMethods.toArray(new BytecodeMethod[theMethods.size()]);
+        return theMethods.toArray(new BytecodeMethod[0]);
     }
 }

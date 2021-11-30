@@ -31,15 +31,21 @@ public class BytecodeInstructionPUTSTATIC extends BytecodeInstruction {
     }
 
     @Override
-    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext) {
+    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext, final AnalysisStack analysisStack) {
         final BytecodeFieldRefConstant theConstant = getConstant();
         final BytecodeClassinfoConstant theClass = theConstant.getClassIndex().getClassConstant();
         final BytecodeNameIndex theName = theConstant.getNameAndTypeIndex().getNameAndType().getNameIndex();
 
-        final BytecodeLinkedClass accessedType = aLinkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClass.getConstant()));
-        accessedType.tagWith(BytecodeLinkedClass.Tag.STATIC_READ_WRITE_ACCESS);
-        if (!accessedType.resolveStaticField(theName.getName())) {
-            throw new IllegalStateException("Cannot link static field " + theName.getName().stringValue() + " in " + accessedType.getClassName().name());
+        final BytecodeObjectTypeRef className = BytecodeObjectTypeRef.fromUtf8Constant(theClass.getConstant());
+        final AnalysisStack.Frame currentFrame = analysisStack.staticFieldAccess(className, theName.getName().stringValue());
+        try {
+            final BytecodeLinkedClass accessedType = aLinkerContext.resolveClass(className, analysisStack);
+            accessedType.tagWith(BytecodeLinkedClass.Tag.STATIC_READ_WRITE_ACCESS);
+            if (!accessedType.resolveStaticField(theName.getName(), analysisStack)) {
+                throw new MissingLinkException("Cannot find static field. Analysis stack is \n" + analysisStack.toDebugOutput());
+            }
+        } finally {
+            currentFrame.close();
         }
     }
 }

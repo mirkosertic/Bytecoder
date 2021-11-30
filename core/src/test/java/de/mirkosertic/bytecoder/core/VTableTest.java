@@ -42,15 +42,16 @@ public class VTableTest {
 
     @Test
     public void testVTable() {
+        final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
         final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE);
-        final BytecodeLinkedClass theBaseClass = theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Base.class.getName()));
-        final BytecodeLinkedClass theImplClass = theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Impl.class.getName()));
-        final BytecodeLinkedClass theImpl2Class = theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Impl2.class.getName()));
-        theImpl2Class.resolveVirtualMethod("process", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
-        theImpl2Class.resolveVirtualMethod("doNothing", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
+        final BytecodeLinkedClass theBaseClass = theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Base.class.getName()), analysisStack);
+        final BytecodeLinkedClass theImplClass = theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Impl.class.getName()), analysisStack);
+        final BytecodeLinkedClass theImpl2Class = theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Impl2.class.getName()), analysisStack);
+        theImpl2Class.resolveVirtualMethod("process", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]), analysisStack);
+        theImpl2Class.resolveVirtualMethod("doNothing", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]), analysisStack);
 
-        theLinkerContext.resolveAbstractMethodsInSubclasses();
+        theLinkerContext.resolveAbstractMethodsInSubclasses(analysisStack);
 
         final BytecodeVTable theImpl2Table = theImpl2Class.resolveVTable();
         final List<BytecodeVTable.Slot> theImpl2Slots = theImpl2Table.sortedSlots();

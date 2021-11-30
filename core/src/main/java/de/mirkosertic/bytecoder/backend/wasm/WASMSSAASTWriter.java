@@ -43,6 +43,7 @@ import de.mirkosertic.bytecoder.backend.wasm.ast.WASMValue;
 import de.mirkosertic.bytecoder.backend.wasm.ast.WeakFunctionReferenceCallable;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.MemoryManager;
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
@@ -141,13 +142,13 @@ import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.ssa.VariableAssignmentExpression;
 import de.mirkosertic.bytecoder.stackifier.Stackifier;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Stack;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -216,9 +217,18 @@ public class WASMSSAASTWriter {
     private boolean labelRequired;
     final AtomicBoolean stackifierEnabled;
     private final AbstractAllocator allocator;
+    private final AnalysisStack analysisStack;
 
     public WASMSSAASTWriter(
-            final Resolver aResolver, final BytecodeLinkerContext aLinkerContext, final Module aModule, final CompileOptions aOptions, final Program aProgram, final NativeMemoryLayouter aMemoryLayouter, final ExportableFunction aFunction, final AbstractAllocator aAllocator) {
+            final Resolver aResolver,
+            final BytecodeLinkerContext aLinkerContext,
+            final Module aModule,
+            final CompileOptions aOptions,
+            final Program aProgram,
+            final NativeMemoryLayouter aMemoryLayouter,
+            final ExportableFunction aFunction,
+            final AbstractAllocator aAllocator,
+            final AnalysisStack aAnalysisStack) {
         resolver = aResolver;
         linkerContext = aLinkerContext;
         function = aFunction;
@@ -229,6 +239,7 @@ public class WASMSSAASTWriter {
         flow = function.flow;
         container = function;
         allocator = aAllocator;
+        analysisStack = aAnalysisStack;
 
         for (final Register r : allocator.assignedRegister()) {
             if (r.getType().resolve() == TypeRef.Native.REFERENCE) {
@@ -240,9 +251,19 @@ public class WASMSSAASTWriter {
     }
 
     private WASMSSAASTWriter(
-            final Resolver aResolver, final BytecodeLinkerContext aLinkerContext, final Module aModule, final CompileOptions aOptions, final NativeMemoryLayouter aMemoryLayouter, final ExportableFunction aFunction, final LabeledContainer aContainer,
-            final List<Register> aStackRegister, final boolean aLabelRequired, final Expressions aFlow, final AtomicBoolean aStackifierEnabled,
-            final AbstractAllocator aAllocator) {
+            final Resolver aResolver,
+            final BytecodeLinkerContext aLinkerContext,
+            final Module aModule,
+            final CompileOptions aOptions,
+            final NativeMemoryLayouter aMemoryLayouter,
+            final ExportableFunction aFunction,
+            final LabeledContainer aContainer,
+            final List<Register> aStackRegister,
+            final boolean aLabelRequired,
+            final Expressions aFlow,
+            final AtomicBoolean aStackifierEnabled,
+            final AbstractAllocator aAllocator,
+            final AnalysisStack aAnalysisStack) {
         resolver = aResolver;
         linkerContext = aLinkerContext;
         function = aFunction;
@@ -255,16 +276,17 @@ public class WASMSSAASTWriter {
         labelRequired = aLabelRequired;
         stackifierEnabled = aStackifierEnabled;
         allocator = aAllocator;
+        analysisStack = aAnalysisStack;
     }
 
     private WASMSSAASTWriter block(final String label, final Expression expression) {
         final Block block = flow.block(label, expression);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackRegister, labelRequired, block.flow, stackifierEnabled, allocator);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackRegister, labelRequired, block.flow, stackifierEnabled, allocator, analysisStack);
     }
 
     private WASMSSAASTWriter block(final String label, final PrimitiveType blockType, final Expression expression) {
         final Block block = flow.block(label, blockType, expression);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackRegister, labelRequired, block.flow, stackifierEnabled, allocator);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackRegister, labelRequired, block.flow, stackifierEnabled, allocator, analysisStack);
     }
 
     private static class IFCondition {
@@ -280,24 +302,24 @@ public class WASMSSAASTWriter {
 
     private IFCondition iff(final String label, final WASMValue condition, final Expression expression) {
         final Iff block = flow.iff(label, condition, expression);
-        final WASMSSAASTWriter theTrueWriter = new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackRegister, labelRequired, block.flow, stackifierEnabled, allocator);
-        final WASMSSAASTWriter theFalseWriter = new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackRegister, labelRequired, block.falseFlow, stackifierEnabled, allocator);
+        final WASMSSAASTWriter theTrueWriter = new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackRegister, labelRequired, block.flow, stackifierEnabled, allocator, analysisStack);
+        final WASMSSAASTWriter theFalseWriter = new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackRegister, labelRequired, block.falseFlow, stackifierEnabled, allocator, analysisStack);
         return new IFCondition(theTrueWriter, theFalseWriter);
     }
 
     private WASMSSAASTWriter Try(final String label, final Expression expression) {
         final Try block = flow.Try(label, expression);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackRegister, labelRequired, block.flow, stackifierEnabled, allocator);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackRegister, labelRequired, block.flow, stackifierEnabled, allocator, analysisStack);
     }
 
     private WASMSSAASTWriter Try(final String label, final PrimitiveType blockType, final Expression expression) {
         final Try block = flow.Try(label, blockType, expression);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackRegister, labelRequired, block.flow, stackifierEnabled, allocator);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, block, stackRegister, labelRequired, block.flow, stackifierEnabled, allocator, analysisStack);
     }
 
     private WASMSSAASTWriter loop(final String label, final Expression expression) {
         final Loop loop = flow.loop(label, expression);
-        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, loop, stackRegister, labelRequired, loop.flow, stackifierEnabled, allocator);
+        return new WASMSSAASTWriter(resolver, linkerContext, module, compileOptions, memoryLayouter, function, loop, stackRegister, labelRequired, loop.flow, stackifierEnabled, allocator, analysisStack);
     }
 
     private int stackSize() {
@@ -313,7 +335,7 @@ public class WASMSSAASTWriter {
     }
 
     private BytecodeResolvedFields.FieldEntry implementingClassForStaticField(final BytecodeObjectTypeRef aClass, final String aFieldName) {
-        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aClass);
+        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aClass, analysisStack);
         final BytecodeResolvedFields theFields = theLinkedClass.resolvedFields();
         return theFields.fieldByName(aFieldName);
     }
@@ -592,7 +614,7 @@ public class WASMSSAASTWriter {
         final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()));
         final int theMemoryOffset = theLayout.offsetForInstanceMember(aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
-        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()));
+        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aExpression.getField().getClassIndex().getClassConstant().getConstant()), analysisStack);
         final BytecodeResolvedFields theInstanceFields = theLinkedClass.resolvedFields();
         final BytecodeResolvedFields.FieldEntry theField = theInstanceFields.fieldByName(aExpression.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
 
@@ -894,10 +916,10 @@ public class WASMSSAASTWriter {
                 } else {
                     // Positive number with the id of the class
                     if (aType.isArray()) {
-                        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class));
+                        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(Array.class), analysisStack);
                         f.i32.store(offset, getLocal(data, null), i32.c(theLinkedClass.getUniqueId(), null), aValue);
                     } else {
-                        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) aType);
+                        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) aType, analysisStack);
                         f.i32.store(offset, getLocal(data, null), i32.c(theLinkedClass.getUniqueId(), null), aValue);
                     }
                 }
@@ -1085,7 +1107,7 @@ public class WASMSSAASTWriter {
     }
 
     private WASMValue classReferenceValue(final ClassReferenceValue aValue) {
-        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aValue.getType());
+        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(aValue.getType(), analysisStack);
         final WeakFunctionReferenceCallable classInit = weakFunctionReference(WASMWriterUtils.toClassName(theLinkedClass.getClassName()) + CLASSINITSUFFIX, null);
         return call(classInit, Collections.emptyList(), null);
     }
@@ -1112,7 +1134,7 @@ public class WASMSSAASTWriter {
     }
 
     private WASMValue instanceOfValue(final InstanceOfExpression aValue) {
-        final BytecodeLinkedClass theClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getType().getConstant()));
+        final BytecodeLinkedClass theClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getType().getConstant()), analysisStack);
         final Function theFunction = module.functionIndex().firstByLabel("INSTANCEOF_CHECK");
         return call(theFunction, Arrays.asList(toValue(aValue.incomingDataFlows().get(0)), i32.c(theClass.getUniqueId(), aValue)), aValue);
     }
@@ -1213,7 +1235,7 @@ public class WASMSSAASTWriter {
         // Check if we are invoking something on an opaque type
         final BytecodeTypeRef theInvokedClassName = aValue.getInvokedClass();
         if (!theInvokedClassName.isPrimitive() && !theInvokedClassName.isArray()) {
-            final BytecodeLinkedClass theInvokedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) theInvokedClassName);
+            final BytecodeLinkedClass theInvokedClass = linkerContext.resolveClass((BytecodeObjectTypeRef) theInvokedClassName, analysisStack);
             if (theInvokedClass.isOpaqueType()) {
                 final BytecodeResolvedMethods theMethods = linkerContext.resolveMethods(theInvokedClass);
                 final List<BytecodeResolvedMethods.MethodEntry> theImplMethods = theMethods.stream().filter(
@@ -1416,7 +1438,7 @@ public class WASMSSAASTWriter {
                 "newObject",
                 new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[] {BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
 
-        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(theType);
+        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(theType, analysisStack);
         final String theClassName = WASMWriterUtils.toClassName(theLinkedClass.getClassName());
         final WeakFunctionReferenceCallable theClassInit = weakFunctionReference(theClassName + CLASSINITSUFFIX, aValue);
         final Function theFunction = module.functionIndex().firstByLabel(theMethodName);
@@ -1425,7 +1447,7 @@ public class WASMSSAASTWriter {
     }
 
     private WASMValue getFieldValue(final GetFieldExpression aValue) {
-        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
+        final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()), analysisStack);
 
         final NativeMemoryLayouter.MemoryLayout theLayout = memoryLayouter.layoutFor(BytecodeObjectTypeRef.fromUtf8Constant(aValue.getField().getClassIndex().getClassConstant().getConstant()));
         final int theMemoryOffset = theLayout.offsetForInstanceMember(aValue.getField().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue());
@@ -1448,7 +1470,7 @@ public class WASMSSAASTWriter {
 
     private WASMExpression directMethodInvokeValue(final InvokeDirectMethodExpression aValue) {
 
-        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(aValue.getInvokedClass());
+        final BytecodeLinkedClass theTargetClass = linkerContext.resolveClass(aValue.getInvokedClass(), analysisStack);
         final String theMethodName = aValue.getMethodName();
         final BytecodeMethodSignature theSignature = aValue.getSignature();
 
@@ -1871,7 +1893,7 @@ public class WASMSSAASTWriter {
             final List<Relooper.TryBlock.CatchBlock> theCatches = aTryBlock.getCatchBlocks();
             for (final Relooper.TryBlock.CatchBlock c : theCatches) {
                 for (final BytecodeUtf8Constant theCatchedException : c.getCaughtExceptions()) {
-                    final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theCatchedException));
+                    final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theCatchedException), analysisStack);
                     final WASMSSAASTWriter catchHandler = outer.block("c" + theLinkedClass.getUniqueId(), null);
 
                     // Check for exceptions here
@@ -1895,7 +1917,7 @@ public class WASMSSAASTWriter {
 
     public void writeStackified(final Stackifier st) {
         stackifierEnabled.set(true);
-        final Stack<WASMSSAASTWriter> writerStack = new Stack<>();
+        final ArrayDeque<WASMSSAASTWriter> writerStack = new ArrayDeque<>();
         writerStack.push(this);
 
         final Stackifier.StackifierStructuredControlFlowWriter stWriter = new Stackifier.StackifierStructuredControlFlowWriter(st) {

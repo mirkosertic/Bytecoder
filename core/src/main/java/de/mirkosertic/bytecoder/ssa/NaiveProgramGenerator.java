@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.ssa;
 
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.VM;
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeBasicBlock;
 import de.mirkosertic.bytecoder.core.BytecodeBootstrapMethod;
@@ -171,7 +172,9 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
     }
 
     @Override
-    public Program generateFrom(final BytecodeClass aOwningClass, final BytecodeMethod aMethod) {
+    public Program generateFrom(final BytecodeClass aOwningClass,
+                                final BytecodeMethod aMethod,
+                                final AnalysisStack analysisStack) {
 
         final BytecodeCodeAttributeInfo theCode = aMethod.getCode(aOwningClass);
         final Program theProgram;
@@ -240,7 +243,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 break;
             case EXCEPTION_HANDLER:
                 for (final BytecodeUtf8Constant theClassInfo : theBlock.getCatchType()) {
-                    linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassInfo));
+                    linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theClassInfo), analysisStack);
                 }
                 theSingleAssignmentBlock = theGraph
                         .createAt(theBlock.getStartAddress(), RegionNode.BlockType.EXCEPTION_HANDLER);
@@ -278,7 +281,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             final Dominators<RegionNode> theGraphDominators = theProgram.getControlFlowGraph().dominators();
             for (final RegionNode theNode : theGraphDominators.getPreOrder()) {
                 initializeBlock(aOwningClass, aMethod, theNode, theParsingHelperCache,
-                        theFlowInformation, theProgram);
+                        theFlowInformation, theProgram, analysisStack);
             }
 
             // Check if there are infinite looping blocks
@@ -376,7 +379,8 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             final RegionNode aCurrentBlock,
             final ParsingHelperCache aCache,
             final BytecodeProgram.FlowInformation aFlowInformation,
-            final Program aProgram) {
+            final Program aProgram,
+            final AnalysisStack analysisStack) {
 
         // Resolve predecessor nodes. without them we would not have an initial state for the current node
         // We have to ignore back edges!!
@@ -408,7 +412,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             theParsingState = aCache.resolveInitialPHIStateForNode(aCurrentBlock);
         }
 
-        initializeBlockWith(aOwningClass, aMethod, aCurrentBlock, aFlowInformation, theParsingState, aProgram);
+        initializeBlockWith(aOwningClass, aMethod, aCurrentBlock, aFlowInformation, theParsingState, aProgram, analysisStack);
 
         // register the final state after program flow
         aCache.registerFinalStateForNode(aCurrentBlock, theParsingState);
@@ -419,7 +423,8 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                                      final RegionNode aTargetBlock,
                                      final BytecodeProgram.FlowInformation aFlowInformation,
                                      final ParsingHelper aHelper,
-                                     final Program aProgram) {
+                                     final Program aProgram,
+                                     final AnalysisStack analysisStack) {
 
         aTargetBlock.setStartAnalysisTime(aProgram.getAnalysisTime());
 
@@ -571,7 +576,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 }
             } else if (theInstruction instanceof BytecodeInstructionGETSTATIC) {
                 final BytecodeInstructionGETSTATIC theINS = (BytecodeInstructionGETSTATIC) theInstruction;
-                if (!intrinsics.intrinsify(aProgram, theINS, aTargetBlock, aHelper)) {
+                if (!intrinsics.intrinsify(aProgram, theINS, aTargetBlock, aHelper, analysisStack)) {
                     final GetStaticExpression theValue = new GetStaticExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getConstant());
                     final Variable theVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theINS.getConstant().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().fieldType()), theValue);
                     aHelper.push(theINS.getOpcodeAddress(), theVariable);
@@ -636,7 +641,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionPUTSTATIC) {
                 final BytecodeInstructionPUTSTATIC theINS = (BytecodeInstructionPUTSTATIC) theInstruction;
                 final Value theValue = aHelper.pop();
-                if (!intrinsics.intrinsify(aProgram, theINS, theValue, aTargetBlock, aHelper)) {
+                if (!intrinsics.intrinsify(aProgram, theINS, theValue, aTargetBlock, aHelper, analysisStack)) {
                     aTargetBlock.getExpressions().add(new PutStaticExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getConstant(), theValue));
                 }
             } else if (theInstruction instanceof BytecodeInstructionGenericLDC) {
@@ -1002,7 +1007,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 final BytecodeObjectTypeRef theType = BytecodeObjectTypeRef
                         .fromUtf8Constant(theINS.getMethodReference().getClassIndex().getClassConstant().getConstant());
 
-                if (!intrinsics.intrinsify(aProgram, theINS, theType, theArguments, theTarget, aTargetBlock, aHelper)) {
+                if (!intrinsics.intrinsify(aProgram, theINS, theType, theArguments, theTarget, aTargetBlock, aHelper, analysisStack)) {
 
                     // Check if we are constructing a new object here
                     guard: {
@@ -1066,7 +1071,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
                 final Value theTarget = aHelper.pop();
 
-                if (!intrinsics.intrinsify(aProgram, theINS, theArguments, theTarget, aTargetBlock, aHelper)) {
+                if (!intrinsics.intrinsify(aProgram, theINS, theArguments, theTarget, aTargetBlock, aHelper, analysisStack)) {
                     final InvokeVirtualMethodExpression theExpression = new InvokeVirtualMethodExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getMethodReference().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments, false, theInvokedClass);
                     if (theSignature.getReturnType().isVoid()) {
                         aTargetBlock.getExpressions().add(theExpression);
@@ -1090,7 +1095,7 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
                 final Value theTarget = aHelper.pop();
 
-                if (!intrinsics.intrinsify(aProgram, theINS, theTarget, theArguments, theInvokedClass, aTargetBlock, aHelper)) {
+                if (!intrinsics.intrinsify(aProgram, theINS, theTarget, theArguments, theInvokedClass, aTargetBlock, aHelper, analysisStack)) {
                     final InvokeVirtualMethodExpression theExpression = new InvokeVirtualMethodExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getMethodDescriptor().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments, true, theInvokedClass);
                     if (theSignature.getReturnType().isVoid()) {
                         aTargetBlock.getExpressions().add(theExpression);
@@ -1114,11 +1119,11 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 final BytecodeClassinfoConstant theTargetClass = theINS.getMethodReference().getClassIndex().getClassConstant();
                 final BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(theTargetClass.getConstant());
 
-                if (!intrinsics.intrinsify(aProgram, theINS, theArguments, theObjectType, aTargetBlock, aHelper)) {
+                if (!intrinsics.intrinsify(aProgram, theINS, theArguments, theObjectType, aTargetBlock, aHelper, analysisStack)) {
                     final BytecodeObjectTypeRef theClassToInvoke = BytecodeObjectTypeRef.fromUtf8Constant(theINS.getMethodReference().getClassIndex().getClassConstant().getConstant());
-                    linkerContext.resolveClass(theClassToInvoke)
+                    linkerContext.resolveClass(theClassToInvoke, analysisStack)
                             .resolveStaticMethod(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
-                                    theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature());
+                                    theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature(), analysisStack);
 
                     final BytecodeMethodSignature theCalledSignature = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
                     final InvokeStaticMethodExpression theExpression = new InvokeStaticMethodExpression(aProgram, theInstruction.getOpcodeAddress(),

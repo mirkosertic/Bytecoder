@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2021 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.backend;
+package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.core.AnalysisStack;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
+public class MissingLinkException extends RuntimeException {
 
-public interface CompileBackend<T extends CompileResult> {
-
-    T generateCodeFor(CompileOptions aOptions, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignature, AnalysisStack analysisStack);
+    public MissingLinkException(final String message) {
+        super(message);
+    }
 }
