@@ -20,21 +20,4 @@ public class BytecodeInstructionINVOKESTATIC extends BytecodeInstructionGenericI
     public BytecodeInstructionINVOKESTATIC(final BytecodeOpcodeAddress aOpcodeIndex, final int aIndex, final BytecodeConstantPool aConstantPool) {
         super(aOpcodeIndex, aIndex, aConstantPool);
     }
-
-    @Override
-    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext, final AnalysisStack analysisStack) {
-        final BytecodeMethodRefConstant theMethodRefConstant = getMethodReference();
-        final BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
-        final BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
-
-        final BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
-        final BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
-
-        final BytecodeObjectTypeRef className = BytecodeObjectTypeRef.fromUtf8Constant(theClassConstant.getConstant());
-        final BytecodeLinkedClass invokedType = aLinkerContext.resolveClass(className, analysisStack);
-        invokedType.tagWith(BytecodeLinkedClass.Tag.INVOKESTATIC_TARGET);
-        if (!invokedType.resolveStaticMethod(theName.stringValue(), theSig, analysisStack)) {
-            throw new MissingLinkException("Cannot find static method " + className.name() +"." + theName.stringValue() + "(" + theSig + "). Analysis stack is \n" + analysisStack.toDebugOutput());
-        }
-    }
 }

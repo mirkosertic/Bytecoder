@@ -17,6 +17,9 @@ package de.mirkosertic.bytecoder.core;
 
 import de.mirkosertic.bytecoder.api.Export;
 import de.mirkosertic.bytecoder.api.Logger;
+import de.mirkosertic.bytecoder.intrinsics.Intrinsics;
+import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
+import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 
 import java.util.HashMap;
 import java.util.List;
@@ -34,8 +37,13 @@ public class BytecodeLinkerContext {
     private final ReflectionConfiguration reflectionConfiguration;
     private final Map<BytecodeLinkedClass, BytecodeResolvedMethods> resolvedMethods;
     private final Map<BytecodeObjectTypeRef, BytecodeLinkedClass> linkedClasses;
+    private final ProgramGeneratorFactory programGeneratorFactory;
+    private final Intrinsics intrinsics;
 
-    public BytecodeLinkerContext(final BytecodeLoader aLoader, final Logger aLogger) {
+    public BytecodeLinkerContext(final BytecodeLoader aLoader,
+                                 final Logger aLogger,
+                                 final ProgramGeneratorFactory aProgramGeneratorFactory,
+                                 final Intrinsics aIntrinsics) {
         loader = aLoader;
         methodCollection = new BytecodeMethodCollection();
         logger = aLogger;
@@ -44,6 +52,15 @@ public class BytecodeLinkerContext {
         reflectionConfiguration= new ReflectionConfiguration();
         resolvedMethods = new HashMap<>();
         linkedClasses = new HashMap<>();
+        programGeneratorFactory = aProgramGeneratorFactory;
+        intrinsics = aIntrinsics;
+    }
+
+    public void fillWithProgram(final BytecodeClass bytecodeClass,
+                                final BytecodeMethod method,
+                                final AnalysisStack analysisStack) {
+        final ProgramGenerator generator = programGeneratorFactory.createFor(this, intrinsics);
+        method.setProgram(generator.generateFrom(bytecodeClass, method, analysisStack));
     }
 
     public Statistics getStatistics() {

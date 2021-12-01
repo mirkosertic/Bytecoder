@@ -30,22 +30,15 @@ public class BytecodeInstructionGETSTATIC extends BytecodeInstruction {
         return (BytecodeFieldRefConstant) constantPool.constantByIndex(index - 1);
     }
 
-    @Override
-    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext, final AnalysisStack analysisStack) {
+    public BytecodeObjectTypeRef referencedClass() {
         final BytecodeFieldRefConstant theConstant = getConstant();
         final BytecodeClassinfoConstant theClass = theConstant.getClassIndex().getClassConstant();
-        final BytecodeNameIndex theName = theConstant.getNameAndTypeIndex().getNameAndType().getNameIndex();
+        return BytecodeObjectTypeRef.fromUtf8Constant(theClass.getConstant());
+    }
 
-        final BytecodeObjectTypeRef className = BytecodeObjectTypeRef.fromUtf8Constant(theClass.getConstant());
-        final AnalysisStack.Frame currentFrame = analysisStack.staticFieldAccess(className, theName.getName().stringValue());
-        try {
-            final BytecodeLinkedClass accessedType = aLinkerContext.resolveClass(className, analysisStack);
-            accessedType.tagWith(BytecodeLinkedClass.Tag.STATIC_READ_WRITE_ACCESS);
-            if (!accessedType.resolveStaticField(theName.getName(), analysisStack)) {
-                throw new MissingLinkException("Cannot find static field. Analysis stack is \n" + analysisStack.toDebugOutput());
-            }
-        } finally {
-            currentFrame.close();
-        }
+    public BytecodeUtf8Constant referencedField() {
+        final BytecodeFieldRefConstant theConstant = getConstant();
+        final BytecodeNameIndex theName = theConstant.getNameAndTypeIndex().getNameAndType().getNameIndex();
+        return theName.getName();
     }
 }

@@ -15,20 +15,8 @@
  */
 package de.mirkosertic.bytecoder.escapeanalysis;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.io.FileDescriptor;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
-import java.util.Collection;
-import java.util.Set;
-import java.util.function.Predicate;
-
-import de.mirkosertic.bytecoder.core.AnalysisStack;
-import org.junit.Test;
-
 import de.mirkosertic.bytecoder.backend.llvm.LLVMIntrinsics;
+import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeLoader;
@@ -37,6 +25,7 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.intrinsics.Intrinsics;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.pointsto.AllocationSymbol;
 import de.mirkosertic.bytecoder.pointsto.PointsToAnalysis;
@@ -51,6 +40,17 @@ import de.mirkosertic.bytecoder.ssa.ProgramDescriptorProvider;
 import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ValueWithEscapeCheck;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
+import org.junit.Test;
+
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
+import java.util.Collection;
+import java.util.Set;
+import java.util.function.Predicate;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class EscapeAnalysisTest {
 
@@ -84,13 +84,12 @@ public class EscapeAnalysisTest {
 
     private PointsToAnalysisResult analyzeVirtualMethod(final BytecodeObjectTypeRef aClazz, final String aMethodName, final BytecodeMethodSignature aSignature) {
         final AnalysisStack analysisStack = new AnalysisStack();
-        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
-        final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new LLVMIntrinsics());
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger(), NaiveProgramGenerator.FACTORY, new Intrinsics());
         final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(aClazz, analysisStack);
 
         theLinkedClass.resolveVirtualMethod(aMethodName, aSignature, analysisStack);
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
-        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod, analysisStack);
+        final Program p = theMethod.getProgram();
         KnownOptimizer.LLVM.optimize(null, p.getControlFlowGraph(), theLinkerContext, analysisStack);
 
         return analyzeMethod(theLinkerContext, new ProgramDescriptor(theLinkedClass, theMethod, p));
@@ -102,13 +101,12 @@ public class EscapeAnalysisTest {
 
     private PointsToAnalysisResult analyzeStaticMethod(final BytecodeObjectTypeRef aClazz, final String aMethodName, final BytecodeMethodSignature aSignature) {
         final AnalysisStack analysisStack = new AnalysisStack();
-        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
-        final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new LLVMIntrinsics());
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger(), NaiveProgramGenerator.FACTORY, new Intrinsics());
         final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(aClazz, analysisStack);
 
         theLinkedClass.resolveStaticMethod(aMethodName, aSignature, analysisStack);
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
-        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod, analysisStack);
+        final Program p = theMethod.getProgram();
         KnownOptimizer.LLVM.optimize(null, p.getControlFlowGraph(), theLinkerContext, analysisStack);
 
         return analyzeMethod(theLinkerContext, new ProgramDescriptor(theLinkedClass, theMethod, p));

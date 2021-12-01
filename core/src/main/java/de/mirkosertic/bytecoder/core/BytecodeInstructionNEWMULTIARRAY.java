@@ -41,15 +41,4 @@ public class BytecodeInstructionNEWMULTIARRAY extends BytecodeInstruction {
     public int getDimensions() {
         return dimensions;
     }
-
-    @Override
-    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext, final AnalysisStack analysisStack) {
-        aLinkerContext.resolveClass(getObjectType(), analysisStack);
-
-        final BytecodeClassinfoConstant theConstant = getTypeConstant();
-        final String theClassName = theConstant.getConstant().stringValue();
-
-        final BytecodeTypeRef[] theTypes = aLinkerContext.getSignatureParser().toTypes(theClassName);
-        aLinkerContext.resolveTypeRef(theTypes[0], analysisStack);
-    }
 }

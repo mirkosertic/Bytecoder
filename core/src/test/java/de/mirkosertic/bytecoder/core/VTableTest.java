@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.intrinsics.Intrinsics;
+import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 import org.junit.Assert;
 import org.junit.Test;
@@ -44,7 +46,7 @@ public class VTableTest {
     public void testVTable() {
         final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
-        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE);
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE, NaiveProgramGenerator.FACTORY, new Intrinsics());
         final BytecodeLinkedClass theBaseClass = theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Base.class.getName()), analysisStack);
         final BytecodeLinkedClass theImplClass = theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Impl.class.getName()), analysisStack);
         final BytecodeLinkedClass theImpl2Class = theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Impl2.class.getName()), analysisStack);

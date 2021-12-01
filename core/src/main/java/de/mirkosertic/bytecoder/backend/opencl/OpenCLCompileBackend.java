@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.backend.opencl;
 
 import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
+import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.core.AnalysisStack;
@@ -48,14 +49,21 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
 
     private final BytecodeLoader loader;
     private final ProgramGeneratorFactory programGeneratorFactory;
+    private final OpenCLIntrinsics intrinsics;
 
     public OpenCLCompileBackend() {
         loader = new BytecodeLoader(getClass().getClassLoader());
         programGeneratorFactory = NaiveProgramGenerator.FACTORY;
+        intrinsics = new OpenCLIntrinsics();
     }
 
     public BytecodeMethodSignature signatureFrom(final Method aMethod) {
         return loader.getSignatureParser().toMethodSignature(aMethod);
+    }
+
+    @Override
+    public BytecodeLinkerContext newLinkerContext(final BytecodeLoader bytecodeLoader, final Logger logger) {
+        return new BytecodeLinkerContext(bytecodeLoader, logger, programGeneratorFactory, intrinsics);
     }
 
     @Override
@@ -67,7 +75,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
             final BytecodeMethodSignature aEntryPointSignature,
             final AnalysisStack analysisStack) {
 
-        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(loader, aOptions.getLogger());
+        final BytecodeLinkerContext theLinkerContext = newLinkerContext(loader, aOptions.getLogger());
 
         final BytecodeLinkedClass theKernelClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(aEntryPointClass), analysisStack);
         theKernelClass.resolveVirtualMethod(aEntryPointMethodName, aEntryPointSignature, analysisStack);
@@ -84,7 +92,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
         final BytecodeMethod theKernelMethod = theKernelClass.getBytecodeClass().methodByNameAndSignatureOrNull("processWorkItem", new BytecodeMethodSignature(
                 BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[0]));
 
-        final ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext, new OpenCLIntrinsics());
+        final ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext, intrinsics);
         final Program theSSAProgram = theGenerator.generateFrom(theKernelClass.getBytecodeClass(), theKernelMethod, analysisStack);
 
         //Run optimizer
@@ -117,7 +125,7 @@ public class OpenCLCompileBackend implements CompileBackend<OpenCLCompileResult>
             }
 
             if (theMethod != theKernelMethod) {
-                final Program theSSAProgram1 = theGenerator.generateFrom(aMethodMapEntry.getProvidingClass().getBytecodeClass(), theMethod, analysisStack);
+                final Program theSSAProgram1 = theMethod.getProgram();
 
                 //Run optimizer
                 aOptions.getOptimizer().optimize(this, theSSAProgram1.getControlFlowGraph(), aLinkerContext, analysisStack);

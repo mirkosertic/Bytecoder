@@ -84,11 +84,16 @@ public class CompileTarget {
         backend = aType.createBackend();
         bytecodeLoader = new BytecodeLoader(aClassLoader);
         classLoader = aClassLoader;
+
     }
 
     public CompileResult compile(
-            final CompileOptions aOptions, final Class aClass, final String aMethodName, final BytecodeMethodSignature aSignature) {
-        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(bytecodeLoader, aOptions.getLogger());
+            final CompileOptions aOptions,
+            final Class aClass,
+            final String aMethodName,
+            final BytecodeMethodSignature aSignature) {
+
+        final BytecodeLinkerContext theLinkerContext = backend.newLinkerContext(bytecodeLoader, aOptions.getLogger());
 
         // We try to load all available reflection configuration
         // from the classpath
