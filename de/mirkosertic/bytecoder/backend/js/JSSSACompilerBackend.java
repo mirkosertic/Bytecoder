@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.backend.js;
 import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
+import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.backend.CompileBackend;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileResult;
@@ -33,6 +34,7 @@ import de.mirkosertic.bytecoder.core.BytecodeClassTopologicOrder;
 import de.mirkosertic.bytecoder.core.BytecodeImportedLink;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeLoader;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
@@ -44,7 +46,6 @@ import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.relooper.Relooper;
 import de.mirkosertic.bytecoder.ssa.MethodHandleExpression;
 import de.mirkosertic.bytecoder.ssa.Program;
-import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.StringValue;
 import de.mirkosertic.bytecoder.ssa.Variable;
@@ -64,11 +65,18 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
     private final BytecodeMethodSignature pushExceptionSignature;
     private final BytecodeMethodSignature popExceptionSignature;
     private final ProgramGeneratorFactory programGeneratorFactory;
+    private final JSIntrinsics intrinsics;
 
     public JSSSACompilerBackend(final ProgramGeneratorFactory aProgramGeneratorFactory) {
         programGeneratorFactory = aProgramGeneratorFactory;
         pushExceptionSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[] {BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class)});
         popExceptionSignature = new BytecodeMethodSignature(BytecodeObjectTypeRef.fromRuntimeClass(Throwable.class), new BytecodeTypeRef[0]);
+        intrinsics = new JSIntrinsics();
+    }
+
+    @Override
+    public BytecodeLinkerContext newLinkerContext(final BytecodeLoader bytecodeLoader, final Logger logger) {
+        return new BytecodeLinkerContext(bytecodeLoader, logger, programGeneratorFactory, intrinsics);
     }
 
     @Override
@@ -76,7 +84,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
                                            final BytecodeLinkerContext aLinkerContext,
                                            final Class aEntryPointClass,
                                            final String aEntryPointMethodName,
-                                           final BytecodeMethodSignature aEntryPointSignatue,
+                                           final BytecodeMethodSignature aEntryPointSignature,
                                            final AnalysisStack analysisStack) {
 
         final SourceMapWriter theSourceMapWriter = new SourceMapWriter();
@@ -1525,8 +1533,7 @@ public class JSSSACompilerBackend implements CompileBackend<JSCompileResult> {
 
                 aLinkerContext.getLogger().info("Compiling {}.{}", theLinkedClass.getClassName().name(), theMethod.getName().stringValue());
 
-                final ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext, new JSIntrinsics());
-                final Program theSSAProgram = theGenerator.generateFrom(aEntry.getProvidingClass().getBytecodeClass(), theMethod, analysisStack);
+                final Program theSSAProgram = theMethod.getProgram();
 
                 //Run optimizer
                 if (!theMethod.getAccessFlags().isAbstract() && !theMethod.getAccessFlags().isNative()) {

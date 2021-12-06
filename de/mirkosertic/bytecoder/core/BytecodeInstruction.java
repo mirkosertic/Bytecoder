@@ -27,11 +27,6 @@ public abstract class BytecodeInstruction {
         return opcodeAddress;
     }
 
-    public void performLinking(final BytecodeClass aOwningClass,
-                               final BytecodeLinkerContext aLinkerContext,
-                               final AnalysisStack analysisStack) {
-    }
-
     public BytecodeOpcodeAddress[] getPotentialJumpTargets() {
         return new BytecodeOpcodeAddress[0];
     }

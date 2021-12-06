@@ -27,6 +27,7 @@ import de.mirkosertic.bytecoder.core.BytecodeClassinfoConstant;
 import de.mirkosertic.bytecoder.core.BytecodeCodeAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeConstant;
 import de.mirkosertic.bytecoder.core.BytecodeDoubleConstant;
+import de.mirkosertic.bytecoder.core.BytecodeExceptionTableEntry;
 import de.mirkosertic.bytecoder.core.BytecodeFloatConstant;
 import de.mirkosertic.bytecoder.core.BytecodeInstruction;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionACONSTNULL;
@@ -105,8 +106,10 @@ import de.mirkosertic.bytecoder.core.BytecodeInstructionSIPUSH;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionSWAP;
 import de.mirkosertic.bytecoder.core.BytecodeInstructionTABLESWITCH;
 import de.mirkosertic.bytecoder.core.BytecodeIntegerConstant;
+import de.mirkosertic.bytecoder.core.BytecodeInterfaceRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeInvokeDynamicConstant;
 import de.mirkosertic.bytecoder.core.BytecodeLineNumberTableAttributeInfo;
+import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.core.BytecodeLocalVariableTableAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeLocalVariableTableEntry;
@@ -116,6 +119,7 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodHandleConstant;
 import de.mirkosertic.bytecoder.core.BytecodeMethodRefConstant;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeMethodTypeConstant;
+import de.mirkosertic.bytecoder.core.BytecodeNameAndTypeConstant;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
@@ -126,6 +130,7 @@ import de.mirkosertic.bytecoder.core.BytecodeSourceFileAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeStringConstant;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeUtf8Constant;
+import de.mirkosertic.bytecoder.core.MissingLinkException;
 import de.mirkosertic.bytecoder.graph.Dominators;
 import de.mirkosertic.bytecoder.graph.Edge;
 import de.mirkosertic.bytecoder.intrinsics.Intrinsics;
@@ -224,6 +229,13 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
         if (aMethod.getAccessFlags().isAbstract() || aMethod.getAccessFlags().isNative()) {
             return theProgram;
+        }
+
+        // We link the exception types here
+        for (final BytecodeExceptionTableEntry theHandler : theCode.getProgram().getExceptionHandlers()) {
+            if (!theHandler.isFinally()) {
+                linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theHandler.getCatchType().getConstant()), analysisStack);
+            }
         }
 
         final BytecodeProgram.FlowInformation theFlowInformation = theCode.getProgram().toFlow();
@@ -577,6 +589,23 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionGETSTATIC) {
                 final BytecodeInstructionGETSTATIC theINS = (BytecodeInstructionGETSTATIC) theInstruction;
                 if (!intrinsics.intrinsify(aProgram, theINS, aTargetBlock, aHelper, analysisStack)) {
+
+                    // Perform linkage
+                    final BytecodeObjectTypeRef className = theINS.referencedClass();
+                    final BytecodeUtf8Constant referencedField = theINS.referencedField();
+
+                    final AnalysisStack.Frame currentFrame = analysisStack.staticFieldAccess(className, referencedField.stringValue());
+                    try {
+                        final BytecodeLinkedClass resolvedClass = linkerContext.resolveClass(className, analysisStack);
+                        resolvedClass.tagWith(BytecodeLinkedClass.Tag.STATIC_READ_WRITE_ACCESS);
+                        if (!resolvedClass.resolveStaticField(referencedField, analysisStack)) {
+                            throw new MissingLinkException("Cannot find static field. Analysis stack is \n" + analysisStack.toDebugOutput());
+                        }
+                    } finally {
+                        currentFrame.close();
+                    }
+
+                    // Create instructions
                     final GetStaticExpression theValue = new GetStaticExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getConstant());
                     final Variable theVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theINS.getConstant().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().fieldType()), theValue);
                     aHelper.push(theINS.getOpcodeAddress(), theVariable);
@@ -630,11 +659,43 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 aHelper.push(theINS.getOpcodeAddress(), new NullValue());
             } else if (theInstruction instanceof BytecodeInstructionPUTFIELD) {
                 final BytecodeInstructionPUTFIELD theINS = (BytecodeInstructionPUTFIELD) theInstruction;
+
+                // Perform linkage
+                final BytecodeObjectTypeRef className = theINS.referencedType();
+                final BytecodeUtf8Constant referencedField = theINS.referencedField();
+                final AnalysisStack.Frame currentFrame = analysisStack.fieldAccess(className, referencedField.stringValue());
+                try {
+                    final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(className, analysisStack);
+                    if (!theLinkedClass.resolveInstanceField(referencedField, analysisStack)) {
+                        throw new MissingLinkException("Cannot find instance field. Analysis stack is \n" + analysisStack.toDebugOutput());
+                    }
+                } finally {
+                    currentFrame.close();
+                }
+
+                // Generate instructions
                 final Value theValue = aHelper.pop();
                 final Value theTarget = aHelper.pop();
                 aTargetBlock.getExpressions().add(new PutFieldExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getFieldRefConstant(), theTarget, theValue));
             } else if (theInstruction instanceof BytecodeInstructionGETFIELD) {
                 final BytecodeInstructionGETFIELD theINS = (BytecodeInstructionGETFIELD) theInstruction;
+
+                // Perform linkage
+                final BytecodeObjectTypeRef className = theINS.referencedType();
+                final BytecodeUtf8Constant referencedField = theINS.referencedField();
+
+                final AnalysisStack.Frame currentFrame = analysisStack.fieldAccess(className, referencedField.stringValue());
+
+                try {
+                    final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(className, analysisStack);
+                    if (!theLinkedClass.resolveInstanceField(referencedField, analysisStack)) {
+                        throw new MissingLinkException("Cannot find instance field. Analysis stack is \n" + analysisStack.toDebugOutput());
+                    }
+                } finally {
+                    currentFrame.close();
+                }
+
+                // Generate instructions
                 final Value theTarget = aHelper.pop();
                 final Variable theVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theINS.getFieldRefConstant().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().fieldType()), new GetFieldExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getFieldRefConstant(), theTarget));
                 aHelper.push(theINS.getOpcodeAddress(), theVariable);
@@ -642,11 +703,61 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 final BytecodeInstructionPUTSTATIC theINS = (BytecodeInstructionPUTSTATIC) theInstruction;
                 final Value theValue = aHelper.pop();
                 if (!intrinsics.intrinsify(aProgram, theINS, theValue, aTargetBlock, aHelper, analysisStack)) {
+                    // Perform linkage
+                    final BytecodeObjectTypeRef className = theINS.referencedClass();
+                    final BytecodeUtf8Constant referencedField = theINS.referencedField();
+                    final AnalysisStack.Frame currentFrame = analysisStack.staticFieldAccess(className, referencedField.stringValue());
+                    try {
+                        final BytecodeLinkedClass accessedType = linkerContext.resolveClass(className, analysisStack);
+                        accessedType.tagWith(BytecodeLinkedClass.Tag.STATIC_READ_WRITE_ACCESS);
+                        if (!accessedType.resolveStaticField(referencedField, analysisStack)) {
+                            throw new MissingLinkException("Cannot find static field. Analysis stack is \n" + analysisStack.toDebugOutput());
+                        }
+                    } finally {
+                        currentFrame.close();
+                    }
+
+                    // Create instructions
                     aTargetBlock.getExpressions().add(new PutStaticExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getConstant(), theValue));
                 }
             } else if (theInstruction instanceof BytecodeInstructionGenericLDC) {
                 final BytecodeInstructionGenericLDC theINS = (BytecodeInstructionGenericLDC) theInstruction;
                 final BytecodeConstant theConstant = theINS.constant();
+
+                // Perform linking
+                if (theConstant instanceof BytecodeStringConstant) {
+                    final BytecodeObjectTypeRef stringClassTypeRef = BytecodeObjectTypeRef.fromRuntimeClass(String.class);
+                    linkerContext.resolveClass(stringClassTypeRef, analysisStack)
+                            .resolveConstructorInvocation(new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
+                                    new BytecodeTypeRef[] {new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.BYTE, 1)}), analysisStack);
+                } else if (theConstant instanceof BytecodeClassinfoConstant) {
+                    final BytecodeClassinfoConstant classInfoToResolve = (BytecodeClassinfoConstant) theConstant;
+                    if (classInfoToResolve.getConstant().stringValue().startsWith("[")) {
+                        final BytecodeTypeRef fieldType = linkerContext.getSignatureParser().toFieldType(classInfoToResolve.getConstant());
+                        final BytecodeLinkedClass resolvedFieldType = linkerContext.resolveTypeRef(fieldType, analysisStack);
+                        if (resolvedFieldType != null) {
+                            resolvedFieldType.tagWith(BytecodeLinkedClass.Tag.REFERENCED_AS_CONSTANT);
+                        }
+                    } else {
+                        final BytecodeLinkedClass resolvedClass = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(classInfoToResolve.getConstant()), analysisStack);
+                        resolvedClass.tagWith(BytecodeLinkedClass.Tag.REFERENCED_AS_CONSTANT);
+                    }
+                } else if (theConstant instanceof BytecodeMethodTypeConstant) {
+                    final BytecodeMethodTypeConstant methodTypeConstant = (BytecodeMethodTypeConstant) theConstant;
+                    final BytecodeMethodSignature methodSignature = methodTypeConstant.getDescriptorIndex().methodSignature();
+                    final BytecodeLinkedClass resolvedReturnType = linkerContext.resolveTypeRef(methodSignature.getReturnType(), analysisStack);
+                    if (resolvedReturnType != null) {
+                        resolvedReturnType.tagWith(BytecodeLinkedClass.Tag.POSSIBLE_USE_IN_LAMBDA);
+                    }
+                    for (final BytecodeTypeRef ref : methodSignature.getArguments()) {
+                        final BytecodeLinkedClass resolvedArgumentType = linkerContext.resolveTypeRef(ref, analysisStack);
+                        if (resolvedArgumentType != null) {
+                            resolvedArgumentType.tagWith(BytecodeLinkedClass.Tag.POSSIBLE_USE_IN_LAMBDA);
+                        }
+                    }
+                }
+
+                // We are ready to create the instructions
                 if (theConstant instanceof BytecodeDoubleConstant) {
                     final BytecodeDoubleConstant theC = (BytecodeDoubleConstant) theConstant;
                     aHelper.push(theINS.getOpcodeAddress(), new DoubleValue(theC.getDoubleValue()));
@@ -934,12 +1045,23 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionNEW) {
                 final BytecodeInstructionNEW theINS = (BytecodeInstructionNEW) theInstruction;
 
+                // Perform linkage here
                 final BytecodeClassinfoConstant theClassInfo = theINS.getClassInfoForObjectToCreate();
-                final BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(theClassInfo.getConstant());
-                final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theObjectType), new NewInstanceExpression(aProgram, theInstruction.getOpcodeAddress(), theClassInfo));
+                final BytecodeObjectTypeRef objectTypeToCreate = theINS.getClassToCreate();
+                final BytecodeLinkedClass resolvedClass = linkerContext.resolveClass(objectTypeToCreate, analysisStack);
+                resolvedClass.tagWith(BytecodeLinkedClass.Tag.INSTANTIATED);
+
+                // And we can continue to create the instruction
+                final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(objectTypeToCreate), new NewInstanceExpression(aProgram, theInstruction.getOpcodeAddress(), theClassInfo));
                 aHelper.push(theINS.getOpcodeAddress(), theNewVariable);
+
             } else if (theInstruction instanceof BytecodeInstructionNEWARRAY) {
                 final BytecodeInstructionNEWARRAY theINS = (BytecodeInstructionNEWARRAY) theInstruction;
+
+                // Perform linkage
+                linkerContext.resolveClass(theINS.getObjectType(), analysisStack);
+
+                // Generate instructions
                 final Value theLength = aHelper.pop();
                 final Variable theNewVariable = aTargetBlock.newVariable(
                         theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, new NewArrayExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getPrimitiveType(), theLength));
@@ -951,12 +1073,29 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                     theDimensions.add(aHelper.pop());
                 }
                 Collections.reverse(theDimensions);
+
+                // Perform linkage
+                linkerContext.resolveClass(theINS.getObjectType(), analysisStack);
+
+                final BytecodeClassinfoConstant theConstant = theINS.getTypeConstant();
+                final String theClassName = theConstant.getConstant().stringValue();
+
+                final BytecodeTypeRef[] theTypes = linkerContext.getSignatureParser().toTypes(theClassName);
+                linkerContext.resolveTypeRef(theTypes[0], analysisStack);
+
+                // Generate instructions
                 final BytecodeTypeRef theTypeRef = linkerContext.getSignatureParser().toFieldType(new BytecodeUtf8Constant(theINS.getTypeConstant().getConstant().stringValue()));
                 final Variable theNewVariable = aTargetBlock.newVariable(
                         theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, new NewMultiArrayExpression(aProgram, theInstruction.getOpcodeAddress(), theTypeRef, theDimensions));
                 aHelper.push(theINS.getOpcodeAddress(), theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionANEWARRAY) {
                 final BytecodeInstructionANEWARRAY theINS = (BytecodeInstructionANEWARRAY) theInstruction;
+
+                // Perform linkage
+                linkerContext.resolveClass(theINS.getObjectType(), analysisStack);
+                linkerContext.resolveTypeRef(theINS.getArrayType(linkerContext.getSignatureParser()), analysisStack);
+
+                // Generate instructions
                 final Value theLength = aHelper.pop();
                 final Variable theNewVariable = aTargetBlock.newVariable(
                         theInstruction.getOpcodeAddress(), TypeRef.Native.REFERENCE, new NewArrayExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getObjectType(), theLength));
@@ -990,10 +1129,15 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 aHelper.push(theINS.getOpcodeAddress(), theNewVariable);
             } else if (theInstruction instanceof BytecodeInstructionINVOKESPECIAL) {
                 final BytecodeInstructionINVOKESPECIAL theINS = (BytecodeInstructionINVOKESPECIAL) theInstruction;
-                final BytecodeMethodSignature theSignature = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
+
+                final BytecodeObjectTypeRef invokedType = BytecodeObjectTypeRef
+                        .fromUtf8Constant(theINS.getMethodReference().getClassIndex().getClassConstant().getConstant());
+                final BytecodeUtf8Constant methodName = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType()
+                        .getNameIndex().getName();
+                final BytecodeMethodSignature methodSignature = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
 
                 final List<Value> theArguments = new ArrayList<>();
-                final BytecodeTypeRef[] theArgumentTypes = theSignature.getArguments();
+                final BytecodeTypeRef[] theArgumentTypes = methodSignature.getArguments();
                 for (final BytecodeTypeRef theArgumentType : theArgumentTypes) {
                     theArguments.add(aHelper.pop());
                 }
@@ -1001,17 +1145,27 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
                 final Variable theTarget = (Variable) aHelper.pop();
 
-                final String theMethodName = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType()
-                        .getNameIndex().getName().stringValue();
+                if (!intrinsics.intrinsify(aProgram, theINS, invokedType, theArguments, theTarget, aTargetBlock, aHelper, analysisStack)) {
+                    // Perform linking
+                    final BytecodeLinkedClass resolvedType = linkerContext.resolveClass(invokedType, analysisStack);
+                    resolvedType.tagWith(BytecodeLinkedClass.Tag.INVOKESPECIAL_TARGET);
+                    if ("<init>".equals(methodName.stringValue())) {
+                        if (!resolvedType.resolveConstructorInvocation(methodSignature, analysisStack)) {
+                            throw new MissingLinkException("Cannot find constructor " + invokedType.name() + "." + methodName.stringValue() + "(" + methodSignature + "). Analysis stack is \n" + analysisStack.toDebugOutput());
+                        }
+                    } else {
+                        if (!resolvedType.resolvePrivateMethod(methodName.stringValue(), methodSignature, analysisStack)) {
+                            if (!resolvedType.resolveVirtualMethod(methodName.stringValue(), methodSignature, analysisStack)) {
+                                throw new MissingLinkException("Cannot find private or virtual method " + invokedType.name() + "." + methodName.stringValue() + "(" + methodSignature + "). Analysis stack is \n" + analysisStack.toDebugOutput());
+                            }
+                        }
+                    }
 
-                final BytecodeObjectTypeRef theType = BytecodeObjectTypeRef
-                        .fromUtf8Constant(theINS.getMethodReference().getClassIndex().getClassConstant().getConstant());
-
-                if (!intrinsics.intrinsify(aProgram, theINS, theType, theArguments, theTarget, aTargetBlock, aHelper, analysisStack)) {
+                    // Generate instructions
 
                     // Check if we are constructing a new object here
                     guard: {
-                        if ("<init>".equals(theMethodName)) {
+                        if ("<init>".equals(methodName.stringValue())) {
                             final List<Value> theIncomingValues = theTarget.incomingDataFlows();
                             if (theIncomingValues.size() == 1 && theIncomingValues.get(0) instanceof NewInstanceExpression) {
 
@@ -1032,20 +1186,20 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                                         new VariableAssignmentExpression(aProgram, theINS.getOpcodeAddress(),
                                                 theTarget, new NewInstanceAndConstructExpression(
                                                 aProgram, theInstruction.getOpcodeAddress(),
-                                                theType, theSignature, theArguments)
+                                                invokedType, methodSignature, theArguments)
                                         ));
                                 break guard;
                             }
 
                         }
 
-                        final InvokeDirectMethodExpression theExpression = new InvokeDirectMethodExpression(aProgram, theInstruction.getOpcodeAddress(), theType,
-                                theMethodName, theSignature, theTarget, theArguments);
-                        if (theSignature.getReturnType().isVoid()) {
+                        final InvokeDirectMethodExpression theExpression = new InvokeDirectMethodExpression(aProgram, theInstruction.getOpcodeAddress(), invokedType,
+                                methodName.stringValue(), methodSignature, theTarget, theArguments);
+                        if (methodSignature.getReturnType().isVoid()) {
                             aTargetBlock.getExpressions().add(theExpression);
                         } else {
                             final Variable theNewVariable = aTargetBlock
-                                    .newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theExpression);
+                                    .newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(methodSignature.getReturnType()), theExpression);
                             aHelper.push(theINS.getOpcodeAddress(), theNewVariable);
                         }
                     }
@@ -1054,16 +1208,17 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionINVOKEVIRTUAL) {
                 final BytecodeInstructionINVOKEVIRTUAL theINS = (BytecodeInstructionINVOKEVIRTUAL) theInstruction;
                 final BytecodeTypeRef theInvokedClass;
-                final BytecodeUtf8Constant theConstant = theINS.getMethodReference().getClassIndex().getClassConstant().getConstant();
+                final BytecodeMethodRefConstant theMethodRefConstant = theINS.getMethodReference();
+                final BytecodeUtf8Constant theConstant = theMethodRefConstant.getClassIndex().getClassConstant().getConstant();
                 if (theConstant.stringValue().startsWith("[")) {
                     theInvokedClass = linkerContext.getSignatureParser().toFieldType(theConstant);
                 } else {
                     theInvokedClass = BytecodeObjectTypeRef.fromUtf8Constant(theConstant);
                 }
-                final BytecodeMethodSignature theSignature = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
+                final BytecodeMethodSignature methodSignature = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
 
                 final List<Value> theArguments = new ArrayList<>();
-                final BytecodeTypeRef[] theArgumentTypes = theSignature.getArguments();
+                final BytecodeTypeRef[] theArgumentTypes = methodSignature.getArguments();
                 for (final BytecodeTypeRef theArgumentType : theArgumentTypes) {
                     theArguments.add(aHelper.pop());
                 }
@@ -1072,22 +1227,55 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 final Value theTarget = aHelper.pop();
 
                 if (!intrinsics.intrinsify(aProgram, theINS, theArguments, theTarget, aTargetBlock, aHelper, analysisStack)) {
+                    // Perform linkage
+                    final BytecodeNameAndTypeConstant methodReference = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
+                    final BytecodeUtf8Constant methodName = methodReference.getNameIndex().getName();
+                    final String theClassName = theConstant.stringValue();
+                    if (theClassName.startsWith("[")) {
+
+                        final BytecodeTypeRef[] theTypes = linkerContext.getSignatureParser().toTypes(theClassName);
+                        final BytecodeTypeRef theSingleType = theTypes[0];
+                        linkerContext.resolveTypeRef(theSingleType, analysisStack);
+
+                        // We are linking an Array here, so mark the corresponding name
+                        final BytecodeObjectTypeRef className = BytecodeObjectTypeRef.fromRuntimeClass(Array.class);
+                        final BytecodeLinkedClass theClass = linkerContext.resolveClass(className, analysisStack);
+                        if (!theClass.resolveVirtualMethod(methodName.stringValue(), methodSignature, analysisStack)) {
+                            if (!theClass.getBytecodeClass().getAccessFlags().isAbstract()) {
+                                throw new MissingLinkException("Cannot find virtual method " + className.name() + "." + methodName.stringValue() + "(" + methodSignature + "). Analysis stack is \n" + analysisStack.toDebugOutput());
+                            }
+                        }
+                    } else {
+                        final BytecodeObjectTypeRef className = BytecodeObjectTypeRef.fromUtf8Constant(theConstant);
+                        final BytecodeLinkedClass invokedType = linkerContext.resolveClass(className, analysisStack);
+                        invokedType.tagWith(BytecodeLinkedClass.Tag.INVOKEVIRTUAL_TARGET);
+                        if (!invokedType
+                                .resolveVirtualMethod(methodName.stringValue(), methodSignature, analysisStack)) {
+                            if (!invokedType.getBytecodeClass().getAccessFlags().isAbstract()) {
+                                throw new MissingLinkException("Cannot find virtual method " + className.name() + "." + methodName.stringValue() + "(" + methodSignature + "). Analysis stack is \n" + analysisStack.toDebugOutput());
+                            }
+                        }
+                    }
+
+                    // Generate instructions
                     final InvokeVirtualMethodExpression theExpression = new InvokeVirtualMethodExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getMethodReference().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments, false, theInvokedClass);
-                    if (theSignature.getReturnType().isVoid()) {
+                    if (methodSignature.getReturnType().isVoid()) {
                         aTargetBlock.getExpressions().add(theExpression);
                     } else {
-                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theExpression);
+                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(methodSignature.getReturnType()), theExpression);
                         aHelper.push(theINS.getOpcodeAddress(), theNewVariable);
                     }
                 }
 
             } else if (theInstruction instanceof BytecodeInstructionINVOKEINTERFACE) {
                 final BytecodeInstructionINVOKEINTERFACE theINS = (BytecodeInstructionINVOKEINTERFACE) theInstruction;
-                final BytecodeObjectTypeRef theInvokedClass = BytecodeObjectTypeRef.fromUtf8Constant(theINS.getMethodDescriptor().getClassIndex().getClassConstant().getConstant());
-                final BytecodeMethodSignature theSignature = theINS.getMethodDescriptor().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
+
+                final BytecodeInterfaceRefConstant methodDescriptor = theINS.getMethodDescriptor();
+                final BytecodeObjectTypeRef invokedClass = BytecodeObjectTypeRef.fromUtf8Constant(methodDescriptor.getClassIndex().getClassConstant().getConstant());
+                final BytecodeMethodSignature methodSignature = theINS.getMethodDescriptor().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
 
                 final List<Value> theArguments = new ArrayList<>();
-                final BytecodeTypeRef[] theArgumentTypes = theSignature.getArguments();
+                final BytecodeTypeRef[] theArgumentTypes = methodSignature.getArguments();
                 for (final BytecodeTypeRef theArgumentType : theArgumentTypes) {
                     theArguments.add(aHelper.pop());
                 }
@@ -1095,12 +1283,23 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
 
                 final Value theTarget = aHelper.pop();
 
-                if (!intrinsics.intrinsify(aProgram, theINS, theTarget, theArguments, theInvokedClass, aTargetBlock, aHelper, analysisStack)) {
-                    final InvokeVirtualMethodExpression theExpression = new InvokeVirtualMethodExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getMethodDescriptor().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments, true, theInvokedClass);
-                    if (theSignature.getReturnType().isVoid()) {
+                if (!intrinsics.intrinsify(aProgram, theINS, theTarget, theArguments, invokedClass, aTargetBlock, aHelper, analysisStack)) {
+                    // Perform linkage
+                    final BytecodeNameAndTypeConstant theMethodRef = methodDescriptor.getNameAndTypeIndex().getNameAndType();
+                    final BytecodeUtf8Constant methodName = theMethodRef.getNameIndex().getName();
+
+                    final BytecodeLinkedClass invokedType = linkerContext.resolveClass(invokedClass, analysisStack);
+                    invokedType.tagWith(BytecodeLinkedClass.Tag.INVOKEINTERFACE_TARGET);
+                    if (!invokedType.resolveVirtualMethod(methodName.stringValue(), methodSignature, analysisStack)) {
+                        throw new MissingLinkException("Cannot find invoke interface method " + invokedClass.name() + "." + methodName.stringValue() + "(" + methodSignature + ") . Analysis stack is \n" + analysisStack.toDebugOutput());
+                    }
+
+                    // Generate instructions
+                    final InvokeVirtualMethodExpression theExpression = new InvokeVirtualMethodExpression(aProgram, theInstruction.getOpcodeAddress(), theINS.getMethodDescriptor().getNameAndTypeIndex().getNameAndType(), theTarget, theArguments, true, invokedClass);
+                    if (methodSignature.getReturnType().isVoid()) {
                         aTargetBlock.getExpressions().add(theExpression);
                     } else {
-                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theExpression);
+                        final Variable theNewVariable = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.toType(methodSignature.getReturnType()), theExpression);
                         aHelper.push(theINS.getOpcodeAddress(), theNewVariable);
                     }
                 }
@@ -1120,14 +1319,29 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
                 final BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(theTargetClass.getConstant());
 
                 if (!intrinsics.intrinsify(aProgram, theINS, theArguments, theObjectType, aTargetBlock, aHelper, analysisStack)) {
-                    final BytecodeObjectTypeRef theClassToInvoke = BytecodeObjectTypeRef.fromUtf8Constant(theINS.getMethodReference().getClassIndex().getClassConstant().getConstant());
-                    linkerContext.resolveClass(theClassToInvoke, analysisStack)
+                    // Perform linkage
+                    final BytecodeMethodRefConstant methodRefConstant = theINS.getMethodReference();
+                    final BytecodeClassinfoConstant classInfoConstant = methodRefConstant.getClassIndex().getClassConstant();
+                    final BytecodeNameAndTypeConstant methodRef = methodRefConstant.getNameAndTypeIndex().getNameAndType();
+
+                    final BytecodeMethodSignature methodSignature = methodRef.getDescriptorIndex().methodSignature();
+                    final BytecodeUtf8Constant methodName = methodRef.getNameIndex().getName();
+
+                    final BytecodeObjectTypeRef className = BytecodeObjectTypeRef.fromUtf8Constant(classInfoConstant.getConstant());
+                    final BytecodeLinkedClass invokedType = linkerContext.resolveClass(className, analysisStack);
+                    invokedType.tagWith(BytecodeLinkedClass.Tag.INVOKESTATIC_TARGET);
+                    if (!invokedType.resolveStaticMethod(methodName.stringValue(), methodSignature, analysisStack)) {
+                        throw new MissingLinkException("Cannot find static method " + className.name() +"." + methodName.stringValue() + "(" + methodSignature + "). Analysis stack is \n" + analysisStack.toDebugOutput());
+                    }
+
+                    // Generate instructions
+                    linkerContext.resolveClass(className, analysisStack)
                             .resolveStaticMethod(theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
                                     theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature(), analysisStack);
 
                     final BytecodeMethodSignature theCalledSignature = theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
                     final InvokeStaticMethodExpression theExpression = new InvokeStaticMethodExpression(aProgram, theInstruction.getOpcodeAddress(),
-                            theClassToInvoke,
+                            className,
                             theINS.getMethodReference().getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
                             theCalledSignature,
                             theArguments);
@@ -1141,11 +1355,27 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionINSTANCEOF) {
                 final BytecodeInstructionINSTANCEOF theINS = (BytecodeInstructionINSTANCEOF) theInstruction;
 
+                // Perform linking here
+                final BytecodeClassinfoConstant theType = theINS.getTypeRef();
+                final BytecodeUtf8Constant theName = theType.getConstant();
+                if (theName.stringValue().startsWith("[")) {
+                    final BytecodeTypeRef theTypeRef = linkerContext.getSignatureParser().toFieldType(theName);
+                    final BytecodeLinkedClass checkedType = linkerContext.resolveTypeRef(theTypeRef, analysisStack);
+                    if (checkedType != null) {
+                        checkedType.tagWith(BytecodeLinkedClass.Tag.INSTANCEOF_CHECKED);
+                    }
+                } else {
+                    final BytecodeLinkedClass checkedType = linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theName), analysisStack);
+                    checkedType.tagWith(BytecodeLinkedClass.Tag.INSTANCEOF_CHECKED);
+                }
+
+                // And were are ready to create the instructions
                 final Value theValueToCheck = aHelper.pop();
                 final InstanceOfExpression theValue = new InstanceOfExpression(aProgram, theInstruction.getOpcodeAddress(), theValueToCheck, theINS.getTypeRef());
 
                 final Variable theCheckResult = aTargetBlock.newVariable(theInstruction.getOpcodeAddress(), TypeRef.Native.BOOLEAN, theValue);
                 aHelper.push(theINS.getOpcodeAddress(), theCheckResult);
+
             } else if (theInstruction instanceof BytecodeInstructionTABLESWITCH) {
                 final BytecodeInstructionTABLESWITCH theINS = (BytecodeInstructionTABLESWITCH) theInstruction;
                 final Value theValue = aHelper.pop();
@@ -1181,14 +1411,69 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             } else if (theInstruction instanceof BytecodeInstructionINVOKEDYNAMIC) {
                 final BytecodeInstructionINVOKEDYNAMIC theINS = (BytecodeInstructionINVOKEDYNAMIC) theInstruction;
 
+                // Perform linkage
                 final BytecodeInvokeDynamicConstant theConstant = theINS.getCallSite();
-                final BytecodeMethodSignature theInitSignature = theConstant.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
-
                 final BytecodeBootstrapMethodsAttributeInfo theBootStrapMethods = aOwningClass.getAttributes().getByType(BytecodeBootstrapMethodsAttributeInfo.class);
                 final BytecodeBootstrapMethod theBootstrapMethod = theBootStrapMethods.methodByIndex(theConstant.getBootstrapMethodAttributeIndex().getIndex());
+                for (final BytecodeConstant constant : theBootstrapMethod.getArguments()) {
+                    if (constant instanceof BytecodeMethodTypeConstant) {
+                        final BytecodeMethodTypeConstant m = (BytecodeMethodTypeConstant) constant;
+                        final BytecodeMethodSignature theSignature = m.getDescriptorIndex().methodSignature();
+                        linkSignature(theSignature, linkerContext, analysisStack);
+                    }
+                }
+
+                final BytecodeMethodSignature theInitSignature = theConstant.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature();
+                linkSignature(theInitSignature, linkerContext, analysisStack);
 
                 final BytecodeMethodHandleConstant theMethodRef = theBootstrapMethod.getMethodRef();
                 final BytecodeMethodRefConstant theBootstrapMethodToInvoke = (BytecodeMethodRefConstant) theMethodRef.getReferenceIndex().getConstant();
+
+                switch (theMethodRef.getReferenceKind()) {
+                    case REF_invokeStatic: {
+                        // Link the static method
+                        linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theBootstrapMethodToInvoke.getClassIndex().getClassConstant().getConstant()), analysisStack)
+                                .resolveStaticMethod(theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                                        theBootstrapMethodToInvoke.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature(), analysisStack);
+
+                        // in this case we assume that the invoke dynamic can be replaced by an invokestatic
+                        // to the implementing method, but only indirectly using a callsite object aka function pointer
+                        for (final BytecodeConstant theBootstrapArgument : theBootstrapMethod.getArguments()) {
+                            if (theBootstrapArgument instanceof BytecodeMethodHandleConstant) {
+                                final BytecodeMethodHandleConstant theHandle = (BytecodeMethodHandleConstant) theBootstrapArgument;
+                                final BytecodeMethodRefConstant theImplementingMethodRef = (BytecodeMethodRefConstant) theHandle.getReferenceIndex().getConstant();
+
+                                final BytecodeObjectTypeRef theClass = BytecodeObjectTypeRef.fromUtf8Constant(theImplementingMethodRef.getClassIndex().getClassConstant().getConstant());
+                                final BytecodeLinkedClass theLinkedClass = linkerContext.resolveClass(theClass, analysisStack);
+                                theLinkedClass.tagWith(BytecodeLinkedClass.Tag.POSSIBLE_USE_IN_LAMBDA);
+                                final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull(
+                                        theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                                        theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature()
+                                );
+                                if ("<init>".equals(theMethod.getName().stringValue())) {
+                                    theLinkedClass.tagWith(BytecodeLinkedClass.Tag.INSTANTIATED);
+                                }
+                                if (theMethod.getAccessFlags().isStatic()) {
+                                    theLinkedClass.resolveStaticMethod(theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                                            theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature(), analysisStack);
+                                } else if (theMethod.getAccessFlags().isPrivate()) {
+                                    theLinkedClass.resolvePrivateMethod(theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                                            theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature(), analysisStack);
+                                } else {
+                                    theLinkedClass.resolveVirtualMethod(theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getNameIndex().getName().stringValue(),
+                                            theImplementingMethodRef.getNameAndTypeIndex().getNameAndType().getDescriptorIndex().methodSignature(), analysisStack);
+                                }
+                            }
+                        }
+                        break;
+                    }
+                    default:
+                        throw new IllegalStateException("Nut supported reference kind for invoke dynamic : " + theMethodRef.getReferenceKind());
+                }
+
+                link(linkerContext, theMethodRef.getReferenceKind(), theMethodRef.getReferenceIndex().getConstant(), analysisStack);
+
+                // Generate instructions
 
                 final Program theProgram = new Program(DebugInformation.empty(), linkerContext);
                 final RegionNode theInitNode = theProgram.getControlFlowGraph().createAt(BytecodeOpcodeAddress.START_AT_ZERO, RegionNode.BlockType.NORMAL);
@@ -1457,5 +1742,33 @@ public final class NaiveProgramGenerator implements ProgramGenerator {
             aProgram.incrementAnalysisTime();
         }
         aTargetBlock.setFinishedAnalysisTime(aProgram.getAnalysisTime());
+    }
+
+    private void link(final BytecodeLinkerContext aLinkerContext, final BytecodeReferenceKind aKind, final BytecodeConstant aReference, final AnalysisStack analysisStack) {
+        switch (aKind) {
+            case REF_invokeStatic:
+                final BytecodeMethodRefConstant theStaticReference = (BytecodeMethodRefConstant) aReference;
+
+                final BytecodeObjectTypeRef className = BytecodeObjectTypeRef.fromUtf8Constant(theStaticReference.getClassIndex().getClassConstant().getConstant());
+                final BytecodeNameAndTypeConstant theNameAndType = theStaticReference.getNameAndTypeIndex().getNameAndType();
+                final String methodName = theNameAndType.getNameIndex().getName().stringValue();
+                final BytecodeMethodSignature signature = theNameAndType.getDescriptorIndex().methodSignature();
+                final BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(className, analysisStack);
+                if (!theLinkedClass.resolveVirtualMethod(methodName,
+                        theNameAndType.getDescriptorIndex().methodSignature(), analysisStack)) {
+                    throw new MissingLinkException("Cannot find static invoke dynamic bootstrap method " + className.name() + "." + methodName + "(" +signature + ") . Analysis stack is \n" + analysisStack.toDebugOutput());
+                }
+                break;
+            default:
+                throw new IllegalStateException("Not implemented refkind for invokedynamic : " + aKind);
+        }
+
+    }
+
+    private void linkSignature(final BytecodeMethodSignature signature, final BytecodeLinkerContext context, final AnalysisStack analysisStack) {
+        context.resolveTypeRef(signature.getReturnType(), analysisStack);
+        for (final BytecodeTypeRef ref : signature.getArguments()) {
+            context.resolveTypeRef(ref, analysisStack);
+        }
     }
 }

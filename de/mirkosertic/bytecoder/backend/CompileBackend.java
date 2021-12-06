@@ -15,11 +15,15 @@
  */
 package de.mirkosertic.bytecoder.backend;
 
+import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeLoader;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 
 public interface CompileBackend<T extends CompileResult> {
 
     T generateCodeFor(CompileOptions aOptions, BytecodeLinkerContext aLinkerContext, Class aEntryPointClass, String aEntryPointMethodName, BytecodeMethodSignature aEntryPointSignature, AnalysisStack analysisStack);
+
+    BytecodeLinkerContext newLinkerContext(final BytecodeLoader bytecodeLoader, final Logger logger);
 }

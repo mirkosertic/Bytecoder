@@ -119,7 +119,7 @@ var bytecoder = {
      },
 
      toJSString: function(value) {
-         var theByteArray = bytecoder.intInMemory(value + 8);
+         var theByteArray = bytecoder.intInMemory(value + 12);
          var theData = bytecoder.byteArraytoJSString(theByteArray);
          return theData;
      },

@@ -19,6 +19,7 @@ import de.mirkosertic.bytecoder.api.DelegatesTo;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.graph.EdgeType;
 import de.mirkosertic.bytecoder.graph.Node;
+import de.mirkosertic.bytecoder.ssa.Program;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -36,6 +37,7 @@ public class BytecodeMethod extends Node<Node, EdgeType> {
     private final BytecodeMethodSignature signature;
     private final BytecodeAttributes mappedAttributes;
     private final Set<Tag> tags;
+    private Program program;
 
     public BytecodeMethod(final BytecodeAccessFlags aAccessFlags, final BytecodeUtf8Constant aName, final BytecodeMethodSignature aSignature, final BytecodeAttributeInfo[] aAttributes) {
         accessFlags = aAccessFlags;
@@ -44,6 +46,14 @@ public class BytecodeMethod extends Node<Node, EdgeType> {
         attributes = aAttributes;
         mappedAttributes = new BytecodeAttributes(attributes);
         tags = new HashSet<>();
+    }
+
+    public void setProgram(final Program program) {
+        this.program = program;
+    }
+
+    public Program getProgram() {
+        return program;
     }
 
     public BytecodeMethod tagWith(final Tag tag) {

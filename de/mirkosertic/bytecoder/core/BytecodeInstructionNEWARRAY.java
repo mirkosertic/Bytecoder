@@ -33,9 +33,4 @@ public class BytecodeInstructionNEWARRAY extends BytecodeInstruction {
     public BytecodePrimitiveTypeRef getPrimitiveType() {
         return type;
     }
-
-    @Override
-    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext, final AnalysisStack analysisStack) {
-        aLinkerContext.resolveClass(getObjectType(), analysisStack);
-    }
 }
