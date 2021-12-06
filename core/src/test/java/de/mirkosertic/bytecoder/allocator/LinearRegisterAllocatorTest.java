@@ -18,7 +18,6 @@ package de.mirkosertic.bytecoder.allocator;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.ConstantPool;
 import de.mirkosertic.bytecoder.backend.SourceMapWriter;
-import de.mirkosertic.bytecoder.backend.js.JSIntrinsics;
 import de.mirkosertic.bytecoder.backend.js.JSMinifier;
 import de.mirkosertic.bytecoder.backend.js.JSPrintWriter;
 import de.mirkosertic.bytecoder.backend.js.JSSSAWriter;
@@ -32,10 +31,10 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.intrinsics.Intrinsics;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.Program;
-import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
 import de.mirkosertic.bytecoder.ssa.Variable;
 import de.mirkosertic.bytecoder.stackifier.HeadToHeadControlFlowException;
@@ -59,13 +58,12 @@ public class LinearRegisterAllocatorTest {
     @Test
     public void testSimpleMethodWithLinearRegisterAllocation() {
         final AnalysisStack analysisStack = new AnalysisStack();
-        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
-        final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger(), NaiveProgramGenerator.FACTORY, new Intrinsics());
         final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(getClass()), analysisStack);
         theLinkedClass.resolveStaticMethod("simpleMethod", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}), analysisStack);
 
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("simpleMethod", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.INT, new BytecodeTypeRef[]{BytecodePrimitiveTypeRef.INT, BytecodePrimitiveTypeRef.INT}));
-        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod, analysisStack);
+        final Program p = theMethod.getProgram();
 
         final List<Variable> vars = p.getVariables();
         for (final Variable v : vars) {
@@ -112,14 +110,13 @@ public class LinearRegisterAllocatorTest {
     @Test
     public void testStringArrayInitRegisterAllocation() throws HeadToHeadControlFlowException {
         final AnalysisStack analysisStack = new AnalysisStack();
-        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
-        final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new JSIntrinsics());
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger(), NaiveProgramGenerator.FACTORY, new Intrinsics());
         final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(BytecodeObjectTypeRef.fromRuntimeClass(
                 String.class), analysisStack);
         theLinkedClass.resolveVirtualMethod("<init>", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.CHAR, 1)}), analysisStack);
 
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull("<init>", new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID, new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodePrimitiveTypeRef.CHAR, 1)}));
-        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod, analysisStack);
+        final Program p = theMethod.getProgram();
 
         final List<Variable> vars = p.getVariables();
 

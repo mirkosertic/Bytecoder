@@ -25,6 +25,7 @@ import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
+import de.mirkosertic.bytecoder.intrinsics.Intrinsics;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.Program;
@@ -107,13 +108,12 @@ public class PointsToAnalysisTest {
 
     private PointsToAnalysisResult analyzeVirtualMethod(final BytecodeObjectTypeRef aClazz, final String aMethodName, final BytecodeMethodSignature aSignature) {
         final AnalysisStack analysisStack = new AnalysisStack();
-        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
-        final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new LLVMIntrinsics());
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger(), NaiveProgramGenerator.FACTORY, new Intrinsics());
         final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(aClazz, analysisStack);
 
         theLinkedClass.resolveVirtualMethod(aMethodName, aSignature, analysisStack);
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
-        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod, analysisStack);
+        final Program p = theMethod.getProgram();
         KnownOptimizer.LLVM.optimize(null, p.getControlFlowGraph(), theLinkerContext, analysisStack);
 
         return analyzeMethod(theLinkerContext, new ProgramDescriptor(theLinkedClass, theMethod, p));
@@ -125,13 +125,12 @@ public class PointsToAnalysisTest {
 
     private PointsToAnalysisResult analyzeStaticMethod(final BytecodeObjectTypeRef aClazz, final String aMethodName, final BytecodeMethodSignature aSignature) {
         final AnalysisStack analysisStack = new AnalysisStack();
-        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger());
-        final ProgramGenerator theGenerator = NaiveProgramGenerator.FACTORY.createFor(theLinkerContext, new LLVMIntrinsics());
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(new BytecodeLoader(getClass().getClassLoader()), new Slf4JLogger(), NaiveProgramGenerator.FACTORY, new Intrinsics());
         final BytecodeLinkedClass theLinkedClass = theLinkerContext.resolveClass(aClazz, analysisStack);
 
         theLinkedClass.resolveStaticMethod(aMethodName, aSignature, analysisStack);
         final BytecodeMethod theMethod = theLinkedClass.getBytecodeClass().methodByNameAndSignatureOrNull(aMethodName, aSignature);
-        final Program p = theGenerator.generateFrom(theLinkedClass.getBytecodeClass(), theMethod, analysisStack);
+        final Program p = theMethod.getProgram();
         KnownOptimizer.LLVM.optimize(null, p.getControlFlowGraph(), theLinkerContext, analysisStack);
 
         return analyzeMethod(theLinkerContext, new ProgramDescriptor(theLinkedClass, theMethod, p));

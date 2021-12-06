@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core;
 
+import de.mirkosertic.bytecoder.intrinsics.Intrinsics;
+import de.mirkosertic.bytecoder.ssa.NaiveProgramGenerator;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 import org.junit.Test;
 
@@ -26,7 +28,7 @@ public class BytecodeLoaderTest {
     public void testLoadRuntime1() {
         final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
-        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE);
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE, NaiveProgramGenerator.FACTORY, new Intrinsics());
         theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Object.class.getName()), analysisStack);
     }
 
@@ -34,7 +36,7 @@ public class BytecodeLoaderTest {
     public void testLoadRuntime2() {
         final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
-        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE);
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE, NaiveProgramGenerator.FACTORY, new Intrinsics());
         theLinkerContext.resolveClass(new BytecodeObjectTypeRef(String.class.getName()), analysisStack);
     }
 
@@ -42,7 +44,7 @@ public class BytecodeLoaderTest {
     public void testLoadRuntime3() {
         final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
-        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE);
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE, NaiveProgramGenerator.FACTORY, new Intrinsics());
         theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Math.class.getName()), analysisStack);
     }
 
@@ -50,7 +52,7 @@ public class BytecodeLoaderTest {
     public void testLoadRuntime4() {
         final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
-        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE);
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE, NaiveProgramGenerator.FACTORY, new Intrinsics());
         theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Class.class.getName()), analysisStack);
     }
 
@@ -58,7 +60,7 @@ public class BytecodeLoaderTest {
     public void testLoadRuntime5() {
         final AnalysisStack analysisStack = new AnalysisStack();
         final BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
-        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE);
+        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, Slf4JLogger.INSTANCE, NaiveProgramGenerator.FACTORY, new Intrinsics());
         theLinkerContext.resolveClass(new BytecodeObjectTypeRef(Object.class.getName()), analysisStack);
     }
 

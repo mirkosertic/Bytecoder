@@ -30,11 +30,7 @@ public class BytecodeInstructionNEW extends BytecodeInstruction {
         return (BytecodeClassinfoConstant) constantPool.constantByIndex(index - 1);
     }
 
-    @Override
-    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext, final AnalysisStack analysisStack) {
-        final BytecodeObjectTypeRef theObjectType = BytecodeObjectTypeRef.fromUtf8Constant(getClassInfoForObjectToCreate().getConstant());
-
-        final BytecodeLinkedClass createdType = aLinkerContext.resolveClass(theObjectType, analysisStack);
-        createdType.tagWith(BytecodeLinkedClass.Tag.INSTANTIATED);
+    public BytecodeObjectTypeRef getClassToCreate() {
+        return BytecodeObjectTypeRef.fromUtf8Constant(getClassInfoForObjectToCreate().getConstant());
     }
 }

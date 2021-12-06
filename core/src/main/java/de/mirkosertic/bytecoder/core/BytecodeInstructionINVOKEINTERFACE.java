@@ -31,23 +31,4 @@ public class BytecodeInstructionINVOKEINTERFACE extends BytecodeInstruction impl
     public BytecodeInterfaceRefConstant getMethodDescriptor() {
         return (BytecodeInterfaceRefConstant) constantPool.constantByIndex(methodIndex - 1);
     }
-
-    @Override
-    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext, final AnalysisStack analysisStack) {
-        final BytecodeInterfaceRefConstant theMethodRefConstant = getMethodDescriptor();
-
-        final BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
-        final BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
-
-        final BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
-        final BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
-
-        final BytecodeUtf8Constant theConstant = theClassConstant.getConstant();
-        final BytecodeObjectTypeRef className = BytecodeObjectTypeRef.fromUtf8Constant(theConstant);
-        final BytecodeLinkedClass invokedType = aLinkerContext.resolveClass(className, analysisStack);
-        invokedType.tagWith(BytecodeLinkedClass.Tag.INVOKEINTERFACE_TARGET);
-        if (!invokedType.resolveVirtualMethod(theName.stringValue(), theSig, analysisStack)) {
-            throw new MissingLinkException("Cannot find invoke interface method " + className.name() + "." + theName.stringValue() + "(" + theSig + ") . Analysis stack is \n" + analysisStack.toDebugOutput());
-        }
-    }
 }

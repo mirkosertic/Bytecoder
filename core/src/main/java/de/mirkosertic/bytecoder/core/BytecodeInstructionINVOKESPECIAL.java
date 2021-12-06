@@ -20,30 +20,4 @@ public class BytecodeInstructionINVOKESPECIAL extends BytecodeInstructionGeneric
     public BytecodeInstructionINVOKESPECIAL(final BytecodeOpcodeAddress aOpcodeIndex, final int aIndex, final BytecodeConstantPool aConstantPool) {
         super(aOpcodeIndex, aIndex, aConstantPool);
     }
-
-    @Override
-    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext, final AnalysisStack analysisStack) {
-        final BytecodeMethodRefConstant theMethodRefConstant = getMethodReference();
-        final BytecodeClassinfoConstant theClassConstant = theMethodRefConstant.getClassIndex().getClassConstant();
-        final BytecodeNameAndTypeConstant theMethodRef = theMethodRefConstant.getNameAndTypeIndex().getNameAndType();
-
-        final BytecodeMethodSignature theSig = theMethodRef.getDescriptorIndex().methodSignature();
-        final BytecodeUtf8Constant theClassName = theClassConstant.getConstant();
-
-        final BytecodeUtf8Constant theName = theMethodRef.getNameIndex().getName();
-        final BytecodeObjectTypeRef className = BytecodeObjectTypeRef.fromUtf8Constant(theClassName);
-        final BytecodeLinkedClass invokedType = aLinkerContext.resolveClass(className, analysisStack);
-        invokedType.tagWith(BytecodeLinkedClass.Tag.INVOKESPECIAL_TARGET);
-        if ("<init>".equals(theName.stringValue())) {
-            if (!invokedType.resolveConstructorInvocation(theSig, analysisStack)) {
-                throw new MissingLinkException("Cannot find constructor " + className.name() + "." + theName.stringValue() + "(" + theSig + "). Analysis stack is \n" + analysisStack.toDebugOutput());
-            }
-        } else {
-            if (!invokedType.resolvePrivateMethod(theName.stringValue(), theSig, analysisStack)) {
-                if (!invokedType.resolveVirtualMethod(theName.stringValue(), theSig, analysisStack)) {
-                    throw new MissingLinkException("Cannot find private or virtual method " + className.name() + "." + theName.stringValue() + "(" + theSig + "). Analysis stack is \n" + analysisStack.toDebugOutput());
-                }
-            }
-        }
-    }
 }

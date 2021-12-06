@@ -19,6 +19,7 @@ import de.mirkosertic.bytecoder.allocator.AbstractAllocator;
 import de.mirkosertic.bytecoder.allocator.Register;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
+import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.api.OpaqueIndexed;
 import de.mirkosertic.bytecoder.api.OpaqueMethod;
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
@@ -58,6 +59,7 @@ import de.mirkosertic.bytecoder.core.BytecodeClass;
 import de.mirkosertic.bytecoder.core.BytecodeImportedLink;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeLoader;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
@@ -137,9 +139,16 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
     }
 
     private final ProgramGeneratorFactory programGeneratorFactory;
+    private final WASMIntrinsics intrinsics;
 
     public WASMSSAASTCompilerBackend(final ProgramGeneratorFactory aProgramGeneratorFactory) {
         this.programGeneratorFactory = aProgramGeneratorFactory;
+        this.intrinsics = new WASMIntrinsics();
+    }
+
+    @Override
+    public BytecodeLinkerContext newLinkerContext(final BytecodeLoader bytecodeLoader, final Logger logger) {
+        return new BytecodeLinkerContext(bytecodeLoader, logger, programGeneratorFactory, intrinsics);
     }
 
     @Override
@@ -148,7 +157,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
             final BytecodeLinkerContext aLinkerContext,
             final Class aEntryPointClass,
             final String aEntryPointMethodName,
-            final BytecodeMethodSignature aEntryPointSignatue,
+            final BytecodeMethodSignature aEntryPointSignature,
             final AnalysisStack analysisStack) {
 
         final WASMMinifier theMinifier = new WASMMinifier();
@@ -878,7 +887,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
                 }
 
                 final ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext, new WASMIntrinsics());
-                final Program theSSAProgram = theGenerator.generateFrom(aMethodMapEntry.getProvidingClass().getBytecodeClass(), theMethod, analysisStack);
+                final Program theSSAProgram = theMethod.getProgram();
 
                 //Run optimizer
                 aOptions.getOptimizer().optimize(this, theSSAProgram.getControlFlowGraph(), aLinkerContext, analysisStack);
@@ -1235,7 +1244,7 @@ public class WASMSSAASTCompilerBackend implements CompileBackend<WASMCompileResu
         {
             final ExportableFunction mainFunction = module.functionIndex().firstByLabel(WASMWriterUtils
                     .toMethodName(BytecodeObjectTypeRef.fromRuntimeClass(aEntryPointClass), aEntryPointMethodName,
-                            aEntryPointSignatue));
+                            aEntryPointSignature));
             mainFunction.exportAs("main");
         }
 

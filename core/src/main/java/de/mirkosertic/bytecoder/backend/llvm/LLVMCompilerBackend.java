@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.backend.llvm;
 
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
+import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.api.OpaqueIndexed;
 import de.mirkosertic.bytecoder.api.OpaqueMethod;
 import de.mirkosertic.bytecoder.api.OpaqueProperty;
@@ -37,6 +38,7 @@ import de.mirkosertic.bytecoder.core.BytecodeAttributeInfo;
 import de.mirkosertic.bytecoder.core.BytecodeImportedLink;
 import de.mirkosertic.bytecoder.core.BytecodeLinkedClass;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
+import de.mirkosertic.bytecoder.core.BytecodeLoader;
 import de.mirkosertic.bytecoder.core.BytecodeMethod;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
@@ -55,7 +57,6 @@ import de.mirkosertic.bytecoder.ssa.MethodHandleExpression;
 import de.mirkosertic.bytecoder.ssa.Program;
 import de.mirkosertic.bytecoder.ssa.ProgramDescriptor;
 import de.mirkosertic.bytecoder.ssa.ProgramDescriptorProvider;
-import de.mirkosertic.bytecoder.ssa.ProgramGenerator;
 import de.mirkosertic.bytecoder.ssa.ProgramGeneratorFactory;
 import de.mirkosertic.bytecoder.ssa.RegionNode;
 import de.mirkosertic.bytecoder.ssa.TypeRef;
@@ -133,9 +134,16 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
     }
 
     private final ProgramGeneratorFactory programGeneratorFactory;
+    private final LLVMIntrinsics intrinsics;
 
     public LLVMCompilerBackend(final ProgramGeneratorFactory aProgramGeneratorFactory) {
         this.programGeneratorFactory = aProgramGeneratorFactory;
+        this.intrinsics = new LLVMIntrinsics();
+    }
+
+    @Override
+    public BytecodeLinkerContext newLinkerContext(final BytecodeLoader bytecodeLoader, final Logger logger) {
+        return new BytecodeLinkerContext(bytecodeLoader, logger, programGeneratorFactory, intrinsics);
     }
 
     @Override
@@ -2063,8 +2071,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             pw.println();
                         }
 
-                        final ProgramGenerator theGenerator = programGeneratorFactory.createFor(aLinkerContext, new LLVMIntrinsics());
-                        final Program theSSAProgram = theGenerator.generateFrom(aMethodMapEntry.getProvidingClass().getBytecodeClass(), theMethod, analysisStack);
+                        final Program theSSAProgram = theMethod.getProgram();
                         final LLVMDebugInformation.CompileUnit compileUnit = debugInformation.compileUnitFor(theSSAProgram);
                         final LLVMDebugInformation.SubProgram subProgram = compileUnit.subProgram(theSSAProgram, theMethod.getName().stringValue(), theSignature);
 

@@ -15,8 +15,6 @@
  */
 package de.mirkosertic.bytecoder.api.opencl;
 
-import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
-
 import de.mirkosertic.bytecoder.allocator.Allocator;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.opencl.OpenCLCompileBackend;
@@ -31,6 +29,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+
+import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
 
 public class CompilerTest {
 
@@ -96,7 +96,7 @@ public class CompilerTest {
         final BytecodeMethodSignature theSignature = backend.signatureFrom(theMethod);
 
         final BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
-        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
+        final BytecodeLinkerContext theLinkerContext = backend.newLinkerContext(theLoader, compileOptions.getLogger());
         final OpenCLCompileResult compiledKernel = backend.generateCodeFor(compileOptions, theLinkerContext, theKernelClass, theMethod.getName(), theSignature, analysisStack);
         final OpenCLCompileResult.OpenCLContent content = (OpenCLCompileResult.OpenCLContent) compiledKernel.getContent()[0];
 
@@ -133,7 +133,7 @@ public class CompilerTest {
         final BytecodeMethodSignature theSignature = backend.signatureFrom(theMethod);
 
         final BytecodeLoader theLoader = new BytecodeLoader(getClass().getClassLoader());
-        final BytecodeLinkerContext theLinkerContext = new BytecodeLinkerContext(theLoader, compileOptions.getLogger());
+        final BytecodeLinkerContext theLinkerContext = backend.newLinkerContext(theLoader, compileOptions.getLogger());
         final OpenCLCompileResult compiledKernel = backend.generateCodeFor(compileOptions, theLinkerContext, theKernelClass, theMethod.getName(), theSignature, analysisStack);
         final OpenCLCompileResult.OpenCLContent content = (OpenCLCompileResult.OpenCLContent) compiledKernel.getContent()[0];
 

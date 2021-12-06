@@ -44,10 +44,4 @@ public class BytecodeInstructionANEWARRAY extends BytecodeInstruction {
     private BytecodeClassinfoConstant getTypeConstant() {
         return (BytecodeClassinfoConstant) constantPool.constantByIndex(typeIndex - 1);
     }
-
-    @Override
-    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext, final AnalysisStack analysisStack) {
-        aLinkerContext.resolveClass(getObjectType(), analysisStack);
-        aLinkerContext.resolveTypeRef(getArrayType(aLinkerContext.getSignatureParser()), analysisStack);
-    }
 }

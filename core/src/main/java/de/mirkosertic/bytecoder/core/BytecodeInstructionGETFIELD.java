@@ -30,23 +30,15 @@ public class BytecodeInstructionGETFIELD extends BytecodeInstruction {
         return (BytecodeFieldRefConstant) constantPool.constantByIndex(poolIndex - 1);
     }
 
-    @Override
-    public void performLinking(final BytecodeClass aOwningClass, final BytecodeLinkerContext aLinkerContext, final AnalysisStack analysisStack) {
-        final BytecodeFieldRefConstant theFieldRef = getFieldRefConstant();
+    public BytecodeObjectTypeRef referencedType() {
+        final BytecodeFieldRefConstant fieldRef = getFieldRefConstant();
+        final BytecodeClassinfoConstant classInfo = fieldRef.getClassIndex().getClassConstant();
+        return BytecodeObjectTypeRef.fromUtf8Constant(classInfo.getConstant());
+    }
 
-        final BytecodeClassinfoConstant theClass = theFieldRef.getClassIndex().getClassConstant();
-        final BytecodeNameIndex theName = theFieldRef.getNameAndTypeIndex().getNameAndType().getNameIndex();
-
-        final BytecodeObjectTypeRef className = BytecodeObjectTypeRef.fromUtf8Constant(theClass.getConstant());
-        final AnalysisStack.Frame currentFrame = analysisStack.fieldAccess(className, theName.getName().stringValue());
-
-        try {
-            final BytecodeLinkedClass theLinkedClass = aLinkerContext.resolveClass(className, analysisStack);
-            if (!theLinkedClass.resolveInstanceField(theName.getName(), analysisStack)) {
-                throw new MissingLinkException("Cannot find instance field. Analysis stack is \n" + analysisStack.toDebugOutput());
-            }
-        } finally {
-            currentFrame.close();
-        }
+    public BytecodeUtf8Constant referencedField() {
+        final BytecodeFieldRefConstant fieldRef = getFieldRefConstant();
+        final BytecodeNameIndex theName = fieldRef.getNameAndTypeIndex().getNameAndType().getNameIndex();
+        return theName.getName();
     }
 }

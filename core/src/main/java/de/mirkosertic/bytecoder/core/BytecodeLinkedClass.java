@@ -469,32 +469,12 @@ public class BytecodeLinkedClass extends Node<Node, EdgeType> {
             linkerContext.resolveTypeRef(argumentType, analysisStack);
         }
 
-        if (!aMethod.getAccessFlags().isAbstract()) {
-            if (aMethod.getAccessFlags().isNative()) {
-                if (bytecodeClass.getAttributes().getAnnotationByType(EmulatedByRuntime.class.getName()) == null) {
-                    // Will be linked dynamically
-                    // No need to worry
-                }
-            } else {
-
-                final AnalysisStack.Frame methodInvocationFrame = analysisStack.startMethodInvocation(this.className, aMethod.getName().stringValue(), aMethod.getSignature());
-                try {
-
-                    final BytecodeCodeAttributeInfo theCode = aMethod.getCode(bytecodeClass);
-                    final BytecodeProgram theProgram = theCode.getProgram();
-                    for (final BytecodeInstruction theInstruction : theProgram.getInstructions()) {
-                        theInstruction.performLinking(bytecodeClass, linkerContext, analysisStack);
-                    }
-
-                    for (final BytecodeExceptionTableEntry theHandler : theProgram.getExceptionHandlers()) {
-                        if (!theHandler.isFinally()) {
-                            linkerContext.resolveClass(BytecodeObjectTypeRef.fromUtf8Constant(theHandler.getCatchType().getConstant()), analysisStack);
-                        }
-                    }
-                } finally {
-                    methodInvocationFrame.close();
-                }
-            }
+        final AnalysisStack.Frame methodInvocationFrame = analysisStack.startMethodInvocation(this.className, aMethod.getName().stringValue(), aMethod.getSignature());
+        try {
+            // Convert to SSA form
+            linkerContext.fillWithProgram(bytecodeClass, aMethod, analysisStack);
+        } finally {
+            methodInvocationFrame.close();
         }
     }
 
