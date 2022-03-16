@@ -138,6 +138,6 @@ The WebAssembly backends include a very simple incremental mark and sweep garbag
 When GC runs, the application halts ( stop the world ) and memory is scanned and
 freed. However, this is a **very** expensive process, so you maybe want to configure
 the garbage collector intervals and parameters by hand depending an your use case.
-The Bytecoder GC is will be removed as soon as there is a Wasm built-in garbage collector
+The Bytecoder GC will be removed as soon as there is a Wasm built-in garbage collector
 available.
 {{% /notice %}}
