@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 import java.io.PrintStream;
+import java.io.PrintWriter;
 
 @SubstitutesInClass(completeReplace = true)
 public class TThrowable {
@@ -57,6 +58,9 @@ public class TThrowable {
     }
 
     public void printStackTrace(final PrintStream s) {
+    }
+
+    public void printStackTrace(final PrintWriter w) {
     }
 
     public Throwable fillInStackTrace() {
