@@ -57,9 +57,9 @@ public class BytecodeLoader {
             }
         }
 
-        if (aTypeRef.name().startsWith("java.") || aTypeRef.name().startsWith("javax.")) {
-            throw new IllegalArgumentException("Not supported Java module for class " + aTypeRef.name());
-        }
+        // if (aTypeRef.name().startsWith("java.") || aTypeRef.name().startsWith("javax.")) {
+        //     throw new IllegalArgumentException("Not supported Java module for class " + aTypeRef.name());
+        // }
 
         final InputStream theStream = classLoader.getResourceAsStream(theResourceName);
         if (theStream == null) {

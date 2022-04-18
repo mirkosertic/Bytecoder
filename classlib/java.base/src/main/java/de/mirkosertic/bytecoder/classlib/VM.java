@@ -262,7 +262,7 @@ public class VM {
     }
 
     public static Locale defaultLocale() {
-        return new Locale("en", "US");
+        return new Locale("en");
     }
 
     @EmulatedByRuntime

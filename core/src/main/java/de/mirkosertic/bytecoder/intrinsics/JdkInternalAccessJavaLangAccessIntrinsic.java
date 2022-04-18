@@ -78,6 +78,29 @@ public class JdkInternalAccessJavaLangAccessIntrinsic extends Intrinsic {
 
                 return true;
             }
+
+            String[] methods = {
+                "getEnumConstantsShared",
+                "join",
+                "fastUUID",
+            };
+            for (int x = 0; x < methods.length; x++) {
+                if (Objects.equals(methods[x], aMethodName)) {
+                    final BytecodeObjectTypeRef theClassToInvoke = BytecodeObjectTypeRef.fromRuntimeClass(String.class);
+                    aProgram.getLinkerContext().resolveClass(theClassToInvoke, analysisStack)
+                            .resolveStaticMethod(aMethodName, theSignature, analysisStack);
+    
+                    final InvokeStaticMethodExpression theExpression = new InvokeStaticMethodExpression(aProgram, aInstruction.getOpcodeAddress(),
+                        theClassToInvoke,
+                        aMethodName,
+                        theSignature,
+                        aArguments);
+                    final Variable theNewVariable = aTargetBlock.newVariable(aInstruction.getOpcodeAddress(), TypeRef.toType(theSignature.getReturnType()), theExpression);
+                        aHelper.push(aInstruction.getOpcodeAddress(), theNewVariable);
+                    return true;
+                }    
+            }
+            
             throw new IllegalArgumentException("Not supported invocation of " + aMethodName + " on " + aObjectType.name());
         }
         return false;

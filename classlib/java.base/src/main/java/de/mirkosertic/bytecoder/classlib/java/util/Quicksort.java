@@ -72,4 +72,29 @@ public class Quicksort {
         quickSortComparable(array, pivot+1, end);
     }
 
+    static int partitionComparable(final int[] array, final int begin, final int end) {
+        final int pivot = end;
+
+        int counter = begin;
+        for (int i = begin; i < end; i++) {
+            if (((Comparable) array[i]).compareTo(array[pivot]) < 0) {
+                final int temp = array[counter];
+                array[counter] = array[i];
+                array[i] = temp;
+                counter++;
+            }
+        }
+        final int temp = array[pivot];
+        array[pivot] = array[counter];
+        array[counter] = temp;
+
+        return counter;
+    }
+    public static void quickSortComparable(final int[] array, final int begin, final int end) {
+        if (end <= begin) return;
+        final int pivot = partitionComparable(array, begin, end);
+        quickSortComparable(array, begin, pivot-1);
+        quickSortComparable(array, pivot+1, end);
+    }
+
 }

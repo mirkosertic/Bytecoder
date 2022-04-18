@@ -42,6 +42,10 @@ public class TArrays {
         Quicksort.quickSortComparable(aData, 0, aData.length - 1);
     }
 
+    public static void sort(final int[] aData) {
+        Quicksort.quickSortComparable(aData, 0, aData.length - 1);
+    }
+
     public static <T> List<T> asList(final T... aValues) {
         final ArrayList<T> theResult = new ArrayList<>();
         for (final T theValue : aValues) {

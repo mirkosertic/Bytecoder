@@ -24,6 +24,9 @@ public class TMethodHandles {
 
     @SubstitutesInClass(completeReplace = true)
     public static class Lookup {
+        public Class<?> ensureInitialized(Class<?> arg0) throws IllegalAccessException {
+            return arg0;
+        }
     }
 
     public static MethodHandles.Lookup lookup() {

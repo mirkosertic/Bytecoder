@@ -53,6 +53,7 @@ public class TDecimalFormatSymbols {
         currencySymbol = bundle.getString("DecimalFormatSymbols.currencySymbol");
         intlCurrencySymbol = bundle.getString("DecimalFormatSymbols.intlCurrencySymbol");
         monetarySeparator = bundle.getString("DecimalFormatSymbols.monetarySeparator").charAt(0);
+        monetaryGroupingSeparator = bundle.getString("DecimalFormatSymbols.monetaryGroupingSeparator").charAt(0);
         exponential = bundle.getString("DecimalFormatSymbols.exponential").charAt(0);
         exponentialSeparator = bundle.getString("exponentialSeparator.exponentialSeparator");
 
@@ -180,8 +181,17 @@ public class TDecimalFormatSymbols {
         return monetarySeparator;
     }
 
+    
     public void setMonetaryDecimalSeparator(final char sep) {
         monetarySeparator = sep;
+    }
+    
+    public char getMonetaryGroupingSeparator() {
+        return monetarySeparator;
+    }
+
+    public void setMonetaryGroupingSeparator(char sep) {
+        monetaryGroupingSeparator = sep;
     }
 
     char getExponentialSymbol() {
@@ -238,6 +248,8 @@ public class TDecimalFormatSymbols {
     private String intlCurrencySymbol;
 
     private char monetarySeparator; // Field new in JDK 1.1.6
+
+    private char monetaryGroupingSeparator;
 
     private char exponential;       // Field new in JDK 1.1.6
 

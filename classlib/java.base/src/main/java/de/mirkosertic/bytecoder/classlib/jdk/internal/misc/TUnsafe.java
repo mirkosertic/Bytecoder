@@ -193,4 +193,23 @@ public class TUnsafe {
     public long reallocateMemory(final long a, final long b) {
         return a;
     }
+
+    public static final int ARRAY_BOOLEAN_BASE_OFFSET = INSTANCE.arrayBaseOffset(boolean[].class);
+
+    public static final int ARRAY_BYTE_BASE_OFFSET = INSTANCE.arrayBaseOffset(byte[].class);
+
+
+    public static final int ARRAY_SHORT_BASE_OFFSET = INSTANCE.arrayBaseOffset(short[].class);
+
+    public static final int ARRAY_CHAR_BASE_OFFSET = INSTANCE.arrayBaseOffset(char[].class);
+
+    public static final int ARRAY_INT_BASE_OFFSET = INSTANCE.arrayBaseOffset(int[].class);
+
+    public static final int ARRAY_LONG_BASE_OFFSET = INSTANCE.arrayBaseOffset(long[].class);
+
+    public static final int ARRAY_FLOAT_BASE_OFFSET = INSTANCE.arrayBaseOffset(float[].class);
+
+    public static final int ARRAY_DOUBLE_BASE_OFFSET = INSTANCE.arrayBaseOffset(double[].class);
+
+    public static final int ARRAY_OBJECT_BASE_OFFSET = INSTANCE.arrayBaseOffset(Object[].class);
 }

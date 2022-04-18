@@ -34,6 +34,18 @@ import java.security.ProtectionDomain;
 @SubstitutesInClass(completeReplace = true)
 public class TClass {
 
+    public <U> Class<? extends U> asSubclass(Class<U> clazz) {
+        try {
+            Class<?> self = Class.forName(getCanonicalName());
+            if (clazz.isAssignableFrom(self))
+                return (Class<? extends U>) self;
+            else
+                throw new ClassCastException(toString());
+        } catch (ClassNotFoundException cnfe) {
+            throw new ClassCastException("class not found");
+        }
+    }
+
     @EmulatedByRuntime
     public boolean desiredAssertionStatus() {
         return false;

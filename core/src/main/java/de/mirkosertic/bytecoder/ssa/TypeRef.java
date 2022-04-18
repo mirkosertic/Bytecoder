@@ -50,6 +50,8 @@ public interface TypeRef {
                         return BYTE;
                     case INT:
                         return INT;
+                    case SHORT:
+                        return SHORT;
                     default:
                         throw new IllegalStateException("Don't know how to promote " + this + " to " + aOtherType);
 
@@ -60,6 +62,8 @@ public interface TypeRef {
             @Override
             public Native eventuallyPromoteTo(final Native aOtherType) {
                 switch (aOtherType) {
+                    case BYTE:
+                        return BYTE;
                     case SHORT:
                         return SHORT;
                     case INT:

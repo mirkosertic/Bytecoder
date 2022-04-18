@@ -22,7 +22,9 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.lang.System.Logger;
 import java.util.Properties;
+import java.util.ResourceBundle;
 
 @SubstitutesInClass(completeReplace = true)
 public class TSystem {
@@ -93,5 +95,30 @@ public class TSystem {
     }
 
     public static void gc() {
+    }
+
+    public static Logger getLogger(String label) {
+        return new Logger() {
+            @Override
+            public String getName() {
+                return label;
+            }
+
+            @Override
+            public boolean isLoggable(Level arg0) {
+                return false;
+            }
+
+            @Override
+            public void log(Level arg0, ResourceBundle arg1, String arg2, Throwable arg3) {
+                
+            }
+
+            @Override
+            public void log(Level arg0, ResourceBundle arg1, String arg2, Object... arg3) {
+                                
+            }
+
+        };
     }
 }
