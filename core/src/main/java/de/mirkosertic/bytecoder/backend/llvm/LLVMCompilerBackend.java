@@ -3706,26 +3706,42 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
             theCompileResult.add(new CompileResult.StringContent(aOptions.getFilenamePrefix() + ".js", theJSCode.toString()));
 
             // Compile LLVM Assembly File to object file
-            final List<String> theLLCommand = new ArrayList<>();
+            final List<String> clangCommand = new ArrayList<>();
             if ("\\".equals(File.separator)) {
                 // We are running on windows
                 // llvm needs to be installed in the Windows Subsystem for Linux
-                theLLCommand.add("wsl");
+                clangCommand.add("wsl");
             }
-            final String theObjectFileName = theLLFile.getName() + ".o";
-            theLLCommand.add("llc-11");
-            theLLCommand.add("-" + aOptions.getLlvmOptimizationLevel().name());
-            //theLLCommand.add("--stats");
-            //theLLCommand.add("--time-passes");
-            theLLCommand.add("-filetype=obj");
-            theLLCommand.add(theLLFile.getName());
-            theLLCommand.add("-o");
-            theLLCommand.add(theObjectFileName);
-            final ProcessBuilder theLLCProcessBuilder = new ProcessBuilder(theLLCommand).directory(theLLFile.getParentFile()).inheritIO();
-            aOptions.getLogger().info("LLVM compiler command is {}", theLLCProcessBuilder.command());
-            final Process theLLCProcess = theLLCProcessBuilder.start();
+
+            final String theWASMFileName = theLLFile.getName() + ".wasm";
+
+            clangCommand.add("clang");
+            clangCommand.add(theLLFile.getName());
+            clangCommand.add("-" + aOptions.getLlvmOptimizationLevel().name());
+            clangCommand.add("-target");
+            clangCommand.add("wasm32-unnkown-unknown");
+            clangCommand.add("-nostdlib");
+
+            final StringBuilder linkerArgs = new StringBuilder("-Wl,--export-dynamic,--no-entry,--allow-undefined,--lto-");
+            linkerArgs.append(aOptions.getLlvmOptimizationLevel().name());
+            linkerArgs.append(",--initial-memory=").append(aOptions.getWasmMinimumPageSize() * 65536);
+            linkerArgs.append(",--max-memory=").append(aOptions.getWasmMaximumPageSize() * 65536);
+            if (aOptions.isDebugOutput()) {
+                linkerArgs.append(",--demangle");
+            } else {
+                linkerArgs.append(",-s");
+            }
+
+            clangCommand.add(linkerArgs.toString());
+
+            clangCommand.add("-o");
+            clangCommand.add(theWASMFileName);
+
+            final ProcessBuilder clangProcessBuilder = new ProcessBuilder(clangCommand).directory(theLLFile.getParentFile()).inheritIO();
+            aOptions.getLogger().info("LLVM compiler command is {}", clangProcessBuilder.command());
+            final Process theLLCProcess = clangProcessBuilder.start();
             if (theLLCProcess.waitFor() != 0) {
-                aOptions.getLogger().warn("llc returned with exit code {}", theLLCProcess.exitValue());
+                aOptions.getLogger().warn("clang returned with exit code {}", theLLCProcess.exitValue());
 
                 try (final BufferedReader processOutput = new BufferedReader(new InputStreamReader(theLLCProcess.getErrorStream()))) {
                     String line;
@@ -3734,58 +3750,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                     }
                 }
 
-                throw new RuntimeException("llc reported an error!");
-            } else {
-                final File theObjectFile = new File(theLLFile.getParent(), theObjectFileName);
-                theObjectFile.deleteOnExit();
-                try (final FileInputStream inputStream = new FileInputStream(theObjectFile)) {
-                    theCompileResult.add(new CompileResult.BinaryContent(aOptions.getFilenamePrefix() + ".o",
-                            IOUtils.toByteArray(inputStream)));
-                }
-
-                // We can delete the LL file, as we have rhe object file now
-                theLLFile.delete();
-            }
-
-            // Link object file to wasm binary
-            final List<String> theLinkerCommand = new ArrayList<>();
-            if ("\\".equals(File.separator)) {
-                // We are running on windows
-                // llvm needs to be installed in the Windows Subsystem for Linux
-                theLinkerCommand.add("wsl");
-            }
-            final String theWASMFileName = theLLFile.getName() + ".wasm";
-            theLinkerCommand.add("wasm-ld-11");
-            theLinkerCommand.add(theObjectFileName);
-            theLinkerCommand.add("-o");
-            theLinkerCommand.add(theWASMFileName);
-            theLinkerCommand.add("-export-dynamic");
-            theLinkerCommand.add("-allow-undefined");
-            theLinkerCommand.add("--lto-" + aOptions.getLlvmOptimizationLevel().name());
-            theLinkerCommand.add("--no-entry");
-            if (aOptions.isDebugOutput()) {
-                theLinkerCommand.add("--demangle");
-            } else {
-                theLinkerCommand.add("-s");
-            }
-            theLinkerCommand.add("--initial-memory=" + aOptions.getWasmMinimumPageSize() * 65536);
-            theLinkerCommand.add("--max-memory=" + aOptions.getWasmMaximumPageSize() * 65536);
-            final ProcessBuilder theLinkerProcessBuilder = new ProcessBuilder(theLinkerCommand).directory(theLLFile.getParentFile());
-            aOptions.getLogger().info("LLVM linker command is {}", theLinkerProcessBuilder.command());
-
-            final Process theLinkerProcess = theLinkerProcessBuilder.start();
-            if (theLinkerProcess.waitFor() != 0) {
-                aOptions.getLogger().warn("wasm-ld returned with exit code {} ", theLinkerProcess.exitValue());
-                try (final BufferedReader processOutput = new BufferedReader(
-                        new InputStreamReader(theLinkerProcess.getErrorStream()))) {
-                    String line;
-                    while ((line = processOutput.readLine()) != null) {
-                        aOptions.getLogger().warn(line);
-                    }
-                }
-
-                throw new RuntimeException("wasm-ld reported an error!");
-
+                throw new RuntimeException("clang reported an error!");
             } else {
                 final File theWASMFile = new File(theLLFile.getParent(), theWASMFileName);
                 theWASMFile.deleteOnExit();
@@ -3794,8 +3759,7 @@ public class LLVMCompilerBackend implements CompileBackend<LLVMCompileResult> {
                             IOUtils.toByteArray(inputStream)));
                 }
 
-                // We can delete the object and the wasm file now
-                new File(theObjectFileName).delete();
+                // We can delete the wasm file now
                 theWASMFile.delete();
             }
 

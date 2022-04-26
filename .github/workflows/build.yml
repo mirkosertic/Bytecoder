@@ -19,6 +19,7 @@ jobs:
           chmod +x llvm.sh
           sudo ./llvm.sh 11
           sudo apt-get install -y ocl-icd-opencl-dev clang-11 lldb-11 lld-11 clangd-11
+          sudo update-alternatives --install /usr/bin/wasm-ld wasm-ld /usr/bin/wasm-ld-11 1000
       - run: |
           wget https://github.com/gohugoio/hugo/releases/download/v0.59.0/hugo_0.59.0_Linux-64bit.tar.gz
           tar xzf hugo_0.59.0_Linux-64bit.tar.gz
