@@ -1,0 +1,1 @@
+clang -nostdlib -O0 -S -emit-llvm Testclass.cpp
