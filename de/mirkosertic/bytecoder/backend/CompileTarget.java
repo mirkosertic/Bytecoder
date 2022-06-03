@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.backend;
 
 import de.mirkosertic.bytecoder.api.ClassLibProvider;
+import de.mirkosertic.bytecoder.backend.cpp.CPPCompilerBackend;
 import de.mirkosertic.bytecoder.backend.js.JSSSACompilerBackend;
 import de.mirkosertic.bytecoder.backend.llvm.LLVMCompilerBackend;
 import de.mirkosertic.bytecoder.backend.wasm.WASMSSAASTCompilerBackend;
@@ -71,7 +72,14 @@ public class CompileTarget {
             public CompileBackend createBackend() {
                 return new LLVMCompilerBackend(NaiveProgramGenerator.FACTORY);
             }
+        },
+        cpp {
+            @Override
+            public CompileBackend createBackend() {
+                return new CPPCompilerBackend(NaiveProgramGenerator.FACTORY);
+            }
         };
+
 
         public abstract CompileBackend createBackend();
     }

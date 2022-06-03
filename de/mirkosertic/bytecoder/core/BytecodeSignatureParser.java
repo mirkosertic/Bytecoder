@@ -23,11 +23,11 @@ public class BytecodeSignatureParser {
 
     private final BytecodeReplacer replacer;
 
-    public BytecodeSignatureParser(BytecodeReplacer aReplacer) {
+    public BytecodeSignatureParser(final BytecodeReplacer aReplacer) {
         replacer = aReplacer;
     }
 
-    private void add(List<BytecodeTypeRef> aTypes, BytecodeTypeRef aType, boolean isArray, int arrayDepth) {
+    private void add(final List<BytecodeTypeRef> aTypes, final BytecodeTypeRef aType, final boolean isArray, final int arrayDepth) {
         if (isArray) {
             aTypes.add(new BytecodeArrayTypeRef(aType, arrayDepth));
         } else {
@@ -35,20 +35,20 @@ public class BytecodeSignatureParser {
         }
     }
 
-    public BytecodeTypeRef toFieldType(BytecodeUtf8Constant aConstant) {
-        BytecodeTypeRef[] theTypes = toTypes(aConstant.stringValue());
+    public BytecodeTypeRef toFieldType(final BytecodeUtf8Constant aConstant) {
+        final BytecodeTypeRef[] theTypes = toTypes(aConstant.stringValue());
         return theTypes[0];
     }
 
-    public BytecodeTypeRef[] toTypes(String aTypeList) {
-        List<BytecodeTypeRef> theResult = new ArrayList();
+    public BytecodeTypeRef[] toTypes(final String aTypeList) {
+        final List<BytecodeTypeRef> theResult = new ArrayList();
         int p = 0;
         int arrayDepth = 0;
         boolean isArray = false;
         boolean isObject = false;
         StringBuilder objectName = null;
         while(p<aTypeList.length()) {
-            char theChar = aTypeList.charAt(p++);
+            final char theChar = aTypeList.charAt(p++);
             if (isObject) {
                 switch (theChar) {
                     case '[':
@@ -124,10 +124,10 @@ public class BytecodeSignatureParser {
                 }
             }
         }
-        return theResult.toArray(new BytecodeTypeRef[theResult.size()]);
+        return theResult.toArray(new BytecodeTypeRef[0]);
     }
 
-    private BytecodeTypeRef toTypeRef(Class aClass) {
+    private BytecodeTypeRef toTypeRef(final Class aClass) {
         if (aClass == Void.class) {
             return BytecodePrimitiveTypeRef.VOID;
         }
@@ -135,6 +135,8 @@ public class BytecodeSignatureParser {
             switch (aClass.getSimpleName()) {
                 case "void":
                     return BytecodePrimitiveTypeRef.VOID;
+                case "int":
+                    return BytecodePrimitiveTypeRef.INT;
                 default:
                     throw new IllegalArgumentException("Unknown primitive : " + aClass.getSimpleName());
             }
@@ -145,22 +147,22 @@ public class BytecodeSignatureParser {
         return BytecodeObjectTypeRef.fromRuntimeClass(aClass);
     }
 
-    public BytecodeMethodSignature toMethodSignature(Method aMethod) {
-        BytecodeTypeRef theReturnType = toTypeRef(aMethod.getReturnType());
-        Class<?>[] theParameter = aMethod.getParameterTypes();
-        BytecodeTypeRef[] theReturnValues = new BytecodeTypeRef[theParameter.length];
+    public BytecodeMethodSignature toMethodSignature(final Method aMethod) {
+        final BytecodeTypeRef theReturnType = toTypeRef(aMethod.getReturnType());
+        final Class<?>[] theParameter = aMethod.getParameterTypes();
+        final BytecodeTypeRef[] theReturnValues = new BytecodeTypeRef[theParameter.length];
         for (int i=0;i<theParameter.length;i++) {
             theReturnValues[i] = toTypeRef(theParameter[i]);
         }
         return new BytecodeMethodSignature(theReturnType, theReturnValues);
     }
 
-    public BytecodeMethodSignature toMethodSignature(BytecodeUtf8Constant aConstant) {
-        StringBuilder theBuilder = new StringBuilder(aConstant.stringValue());
-        int p = theBuilder.indexOf("(");
-        int p2 = theBuilder.lastIndexOf(")");
-        String theArguments = theBuilder.substring(p+1, p2);
-        BytecodeTypeRef[] theReturnValue = toTypes(theBuilder.substring(p2 + 1));
+    public BytecodeMethodSignature toMethodSignature(final BytecodeUtf8Constant aConstant) {
+        final StringBuilder theBuilder = new StringBuilder(aConstant.stringValue());
+        final int p = theBuilder.indexOf("(");
+        final int p2 = theBuilder.lastIndexOf(")");
+        final String theArguments = theBuilder.substring(p+1, p2);
+        final BytecodeTypeRef[] theReturnValue = toTypes(theBuilder.substring(p2 + 1));
         if (theReturnValue.length != 1) {
             throw new IllegalArgumentException("Invalid name signature: missing return type : " + theBuilder);
         }

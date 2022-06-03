@@ -70,8 +70,8 @@ public class JSPrintWriter {
         return this;
     }
 
-    public JSPrintWriter symbol(final String aSymbol, final DebugPosition aPositionl) {
-        sourceMapWriter.assignName(lineCounter, columnCounter, aSymbol, aPositionl);
+    public JSPrintWriter symbol(final String aSymbol, final DebugPosition aPosition) {
+        sourceMapWriter.assignName(lineCounter, columnCounter, aSymbol, aPosition);
         print(minifier.toSymbol(aSymbol));
         return this;
     }
