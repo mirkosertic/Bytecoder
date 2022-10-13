@@ -123,12 +123,12 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>selenium</artifactId>
-            <version>1.17.3</version>
+            <version>1.17.5</version>
         </dependency>
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-analysis</artifactId>
-            <version>9.3</version>
+            <version>9.4</version>
         </dependency>
     </dependencies>
 
