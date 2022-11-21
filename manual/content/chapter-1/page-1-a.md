@@ -23,7 +23,16 @@ public class HelloWorld {
 First of all, we need to compile the Java sources to a JVM class file. This is done by using the `javac` tool from the JDK:
 
 ```
-javac HelloWorld.java
+mkdir -p bytecodertest && cd bytecodertest  && javac HelloWorld.java
+```
+The directry structure
+```
+[root@host]# tree
+.
+├── bytecoder-cli-2021-11-02-executable.jar
+└── bytecodertest
+    └── HelloWorld.java
+
 ```
 
 Now, we have the compiled .class files. Now we can use the Bytecoder CLI to compile it to JavaScript!
