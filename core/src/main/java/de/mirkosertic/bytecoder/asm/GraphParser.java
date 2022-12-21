@@ -265,11 +265,7 @@ public class GraphParser {
             ifNode.addIncomingData(arg1, arg2);
             final GraphParserState newState = currentState.controlFlowsTo(ifNode).withNewStack(newStack);
 
-            final RegionNode jumpTarget = graph.getOrCreateRegionNodeFor(node.label.getLabel().toString());
-            ifNode.addControlFlowTo(jumpTarget);
-
             final List<ControlFlow> results = new ArrayList<>();
-
             results.add(currentFlow.continueWith(node.getNext(), newState));
 
             if (labelsWithBackEdges.contains(node.label)) {
