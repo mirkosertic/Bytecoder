@@ -3,10 +3,10 @@ package de.mirkosertic.bytecoder.asm;
 public class Testclass {
 
     public Testclass() {
-        for (int i = 0; i < 10; i++) {
-            if (i == 5) {
-                return;
-            }
+        //final int x = 10;
+        int x = 0;
+        for (int y = 0; y < 100; y++) {
+            x = x + y;
         }
     }
 }
