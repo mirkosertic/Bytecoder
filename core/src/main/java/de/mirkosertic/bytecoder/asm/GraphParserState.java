@@ -45,6 +45,9 @@ public class GraphParserState {
     public GraphParserState withNewStack(final Node[] newStack) {
         return new GraphParserState(locals, newStack, lastControlTokenConsumer, lineNumber);
     }
+    public GraphParserState withStackAndLocals(final Node[] newStack, final Node[] newLocals) {
+        return new GraphParserState(newLocals, newStack, lastControlTokenConsumer, lineNumber);
+    }
 
     public GraphParserState setLocalWithStack(final int local, final Node value, final Node[] newStack) {
         final Node[] newLocals = new Node[locals.length];

@@ -24,6 +24,10 @@ import java.util.*;
 
 public class GraphParser {
 
+    enum EdgeType {
+        FORWARD, BACK
+    }
+
     private final Graph graph;
 
     private final MethodNode methodNode;
@@ -52,11 +56,14 @@ public class GraphParser {
         }
 
         final RegionNode startRegion = graph.getOrCreateRegionNodeFor("Start");
+        final Frame startFrame = new Frame();
+        startFrame.incomingLocals = initialLocals;
+        startFrame.incomingStack = initialStack;
+        startRegion.frame = startFrame;
         final GraphParserState initialState = new GraphParserState(initialLocals, initialStack, startRegion, -1);
 
         // Step 1: We collect all jump targets
-        final Set<LabelNode> jumpTargets = new HashSet<>();
-        final Set<LabelNode> labelsWithBackEdges = new HashSet<>();
+        final Map<LabelNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerLabel = new HashMap<>();
 
         // Step 2: Check for back edges
         final Stack<ControlFlow> controlFlowsToCheck = new Stack<>();
@@ -74,47 +81,68 @@ public class GraphParser {
                 if (jump.getOpcode() == Opcodes.GOTO) {
                     if (flow.visited(jump.label)) {
                         // Back-Edge
-                        jumpTargets.add(jump.label);
-                        labelsWithBackEdges.add(jump.label);
+                        final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerLabel.computeIfAbsent(jump.label, k -> new HashMap<>());
+                        jumps.put(jump, EdgeType.BACK);
                     } else {
-                        jumpTargets.add(jump.label);
+                        final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerLabel.computeIfAbsent(jump.label, k -> new HashMap<>());
+                        jumps.put(jump, EdgeType.FORWARD);
                         controlFlowsToCheck.push(flow.addLabelAndContinueWith(jump.label, next));
                     }
                 } else {
                     if (flow.visited(jump.label)) {
                         // Back-Edge
-                        jumpTargets.add(jump.label);
-                        labelsWithBackEdges.add(jump.label);
+                        final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerLabel.computeIfAbsent(jump.label, k -> new HashMap<>());
+                        jumps.put(jump, EdgeType.BACK);
                     } else {
-                        jumpTargets.add(jump.label);
+                        final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerLabel.computeIfAbsent(jump.label, k -> new HashMap<>());
+                        jumps.put(jump, EdgeType.FORWARD);
                         controlFlowsToCheck.push(flow.addLabelAndContinueWith(jump.label, next));
                     }
 
                     final LabelNode nextNode = (LabelNode) jump.getNext();
                     if (flow.visited(nextNode)) {
                         // Back-Edge
-                        jumpTargets.add(nextNode);
-                        labelsWithBackEdges.add(nextNode);
+                        final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerLabel.computeIfAbsent(nextNode, k -> new HashMap<>());
+                        jumps.put(jump, EdgeType.BACK);
                     } else {
-                        jumpTargets.add(nextNode);
+                        final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerLabel.computeIfAbsent(nextNode, k -> new HashMap<>());
+                        jumps.put(jump, EdgeType.FORWARD);
+
                         controlFlowsToCheck.push(flow.addLabelAndContinueWith(nextNode, next));
                     }
                 }
             } else {
                 if (next != null) {
+                    if (next instanceof LabelNode) {
+                        final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerLabel.computeIfAbsent((LabelNode) next, k -> new HashMap<>());
+                        jumps.put(flow.currentNode, EdgeType.FORWARD);
+                    }
                     controlFlowsToCheck.push(flow.continueWith(next));
+                } else {
+                    System.out.println("no more next!");
                 }
             }
         }
 
         // Step 3: We know the back edges,
         // Now we do a forward control flow analysis
+        final Set<AbstractInsnNode> alreadyVisited = new HashSet<>();
         controlFlowsToCheck.push(new ControlFlow(methodNode.instructions.get(0), initialState));
         while (!controlFlowsToCheck.isEmpty()) {
             final ControlFlow flow = controlFlowsToCheck.pop();
-            List<ControlFlow> outcomes = parse(flow, jumpTargets, labelsWithBackEdges);
-            for (final ControlFlow nextOutCome : outcomes) {
-                controlFlowsToCheck.push(nextOutCome);
+            alreadyVisited.add(flow.currentNode);
+            for (final ControlFlow nextOutCome : parse(flow, incomingEdgesPerLabel)) {
+                if (!alreadyVisited.contains(nextOutCome.currentNode)) {
+                    controlFlowsToCheck.push(nextOutCome);
+                }
+            }
+        }
+
+        // Step 4: Fixup dataflow for copy nodes
+        for (final Node n : graph.nodes()) {
+            if (n instanceof CopyNode) {
+                final CopyNode c = (CopyNode) n;
+                c.resolve();
             }
         }
     }
@@ -124,6 +152,12 @@ public class GraphParser {
         final Label l = node.getLabel();
 
         final RegionNode region = graph.getOrCreateRegionNodeFor(l.toString());
+
+        final Frame frame = new Frame();
+        frame.incomingLocals = currentFlow.graphParserState.locals;
+        frame.incomingStack = currentFlow.graphParserState.stack;
+        region.frame = frame;
+
         final GraphParserState newState = currentFlow.graphParserState.controlFlowsTo(region);
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -170,15 +204,16 @@ public class GraphParser {
         final Type methodType = Type.getMethodType(node.desc);
         if (node.getOpcode() == Opcodes.INVOKESPECIAL) {
             final Type[] argumentTypes = methodType.getArgumentTypes();
-            final Node[] incomingData = new Node[argumentTypes.length];
+            final Node[] incomingData = new Node[argumentTypes.length + 1];
+            incomingData[0] = currentState.stack[currentState.stack.length - 1];
             for (int i = 0; i < argumentTypes.length; i++) {
-                incomingData[i] = currentState.stack[currentState.stack.length - 1 - i];
+                incomingData[i + 1] = currentState.stack[currentState.stack.length - 2 - i];
             }
             final Node[] newStack = new Node[currentState.stack.length - argumentTypes.length];
             System.arraycopy(currentState.stack, 0, newStack, 0, newStack.length);
 
             final ControlTokenConsumerNode n = graph.newMethodInvocationNode(node);
-            n.addIncomingData(newStack);
+            n.addIncomingData(incomingData);
 
             final GraphParserState newState = currentState.controlFlowsTo(n).withNewStack(newStack);
             return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
@@ -243,16 +278,49 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(currentFlow.currentNode.getNext()));
     }
 
-    private List<ControlFlow> parseJumpInsnNode(final ControlFlow currentFlow, final Set<LabelNode> jumpTargets, final Set<LabelNode> labelsWithBackEdges) {
+    private GraphParserState introduceCopyInstructions(final GraphParserState graphParserState, final LabelNode targetNode) {
+        final RegionNode targetRegion = graph.getOrCreateRegionNodeFor(targetNode.getLabel().toString());
+        GraphParserState state = graphParserState;
+
+        for (int i = 0; i < state.locals.length; i++) {
+            final Node source = graphParserState.locals[i];
+            final int index = i;
+            final CopyNode.DataFlowResolver resolver = copy -> {
+                final Node target = targetRegion.frame.incomingLocals[index];
+                if (source != target) {
+                    copy.addIncomingData(source);
+                    target.addIncomingData(copy);
+                }
+            };
+            final CopyNode copy = graph.newCopyNode(source.type, resolver);
+            state = state.controlFlowsTo(copy);
+        }
+        for (int i = 0; i < state.stack.length; i++) {
+            final Node source = state.stack[i];
+            final int index = i;
+            final CopyNode.DataFlowResolver resolver = copy -> {
+                final Node target = targetRegion.frame.incomingStack[index];
+                if (source != target) {
+                    copy.addIncomingData(source);
+                    target.addIncomingData(copy);
+                }
+            };
+            final CopyNode copy = graph.newCopyNode(source.type, resolver);
+            state = state.controlFlowsTo(copy);
+        }
+        return state.controlFlowsTo(targetRegion);
+    }
+
+    private List<ControlFlow> parseJumpInsnNode(final ControlFlow currentFlow, final Map<LabelNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerLabel) {
         final JumpInsnNode node = (JumpInsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
         if (node.getOpcode() == Opcodes.GOTO) {
-            if (labelsWithBackEdges.contains(node.label)) {
-                // Back-Jump, do nothing
-                currentState.controlFlowsTo(graph.getOrCreateRegionNodeFor(node.label.getLabel().toString()));
+            final Map<AbstractInsnNode, EdgeType> edges = incomingEdgesPerLabel.get(node.label);
+            final GraphParserState newState = introduceCopyInstructions(currentState, node.label);
+            if (EdgeType.BACK == edges.get(node)) {
+                // Back Edge, do nothing
                 return Collections.emptyList();
             }
-            final GraphParserState newState = currentState.controlFlowsTo(graph.getOrCreateRegionNodeFor(node.label.getLabel().toString()));
             return Collections.singletonList(currentFlow.continueWith(node.label, newState));
         } else {
             final Node arg2 = currentState.stack[currentState.stack.length - 1];
@@ -268,10 +336,12 @@ public class GraphParser {
             final List<ControlFlow> results = new ArrayList<>();
             results.add(currentFlow.continueWith(node.getNext(), newState));
 
-            if (labelsWithBackEdges.contains(node.label)) {
+            final Map<AbstractInsnNode, EdgeType> edges = incomingEdgesPerLabel.get(node.label);
+            final GraphParserState afterCopy = introduceCopyInstructions(newState, node.label);
+            if (EdgeType.BACK == edges.get(node)) {
                 // Back-Jump, do nothing
             } else {
-                results.add(currentFlow.continueWith(node.label, newState));
+                results.add(currentFlow.continueWith(node.label, afterCopy));
             }
             return results;
         }
@@ -283,25 +353,71 @@ public class GraphParser {
 
         final int local = node.var;
         final Node currentValue = currentState.locals[local];
-        final Node intConstant = graph.newIntNode(node.incr);
-        final Node addNode = graph.newAddInt();
-        addNode.addIncomingData(currentValue, intConstant);
-        final GraphParserState newState = currentState.setLocalWithStack(local, addNode, currentState.stack);
+        final ControlTokenConsumerNode iincNode = graph.newIIncNode(node.incr);
+        iincNode.addIncomingData(currentValue);
+
+        final GraphParserState newState = currentState.controlFlowsTo(iincNode).setLocalWithStack(local, iincNode, currentState.stack);
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
-    private List<ControlFlow> parse(final ControlFlow currentFlow, final Set<LabelNode> jumpTargets, final Set<LabelNode> labelsWithBackEdges) {
+    private List<ControlFlow> parse(final ControlFlow currentFlow, final Map<LabelNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerLabel) {
         if (currentFlow.currentNode instanceof LabelNode) {
             final LabelNode labelNode = (LabelNode) currentFlow.currentNode;
 
-            if (jumpTargets.contains(labelNode)) {
-                return parseLabelNode(currentFlow);
+            final Map<AbstractInsnNode, EdgeType> incomingEdges = incomingEdgesPerLabel.get(labelNode);
+            if (incomingEdges != null) {
+                if (incomingEdges.size() > 1) {
+                    // We do have multiple incoming edges, hence we need PHI nodes
+                    GraphParserState graphParserState = currentFlow.graphParserState;
+                    final Node[] newLocals = new Node[graphParserState.locals.length];
+                    final Node[] newStack = new Node[graphParserState.stack.length];
+                    // Copy data to phi nodes
+
+                    for (int i = 0; i < graphParserState.locals.length; i++) {
+                        final Node source = graphParserState.locals[i];
+                        final Node phi = graph.newPHINode(source.type);
+                        final CopyNode.DataFlowResolver resolver = copy -> {
+                            copy.addIncomingData(source);
+                            phi.addIncomingData(copy);
+                        };
+                        final CopyNode copy = graph.newCopyNode(source.type, resolver);
+                        graphParserState = graphParserState.controlFlowsTo(copy);
+
+                        newLocals[i] = phi;
+                    }
+                    for (int i = 0; i < graphParserState.stack.length; i++) {
+                        final Node source = graphParserState.stack[i];
+                        final Node phi = graph.newPHINode(source.type);
+                        final CopyNode.DataFlowResolver resolver = copy -> {
+                            copy.addIncomingData(source);
+                            phi.addIncomingData(copy);
+                        };
+                        final CopyNode copy = graph.newCopyNode(source.type, resolver);
+                        graphParserState = graphParserState.controlFlowsTo(copy);
+
+                        newStack[i] = phi;
+                    }
+                    final GraphParserState newState = graphParserState.withStackAndLocals(newStack, newLocals);
+                    final ControlFlow mergedFlow = currentFlow.continueWith(newState);
+                    return parseLabelNode(mergedFlow);
+                }
             }
 
             // Do nothing with this label
             if (labelNode.getNext() == null) {
                 return Collections.emptyList();
+            }
+
+            if (incomingEdgesPerLabel.containsKey(labelNode)) {
+                final RegionNode targetRegion = graph.getOrCreateRegionNodeFor(labelNode.getLabel().toString());
+                if (targetRegion.frame == null) {
+                    final Frame frame = new Frame();
+                    frame.incomingStack = currentFlow.graphParserState.stack;
+                    frame.incomingLocals = currentFlow.graphParserState.locals;
+                    targetRegion.frame = frame;
+                }
+                return Collections.singletonList(currentFlow.continueWith(labelNode.getNext()));
             }
             return Collections.singletonList(currentFlow.continueWith(labelNode.getNext()));
         }
@@ -324,7 +440,7 @@ public class GraphParser {
             return parseFrame(currentFlow);
         }
         if (currentFlow.currentNode  instanceof JumpInsnNode) {
-            return parseJumpInsnNode(currentFlow, jumpTargets, labelsWithBackEdges);
+            return parseJumpInsnNode(currentFlow, incomingEdgesPerLabel);
         }
         if (currentFlow.currentNode  instanceof IincInsnNode) {
             return parseIincInsnNode(currentFlow);

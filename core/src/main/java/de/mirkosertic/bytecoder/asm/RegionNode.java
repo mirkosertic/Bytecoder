@@ -19,6 +19,8 @@ public class RegionNode extends ControlTokenConsumerNode {
 
     final String label;
 
+    Frame frame;
+
     public RegionNode(final String label) {
         super(null);
         this.label = label;

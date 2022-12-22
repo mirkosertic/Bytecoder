@@ -16,7 +16,6 @@
 package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
-
 public class IntNode extends ConstantNode {
 
     final int value;

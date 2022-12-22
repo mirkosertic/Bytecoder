@@ -36,6 +36,10 @@ public class Graph {
         return n;
     }
 
+    public List<Node> nodes() {
+        return nodes;
+    }
+
     public Node newThisNode(final Type type) {
         return register(new ThisNode(type));
     }
@@ -105,7 +109,7 @@ public class Graph {
         return register(new AddIntNode());
     }
 
-    public void writeDebugTo(OutputStream fileOutputStream) {
+    public void writeDebugTo(final OutputStream fileOutputStream) {
         final PrintWriter pw = new PrintWriter(fileOutputStream);
         pw.println("digraph debugoutput {");
         for (int i = 0; i < nodes.size(); i++) {
@@ -119,7 +123,7 @@ public class Graph {
             }
             pw.print(" node_" + i + "[label=\"" + label + "\" ");
             if (n instanceof ControlTokenConsumerNode) {
-                pw.print("shape=\"box\" style=\"filled\" fillcolor=\"lightgray\"");
+                pw.print("style=\"filled\" fillcolor=\"lightgray\"");
             }
             pw.println("];");
             for (final Node incoming : n.incomingDataFlows) {
@@ -135,5 +139,17 @@ public class Graph {
         }
         pw.println("}");
         pw.flush();
+    }
+
+    public Node newPHINode(final Type type) {
+        return register(new PHINode(type));
+    }
+
+    public IIncNode newIIncNode(final int amount) {
+        return (IIncNode) register(new IIncNode(amount));
+    }
+
+    public CopyNode newCopyNode(final Type type, final CopyNode.DataFlowResolver dataFlowResolver) {
+        return (CopyNode) register(new CopyNode(type, dataFlowResolver));
     }
 }

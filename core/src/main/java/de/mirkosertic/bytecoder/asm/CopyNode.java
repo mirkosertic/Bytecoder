@@ -15,9 +15,22 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-public class IfNode extends ControlTokenConsumerNode {
+import org.objectweb.asm.Type;
 
-    public IfNode() {
-        super(null);
+public class CopyNode extends ControlTokenConsumerNode {
+
+    interface DataFlowResolver {
+        void resolve(final CopyNode copyNode);
+    }
+
+    final DataFlowResolver resolver;
+
+    public CopyNode(final Type type, final DataFlowResolver resolver) {
+        super(type);
+        this.resolver = resolver;
+    }
+
+    public void resolve() {
+        resolver.resolve(this);
     }
 }

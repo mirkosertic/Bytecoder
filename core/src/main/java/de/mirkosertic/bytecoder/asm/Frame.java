@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 package de.mirkosertic.bytecoder.asm;
+public class Frame {
 
-public class IfNode extends ControlTokenConsumerNode {
-
-    public IfNode() {
-        super(null);
-    }
+    Node[] incomingLocals;
+    Node[] incomingStack;
 }

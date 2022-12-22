@@ -15,9 +15,11 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-public class IfNode extends ControlTokenConsumerNode {
+import org.objectweb.asm.Type;
 
-    public IfNode() {
-        super(null);
+public class PHINode extends Node {
+
+    public PHINode(final Type type) {
+        super(type);
     }
 }
