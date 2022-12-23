@@ -16,7 +16,7 @@
 package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
-public class IntNode extends ConstantNode {
+public class IntNode extends PrimitiveValueNode {
 
     final int value;
 

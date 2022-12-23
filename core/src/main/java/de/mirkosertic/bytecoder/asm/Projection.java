@@ -15,14 +15,5 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Type;
-
-public class IIncNode extends ControlTokenConsumerNode {
-
-    final int amount;
-
-    public IIncNode(final int amount) {
-        super(Type.INT_TYPE);
-        this.amount = amount;
-    }
+public interface Projection {
 }

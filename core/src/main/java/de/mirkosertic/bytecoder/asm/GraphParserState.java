@@ -17,42 +17,37 @@ package de.mirkosertic.bytecoder.asm;
 
 public class GraphParserState {
 
-    final Node[] locals;
-    final Node[] stack;
+    final Frame frame;
 
     final ControlTokenConsumerNode lastControlTokenConsumer;
 
+    final Projection projection;
+
     final int lineNumber;
 
-    public GraphParserState(final Node[] locals, final Node[] stack, final ControlTokenConsumerNode lastControlTokenConsumer, final int lineNumber) {
-        this.locals = locals;
-        this.stack = stack;
+    public GraphParserState(final Frame frame, final ControlTokenConsumerNode lastControlTokenConsumer, final Projection projection, final int lineNumber) {
+        this.frame = frame;
         this.lastControlTokenConsumer = lastControlTokenConsumer;
+        this.projection = projection;
         this.lineNumber = lineNumber;
     }
 
     public GraphParserState controlFlowsTo(final ControlTokenConsumerNode node) {
         if (lastControlTokenConsumer != null) {
-            lastControlTokenConsumer.addControlFlowTo(node);
+            lastControlTokenConsumer.addControlFlowTo(projection, node);
         }
-        return new GraphParserState(locals, stack, node, lineNumber);
+        return new GraphParserState(frame, node, StandardProjections.DEFAULT, lineNumber);
+    }
+
+    public GraphParserState projection(final Projection newProjection) {
+        return new GraphParserState(frame, lastControlTokenConsumer, newProjection, lineNumber);
     }
 
     public GraphParserState withLineNumber(final int line) {
-        return new GraphParserState(locals, stack, lastControlTokenConsumer, lineNumber);
+        return new GraphParserState(frame, lastControlTokenConsumer, projection, line);
     }
 
-    public GraphParserState withNewStack(final Node[] newStack) {
-        return new GraphParserState(locals, newStack, lastControlTokenConsumer, lineNumber);
-    }
-    public GraphParserState withStackAndLocals(final Node[] newStack, final Node[] newLocals) {
-        return new GraphParserState(newLocals, newStack, lastControlTokenConsumer, lineNumber);
-    }
-
-    public GraphParserState setLocalWithStack(final int local, final Node value, final Node[] newStack) {
-        final Node[] newLocals = new Node[locals.length];
-        System.arraycopy(locals, 0, newLocals, 0, locals.length);
-        newLocals[local] = value;
-        return new GraphParserState(newLocals, newStack, lastControlTokenConsumer, lineNumber);
+    public GraphParserState withFrame(final Frame frame) {
+        return new GraphParserState(frame, lastControlTokenConsumer, projection, lineNumber);
     }
 }

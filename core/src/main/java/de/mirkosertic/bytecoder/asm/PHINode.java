@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class PHINode extends Node {
+public class PHINode extends VarNode {
 
     public PHINode(final Type type) {
         super(type);

@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class MethodArgumentNode extends ConstantNode {
+public class MethodArgumentNode extends VarNode {
 
     public MethodArgumentNode(final Type type, final int local) {
         super(type);

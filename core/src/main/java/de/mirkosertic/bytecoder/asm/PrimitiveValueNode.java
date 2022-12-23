@@ -17,22 +17,9 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-import java.util.HashMap;
-import java.util.Map;
+public class PrimitiveValueNode extends ConstantNode {
 
-public abstract class ControlTokenConsumerNode extends Node {
-
-    final Map<Projection, ControlTokenConsumerNode> controlFlowsTo;
-
-    public ControlTokenConsumerNode(final Type type) {
+    public PrimitiveValueNode(final Type type) {
         super(type);
-        controlFlowsTo = new HashMap<>();
-    }
-
-    public void addControlFlowTo(final Projection projection, final ControlTokenConsumerNode node) {
-        if (controlFlowsTo.containsKey(projection)) {
-            System.out.println("There is already a control flow with projection " + projection);
-        }
-        controlFlowsTo.put(projection, node);
     }
 }

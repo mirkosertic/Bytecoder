@@ -16,19 +16,33 @@
 package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Graph {
 
     private final List<Node> nodes;
 
+    private final Map<AbstractInsnNode, Node> instructionsToNodeMapping;
+
     public Graph() {
         nodes = new ArrayList<>();
+        instructionsToNodeMapping = new HashMap<>();
+    }
+
+    public void registerMapping(final AbstractInsnNode instruction, final Node node) {
+        instructionsToNodeMapping.put(instruction, node);
+    }
+
+    public Node registeredMappingFor(final AbstractInsnNode instruction) {
+        return instructionsToNodeMapping.get(instruction);
     }
 
     protected Node register(final Node n) {
@@ -40,12 +54,12 @@ public class Graph {
         return nodes;
     }
 
-    public Node newThisNode(final Type type) {
-        return register(new ThisNode(type));
+    public VarNode newThisNode(final Type type) {
+        return (VarNode) register(new ThisNode(type));
     }
 
-    public Node newMethodArgumentNode(final Type type, final int local) {
-        return register(new MethodArgumentNode(type, local));
+    public MethodArgumentNode newMethodArgumentNode(final Type type, final int local) {
+        return (MethodArgumentNode) register(new MethodArgumentNode(type, local));
     }
 
     public Node newNode(final Type type) {
@@ -105,8 +119,8 @@ public class Graph {
         return (RegionNode) register(new RegionNode(label));
     }
 
-    public Node newAddInt() {
-        return register(new AddIntNode());
+    public Node newAddNode(final Type type) {
+        return register(new AddNode(type));
     }
 
     public void writeDebugTo(final OutputStream fileOutputStream) {
@@ -131,8 +145,12 @@ public class Graph {
             }
             if (n instanceof ControlTokenConsumerNode) {
                 final ControlTokenConsumerNode c = (ControlTokenConsumerNode) n;
-                for (final Node outgoing : c.controlFlowsTo) {
-                    pw.println(" node_" + i + " -> node_" + nodes.indexOf(outgoing) + "[dir=\"forward\" color=\"red\"];");
+                for (final Map.Entry<Projection, ControlTokenConsumerNode> entry : c.controlFlowsTo.entrySet()) {
+                    pw.print(" node_" + i + " -> node_" + nodes.indexOf(entry.getValue()) + "[dir=\"forward\" color=\"red\"");
+                    if (entry.getKey() != StandardProjections.DEFAULT) {
+                        pw.print(" label=\"" + entry.getKey() + "\"");
+                    }
+                    pw.println("];");
                 }
             }
 
@@ -141,12 +159,12 @@ public class Graph {
         pw.flush();
     }
 
-    public Node newPHINode(final Type type) {
-        return register(new PHINode(type));
+    public PHINode newPHINode(final Type type) {
+        return (PHINode) register(new PHINode(type));
     }
 
-    public IIncNode newIIncNode(final int amount) {
-        return (IIncNode) register(new IIncNode(amount));
+    public VarNode newVarNode(final Type type) {
+        return (VarNode) register(new VarNode(type));
     }
 
     public CopyNode newCopyNode(final Type type, final CopyNode.DataFlowResolver dataFlowResolver) {

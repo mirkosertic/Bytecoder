@@ -15,11 +15,7 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Type;
+public enum StandardProjections implements Projection {
 
-public class AddIntNode extends Node {
-
-    public AddIntNode() {
-        super(Type.INT_TYPE);
-    }
+    TRUE, FALSE, DEFAULT
 }
