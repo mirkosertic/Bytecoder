@@ -134,8 +134,8 @@ public class GraphParser {
         controlFlowsToCheck.push(new ControlFlow(methodNode.instructions.get(0), initialState));
         while (!controlFlowsToCheck.isEmpty()) {
             final ControlFlow flow = controlFlowsToCheck.pop();
-            alreadyVisited.add(flow.currentNode);
             System.out.println("Parsing " + flow.currentNode + " opcode " + flow.currentNode.getOpcode());
+            alreadyVisited.add(flow.currentNode);
             for (final ControlFlow nextOutCome : parse(flow, incomingEdgesPerLabel)) {
                 if (!alreadyVisited.contains(nextOutCome.currentNode)) {
                     controlFlowsToCheck.push(nextOutCome);
@@ -406,28 +406,26 @@ public class GraphParser {
             final GraphParserState afterTrueCopy = introduceCopyInstructions(origin, StandardProjections.TRUE, node.label, copyNode -> {
             });
             final RegionNode trueTargetNode = graph.getOrCreateRegionNodeFor(node.label.getLabel().toString());
-            final GraphParserState newTrueState = afterTrueCopy.controlFlowsTo(trueTargetNode);
+            //final GraphParserState newTrueState = afterTrueCopy.controlFlowsTo(trueTargetNode);
             if (EdgeType.BACK == edges.get(node)) {
                 // Do nothing
             } else {
-                results.add(currentFlow.continueWith(node.label, newTrueState));
+                results.add(currentFlow.continueWith(node.label, afterTrueCopy));
             }
 
             // False-Case
             final AbstractInsnNode nextNode = node.getNext();
             if (nextNode instanceof LabelNode) {
                 final LabelNode falseLabel = (LabelNode) nextNode;
-                final RegionNode falseTargetNode = graph.getOrCreateRegionNodeFor(falseLabel.getLabel().toString());
                 final GraphParserState afterFalseCopy = introduceCopyInstructions(origin, StandardProjections.FALSE, falseLabel, copyNode -> {
                 });
-                final GraphParserState newFalseState = afterFalseCopy.controlFlowsTo(falseTargetNode).withFrame(pop2.newFrame);
                 if (EdgeType.BACK == edges.get(node)) {
                     // Do nothing
                 } else {
-                    results.add(currentFlow.continueWith(nextNode, newFalseState));
+                    results.add(currentFlow.continueWith(nextNode, afterFalseCopy));
                 }
             } else {
-                final GraphParserState newFalseState = origin.projection(StandardProjections.FALSE).withFrame(pop2.newFrame);
+                final GraphParserState newFalseState = origin.projection(StandardProjections.FALSE);
                 results.add(currentFlow.continueWith(nextNode, newFalseState));
             }
 

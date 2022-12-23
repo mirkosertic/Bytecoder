@@ -30,6 +30,10 @@ public abstract class ControlTokenConsumerNode extends Node {
     }
 
     public void addControlFlowTo(final Projection projection, final ControlTokenConsumerNode node) {
+        if (node == this) {
+            System.out.println("FIXME: Infinite control flow recursion");
+            return;
+        }
         if (controlFlowsTo.containsKey(projection)) {
             System.out.println("There is already a control flow with projection " + projection);
         }
