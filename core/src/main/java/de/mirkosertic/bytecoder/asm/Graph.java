@@ -28,6 +28,8 @@ import java.util.Map;
 
 public class Graph {
 
+    public static final String START_REGION_NAME = "Start";
+
     private final List<Node> nodes;
 
     private final Map<AbstractInsnNode, Node> instructionsToNodeMapping;
@@ -74,8 +76,8 @@ public class Graph {
         return register(new IntNode(value));
     }
 
-    public IfNode newIfNode() {
-        return (IfNode) register(new IfNode());
+    public IfNode newIfNode(final IfNode.Operation operation) {
+        return (IfNode) register(new IfNode(operation));
     }
 
     public Node newIntegerNode(final Integer value) {

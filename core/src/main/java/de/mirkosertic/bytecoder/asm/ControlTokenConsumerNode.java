@@ -39,4 +39,8 @@ public abstract class ControlTokenConsumerNode extends Node {
         }
         controlFlowsTo.put(projection, node);
     }
+
+    public ControlTokenConsumerNode flowForProjection(final Projection p) {
+        return controlFlowsTo.get(p);
+    }
 }

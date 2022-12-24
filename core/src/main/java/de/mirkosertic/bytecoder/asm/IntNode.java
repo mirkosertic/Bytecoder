@@ -18,7 +18,7 @@ package de.mirkosertic.bytecoder.asm;
 import org.objectweb.asm.Type;
 public class IntNode extends PrimitiveValueNode {
 
-    final int value;
+    public final int value;
 
     public IntNode(final int value) {
         super(Type.INT_TYPE);

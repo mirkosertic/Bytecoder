@@ -56,7 +56,7 @@ public class GraphParser {
             localIndex+= t.getSize();
         }
 
-        final RegionNode startRegion = graph.getOrCreateRegionNodeFor("Start");
+        final RegionNode startRegion = graph.getOrCreateRegionNodeFor(Graph.START_REGION_NAME);
         final Frame startFrame = new Frame(initialLocals, initialStack);
         startRegion.frame = startFrame;
         final GraphParserState initialState = new GraphParserState(startFrame, startRegion, StandardProjections.DEFAULT, -1);
@@ -392,7 +392,10 @@ public class GraphParser {
             final Frame.PopResult pop1 = currentState.frame.popFromStack();
             final Frame.PopResult pop2 = pop1.newFrame.popFromStack();
 
-            final IfNode ifNode = graph.newIfNode();
+            //TODO: Set correct operation based on opcode
+            final IfNode.Operation operation = null;
+
+            final IfNode ifNode = graph.newIfNode(operation);
             graph.registerMapping(node, ifNode);
             ifNode.addIncomingData(pop1.value, pop2.value);
 

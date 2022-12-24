@@ -18,19 +18,19 @@ package de.mirkosertic.bytecoder.asm;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.analysis.Value;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class Node implements Value {
 
     final Type type;
 
-    final List<Node> incomingDataFlows;
+    public final List<Node> incomingDataFlows;
+    public final List<Node> outgoingFlows;
 
     public Node(final Type type) {
         this.type = type;
         this.incomingDataFlows = new ArrayList<>();
+        this.outgoingFlows = new ArrayList<>();
     }
 
     @Override
@@ -40,6 +40,14 @@ public class Node implements Value {
 
     public void addIncomingData(final Node... nodes) {
         Collections.addAll(incomingDataFlows, nodes);
+        for (final Node n : nodes) {
+            n.addOutgoingData(this);
+        }
     }
 
+    public void addOutgoingData(final Node node) {
+        if (!outgoingFlows.contains(node)) {
+            outgoingFlows.add(node);
+        }
+    }
 }

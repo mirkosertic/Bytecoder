@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.asm;
 
 import de.mirkosertic.bytecoder.api.ClassLibProvider;
+import de.mirkosertic.bytecoder.asm.interpreter.Interpreter;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -38,6 +39,8 @@ public class ASMTest {
             final Graph g = p.graph();
             g.writeDebugTo(Files.newOutputStream(Paths.get("debug.dot")));
             System.out.println(g);
+
+            final Interpreter interpreter = new Interpreter("Temp",  g);
         }
     }
 

@@ -17,7 +17,14 @@ package de.mirkosertic.bytecoder.asm;
 
 public class IfNode extends ControlTokenConsumerNode {
 
-    public IfNode() {
+    enum Operation {
+
+    }
+
+    public final Operation operation;
+
+    public IfNode(final Operation operation) {
         super(null);
+        this.operation = operation;
     }
 }
