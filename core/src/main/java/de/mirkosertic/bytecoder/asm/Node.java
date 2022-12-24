@@ -22,7 +22,7 @@ import java.util.*;
 
 public class Node implements Value {
 
-    final Type type;
+    public final Type type;
 
     public final List<Node> incomingDataFlows;
     public final List<Node> outgoingFlows;

@@ -393,11 +393,18 @@ public class GraphParser {
             final Frame.PopResult pop2 = pop1.newFrame.popFromStack();
 
             //TODO: Set correct operation based on opcode
-            final IfNode.Operation operation = null;
+            final IfNode.Operation operation;
+            switch (currentFlow.currentNode.getOpcode()) {
+                case Opcodes.IF_ICMPGE:
+                    operation = IfNode.Operation.icmpge;
+                    break;
+                default:
+                    throw new IllegalStateException("Not supported opcode : " + currentFlow.currentNode.getOpcode());
+            }
 
             final IfNode ifNode = graph.newIfNode(operation);
             graph.registerMapping(node, ifNode);
-            ifNode.addIncomingData(pop1.value, pop2.value);
+            ifNode.addIncomingData(pop2.value, pop1.value);
 
             final List<ControlFlow> results = new ArrayList<>();
 

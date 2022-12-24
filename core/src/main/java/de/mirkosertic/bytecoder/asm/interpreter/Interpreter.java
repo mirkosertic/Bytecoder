@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.asm.interpreter;
 
 import de.mirkosertic.bytecoder.asm.*;
+import org.objectweb.asm.Type;
 
 import java.util.HashMap;
 import java.util.List;
@@ -48,6 +49,25 @@ public class Interpreter {
         return variables.get(node);
     }
 
+    private Object interpretValue(final AddNode node) {
+        final List<Node> incoming = node.incomingDataFlows;
+        if (incoming.size() != 2) {
+            throw new IllegalStateException("Wrong number of incoming nodes");
+        }
+        if (!(node.type == Type.INT_TYPE)) {
+            throw new IllegalStateException("Only integer addition supported!");
+        }
+        final Number a = (Number) interpretValue(incoming.get(0));
+        final Number b = (Number) interpretValue(incoming.get(1));
+        if (!(a instanceof Integer)) {
+            throw new IllegalStateException("Only integers supported!");
+        }
+        if (!(b instanceof Integer)) {
+            throw new IllegalStateException("Only integers supported!");
+        }
+        return a.intValue() + b.intValue();
+    }
+
     private Object interpretValue(final Node node) {
         if (node instanceof ThisNode) {
             return interpretValue((ThisNode) node);
@@ -57,6 +77,9 @@ public class Interpreter {
         }
         if (node instanceof VarNode) {
             return interpretValue((VarNode) node);
+        }
+        if (node instanceof AddNode) {
+            return interpretValue((AddNode) node);
         }
         throw new IllegalStateException("Not implemented : " + node);
     }
@@ -88,10 +111,23 @@ public class Interpreter {
         if (incoming.size() != 2) {
             throw new IllegalStateException("Wrong number of incoming data flows!");
         }
-        final Object a = interpretValue(incoming.get(0));
-        final Object b = interpretValue(incoming.get(1));
-        System.out.println("a = " + a + ", b= " + b);
-        throw new IllegalStateException("Not implemented!");
+        final Number a = (Number) interpretValue(incoming.get(0));
+        final Number b = (Number) interpretValue(incoming.get(1));
+        switch (node.operation) {
+            case icmpge:
+                if (!(a instanceof Integer)) {
+                    throw new IllegalStateException("Only integers supported!");
+                }
+                if (!(b instanceof Integer)) {
+                    throw new IllegalStateException("Only integers supported!");
+                }
+                if (a.intValue() >= b.intValue()) {
+                    return node.flowForProjection(StandardProjections.TRUE);
+                }
+                return node.flowForProjection(StandardProjections.FALSE);
+            default:
+                throw new IllegalStateException("Not suppted operation : " + node.operation);
+        }
     }
 
     private ControlTokenConsumerNode interpret(final ControlTokenConsumerNode token) {
@@ -108,6 +144,9 @@ public class Interpreter {
         if (token instanceof IfNode) {
             return interpret((IfNode) token);
         }
+        if (token instanceof ReturnNothingNode) {
+            return null;
+        }
         throw new IllegalStateException("Not implemented : " + token);
     }
 
@@ -116,5 +155,6 @@ public class Interpreter {
         while (currentToken != null) {
             currentToken = interpret(currentToken);
         }
+        System.out.println("final state " + variables);
     }
 }

@@ -17,8 +17,8 @@ package de.mirkosertic.bytecoder.asm;
 
 public class IfNode extends ControlTokenConsumerNode {
 
-    enum Operation {
-
+    public enum Operation {
+        icmpge
     }
 
     public final Operation operation;
