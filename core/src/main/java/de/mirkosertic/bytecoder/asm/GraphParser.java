@@ -432,6 +432,7 @@ public class GraphParser {
             final GraphParserState p = state;
             final CopyNode copy = graph.newCopyNode(source.type);
             graph.addFixup(g -> {
+                final GraphParserState x = p;
                 if (targetRegion.frame.incomingStack.length > index) {
                     final Node target = targetRegion.frame.incomingStack[index];
                     if (source != target) {
