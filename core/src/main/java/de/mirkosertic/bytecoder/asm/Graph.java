@@ -156,15 +156,15 @@ public class Graph {
         pw.println("digraph debugoutput {");
         for (int i = 0; i < nodes.size(); i++) {
             final Node n = nodes.get(i);
-            String label = n.getClass().getSimpleName();
+            String label = nodes.indexOf(n) + " " + n.getClass().getSimpleName();
             if (n instanceof RegionNode) {
-                label = ((RegionNode) n).label;
+                label += " " + ((RegionNode) n).label;
             }
             if (n instanceof IntNode) {
-                label = "Int : " + ((IntNode) n).value;
+                label += " Int : " + ((IntNode) n).value;
             }
             if (n instanceof ShortNode) {
-                label = "Short : " + ((ShortNode) n).value;
+                label += " Short : " + ((ShortNode) n).value;
             }
             pw.print(" node_" + i + "[label=\"" + label + "\" ");
             if (n instanceof ControlTokenConsumerNode) {
