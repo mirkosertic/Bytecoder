@@ -27,6 +27,8 @@ public class Node implements Value {
     public final List<Node> incomingDataFlows;
     public final List<Node> outgoingFlows;
 
+    boolean error;
+
     public Node(final Type type) {
         this.type = type;
         this.incomingDataFlows = new ArrayList<>();

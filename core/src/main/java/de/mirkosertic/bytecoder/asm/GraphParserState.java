@@ -21,33 +21,23 @@ public class GraphParserState {
 
     final ControlTokenConsumerNode lastControlTokenConsumer;
 
-    final Projection projection;
-
     final int lineNumber;
 
-    public GraphParserState(final Frame frame, final ControlTokenConsumerNode lastControlTokenConsumer, final Projection projection, final int lineNumber) {
+    public GraphParserState(final Frame frame, final ControlTokenConsumerNode lastControlTokenConsumer, final int lineNumber) {
         this.frame = frame;
         this.lastControlTokenConsumer = lastControlTokenConsumer;
-        this.projection = projection;
         this.lineNumber = lineNumber;
     }
 
     public GraphParserState controlFlowsTo(final ControlTokenConsumerNode node) {
-        if (lastControlTokenConsumer != null) {
-            lastControlTokenConsumer.addControlFlowTo(projection, node);
-        }
-        return new GraphParserState(frame, node, StandardProjections.DEFAULT, lineNumber);
-    }
-
-    public GraphParserState projection(final Projection newProjection) {
-        return new GraphParserState(frame, lastControlTokenConsumer, newProjection, lineNumber);
+        return new GraphParserState(frame, node, lineNumber);
     }
 
     public GraphParserState withLineNumber(final int line) {
-        return new GraphParserState(frame, lastControlTokenConsumer, projection, line);
+        return new GraphParserState(frame, lastControlTokenConsumer, line);
     }
 
     public GraphParserState withFrame(final Frame frame) {
-        return new GraphParserState(frame, lastControlTokenConsumer, projection, lineNumber);
+        return new GraphParserState(frame, lastControlTokenConsumer, lineNumber);
     }
 }

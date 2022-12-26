@@ -15,11 +15,8 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Type;
+public interface Fixup {
 
-public class CopyNode extends ControlTokenConsumerNode {
+    void applyTo(final Graph g);
 
-    public CopyNode(final Type type) {
-        super(type);
-    }
 }

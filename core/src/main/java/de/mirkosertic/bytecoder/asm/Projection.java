@@ -16,4 +16,6 @@
 package de.mirkosertic.bytecoder.asm;
 
 public interface Projection {
+
+    EdgeType edgeType();
 }

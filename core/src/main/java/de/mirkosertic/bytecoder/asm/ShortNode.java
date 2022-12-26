@@ -17,9 +17,12 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class CopyNode extends ControlTokenConsumerNode {
+public class ShortNode extends PrimitiveValueNode {
 
-    public CopyNode(final Type type) {
-        super(type);
+    public final short value;
+
+    public ShortNode(final short value) {
+        super(Type.SHORT_TYPE);
+        this.value = value;
     }
 }

@@ -32,19 +32,37 @@ public class Graph {
 
     private final List<Node> nodes;
 
-    private final Map<AbstractInsnNode, Node> instructionsToNodeMapping;
+    private final Map<AbstractInsnNode, InstructionTranslation> translations;
+
+    private final List<Fixup> fixups;
 
     public Graph() {
         nodes = new ArrayList<>();
-        instructionsToNodeMapping = new HashMap<>();
+        translations = new HashMap<>();
+        fixups = new ArrayList<>();
     }
 
-    public void registerMapping(final AbstractInsnNode instruction, final Node node) {
-        instructionsToNodeMapping.put(instruction, node);
+    public void addFixup(final Fixup fixup) {
+        fixups.add(fixup);
     }
 
-    public Node registeredMappingFor(final AbstractInsnNode instruction) {
-        return instructionsToNodeMapping.get(instruction);
+    public void applyFixups() {
+        for (final Fixup f : fixups) {
+            f.applyTo(this);
+        }
+        fixups.clear();
+    }
+
+    public void registerTranslation(final AbstractInsnNode instruction, final InstructionTranslation translation) {
+        if (!translations.containsKey(instruction)) {
+            translations.put(instruction, translation);
+        } else {
+            System.out.println("Already mapped translation for " + instruction);
+        }
+    }
+
+    public InstructionTranslation translationFor(final AbstractInsnNode instruction) {
+        return translations.get(instruction);
     }
 
     protected Node register(final Node n) {
@@ -74,6 +92,10 @@ public class Graph {
 
     public Node newIntNode(final int value) {
         return register(new IntNode(value));
+    }
+
+    public Node newShortNode(final short value) {
+        return register(new ShortNode(value));
     }
 
     public IfNode newIfNode(final IfNode.Operation operation) {
@@ -125,6 +147,10 @@ public class Graph {
         return register(new AddNode(type));
     }
 
+    public Node newDivNode(final Type type) {
+        return register(new DivNode(type));
+    }
+
     public void writeDebugTo(final OutputStream fileOutputStream) {
         final PrintWriter pw = new PrintWriter(fileOutputStream);
         pw.println("digraph debugoutput {");
@@ -137,9 +163,15 @@ public class Graph {
             if (n instanceof IntNode) {
                 label = "Int : " + ((IntNode) n).value;
             }
+            if (n instanceof ShortNode) {
+                label = "Short : " + ((ShortNode) n).value;
+            }
             pw.print(" node_" + i + "[label=\"" + label + "\" ");
             if (n instanceof ControlTokenConsumerNode) {
                 pw.print("style=\"filled\" fillcolor=\"lightgray\"");
+            }
+            if (n.error) {
+                pw.print(" color=\"red\"");
             }
             pw.println("];");
             for (final Node incoming : n.incomingDataFlows) {
@@ -147,12 +179,14 @@ public class Graph {
             }
             if (n instanceof ControlTokenConsumerNode) {
                 final ControlTokenConsumerNode c = (ControlTokenConsumerNode) n;
-                for (final Map.Entry<Projection, ControlTokenConsumerNode> entry : c.controlFlowsTo.entrySet()) {
-                    pw.print(" node_" + i + " -> node_" + nodes.indexOf(entry.getValue()) + "[dir=\"forward\" color=\"red\"");
-                    if (entry.getKey() != StandardProjections.DEFAULT) {
-                        pw.print(" label=\"" + entry.getKey() + "\"");
+                for (final Map.Entry<Projection, List<ControlTokenConsumerNode>> entry : c.controlFlowsTo.entrySet()) {
+                    for (final ControlTokenConsumerNode no : entry.getValue()) {
+                        pw.print(" node_" + i + " -> node_" + nodes.indexOf(no) + "[dir=\"forward\" color=\"red\"");
+                        if (!(entry.getKey() instanceof StandardProjections.DefaultProjection)) {
+                            pw.print(" label=\"" + entry.getKey().getClass().getSimpleName() + "\"");
+                        }
+                        pw.println("];");
                     }
-                    pw.println("];");
                 }
             }
 
@@ -169,7 +203,15 @@ public class Graph {
         return (VarNode) register(new VarNode(type));
     }
 
-    public CopyNode newCopyNode(final Type type, final CopyNode.DataFlowResolver dataFlowResolver) {
-        return (CopyNode) register(new CopyNode(type, dataFlowResolver));
+    public CopyNode newCopyNode(final Type type) {
+        return (CopyNode) register(new CopyNode(type));
+    }
+
+    public VarNode newCaughtException(final Type type) {
+        return (VarNode) register(new CaughtException(type));
+    }
+
+    public GotoNode newGotoNode() {
+        return (GotoNode) register(new GotoNode());
     }
 }

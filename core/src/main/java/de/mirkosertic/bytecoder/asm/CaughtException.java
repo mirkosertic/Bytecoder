@@ -17,9 +17,9 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class CopyNode extends ControlTokenConsumerNode {
+public class CaughtException extends VarNode {
 
-    public CopyNode(final Type type) {
-        super(type);
+    public CaughtException(final Type value) {
+        super(value);
     }
 }

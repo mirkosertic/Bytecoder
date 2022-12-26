@@ -17,12 +17,14 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 
 public abstract class ControlTokenConsumerNode extends Node {
 
-    final Map<Projection, ControlTokenConsumerNode> controlFlowsTo;
+    final Map<Projection, List<ControlTokenConsumerNode>> controlFlowsTo;
 
     public ControlTokenConsumerNode(final Type type) {
         super(type);
@@ -37,10 +39,16 @@ public abstract class ControlTokenConsumerNode extends Node {
         if (controlFlowsTo.containsKey(projection)) {
             System.out.println("There is already a control flow with projection " + projection);
         }
-        controlFlowsTo.put(projection, node);
+        final List<ControlTokenConsumerNode> list = controlFlowsTo.computeIfAbsent(projection, t -> new ArrayList<>());
+        list.add(node);
     }
 
-    public ControlTokenConsumerNode flowForProjection(final Projection p) {
-        return controlFlowsTo.get(p);
+    public ControlTokenConsumerNode flowForProjection(final Class<?> p) {
+        for (final Map.Entry<Projection, List<ControlTokenConsumerNode>> entry : controlFlowsTo.entrySet()) {
+            if (entry.getKey().getClass().isAssignableFrom(p)) {
+                return entry.getValue().get(0);
+            }
+        }
+        return null;
     }
 }

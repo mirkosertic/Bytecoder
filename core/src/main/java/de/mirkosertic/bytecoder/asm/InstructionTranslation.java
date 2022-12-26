@@ -15,11 +15,14 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Type;
+public class InstructionTranslation {
 
-public class CopyNode extends ControlTokenConsumerNode {
+    public final ControlTokenConsumerNode preludeStart;
 
-    public CopyNode(final Type type) {
-        super(type);
+    public final ControlTokenConsumerNode main;
+
+    public InstructionTranslation(ControlTokenConsumerNode preludeStart, ControlTokenConsumerNode main) {
+        this.preludeStart = preludeStart;
+        this.main = main;
     }
 }

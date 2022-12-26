@@ -19,8 +19,13 @@ public class Testclass {
 
     public Testclass() {
         int z = 0;
-        for (int y = 0; y < 100; y++) {
-            z = z + y;
+        try {
+            z = z / 10;
+        } catch (RuntimeException e) {
+            z = 1000;
+        } finally {
+            //z = 2000;
         }
+        int kk = z + 8888;
     }
 }

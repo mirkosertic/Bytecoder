@@ -17,9 +17,9 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class CopyNode extends ControlTokenConsumerNode {
+public class DivNode extends Node {
 
-    public CopyNode(final Type type) {
+    public DivNode(final Type type) {
         super(type);
     }
 }

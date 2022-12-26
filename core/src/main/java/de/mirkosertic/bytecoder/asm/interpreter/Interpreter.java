@@ -34,7 +34,7 @@ public class Interpreter {
     }
 
     private ControlTokenConsumerNode interpret(final RegionNode regionNode) {
-        return regionNode.flowForProjection(StandardProjections.DEFAULT);
+        return regionNode.flowForProjection(StandardProjections.DefaultProjection.class);
     }
 
     private Object interpretValue(final ThisNode node) {
@@ -42,6 +42,10 @@ public class Interpreter {
     }
 
     private Object interpretValue(final IntNode node) {
+        return node.value;
+    }
+
+    private Object interpretValue(final ShortNode node) {
         return node.value;
     }
 
@@ -59,13 +63,20 @@ public class Interpreter {
         }
         final Number a = (Number) interpretValue(incoming.get(0));
         final Number b = (Number) interpretValue(incoming.get(1));
-        if (!(a instanceof Integer)) {
-            throw new IllegalStateException("Only integers supported!");
-        }
-        if (!(b instanceof Integer)) {
-            throw new IllegalStateException("Only integers supported!");
-        }
         return a.intValue() + b.intValue();
+    }
+
+    private Object interpretValue(final DivNode node) {
+        final List<Node> incoming = node.incomingDataFlows;
+        if (incoming.size() != 2) {
+            throw new IllegalStateException("Wrong number of incoming nodes");
+        }
+        if (!(node.type == Type.INT_TYPE)) {
+            throw new IllegalStateException("Only integer addition supported!");
+        }
+        final Number a = (Number) interpretValue(incoming.get(0));
+        final Number b = (Number) interpretValue(incoming.get(1));
+        return a.intValue() / b.intValue();
     }
 
     private Object interpretValue(final Node node) {
@@ -75,11 +86,17 @@ public class Interpreter {
         if (node instanceof IntNode) {
             return interpretValue((IntNode) node);
         }
+        if (node instanceof ShortNode) {
+            return interpretValue((ShortNode) node);
+        }
         if (node instanceof VarNode) {
             return interpretValue((VarNode) node);
         }
         if (node instanceof AddNode) {
             return interpretValue((AddNode) node);
+        }
+        if (node instanceof DivNode) {
+            return interpretValue((DivNode) node);
         }
         throw new IllegalStateException("Not implemented : " + node);
     }
@@ -89,7 +106,7 @@ public class Interpreter {
         final List<Node> outgoing = copyNode.outgoingFlows;
         if (incoming.isEmpty() && outgoing.isEmpty()) {
             // nothing to do
-            return copyNode.flowForProjection(StandardProjections.DEFAULT);
+            return copyNode.flowForProjection(StandardProjections.DefaultProjection.class);
         }
         if (incoming.size() != 1 || outgoing.size() != 1) {
             throw new IllegalStateException("Wrong number of incoming and outgoing nodes");
@@ -99,11 +116,11 @@ public class Interpreter {
             throw new IllegalStateException("Can only copy value to variable!");
         }
         variables.put((VarNode) target, interpretValue(incoming.get(0)));
-        return copyNode.flowForProjection(StandardProjections.DEFAULT);
+        return copyNode.flowForProjection(StandardProjections.DefaultProjection.class);
     }
 
     private ControlTokenConsumerNode interpret(final MethodInvocationNode node) {
-        return node.flowForProjection(StandardProjections.DEFAULT);
+        return node.flowForProjection(StandardProjections.DefaultProjection.class);
     }
 
     private ControlTokenConsumerNode interpret(final IfNode node) {
@@ -122,12 +139,16 @@ public class Interpreter {
                     throw new IllegalStateException("Only integers supported!");
                 }
                 if (a.intValue() >= b.intValue()) {
-                    return node.flowForProjection(StandardProjections.TRUE);
+                    return node.flowForProjection(StandardProjections.TrueProjection.class);
                 }
-                return node.flowForProjection(StandardProjections.FALSE);
+                return node.flowForProjection(StandardProjections.FalseProjection.class);
             default:
                 throw new IllegalStateException("Not suppted operation : " + node.operation);
         }
+    }
+
+    private ControlTokenConsumerNode interpret(final GotoNode node) {
+        return node.flowForProjection(StandardProjections.DefaultProjection.class);
     }
 
     private ControlTokenConsumerNode interpret(final ControlTokenConsumerNode token) {
@@ -143,6 +164,9 @@ public class Interpreter {
         }
         if (token instanceof IfNode) {
             return interpret((IfNode) token);
+        }
+        if (token instanceof GotoNode) {
+            return interpret((GotoNode) token);
         }
         if (token instanceof ReturnNothingNode) {
             return null;

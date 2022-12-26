@@ -25,4 +25,9 @@ public class RegionNode extends ControlTokenConsumerNode {
         super(null);
         this.label = label;
     }
+
+    @Override
+    public void addControlFlowTo(Projection projection, ControlTokenConsumerNode node) {
+        super.addControlFlowTo(projection, node);
+    }
 }
