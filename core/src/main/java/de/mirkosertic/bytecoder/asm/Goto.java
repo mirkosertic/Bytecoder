@@ -15,11 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Type;
+public class Goto extends ControlTokenConsumer {
 
-public class PrimitiveValueNode extends ConstantNode {
-
-    public PrimitiveValueNode(final Type type) {
-        super(type);
+    public Goto() {
+        super(null);
     }
 }

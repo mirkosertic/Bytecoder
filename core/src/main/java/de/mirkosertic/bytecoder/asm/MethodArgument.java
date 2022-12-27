@@ -17,9 +17,9 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class FloatNode extends ConstantNode {
+public class MethodArgument extends Variable {
 
-    public FloatNode(final Float value) {
-        super(Type.FLOAT_TYPE);
+    public MethodArgument(final Type type, final int local) {
+        super(type);
     }
 }

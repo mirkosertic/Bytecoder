@@ -15,13 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Type;
-public class IntNode extends PrimitiveValueNode {
+public class ReturnNothing extends ControlTokenConsumer {
 
-    public final int value;
-
-    public IntNode(final int value) {
-        super(Type.INT_TYPE);
-        this.value = value;
+    public ReturnNothing() {
+        super(null);
     }
 }

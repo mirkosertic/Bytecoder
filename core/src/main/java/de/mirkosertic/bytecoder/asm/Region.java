@@ -15,11 +15,19 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Type;
+public class Region extends ControlTokenConsumer {
 
-public class IntegerNode extends ConstantNode {
+    public final String label;
 
-    public IntegerNode(final Integer value) {
-        super(Type.INT_TYPE);
+    Frame frame;
+
+    public Region(final String label) {
+        super(null);
+        this.label = label;
+    }
+
+    @Override
+    public void addControlFlowTo(Projection projection, ControlTokenConsumer node) {
+        super.addControlFlowTo(projection, node);
     }
 }

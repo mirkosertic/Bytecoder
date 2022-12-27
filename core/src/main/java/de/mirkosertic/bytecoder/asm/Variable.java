@@ -15,16 +15,11 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-public class IfNode extends ControlTokenConsumerNode {
+import org.objectweb.asm.Type;
 
-    public enum Operation {
-        icmpge
-    }
+public class Variable extends Node {
 
-    public final Operation operation;
-
-    public IfNode(final Operation operation) {
-        super(null);
-        this.operation = operation;
+    public Variable(final Type value) {
+        super(value);
     }
 }

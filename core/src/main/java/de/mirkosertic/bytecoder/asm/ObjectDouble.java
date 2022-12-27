@@ -17,9 +17,9 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class LongNode extends ConstantNode {
+public class ObjectDouble extends Constant {
 
-    public LongNode(final Long value) {
-        super(Type.LONG_TYPE);
+    public ObjectDouble(final java.lang.Double value) {
+        super(Type.DOUBLE_TYPE);
     }
 }

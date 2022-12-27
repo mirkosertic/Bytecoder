@@ -17,9 +17,12 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class VarNode extends Node {
+public class Short extends PrimitiveValue {
 
-    public VarNode(final Type value) {
-        super(value);
+    public final short value;
+
+    public Short(final short value) {
+        super(Type.SHORT_TYPE);
+        this.value = value;
     }
 }

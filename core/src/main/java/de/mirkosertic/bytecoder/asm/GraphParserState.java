@@ -19,17 +19,17 @@ public class GraphParserState {
 
     final Frame frame;
 
-    final ControlTokenConsumerNode lastControlTokenConsumer;
+    final ControlTokenConsumer lastControlTokenConsumer;
 
     final int lineNumber;
 
-    public GraphParserState(final Frame frame, final ControlTokenConsumerNode lastControlTokenConsumer, final int lineNumber) {
+    public GraphParserState(final Frame frame, final ControlTokenConsumer lastControlTokenConsumer, final int lineNumber) {
         this.frame = frame;
         this.lastControlTokenConsumer = lastControlTokenConsumer;
         this.lineNumber = lineNumber;
     }
 
-    public GraphParserState controlFlowsTo(final ControlTokenConsumerNode node) {
+    public GraphParserState controlFlowsTo(final ControlTokenConsumer node) {
         return new GraphParserState(frame, node, lineNumber);
     }
 

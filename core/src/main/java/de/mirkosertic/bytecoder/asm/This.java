@@ -17,9 +17,9 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class StringNode extends ConstantNode {
+public class This extends Variable {
 
-    public StringNode(final String value) {
-        super(Type.getObjectType("java/lang/String"));
+    public This(final Type type) {
+        super(type);
     }
 }

@@ -17,12 +17,9 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class ShortNode extends PrimitiveValueNode {
+public class ObjectFloat extends Constant {
 
-    public final short value;
-
-    public ShortNode(final short value) {
-        super(Type.SHORT_TYPE);
-        this.value = value;
+    public ObjectFloat(final java.lang.Float value) {
+        super(Type.FLOAT_TYPE);
     }
 }

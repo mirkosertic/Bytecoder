@@ -15,9 +15,11 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-public class GotoNode extends ControlTokenConsumerNode {
+import org.objectweb.asm.Type;
 
-    public GotoNode() {
-        super(null);
+public class ObjectInteger extends Constant {
+
+    public ObjectInteger(final java.lang.Integer value) {
+        super(Type.INT_TYPE);
     }
 }

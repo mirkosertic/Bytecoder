@@ -28,7 +28,7 @@ import java.util.Map;
 
 public class Graph {
 
-    public static final String START_REGION_NAME = "Start";
+    public static final java.lang.String START_REGION_NAME = "Start";
 
     private final List<Node> nodes;
 
@@ -36,10 +36,13 @@ public class Graph {
 
     private final List<Fixup> fixups;
 
+    private final Map<String, Region> labeledRegions;
+
     public Graph() {
         nodes = new ArrayList<>();
         translations = new HashMap<>();
         fixups = new ArrayList<>();
+        labeledRegions = new HashMap<>();
     }
 
     public void addFixup(final Fixup fixup) {
@@ -67,6 +70,10 @@ public class Graph {
 
     protected Node register(final Node n) {
         nodes.add(n);
+        if (n instanceof Region) {
+            final Region r = (Region) n;
+            labeledRegions.put(r.label, r);
+        }
         return n;
     }
 
@@ -74,12 +81,16 @@ public class Graph {
         return nodes;
     }
 
-    public VarNode newThisNode(final Type type) {
-        return (VarNode) register(new ThisNode(type));
+    public Region regionByLabel(final String label) {
+        return labeledRegions.get(label);
     }
 
-    public MethodArgumentNode newMethodArgumentNode(final Type type, final int local) {
-        return (MethodArgumentNode) register(new MethodArgumentNode(type, local));
+    public Variable newThisNode(final Type type) {
+        return (Variable) register(new This(type));
+    }
+
+    public MethodArgument newMethodArgumentNode(final Type type, final int local) {
+        return (MethodArgument) register(new MethodArgument(type, local));
     }
 
     public Node newNode(final Type type) {
@@ -87,68 +98,55 @@ public class Graph {
     }
 
     public Node newNullNode() {
-        return register(new NullNode());
+        return register(new NullReference());
     }
 
     public Node newIntNode(final int value) {
-        return register(new IntNode(value));
+        return register(new Int(value));
     }
 
     public Node newShortNode(final short value) {
-        return register(new ShortNode(value));
+        return register(new Short(value));
     }
 
-    public IfNode newIfNode(final IfNode.Operation operation) {
-        return (IfNode) register(new IfNode(operation));
+    public If newIfNode(final If.Operation operation) {
+        return (If) register(new If(operation));
     }
 
-    public Node newIntegerNode(final Integer value) {
-        return register(new IntegerNode(value));
+    public Node newIntegerNode(final java.lang.Integer value) {
+        return register(new ObjectInteger(value));
     }
 
-    public Node newFloatNode(final Float value) {
-        return register(new FloatNode(value));
+    public Node newFloatNode(final java.lang.Float value) {
+        return register(new ObjectFloat(value));
     }
 
-    public Node newLongNode(final Long value) {
-        return register(new LongNode(value));
+    public Node newLongNode(final java.lang.Long value) {
+        return register(new ObjectLong(value));
     }
 
-    public Node newDoubleNode(final Double value) {
-        return register(new DoubleNode(value));
+    public Node newDoubleNode(final java.lang.Double value) {
+        return register(new ObjectDouble(value));
     }
 
-    public Node newStringNode(final String value) {
-        return register(new StringNode(value));
+    public Node newStringNode(final java.lang.String value) {
+        return register(new ObjectString(value));
     }
 
-    public ControlTokenConsumerNode newMethodInvocationNode(final MethodInsnNode insn) {
-        return (ControlTokenConsumerNode) register(new MethodInvocationNode(insn));
+    public ControlTokenConsumer newMethodInvocationNode(final MethodInsnNode insn) {
+        return (ControlTokenConsumer) register(new MethodInvocation(insn));
     }
 
-    public ReturnNothingNode newReturnNode() {
-        return (ReturnNothingNode) register(new ReturnNothingNode());
-    }
-
-    public RegionNode getOrCreateRegionNodeFor(final String label) {
-        for (final Node n : nodes) {
-            if (n instanceof RegionNode) {
-                final RegionNode r = (RegionNode) n;
-                if (label.equals(r.label)) {
-                    return r;
-                }
-            }
-        }
-
-        return (RegionNode) register(new RegionNode(label));
+    public ReturnNothing newReturnNode() {
+        return (ReturnNothing) register(new ReturnNothing());
     }
 
     public Node newAddNode(final Type type) {
-        return register(new AddNode(type));
+        return register(new Add(type));
     }
 
     public Node newDivNode(final Type type) {
-        return register(new DivNode(type));
+        return register(new Div(type));
     }
 
     public void writeDebugTo(final OutputStream fileOutputStream) {
@@ -156,18 +154,18 @@ public class Graph {
         pw.println("digraph debugoutput {");
         for (int i = 0; i < nodes.size(); i++) {
             final Node n = nodes.get(i);
-            String label = nodes.indexOf(n) + " " + n.getClass().getSimpleName();
-            if (n instanceof RegionNode) {
-                label += " " + ((RegionNode) n).label;
+            java.lang.String label = nodes.indexOf(n) + " " + n.getClass().getSimpleName();
+            if (n instanceof Region) {
+                label += " " + ((Region) n).label;
             }
-            if (n instanceof IntNode) {
-                label += " Int : " + ((IntNode) n).value;
+            if (n instanceof Int) {
+                label += " : " + ((Int) n).value;
             }
-            if (n instanceof ShortNode) {
-                label += " Short : " + ((ShortNode) n).value;
+            if (n instanceof Short) {
+                label += " : " + ((Short) n).value;
             }
             pw.print(" node_" + i + "[label=\"" + label + "\" ");
-            if (n instanceof ControlTokenConsumerNode) {
+            if (n instanceof ControlTokenConsumer) {
                 pw.print("style=\"filled\" fillcolor=\"lightgray\"");
             }
             if (n.error) {
@@ -177,10 +175,10 @@ public class Graph {
             for (final Node incoming : n.incomingDataFlows) {
                 pw.print(" node_" + nodes.indexOf(incoming) + " -> node_" + i + "[dir=\"forward\" color=\"blue\" label=\"arg " + n.incomingDataFlows.indexOf(incoming)+ "\"];");
             }
-            if (n instanceof ControlTokenConsumerNode) {
-                final ControlTokenConsumerNode c = (ControlTokenConsumerNode) n;
-                for (final Map.Entry<Projection, List<ControlTokenConsumerNode>> entry : c.controlFlowsTo.entrySet()) {
-                    for (final ControlTokenConsumerNode no : entry.getValue()) {
+            if (n instanceof ControlTokenConsumer) {
+                final ControlTokenConsumer c = (ControlTokenConsumer) n;
+                for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : c.controlFlowsTo.entrySet()) {
+                    for (final ControlTokenConsumer no : entry.getValue()) {
                         pw.print(" node_" + i + " -> node_" + nodes.indexOf(no) + "[dir=\"forward\" color=\"red\"");
                         if (!(entry.getKey() instanceof StandardProjections.DefaultProjection)) {
                             pw.print(" label=\"" + entry.getKey().getClass().getSimpleName() + "\"");
@@ -199,19 +197,27 @@ public class Graph {
         return (PHINode) register(new PHINode(type));
     }
 
-    public VarNode newVarNode(final Type type) {
-        return (VarNode) register(new VarNode(type));
+    public Variable newVarNode(final Type type) {
+        return (Variable) register(new Variable(type));
     }
 
-    public CopyNode newCopyNode(final Type type) {
-        return (CopyNode) register(new CopyNode(type));
+    public Copy newCopyNode(final Type type) {
+        return (Copy) register(new Copy(type));
     }
 
-    public VarNode newCaughtException(final Type type) {
-        return (VarNode) register(new CaughtException(type));
+    public Variable newCaughtException(final Type type) {
+        return (Variable) register(new CaughtException(type));
     }
 
-    public GotoNode newGotoNode() {
-        return (GotoNode) register(new GotoNode());
+    public Goto newGotoNode() {
+        return (Goto) register(new Goto());
+    }
+
+    public Region newRegion(String label) {
+        return (Region) register(new Region(label));
+    }
+
+    public TryCatch newTryCatch(String label) {
+        return (TryCatch) register(new TryCatch(label));
     }
 }

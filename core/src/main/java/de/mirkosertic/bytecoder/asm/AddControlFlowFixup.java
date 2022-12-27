@@ -21,11 +21,11 @@ import org.objectweb.asm.tree.LineNumberNode;
 
 public class AddControlFlowFixup implements Fixup {
 
-    private final ControlTokenConsumerNode sourceNode;
+    private final ControlTokenConsumer sourceNode;
     private final Projection projection;
     private final AbstractInsnNode targetInstruction;
 
-    public AddControlFlowFixup(ControlTokenConsumerNode sourceNode, Projection projection, AbstractInsnNode targetInstruction) {
+    public AddControlFlowFixup(ControlTokenConsumer sourceNode, Projection projection, AbstractInsnNode targetInstruction) {
         this.sourceNode = sourceNode;
         this.projection = projection;
         this.targetInstruction = targetInstruction;
@@ -40,13 +40,13 @@ public class AddControlFlowFixup implements Fixup {
         final InstructionTranslation translation = g.translationFor(target);
         if (translation != null) {
             if (projection.edgeType() == EdgeType.FORWARD) {
-                ControlTokenConsumerNode t = translation.preludeStart;
+                ControlTokenConsumer t = translation.preludeStart;
                 if (t == null) {
                     t = translation.main;
                 }
                 sourceNode.addControlFlowTo(projection, t);
             } else {
-                ControlTokenConsumerNode t = translation.main;
+                ControlTokenConsumer t = translation.main;
                 if (t == null) {
                     t = translation.preludeStart;
                 }

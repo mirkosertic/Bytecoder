@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.asm.interpreter;
 
 import de.mirkosertic.bytecoder.asm.*;
+import de.mirkosertic.bytecoder.asm.Short;
 import org.objectweb.asm.Type;
 
 import java.util.HashMap;
@@ -24,7 +25,7 @@ import java.util.Map;
 
 public class Interpreter {
 
-    private final Map<VarNode, Object> variables;
+    private final Map<Variable, Object> variables;
     private final Object thisRef;
 
     public Interpreter(final Object thisRef, final Graph graph) {
@@ -33,27 +34,27 @@ public class Interpreter {
         interpretInstanceInvocation(graph);
     }
 
-    private ControlTokenConsumerNode interpret(final RegionNode regionNode) {
+    private ControlTokenConsumer interpret(final Region regionNode) {
         return regionNode.flowForProjection(StandardProjections.DefaultProjection.class);
     }
 
-    private Object interpretValue(final ThisNode node) {
+    private Object interpretValue(final This node) {
         return thisRef;
     }
 
-    private Object interpretValue(final IntNode node) {
+    private Object interpretValue(final Int node) {
         return node.value;
     }
 
-    private Object interpretValue(final ShortNode node) {
+    private Object interpretValue(final Short node) {
         return node.value;
     }
 
-    private Object interpretValue(final VarNode node) {
+    private Object interpretValue(final Variable node) {
         return variables.get(node);
     }
 
-    private Object interpretValue(final AddNode node) {
+    private Object interpretValue(final Add node) {
         final List<Node> incoming = node.incomingDataFlows;
         if (incoming.size() != 2) {
             throw new IllegalStateException("Wrong number of incoming nodes");
@@ -66,7 +67,7 @@ public class Interpreter {
         return a.intValue() + b.intValue();
     }
 
-    private Object interpretValue(final DivNode node) {
+    private Object interpretValue(final Div node) {
         final List<Node> incoming = node.incomingDataFlows;
         if (incoming.size() != 2) {
             throw new IllegalStateException("Wrong number of incoming nodes");
@@ -80,28 +81,28 @@ public class Interpreter {
     }
 
     private Object interpretValue(final Node node) {
-        if (node instanceof ThisNode) {
-            return interpretValue((ThisNode) node);
+        if (node instanceof This) {
+            return interpretValue((This) node);
         }
-        if (node instanceof IntNode) {
-            return interpretValue((IntNode) node);
+        if (node instanceof Int) {
+            return interpretValue((Int) node);
         }
-        if (node instanceof ShortNode) {
-            return interpretValue((ShortNode) node);
+        if (node instanceof Short) {
+            return interpretValue((Short) node);
         }
-        if (node instanceof VarNode) {
-            return interpretValue((VarNode) node);
+        if (node instanceof Variable) {
+            return interpretValue((Variable) node);
         }
-        if (node instanceof AddNode) {
-            return interpretValue((AddNode) node);
+        if (node instanceof Add) {
+            return interpretValue((Add) node);
         }
-        if (node instanceof DivNode) {
-            return interpretValue((DivNode) node);
+        if (node instanceof Div) {
+            return interpretValue((Div) node);
         }
         throw new IllegalStateException("Not implemented : " + node);
     }
 
-    private ControlTokenConsumerNode interpret(final CopyNode copyNode) {
+    private ControlTokenConsumer interpret(final Copy copyNode) {
         final List<Node> incoming = copyNode.incomingDataFlows;
         final List<Node> outgoing = copyNode.outgoingFlows;
         if (incoming.isEmpty() && outgoing.isEmpty()) {
@@ -112,18 +113,18 @@ public class Interpreter {
             throw new IllegalStateException("Wrong number of incoming and outgoing nodes");
         }
         final Node target = outgoing.get(0);
-        if (!(target instanceof VarNode)) {
+        if (!(target instanceof Variable)) {
             throw new IllegalStateException("Can only copy value to variable!");
         }
-        variables.put((VarNode) target, interpretValue(incoming.get(0)));
+        variables.put((Variable) target, interpretValue(incoming.get(0)));
         return copyNode.flowForProjection(StandardProjections.DefaultProjection.class);
     }
 
-    private ControlTokenConsumerNode interpret(final MethodInvocationNode node) {
+    private ControlTokenConsumer interpret(final MethodInvocation node) {
         return node.flowForProjection(StandardProjections.DefaultProjection.class);
     }
 
-    private ControlTokenConsumerNode interpret(final IfNode node) {
+    private ControlTokenConsumer interpret(final If node) {
         final List<Node> incoming = node.incomingDataFlows;
         if (incoming.size() != 2) {
             throw new IllegalStateException("Wrong number of incoming data flows!");
@@ -147,35 +148,43 @@ public class Interpreter {
         }
     }
 
-    private ControlTokenConsumerNode interpret(final GotoNode node) {
+    private ControlTokenConsumer interpret(final Goto node) {
         return node.flowForProjection(StandardProjections.DefaultProjection.class);
     }
 
-    private ControlTokenConsumerNode interpret(final ControlTokenConsumerNode token) {
+    private ControlTokenConsumer interpret(final ControlTokenConsumer token) {
         System.out.println("Visiting token " + token);
-        if (token instanceof RegionNode) {
-            return interpret((RegionNode) token);
+        if (token instanceof Region) {
+            return interpret((Region) token);
         }
-        if (token instanceof CopyNode) {
-            return interpret((CopyNode) token);
+        if (token instanceof Copy) {
+            return interpret((Copy) token);
         }
-        if (token instanceof MethodInvocationNode) {
-            return interpret((MethodInvocationNode) token);
+        if (token instanceof MethodInvocation) {
+            return interpret((MethodInvocation) token);
         }
-        if (token instanceof IfNode) {
-            return interpret((IfNode) token);
+        if (token instanceof If) {
+            return interpret((If) token);
         }
-        if (token instanceof GotoNode) {
-            return interpret((GotoNode) token);
+        if (token instanceof Goto) {
+            return interpret((Goto) token);
         }
-        if (token instanceof ReturnNothingNode) {
+        if (token instanceof ReturnNothing) {
             return null;
         }
         throw new IllegalStateException("Not implemented : " + token);
     }
 
     private void interpretInstanceInvocation(final Graph graph) {
-        ControlTokenConsumerNode currentToken = graph.getOrCreateRegionNodeFor(Graph.START_REGION_NAME);
+
+        ControlTokenConsumer currentToken = null;
+        for (final Node n : graph.nodes()) {
+            if (n instanceof Region) {
+                if (Graph.START_REGION_NAME.equals(((Region) n).label)) {
+                    currentToken = (Region) n;
+                }
+            }
+        }
         while (currentToken != null) {
             currentToken = interpret(currentToken);
         }

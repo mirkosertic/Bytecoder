@@ -15,9 +15,16 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-public class ReturnNothingNode extends ControlTokenConsumerNode {
+public class If extends ControlTokenConsumer {
 
-    public ReturnNothingNode() {
+    public enum Operation {
+        icmpge
+    }
+
+    public final Operation operation;
+
+    public If(final Operation operation) {
         super(null);
+        this.operation = operation;
     }
 }

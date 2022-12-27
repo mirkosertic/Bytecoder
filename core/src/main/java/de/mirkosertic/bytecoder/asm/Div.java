@@ -16,11 +16,10 @@
 package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.MethodInsnNode;
 
-public class MethodInvocationNode extends ControlTokenConsumerNode {
+public class Div extends Node {
 
-    public MethodInvocationNode(final MethodInsnNode insnNode) {
-        super(Type.getReturnType(insnNode.desc));
+    public Div(final Type type) {
+        super(type);
     }
 }

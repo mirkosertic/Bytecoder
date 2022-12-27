@@ -15,7 +15,6 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.*;
@@ -35,10 +34,24 @@ public class GraphParser {
         parse();
     }
 
+    private Region getOrCreateRegionNodeFor(final LabelNode label) {
+        final String nodeLabel = label.getLabel().toString();
+        final Region r = graph.regionByLabel(nodeLabel);
+        if (r != null) {
+            return r;
+        }
+        for (final TryCatchBlockNode n : methodNode.tryCatchBlocks) {
+            if (n.start == label) {
+                return graph.newTryCatch(nodeLabel);
+            }
+        }
+        return graph.newRegion(nodeLabel);
+    }
+
     private void parse() {
         // Construct the initial parsing state
-        final VarNode[] initialStack = new VarNode[0];
-        final VarNode[] initialLocals = new VarNode[methodNode.maxLocals];
+        final Variable[] initialStack = new Variable[0];
+        final Variable[] initialLocals = new Variable[methodNode.maxLocals];
 
         final Type methodType = Type.getMethodType(methodNode.desc);
 
@@ -51,7 +64,7 @@ public class GraphParser {
             localIndex+= t.getSize();
         }
 
-        final RegionNode startRegion = graph.getOrCreateRegionNodeFor(Graph.START_REGION_NAME);
+        final Region startRegion = (Region) graph.register(new Region(Graph.START_REGION_NAME));
         graph.addFixup(new AddControlFlowFixup(startRegion, StandardProjections.DEFAULT_FORWARD, methodNode.instructions.getFirst()));
 
         final Frame startFrame = new Frame(initialLocals, initialStack);
@@ -71,7 +84,12 @@ public class GraphParser {
                 final LabelNode labelNode = (LabelNode) flow.currentNode;
                  if (next != null) {
                      controlFlowsToCheck.push(flow.addLabelAndContinueWith(labelNode, next));
-                }
+                 }
+                 for (final TryCatchBlockNode tryCatchBlockNode : methodNode.tryCatchBlocks) {
+                     if (tryCatchBlockNode.type != null && tryCatchBlockNode.start == labelNode) {
+                         controlFlowsToCheck.push(flow.addLabelAndContinueWith(labelNode, tryCatchBlockNode.handler));
+                     }
+                 }
             } else if (flow.currentNode instanceof JumpInsnNode) {
                 final JumpInsnNode jump = (JumpInsnNode) flow.currentNode;
                 if (jump.getOpcode() == Opcodes.GOTO) {
@@ -144,12 +162,8 @@ public class GraphParser {
                 for (final ControlFlow nextOutCome : parse(flow, incomingEdgesPerLabel)) {
                     if (!alreadyVisited.contains(nextOutCome.currentNode)) {
                         controlFlowsToCheck.push(nextOutCome);
-                    } else {
-                        System.out.println("Ignoring control from " + flow.graphParserState.lastControlTokenConsumer + " to " + nextOutCome.currentNode);
                     }
                 }
-            } else {
-                System.out.println("Already visited : " + flow.currentNode);
             }
         }
 
@@ -157,11 +171,10 @@ public class GraphParser {
         graph.applyFixups();
     }
 
-    private List<ControlFlow> parseLabelNode(final ControlFlow currentFlow, final ControlTokenConsumerNode preludeStart, final ControlTokenConsumerNode preludeEnd) {
+    private List<ControlFlow> parseLabelNode(final ControlFlow currentFlow, final ControlTokenConsumer preludeStart, final ControlTokenConsumer preludeEnd) {
         final LabelNode node = (LabelNode) currentFlow.currentNode;
-        final Label l = node.getLabel();
 
-        final RegionNode region = graph.getOrCreateRegionNodeFor(l.toString());
+        final Region region = getOrCreateRegionNodeFor(node);
         if (preludeEnd != null) {
             preludeEnd.addControlFlowTo(StandardProjections.DEFAULT_FORWARD, region);
         }
@@ -179,7 +192,7 @@ public class GraphParser {
         // Check for exceptional flows
         for (final TryCatchBlockNode tryCatchBlockNode : methodNode.tryCatchBlocks) {
             if (tryCatchBlockNode.start == node && tryCatchBlockNode.type != null) {
-                final RegionNode startRegion = graph.getOrCreateRegionNodeFor(tryCatchBlockNode.start.getLabel().toString());
+                final Region startRegion = getOrCreateRegionNodeFor(tryCatchBlockNode.start);
                 final Frame frameWithPushedException = state.frame.pushToStack(graph.newCaughtException(Type.getObjectType(tryCatchBlockNode.type)));
                 graph.addFixup(new AddControlFlowFixup(startRegion, StandardProjections.EXCEPTION_FORWARD, tryCatchBlockNode.handler));
                 flowsToCheck.add(currentFlow.continueWith(tryCatchBlockNode.handler, state.withFrame(frameWithPushedException)));
@@ -201,9 +214,9 @@ public class GraphParser {
         final GraphParserState currentState = currentFlow.graphParserState;
         final int local = node.var;
         if (node.getOpcode() == Opcodes.ALOAD) {
-            final VarNode value = currentState.frame.incomingLocals[local];
-            final VarNode variable = graph.newVarNode(value.type);
-            final CopyNode copy = graph.newCopyNode(value.type);
+            final Variable value = currentState.frame.incomingLocals[local];
+            final Variable variable = graph.newVarNode(value.type);
+            final Copy copy = graph.newCopyNode(value.type);
             copy.addIncomingData(value);
             variable.addIncomingData(copy);
             graph.registerTranslation(node, new InstructionTranslation(null, copy));
@@ -217,8 +230,8 @@ public class GraphParser {
 
          } else if (node.getOpcode() == Opcodes.ILOAD) {
             final Node value = currentState.frame.incomingLocals[local];
-            final VarNode variable = graph.newVarNode(value.type);
-            final CopyNode copy = graph.newCopyNode(value.type);
+            final Variable variable = graph.newVarNode(value.type);
+            final Copy copy = graph.newCopyNode(value.type);
             copy.addIncomingData(value);
             variable.addIncomingData(copy);
             graph.registerTranslation(node, new InstructionTranslation(null, copy));
@@ -233,9 +246,9 @@ public class GraphParser {
 
             final Frame.PopResult popResult = currentState.frame.popFromStack();
 
-            final VarNode value = popResult.value;
-            final VarNode variable = graph.newVarNode(value.type);
-            final CopyNode copy = graph.newCopyNode(value.type);
+            final Variable value = popResult.value;
+            final Variable variable = graph.newVarNode(value.type);
+            final Copy copy = graph.newCopyNode(value.type);
             copy.addIncomingData(value);
             variable.addIncomingData(copy);
             graph.registerTranslation(node, new InstructionTranslation(null, copy));
@@ -250,9 +263,9 @@ public class GraphParser {
 
             final Frame.PopResult popResult = currentState.frame.popFromStack();
 
-            final VarNode value = popResult.value;
-            final VarNode variable = graph.newVarNode(value.type);
-            final CopyNode copy = graph.newCopyNode(value.type);
+            final Variable value = popResult.value;
+            final Variable variable = graph.newVarNode(value.type);
+            final Copy copy = graph.newCopyNode(value.type);
             copy.addIncomingData(value);
             variable.addIncomingData(copy);
             graph.registerTranslation(node, new InstructionTranslation(null, copy));
@@ -282,7 +295,7 @@ public class GraphParser {
                 incomingData[i + 1] = latest.value;
             }
 
-            final ControlTokenConsumerNode n = graph.newMethodInvocationNode(node);
+            final ControlTokenConsumer n = graph.newMethodInvocationNode(node);
             n.addIncomingData(incomingData);
             graph.registerTranslation(node, new InstructionTranslation(null, n));
 
@@ -299,13 +312,13 @@ public class GraphParser {
         final GraphParserState currentState = currentFlow.graphParserState;
         if (node.getOpcode() == Opcodes.BIPUSH) {
             final Node value = graph.newIntNode(node.operand);
-            final VarNode varNode = graph.newVarNode(value.type);
-            final CopyNode copyNode = graph.newCopyNode(value.type);
+            final Variable variable = graph.newVarNode(value.type);
+            final Copy copyNode = graph.newCopyNode(value.type);
             copyNode.addIncomingData(value);
-            varNode.addIncomingData(copyNode);
+            variable.addIncomingData(copyNode);
             graph.registerTranslation(node, new InstructionTranslation(null, copyNode));
 
-            final Frame newFrame = currentState.frame.pushToStack(varNode);
+            final Frame newFrame = currentState.frame.pushToStack(variable);
 
             final GraphParserState newState = currentState.controlFlowsTo(copyNode).withFrame(newFrame);
             graph.addFixup(new AddControlFlowFixup(copyNode, StandardProjections.DEFAULT_FORWARD, node.getNext()));
@@ -314,13 +327,13 @@ public class GraphParser {
         }
         if (node.getOpcode() == Opcodes.SIPUSH) {
             final Node value = graph.newShortNode((short) node.operand);
-            final VarNode varNode = graph.newVarNode(value.type);
-            final CopyNode copyNode = graph.newCopyNode(value.type);
+            final Variable variable = graph.newVarNode(value.type);
+            final Copy copyNode = graph.newCopyNode(value.type);
             copyNode.addIncomingData(value);
-            varNode.addIncomingData(copyNode);
+            variable.addIncomingData(copyNode);
             graph.registerTranslation(node, new InstructionTranslation(null, copyNode));
 
-            final Frame newFrame = currentState.frame.pushToStack(varNode);
+            final Frame newFrame = currentState.frame.pushToStack(variable);
 
             final GraphParserState newState = currentState.controlFlowsTo(copyNode).withFrame(newFrame);
             graph.addFixup(new AddControlFlowFixup(copyNode, StandardProjections.DEFAULT_FORWARD, node.getNext()));
@@ -334,15 +347,15 @@ public class GraphParser {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
         if (node.getOpcode() == Opcodes.RETURN) {
-            final ReturnNothingNode value = graph.newReturnNode();
+            final ReturnNothing value = graph.newReturnNode();
             graph.registerTranslation(node, new InstructionTranslation(null, value));
             currentState.controlFlowsTo(value);
             return Collections.emptyList();
         }
         if (node.getOpcode() == Opcodes.ICONST_0) {
             final Node value = graph.newIntNode(0);
-            final VarNode variable = graph.newVarNode(value.type);
-            final CopyNode copy = graph.newCopyNode(value.type);
+            final Variable variable = graph.newVarNode(value.type);
+            final Copy copy = graph.newCopyNode(value.type);
             copy.addIncomingData(value);
             variable.addIncomingData(copy);
             graph.registerTranslation(node, new InstructionTranslation(null, copy));
@@ -362,13 +375,13 @@ public class GraphParser {
             final Node addNode = graph.newAddNode(Type.INT_TYPE);
             addNode.addIncomingData(pop1.value, pop2.value);
 
-            final VarNode varNode = graph.newVarNode(Type.INT_TYPE);
-            final CopyNode copy = graph.newCopyNode(Type.INT_TYPE);
+            final Variable variable = graph.newVarNode(Type.INT_TYPE);
+            final Copy copy = graph.newCopyNode(Type.INT_TYPE);
             copy.addIncomingData(addNode);
-            varNode.addIncomingData(copy);
+            variable.addIncomingData(copy);
             graph.registerTranslation(node, new InstructionTranslation(null, copy));
 
-            final Frame newFrame = pop2.newFrame.pushToStack(varNode);
+            final Frame newFrame = pop1.newFrame.pushToStack(variable);
 
             final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
             graph.addFixup(new AddControlFlowFixup(copy, StandardProjections.DEFAULT_FORWARD, node.getNext()));
@@ -383,13 +396,13 @@ public class GraphParser {
             final Node divNode = graph.newDivNode(Type.INT_TYPE);
             divNode.addIncomingData(pop1.value, pop2.value);
 
-            final VarNode varNode = graph.newVarNode(Type.INT_TYPE);
-            final CopyNode copy = graph.newCopyNode(Type.INT_TYPE);
+            final Variable variable = graph.newVarNode(Type.INT_TYPE);
+            final Copy copy = graph.newCopyNode(Type.INT_TYPE);
             copy.addIncomingData(divNode);
-            varNode.addIncomingData(copy);
+            variable.addIncomingData(copy);
             graph.registerTranslation(node, new InstructionTranslation(null, copy));
 
-            final Frame newFrame = pop2.newFrame.pushToStack(varNode);
+            final Frame newFrame = pop1.newFrame.pushToStack(variable);
 
             final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
             graph.addFixup(new AddControlFlowFixup(copy, StandardProjections.DEFAULT_FORWARD, node.getNext()));
@@ -401,11 +414,15 @@ public class GraphParser {
     }
 
     private List<ControlFlow> parseFrame(final ControlFlow currentFlow) {
+        final FrameNode frameNode = (FrameNode) currentFlow.currentNode;
+        if (frameNode.stack.size() != currentFlow.graphParserState.frame.incomingStack.length) {
+            System.out.println("Parser stack does not match with compiled bytecode stack!");
+        }
         return Collections.singletonList(currentFlow.continueWith(currentFlow.currentNode.getNext()));
     }
 
     private GraphParserState introduceCopyInstructions(final GraphParserState graphParserState, final Projection firstProjection, final LabelNode targetNode) {
-        final RegionNode targetRegion = graph.getOrCreateRegionNodeFor(targetNode.getLabel().toString());
+        final Region targetRegion = getOrCreateRegionNodeFor(targetNode);
         GraphParserState state = graphParserState;
 
         Projection f = firstProjection;
@@ -413,7 +430,7 @@ public class GraphParser {
             final Node source = state.frame.incomingLocals[i];
             if (source != null) {
                 final int index = i;
-                final CopyNode copy = graph.newCopyNode(source.type);
+                final Copy copy = graph.newCopyNode(source.type);
                 graph.addFixup(g -> {
                     final Node target = targetRegion.frame.incomingLocals[index];
                     if (source != target && target != null) {
@@ -430,7 +447,7 @@ public class GraphParser {
             final Node source = state.frame.incomingStack[i];
             final int index = i;
             final GraphParserState p = state;
-            final CopyNode copy = graph.newCopyNode(source.type);
+            final Copy copy = graph.newCopyNode(source.type);
             graph.addFixup(g -> {
                 final GraphParserState x = p;
                 if (targetRegion.frame.incomingStack.length > index) {
@@ -457,7 +474,7 @@ public class GraphParser {
         if (node.getOpcode() == Opcodes.GOTO) {
             final Map<AbstractInsnNode, EdgeType> edges = incomingEdgesPerLabel.get(node.label);
 
-            final GotoNode gotoNode = graph.newGotoNode();
+            final Goto gotoNode = graph.newGotoNode();
 
             final GraphParserState afterCopy = introduceCopyInstructions(currentState.controlFlowsTo(gotoNode), StandardProjections.DEFAULT_FORWARD, node.label);
             graph.registerTranslation(node, new InstructionTranslation(null, gotoNode));
@@ -474,16 +491,16 @@ public class GraphParser {
             final Frame.PopResult pop1 = currentState.frame.popFromStack();
             final Frame.PopResult pop2 = pop1.newFrame.popFromStack();
 
-            final IfNode.Operation operation;
+            final If.Operation operation;
             switch (currentFlow.currentNode.getOpcode()) {
                 case Opcodes.IF_ICMPGE:
-                    operation = IfNode.Operation.icmpge;
+                    operation = If.Operation.icmpge;
                     break;
                 default:
                     throw new IllegalStateException("Not supported opcode : " + currentFlow.currentNode.getOpcode());
             }
 
-            final IfNode ifNode = graph.newIfNode(operation);
+            final If ifNode = graph.newIfNode(operation);
             graph.registerTranslation(node, new InstructionTranslation(null, ifNode));
             ifNode.addIncomingData(pop2.value, pop1.value);
 
@@ -494,7 +511,7 @@ public class GraphParser {
             final Map<AbstractInsnNode, EdgeType> edges = incomingEdgesPerLabel.get(node.label);
 
             // True-Case
-            final RegionNode trueTargetNode = graph.getOrCreateRegionNodeFor(node.label.getLabel().toString());
+            final Region trueTargetNode = getOrCreateRegionNodeFor(node.label);
             if (EdgeType.BACK == edges.get(node)) {
                 final Projection p = new StandardProjections.TrueProjection(EdgeType.BACK);
                 final GraphParserState afterTrueCopy = introduceCopyInstructions(origin, p, node.label);
@@ -511,7 +528,7 @@ public class GraphParser {
             final AbstractInsnNode nextNode = node.getNext();
             if (nextNode instanceof LabelNode) {
                 final LabelNode falseLabel = (LabelNode) nextNode;
-                final RegionNode falseTargetNode = graph.getOrCreateRegionNodeFor(node.label.getLabel().toString());
+                final Region falseTargetNode = getOrCreateRegionNodeFor(node.label);
                 if (EdgeType.BACK == edges.get(node)) {
                     // TODO: can this happen?
                     final Projection p = new StandardProjections.FalseProjection(EdgeType.BACK);
@@ -544,14 +561,14 @@ public class GraphParser {
         final Node addNode = graph.newAddNode(Type.INT_TYPE);
         addNode.addIncomingData(currentValue, amountNode);
 
-        final VarNode varNode = graph.newVarNode(Type.INT_TYPE);
+        final Variable variable = graph.newVarNode(Type.INT_TYPE);
 
-        final CopyNode copy = graph.newCopyNode(Type.INT_TYPE);
+        final Copy copy = graph.newCopyNode(Type.INT_TYPE);
         copy.addIncomingData(addNode);
-        varNode.addIncomingData(copy);
+        variable.addIncomingData(copy);
         graph.registerTranslation(node, new InstructionTranslation(null, copy));
 
-        final Frame newFrame = currentState.frame.setLocal(local, varNode);
+        final Frame newFrame = currentState.frame.setLocal(local, variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
         graph.addFixup(new AddControlFlowFixup(copy, StandardProjections.DEFAULT_FORWARD, node.getNext()));
@@ -566,19 +583,19 @@ public class GraphParser {
             final Map<AbstractInsnNode, EdgeType> incomingEdges = incomingEdgesPerLabel.get(labelNode);
             if (incomingEdges != null) {
                 if (incomingEdges.size() > 1) {
-                    ControlTokenConsumerNode firstCopy = null;
-                    ControlTokenConsumerNode lastCopy = null;
+                    ControlTokenConsumer firstCopy = null;
+                    ControlTokenConsumer lastCopy = null;
                     // We do have multiple incoming edges, hence we need PHI nodes
                     GraphParserState graphParserState = currentFlow.graphParserState;
-                    final VarNode[] newLocals = new VarNode[graphParserState.frame.incomingLocals.length];
-                    final VarNode[] newStack = new VarNode[graphParserState.frame.incomingStack.length];
+                    final Variable[] newLocals = new Variable[graphParserState.frame.incomingLocals.length];
+                    final Variable[] newStack = new Variable[graphParserState.frame.incomingStack.length];
                     // Copy data to phi nodes
 
                     for (int i = 0; i < graphParserState.frame.incomingLocals.length; i++) {
                         final Node source = graphParserState.frame.incomingLocals[i];
                         if (source != null) {
                             final PHINode phi = graph.newPHINode(source.type);
-                            final CopyNode copy = graph.newCopyNode(source.type);
+                            final Copy copy = graph.newCopyNode(source.type);
                             copy.addIncomingData(source);
                             phi.addIncomingData(copy);
                             if (firstCopy == null) {
@@ -597,7 +614,7 @@ public class GraphParser {
                     for (int i = 0; i < graphParserState.frame.incomingStack.length; i++) {
                         final Node source = graphParserState.frame.incomingStack[i];
                         final PHINode phi = graph.newPHINode(source.type);
-                        final CopyNode copy = graph.newCopyNode(source.type);
+                        final Copy copy = graph.newCopyNode(source.type);
                         copy.addIncomingData(source);
                         phi.addIncomingData(copy);
                         if (firstCopy == null) {

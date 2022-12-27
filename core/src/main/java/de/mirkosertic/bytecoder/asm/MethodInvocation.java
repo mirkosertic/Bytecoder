@@ -15,19 +15,12 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-public class RegionNode extends ControlTokenConsumerNode {
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.MethodInsnNode;
 
-    final String label;
+public class MethodInvocation extends ControlTokenConsumer {
 
-    Frame frame;
-
-    public RegionNode(final String label) {
-        super(null);
-        this.label = label;
-    }
-
-    @Override
-    public void addControlFlowTo(Projection projection, ControlTokenConsumerNode node) {
-        super.addControlFlowTo(projection, node);
+    public MethodInvocation(final MethodInsnNode insnNode) {
+        super(Type.getReturnType(insnNode.desc));
     }
 }

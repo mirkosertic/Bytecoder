@@ -15,9 +15,13 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-public class NullNode extends ConstantNode {
+import org.objectweb.asm.Type;
+public class Int extends PrimitiveValue {
 
-    public NullNode() {
-        super(null);
+    public final int value;
+
+    public Int(final int value) {
+        super(Type.INT_TYPE);
+        this.value = value;
     }
 }

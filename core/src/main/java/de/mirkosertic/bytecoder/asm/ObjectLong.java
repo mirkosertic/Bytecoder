@@ -17,9 +17,9 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class DivNode extends Node {
+public class ObjectLong extends Constant {
 
-    public DivNode(final Type type) {
-        super(type);
+    public ObjectLong(final java.lang.Long value) {
+        super(Type.LONG_TYPE);
     }
 }

@@ -20,46 +20,46 @@ public class Frame {
     public static class PopResult {
         public final Frame newFrame;
 
-        public final VarNode value;
+        public final Variable value;
 
-        PopResult(final Frame newFrame, final VarNode value) {
+        PopResult(final Frame newFrame, final Variable value) {
             this.newFrame = newFrame;
             this.value = value;
         }
     }
 
-    final VarNode[] incomingLocals;
-    final VarNode[] incomingStack;
+    final Variable[] incomingLocals;
+    final Variable[] incomingStack;
 
-    public Frame(final VarNode[] incomingLocals, final VarNode[] incomingStack) {
+    public Frame(final Variable[] incomingLocals, final Variable[] incomingStack) {
         this.incomingLocals = incomingLocals;
         this.incomingStack = incomingStack;
     }
 
-    public Frame setLocal(final int local, final VarNode value) {
-        final VarNode[] newLocals = new VarNode[incomingLocals.length];
+    public Frame setLocal(final int local, final Variable value) {
+        final Variable[] newLocals = new Variable[incomingLocals.length];
         System.arraycopy(incomingLocals, 0, newLocals, 0, incomingLocals.length);
         newLocals[local] = value;
         return new Frame(newLocals, incomingStack);
     }
 
-    public Frame pushToStack(final VarNode variable) {
-        final VarNode[] newStack = new VarNode[incomingStack.length + 1];
+    public Frame pushToStack(final Variable variable) {
+        final Variable[] newStack = new Variable[incomingStack.length + 1];
         System.arraycopy(incomingStack, 0, newStack, 0, incomingStack.length);
         newStack[newStack.length - 1] = variable;
         return new Frame(incomingLocals, newStack);
     }
 
     public PopResult popFromStack() {
-        final VarNode[] newStack = new VarNode[incomingStack.length - 1];
+        final Variable[] newStack = new Variable[incomingStack.length - 1];
         System.arraycopy(incomingStack, 0, newStack, 0, newStack.length);
 
-        final VarNode value = incomingStack[incomingStack.length - 1];
+        final Variable value = incomingStack[incomingStack.length - 1];
 
         return new PopResult(new Frame(incomingLocals, newStack), value);
     }
 
-    public Frame withLocalsAndStack(final VarNode[] locals, final VarNode[] stack) {
+    public Frame withLocalsAndStack(final Variable[] locals, final Variable[] stack) {
         return new Frame(locals, stack);
     }
 }

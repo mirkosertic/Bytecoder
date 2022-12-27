@@ -22,16 +22,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
 
-public abstract class ControlTokenConsumerNode extends Node {
+public abstract class ControlTokenConsumer extends Node {
 
-    final Map<Projection, List<ControlTokenConsumerNode>> controlFlowsTo;
+    final Map<Projection, List<ControlTokenConsumer>> controlFlowsTo;
 
-    public ControlTokenConsumerNode(final Type type) {
+    public ControlTokenConsumer(final Type type) {
         super(type);
         controlFlowsTo = new HashMap<>();
     }
 
-    public void addControlFlowTo(final Projection projection, final ControlTokenConsumerNode node) {
+    public void addControlFlowTo(final Projection projection, final ControlTokenConsumer node) {
         if (node == this) {
             System.out.println("FIXME: Infinite control flow recursion");
             return;
@@ -39,12 +39,12 @@ public abstract class ControlTokenConsumerNode extends Node {
         if (controlFlowsTo.containsKey(projection)) {
             System.out.println("There is already a control flow with projection " + projection);
         }
-        final List<ControlTokenConsumerNode> list = controlFlowsTo.computeIfAbsent(projection, t -> new ArrayList<>());
+        final List<ControlTokenConsumer> list = controlFlowsTo.computeIfAbsent(projection, t -> new ArrayList<>());
         list.add(node);
     }
 
-    public ControlTokenConsumerNode flowForProjection(final Class<?> p) {
-        for (final Map.Entry<Projection, List<ControlTokenConsumerNode>> entry : controlFlowsTo.entrySet()) {
+    public ControlTokenConsumer flowForProjection(final Class<?> p) {
+        for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : controlFlowsTo.entrySet()) {
             if (entry.getKey().getClass().isAssignableFrom(p)) {
                 return entry.getValue().get(0);
             }

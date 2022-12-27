@@ -17,9 +17,9 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class DoubleNode extends ConstantNode {
+public abstract class Constant extends Node {
 
-    public DoubleNode(final Double value) {
-        super(Type.DOUBLE_TYPE);
+    public Constant(final Type type) {
+        super(type);
     }
 }

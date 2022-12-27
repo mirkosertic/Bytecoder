@@ -15,11 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Type;
+public class TryCatch extends Region {
 
-public class PHINode extends Variable {
-
-    public PHINode(final Type type) {
-        super(type);
+    public TryCatch(final String label) {
+        super(label);
     }
 }
