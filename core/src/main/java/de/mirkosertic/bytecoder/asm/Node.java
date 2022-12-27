@@ -18,7 +18,9 @@ package de.mirkosertic.bytecoder.asm;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.analysis.Value;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class Node implements Value {
 

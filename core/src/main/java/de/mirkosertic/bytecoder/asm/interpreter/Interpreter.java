@@ -15,8 +15,22 @@
  */
 package de.mirkosertic.bytecoder.asm.interpreter;
 
-import de.mirkosertic.bytecoder.asm.*;
+import de.mirkosertic.bytecoder.asm.Add;
+import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
+import de.mirkosertic.bytecoder.asm.Copy;
+import de.mirkosertic.bytecoder.asm.Div;
+import de.mirkosertic.bytecoder.asm.Goto;
+import de.mirkosertic.bytecoder.asm.Graph;
+import de.mirkosertic.bytecoder.asm.If;
+import de.mirkosertic.bytecoder.asm.Int;
+import de.mirkosertic.bytecoder.asm.MethodInvocation;
+import de.mirkosertic.bytecoder.asm.Node;
+import de.mirkosertic.bytecoder.asm.Region;
+import de.mirkosertic.bytecoder.asm.ReturnNothing;
 import de.mirkosertic.bytecoder.asm.Short;
+import de.mirkosertic.bytecoder.asm.StandardProjections;
+import de.mirkosertic.bytecoder.asm.This;
+import de.mirkosertic.bytecoder.asm.Variable;
 import org.objectweb.asm.Type;
 
 import java.util.HashMap;

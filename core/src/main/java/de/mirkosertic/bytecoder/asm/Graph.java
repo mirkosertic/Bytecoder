@@ -85,19 +85,15 @@ public class Graph {
         return labeledRegions.get(label);
     }
 
-    public Variable newThisNode(final Type type) {
+    public Variable newThis(final Type type) {
         return (Variable) register(new This(type));
     }
 
-    public MethodArgument newMethodArgumentNode(final Type type, final int local) {
+    public MethodArgument newMethodArgument(final Type type, final int local) {
         return (MethodArgument) register(new MethodArgument(type, local));
     }
 
-    public Node newNode(final Type type) {
-        return register(new Node(type));
-    }
-
-    public Node newNullNode() {
+    public Node newNull() {
         return register(new NullReference());
     }
 
@@ -109,43 +105,43 @@ public class Graph {
         return register(new Short(value));
     }
 
-    public If newIfNode(final If.Operation operation) {
+    public If newIf(final If.Operation operation) {
         return (If) register(new If(operation));
     }
 
-    public Node newIntegerNode(final java.lang.Integer value) {
+    public Node newObjectInteger(final java.lang.Integer value) {
         return register(new ObjectInteger(value));
     }
 
-    public Node newFloatNode(final java.lang.Float value) {
+    public Node newObjectFloat(final java.lang.Float value) {
         return register(new ObjectFloat(value));
     }
 
-    public Node newLongNode(final java.lang.Long value) {
+    public Node newObjectLong(final java.lang.Long value) {
         return register(new ObjectLong(value));
     }
 
-    public Node newDoubleNode(final java.lang.Double value) {
+    public Node newObjectDouble(final java.lang.Double value) {
         return register(new ObjectDouble(value));
     }
 
-    public Node newStringNode(final java.lang.String value) {
+    public Node newObjectString(final java.lang.String value) {
         return register(new ObjectString(value));
     }
 
-    public ControlTokenConsumer newMethodInvocationNode(final MethodInsnNode insn) {
-        return (ControlTokenConsumer) register(new MethodInvocation(insn));
+    public MethodInvocation newMethodInvocation(final MethodInsnNode insn) {
+        return (MethodInvocation) register(new MethodInvocation(insn));
     }
 
-    public ReturnNothing newReturnNode() {
+    public ReturnNothing newReturnNothing() {
         return (ReturnNothing) register(new ReturnNothing());
     }
 
-    public Node newAddNode(final Type type) {
+    public Node newAdd(final Type type) {
         return register(new Add(type));
     }
 
-    public Node newDivNode(final Type type) {
+    public Node newDiv(final Type type) {
         return register(new Div(type));
     }
 
@@ -193,15 +189,15 @@ public class Graph {
         pw.flush();
     }
 
-    public PHINode newPHINode(final Type type) {
-        return (PHINode) register(new PHINode(type));
+    public PHI newPHI(final Type type) {
+        return (PHI) register(new PHI(type));
     }
 
-    public Variable newVarNode(final Type type) {
+    public Variable newVariable(final Type type) {
         return (Variable) register(new Variable(type));
     }
 
-    public Copy newCopyNode(final Type type) {
+    public Copy newCopy(final Type type) {
         return (Copy) register(new Copy(type));
     }
 
@@ -209,7 +205,7 @@ public class Graph {
         return (Variable) register(new CaughtException(type));
     }
 
-    public Goto newGotoNode() {
+    public Goto newGoto() {
         return (Goto) register(new Goto());
     }
 
