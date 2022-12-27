@@ -602,7 +602,7 @@ public class GraphParser {
         } else {
             final Projection p = new StandardProjections.TrueProjection(EdgeType.FORWARD);
             final GraphParserState afterTrueCopy = introduceCopyInstructions(origin, p, node.label);
-            graph.addFixup(new AddControlFlowFixup(afterTrueCopy.lastControlTokenConsumer, p, node.getNext()));
+            graph.addFixup(new AddControlFlowFixup(afterTrueCopy.lastControlTokenConsumer, p, node.label));
             results.add(currentFlow.continueWith(node.label, afterTrueCopy));
         }
 
@@ -610,7 +610,7 @@ public class GraphParser {
         final AbstractInsnNode nextNode = node.getNext();
         if (nextNode instanceof LabelNode) {
             final LabelNode falseLabel = (LabelNode) nextNode;
-            final Region falseTargetNode = getOrCreateRegionNodeFor(node.label);
+            final Region falseTargetNode = getOrCreateRegionNodeFor(falseLabel);
             if (EdgeType.BACK == edges.get(node)) {
                 // TODO: can this happen?
                 final Projection p = new StandardProjections.FalseProjection(EdgeType.BACK);
@@ -620,11 +620,11 @@ public class GraphParser {
             } else {
                 final Projection p = new StandardProjections.FalseProjection(EdgeType.FORWARD);
                 final GraphParserState afterFalseCopy = introduceCopyInstructions(origin, p, falseLabel);
-                graph.addFixup(new AddControlFlowFixup(afterFalseCopy.lastControlTokenConsumer, p, node.getNext()));
+                graph.addFixup(new AddControlFlowFixup(afterFalseCopy.lastControlTokenConsumer, p, falseLabel));
                 results.add(currentFlow.continueWith(nextNode, afterFalseCopy));
             }
         } else {
-            graph.addFixup(new AddControlFlowFixup(origin.lastControlTokenConsumer, new StandardProjections.FalseProjection(EdgeType.FORWARD), node.getNext()));
+            graph.addFixup(new AddControlFlowFixup(origin.lastControlTokenConsumer, new StandardProjections.FalseProjection(EdgeType.FORWARD), nextNode));
             results.add(currentFlow.continueWith(nextNode, origin));
         }
 
