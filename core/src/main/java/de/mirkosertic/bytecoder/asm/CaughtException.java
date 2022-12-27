@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class CaughtException extends Variable {
+public class CaughtException extends Value implements Constant {
 
     public CaughtException(final Type value) {
         super(value);

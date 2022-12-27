@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class This extends Variable {
+public class This extends Value implements Constant {
 
     public This(final Type type) {
         super(type);

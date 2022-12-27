@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class PrimitiveValue extends Constant {
+public class PrimitiveValue extends Value implements Constant {
 
     public PrimitiveValue(final Type type) {
         super(type);

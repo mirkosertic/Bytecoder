@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class ObjectDouble extends Constant {
+public class ObjectDouble extends Value implements Constant {
 
     public ObjectDouble(final java.lang.Double value) {
         super(Type.DOUBLE_TYPE);

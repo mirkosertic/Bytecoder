@@ -68,8 +68,8 @@ public class GraphParser {
 
     private void parse() {
         // Construct the initial parsing state
-        final Variable[] initialStack = new Variable[0];
-        final Variable[] initialLocals = new Variable[methodNode.maxLocals];
+        final Value[] initialStack = new Value[0];
+        final Value[] initialLocals = new Value[methodNode.maxLocals];
 
         final Type methodType = Type.getMethodType(methodNode.desc);
 
@@ -232,7 +232,7 @@ public class GraphParser {
         final GraphParserState currentState = currentFlow.graphParserState;
         final int local = node.var;
 
-        final Variable value = currentState.frame.incomingLocals[local];
+        final Value value = currentState.frame.incomingLocals[local];
         final Variable variable = graph.newVariable(value.type);
         final Copy copy = graph.newCopy(value.type);
         copy.addIncomingData(value);
@@ -274,7 +274,7 @@ public class GraphParser {
 
         final Frame.PopResult popResult = currentState.frame.popFromStack();
 
-        final Variable value = popResult.value;
+        final Value value = popResult.value;
         final Variable variable = graph.newVariable(value.type);
         final Copy copy = graph.newCopy(value.type);
         copy.addIncomingData(value);
@@ -296,7 +296,7 @@ public class GraphParser {
 
         final Frame.PopResult popResult = currentState.frame.popFromStack();
 
-        final Variable value = popResult.value;
+        final Value value = popResult.value;
         final Variable variable = graph.newVariable(value.type);
         final Copy copy = graph.newCopy(value.type);
         copy.addIncomingData(value);

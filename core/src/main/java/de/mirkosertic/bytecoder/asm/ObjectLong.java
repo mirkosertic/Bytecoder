@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class ObjectLong extends Constant {
+public class ObjectLong extends Value implements Constant {
 
     public ObjectLong(final java.lang.Long value) {
         super(Type.LONG_TYPE);

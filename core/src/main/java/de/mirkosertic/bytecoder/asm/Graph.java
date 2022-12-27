@@ -85,8 +85,8 @@ public class Graph {
         return labeledRegions.get(label);
     }
 
-    public Variable newThis(final Type type) {
-        return (Variable) register(new This(type));
+    public This newThis(final Type type) {
+        return (This) register(new This(type));
     }
 
     public MethodArgument newMethodArgument(final Type type, final int local) {
@@ -201,8 +201,8 @@ public class Graph {
         return (Copy) register(new Copy(type));
     }
 
-    public Variable newCaughtException(final Type type) {
-        return (Variable) register(new CaughtException(type));
+    public CaughtException newCaughtException(final Type type) {
+        return (CaughtException) register(new CaughtException(type));
     }
 
     public Goto newGoto() {

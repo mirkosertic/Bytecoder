@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class ObjectFloat extends Constant {
+public class ObjectFloat extends Value implements Constant {
 
     public ObjectFloat(final java.lang.Float value) {
         super(Type.FLOAT_TYPE);

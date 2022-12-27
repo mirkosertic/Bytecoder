@@ -15,9 +15,10 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-public class NullReference extends Value implements Constant {
+import org.objectweb.asm.Type;
+public class Value extends Node {
 
-    public NullReference() {
-        super(null);
+    public Value(final Type value) {
+        super(value);
     }
 }

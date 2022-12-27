@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class MethodArgument extends Variable {
+public class MethodArgument extends Value implements Constant {
 
     public MethodArgument(final Type type, final int local) {
         super(type);

@@ -16,13 +16,12 @@
 package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.analysis.Value;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class Node implements Value {
+public class Node {
 
     public final Type type;
 
@@ -35,11 +34,6 @@ public class Node implements Value {
         this.type = type;
         this.incomingDataFlows = new ArrayList<>();
         this.outgoingFlows = new ArrayList<>();
-    }
-
-    @Override
-    public int getSize() {
-        return this.type != Type.LONG_TYPE && this.type != Type.DOUBLE_TYPE ? 1 : 2;
     }
 
     public void addIncomingData(final Node... nodes) {

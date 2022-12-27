@@ -15,11 +15,6 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Type;
+public interface Constant {
 
-public abstract class Constant extends Node {
-
-    public Constant(final Type type) {
-        super(type);
-    }
 }

@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class Variable extends Node {
+public class Variable extends Value {
 
     public Variable(final Type value) {
         super(value);

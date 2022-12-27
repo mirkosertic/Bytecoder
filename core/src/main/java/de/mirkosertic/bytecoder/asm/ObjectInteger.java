@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class ObjectInteger extends Constant {
+public class ObjectInteger extends Value implements Constant {
 
     public ObjectInteger(final java.lang.Integer value) {
         super(Type.INT_TYPE);

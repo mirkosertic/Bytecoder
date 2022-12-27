@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class ObjectString extends Constant {
+public class ObjectString extends Value implements Constant {
 
     public ObjectString(final java.lang.String value) {
         super(Type.getObjectType("java/lang/String"));
