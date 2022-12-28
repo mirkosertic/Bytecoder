@@ -174,8 +174,9 @@ public class Graph {
                 pw.print(" color=\"red\"");
             }
             pw.println("];");
-            for (final Node incoming : n.incomingDataFlows) {
-                pw.print(" node_" + nodes.indexOf(incoming) + " -> node_" + i + "[dir=\"forward\" color=\"cyan2\" label=\"arg " + n.incomingDataFlows.indexOf(incoming)+ "\"];");
+            for (int inidx = 0; inidx < n.incomingDataFlows.length; inidx++) {
+                final Node incoming = n.incomingDataFlows[inidx];
+                pw.print(" node_" + nodes.indexOf(incoming) + " -> node_" + i + "[dir=\"forward\" color=\"cyan2\" label=\"arg " + inidx + "\"];");
             }
             if (n instanceof ControlTokenConsumer) {
                 final ControlTokenConsumer c = (ControlTokenConsumer) n;

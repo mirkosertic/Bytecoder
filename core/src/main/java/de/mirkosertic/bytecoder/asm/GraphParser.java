@@ -589,7 +589,7 @@ public class GraphParser {
         // True-Case
         final Region trueTargetNode = getOrCreateRegionNodeFor(node.label);
         if (EdgeType.BACK == edges.get(node)) {
-            final Projection p = new StandardProjections.TrueProjection(EdgeType.FORWARD);
+            final Projection p = new StandardProjections.TrueProjection(EdgeType.BACK);
             final GraphParserState afterTrueCopy = introduceCopyInstructionsForBackEdge(origin, p, node.label);
             if (afterTrueCopy.lastControlTokenConsumer == ifNode) {
                 // No copy instruction created
@@ -600,7 +600,7 @@ public class GraphParser {
             // Do nothing
         } else {
             final Projection p = new StandardProjections.TrueProjection(EdgeType.FORWARD);
-            graph.addFixup(new ForwardControlFlowFixup(currentState.lastControlTokenConsumer, pop2.newFrame, p, node.label));
+            graph.addFixup(new ForwardControlFlowFixup(origin.lastControlTokenConsumer, origin.frame, p, node.label));
             results.add(currentFlow.continueWith(node.label, origin));
         }
 
@@ -611,7 +611,7 @@ public class GraphParser {
             final Region falseTargetNode = getOrCreateRegionNodeFor(falseLabel);
             if (EdgeType.BACK == edges.get(node)) {
                 // TODO: can this happen?
-                final Projection p = new StandardProjections.FalseProjection(EdgeType.FORWARD);
+                final Projection p = new StandardProjections.FalseProjection(EdgeType.BACK);
                 final GraphParserState afterFalseCopy = introduceCopyInstructionsForBackEdge(origin, p, falseLabel);
                 if (afterFalseCopy.lastControlTokenConsumer == ifNode) {
                     // No Copy instructions created
@@ -622,11 +622,11 @@ public class GraphParser {
                 // Do nothing
             } else {
                 final Projection p = new StandardProjections.FalseProjection(EdgeType.FORWARD);
-                graph.addFixup(new ForwardControlFlowFixup(ifNode, pop2.newFrame, p, falseLabel));
+                graph.addFixup(new ForwardControlFlowFixup(origin.lastControlTokenConsumer, origin.frame, p, falseLabel));
                 results.add(currentFlow.continueWith(nextNode, origin));
             }
         } else {
-            graph.addFixup(new ForwardControlFlowFixup(origin.lastControlTokenConsumer, pop2.newFrame, new StandardProjections.FalseProjection(EdgeType.FORWARD), nextNode));
+            graph.addFixup(new ForwardControlFlowFixup(origin.lastControlTokenConsumer, origin.frame, new StandardProjections.FalseProjection(EdgeType.FORWARD), nextNode));
             results.add(currentFlow.continueWith(nextNode, origin));
         }
 

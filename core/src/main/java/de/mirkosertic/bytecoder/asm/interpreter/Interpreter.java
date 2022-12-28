@@ -34,7 +34,6 @@ import de.mirkosertic.bytecoder.asm.Variable;
 import org.objectweb.asm.Type;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class Interpreter {
@@ -69,28 +68,28 @@ public class Interpreter {
     }
 
     private Object interpretValue(final Add node) {
-        final List<Node> incoming = node.incomingDataFlows;
-        if (incoming.size() != 2) {
+        final Node[] incoming = node.incomingDataFlows;
+        if (incoming.length != 2) {
             throw new IllegalStateException("Wrong number of incoming nodes");
         }
         if (!(node.type == Type.INT_TYPE)) {
             throw new IllegalStateException("Only integer addition supported!");
         }
-        final Number a = (Number) interpretValue(incoming.get(0));
-        final Number b = (Number) interpretValue(incoming.get(1));
+        final Number a = (Number) interpretValue(incoming[0]);
+        final Number b = (Number) interpretValue(incoming[1]);
         return a.intValue() + b.intValue();
     }
 
     private Object interpretValue(final Div node) {
-        final List<Node> incoming = node.incomingDataFlows;
-        if (incoming.size() != 2) {
+        final Node[] incoming = node.incomingDataFlows;
+        if (incoming.length != 2) {
             throw new IllegalStateException("Wrong number of incoming nodes");
         }
         if (!(node.type == Type.INT_TYPE)) {
             throw new IllegalStateException("Only integer addition supported!");
         }
-        final Number a = (Number) interpretValue(incoming.get(0));
-        final Number b = (Number) interpretValue(incoming.get(1));
+        final Number a = (Number) interpretValue(incoming[0]);
+        final Number b = (Number) interpretValue(incoming[1]);
         return a.intValue() / b.intValue();
     }
 
@@ -117,20 +116,20 @@ public class Interpreter {
     }
 
     private ControlTokenConsumer interpret(final Copy copyNode) {
-        final List<Node> incoming = copyNode.incomingDataFlows;
-        final List<Node> outgoing = copyNode.outgoingFlows;
-        if (incoming.isEmpty() && outgoing.isEmpty()) {
+        final Node[] incoming = copyNode.incomingDataFlows;
+        final Node[] outgoing = copyNode.outgoingFlows;
+        if (incoming.length == 0 && outgoing.length == 0) {
             // nothing to do
             return copyNode.flowForProjection(StandardProjections.DefaultProjection.class);
         }
-        if (incoming.size() != 1 || outgoing.size() != 1) {
+        if (incoming.length != 1 || outgoing.length != 1) {
             throw new IllegalStateException("Wrong number of incoming and outgoing nodes");
         }
-        final Node target = outgoing.get(0);
+        final Node target = outgoing[0];
         if (!(target instanceof Variable)) {
             throw new IllegalStateException("Can only copy value to variable!");
         }
-        variables.put((Variable) target, interpretValue(incoming.get(0)));
+        variables.put((Variable) target, interpretValue(incoming[0]));
         return copyNode.flowForProjection(StandardProjections.DefaultProjection.class);
     }
 
@@ -139,12 +138,12 @@ public class Interpreter {
     }
 
     private ControlTokenConsumer interpret(final If node) {
-        final List<Node> incoming = node.incomingDataFlows;
-        if (incoming.size() != 2) {
+        final Node[] incoming = node.incomingDataFlows;
+        if (incoming.length != 2) {
             throw new IllegalStateException("Wrong number of incoming data flows!");
         }
-        final Number a = (Number) interpretValue(incoming.get(0));
-        final Number b = (Number) interpretValue(incoming.get(1));
+        final Number a = (Number) interpretValue(incoming[0]);
+        final Number b = (Number) interpretValue(incoming[1]);
         switch (node.operation) {
             case icmpge:
                 if (!(a instanceof Integer)) {
@@ -158,7 +157,7 @@ public class Interpreter {
                 }
                 return node.flowForProjection(StandardProjections.FalseProjection.class);
             default:
-                throw new IllegalStateException("Not suppted operation : " + node.operation);
+                throw new IllegalStateException("Not supported operation : " + node.operation);
         }
     }
 

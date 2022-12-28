@@ -17,35 +17,43 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 public class Node {
 
     public final Type type;
 
-    public final List<Node> incomingDataFlows;
-    public final List<Node> outgoingFlows;
+    public Node[] incomingDataFlows;
+    public Node[] outgoingFlows;
 
     boolean error;
 
     public Node(final Type type) {
         this.type = type;
-        this.incomingDataFlows = new ArrayList<>();
-        this.outgoingFlows = new ArrayList<>();
+        this.incomingDataFlows = new Node[0];
+        this.outgoingFlows = new Node[0];
     }
 
     public void addIncomingData(final Node... nodes) {
-        Collections.addAll(incomingDataFlows, nodes);
+        if (incomingDataFlows.length == 0) {
+            incomingDataFlows = nodes;
+        } else {
+            final Node[] newData = new Node[incomingDataFlows.length + nodes.length];
+            System.arraycopy(incomingDataFlows, 0, newData, 0, incomingDataFlows.length);
+            System.arraycopy(nodes, 0, newData, incomingDataFlows.length, nodes.length);
+            incomingDataFlows = newData;
+        }
         for (final Node n : nodes) {
             n.addOutgoingData(this);
         }
     }
 
     public void addOutgoingData(final Node node) {
-        if (!outgoingFlows.contains(node)) {
-            outgoingFlows.add(node);
+        if (outgoingFlows.length == 0) {
+            outgoingFlows = new Node[] {node};
+        } else {
+            final Node[] newData = new Node[outgoingFlows.length + 1];
+            System.arraycopy(outgoingFlows, 0, newData, 0, outgoingFlows.length);
+            newData[outgoingFlows.length] = node;
+            outgoingFlows = newData;
         }
     }
 }
