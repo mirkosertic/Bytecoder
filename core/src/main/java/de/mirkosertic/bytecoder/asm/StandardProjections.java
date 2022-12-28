@@ -42,6 +42,9 @@ public class StandardProjections implements Projection {
     }
 
     public static final StandardProjections DEFAULT_FORWARD = new DefaultProjection(EdgeType.FORWARD);
+
+    public static final StandardProjections DEFAULT_BACKWARD = new DefaultProjection(EdgeType.BACK);
+
     public static final StandardProjections EXCEPTION_FORWARD = new ExceptionHandler();
     private final EdgeType edgeType;
 

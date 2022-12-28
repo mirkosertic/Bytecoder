@@ -17,12 +17,12 @@ package de.mirkosertic.bytecoder.asm;
 
 public class InstructionTranslation {
 
-    public final ControlTokenConsumer preludeStart;
-
     public final ControlTokenConsumer main;
 
-    public InstructionTranslation(ControlTokenConsumer preludeStart, ControlTokenConsumer main) {
-        this.preludeStart = preludeStart;
+    public final Frame frame;
+
+    public InstructionTranslation(ControlTokenConsumer main, Frame frame) {
         this.main = main;
+        this.frame = frame;
     }
 }

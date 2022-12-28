@@ -82,11 +82,11 @@ public class GraphParser {
             localIndex+= t.getSize();
         }
 
-        final Region startRegion = (Region) graph.register(new Region(Graph.START_REGION_NAME));
-        graph.addFixup(new AddControlFlowFixup(startRegion, StandardProjections.DEFAULT_FORWARD, methodNode.instructions.getFirst()));
-
         final Frame startFrame = new Frame(initialLocals, initialStack);
+        final Region startRegion = (Region) graph.register(new Region(Graph.START_REGION_NAME));
         startRegion.frame = startFrame;
+        graph.addFixup(new ForwardControlFlowFixup(startRegion, startRegion.frame, StandardProjections.DEFAULT_FORWARD, methodNode.instructions.getFirst()));
+
         final GraphParserState initialState = new GraphParserState(startFrame, startRegion, -1);
 
         // Step 1: We collect all jump targets
@@ -193,14 +193,13 @@ public class GraphParser {
         final LabelNode node = (LabelNode) currentFlow.currentNode;
 
         final Region region = getOrCreateRegionNodeFor(node);
-        graph.registerTranslation(node, new InstructionTranslation(null, region));
-
         region.frame = currentFlow.graphParserState.frame;
+        graph.registerTranslation(node, new InstructionTranslation(region, region.frame));
 
         final GraphParserState state = currentFlow.graphParserState;
         final List<ControlFlow> flowsToCheck = new ArrayList<>();
         if (node.getNext() != null) {
-            graph.addFixup(new AddControlFlowFixup(region, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+            graph.addFixup(new ForwardControlFlowFixup(region, state.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
             flowsToCheck.add(currentFlow.continueWith(node.getNext(), state));
         }
 
@@ -209,7 +208,7 @@ public class GraphParser {
             if (tryCatchBlockNode.start == node && tryCatchBlockNode.type != null) {
                 final Region startRegion = getOrCreateRegionNodeFor(tryCatchBlockNode.start);
                 final Frame frameWithPushedException = state.frame.pushToStack(graph.newCaughtException(Type.getObjectType(tryCatchBlockNode.type)));
-                graph.addFixup(new AddControlFlowFixup(startRegion, StandardProjections.EXCEPTION_FORWARD, tryCatchBlockNode.handler));
+                graph.addFixup(new ForwardControlFlowFixup(startRegion, state.frame, StandardProjections.EXCEPTION_FORWARD, tryCatchBlockNode.handler));
                 flowsToCheck.add(currentFlow.continueWith(tryCatchBlockNode.handler, state.withFrame(frameWithPushedException)));
             }
         }
@@ -234,12 +233,12 @@ public class GraphParser {
         final Copy copy = graph.newCopy(value.type);
         copy.addIncomingData(value);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(null, copy));
+        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
 
         final Frame newFrame = currentFlow.graphParserState.frame.pushToStack(variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
-        graph.addFixup(new AddControlFlowFixup(copy, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+        graph.addFixup(new ForwardControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -254,12 +253,12 @@ public class GraphParser {
         final Copy copy = graph.newCopy(value.type);
         copy.addIncomingData(value);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(null, copy));
+        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
 
         final Frame newFrame = currentFlow.graphParserState.frame.pushToStack(variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
-        graph.addFixup(new AddControlFlowFixup(copy, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+        graph.addFixup(new ForwardControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -276,12 +275,12 @@ public class GraphParser {
         final Copy copy = graph.newCopy(value.type);
         copy.addIncomingData(value);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(null, copy));
+        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
 
         final Frame newFrame = popResult.newFrame.setLocal(local, variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
-        graph.addFixup(new AddControlFlowFixup(copy, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+        graph.addFixup(new ForwardControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -298,12 +297,12 @@ public class GraphParser {
         final Copy copy = graph.newCopy(value.type);
         copy.addIncomingData(value);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(null, copy));
+        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
 
         final Frame newFrame = popResult.newFrame.setLocal(local, variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
-        graph.addFixup(new AddControlFlowFixup(copy, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+        graph.addFixup(new ForwardControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -340,10 +339,10 @@ public class GraphParser {
 
         final ControlTokenConsumer n = graph.newMethodInvocation(node);
         n.addIncomingData(incomingData);
-        graph.registerTranslation(node, new InstructionTranslation(null, n));
+        graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
 
         final GraphParserState newState = currentState.controlFlowsTo(n).withFrame(latest.newFrame);
-        graph.addFixup(new AddControlFlowFixup(n, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+        graph.addFixup(new ForwardControlFlowFixup(n, newState.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -366,12 +365,12 @@ public class GraphParser {
         final Copy copyNode = graph.newCopy(value.type);
         copyNode.addIncomingData(value);
         variable.addIncomingData(copyNode);
-        graph.registerTranslation(node, new InstructionTranslation(null, copyNode));
+        graph.registerTranslation(node, new InstructionTranslation(copyNode, currentState.frame));
 
         final Frame newFrame = currentState.frame.pushToStack(variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copyNode).withFrame(newFrame);
-        graph.addFixup(new AddControlFlowFixup(copyNode, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+        graph.addFixup(new ForwardControlFlowFixup(copyNode, newState.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -385,12 +384,12 @@ public class GraphParser {
         final Copy copyNode = graph.newCopy(value.type);
         copyNode.addIncomingData(value);
         variable.addIncomingData(copyNode);
-        graph.registerTranslation(node, new InstructionTranslation(null, copyNode));
+        graph.registerTranslation(node, new InstructionTranslation(copyNode, currentState.frame));
 
         final Frame newFrame = currentState.frame.pushToStack(variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copyNode).withFrame(newFrame);
-        graph.addFixup(new AddControlFlowFixup(copyNode, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+        graph.addFixup(new ForwardControlFlowFixup(copyNode, newState.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -411,7 +410,7 @@ public class GraphParser {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
         final ReturnNothing value = graph.newReturnNothing();
-        graph.registerTranslation(node, new InstructionTranslation(null, value));
+        graph.registerTranslation(node, new InstructionTranslation(value, currentState.frame));
         currentState.controlFlowsTo(value);
         return Collections.emptyList();
     }
@@ -424,12 +423,12 @@ public class GraphParser {
         final Copy copy = graph.newCopy(value.type);
         copy.addIncomingData(value);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(null, copy));
+        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
 
         final Frame newFrame = currentState.frame.pushToStack(variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
-        graph.addFixup(new AddControlFlowFixup(copy, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+        graph.addFixup(new ForwardControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -448,12 +447,12 @@ public class GraphParser {
         final Copy copy = graph.newCopy(Type.INT_TYPE);
         copy.addIncomingData(addNode);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(null, copy));
+        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
 
         final Frame newFrame = pop1.newFrame.pushToStack(variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
-        graph.addFixup(new AddControlFlowFixup(copy, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+        graph.addFixup(new ForwardControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -472,12 +471,12 @@ public class GraphParser {
         final Copy copy = graph.newCopy(Type.INT_TYPE);
         copy.addIncomingData(divNode);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(null, copy));
+        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
 
         final Frame newFrame = pop1.newFrame.pushToStack(variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
-        graph.addFixup(new AddControlFlowFixup(copy, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+        graph.addFixup(new ForwardControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -506,49 +505,41 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(currentFlow.currentNode.getNext()));
     }
 
-    private GraphParserState introduceCopyInstructions(final GraphParserState graphParserState, final Projection firstProjection, final LabelNode targetNode) {
-        final Region targetRegion = getOrCreateRegionNodeFor(targetNode);
+    private GraphParserState introduceCopyInstructionsForBackEdge(final GraphParserState graphParserState, final Projection firstProjection, final LabelNode targetNode) {
         GraphParserState state = graphParserState;
 
+        final InstructionTranslation translation = graph.translationFor(targetNode);
+        if (translation == null) {
+            throw new IllegalStateException("Unknown translation!");
+        }
+
+        final Frame targetFrame = translation.frame;
         Projection f = firstProjection;
         for (int i = 0; i < state.frame.incomingLocals.length; i++) {
-            final Node source = state.frame.incomingLocals[i];
-            if (source != null) {
-                final int index = i;
+            final Value source = state.frame.incomingLocals[i];
+            final Value target = targetFrame.incomingLocals[i];
+            if ((source != null) && (source != target)) {
                 final Copy copy = graph.newCopy(source.type);
-                graph.addFixup(g -> {
-                    final Node target = targetRegion.frame.incomingLocals[index];
-                    if (source != target && target != null) {
-                        copy.addIncomingData(source);
-                        target.addIncomingData(copy);
-                    }
-                });
+                copy.addIncomingData(source);
+                target.addIncomingData(copy);
+
                 state.lastControlTokenConsumer.addControlFlowTo(f, copy);
                 state = state.controlFlowsTo(copy);
                 f = StandardProjections.DEFAULT_FORWARD;
             }
         }
         for (int i = 0; i < state.frame.incomingStack.length; i++) {
-            final Node source = state.frame.incomingStack[i];
-            final int index = i;
-            final GraphParserState p = state;
-            final Copy copy = graph.newCopy(source.type);
-            graph.addFixup(g -> {
-                final GraphParserState x = p;
-                if (targetRegion.frame.incomingStack.length > index) {
-                    final Node target = targetRegion.frame.incomingStack[index];
-                    if (source != target) {
-                        copy.addIncomingData(source);
-                        target.addIncomingData(copy);
-                    }
-                } else {
-                    System.out.println("Wrong stack size!");
-                    copy.error = true;
-                }
-            });
-            state.lastControlTokenConsumer.addControlFlowTo(f, copy);
-            state = state.controlFlowsTo(copy);
-            f = StandardProjections.DEFAULT_FORWARD;
+            final Value source = state.frame.incomingStack[i];
+            final Value target = targetFrame.incomingStack[i];
+            if ((source != null) && (source != target)) {
+                final Copy copy = graph.newCopy(source.type);
+                copy.addIncomingData(source);
+                target.addIncomingData(copy);
+
+                state.lastControlTokenConsumer.addControlFlowTo(f, copy);
+                state = state.controlFlowsTo(copy);
+                f = StandardProjections.DEFAULT_FORWARD;
+            }
         }
         return state;
     }
@@ -561,15 +552,21 @@ public class GraphParser {
 
         final Goto gotoNode = graph.newGoto();
 
-        final GraphParserState afterCopy = introduceCopyInstructions(currentState.controlFlowsTo(gotoNode), StandardProjections.DEFAULT_FORWARD, node.label);
-        graph.registerTranslation(node, new InstructionTranslation(null, gotoNode));
+        graph.registerTranslation(node, new InstructionTranslation(gotoNode, currentState.frame));
 
+        final Region target = graph.regionByLabel(node.label.getLabel().toString());
         if (EdgeType.BACK == edges.get(node)) {
-            // Back Edge, do nothing
+            // Back Edge, we know the state of the target label and can create copy instructions accordingly
+            if (target == null) {
+                throw new IllegalStateException("Unknown back edge!");
+            }
+
+            final GraphParserState afterCopy = introduceCopyInstructionsForBackEdge(currentState.controlFlowsTo(gotoNode), StandardProjections.DEFAULT_FORWARD, node.label);
+            afterCopy.lastControlTokenConsumer.addControlFlowTo(StandardProjections.DEFAULT_BACKWARD, target);
             return Collections.emptyList();
         }
-        graph.addFixup(new AddControlFlowFixup(afterCopy.lastControlTokenConsumer, StandardProjections.DEFAULT_FORWARD, node.label));
-        return Collections.singletonList(currentFlow.continueWith(node.label, afterCopy));
+        graph.addFixup(new ForwardControlFlowFixup(gotoNode, currentState.frame, StandardProjections.DEFAULT_FORWARD, node.label));
+        return Collections.singletonList(currentFlow.continueWith(node.label, currentState.controlFlowsTo(target)));
     }
 
     private List<ControlFlow> parse_IF(final ControlFlow currentFlow, final If.Operation operation, final Map<LabelNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerLabel) {
@@ -580,7 +577,7 @@ public class GraphParser {
         final Frame.PopResult pop2 = pop1.newFrame.popFromStack();
 
         final If ifNode = graph.newIf(operation);
-        graph.registerTranslation(node, new InstructionTranslation(null, ifNode));
+        graph.registerTranslation(node, new InstructionTranslation(ifNode, currentState.frame));
         ifNode.addIncomingData(pop2.value, pop1.value);
 
         final List<ControlFlow> results = new ArrayList<>();
@@ -592,15 +589,19 @@ public class GraphParser {
         // True-Case
         final Region trueTargetNode = getOrCreateRegionNodeFor(node.label);
         if (EdgeType.BACK == edges.get(node)) {
-            final Projection p = new StandardProjections.TrueProjection(EdgeType.BACK);
-            final GraphParserState afterTrueCopy = introduceCopyInstructions(origin, p, node.label);
-            afterTrueCopy.lastControlTokenConsumer.addControlFlowTo(p, trueTargetNode);
+            final Projection p = new StandardProjections.TrueProjection(EdgeType.FORWARD);
+            final GraphParserState afterTrueCopy = introduceCopyInstructionsForBackEdge(origin, p, node.label);
+            if (afterTrueCopy.lastControlTokenConsumer == ifNode) {
+                // No copy instruction created
+                afterTrueCopy.lastControlTokenConsumer.addControlFlowTo(new StandardProjections.TrueProjection(EdgeType.BACK), trueTargetNode);
+            } else {
+                afterTrueCopy.lastControlTokenConsumer.addControlFlowTo(StandardProjections.DEFAULT_BACKWARD, trueTargetNode);
+            }
             // Do nothing
         } else {
             final Projection p = new StandardProjections.TrueProjection(EdgeType.FORWARD);
-            final GraphParserState afterTrueCopy = introduceCopyInstructions(origin, p, node.label);
-            graph.addFixup(new AddControlFlowFixup(afterTrueCopy.lastControlTokenConsumer, p, node.label));
-            results.add(currentFlow.continueWith(node.label, afterTrueCopy));
+            graph.addFixup(new ForwardControlFlowFixup(currentState.lastControlTokenConsumer, pop2.newFrame, p, node.label));
+            results.add(currentFlow.continueWith(node.label, origin));
         }
 
         // False-Case
@@ -610,18 +611,22 @@ public class GraphParser {
             final Region falseTargetNode = getOrCreateRegionNodeFor(falseLabel);
             if (EdgeType.BACK == edges.get(node)) {
                 // TODO: can this happen?
-                final Projection p = new StandardProjections.FalseProjection(EdgeType.BACK);
-                final GraphParserState afterFalseCopy = introduceCopyInstructions(origin, p, falseLabel);
-                afterFalseCopy.lastControlTokenConsumer.addControlFlowTo(p, falseTargetNode);
+                final Projection p = new StandardProjections.FalseProjection(EdgeType.FORWARD);
+                final GraphParserState afterFalseCopy = introduceCopyInstructionsForBackEdge(origin, p, falseLabel);
+                if (afterFalseCopy.lastControlTokenConsumer == ifNode) {
+                    // No Copy instructions created
+                    afterFalseCopy.lastControlTokenConsumer.addControlFlowTo(new StandardProjections.FalseProjection(EdgeType.BACK), falseTargetNode);
+                } else {
+                    afterFalseCopy.lastControlTokenConsumer.addControlFlowTo(StandardProjections.DEFAULT_BACKWARD, falseTargetNode);
+                }
                 // Do nothing
             } else {
                 final Projection p = new StandardProjections.FalseProjection(EdgeType.FORWARD);
-                final GraphParserState afterFalseCopy = introduceCopyInstructions(origin, p, falseLabel);
-                graph.addFixup(new AddControlFlowFixup(afterFalseCopy.lastControlTokenConsumer, p, falseLabel));
-                results.add(currentFlow.continueWith(nextNode, afterFalseCopy));
+                graph.addFixup(new ForwardControlFlowFixup(ifNode, pop2.newFrame, p, falseLabel));
+                results.add(currentFlow.continueWith(nextNode, origin));
             }
         } else {
-            graph.addFixup(new AddControlFlowFixup(origin.lastControlTokenConsumer, new StandardProjections.FalseProjection(EdgeType.FORWARD), nextNode));
+            graph.addFixup(new ForwardControlFlowFixup(origin.lastControlTokenConsumer, pop2.newFrame, new StandardProjections.FalseProjection(EdgeType.FORWARD), nextNode));
             results.add(currentFlow.continueWith(nextNode, origin));
         }
 
@@ -655,12 +660,12 @@ public class GraphParser {
         final Copy copy = graph.newCopy(Type.INT_TYPE);
         copy.addIncomingData(addNode);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(null, copy));
+        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
 
         final Frame newFrame = currentState.frame.setLocal(local, variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
-        graph.addFixup(new AddControlFlowFixup(copy, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+        graph.addFixup(new ForwardControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }

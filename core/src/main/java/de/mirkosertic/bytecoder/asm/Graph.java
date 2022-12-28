@@ -162,14 +162,20 @@ public class Graph {
             }
             pw.print(" node_" + i + "[label=\"" + label + "\" ");
             if (n instanceof ControlTokenConsumer) {
-                pw.print("style=\"filled\" fillcolor=\"lightgray\"");
+                pw.print("shape=\"box\" fillcolor=\"orangered\" style=\"filled\"");
+            } else {
+                if (n instanceof Constant) {
+                    pw.print("shape=\"diamong\" fillcolor=\"darkgoldenrod1\" style=\"filled\"");
+                } else {
+                    pw.print("shape=\"oval\" fillcolor=\"cyan2\" style=\"filled\"");
+                }
             }
             if (n.error) {
                 pw.print(" color=\"red\"");
             }
             pw.println("];");
             for (final Node incoming : n.incomingDataFlows) {
-                pw.print(" node_" + nodes.indexOf(incoming) + " -> node_" + i + "[dir=\"forward\" color=\"blue\" label=\"arg " + n.incomingDataFlows.indexOf(incoming)+ "\"];");
+                pw.print(" node_" + nodes.indexOf(incoming) + " -> node_" + i + "[dir=\"forward\" color=\"cyan2\" label=\"arg " + n.incomingDataFlows.indexOf(incoming)+ "\"];");
             }
             if (n instanceof ControlTokenConsumer) {
                 final ControlTokenConsumer c = (ControlTokenConsumer) n;
@@ -179,9 +185,13 @@ public class Graph {
                         if (!(entry.getKey() instanceof StandardProjections.DefaultProjection)) {
                             pw.print(" label=\"" + entry.getKey().getClass().getSimpleName() + "\"");
                         }
+                        if (entry.getKey().edgeType() == EdgeType.BACK) {
+                            pw.print(" style=\"dashed\"");
+                        }
                         pw.println("];");
                     }
                 }
+
             }
 
         }
