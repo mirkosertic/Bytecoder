@@ -59,7 +59,7 @@ public class Frame {
         return new PopResult(new Frame(incomingLocals, newStack), value);
     }
 
-    public Frame withLocalsAndStack(final Variable[] locals, final Variable[] stack) {
+    public Frame withLocalsAndStack(final Value[] locals, final Value[] stack) {
         return new Frame(locals, stack);
     }
 }

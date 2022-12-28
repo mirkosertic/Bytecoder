@@ -189,14 +189,11 @@ public class GraphParser {
         graph.applyFixups();
     }
 
-    private List<ControlFlow> parseLabelNode(final ControlFlow currentFlow, final ControlTokenConsumer preludeStart, final ControlTokenConsumer preludeEnd) {
+    private List<ControlFlow> parseLabelNode(final ControlFlow currentFlow) {
         final LabelNode node = (LabelNode) currentFlow.currentNode;
 
         final Region region = getOrCreateRegionNodeFor(node);
-        if (preludeEnd != null) {
-            preludeEnd.addControlFlowTo(StandardProjections.DEFAULT_FORWARD, region);
-        }
-        graph.registerTranslation(node, new InstructionTranslation(preludeStart, region));
+        graph.registerTranslation(node, new InstructionTranslation(null, region));
 
         region.frame = currentFlow.graphParserState.frame;
 
@@ -680,61 +677,36 @@ public class GraphParser {
                     // is a PHI. Data copy is handled during the graph fixup phase
                     // We just have to make sure that there are phi variables there to handle everything
 
-                    // TODO: implement this correctly
-                    ControlTokenConsumer firstCopy = null;
-                    ControlTokenConsumer lastCopy = null;
-                    // We do have multiple incoming edges, hence we need PHI nodes
-                    GraphParserState graphParserState = currentFlow.graphParserState;
-                    final Variable[] newLocals = new Variable[graphParserState.frame.incomingLocals.length];
-                    final Variable[] newStack = new Variable[graphParserState.frame.incomingStack.length];
-                    // Copy data to phi nodes
+                    final GraphParserState graphParserState = currentFlow.graphParserState;
+                    final Value[] newLocals = new Value[graphParserState.frame.incomingLocals.length];
+                    final Value[] newStack = new Value[graphParserState.frame.incomingStack.length];
 
                     for (int i = 0; i < graphParserState.frame.incomingLocals.length; i++) {
-                        final Node source = graphParserState.frame.incomingLocals[i];
-                        if (source != null) {
-                            final PHI phi = graph.newPHI(source.type);
-                            final Copy copy = graph.newCopy(source.type);
-                            copy.addIncomingData(source);
-                            phi.addIncomingData(copy);
-                            if (firstCopy == null) {
-                                firstCopy = copy;
-                                lastCopy = copy;
-                            } else {
-                                lastCopy = copy;
-                            }
-                            graphParserState.lastControlTokenConsumer.addControlFlowTo(StandardProjections.DEFAULT_FORWARD, copy);
-                            graphParserState = graphParserState.controlFlowsTo(copy);
-
-                            newLocals[i] = phi;
+                        final Value source = graphParserState.frame.incomingLocals[i];
+                        if (source != null && !(source instanceof PHI)) {
+                            newLocals[i] = graph.newPHI(source.type);
+                        } else {
+                            newLocals[i] = source;
                         }
                     }
                     for (int i = 0; i < graphParserState.frame.incomingStack.length; i++) {
-                        final Node source = graphParserState.frame.incomingStack[i];
-                        final PHI phi = graph.newPHI(source.type);
-                        final Copy copy = graph.newCopy(source.type);
-                        copy.addIncomingData(source);
-                        phi.addIncomingData(copy);
-                        if (firstCopy == null) {
-                            firstCopy = copy;
-                            lastCopy = copy;
+                        final Value source = graphParserState.frame.incomingStack[i];
+                        if (source != null && !(source instanceof PHI)) {
+                            newStack[i] = graph.newPHI(source.type);
                         } else {
-                            lastCopy = copy;
+                            newStack[i] = source;
                         }
-                        graphParserState.lastControlTokenConsumer.addControlFlowTo(StandardProjections.DEFAULT_FORWARD, copy);
-                        graphParserState = graphParserState.controlFlowsTo(copy);
-
-                        newStack[i] = phi;
                     }
 
                     final Frame newFrame = graphParserState.frame.withLocalsAndStack(newLocals, newStack);
 
                     final GraphParserState newState = graphParserState.withFrame(newFrame);
                     final ControlFlow mergedFlow = currentFlow.continueWith(newState);
-                    return parseLabelNode(mergedFlow, firstCopy, lastCopy);
+                    return parseLabelNode(mergedFlow);
                 }
             }
 
-            return parseLabelNode(currentFlow, null, null);
+            return parseLabelNode(currentFlow);
         }
         if (currentFlow.currentNode instanceof LineNumberNode) {
             return parseLineNumberNode(currentFlow);
