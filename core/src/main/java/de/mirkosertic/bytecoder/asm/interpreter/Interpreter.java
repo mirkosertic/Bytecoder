@@ -25,10 +25,10 @@ import de.mirkosertic.bytecoder.asm.If;
 import de.mirkosertic.bytecoder.asm.Int;
 import de.mirkosertic.bytecoder.asm.MethodInvocation;
 import de.mirkosertic.bytecoder.asm.Node;
+import de.mirkosertic.bytecoder.asm.Projection;
 import de.mirkosertic.bytecoder.asm.Region;
 import de.mirkosertic.bytecoder.asm.ReturnNothing;
 import de.mirkosertic.bytecoder.asm.Short;
-import de.mirkosertic.bytecoder.asm.StandardProjections;
 import de.mirkosertic.bytecoder.asm.This;
 import de.mirkosertic.bytecoder.asm.Variable;
 import org.objectweb.asm.Type;
@@ -48,7 +48,7 @@ public class Interpreter {
     }
 
     private ControlTokenConsumer interpret(final Region regionNode) {
-        return regionNode.flowForProjection(StandardProjections.DefaultProjection.class);
+        return regionNode.flowForProjection(Projection.DefaultProjection.class);
     }
 
     private Object interpretValue(final This node) {
@@ -120,7 +120,7 @@ public class Interpreter {
         final Node[] outgoing = copyNode.outgoingFlows;
         if (incoming.length == 0 && outgoing.length == 0) {
             // nothing to do
-            return copyNode.flowForProjection(StandardProjections.DefaultProjection.class);
+            return copyNode.flowForProjection(Projection.DefaultProjection.class);
         }
         if (incoming.length != 1 || outgoing.length != 1) {
             throw new IllegalStateException("Wrong number of incoming and outgoing nodes");
@@ -130,11 +130,11 @@ public class Interpreter {
             throw new IllegalStateException("Can only copy value to variable!");
         }
         variables.put((Variable) target, interpretValue(incoming[0]));
-        return copyNode.flowForProjection(StandardProjections.DefaultProjection.class);
+        return copyNode.flowForProjection(Projection.DefaultProjection.class);
     }
 
     private ControlTokenConsumer interpret(final MethodInvocation node) {
-        return node.flowForProjection(StandardProjections.DefaultProjection.class);
+        return node.flowForProjection(Projection.DefaultProjection.class);
     }
 
     private ControlTokenConsumer interpret(final If node) {
@@ -153,16 +153,16 @@ public class Interpreter {
                     throw new IllegalStateException("Only integers supported!");
                 }
                 if (a.intValue() >= b.intValue()) {
-                    return node.flowForProjection(StandardProjections.TrueProjection.class);
+                    return node.flowForProjection(Projection.TrueProjection.class);
                 }
-                return node.flowForProjection(StandardProjections.FalseProjection.class);
+                return node.flowForProjection(Projection.FalseProjection.class);
             default:
                 throw new IllegalStateException("Not supported operation : " + node.operation);
         }
     }
 
     private ControlTokenConsumer interpret(final Goto node) {
-        return node.flowForProjection(StandardProjections.DefaultProjection.class);
+        return node.flowForProjection(Projection.DefaultProjection.class);
     }
 
     private ControlTokenConsumer interpret(final ControlTokenConsumer token) {

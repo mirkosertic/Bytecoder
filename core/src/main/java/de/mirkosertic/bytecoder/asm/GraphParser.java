@@ -85,12 +85,12 @@ public class GraphParser {
         final Frame startFrame = new Frame(initialLocals, initialStack);
         final Region startRegion = (Region) graph.register(new Region(Graph.START_REGION_NAME));
         startRegion.frame = startFrame;
-        graph.addFixup(new ForwardControlFlowFixup(startRegion, startRegion.frame, StandardProjections.DEFAULT_FORWARD, methodNode.instructions.getFirst()));
+        graph.addFixup(new ControlFlowFixup(startRegion, startRegion.frame, StandardProjections.DEFAULT, methodNode.instructions.getFirst()));
 
         final GraphParserState initialState = new GraphParserState(startFrame, startRegion, -1);
 
         // Step 1: We collect all jump targets
-        final Map<LabelNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerLabel = new HashMap<>();
+        final Map<AbstractInsnNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerInstruction = new HashMap<>();
 
         // Step 2: Check for back edges
         final Stack<ControlFlow> controlFlowsToCheck = new Stack<>();
@@ -113,20 +113,20 @@ public class GraphParser {
                 if (jump.getOpcode() == Opcodes.GOTO) {
                     if (flow.visited(jump.label)) {
                         // Back-Edge
-                        final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerLabel.computeIfAbsent(jump.label, k -> new HashMap<>());
+                        final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(jump.label, k -> new HashMap<>());
                         jumps.put(jump, EdgeType.BACK);
                     } else {
-                        final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerLabel.computeIfAbsent(jump.label, k -> new HashMap<>());
+                        final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(jump.label, k -> new HashMap<>());
                         jumps.put(jump, EdgeType.FORWARD);
                         controlFlowsToCheck.push(flow.addLabelAndContinueWith(jump.label, jump.label));
                     }
                 } else {
                     if (flow.visited(jump.label)) {
                         // Back-Edge
-                        final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerLabel.computeIfAbsent(jump.label, k -> new HashMap<>());
+                        final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(jump.label, k -> new HashMap<>());
                         jumps.put(jump, EdgeType.BACK);
                     } else {
-                        final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerLabel.computeIfAbsent(jump.label, k -> new HashMap<>());
+                        final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(jump.label, k -> new HashMap<>());
                         jumps.put(jump, EdgeType.FORWARD);
                         controlFlowsToCheck.push(flow.addLabelAndContinueWith(jump.label, next));
                     }
@@ -136,10 +136,10 @@ public class GraphParser {
                         final LabelNode nextNode = (LabelNode) jump.getNext();
                         if (flow.visited(nextNode)) {
                             // Back-Edge
-                            final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerLabel.computeIfAbsent(nextNode, k -> new HashMap<>());
+                            final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(nextNode, k -> new HashMap<>());
                             jumps.put(jump, EdgeType.BACK);
                         } else {
-                            final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerLabel.computeIfAbsent(nextNode, k -> new HashMap<>());
+                            final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(nextNode, k -> new HashMap<>());
                             jumps.put(jump, EdgeType.FORWARD);
 
                             controlFlowsToCheck.push(flow.addLabelAndContinueWith(nextNode, next));
@@ -150,10 +150,8 @@ public class GraphParser {
                 }
             } else {
                 if (next != null) {
-                    if (next instanceof LabelNode) {
-                        final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerLabel.computeIfAbsent((LabelNode) next, k -> new HashMap<>());
-                        jumps.put(flow.currentNode, EdgeType.FORWARD);
-                    }
+                    final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(next, k -> new HashMap<>());
+                    jumps.put(flow.currentNode, EdgeType.FORWARD);
                     controlFlowsToCheck.push(flow.continueWith(next));
                 } else {
                     System.out.println("no more next!");
@@ -165,7 +163,7 @@ public class GraphParser {
                 final LabelNode start = tryCatchBlockNode.start;
                 final LabelNode handler = tryCatchBlockNode.handler;
 
-                final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerLabel.computeIfAbsent(handler, k -> new HashMap<>());
+                final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(handler, k -> new HashMap<>());
                 jumps.put(start, EdgeType.FORWARD);
             }
         }
@@ -177,7 +175,7 @@ public class GraphParser {
         while (!controlFlowsToCheck.isEmpty()) {
             final ControlFlow flow = controlFlowsToCheck.pop();
             if (alreadyVisited.add(flow.currentNode)) {
-                for (final ControlFlow nextOutCome : parse(flow, incomingEdgesPerLabel)) {
+                for (final ControlFlow nextOutCome : parse(flow, incomingEdgesPerInstruction)) {
                     if (!alreadyVisited.contains(nextOutCome.currentNode)) {
                         controlFlowsToCheck.push(nextOutCome);
                     }
@@ -186,7 +184,7 @@ public class GraphParser {
         }
 
         // Step 4: Fixup stuff not possible during analysis
-        graph.applyFixups();
+        graph.applyFixups(incomingEdgesPerInstruction);
     }
 
     private List<ControlFlow> parseLabelNode(final ControlFlow currentFlow) {
@@ -199,7 +197,7 @@ public class GraphParser {
         final GraphParserState state = currentFlow.graphParserState;
         final List<ControlFlow> flowsToCheck = new ArrayList<>();
         if (node.getNext() != null) {
-            graph.addFixup(new ForwardControlFlowFixup(region, state.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+            graph.addFixup(new ControlFlowFixup(region, state.frame, StandardProjections.DEFAULT, node.getNext()));
             flowsToCheck.add(currentFlow.continueWith(node.getNext(), state));
         }
 
@@ -208,7 +206,7 @@ public class GraphParser {
             if (tryCatchBlockNode.start == node && tryCatchBlockNode.type != null) {
                 final Region startRegion = getOrCreateRegionNodeFor(tryCatchBlockNode.start);
                 final Frame frameWithPushedException = state.frame.pushToStack(graph.newCaughtException(Type.getObjectType(tryCatchBlockNode.type)));
-                graph.addFixup(new ForwardControlFlowFixup(startRegion, state.frame, StandardProjections.EXCEPTION_FORWARD, tryCatchBlockNode.handler));
+                graph.addFixup(new ControlFlowFixup(startRegion, state.frame, StandardProjections.EXCEPTION_HANDLER, tryCatchBlockNode.handler));
                 flowsToCheck.add(currentFlow.continueWith(tryCatchBlockNode.handler, state.withFrame(frameWithPushedException)));
             }
         }
@@ -238,7 +236,7 @@ public class GraphParser {
         final Frame newFrame = currentFlow.graphParserState.frame.pushToStack(variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
-        graph.addFixup(new ForwardControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+        graph.addFixup(new ControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -258,7 +256,7 @@ public class GraphParser {
         final Frame newFrame = currentFlow.graphParserState.frame.pushToStack(variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
-        graph.addFixup(new ForwardControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+        graph.addFixup(new ControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -280,7 +278,7 @@ public class GraphParser {
         final Frame newFrame = popResult.newFrame.setLocal(local, variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
-        graph.addFixup(new ForwardControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+        graph.addFixup(new ControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -302,7 +300,7 @@ public class GraphParser {
         final Frame newFrame = popResult.newFrame.setLocal(local, variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
-        graph.addFixup(new ForwardControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+        graph.addFixup(new ControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -342,7 +340,7 @@ public class GraphParser {
         graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
 
         final GraphParserState newState = currentState.controlFlowsTo(n).withFrame(latest.newFrame);
-        graph.addFixup(new ForwardControlFlowFixup(n, newState.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+        graph.addFixup(new ControlFlowFixup(n, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -370,7 +368,7 @@ public class GraphParser {
         final Frame newFrame = currentState.frame.pushToStack(variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copyNode).withFrame(newFrame);
-        graph.addFixup(new ForwardControlFlowFixup(copyNode, newState.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+        graph.addFixup(new ControlFlowFixup(copyNode, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -389,7 +387,7 @@ public class GraphParser {
         final Frame newFrame = currentState.frame.pushToStack(variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copyNode).withFrame(newFrame);
-        graph.addFixup(new ForwardControlFlowFixup(copyNode, newState.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+        graph.addFixup(new ControlFlowFixup(copyNode, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -428,7 +426,7 @@ public class GraphParser {
         final Frame newFrame = currentState.frame.pushToStack(variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
-        graph.addFixup(new ForwardControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+        graph.addFixup(new ControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -452,7 +450,7 @@ public class GraphParser {
         final Frame newFrame = pop1.newFrame.pushToStack(variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
-        graph.addFixup(new ForwardControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+        graph.addFixup(new ControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -476,7 +474,7 @@ public class GraphParser {
         final Frame newFrame = pop1.newFrame.pushToStack(variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
-        graph.addFixup(new ForwardControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+        graph.addFixup(new ControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -505,71 +503,20 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(currentFlow.currentNode.getNext()));
     }
 
-    private GraphParserState introduceCopyInstructionsForBackEdge(final GraphParserState graphParserState, final Projection firstProjection, final LabelNode targetNode) {
-        GraphParserState state = graphParserState;
-
-        final InstructionTranslation translation = graph.translationFor(targetNode);
-        if (translation == null) {
-            throw new IllegalStateException("Unknown translation!");
-        }
-
-        final Frame targetFrame = translation.frame;
-        Projection f = firstProjection;
-        for (int i = 0; i < state.frame.incomingLocals.length; i++) {
-            final Value source = state.frame.incomingLocals[i];
-            final Value target = targetFrame.incomingLocals[i];
-            if ((source != null) && (source != target)) {
-                final Copy copy = graph.newCopy(source.type);
-                copy.addIncomingData(source);
-                target.addIncomingData(copy);
-
-                state.lastControlTokenConsumer.addControlFlowTo(f, copy);
-                state = state.controlFlowsTo(copy);
-                f = StandardProjections.DEFAULT_FORWARD;
-            }
-        }
-        for (int i = 0; i < state.frame.incomingStack.length; i++) {
-            final Value source = state.frame.incomingStack[i];
-            final Value target = targetFrame.incomingStack[i];
-            if ((source != null) && (source != target)) {
-                final Copy copy = graph.newCopy(source.type);
-                copy.addIncomingData(source);
-                target.addIncomingData(copy);
-
-                state.lastControlTokenConsumer.addControlFlowTo(f, copy);
-                state = state.controlFlowsTo(copy);
-                f = StandardProjections.DEFAULT_FORWARD;
-            }
-        }
-        return state;
-    }
-
-    private List<ControlFlow> parse_GOTO(final ControlFlow currentFlow, final Map<LabelNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerLabel) {
+    private List<ControlFlow> parse_GOTO(final ControlFlow currentFlow) {
         final JumpInsnNode node = (JumpInsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
-
-        final Map<AbstractInsnNode, EdgeType> edges = incomingEdgesPerLabel.get(node.label);
 
         final Goto gotoNode = graph.newGoto();
 
         graph.registerTranslation(node, new InstructionTranslation(gotoNode, currentState.frame));
 
         final Region target = graph.regionByLabel(node.label.getLabel().toString());
-        if (EdgeType.BACK == edges.get(node)) {
-            // Back Edge, we know the state of the target label and can create copy instructions accordingly
-            if (target == null) {
-                throw new IllegalStateException("Unknown back edge!");
-            }
-
-            final GraphParserState afterCopy = introduceCopyInstructionsForBackEdge(currentState.controlFlowsTo(gotoNode), StandardProjections.DEFAULT_FORWARD, node.label);
-            afterCopy.lastControlTokenConsumer.addControlFlowTo(StandardProjections.DEFAULT_BACKWARD, target);
-            return Collections.emptyList();
-        }
-        graph.addFixup(new ForwardControlFlowFixup(gotoNode, currentState.frame, StandardProjections.DEFAULT_FORWARD, node.label));
+        graph.addFixup(new ControlFlowFixup(gotoNode, currentState.frame, StandardProjections.DEFAULT, node.label));
         return Collections.singletonList(currentFlow.continueWith(node.label, currentState.controlFlowsTo(target)));
     }
 
-    private List<ControlFlow> parse_IF(final ControlFlow currentFlow, final If.Operation operation, final Map<LabelNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerLabel) {
+    private List<ControlFlow> parse_IF(final ControlFlow currentFlow, final If.Operation operation) {
         final JumpInsnNode node = (JumpInsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
 
@@ -584,61 +531,24 @@ public class GraphParser {
 
         final GraphParserState origin = currentState.controlFlowsTo(ifNode).withFrame(pop2.newFrame);
 
-        final Map<AbstractInsnNode, EdgeType> edges = incomingEdgesPerLabel.get(node.label);
-
         // True-Case
-        final Region trueTargetNode = getOrCreateRegionNodeFor(node.label);
-        if (EdgeType.BACK == edges.get(node)) {
-            final Projection p = new StandardProjections.TrueProjection(EdgeType.BACK);
-            final GraphParserState afterTrueCopy = introduceCopyInstructionsForBackEdge(origin, p, node.label);
-            if (afterTrueCopy.lastControlTokenConsumer == ifNode) {
-                // No copy instruction created
-                afterTrueCopy.lastControlTokenConsumer.addControlFlowTo(new StandardProjections.TrueProjection(EdgeType.BACK), trueTargetNode);
-            } else {
-                afterTrueCopy.lastControlTokenConsumer.addControlFlowTo(StandardProjections.DEFAULT_BACKWARD, trueTargetNode);
-            }
-            // Do nothing
-        } else {
-            final Projection p = new StandardProjections.TrueProjection(EdgeType.FORWARD);
-            graph.addFixup(new ForwardControlFlowFixup(origin.lastControlTokenConsumer, origin.frame, p, node.label));
-            results.add(currentFlow.continueWith(node.label, origin));
-        }
+        graph.addFixup(new ControlFlowFixup(origin.lastControlTokenConsumer, origin.frame, StandardProjections.TRUE, node.label));
+        results.add(currentFlow.continueWith(node.label, origin));
 
         // False-Case
         final AbstractInsnNode nextNode = node.getNext();
-        if (nextNode instanceof LabelNode) {
-            final LabelNode falseLabel = (LabelNode) nextNode;
-            final Region falseTargetNode = getOrCreateRegionNodeFor(falseLabel);
-            if (EdgeType.BACK == edges.get(node)) {
-                // TODO: can this happen?
-                final Projection p = new StandardProjections.FalseProjection(EdgeType.BACK);
-                final GraphParserState afterFalseCopy = introduceCopyInstructionsForBackEdge(origin, p, falseLabel);
-                if (afterFalseCopy.lastControlTokenConsumer == ifNode) {
-                    // No Copy instructions created
-                    afterFalseCopy.lastControlTokenConsumer.addControlFlowTo(new StandardProjections.FalseProjection(EdgeType.BACK), falseTargetNode);
-                } else {
-                    afterFalseCopy.lastControlTokenConsumer.addControlFlowTo(StandardProjections.DEFAULT_BACKWARD, falseTargetNode);
-                }
-                // Do nothing
-            } else {
-                final Projection p = new StandardProjections.FalseProjection(EdgeType.FORWARD);
-                graph.addFixup(new ForwardControlFlowFixup(origin.lastControlTokenConsumer, origin.frame, p, falseLabel));
-                results.add(currentFlow.continueWith(nextNode, origin));
-            }
-        } else {
-            graph.addFixup(new ForwardControlFlowFixup(origin.lastControlTokenConsumer, origin.frame, new StandardProjections.FalseProjection(EdgeType.FORWARD), nextNode));
-            results.add(currentFlow.continueWith(nextNode, origin));
-        }
+        graph.addFixup(new ControlFlowFixup(origin.lastControlTokenConsumer, origin.frame, StandardProjections.FALSE, nextNode));
+        results.add(currentFlow.continueWith(nextNode, origin));
 
         return results;
     }
 
-    private List<ControlFlow> parseJumpInsnNode(final ControlFlow currentFlow, final Map<LabelNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerLabel) {
+    private List<ControlFlow> parseJumpInsnNode(final ControlFlow currentFlow) {
         switch (currentFlow.currentNode.getOpcode()) {
             case Opcodes.GOTO:
-                return parse_GOTO(currentFlow, incomingEdgesPerLabel);
+                return parse_GOTO(currentFlow);
             case Opcodes.IF_ICMPGE:
-                return parse_IF(currentFlow, If.Operation.icmpge, incomingEdgesPerLabel);
+                return parse_IF(currentFlow, If.Operation.icmpge);
             default:
                 throw new IllegalStateException("Not supported opcode : " + currentFlow.currentNode.getOpcode());
         }
@@ -665,16 +575,16 @@ public class GraphParser {
         final Frame newFrame = currentState.frame.setLocal(local, variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
-        graph.addFixup(new ForwardControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT_FORWARD, node.getNext()));
+        graph.addFixup(new ControlFlowFixup(copy, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
-    private List<ControlFlow> parse(final ControlFlow currentFlow, final Map<LabelNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerLabel) {
+    private List<ControlFlow> parse(final ControlFlow currentFlow, final Map<AbstractInsnNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerInstruction) {
         if (currentFlow.currentNode instanceof LabelNode) {
             final LabelNode labelNode = (LabelNode) currentFlow.currentNode;
 
-            final Map<AbstractInsnNode, EdgeType> incomingEdges = incomingEdgesPerLabel.get(labelNode);
+            final Map<AbstractInsnNode, EdgeType> incomingEdges = incomingEdgesPerInstruction.get(labelNode);
             if (incomingEdges != null) {
                 if (incomingEdges.size() > 1) {
                     // We do have multiple incoming edges
@@ -732,7 +642,7 @@ public class GraphParser {
             return parseFrame(currentFlow);
         }
         if (currentFlow.currentNode instanceof JumpInsnNode) {
-            return parseJumpInsnNode(currentFlow, incomingEdgesPerLabel);
+            return parseJumpInsnNode(currentFlow);
         }
         if (currentFlow.currentNode instanceof IincInsnNode) {
             return parseIincInsnNode(currentFlow);

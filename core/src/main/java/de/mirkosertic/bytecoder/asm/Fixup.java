@@ -15,8 +15,12 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
+import org.objectweb.asm.tree.AbstractInsnNode;
+
+import java.util.Map;
+
 public interface Fixup {
 
-    void applyTo(final Graph g);
+    void applyTo(final Graph g, Map<AbstractInsnNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerLabel);
 
 }

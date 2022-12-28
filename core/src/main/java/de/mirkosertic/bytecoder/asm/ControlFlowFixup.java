@@ -19,7 +19,9 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FrameNode;
 import org.objectweb.asm.tree.LineNumberNode;
 
-public class ForwardControlFlowFixup implements Fixup {
+import java.util.Map;
+
+public class ControlFlowFixup implements Fixup {
 
     private final ControlTokenConsumer sourceNode;
     private final Projection projection;
@@ -27,7 +29,7 @@ public class ForwardControlFlowFixup implements Fixup {
 
     private final Frame frame;
 
-    public ForwardControlFlowFixup(ControlTokenConsumer sourceNode, final Frame frame, Projection projection, AbstractInsnNode targetInstruction) {
+    public ControlFlowFixup(ControlTokenConsumer sourceNode, final Frame frame, Projection projection, AbstractInsnNode targetInstruction) {
         this.sourceNode = sourceNode;
         this.projection = projection;
         this.targetInstruction = targetInstruction;
@@ -35,7 +37,7 @@ public class ForwardControlFlowFixup implements Fixup {
     }
 
     @Override
-    public void applyTo(Graph g) {
+    public void applyTo(Graph g, Map<AbstractInsnNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerInstruction) {
         AbstractInsnNode target = this.targetInstruction;
         while ((target instanceof LineNumberNode) || (target instanceof FrameNode)) {
             target = target.getNext();
@@ -54,7 +56,7 @@ public class ForwardControlFlowFixup implements Fixup {
                     targetValue.addIncomingData(c);
                     current.addControlFlowTo(p, c);
                     current = c;
-                    p = StandardProjections.DEFAULT_FORWARD;
+                    p = StandardProjections.DEFAULT;
                 }
             }
             for (int i = 0; i < frame.incomingStack.length; i++) {
@@ -66,11 +68,12 @@ public class ForwardControlFlowFixup implements Fixup {
                     targetValue.addIncomingData(c);
                     current.addControlFlowTo(p, c);
                     current = c;
-                    p = StandardProjections.DEFAULT_FORWARD;
+                    p = StandardProjections.DEFAULT;
                 }
             }
 
             // TODO: Check for the correct edge type here!!
+            final Map<AbstractInsnNode, EdgeType> incomingEdges = incomingEdgesPerInstruction.get(target);
 
             if (current == sourceNode) {
                 // No copy instruction generated

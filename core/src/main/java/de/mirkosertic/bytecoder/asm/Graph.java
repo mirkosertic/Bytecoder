@@ -49,9 +49,9 @@ public class Graph {
         fixups.add(fixup);
     }
 
-    public void applyFixups() {
+    public void applyFixups(Map<AbstractInsnNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerInstruction) {
         for (final Fixup f : fixups) {
-            f.applyTo(this);
+            f.applyTo(this, incomingEdgesPerInstruction);
         }
         fixups.clear();
     }
@@ -183,7 +183,7 @@ public class Graph {
                 for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : c.controlFlowsTo.entrySet()) {
                     for (final ControlTokenConsumer no : entry.getValue()) {
                         pw.print(" node_" + i + " -> node_" + nodes.indexOf(no) + "[dir=\"forward\" color=\"red\"");
-                        if (!(entry.getKey() instanceof StandardProjections.DefaultProjection)) {
+                        if (!(entry.getKey() instanceof Projection.DefaultProjection)) {
                             pw.print(" label=\"" + entry.getKey().getClass().getSimpleName() + "\"");
                         }
                         if (entry.getKey().edgeType() == EdgeType.BACK) {

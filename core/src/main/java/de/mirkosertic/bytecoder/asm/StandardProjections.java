@@ -15,45 +15,14 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-public class StandardProjections implements Projection {
+public abstract class StandardProjections {
 
-    public static class DefaultProjection extends StandardProjections {
-        public DefaultProjection(EdgeType edgeType) {
-            super(edgeType);
-        }
-    }
+    public static final Projection DEFAULT = new Projection.DefaultProjection(EdgeType.FORWARD);
 
-    public static class TrueProjection extends StandardProjections {
-        public TrueProjection(EdgeType edgeType) {
-            super(edgeType);
-        }
-    }
+    public static final Projection TRUE = new Projection.TrueProjection(EdgeType.FORWARD);
 
-    public static class FalseProjection extends StandardProjections {
-        public FalseProjection(EdgeType edgeType) {
-            super(edgeType);
-        }
-    }
+    public static final Projection FALSE = new Projection.FalseProjection(EdgeType.FORWARD);
 
-    public static class ExceptionHandler extends StandardProjections {
-        public ExceptionHandler() {
-            super(EdgeType.FORWARD);
-        }
-    }
+    public static final Projection EXCEPTION_HANDLER = new Projection.ExceptionHandler();
 
-    public static final StandardProjections DEFAULT_FORWARD = new DefaultProjection(EdgeType.FORWARD);
-
-    public static final StandardProjections DEFAULT_BACKWARD = new DefaultProjection(EdgeType.BACK);
-
-    public static final StandardProjections EXCEPTION_FORWARD = new ExceptionHandler();
-    private final EdgeType edgeType;
-
-    protected StandardProjections(EdgeType edgeType) {
-        this.edgeType = edgeType;
-    }
-
-    @Override
-    public EdgeType edgeType() {
-        return null;
-    }
 }

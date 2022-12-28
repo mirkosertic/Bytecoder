@@ -15,7 +15,78 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-public interface Projection {
+public abstract class Projection {
 
-    EdgeType edgeType();
+    public static class DefaultProjection extends Projection {
+
+        public DefaultProjection(EdgeType edgeType) {
+            super(edgeType);
+        }
+
+        @Override
+        public DefaultProjection withEdgeType(final EdgeType edgeType) {
+            if (edgeType == edgeType()) {
+                return this;
+            }
+            return new DefaultProjection(edgeType);
+        }
+    }
+
+    public static class TrueProjection extends Projection {
+
+        public TrueProjection(EdgeType edgeType) {
+            super(edgeType);
+        }
+
+        @Override
+        public TrueProjection withEdgeType(final EdgeType edgeType) {
+            if (edgeType == edgeType()) {
+                return this;
+            }
+            return new TrueProjection(edgeType);
+        }
+    }
+
+    public static class FalseProjection extends Projection {
+
+        public static final FalseProjection FALSE = new FalseProjection(EdgeType.FORWARD);
+
+        public FalseProjection(EdgeType edgeType) {
+            super(edgeType);
+        }
+
+        @Override
+        public FalseProjection withEdgeType(final EdgeType edgeType) {
+            if (edgeType == edgeType()) {
+                return this;
+            }
+            return new FalseProjection(edgeType);
+        }
+    }
+
+    public static class ExceptionHandler extends Projection {
+
+        public static final ExceptionHandler INSTANCE = new ExceptionHandler();
+
+        public ExceptionHandler() {
+            super(EdgeType.FORWARD);
+        }
+
+        @Override
+        public ExceptionHandler withEdgeType(final EdgeType edgeType) {
+            return this;
+        }
+    }
+
+    private final EdgeType edgeType;
+
+    protected Projection(EdgeType edgeType) {
+        this.edgeType = edgeType;
+    }
+
+    public EdgeType edgeType() {
+        return edgeType;
+    }
+
+    public abstract <T extends Projection> T withEdgeType(final EdgeType edgeType);
 }
