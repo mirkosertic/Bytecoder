@@ -69,6 +69,9 @@ public class ForwardControlFlowFixup implements Fixup {
                     p = StandardProjections.DEFAULT_FORWARD;
                 }
             }
+
+            // TODO: Check for the correct edge type here!!
+
             if (current == sourceNode) {
                 // No copy instruction generated
                 current.addControlFlowTo(projection, translation.main);
