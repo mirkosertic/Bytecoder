@@ -24,4 +24,9 @@ public class Int extends PrimitiveValue {
         super(Type.INT_TYPE);
         this.value = value;
     }
+
+    @Override
+    public String additionalDebugInfo() {
+        return ": " + value;
+    }
 }

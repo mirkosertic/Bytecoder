@@ -32,6 +32,10 @@ public class Node {
         this.outgoingFlows = new Node[0];
     }
 
+    public String additionalDebugInfo() {
+        return "";
+    }
+
     public void addIncomingData(final Node... nodes) {
         if (incomingDataFlows.length == 0) {
             incomingDataFlows = nodes;

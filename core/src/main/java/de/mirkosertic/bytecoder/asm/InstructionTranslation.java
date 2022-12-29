@@ -21,7 +21,7 @@ public class InstructionTranslation {
 
     public final Frame frame;
 
-    public InstructionTranslation(ControlTokenConsumer main, Frame frame) {
+    public InstructionTranslation(final ControlTokenConsumer main, final Frame frame) {
         this.main = main;
         this.frame = frame;
     }

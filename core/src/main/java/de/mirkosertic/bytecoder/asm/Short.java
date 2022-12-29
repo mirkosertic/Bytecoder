@@ -25,4 +25,10 @@ public class Short extends PrimitiveValue {
         super(Type.SHORT_TYPE);
         this.value = value;
     }
+
+
+    @Override
+    public String additionalDebugInfo() {
+        return ": " + value;
+    }
 }

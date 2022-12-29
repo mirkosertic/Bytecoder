@@ -27,7 +27,12 @@ public class Region extends ControlTokenConsumer {
     }
 
     @Override
-    public void addControlFlowTo(Projection projection, ControlTokenConsumer node) {
+    public void addControlFlowTo(final Projection projection, final ControlTokenConsumer node) {
         super.addControlFlowTo(projection, node);
+    }
+
+    @Override
+    public String additionalDebugInfo() {
+        return label;
     }
 }

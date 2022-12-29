@@ -23,6 +23,4 @@ public abstract class StandardProjections {
 
     public static final Projection FALSE = new Projection.FalseProjection(EdgeType.FORWARD);
 
-    public static final Projection EXCEPTION_HANDLER = new Projection.ExceptionHandler();
-
 }

@@ -15,11 +15,13 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
+import org.objectweb.asm.Type;
+
 public abstract class Projection {
 
     public static class DefaultProjection extends Projection {
 
-        public DefaultProjection(EdgeType edgeType) {
+        public DefaultProjection(final EdgeType edgeType) {
             super(edgeType);
         }
 
@@ -34,7 +36,7 @@ public abstract class Projection {
 
     public static class TrueProjection extends Projection {
 
-        public TrueProjection(EdgeType edgeType) {
+        public TrueProjection(final EdgeType edgeType) {
             super(edgeType);
         }
 
@@ -45,13 +47,18 @@ public abstract class Projection {
             }
             return new TrueProjection(edgeType);
         }
+
+        @Override
+        public String additionalDebugInfo() {
+            return "TRUE";
+        }
     }
 
     public static class FalseProjection extends Projection {
 
         public static final FalseProjection FALSE = new FalseProjection(EdgeType.FORWARD);
 
-        public FalseProjection(EdgeType edgeType) {
+        public FalseProjection(final EdgeType edgeType) {
             super(edgeType);
         }
 
@@ -62,25 +69,36 @@ public abstract class Projection {
             }
             return new FalseProjection(edgeType);
         }
+
+        @Override
+        public String additionalDebugInfo() {
+            return "FALSE";
+        }
     }
 
     public static class ExceptionHandler extends Projection {
 
-        public static final ExceptionHandler INSTANCE = new ExceptionHandler();
+        public final Type type;
 
-        public ExceptionHandler() {
+        public ExceptionHandler(final Type type) {
             super(EdgeType.FORWARD);
+            this.type = type;
         }
 
         @Override
         public ExceptionHandler withEdgeType(final EdgeType edgeType) {
             return this;
         }
+
+        @Override
+        public String additionalDebugInfo() {
+            return "EXCEPTIONHANDLER : " + type;
+        }
     }
 
     private final EdgeType edgeType;
 
-    protected Projection(EdgeType edgeType) {
+    protected Projection(final EdgeType edgeType) {
         this.edgeType = edgeType;
     }
 
@@ -89,4 +107,8 @@ public abstract class Projection {
     }
 
     public abstract <T extends Projection> T withEdgeType(final EdgeType edgeType);
+
+    public String additionalDebugInfo() {
+        return "";
+    }
 }

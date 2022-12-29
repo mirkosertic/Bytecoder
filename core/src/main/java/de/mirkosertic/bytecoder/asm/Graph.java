@@ -28,7 +28,7 @@ import java.util.Map;
 
 public class Graph {
 
-    public static final java.lang.String START_REGION_NAME = "Start";
+    public static final String START_REGION_NAME = "Start";
 
     private final List<Node> nodes;
 
@@ -49,7 +49,7 @@ public class Graph {
         fixups.add(fixup);
     }
 
-    public void applyFixups(Map<AbstractInsnNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerInstruction) {
+    public void applyFixups(final Map<AbstractInsnNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerInstruction) {
         for (final Fixup f : fixups) {
             f.applyTo(this, incomingEdgesPerInstruction);
         }
@@ -109,23 +109,23 @@ public class Graph {
         return (If) register(new If(operation));
     }
 
-    public Node newObjectInteger(final java.lang.Integer value) {
+    public Node newObjectInteger(final Integer value) {
         return register(new ObjectInteger(value));
     }
 
-    public Node newObjectFloat(final java.lang.Float value) {
+    public Node newObjectFloat(final Float value) {
         return register(new ObjectFloat(value));
     }
 
-    public Node newObjectLong(final java.lang.Long value) {
+    public Node newObjectLong(final Long value) {
         return register(new ObjectLong(value));
     }
 
-    public Node newObjectDouble(final java.lang.Double value) {
+    public Node newObjectDouble(final Double value) {
         return register(new ObjectDouble(value));
     }
 
-    public Node newObjectString(final java.lang.String value) {
+    public Node newObjectString(final String value) {
         return register(new ObjectString(value));
     }
 
@@ -150,16 +150,7 @@ public class Graph {
         pw.println("digraph debugoutput {");
         for (int i = 0; i < nodes.size(); i++) {
             final Node n = nodes.get(i);
-            java.lang.String label = nodes.indexOf(n) + " " + n.getClass().getSimpleName();
-            if (n instanceof Region) {
-                label += " " + ((Region) n).label;
-            }
-            if (n instanceof Int) {
-                label += " : " + ((Int) n).value;
-            }
-            if (n instanceof Short) {
-                label += " : " + ((Short) n).value;
-            }
+            final String label = nodes.indexOf(n) + " " + n.getClass().getSimpleName() + " " + n.additionalDebugInfo();
             pw.print(" node_" + i + "[label=\"" + label + "\" ");
             if (n instanceof ControlTokenConsumer) {
                 pw.print("shape=\"box\" fillcolor=\"orangered\" style=\"filled\"");
@@ -183,9 +174,9 @@ public class Graph {
                 for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : c.controlFlowsTo.entrySet()) {
                     for (final ControlTokenConsumer no : entry.getValue()) {
                         pw.print(" node_" + i + " -> node_" + nodes.indexOf(no) + "[dir=\"forward\" color=\"red\"");
-                        if (!(entry.getKey() instanceof Projection.DefaultProjection)) {
-                            pw.print(" label=\"" + entry.getKey().getClass().getSimpleName() + "\"");
-                        }
+                        pw.print(" label=\"");
+                        pw.print(entry.getKey().additionalDebugInfo());
+                        pw.print("\"");
                         if (entry.getKey().edgeType() == EdgeType.BACK) {
                             pw.print(" style=\"dashed\"");
                         }
@@ -220,11 +211,11 @@ public class Graph {
         return (Goto) register(new Goto());
     }
 
-    public Region newRegion(String label) {
+    public Region newRegion(final String label) {
         return (Region) register(new Region(label));
     }
 
-    public TryCatch newTryCatch(String label) {
+    public TryCatch newTryCatch(final String label) {
         return (TryCatch) register(new TryCatch(label));
     }
 }

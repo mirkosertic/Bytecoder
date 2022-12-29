@@ -17,35 +17,40 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.FrameNode;
+import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LineNumberNode;
 
 import java.util.Map;
 
 public class ControlFlowFixup implements Fixup {
 
-    private final ControlTokenConsumer sourceNode;
+    private final AbstractInsnNode sourceInstruction;
     private final Projection projection;
     private final AbstractInsnNode targetInstruction;
 
     private final Frame frame;
 
-    public ControlFlowFixup(ControlTokenConsumer sourceNode, final Frame frame, Projection projection, AbstractInsnNode targetInstruction) {
-        this.sourceNode = sourceNode;
+    public ControlFlowFixup(final AbstractInsnNode sourceInstruction, final Frame frame, final Projection projection, final AbstractInsnNode targetInstruction) {
+        this.sourceInstruction = sourceInstruction;
         this.projection = projection;
         this.targetInstruction = targetInstruction;
         this.frame = frame;
     }
 
     @Override
-    public void applyTo(Graph g, Map<AbstractInsnNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerInstruction) {
+    public void applyTo(final Graph g, final Map<AbstractInsnNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerInstruction) {
         AbstractInsnNode target = this.targetInstruction;
         while ((target instanceof LineNumberNode) || (target instanceof FrameNode)) {
             target = target.getNext();
         }
         final InstructionTranslation translation = g.translationFor(target);
         if (translation != null) {
+            final InstructionTranslation sourcetranslation = g.translationFor(sourceInstruction);
+            if (sourcetranslation == null) {
+                throw new IllegalStateException("No translation for source " + sourceInstruction + " found!");
+            }
             final Frame targetFrame = translation.frame;
-            ControlTokenConsumer current = sourceNode;
+            ControlTokenConsumer current = sourcetranslation.main;
             Projection p = projection;
             for (int i = 0; i < frame.incomingLocals.length; i++) {
                 final Value sourceValue = frame.incomingLocals[i];
@@ -73,13 +78,21 @@ public class ControlFlowFixup implements Fixup {
             }
 
             // TODO: Check for the correct edge type here!!
-            final Map<AbstractInsnNode, EdgeType> incomingEdges = incomingEdgesPerInstruction.get(target);
-
-            if (current == sourceNode) {
-                // No copy instruction generated
-                current.addControlFlowTo(projection, translation.main);
+            final Map<AbstractInsnNode, EdgeType> incomingEdges = incomingEdgesPerInstruction.get(targetInstruction);
+            final EdgeType edgeType = incomingEdges.get(sourceInstruction);
+            if (edgeType != null) {
+                if (current == sourcetranslation.main) {
+                    // No copy instruction generated
+                    current.addControlFlowTo(projection.withEdgeType(edgeType), translation.main);
+                } else {
+                    current.addControlFlowTo(p.withEdgeType(edgeType), translation.main);
+                }
             } else {
-                current.addControlFlowTo(p, translation.main);
+                if (sourceInstruction instanceof LabelNode) {
+                    System.out.println("No incoming edges found for " + ((LabelNode) sourceInstruction).getLabel() + " to jump to " + target);
+                 } else {
+                    System.out.println("No incoming edges found for " + sourceInstruction + " to jump to " + target);
+                 }
             }
         } else {
             System.out.println("No translation found for " + target + " opcode " + target.getOpcode());
