@@ -218,4 +218,8 @@ public class Graph {
     public TryCatch newTryCatch(final String label) {
         return (TryCatch) register(new TryCatch(label));
     }
+
+    public Unwind newUnwind(final Type type) {
+        return (Unwind) register(new Unwind(type));
+    }
 }

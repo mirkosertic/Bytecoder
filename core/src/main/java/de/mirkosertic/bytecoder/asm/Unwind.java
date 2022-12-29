@@ -15,14 +15,11 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-public abstract class StandardProjections {
+import org.objectweb.asm.Type;
 
-    public static final Projection DEFAULT = new Projection.DefaultProjection(EdgeType.FORWARD);
+public class Unwind extends ControlTokenConsumer {
 
-    public static final Projection TRUE = new Projection.TrueProjection(EdgeType.FORWARD);
-
-    public static final Projection FALSE = new Projection.FalseProjection(EdgeType.FORWARD);
-
-    public static final Projection FINALLY = new Projection.FinallyProjection(EdgeType.FORWARD);
-
+    public Unwind(final Type type) {
+        super(type);
+    }
 }

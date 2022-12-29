@@ -101,6 +101,10 @@ public class GraphParser {
                 // Stop parsing here
                 continue;
             }
+            if (flow.currentNode.getOpcode() == Opcodes.ATHROW) {
+                // Stop parsing here
+                continue;
+            }
             if (flow.currentNode instanceof LabelNode) {
                 final LabelNode labelNode = (LabelNode) flow.currentNode;
                  if (next != null) {
@@ -109,7 +113,7 @@ public class GraphParser {
                      jumps.put(flow.currentNode, EdgeType.FORWARD);
                  }
                  for (final TryCatchBlockNode tryCatchBlockNode : methodNode.tryCatchBlocks) {
-                     if (tryCatchBlockNode.type != null && tryCatchBlockNode.start == labelNode) {
+                     if (tryCatchBlockNode.start == labelNode) {
                          controlFlowsToCheck.push(flow.addInstructionAndContinueWith(labelNode, tryCatchBlockNode.handler));
                      }
                  }
@@ -206,10 +210,18 @@ public class GraphParser {
 
         // Check for exceptional flows
         for (final TryCatchBlockNode tryCatchBlockNode : methodNode.tryCatchBlocks) {
-            if (tryCatchBlockNode.start == node && tryCatchBlockNode.type != null) {
+            if (tryCatchBlockNode.start == node) {
+
+                final Type exceptionType =
+                        tryCatchBlockNode.type != null ? Type.getObjectType(tryCatchBlockNode.type) : Type.getType(Exception.class);
+
                 final Region startRegion = getOrCreateRegionNodeFor(tryCatchBlockNode.handler);
-                final Frame frameWithPushedException = state.frame.pushToStack(graph.newCaughtException(Type.getObjectType(tryCatchBlockNode.type)));
-                region.addControlFlowTo(new Projection.ExceptionHandler(Type.getObjectType(tryCatchBlockNode.type)), startRegion);
+                final Frame frameWithPushedException = state.frame.pushToStack(graph.newCaughtException(exceptionType));
+                if (tryCatchBlockNode.type == null) {
+                    region.addControlFlowTo(StandardProjections.FINALLY, startRegion);
+                } else {
+                    region.addControlFlowTo(new Projection.ExceptionHandler(exceptionType), startRegion);
+                }
                 flowsToCheck.add(currentFlow.continueWith(tryCatchBlockNode.handler, state.withFrame(frameWithPushedException)));
             }
         }
@@ -458,6 +470,18 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
+    private List<ControlFlow> parse_ATHROW(final ControlFlow currentFlow) {
+        final InsnNode node = (InsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Frame.PopResult pop1 = currentState.frame.popFromStack();
+        final ControlTokenConsumer throwNode = graph.newUnwind(pop1.value.type);
+        throwNode.addIncomingData(pop1.value);
+
+        graph.registerTranslation(node, new InstructionTranslation(throwNode, currentState.frame));
+        return Collections.emptyList();
+    }
+
     private List<ControlFlow> parse_IDIV(final ControlFlow currentFlow) {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
@@ -493,6 +517,8 @@ public class GraphParser {
                 return parse_IADD(currentFlow);
             case Opcodes.IDIV:
                 return parse_IDIV(currentFlow);
+            case Opcodes.ATHROW:
+                return parse_ATHROW(currentFlow);
             default:
                 throw new IllegalStateException("Not implemented : " + node + " -> " + node.getOpcode());
         }

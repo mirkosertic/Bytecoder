@@ -56,8 +56,6 @@ public abstract class Projection {
 
     public static class FalseProjection extends Projection {
 
-        public static final FalseProjection FALSE = new FalseProjection(EdgeType.FORWARD);
-
         public FalseProjection(final EdgeType edgeType) {
             super(edgeType);
         }
@@ -93,6 +91,26 @@ public abstract class Projection {
         @Override
         public String additionalDebugInfo() {
             return "EXCEPTIONHANDLER : " + type;
+        }
+    }
+
+    public static class FinallyProjection extends Projection {
+
+        public FinallyProjection(final EdgeType edgeType) {
+            super(edgeType);
+        }
+
+        @Override
+        public FinallyProjection withEdgeType(final EdgeType edgeType) {
+            if (edgeType == edgeType()) {
+                return this;
+            }
+            return new FinallyProjection(edgeType);
+        }
+
+        @Override
+        public String additionalDebugInfo() {
+            return "FINALLY";
         }
     }
 
