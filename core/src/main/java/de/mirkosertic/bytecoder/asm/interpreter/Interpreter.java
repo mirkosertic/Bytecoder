@@ -30,6 +30,7 @@ import de.mirkosertic.bytecoder.asm.Region;
 import de.mirkosertic.bytecoder.asm.ReturnNothing;
 import de.mirkosertic.bytecoder.asm.Short;
 import de.mirkosertic.bytecoder.asm.This;
+import de.mirkosertic.bytecoder.asm.TryCatch;
 import de.mirkosertic.bytecoder.asm.Variable;
 import org.objectweb.asm.Type;
 
@@ -49,6 +50,10 @@ public class Interpreter {
 
     private ControlTokenConsumer interpret(final Region regionNode) {
         return regionNode.flowForProjection(Projection.DefaultProjection.class);
+    }
+
+    private ControlTokenConsumer interpret(final TryCatch tryCatchNode) {
+        return tryCatchNode.flowForProjection(Projection.TryCatchGuardedProjection.class);
     }
 
     private Object interpretValue(final This node) {
@@ -167,6 +172,9 @@ public class Interpreter {
 
     private ControlTokenConsumer interpret(final ControlTokenConsumer token) {
         System.out.println("Visiting token " + token);
+        if (token instanceof TryCatch) {
+            return interpret((TryCatch) token);
+        }
         if (token instanceof Region) {
             return interpret((Region) token);
         }

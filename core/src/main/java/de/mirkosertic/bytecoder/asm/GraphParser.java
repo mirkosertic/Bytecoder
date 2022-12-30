@@ -86,7 +86,7 @@ public class GraphParser {
         final Region startRegion = (Region) graph.register(new Region(Graph.START_REGION_NAME));
         startRegion.frame = startFrame;
 
-        final GraphParserState initialState = new GraphParserState(startFrame, startRegion, -1);
+        final GraphParserState initialState = new GraphParserState(startFrame, startRegion, -1, new TryCatchGuardStackEntry[0]);
 
         // Step 1: We collect all jump targets
         final Map<AbstractInsnNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerInstruction = new HashMap<>();
@@ -204,25 +204,52 @@ public class GraphParser {
         final GraphParserState state = currentFlow.graphParserState;
         final List<ControlFlow> flowsToCheck = new ArrayList<>();
         if (node.getNext() != null) {
-            graph.addFixup(new ControlFlowFixup(node, state.frame, StandardProjections.DEFAULT, node.getNext()));
-            flowsToCheck.add(currentFlow.continueWith(node.getNext(), state));
+            if (region instanceof TryCatch) {
+                LabelNode endNode = null;
+                for (final TryCatchBlockNode tryCatchBlockNode : methodNode.tryCatchBlocks) {
+                    if (tryCatchBlockNode.start == node) {
+                        if (endNode == null) {
+                            endNode = tryCatchBlockNode.end;
+                        } else {
+                            if (endNode != tryCatchBlockNode.end) {
+                                throw new IllegalStateException("All try catch regions must have the same end for a given label!");
+                            }
+                        }
+                    }
+                }
+                final TryCatchGuardStackEntry tryCatchGuardStackEntry = new TryCatchGuardStackEntry((TryCatch) region, node, endNode);
+                final GraphParserState nextState = state.withNewTryCatchOnStack(tryCatchGuardStackEntry);
+
+                graph.addFixup(new ControlFlowFixup(node, nextState.frame, StandardProjections.TRYCATCHGUARD, node.getNext()));
+                flowsToCheck.add(currentFlow.continueWith(node.getNext(), nextState));
+
+            } else {
+
+                GraphParserState nextState = state;
+                if (nextState.isEndOfTryCatchGuardBlock(node)) {
+                    final TryCatchGuardStackEntry topEntry = nextState.tryCatchGuardStack[nextState.tryCatchGuardStack.length - 1];
+                    topEntry.tryCatch.addControlFlowTo(StandardProjections.TRYCATCHEXIT, region);
+                    nextState = nextState.popLatestTryBatchGuardBlock();
+                }
+
+                graph.addFixup(new ControlFlowFixup(node, nextState.frame, StandardProjections.DEFAULT, node.getNext()));
+                flowsToCheck.add(currentFlow.continueWith(node.getNext(), nextState));
+            }
         }
 
-        // Check for exceptional flows
-        for (final TryCatchBlockNode tryCatchBlockNode : methodNode.tryCatchBlocks) {
-            if (tryCatchBlockNode.start == node) {
+        if (region instanceof TryCatch) {
+            // Check for exceptional flows
+            for (final TryCatchBlockNode tryCatchBlockNode : methodNode.tryCatchBlocks) {
+                if (tryCatchBlockNode.start == node) {
 
-                final Type exceptionType =
-                        tryCatchBlockNode.type != null ? Type.getObjectType(tryCatchBlockNode.type) : Type.getType(Exception.class);
+                    final Type exceptionType =
+                            tryCatchBlockNode.type != null ? Type.getObjectType(tryCatchBlockNode.type) : Type.getType(Throwable.class);
 
-                final Region startRegion = getOrCreateRegionNodeFor(tryCatchBlockNode.handler);
-                final Frame frameWithPushedException = state.frame.pushToStack(graph.newCaughtException(exceptionType));
-                if (tryCatchBlockNode.type == null) {
-                    region.addControlFlowTo(StandardProjections.FINALLY, startRegion);
-                } else {
+                    final Region startRegion = getOrCreateRegionNodeFor(tryCatchBlockNode.handler);
+                    final Frame frameWithPushedException = state.frame.pushToStack(graph.newCaughtException(exceptionType));
                     region.addControlFlowTo(new Projection.ExceptionHandler(exceptionType), startRegion);
+                    flowsToCheck.add(currentFlow.continueWith(tryCatchBlockNode.handler, state.withFrame(frameWithPushedException)));
                 }
-                flowsToCheck.add(currentFlow.continueWith(tryCatchBlockNode.handler, state.withFrame(frameWithPushedException)));
             }
         }
 

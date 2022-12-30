@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
+import org.objectweb.asm.tree.LabelNode;
+
 public class GraphParserState {
 
     final Frame frame;
@@ -23,21 +25,44 @@ public class GraphParserState {
 
     final int lineNumber;
 
-    public GraphParserState(final Frame frame, final ControlTokenConsumer lastControlTokenConsumer, final int lineNumber) {
+    final TryCatchGuardStackEntry[] tryCatchGuardStack;
+
+    public GraphParserState(final Frame frame, final ControlTokenConsumer lastControlTokenConsumer, final int lineNumber, final TryCatchGuardStackEntry[] tryCatchGuardStack) {
         this.frame = frame;
         this.lastControlTokenConsumer = lastControlTokenConsumer;
         this.lineNumber = lineNumber;
+        this.tryCatchGuardStack = tryCatchGuardStack;
     }
 
     public GraphParserState controlFlowsTo(final ControlTokenConsumer node) {
-        return new GraphParserState(frame, node, lineNumber);
+        return new GraphParserState(frame, node, lineNumber, tryCatchGuardStack);
     }
 
     public GraphParserState withLineNumber(final int line) {
-        return new GraphParserState(frame, lastControlTokenConsumer, line);
+        return new GraphParserState(frame, lastControlTokenConsumer, line, tryCatchGuardStack);
     }
 
     public GraphParserState withFrame(final Frame frame) {
-        return new GraphParserState(frame, lastControlTokenConsumer, lineNumber);
+        return new GraphParserState(frame, lastControlTokenConsumer, lineNumber, tryCatchGuardStack);
+    }
+
+    public GraphParserState withNewTryCatchOnStack(final TryCatchGuardStackEntry newTryCatchGuardStackEntry) {
+        final TryCatchGuardStackEntry[] newTryCatchStackEntries = new TryCatchGuardStackEntry[tryCatchGuardStack.length + 1];
+        System.arraycopy(tryCatchGuardStack, 0, newTryCatchStackEntries, 0, tryCatchGuardStack.length);
+        newTryCatchStackEntries[tryCatchGuardStack.length] = newTryCatchGuardStackEntry;
+        return new GraphParserState(frame, lastControlTokenConsumer, lineNumber, newTryCatchStackEntries);
+    }
+
+    public boolean isEndOfTryCatchGuardBlock(final LabelNode node) {
+        if (tryCatchGuardStack.length > 0) {
+            return tryCatchGuardStack[tryCatchGuardStack.length - 1].endLabel == node;
+        }
+        return false;
+    }
+
+    public GraphParserState popLatestTryBatchGuardBlock() {
+        final TryCatchGuardStackEntry[] newTryCatchStackEntries = new TryCatchGuardStackEntry[tryCatchGuardStack.length -1];
+        System.arraycopy(tryCatchGuardStack, 0, newTryCatchStackEntries, 0, tryCatchGuardStack.length - 1);
+        return new GraphParserState(frame, lastControlTokenConsumer, lineNumber, newTryCatchStackEntries);
     }
 }

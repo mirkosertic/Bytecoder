@@ -34,6 +34,51 @@ public abstract class Projection {
         }
     }
 
+    public static class TryCatchGuardedProjection extends Projection {
+
+        public TryCatchGuardedProjection(final EdgeType edgeType) {
+            super(edgeType);
+        }
+
+        @Override
+        public TryCatchGuardedProjection withEdgeType(final EdgeType edgeType) {
+            if (edgeType == edgeType()) {
+                return this;
+            }
+            return new TryCatchGuardedProjection(edgeType);
+        }
+
+        @Override
+        public String additionalDebugInfo() {
+            return "EXCEPTIONGUARDED";
+        }
+    }
+
+    public static class TryCatchGuardedExit extends Projection {
+
+        public TryCatchGuardedExit(final EdgeType edgeType) {
+            super(edgeType);
+        }
+
+        @Override
+        public TryCatchGuardedExit withEdgeType(final EdgeType edgeType) {
+            if (edgeType == edgeType()) {
+                return this;
+            }
+            return new TryCatchGuardedExit(edgeType);
+        }
+
+        @Override
+        public String additionalDebugInfo() {
+            return "EXITS TO";
+        }
+
+        @Override
+        public boolean isControlFlow() {
+            return false;
+        }
+    }
+
     public static class TrueProjection extends Projection {
 
         public TrueProjection(final EdgeType edgeType) {
@@ -94,26 +139,6 @@ public abstract class Projection {
         }
     }
 
-    public static class FinallyProjection extends Projection {
-
-        public FinallyProjection(final EdgeType edgeType) {
-            super(edgeType);
-        }
-
-        @Override
-        public FinallyProjection withEdgeType(final EdgeType edgeType) {
-            if (edgeType == edgeType()) {
-                return this;
-            }
-            return new FinallyProjection(edgeType);
-        }
-
-        @Override
-        public String additionalDebugInfo() {
-            return "FINALLY";
-        }
-    }
-
     private final EdgeType edgeType;
 
     protected Projection(final EdgeType edgeType) {
@@ -128,5 +153,9 @@ public abstract class Projection {
 
     public String additionalDebugInfo() {
         return "";
+    }
+
+    public boolean isControlFlow() {
+        return true;
     }
 }

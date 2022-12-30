@@ -15,11 +15,18 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-public class TryCatch extends Region {
+import org.objectweb.asm.tree.LabelNode;
 
+public class TryCatchGuardStackEntry {
 
+    public final TryCatch tryCatch;
 
-    public TryCatch(final String label) {
-        super(label);
+    public final LabelNode startLabel;
+    public final LabelNode endLabel;
+
+    public TryCatchGuardStackEntry(final TryCatch tryCatch, final LabelNode startLabel, final LabelNode endLabel) {
+        this.tryCatch = tryCatch;
+        this.startLabel = startLabel;
+        this.endLabel = endLabel;
     }
 }
