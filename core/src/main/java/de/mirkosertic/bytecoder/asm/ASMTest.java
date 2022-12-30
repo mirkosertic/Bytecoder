@@ -17,6 +17,8 @@ package de.mirkosertic.bytecoder.asm;
 
 import de.mirkosertic.bytecoder.api.ClassLibProvider;
 import de.mirkosertic.bytecoder.asm.interpreter.Interpreter;
+import de.mirkosertic.bytecoder.asm.optimizer.Optimizations;
+import de.mirkosertic.bytecoder.asm.optimizer.Optimizer;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -38,7 +40,12 @@ public class ASMTest {
             final GraphParser p = new GraphParser(methodNode);
             final Graph g = p.graph();
             g.writeDebugTo(Files.newOutputStream(Paths.get("debug.dot")));
-            System.out.println(g);
+
+            final Optimizer o = Optimizations.DEFAULT;
+            while (o.optimize(g)) {
+            }
+
+            g.writeDebugTo(Files.newOutputStream(Paths.get("debug_optimized.dot")));
 
             final Interpreter interpreter = new Interpreter("Temp",  g);
         }

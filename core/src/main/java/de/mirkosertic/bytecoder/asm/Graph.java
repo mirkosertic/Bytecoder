@@ -78,7 +78,7 @@ public class Graph {
     }
 
     public List<Node> nodes() {
-        return nodes;
+        return new ArrayList<>(nodes);
     }
 
     public Region regionByLabel(final String label) {
@@ -226,5 +226,9 @@ public class Graph {
 
     public Unwind newUnwind(final Type type) {
         return (Unwind) register(new Unwind(type));
+    }
+
+    public void deleteNode(final Node node) {
+        nodes.remove(node);
     }
 }
