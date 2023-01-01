@@ -160,7 +160,7 @@ public class Graph {
                 } else if (n instanceof Variable) {
                     pw.print("shape=\"oval\" fillcolor=\"cyan2\" style=\"filled\"");
                 } else {
-                    pw.print("shape=\"hexagon\" fillcolor=\"darkorchid1\" style=\"filled\"");
+                    pw.print("shape=\"hexagon\" fillcolor=\"cyan2\" style=\"filled\"");
                 }
             }
             if (n.error) {

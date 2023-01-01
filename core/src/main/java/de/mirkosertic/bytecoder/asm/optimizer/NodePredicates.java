@@ -29,7 +29,15 @@ public class NodePredicates {
     }
 
     public static Predicate<Node[]> empty() {
-        return nodes -> nodes.length == 0;
+        return length(0);
+    }
+
+    public static Predicate<Node[]> length(final int expected) {
+        return nodes -> nodes.length == expected;
+    }
+
+    public static Predicate<Node[]> notEmpty() {
+        return nodes -> nodes.length > 0;
     }
 
     public static BiPredicate<Node, NodeContext> incomingDataFlows(final Predicate<Node[]> pred) {

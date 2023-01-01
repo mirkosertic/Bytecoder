@@ -30,48 +30,50 @@ import java.util.Map;
 
 public class PromoteVariableToConstant implements Optimizer {
 
-    int count = 0;
+    private final NodePatternMatcher patternMatcher;
+
+    public PromoteVariableToConstant() {
+        patternMatcher = new NodePatternMatcher(
+                NodePredicates.ofType(Copy.class),
+                NodePredicates.incomingDataFlows(NodePredicates.length(1)),
+                NodePredicates.outgoingDataFlows(NodePredicates.length(1)),
+                NodePredicates.singlePredWithForwardEdge(),
+                NodePredicates.singleSuccWithForwardEdge()
+        );
+    }
 
     @Override
     public boolean optimize(final Graph g) {
         for (final Node node : g.nodes()) {
-            if (node instanceof Copy && node.incomingDataFlows.length > 0 && node.outgoingFlows.length > 0) {
+            if (patternMatcher.test(node)) {
                 final Copy copy = (Copy) node;
-                if (copy.controlFlowsTo.size() == 1 && copy.controlComingFrom.size() == 1) {
-                    final Node incoming = copy.incomingDataFlows[0];
-                    final Node outgoing = copy.outgoingFlows[0];
-                    if (incoming instanceof Constant && !(incoming instanceof CaughtException) && outgoing instanceof Variable && !(outgoing instanceof PHI)) {
+                final Node incoming = copy.incomingDataFlows[0];
+                final Node outgoing = copy.outgoingFlows[0];
+                if (incoming instanceof Constant && !(incoming instanceof CaughtException) && outgoing instanceof Variable && !(outgoing instanceof PHI)) {
 
-                        if (count >= 6) {
-                            System.out.println("Found redundant copy " + copy + " #" + g.nodes().indexOf(node));
-                            return false;
-                        }
+                    incoming.removeFromOutgoingData(copy);
+                    outgoing.clearIncomingData();
 
-                        incoming.removeFromOutgoingData(copy);
-                        outgoing.clearIncomingData();
-
-                        for (final Node target : outgoing.outgoingFlows) {
-                            target.replaceIncomingDataFlowsWith(outgoing, incoming);
-                        }
-
-                        final ControlTokenConsumer prevNode = copy.controlComingFrom.get(0);
-
-                        // TODO: Maybe check for edge types here?
-
-                        for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : copy.controlFlowsTo.entrySet()) {
-                            for (final ControlTokenConsumer targetnode : entry.getValue()) {
-                                prevNode.addControlFlowTo(entry.getKey(), targetnode);
-                                targetnode.deleteControlFlowFrom(copy);
-                            }
-                        }
-
-                        prevNode.deleteControlFlowTo(copy);
-                        g.deleteNode(copy);
-
-                        System.out.println("Possible redundant node : " + node + " #" + g.nodes().indexOf(node));
-                        count = count + 1;
-                        return true;
+                    for (final Node target : outgoing.outgoingFlows) {
+                        target.replaceIncomingDataFlowsWith(outgoing, incoming);
                     }
+
+                    final ControlTokenConsumer prevNode = copy.controlComingFrom.get(0);
+
+                    // TODO: Maybe check for edge types here?
+
+                    for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : copy.controlFlowsTo.entrySet()) {
+                        for (final ControlTokenConsumer targetnode : entry.getValue()) {
+                            prevNode.addControlFlowTo(entry.getKey(), targetnode);
+                            targetnode.deleteControlFlowFrom(copy);
+                        }
+                    }
+
+                    prevNode.deleteControlFlowTo(copy);
+                    g.deleteNode(copy);
+
+                    System.out.println("Possible redundant node : " + node + " #" + g.nodes().indexOf(node));
+                    return true;
                 }
             }
         }
