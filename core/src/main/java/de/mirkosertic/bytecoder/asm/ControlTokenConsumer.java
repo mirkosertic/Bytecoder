@@ -19,16 +19,20 @@ import org.objectweb.asm.Type;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public abstract class ControlTokenConsumer extends Node {
 
-    final Map<Projection, List<ControlTokenConsumer>> controlFlowsTo;
+    public final Map<Projection, List<ControlTokenConsumer>> controlFlowsTo;
+    public final List<ControlTokenConsumer> controlComingFrom;
 
     public ControlTokenConsumer(final Type type) {
         super(type);
         controlFlowsTo = new HashMap<>();
+        controlComingFrom = new ArrayList<>();
     }
 
     public void addControlFlowTo(final Projection projection, final ControlTokenConsumer node) {
@@ -41,6 +45,7 @@ public abstract class ControlTokenConsumer extends Node {
         }
         final List<ControlTokenConsumer> list = controlFlowsTo.computeIfAbsent(projection, t -> new ArrayList<>());
         list.add(node);
+        node.controlComingFrom.add(this);
     }
 
     public ControlTokenConsumer flowForProjection(final Class<?> p) {
@@ -50,5 +55,20 @@ public abstract class ControlTokenConsumer extends Node {
             }
         }
         return null;
+    }
+
+    public void deleteControlFlowTo(final ControlTokenConsumer consumer) {
+        final Set<Projection> keysToDelete = new HashSet<>();
+        for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : controlFlowsTo.entrySet()) {
+            if (entry.getValue().remove(consumer)) {
+                consumer.controlComingFrom.remove(this);
+            }
+            if (entry.getValue().isEmpty()) {
+                keysToDelete.add(entry.getKey());
+            }
+        }
+        for (final Projection p : keysToDelete) {
+            controlFlowsTo.remove(p);
+        }
     }
 }

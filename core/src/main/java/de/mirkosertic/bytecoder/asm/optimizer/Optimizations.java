@@ -19,7 +19,13 @@ import de.mirkosertic.bytecoder.asm.Graph;
 
 public enum Optimizations implements Optimizer {
     DISABLED(new Optimizer[] {}),
-    DEFAULT(new Optimizer[] {new DeleteUnusedConstants()})
+    DEFAULT(new Optimizer[] {
+                new DeleteUnusedConstants(),
+                //
+            //
+                //new DeleteRedundantControlTokenWithoutDataFlow(),
+                //new PromoteVariableToConstant()
+            }),
     ;
 
     private final Optimizer[] optimizers;

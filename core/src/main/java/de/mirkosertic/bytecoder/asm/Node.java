@@ -17,6 +17,10 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 public class Node {
 
     public final Type type;
@@ -59,5 +63,28 @@ public class Node {
             newData[outgoingFlows.length] = node;
             outgoingFlows = newData;
         }
+    }
+
+    public void removeFromOutgoingData(final Node node) {
+        final List<Node> l = new ArrayList<>();
+        l.addAll(Arrays.asList(outgoingFlows));
+        l.remove(node);
+        outgoingFlows = l.toArray(new Node[0]);
+    }
+
+    public void replaceIncomingDataFlowsWith(final Node original, final Node replacement) {
+        for (int i = 0; i < incomingDataFlows.length; i++) {
+            if (incomingDataFlows[i] == original) {
+                incomingDataFlows[i] = replacement;
+                replacement.addOutgoingData(this);
+            }
+        }
+    }
+
+    public void clearIncomingData() {
+        for (final Node incoming : incomingDataFlows) {
+            incoming.removeFromOutgoingData(this);
+        }
+        this.incomingDataFlows = new Node[0];
     }
 }
