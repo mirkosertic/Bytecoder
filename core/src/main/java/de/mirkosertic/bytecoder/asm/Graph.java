@@ -157,8 +157,10 @@ public class Graph {
             } else {
                 if (n instanceof Constant) {
                     pw.print("shape=\"diamong\" fillcolor=\"darkgoldenrod1\" style=\"filled\"");
-                } else {
+                } else if (n instanceof Variable) {
                     pw.print("shape=\"oval\" fillcolor=\"cyan2\" style=\"filled\"");
+                } else {
+                    pw.print("shape=\"hexagon\" fillcolor=\"darkorchid1\" style=\"filled\"");
                 }
             }
             if (n.error) {

@@ -21,15 +21,22 @@ import de.mirkosertic.bytecoder.asm.Node;
 
 public class DeleteUnusedConstants implements Optimizer {
 
+    private final NodePatternMatcher patternMatcher;
+
+    public DeleteUnusedConstants() {
+        patternMatcher = new NodePatternMatcher(
+            NodePredicates.ofType(Constant.class),
+            NodePredicates.outgoingDataFlows(NodePredicates.empty())
+        );
+    }
+
     @Override
     public boolean optimize(final Graph g) {
         boolean changed = false;
         for (final Node node : g.nodes()) {
-            if (node instanceof Constant) {
-                if (node.outgoingFlows.length == 0) {
-                    changed = true;
-                    g.deleteNode(node);
-                }
+            if (patternMatcher.test(node)) {
+                changed = true;
+                g.deleteNode(node);
             }
         }
         return changed;

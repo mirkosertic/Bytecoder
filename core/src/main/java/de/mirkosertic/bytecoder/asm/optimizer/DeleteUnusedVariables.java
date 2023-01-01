@@ -22,15 +22,23 @@ import de.mirkosertic.bytecoder.asm.Variable;
 
 public class DeleteUnusedVariables implements Optimizer {
 
+    private final NodePatternMatcher patternMatcher;
+
+    public DeleteUnusedVariables() {
+        patternMatcher = new NodePatternMatcher(
+            NodePredicates.ofType(Variable.class),
+            NodePredicates.ofType(PHI.class).negate(),
+            NodePredicates.incomingDataFlows(NodePredicates.empty())
+        );
+    }
+
     @Override
     public boolean optimize(final Graph g) {
         boolean changed = false;
         for (final Node node : g.nodes()) {
-            if ((node instanceof Variable) && !(node instanceof PHI)) {
-                if (node.incomingDataFlows.length == 0) {
-                    changed = true;
-                    g.deleteNode(node);
-                }
+            if (patternMatcher.test(node)) {
+                changed = true;
+                g.deleteNode(node);
             }
         }
         return changed;
