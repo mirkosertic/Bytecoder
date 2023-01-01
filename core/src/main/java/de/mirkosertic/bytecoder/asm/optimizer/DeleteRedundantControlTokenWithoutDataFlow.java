@@ -25,29 +25,39 @@ import java.util.Map;
 
 public class DeleteRedundantControlTokenWithoutDataFlow implements Optimizer {
 
+    private final NodePatternMatcher patternMatcher;
+
+    public DeleteRedundantControlTokenWithoutDataFlow() {
+        patternMatcher = new NodePatternMatcher(
+                NodePredicates.ofType(ControlTokenConsumer.class),
+                NodePredicates.incomingDataFlows(NodePredicates.empty()),
+                NodePredicates.outgoingDataFlows(NodePredicates.empty()),
+                NodePredicates.singlePredWithForwardEdge(),
+                NodePredicates.singleSuccWithForwardEdge()
+        );
+    }
+
     @Override
     public boolean optimize(final Graph g) {
         for (final Node node : g.nodes()) {
-            if (node instanceof ControlTokenConsumer && node.incomingDataFlows.length == 0 && node.outgoingFlows.length == 0) {
+            if (patternMatcher.test(node)) {
                 final ControlTokenConsumer controlTokenConsumer = (ControlTokenConsumer) node;
-                if (controlTokenConsumer.controlFlowsTo.size() == 1 && controlTokenConsumer.controlComingFrom.size() == 1) {
-                    final ControlTokenConsumer prevNode = controlTokenConsumer.controlComingFrom.get(0);
+                final ControlTokenConsumer prevNode = controlTokenConsumer.controlComingFrom.get(0);
 
-                    // TODO: Maybe check for edge types here?
-                    for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : controlTokenConsumer.controlFlowsTo.entrySet()) {
-                        for (final ControlTokenConsumer targetnode : entry.getValue()) {
-                            prevNode.addControlFlowTo(entry.getKey(), targetnode);
-                            targetnode.deleteControlFlowFrom(controlTokenConsumer);
-                        }
+                // TODO: Maybe check for edge types here?
+                for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : controlTokenConsumer.controlFlowsTo.entrySet()) {
+                    for (final ControlTokenConsumer targetnode : entry.getValue()) {
+                        prevNode.addControlFlowTo(entry.getKey(), targetnode);
+                        targetnode.deleteControlFlowFrom(controlTokenConsumer);
                     }
-
-                    prevNode.deleteControlFlowTo(controlTokenConsumer);
-
-                    System.out.println("Possible redundant node : " + node + " #" + g.nodes().indexOf(node));
-
-                    g.deleteNode(controlTokenConsumer);
-                    return true;
                 }
+
+                prevNode.deleteControlFlowTo(controlTokenConsumer);
+
+                System.out.println("Possible redundant node : " + node + " #" + g.nodes().indexOf(node));
+
+                g.deleteNode(controlTokenConsumer);
+                return true;
             }
         }
         return false;

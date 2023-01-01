@@ -15,17 +15,22 @@
  */
 package de.mirkosertic.bytecoder.asm.optimizer;
 
+import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.asm.Node;
+import de.mirkosertic.bytecoder.asm.Projection;
 
-import java.util.function.Predicate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.function.BiPredicate;
 
 public class NodePatternMatcher {
 
-    private final Predicate<Node> chainedpredicate;
+    private final BiPredicate<Node, NodeContext> chainedpredicate;
 
-    public NodePatternMatcher(final Predicate<Node>... predicates) {
-        Predicate<Node> chained = null;
-        for (final Predicate<Node> p : predicates) {
+    public NodePatternMatcher(final BiPredicate<Node, NodeContext>... predicates) {
+        BiPredicate<Node, NodeContext> chained = null;
+        for (final BiPredicate<Node, NodeContext> p : predicates) {
             if (chained == null) {
                 chained = p;
             } else {
@@ -36,6 +41,26 @@ public class NodePatternMatcher {
     }
 
     public boolean test(final Node node) {
-        return chainedpredicate.test(node);
+        final NodeContext nodeContext = new NodeContext();
+        if (node instanceof ControlTokenConsumer) {
+            final ControlTokenConsumer controlTokenConsumer = (ControlTokenConsumer) node;
+            final List<NodeContext.ControlFlowEdge> predsToSucc = new ArrayList<>();
+            for (final ControlTokenConsumer pred : controlTokenConsumer.controlComingFrom) {
+                for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : pred.controlFlowsTo.entrySet()) {
+                    for (final ControlTokenConsumer n : entry.getValue()) {
+                        predsToSucc.add(new NodeContext.ControlFlowEdge(entry.getKey(), n));
+                    }
+                }
+            }
+            final List<NodeContext.ControlFlowEdge> nodeToSucc = new ArrayList<>();
+            for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : controlTokenConsumer.controlFlowsTo.entrySet()) {
+                for (final ControlTokenConsumer n : entry.getValue()) {
+                    nodeToSucc.add(new NodeContext.ControlFlowEdge(entry.getKey(), n));
+                }
+            }
+            nodeContext.predsToSucc = predsToSucc;
+            nodeContext.nodeToSucc = nodeToSucc;
+        }
+        return chainedpredicate.test(node, nodeContext);
     }
 }

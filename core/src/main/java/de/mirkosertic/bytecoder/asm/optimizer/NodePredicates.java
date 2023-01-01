@@ -15,25 +15,40 @@
  */
 package de.mirkosertic.bytecoder.asm.optimizer;
 
+import de.mirkosertic.bytecoder.asm.EdgeType;
 import de.mirkosertic.bytecoder.asm.Node;
+import de.mirkosertic.bytecoder.asm.Projection;
 
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 public class NodePredicates {
 
-    public static Predicate<Node> ofType(final Class nodeClass) {
-        return node -> nodeClass.isAssignableFrom(node.getClass());
+    public static BiPredicate<Node, NodeContext> ofType(final Class nodeClass) {
+        return (node, context) -> nodeClass.isAssignableFrom(node.getClass());
     }
 
     public static Predicate<Node[]> empty() {
         return nodes -> nodes.length == 0;
     }
 
-    public static Predicate<Node> incomingDataFlows(final Predicate<Node[]> pred) {
-        return node -> pred.test(node.incomingDataFlows);
+    public static BiPredicate<Node, NodeContext> incomingDataFlows(final Predicate<Node[]> pred) {
+        return (node, context) -> pred.test(node.incomingDataFlows);
     }
 
-    public static Predicate<Node> outgoingDataFlows(final Predicate<Node[]> pred) {
-        return node -> pred.test(node.outgoingFlows);
+    public static BiPredicate<Node, NodeContext> outgoingDataFlows(final Predicate<Node[]> pred) {
+        return (node, context) -> pred.test(node.outgoingFlows);
+    }
+
+    public static BiPredicate<Node, NodeContext> singlePredWithForwardEdge() {
+        return (node, nodeContext) -> nodeContext.predsToSucc != null && nodeContext.predsToSucc.size() == 1 &&
+                (nodeContext.predsToSucc.get(0).projection instanceof Projection.DefaultProjection) &&
+                nodeContext.predsToSucc.get(0).projection.edgeType() == EdgeType.FORWARD;
+    }
+
+    public static BiPredicate<Node, NodeContext> singleSuccWithForwardEdge() {
+        return (node, nodeContext) -> nodeContext.nodeToSucc != null && nodeContext.nodeToSucc.size() == 1 &&
+                (nodeContext.nodeToSucc.get(0).projection instanceof Projection.DefaultProjection) &&
+                nodeContext.nodeToSucc.get(0).projection.edgeType() == EdgeType.FORWARD;
     }
 }
