@@ -30,40 +30,48 @@ import java.util.Map;
 
 public class PromoteVariableToConstant implements Optimizer {
 
+    int count = 0;
+
     @Override
     public boolean optimize(final Graph g) {
         for (final Node node : g.nodes()) {
             if (node instanceof Copy && node.incomingDataFlows.length > 0 && node.outgoingFlows.length > 0) {
                 final Copy copy = (Copy) node;
-                final Node incoming = copy.incomingDataFlows[0];
-                final Node outgoing = copy.outgoingFlows[0];
-                if (incoming instanceof Constant && !(incoming instanceof CaughtException) && outgoing instanceof Variable && !(outgoing instanceof PHI)) {
-                    System.out.println("Found redundant copy " + copy + " #" + g.nodes().indexOf(node));
+                if (copy.controlFlowsTo.size() == 1 && copy.controlComingFrom.size() == 1) {
+                    final Node incoming = copy.incomingDataFlows[0];
+                    final Node outgoing = copy.outgoingFlows[0];
+                    if (incoming instanceof Constant && !(incoming instanceof CaughtException) && outgoing instanceof Variable && !(outgoing instanceof PHI)) {
 
-                    incoming.removeFromOutgoingData(copy);
-                    outgoing.clearIncomingData();
-
-                    for (final Node target : outgoing.outgoingFlows) {
-                        target.replaceIncomingDataFlowsWith(outgoing, incoming);
-                    }
-
-                    final ControlTokenConsumer prevNode = copy.controlComingFrom.get(0);
-
-                    // TODO: Maybe check for edge types here?
-
-                    for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : copy.controlFlowsTo.entrySet()) {
-                        for (final ControlTokenConsumer targetnode : entry.getValue()) {
-                            prevNode.addControlFlowTo(entry.getKey(), targetnode);
+                        if (count >= 6) {
+                            System.out.println("Found redundant copy " + copy + " #" + g.nodes().indexOf(node));
+                            return false;
                         }
+
+                        incoming.removeFromOutgoingData(copy);
+                        outgoing.clearIncomingData();
+
+                        for (final Node target : outgoing.outgoingFlows) {
+                            target.replaceIncomingDataFlowsWith(outgoing, incoming);
+                        }
+
+                        final ControlTokenConsumer prevNode = copy.controlComingFrom.get(0);
+
+                        // TODO: Maybe check for edge types here?
+
+                        for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : copy.controlFlowsTo.entrySet()) {
+                            for (final ControlTokenConsumer targetnode : entry.getValue()) {
+                                prevNode.addControlFlowTo(entry.getKey(), targetnode);
+                                targetnode.deleteControlFlowFrom(copy);
+                            }
+                        }
+
+                        prevNode.deleteControlFlowTo(copy);
+                        g.deleteNode(copy);
+
+                        System.out.println("Possible redundant node : " + node + " #" + g.nodes().indexOf(node));
+                        count = count + 1;
+                        return true;
                     }
-
-                    prevNode.deleteControlFlowTo(copy);
-
-                    g.deleteNode(copy);
-
-                    System.out.println("Possible redundant node : " + node + " #" + g.nodes().indexOf(node));
-
-                    return true;
                 }
             }
         }

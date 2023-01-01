@@ -16,28 +16,23 @@
 package de.mirkosertic.bytecoder.asm.optimizer;
 
 import de.mirkosertic.bytecoder.asm.Graph;
+import de.mirkosertic.bytecoder.asm.Node;
+import de.mirkosertic.bytecoder.asm.PHI;
+import de.mirkosertic.bytecoder.asm.Variable;
 
-public enum Optimizations implements Optimizer {
-    DISABLED(new Optimizer[] {}),
-    DEFAULT(new Optimizer[] {
-                new DeleteUnusedConstants(),
-                new DeleteUnusedVariables(),
-                new DeleteRedundantControlTokenWithoutDataFlow(),
-                new PromoteVariableToConstant()
-            }),
-    ;
+public class DeleteUnusedVariables implements Optimizer {
 
-    private final Optimizer[] optimizers;
-
-    Optimizations(final Optimizer[] optimizers) {
-        this.optimizers = optimizers;
-    }
-
-    public boolean optimize(final Graph graph) {
-        boolean graphchanged = false;
-        for (final Optimizer o : optimizers) {
-            graphchanged = graphchanged | o.optimize(graph);
+    @Override
+    public boolean optimize(final Graph g) {
+        boolean changed = false;
+        for (final Node node : g.nodes()) {
+            if ((node instanceof Variable) && !(node instanceof PHI)) {
+                if (node.incomingDataFlows.length == 0) {
+                    changed = true;
+                    g.deleteNode(node);
+                }
+            }
         }
-        return graphchanged;
+        return changed;
     }
 }
