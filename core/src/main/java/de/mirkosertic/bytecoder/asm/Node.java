@@ -66,8 +66,7 @@ public class Node {
     }
 
     public void removeFromOutgoingData(final Node node) {
-        final List<Node> l = new ArrayList<>();
-        l.addAll(Arrays.asList(outgoingFlows));
+        final List<Node> l = new ArrayList<>(Arrays.asList(outgoingFlows));
         l.remove(node);
         outgoingFlows = l.toArray(new Node[0]);
     }
@@ -86,5 +85,11 @@ public class Node {
             incoming.removeFromOutgoingData(this);
         }
         this.incomingDataFlows = new Node[0];
+    }
+
+    public void removeFromIncomingData(final Node node) {
+        final List<Node> l = new ArrayList<>(Arrays.asList(incomingDataFlows));
+        l.remove(node);
+        incomingDataFlows = l.toArray(new Node[0]);
     }
 }

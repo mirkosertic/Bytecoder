@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,24 +15,22 @@
  */
 package de.mirkosertic.bytecoder.asm.optimizer;
 
-import de.mirkosertic.bytecoder.asm.CaughtException;
 import de.mirkosertic.bytecoder.asm.Constant;
 import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.asm.Copy;
 import de.mirkosertic.bytecoder.asm.Graph;
 import de.mirkosertic.bytecoder.asm.Node;
-import de.mirkosertic.bytecoder.asm.PHI;
 import de.mirkosertic.bytecoder.asm.Projection;
 import de.mirkosertic.bytecoder.asm.Variable;
 
 import java.util.List;
 import java.util.Map;
 
-public class PromoteVariableToConstant implements Optimizer {
+public class DeleteCopyToUnusedVariable implements Optimizer {
 
     private final NodePatternMatcher patternMatcher;
 
-    public PromoteVariableToConstant() {
+    public DeleteCopyToUnusedVariable() {
         patternMatcher = new NodePatternMatcher(
                 NodePredicates.ofType(Copy.class),
                 NodePredicates.incomingDataFlows(NodePredicates.length(1)),
@@ -49,30 +47,26 @@ public class PromoteVariableToConstant implements Optimizer {
                 final Copy copy = (Copy) node;
                 final Node incoming = copy.incomingDataFlows[0];
                 final Node outgoing = copy.outgoingFlows[0];
-                if (incoming instanceof Constant && !(incoming instanceof CaughtException) && outgoing instanceof Variable && !(outgoing instanceof PHI)) {
+                if ((incoming instanceof Variable || incoming instanceof Constant) && outgoing instanceof Variable) {
 
-                    incoming.removeFromOutgoingData(copy);
-                    outgoing.clearIncomingData();
+                    if (outgoing.outgoingFlows.length == 0) {
+                        incoming.removeFromOutgoingData(copy);
+                        outgoing.removeFromIncomingData(copy);
 
-                    for (final Node target : outgoing.outgoingFlows) {
-                        target.replaceIncomingDataFlowsWith(outgoing, incoming);
-                    }
+                        final ControlTokenConsumer prevNode = copy.controlComingFrom.get(0);
 
-                    final ControlTokenConsumer prevNode = copy.controlComingFrom.get(0);
-
-                    // TODO: Maybe check for edge types here?
-
-                    for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : copy.controlFlowsTo.entrySet()) {
-                        for (final ControlTokenConsumer targetnode : entry.getValue()) {
-                            prevNode.addControlFlowTo(entry.getKey(), targetnode);
-                            targetnode.deleteControlFlowFrom(copy);
+                        for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : copy.controlFlowsTo.entrySet()) {
+                            for (final ControlTokenConsumer targetnode : entry.getValue()) {
+                                prevNode.addControlFlowTo(entry.getKey(), targetnode);
+                                targetnode.deleteControlFlowFrom(copy);
+                            }
                         }
+
+                        prevNode.deleteControlFlowTo(copy);
+                        g.deleteNode(copy);
+
+                        return true;
                     }
-
-                    prevNode.deleteControlFlowTo(copy);
-                    g.deleteNode(copy);
-
-                    return true;
                 }
             }
         }

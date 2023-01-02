@@ -96,7 +96,11 @@ public class GraphParser {
         controlFlowsToCheck.push(new ControlFlow(methodNode.instructions.get(0), initialState));
         while (!controlFlowsToCheck.isEmpty()) {
             final ControlFlow flow = controlFlowsToCheck.pop();
-            final AbstractInsnNode next = flow.currentNode.getNext();
+            AbstractInsnNode next = flow.currentNode.getNext();
+            while ((next instanceof LineNumberNode) || (next instanceof FrameNode)) {
+                next = next.getNext();
+            }
+
             if (flow.currentNode.getOpcode() == Opcodes.RETURN) {
                 // Stop parsing here
                 continue;
@@ -105,7 +109,9 @@ public class GraphParser {
                 // Stop parsing here
                 continue;
             }
-            if (flow.currentNode instanceof LabelNode) {
+            if ((flow.currentNode instanceof LineNumberNode) || (flow.currentNode instanceof FrameNode)) {
+                controlFlowsToCheck.push(flow.addInstructionAndContinueWith(next, next));
+            } else if (flow.currentNode instanceof LabelNode) {
                 final LabelNode labelNode = (LabelNode) flow.currentNode;
                  if (next != null) {
                      controlFlowsToCheck.push(flow.addInstructionAndContinueWith(labelNode, next));
@@ -140,19 +146,18 @@ public class GraphParser {
                         } else {
                             final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(jump.label, k -> new HashMap<>());
                             jumps.put(jump, EdgeType.FORWARD);
-                            controlFlowsToCheck.push(flow.addInstructionAndContinueWith(jump.label, next));
+                            controlFlowsToCheck.push(flow.addInstructionAndContinueWith(jump.label, jump.label));
                         }
 
-                        final AbstractInsnNode falseTarget = jump.getNext();
-                        if (flow.visited(falseTarget)) {
+                        if (flow.visited(next)) {
                             // Back-Edge
-                            final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(falseTarget, k -> new HashMap<>());
+                            final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(next, k -> new HashMap<>());
                             jumps.put(jump, EdgeType.BACK);
                         } else {
-                            final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(falseTarget, k -> new HashMap<>());
+                            final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(next, k -> new HashMap<>());
                             jumps.put(jump, EdgeType.FORWARD);
 
-                            controlFlowsToCheck.push(flow.addInstructionAndContinueWith(falseTarget, next));
+                            controlFlowsToCheck.push(flow.addInstructionAndContinueWith(next, next));
                         }
                         break;
                     }
@@ -538,8 +543,20 @@ public class GraphParser {
         switch (node.getOpcode()) {
             case Opcodes.RETURN:
                 return parse_RETURN(currentFlow);
+            case Opcodes.ICONST_M1:
+                return parse_ICONSTX(currentFlow, -1);
             case Opcodes.ICONST_0:
                 return parse_ICONSTX(currentFlow, 0);
+            case Opcodes.ICONST_1:
+                return parse_ICONSTX(currentFlow, 1);
+            case Opcodes.ICONST_2:
+                return parse_ICONSTX(currentFlow, 2);
+            case Opcodes.ICONST_3:
+                return parse_ICONSTX(currentFlow, 3);
+            case Opcodes.ICONST_4:
+                return parse_ICONSTX(currentFlow, 4);
+            case Opcodes.ICONST_5:
+                return parse_ICONSTX(currentFlow, 5);
             case Opcodes.IADD:
                 return parse_IADD(currentFlow);
             case Opcodes.IDIV:

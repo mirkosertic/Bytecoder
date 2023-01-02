@@ -21,6 +21,7 @@ public class Testclass {
         int z = 0;
         try {
             z = z / 10;
+            for (int i = 0; i < 1; i++);
         } catch (RuntimeException e) {
             z = 1000;
         } finally {

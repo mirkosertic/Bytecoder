@@ -20,7 +20,15 @@ import org.objectweb.asm.tree.MethodInsnNode;
 
 public class MethodInvocation extends ControlTokenConsumer {
 
+    private final MethodInsnNode insnNode;
+
     public MethodInvocation(final MethodInsnNode insnNode) {
         super(Type.getReturnType(insnNode.desc));
+        this.insnNode = insnNode;
+    }
+
+    @Override
+    public String additionalDebugInfo() {
+        return insnNode.owner + "." + insnNode.name + insnNode.desc;
     }
 }

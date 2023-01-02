@@ -23,7 +23,10 @@ public enum Optimizations implements Optimizer {
                 new DeleteUnusedConstants(),
                 new DeleteUnusedVariables(),
                 new DeleteRedundantControlTokenWithoutDataFlow(),
-                new PromoteVariableToConstant()
+                new PromoteVariableToConstant(),
+                new DeleteCopyToUnusedVariable(),
+                new DeleteRedundantVariableCopy(),
+                new VariableShouldBePHI()
             }),
     ;
 

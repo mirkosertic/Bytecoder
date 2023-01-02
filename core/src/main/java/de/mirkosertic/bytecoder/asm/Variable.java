@@ -22,4 +22,9 @@ public class Variable extends Value {
     public Variable(final Type value) {
         super(value);
     }
+
+    @Override
+    public String additionalDebugInfo() {
+        return ": " + type;
+    }
 }

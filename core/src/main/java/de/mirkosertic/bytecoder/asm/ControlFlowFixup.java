@@ -78,21 +78,29 @@ public class ControlFlowFixup implements Fixup {
             }
 
             // TODO: Check for the correct edge type here!!
-            final Map<AbstractInsnNode, EdgeType> incomingEdges = incomingEdgesPerInstruction.get(targetInstruction);
-            final EdgeType edgeType = incomingEdges.get(sourceInstruction);
-            if (edgeType != null) {
-                if (current == sourcetranslation.main) {
-                    // No copy instruction generated
-                    current.addControlFlowTo(projection.withEdgeType(edgeType), translation.main);
+            Map<AbstractInsnNode, EdgeType> incomingEdges = incomingEdgesPerInstruction.get(target);
+            while (incomingEdges == null) {
+                target = target.getPrevious();
+                incomingEdges = incomingEdgesPerInstruction.get(target);
+            }
+            if (incomingEdges != null) {
+                final EdgeType edgeType = incomingEdges.get(sourceInstruction);
+                if (edgeType != null) {
+                    if (current == sourcetranslation.main) {
+                        // No copy instruction generated
+                        current.addControlFlowTo(projection.withEdgeType(edgeType), translation.main);
+                    } else {
+                        current.addControlFlowTo(p.withEdgeType(edgeType), translation.main);
+                    }
                 } else {
-                    current.addControlFlowTo(p.withEdgeType(edgeType), translation.main);
+                    if (sourceInstruction instanceof LabelNode) {
+                        System.out.println("No incoming edges found for " + ((LabelNode) sourceInstruction).getLabel() + " to jump to " + target);
+                    } else {
+                        System.out.println("No incoming edges found for " + sourceInstruction + " to jump to " + target);
+                    }
                 }
             } else {
-                if (sourceInstruction instanceof LabelNode) {
-                    System.out.println("No incoming edges found for " + ((LabelNode) sourceInstruction).getLabel() + " to jump to " + target);
-                 } else {
-                    System.out.println("No incoming edges found for " + sourceInstruction + " to jump to " + target);
-                 }
+                System.out.println("Confused : no incoming edges for " + target + ", original target was " + targetInstruction);
             }
         } else {
             System.out.println("No translation found for " + target + " opcode " + target.getOpcode());

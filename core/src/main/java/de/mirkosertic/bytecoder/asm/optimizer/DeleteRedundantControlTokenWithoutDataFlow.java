@@ -54,8 +54,6 @@ public class DeleteRedundantControlTokenWithoutDataFlow implements Optimizer {
 
                 prevNode.deleteControlFlowTo(controlTokenConsumer);
 
-                System.out.println("Possible redundant node : " + node + " #" + g.nodes().indexOf(node));
-
                 g.deleteNode(controlTokenConsumer);
                 return true;
             }
