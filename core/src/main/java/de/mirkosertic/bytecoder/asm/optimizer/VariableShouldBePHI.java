@@ -47,7 +47,7 @@ public class VariableShouldBePHI implements Optimizer {
                 final Copy copy = (Copy) node;
                 final Node incoming = copy.incomingDataFlows[0];
                 final Node outgoing = copy.outgoingFlows[0];
-                if ((incoming instanceof PHI) && (outgoing instanceof Variable)) {
+                if ((incoming instanceof PHI) && (outgoing instanceof Variable) && !(outgoing instanceof PHI)) {
 
                     for (final Node out : outgoing.outgoingFlows) {
                         out.replaceIncomingDataFlowsWith(outgoing, incoming);
