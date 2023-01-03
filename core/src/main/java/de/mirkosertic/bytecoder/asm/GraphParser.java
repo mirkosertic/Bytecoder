@@ -45,11 +45,14 @@ public class GraphParser {
 
     private final MethodNode methodNode;
 
-    public GraphParser(final MethodNode methodNode) {
+    private final CompileUnit compileUnit;
+
+    public GraphParser(final CompileUnit compileUnit, final Type ownerType, final MethodNode methodNode) {
         this.methodNode = methodNode;
         this.graph = new Graph();
+        this.compileUnit = compileUnit;
 
-        parse();
+        parse(ownerType);
     }
 
     private Region getOrCreateRegionNodeFor(final LabelNode label) {
@@ -66,7 +69,7 @@ public class GraphParser {
         return graph.newRegion(nodeLabel);
     }
 
-    private void parse() {
+    private void parse(final Type ownerType) {
         // Construct the initial parsing state
         final Value[] initialStack = new Value[0];
         final Value[] initialLocals = new Value[methodNode.maxLocals];
@@ -75,7 +78,9 @@ public class GraphParser {
 
         int localIndex = 0;
         // TODO: Set correct type for this
-        initialLocals[localIndex++] = graph.newThis(null);
+        if ((methodNode.access & Opcodes.ACC_STATIC) == 0) {
+            initialLocals[localIndex++] = graph.newThis(ownerType);
+        }
         for (int i = 0; i < methodType.getArgumentTypes().length; i ++)  {
             final Type t = methodType.getArgumentTypes()[i];
             initialLocals[localIndex] = graph.newMethodArgument(t, i);
@@ -138,7 +143,12 @@ public class GraphParser {
                         }
                         break;
                     }
-                    case Opcodes.IF_ICMPGE: {
+                    case Opcodes.IF_ICMPGE:
+                    case Opcodes.IF_ICMPEQ:
+                    case Opcodes.IF_ICMPNE:
+                    case Opcodes.IF_ICMPLT:
+                    case Opcodes.IF_ICMPGT:
+                    case Opcodes.IF_ICMPLE: {
                         if (flow.visited(jump.label)) {
                             // Back-Edge
                             final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(jump.label, k -> new HashMap<>());
@@ -502,6 +512,30 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
+    private List<ControlFlow> parse_ISUB(final ControlFlow currentFlow) {
+        final InsnNode node = (InsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Frame.PopResult pop2 = currentState.frame.popFromStack();
+        final Frame.PopResult pop1 = pop2.newFrame.popFromStack();
+
+        final Node addNode = graph.newSub(Type.INT_TYPE);
+        addNode.addIncomingData(pop1.value, pop2.value);
+
+        final Variable variable = graph.newVariable(Type.INT_TYPE);
+        final Copy copy = graph.newCopy(Type.INT_TYPE);
+        copy.addIncomingData(addNode);
+        variable.addIncomingData(copy);
+        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+
+        final Frame newFrame = pop1.newFrame.pushToStack(variable);
+
+        final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
     private List<ControlFlow> parse_ATHROW(final ControlFlow currentFlow) {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
@@ -561,6 +595,8 @@ public class GraphParser {
                 return parse_IADD(currentFlow);
             case Opcodes.IDIV:
                 return parse_IDIV(currentFlow);
+            case Opcodes.ISUB:
+                return parse_ISUB(currentFlow);
             case Opcodes.ATHROW:
                 return parse_ATHROW(currentFlow);
             default:
@@ -620,8 +656,18 @@ public class GraphParser {
         switch (currentFlow.currentNode.getOpcode()) {
             case Opcodes.GOTO:
                 return parse_GOTO(currentFlow);
+            case Opcodes.IF_ICMPEQ:
+                return parse_IF(currentFlow, If.Operation.EQ);
+            case Opcodes.IF_ICMPNE:
+                return parse_IF(currentFlow, If.Operation.NE);
+            case Opcodes.IF_ICMPLT:
+                return parse_IF(currentFlow, If.Operation.LT);
             case Opcodes.IF_ICMPGE:
-                return parse_IF(currentFlow, If.Operation.icmpge);
+                return parse_IF(currentFlow, If.Operation.GE);
+            case Opcodes.IF_ICMPGT:
+                return parse_IF(currentFlow, If.Operation.GT);
+            case Opcodes.IF_ICMPLE:
+                return parse_IF(currentFlow, If.Operation.LE);
             default:
                 throw new IllegalStateException("Not supported opcode : " + currentFlow.currentNode.getOpcode());
         }

@@ -15,59 +15,45 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import de.mirkosertic.bytecoder.api.ClassLibProvider;
 import de.mirkosertic.bytecoder.asm.interpreter.Interpreter;
 import de.mirkosertic.bytecoder.asm.optimizer.Optimizations;
 import de.mirkosertic.bytecoder.asm.optimizer.Optimizer;
-import org.objectweb.asm.ClassReader;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.MethodNode;
+import de.mirkosertic.bytecoder.asm.sequencer.DominatorTree;
+import de.mirkosertic.bytecoder.asm.sequencer.Sequencer;
+import org.objectweb.asm.Type;
+
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
 public class ASMTest {
 
-    private static void loadFromStream(final String typeName, final InputStream is) throws IOException {
-        final ClassReader reader = new ClassReader(is);
-        final ClassNode classNode = new ClassNode();
-        reader.accept(classNode, ClassReader.EXPAND_FRAMES);
+    private static void renderMethod(final ResolvedMethod resolvedMethod) throws IOException {
+        final Graph g = resolvedMethod.methodBody;
+        g.writeDebugTo(Files.newOutputStream(Paths.get("debug.dot")));
 
-        for (int i = 0; i < classNode.methods.size(); i++) {
-            final MethodNode methodNode = classNode.methods.get(i);
-            final GraphParser p = new GraphParser(methodNode);
-            final Graph g = p.graph();
-            g.writeDebugTo(Files.newOutputStream(Paths.get("debug.dot")));
-
-            final Optimizer o = Optimizations.DEFAULT;
-            while (o.optimize(g)) {
-            }
-
-            g.writeDebugTo(Files.newOutputStream(Paths.get("debug_optimized.dot")));
-
-            final Interpreter interpreter = new Interpreter("Temp",  g);
+        final Optimizer o = Optimizations.DEFAULT;
+        while (o.optimize(g)) {
         }
+
+        g.writeDebugTo(Files.newOutputStream(Paths.get("debug_optimized.dot")));
+
+        final DominatorTree dt = new DominatorTree(g);
+        dt.writeDebugTo(Files.newOutputStream(Paths.get("dominatortree.dot")));
+
+        final Sequencer sequencer = new Sequencer(g, dt);
+
+        final Interpreter interpreter = new Interpreter("Temp",  g);
     }
 
-    private static void loadClass(final String typeName, final ClassLoader classLoader) throws IOException, ClassNotFoundException {
-        final String theResourceName = typeName.replace(".", "/") + ".class";
-        for (final ClassLibProvider theProvider : ClassLibProvider.availableProviders()) {
-            final InputStream theStream = classLoader.getResourceAsStream(theProvider.getResourceBase() + "/" + theResourceName);
-            if (theStream != null) {
-                loadFromStream(typeName, theStream);
-            }
-        }
-        final InputStream fromRoot = classLoader.getResourceAsStream(theResourceName);
-        if (fromRoot != null) {
-            loadFromStream(typeName, fromRoot);
-            return;
-        }
-        throw new ClassNotFoundException(typeName);
-    }
+    public static void main(final String[] args) throws IOException {
 
-    public static void main(final String[] args) throws IOException, ClassNotFoundException {
-        loadClass(Testclass.class.getName(), ASMTest.class.getClassLoader());
+        final AnalysisStack analysisStack = new AnalysisStack();
+
+        final CompileUnit compileUnit = new CompileUnit(ASMTest.class.getClassLoader());
+        final ResolvedClass resolvedClass = compileUnit.resolveClass(Type.getType(Testclass.class), analysisStack);
+        final ResolvedMethod method = resolvedClass.resolveMethod("<init>", Type.getMethodType(Type.VOID_TYPE), analysisStack);
+        renderMethod(method);
     }
 }

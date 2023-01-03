@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,10 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-public class If extends ControlTokenConsumer {
+import org.objectweb.asm.Type;
 
-    public enum Operation {
-        EQ, NE, LT, GE, GT, LE
-    }
-
-    public final Operation operation;
-
-    public If(final Operation operation) {
-        super(null);
-        this.operation = operation;
+public class AnalysisStack {
+    public AnalysisStack addTypeImport(final Type type) {
+        return this;
     }
 }

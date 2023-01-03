@@ -29,6 +29,7 @@ import de.mirkosertic.bytecoder.asm.Projection;
 import de.mirkosertic.bytecoder.asm.Region;
 import de.mirkosertic.bytecoder.asm.ReturnNothing;
 import de.mirkosertic.bytecoder.asm.Short;
+import de.mirkosertic.bytecoder.asm.Sub;
 import de.mirkosertic.bytecoder.asm.This;
 import de.mirkosertic.bytecoder.asm.TryCatch;
 import de.mirkosertic.bytecoder.asm.Variable;
@@ -85,6 +86,19 @@ public class Interpreter {
         return a.intValue() + b.intValue();
     }
 
+    private Object interpretValue(final Sub node) {
+        final Node[] incoming = node.incomingDataFlows;
+        if (incoming.length != 2) {
+            throw new IllegalStateException("Wrong number of incoming nodes");
+        }
+        if (!(node.type == Type.INT_TYPE)) {
+            throw new IllegalStateException("Only integer addition supported!");
+        }
+        final Number a = (Number) interpretValue(incoming[0]);
+        final Number b = (Number) interpretValue(incoming[1]);
+        return a.intValue() - b.intValue();
+    }
+
     private Object interpretValue(final Div node) {
         final Node[] incoming = node.incomingDataFlows;
         if (incoming.length != 2) {
@@ -116,6 +130,9 @@ public class Interpreter {
         }
         if (node instanceof Div) {
             return interpretValue((Div) node);
+        }
+        if (node instanceof Sub) {
+            return interpretValue((Sub) node);
         }
         throw new IllegalStateException("Not implemented : " + node);
     }
@@ -150,7 +167,7 @@ public class Interpreter {
         final Number a = (Number) interpretValue(incoming[0]);
         final Number b = (Number) interpretValue(incoming[1]);
         switch (node.operation) {
-            case icmpge:
+            case GE:
                 if (!(a instanceof Integer)) {
                     throw new IllegalStateException("Only integers supported!");
                 }
@@ -158,6 +175,17 @@ public class Interpreter {
                     throw new IllegalStateException("Only integers supported!");
                 }
                 if (a.intValue() >= b.intValue()) {
+                    return node.flowForProjection(Projection.TrueProjection.class);
+                }
+                return node.flowForProjection(Projection.FalseProjection.class);
+            case LE:
+                if (!(a instanceof Integer)) {
+                    throw new IllegalStateException("Only integers supported!");
+                }
+                if (!(b instanceof Integer)) {
+                    throw new IllegalStateException("Only integers supported!");
+                }
+                if (a.intValue() <= b.intValue()) {
                     return node.flowForProjection(Projection.TrueProjection.class);
                 }
                 return node.flowForProjection(Projection.FalseProjection.class);

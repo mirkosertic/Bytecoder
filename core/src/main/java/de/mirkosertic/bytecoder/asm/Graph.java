@@ -137,8 +137,12 @@ public class Graph {
         return (ReturnNothing) register(new ReturnNothing());
     }
 
-    public Node newAdd(final Type type) {
-        return register(new Add(type));
+    public Add newAdd(final Type type) {
+        return (Add) register(new Add(type));
+    }
+
+    public Sub newSub(final Type type) {
+        return (Sub) register(new Sub(type));
     }
 
     public Node newDiv(final Type type) {

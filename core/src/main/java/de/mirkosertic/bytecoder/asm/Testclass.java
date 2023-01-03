@@ -18,15 +18,12 @@ package de.mirkosertic.bytecoder.asm;
 public class Testclass {
 
     public Testclass() {
-        int z = 0;
-        try {
-            z = z / 10;
-            for (int i = 0; i < 1; i++);
-        } catch (RuntimeException e) {
-            z = 1000;
-        } finally {
-            //z = 2000;
+        int x = 100;
+        if (x > 100) {
+            for (int j = 0; j < 100; j++);
+        } else {
+            x = x - 20;
         }
-        int kk = z + 8888;
+        x = x + 10;
     }
 }
