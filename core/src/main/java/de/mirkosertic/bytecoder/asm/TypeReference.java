@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,16 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-public class Testclass {
+import org.objectweb.asm.Type;
 
-    public void testmethod() {
-        final Testclass k = new Testclass();
-        int x = 100;
-        if (x > 100) {
-            for (int j = 0; j < 100; j++);
-        } else {
-            x = x - 20;
-        }
-        x = x + 10;
+public class TypeReference extends Value implements Constant {
+
+    public TypeReference(final Type type) {
+        super(type);
+    }
+
+    @Override
+    public String additionalDebugInfo() {
+        return ": " + type;
     }
 }

@@ -28,6 +28,7 @@ import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
 import java.util.ArrayList;
@@ -548,6 +549,27 @@ public class GraphParser {
         return Collections.emptyList();
     }
 
+    private List<ControlFlow> parse_DUP(final ControlFlow currentFlow) {
+        final InsnNode node = (InsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Frame.PopResult pop1 = currentState.frame.popFromStack();
+
+        final Variable dest = graph.newVariable(pop1.value.type);
+        final Copy c = graph.newCopy(pop1.value.type);
+        c.addIncomingData(pop1.value);
+        dest.addIncomingData(c);
+
+        graph.registerTranslation(node, new InstructionTranslation(c, currentState.frame));
+
+        final Frame newFrame = pop1.newFrame.pushToStack(pop1.value).pushToStack(dest);
+
+        final GraphParserState newState = currentState.controlFlowsTo(c).withFrame(newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
     private List<ControlFlow> parse_IDIV(final ControlFlow currentFlow) {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
@@ -599,6 +621,8 @@ public class GraphParser {
                 return parse_ISUB(currentFlow);
             case Opcodes.ATHROW:
                 return parse_ATHROW(currentFlow);
+            case Opcodes.DUP:
+                return parse_DUP(currentFlow);
             default:
                 throw new IllegalStateException("Not implemented : " + node + " -> " + node.getOpcode());
         }
@@ -699,6 +723,40 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
+    private List<ControlFlow> parse_NEW(final ControlFlow currentFlow) {
+        final TypeInsnNode node = (TypeInsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Type type = Type.getObjectType(node.desc);
+
+        final TypeReference typeReference = graph.newTypeReference(type);
+        final New n = graph.newNew(type);
+        n.addIncomingData(typeReference);
+
+        final Variable variable = graph.newVariable(type);
+
+        final Copy copy = graph.newCopy(type);
+        copy.addIncomingData(n);
+        variable.addIncomingData(copy);
+        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+
+        final Frame newFrame = currentState.frame.pushToStack(variable);
+
+        final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
+    private List<ControlFlow> parseTypeInsnNode(final ControlFlow currentFlow) {
+        switch (currentFlow.currentNode.getOpcode()) {
+            case Opcodes.NEW:
+                return parse_NEW(currentFlow);
+            default:
+                throw new IllegalStateException("Not supported opcode : " + currentFlow.currentNode.getOpcode());
+        }
+    }
+
     private List<ControlFlow> parse(final ControlFlow currentFlow, final Map<AbstractInsnNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerInstruction) {
         if (currentFlow.currentNode instanceof LabelNode) {
             final LabelNode labelNode = (LabelNode) currentFlow.currentNode;
@@ -765,6 +823,9 @@ public class GraphParser {
         }
         if (currentFlow.currentNode instanceof IincInsnNode) {
             return parseIincInsnNode(currentFlow);
+        }
+        if (currentFlow.currentNode instanceof TypeInsnNode) {
+            return parseTypeInsnNode(currentFlow);
         }
         throw new IllegalStateException("Not implemented : " + currentFlow.currentNode + " -> " + currentFlow.currentNode.getOpcode());
     }

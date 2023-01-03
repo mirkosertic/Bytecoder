@@ -234,6 +234,14 @@ public class Graph {
         return (Unwind) register(new Unwind(type));
     }
 
+    public TypeReference newTypeReference(final Type type) {
+        return (TypeReference) register(new TypeReference(type));
+    }
+
+    public New newNew(final Type type) {
+        return (New) register(new New(type));
+    }
+
     public void deleteNode(final Node node) {
         nodes.remove(node);
     }
