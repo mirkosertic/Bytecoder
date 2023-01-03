@@ -53,7 +53,7 @@ public class ASMTest {
 
         final CompileUnit compileUnit = new CompileUnit(ASMTest.class.getClassLoader());
         final ResolvedClass resolvedClass = compileUnit.resolveClass(Type.getType(Testclass.class), analysisStack);
-        final ResolvedMethod method = resolvedClass.resolveMethod("<init>", Type.getMethodType(Type.VOID_TYPE), analysisStack);
+        final ResolvedMethod method = resolvedClass.resolveMethod("testmethod", Type.getMethodType(Type.VOID_TYPE), analysisStack);
         renderMethod(method);
     }
 }

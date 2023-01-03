@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.asm;
 
 public class Testclass {
 
-    public Testclass() {
+    public void testmethod() {
         int x = 100;
         if (x > 100) {
             for (int j = 0; j < 100; j++);

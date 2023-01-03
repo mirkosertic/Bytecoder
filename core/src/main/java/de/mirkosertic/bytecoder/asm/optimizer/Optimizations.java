@@ -25,7 +25,7 @@ public enum Optimizations implements Optimizer {
                 new DeleteRedundantControlTokenWithoutDataFlow(),
                 new PromoteVariableToConstant(),
                 new DeleteCopyToUnusedVariable(),
-                new DeleteRedundantVariableCopy(),
+                //new DeleteRedundantVariableCopy(),
                 new VariableShouldBePHI()
             }),
     ;
