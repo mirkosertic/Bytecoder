@@ -61,8 +61,16 @@ public class JSBackend {
         return type.getClassName().replace('.', '$');
     }
 
-    public String generateMethodName(final String name) {
-        return name.replace('<', '$').replace('>', '$');
+    public String generateMethodName(final String name, final Type[] argumentTypes) {
+        final StringBuilder builder = new StringBuilder(name);
+        for (final Type arg : argumentTypes) {
+            builder.append("$").append(arg);
+        }
+        return builder.toString()
+                .replace('<', '$')
+                .replace('>', '$')
+                .replace('/', '$')
+                .replace(';', '$');
     }
 
     public void generateCodeFor(final CompileUnit compileUnit, final OutputStream out) {
@@ -151,9 +159,20 @@ public class JSBackend {
                 if ((m.methodNode.access & Opcodes.ACC_PRIVATE) > 0) {
                     pw.print("#");
                 }
-                final String methodName = generateMethodName(m.methodNode.name);
+                final String methodName = generateMethodName(m.methodNode.name, Type.getArgumentTypes(m.methodNode.desc));
                 pw.print(methodName);
-                pw.println("() {");
+
+                final Type[] arguments = Type.getArgumentTypes(m.methodNode.desc);
+
+                pw.print("(");
+                for (int i = 0; i < arguments.length; i++) {
+                    if (i > 0) {
+                        pw.print(",");
+                    }
+                    pw.print("arg");
+                    pw.print(i);
+                }
+                pw.println(") {");
 
                 final Graph g = m.methodBody;
                 final Optimizer o = Optimizations.DEFAULT;
@@ -226,7 +245,7 @@ public class JSBackend {
                                 pw.print("#");
                             }
 
-                            pw.print(generateMethodName(node.insnNode.name));
+                            pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
                             pw.print("(");
                             for (int i = 1; i < node.incomingDataFlows.length; i++) {
                                 if (i > 1) {
@@ -243,7 +262,7 @@ public class JSBackend {
                                 pw.print("#");
                             }
 
-                            pw.print(generateMethodName(node.insnNode.name));
+                            pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
                             pw.print(".call(");
                             writeExpression(node.incomingDataFlows[0]);
                             for (int i = 1; i < node.incomingDataFlows.length; i++) {
@@ -270,7 +289,7 @@ public class JSBackend {
                                 pw.print("#");
                             }
 
-                            pw.print(generateMethodName(node.insnNode.name));
+                            pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
                             pw.print("(");
                             for (int i = 1; i < node.incomingDataFlows.length; i++) {
                                 if (i > 1) {
@@ -287,7 +306,7 @@ public class JSBackend {
                                 pw.print("#");
                             }
 
-                            pw.print(generateMethodName(node.insnNode.name));
+                            pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
                             pw.print(".call(");
                             writeExpression(node.incomingDataFlows[0]);
                             for (int i = 1; i < node.incomingDataFlows.length; i++) {
@@ -307,7 +326,7 @@ public class JSBackend {
                         writeExpression(node.incomingDataFlows[0]);
 
                         pw.print(".");
-                        pw.print(generateMethodName(node.insnNode.name));
+                        pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
                         pw.print("(");
                         for (int i = 1; i < node.incomingDataFlows.length; i++) {
                             if (i > 1) {
@@ -324,7 +343,7 @@ public class JSBackend {
                         writeExpression(node.incomingDataFlows[0]);
 
                         pw.print(".");
-                        pw.print(generateMethodName(node.insnNode.name));
+                        pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
                         pw.print("(");
                         for (int i = 1; i < node.incomingDataFlows.length; i++) {
                             if (i > 1) {
@@ -347,7 +366,7 @@ public class JSBackend {
                         if ((node.resolvedMethod.methodNode.access & Opcodes.ACC_PRIVATE) > 0) {
                             pw.print("#");
                         }
-                        pw.print(generateMethodName(node.insnNode.name));
+                        pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
                         pw.print("(");
                         for (int i = 1; i < node.incomingDataFlows.length; i++) {
                             if (i > 1) {
@@ -369,7 +388,7 @@ public class JSBackend {
                         if ((node.resolvedMethod.methodNode.access & Opcodes.ACC_PRIVATE) > 0) {
                             pw.print("#");
                         }
-                        pw.print(generateMethodName(node.insnNode.name));
+                        pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
                         pw.print("(");
                         for (int i = 1; i < node.incomingDataFlows.length; i++) {
                             if (i > 1) {

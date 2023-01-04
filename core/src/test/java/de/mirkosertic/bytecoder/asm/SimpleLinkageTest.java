@@ -36,7 +36,7 @@ public class SimpleLinkageTest {
             return 42;
         }
 
-        private int getInt() {
+        private int getInt(final int value, Object obj) {
             return 18;
         }
 
@@ -45,7 +45,7 @@ public class SimpleLinkageTest {
             //k.doit()
             k.doit2();
             getValue();
-            getInt();
+            getInt(10, k);
         }
     }
 

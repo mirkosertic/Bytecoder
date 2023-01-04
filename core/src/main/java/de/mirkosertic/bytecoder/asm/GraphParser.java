@@ -396,7 +396,7 @@ public class GraphParser {
         Frame.PopResult latest = currentState.frame.popFromStack();
         incomingData[0] = latest.value;
         for (int i = 0; i < argumentTypes.length; i++) {
-            latest = currentState.frame.popFromStack();
+            latest = latest.newFrame.popFromStack();
             incomingData[i + 1] = latest.value;
         }
 
@@ -441,7 +441,7 @@ public class GraphParser {
         Frame.PopResult latest = currentState.frame.popFromStack();
         incomingData[0] = latest.value;
         for (int i = 0; i < argumentTypes.length; i++) {
-            latest = currentState.frame.popFromStack();
+            latest = latest.newFrame.popFromStack();
             incomingData[i + 1] = latest.value;
         }
 

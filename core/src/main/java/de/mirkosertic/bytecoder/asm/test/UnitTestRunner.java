@@ -269,7 +269,7 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                 theCodeWriter.println(compiledCode);
 
                 final String theClassName = backend.generateClassName(invokedType);
-                final String theMethodName = backend.generateMethodName(method.methodNode.name);
+                final String theMethodName = backend.generateMethodName(method.methodNode.name, Type.getArgumentTypes(method.methodNode.desc));
 
                 final String theFilename = theClassName + "." + theMethodName + "_" + aTestOption.toFilePrefix() + ".html";
 
