@@ -266,7 +266,7 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                 final StringWriter theStrWriter = new StringWriter();
                 final PrintWriter theCodeWriter = new PrintWriter(theStrWriter);
 
-                theCodeWriter.println(new String(compiledCode.toByteArray()));
+                theCodeWriter.println(compiledCode);
 
                 final String theClassName = backend.generateClassName(invokedType);
                 final String theMethodName = backend.generateMethodName(method.methodNode.name);
