@@ -24,6 +24,7 @@ import de.mirkosertic.bytecoder.asm.InstanceMethodInvocation;
 import de.mirkosertic.bytecoder.asm.Projection;
 import de.mirkosertic.bytecoder.asm.Region;
 import de.mirkosertic.bytecoder.asm.ReturnNothing;
+import de.mirkosertic.bytecoder.asm.ReturnPrimitive;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocation;
 import de.mirkosertic.bytecoder.asm.Variable;
 import de.mirkosertic.bytecoder.asm.VirtualMethodInvocation;
@@ -92,6 +93,8 @@ public class Sequencer {
             visit((If) node, activeStack);
         } else if (node instanceof ReturnNothing) {
             visit((ReturnNothing) node, activeStack);
+        } else if (node instanceof ReturnPrimitive) {
+            visit((ReturnPrimitive) node, activeStack);
         } else {
             throw new IllegalStateException("Not implemented : " + node.getClass().getSimpleName());
         }
@@ -260,4 +263,10 @@ public class Sequencer {
 
         codegenerator.write(node);
     }
+
+    private void visit(final ReturnPrimitive node, final List<Block> activeStack) {
+
+        codegenerator.write(node);
+    }
+
 }

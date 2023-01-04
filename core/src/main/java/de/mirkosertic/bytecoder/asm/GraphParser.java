@@ -400,13 +400,30 @@ public class GraphParser {
             incomingData[i + 1] = latest.value;
         }
 
-        final ControlTokenConsumer n = graph.newInstanceMethodInvocation(node, rm);
-        n.addIncomingData(incomingData);
-        graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+        final GraphParserState newState;
 
-        final GraphParserState newState = currentState.controlFlowsTo(n).withFrame(latest.newFrame);
-        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+        if (methodType.getReturnType().equals(Type.VOID_TYPE)) {
 
+            final InstanceMethodInvocation n = graph.newInstanceMethodInvocation(node, rm);
+            n.addIncomingData(incomingData);
+            graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+
+            newState = currentState.controlFlowsTo(n).withFrame(latest.newFrame);
+            graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+        } else {
+            final InstanceMethodInvocationExpression n = graph.newInstanceMethodInvocationExpression(node, rm);
+            n.addIncomingData(incomingData);
+
+            final Variable var = graph.newVariable(methodType.getReturnType());
+            final Copy copy = graph.newCopy(methodType.getReturnType());
+            copy.addIncomingData(n);
+            var.addIncomingData(copy);
+
+            graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+
+            newState = currentState.controlFlowsTo(copy).withFrame(latest.newFrame.pushToStack(var));
+            graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+        }
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
@@ -428,12 +445,31 @@ public class GraphParser {
             incomingData[i + 1] = latest.value;
         }
 
-        final ControlTokenConsumer n = graph.newVirtualMethodInvocation(node);
-        n.addIncomingData(incomingData);
-        graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+        final GraphParserState newState;
+        if (methodType.getReturnType().equals(Type.VOID_TYPE)) {
 
-        final GraphParserState newState = currentState.controlFlowsTo(n).withFrame(latest.newFrame);
-        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+            final VirtualMethodInvocation n = graph.newVirtualMethodInvocation(node);
+            n.addIncomingData(incomingData);
+
+            graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+
+            newState = currentState.controlFlowsTo(n).withFrame(latest.newFrame);
+            graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        } else {
+            final VirtualMethodInvocationExpression n = graph.newVirtualMethodInvocationExpression(node);
+            n.addIncomingData(incomingData);
+
+            final Variable var = graph.newVariable(methodType.getReturnType());
+            final Copy copy = graph.newCopy(methodType.getReturnType());
+            copy.addIncomingData(n);
+            var.addIncomingData(copy);
+
+            graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+
+            newState = currentState.controlFlowsTo(copy).withFrame(latest.newFrame.pushToStack(var));
+            graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+        }
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -456,12 +492,33 @@ public class GraphParser {
             latest = popresult.newFrame;
         }
 
-        final ControlTokenConsumer n = graph.newStaticMethodInvocation(node, rm);
-        n.addIncomingData(incomingData);
-        graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+        final GraphParserState newState;
 
-        final GraphParserState newState = currentState.controlFlowsTo(n).withFrame(latest);
-        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+        if (methodType.getReturnType().equals(Type.VOID_TYPE)) {
+
+            final StaticMethodInvocation n = graph.newStaticMethodInvocation(node, rm);
+            n.addIncomingData(incomingData);
+            graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+
+            newState = currentState.controlFlowsTo(n).withFrame(latest);
+            graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        } else {
+
+            final StaticMethodInvocationExpression n = graph.newStaticMethodInvocationExpression(node, rm);
+            n.addIncomingData(incomingData);
+
+            final Variable var = graph.newVariable(methodType.getReturnType());
+            final Copy copy = graph.newCopy(methodType.getReturnType());
+            copy.addIncomingData(n);
+            var.addIncomingData(copy);
+
+            graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+
+            newState = currentState.controlFlowsTo(copy).withFrame(latest.pushToStack(var));
+            graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        }
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
@@ -533,6 +590,17 @@ public class GraphParser {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
         final ReturnNothing value = graph.newReturnNothing();
+        graph.registerTranslation(node, new InstructionTranslation(value, currentState.frame));
+        currentState.controlFlowsTo(value);
+        return Collections.emptyList();
+    }
+
+    private List<ControlFlow> parse_IRETURN(final ControlFlow currentFlow) {
+        final InsnNode node = (InsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+        final ReturnPrimitive value = graph.newReturnPrimitive();
+        final Frame.PopResult popResult = currentState.frame.popFromStack();
+        value.addIncomingData(popResult.value);
         graph.registerTranslation(node, new InstructionTranslation(value, currentState.frame));
         currentState.controlFlowsTo(value);
         return Collections.emptyList();
@@ -637,6 +705,25 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
+    private List<ControlFlow> parse_POP(final ControlFlow currentFlow) {
+        final InsnNode node = (InsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Frame.PopResult pop1 = currentState.frame.popFromStack();
+
+        final Variable dest = graph.newVariable(pop1.value.type);
+        final Copy c = graph.newCopy(pop1.value.type);
+        c.addIncomingData(pop1.value);
+        dest.addIncomingData(c);
+
+        graph.registerTranslation(node, new InstructionTranslation(c, currentState.frame));
+
+        final GraphParserState newState = currentState.controlFlowsTo(c).withFrame(pop1.newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
     private List<ControlFlow> parse_IDIV(final ControlFlow currentFlow) {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
@@ -666,6 +753,8 @@ public class GraphParser {
         switch (node.getOpcode()) {
             case Opcodes.RETURN:
                 return parse_RETURN(currentFlow);
+            case Opcodes.IRETURN:
+                return parse_IRETURN(currentFlow);
             case Opcodes.ICONST_M1:
                 return parse_ICONSTX(currentFlow, -1);
             case Opcodes.ICONST_0:
@@ -690,6 +779,8 @@ public class GraphParser {
                 return parse_ATHROW(currentFlow);
             case Opcodes.DUP:
                 return parse_DUP(currentFlow);
+            case Opcodes.POP:
+                return parse_POP(currentFlow);
             default:
                 throw new IllegalStateException("Not implemented : " + node + " -> " + node.getOpcode());
         }

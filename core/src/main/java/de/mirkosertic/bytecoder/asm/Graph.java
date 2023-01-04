@@ -133,16 +133,32 @@ public class Graph {
         return (InstanceMethodInvocation) register(new InstanceMethodInvocation(insn, rm));
     }
 
+    public InstanceMethodInvocationExpression newInstanceMethodInvocationExpression(final MethodInsnNode insn, final ResolvedMethod rm) {
+        return (InstanceMethodInvocationExpression) register(new InstanceMethodInvocationExpression(insn, rm));
+    }
+
     public VirtualMethodInvocation newVirtualMethodInvocation(final MethodInsnNode insn) {
         return (VirtualMethodInvocation) register(new VirtualMethodInvocation(insn));
+    }
+
+    public VirtualMethodInvocationExpression newVirtualMethodInvocationExpression(final MethodInsnNode insn) {
+        return (VirtualMethodInvocationExpression) register(new VirtualMethodInvocationExpression(insn));
     }
 
     public StaticMethodInvocation newStaticMethodInvocation(final MethodInsnNode insn, final ResolvedMethod rm) {
         return (StaticMethodInvocation) register(new StaticMethodInvocation(insn, rm));
     }
 
+    public StaticMethodInvocationExpression newStaticMethodInvocationExpression(final MethodInsnNode insn, final ResolvedMethod rm) {
+        return (StaticMethodInvocationExpression) register(new StaticMethodInvocationExpression(insn, rm));
+    }
+
     public ReturnNothing newReturnNothing() {
         return (ReturnNothing) register(new ReturnNothing());
+    }
+
+    public ReturnPrimitive newReturnPrimitive() {
+        return (ReturnPrimitive) register(new ReturnPrimitive());
     }
 
     public Add newAdd(final Type type) {

@@ -293,10 +293,6 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
 
                 final File theWorkingDirectory = new File(".");
 
-                initializeTestWebServer();
-
-                final BrowserWebDriverContainer theContainer = initializeSeleniumContainer();
-
                 final File theMavenTargetDir = new File(theWorkingDirectory, "target");
                 final File theGeneratedFilesDir = new File(theMavenTargetDir, "bytecoder_js_new");
                 theGeneratedFilesDir.mkdirs();
@@ -308,6 +304,10 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                 theWriter.println("</script></body></html>");
                 theWriter.flush();
                 theWriter.close();
+
+                initializeTestWebServer();
+
+                final BrowserWebDriverContainer theContainer = initializeSeleniumContainer();
 
                 initializeWebRoot(theGeneratedFile.getParentFile());
 

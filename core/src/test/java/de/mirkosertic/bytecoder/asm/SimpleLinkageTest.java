@@ -20,7 +20,8 @@ public class SimpleLinkageTest {
         private void doit() {
         }
 
-        public void doit2() {
+        public int doit2() {
+            return 23;
         }
 
         private static void gnamph() {
@@ -31,20 +32,20 @@ public class SimpleLinkageTest {
             int x = 20;
         }
 
-        public void testmethod() {
-            gnamph();
-            gnamph2();
+        public static int getValue() {
+            return 42;
+        }
 
-            //final Testclass k = new Testclass();
-            //k.doit();
-            //k.doit2();
-            int x = 10;
-            if (x > 100) {
-                for (int j = 0; j < 100; j++);
-            } else {
-                x = x - 20;
-            }
-            x = x + 10;
+        private int getInt() {
+            return 18;
+        }
+
+        public void testmethod() {
+            final Testclass k = new Testclass();
+            //k.doit()
+            k.doit2();
+            getValue();
+            getInt();
         }
     }
 

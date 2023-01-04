@@ -21,6 +21,7 @@ import de.mirkosertic.bytecoder.asm.Copy;
 import de.mirkosertic.bytecoder.asm.Graph;
 import de.mirkosertic.bytecoder.asm.If;
 import de.mirkosertic.bytecoder.asm.InstanceMethodInvocation;
+import de.mirkosertic.bytecoder.asm.InstanceMethodInvocationExpression;
 import de.mirkosertic.bytecoder.asm.Int;
 import de.mirkosertic.bytecoder.asm.New;
 import de.mirkosertic.bytecoder.asm.Node;
@@ -28,12 +29,15 @@ import de.mirkosertic.bytecoder.asm.PHI;
 import de.mirkosertic.bytecoder.asm.ResolvedClass;
 import de.mirkosertic.bytecoder.asm.ResolvedMethod;
 import de.mirkosertic.bytecoder.asm.ReturnNothing;
+import de.mirkosertic.bytecoder.asm.ReturnPrimitive;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocation;
+import de.mirkosertic.bytecoder.asm.StaticMethodInvocationExpression;
 import de.mirkosertic.bytecoder.asm.Sub;
 import de.mirkosertic.bytecoder.asm.This;
 import de.mirkosertic.bytecoder.asm.TypeReference;
 import de.mirkosertic.bytecoder.asm.Variable;
 import de.mirkosertic.bytecoder.asm.VirtualMethodInvocation;
+import de.mirkosertic.bytecoder.asm.VirtualMethodInvocationExpression;
 import de.mirkosertic.bytecoder.asm.optimizer.Optimizations;
 import de.mirkosertic.bytecoder.asm.optimizer.Optimizer;
 import de.mirkosertic.bytecoder.asm.sequencer.DominatorTree;
@@ -164,13 +168,13 @@ public class JSBackend {
                     //
                 }
 
-                final DominatorTree dt = new DominatorTree(g);
-
                 try {
                     g.writeDebugTo(Files.newOutputStream(Paths.get(generateClassName(cl.type) + "." + methodName + "_debug_optimized.dot")));
                 } catch (final IOException e) {
                     throw new RuntimeException(e);
                 }
+
+                final DominatorTree dt = new DominatorTree(g);
 
                 try {
                     dt.writeDebugTo(Files.newOutputStream(Paths.get(generateClassName(cl.type) + "." + methodName + "_dominatortree.dot")));
@@ -252,6 +256,50 @@ public class JSBackend {
                         }
                     }
 
+                    private void writeExpression(final InstanceMethodInvocationExpression node) {
+
+                        final Type invocationTarget = Type.getObjectType(node.insnNode.owner);
+
+                        pw.print("(");
+                        if (invocationTarget.equals(cl.type)) {
+                            writeExpression(node.incomingDataFlows[0]);
+
+                            pw.print(".");
+
+                            if ((node.resolvedMethod.methodNode.access & Opcodes.ACC_PRIVATE) > 0) {
+                                pw.print("#");
+                            }
+
+                            pw.print(generateMethodName(node.insnNode.name));
+                            pw.print("(");
+                            for (int i = 1; i < node.incomingDataFlows.length; i++) {
+                                if (i > 1) {
+                                    pw.print(",");
+                                }
+                                writeExpression(node.incomingDataFlows[i]);
+                            }
+                            pw.print("))");
+                        } else {
+                            pw.print(generateClassName(invocationTarget));
+                            pw.print(".prototype.");
+
+                            if ((node.resolvedMethod.methodNode.access & Opcodes.ACC_PRIVATE) > 0) {
+                                pw.print("#");
+                            }
+
+                            pw.print(generateMethodName(node.insnNode.name));
+                            pw.print(".call(");
+                            writeExpression(node.incomingDataFlows[0]);
+                            for (int i = 1; i < node.incomingDataFlows.length; i++) {
+                                if (i > 1) {
+                                    pw.print(",");
+                                }
+                                writeExpression(node.incomingDataFlows[i]);
+                            }
+                            pw.print("))");
+                        }
+                    }
+
                     @Override
                     public void write(final VirtualMethodInvocation node) {
 
@@ -268,6 +316,23 @@ public class JSBackend {
                             writeExpression(node.incomingDataFlows[i]);
                         }
                         pw.println(");");
+                    }
+
+                    private void writeExpression(final VirtualMethodInvocationExpression node) {
+
+                        pw.print("(");
+                        writeExpression(node.incomingDataFlows[0]);
+
+                        pw.print(".");
+                        pw.print(generateMethodName(node.insnNode.name));
+                        pw.print("(");
+                        for (int i = 1; i < node.incomingDataFlows.length; i++) {
+                            if (i > 1) {
+                                pw.print(",");
+                            }
+                            writeExpression(node.incomingDataFlows[i]);
+                        }
+                        pw.print("))");
                     }
 
                     @Override
@@ -291,6 +356,28 @@ public class JSBackend {
                             writeExpression(node.incomingDataFlows[i]);
                         }
                         pw.println(");");
+                    }
+
+                    private void writeExpression(final StaticMethodInvocationExpression node) {
+
+                        pw.print("(");
+
+                        final Type target = Type.getObjectType(node.insnNode.owner);
+
+                        pw.print(generateClassName(target));
+                        pw.print(".");
+                        if ((node.resolvedMethod.methodNode.access & Opcodes.ACC_PRIVATE) > 0) {
+                            pw.print("#");
+                        }
+                        pw.print(generateMethodName(node.insnNode.name));
+                        pw.print("(");
+                        for (int i = 1; i < node.incomingDataFlows.length; i++) {
+                            if (i > 1) {
+                                pw.print(",");
+                            }
+                            writeExpression(node.incomingDataFlows[i]);
+                        }
+                        pw.print("))");
                     }
 
                     @Override
@@ -326,6 +413,12 @@ public class JSBackend {
                             writeExpression((TypeReference) node);
                         } else if (node instanceof This) {
                             writeExpression((This) node);
+                        } else if (node instanceof VirtualMethodInvocationExpression) {
+                            writeExpression((VirtualMethodInvocationExpression) node);
+                        } else if (node instanceof StaticMethodInvocationExpression) {
+                            writeExpression((StaticMethodInvocationExpression) node);
+                        } else if (node instanceof InstanceMethodInvocationExpression) {
+                            writeExpression((InstanceMethodInvocationExpression) node);
                         } else {
                             throw new IllegalArgumentException("Not implemented : " + node);
                         }
@@ -394,7 +487,7 @@ public class JSBackend {
                                 pw.print(" <= ");
                                 break;
                             case LT:
-                                pw.print(" <= ");
+                                pw.print(" < ");
                                 break;
                             case NE:
                                 pw.print(" != ");
@@ -440,6 +533,14 @@ public class JSBackend {
                     public void write(final ReturnNothing node) {
                         writeIndent();
                         pw.println("return;");
+                    }
+
+                    @Override
+                    public void write(final ReturnPrimitive node) {
+                        writeIndent();
+                        pw.print("return ");
+                        writeExpression(node.incomingDataFlows[0]);
+                        pw.println(";");
                     }
 
                     @Override
