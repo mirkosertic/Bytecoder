@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.asm;
+package de.mirkosertic.bytecoder.asm.test;
 
-public class Testclass {
+import org.junit.runners.model.FrameworkMethod;
 
-    public void testmethod() {
-        final Testclass k = new Testclass();
-        int x = 100;
-        if (x > 100) {
-            for (int j = 0; j < 100; j++);
-        } else {
-            x = x - 20;
-        }
-        x = x + 10;
+import java.lang.reflect.Method;
+
+public class FrameworkMethodWithTestOption extends FrameworkMethod {
+
+    private final TestOption testOption;
+
+    public FrameworkMethodWithTestOption(final Method method, final TestOption testOption) {
+        super(method);
+        this.testOption = testOption;
+    }
+
+    public TestOption getTestOption() {
+        return testOption;
     }
 }

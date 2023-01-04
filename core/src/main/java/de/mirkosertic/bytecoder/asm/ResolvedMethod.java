@@ -26,13 +26,13 @@ public class ResolvedMethod {
 
     public final Graph methodBody;
 
-    public ResolvedMethod(final ResolvedClass owner, final MethodNode methodNode) {
+    public ResolvedMethod(final ResolvedClass owner, final MethodNode methodNode, final AnalysisStack analysisStack) {
         this.owner = owner;
         this.methodNode = methodNode;
 
         if (((methodNode.access & Opcodes.ACC_ABSTRACT) == 0) && ((methodNode.access & Opcodes.ACC_NATIVE) == 0)) {
             // Method is not abstract and not native
-            final GraphParser graphParser = new GraphParser(owner.compileUnit, owner.type, methodNode);
+            final GraphParser graphParser = new GraphParser(owner.compileUnit, owner.type, methodNode, analysisStack);
             methodBody = graphParser.graph();
         } else {
             methodBody = null;

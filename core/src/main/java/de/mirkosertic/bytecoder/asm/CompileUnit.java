@@ -24,6 +24,7 @@ import org.objectweb.asm.tree.ClassNode;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,5 +82,34 @@ public class CompileUnit {
         }
 
         return new ResolvedClass(this, type, classNode, superClass, interfaces.toArray(new ResolvedClass[0]));
+    }
+
+    private void computeSubtypesFor(final ResolvedClass cl, final int level, final Map<ResolvedClass, Integer> dependency) {
+        final Integer l = dependency.get(cl);
+        if (l == null || level > l) {
+            dependency.put(cl, level);
+        }
+        for (final ResolvedClass sub : cl.directSubclasses) {
+            computeSubtypesFor(sub, level + 1, dependency);
+        }
+    }
+
+    public List<ResolvedClass> computeClassDependencies() {
+        ResolvedClass objectClass = null;
+        for (final ResolvedClass ent : resolvedClasses.values()) {
+            if (ent.superClass == null) {
+                objectClass = ent;
+            }
+        }
+        if (objectClass == null) {
+            throw new IllegalStateException("Cannot find object class");
+        }
+        final Map<ResolvedClass, Integer> dependency = new HashMap<>();
+        computeSubtypesFor(objectClass, 0, dependency);
+
+        final List<ResolvedClass> classDependencies = new ArrayList<>(dependency.keySet());
+        classDependencies.sort(Comparator.comparingInt(dependency::get));
+
+        return classDependencies;
     }
 }

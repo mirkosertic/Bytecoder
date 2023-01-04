@@ -48,10 +48,13 @@ public class GraphParser {
 
     private final CompileUnit compileUnit;
 
-    public GraphParser(final CompileUnit compileUnit, final Type ownerType, final MethodNode methodNode) {
+    private final AnalysisStack analysisStack;
+
+    public GraphParser(final CompileUnit compileUnit, final Type ownerType, final MethodNode methodNode, final AnalysisStack analysisStack) {
         this.methodNode = methodNode;
         this.graph = new Graph();
         this.compileUnit = compileUnit;
+        this.analysisStack = analysisStack;
 
         parse(ownerType);
     }
@@ -383,8 +386,12 @@ public class GraphParser {
         final MethodInsnNode node = (MethodInsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
         final Type methodType = Type.getMethodType(node.desc);
+        final Type targetClass = Type.getObjectType(node.owner);
         final Type[] argumentTypes = methodType.getArgumentTypes();
         final Node[] incomingData = new Node[argumentTypes.length + 1];
+
+        final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
+        final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
 
         Frame.PopResult latest = currentState.frame.popFromStack();
         incomingData[0] = latest.value;
@@ -393,11 +400,67 @@ public class GraphParser {
             incomingData[i + 1] = latest.value;
         }
 
-        final ControlTokenConsumer n = graph.newMethodInvocation(node);
+        final ControlTokenConsumer n = graph.newInstanceMethodInvocation(node, rm);
         n.addIncomingData(incomingData);
         graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
 
         final GraphParserState newState = currentState.controlFlowsTo(n).withFrame(latest.newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
+    private List<ControlFlow> parse_INVOKEVIRTUAL(final ControlFlow currentFlow) {
+        final MethodInsnNode node = (MethodInsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+        final Type methodType = Type.getMethodType(node.desc);
+        final Type targetClass = Type.getObjectType(node.owner);
+        final Type[] argumentTypes = methodType.getArgumentTypes();
+        final Node[] incomingData = new Node[argumentTypes.length + 1];
+
+        final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
+        rc.resolveMethod(node.name, methodType, analysisStack);
+
+        Frame.PopResult latest = currentState.frame.popFromStack();
+        incomingData[0] = latest.value;
+        for (int i = 0; i < argumentTypes.length; i++) {
+            latest = currentState.frame.popFromStack();
+            incomingData[i + 1] = latest.value;
+        }
+
+        final ControlTokenConsumer n = graph.newVirtualMethodInvocation(node);
+        n.addIncomingData(incomingData);
+        graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+
+        final GraphParserState newState = currentState.controlFlowsTo(n).withFrame(latest.newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
+    private List<ControlFlow> parse_INVOKESTATIC(final ControlFlow currentFlow) {
+        final MethodInsnNode node = (MethodInsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+        final Type methodType = Type.getMethodType(node.desc);
+        final Type targetClass = Type.getObjectType(node.owner);
+        final Type[] argumentTypes = methodType.getArgumentTypes();
+        final Node[] incomingData = new Node[argumentTypes.length];
+
+        final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
+        final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
+
+        Frame latest = currentState.frame;
+        for (int i = 0; i < argumentTypes.length; i++) {
+            final Frame.PopResult popresult = latest.popFromStack();
+            incomingData[i] = popresult.value;
+            latest = popresult.newFrame;
+        }
+
+        final ControlTokenConsumer n = graph.newStaticMethodInvocation(node, rm);
+        n.addIncomingData(incomingData);
+        graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+
+        final GraphParserState newState = currentState.controlFlowsTo(n).withFrame(latest);
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
@@ -408,6 +471,10 @@ public class GraphParser {
         switch (node.getOpcode()) {
             case Opcodes.INVOKESPECIAL:
                 return parse_INVOKESPECIAL(currentFlow);
+            case Opcodes.INVOKEVIRTUAL:
+                return parse_INVOKEVIRTUAL(currentFlow);
+            case Opcodes.INVOKESTATIC:
+                return parse_INVOKESTATIC(currentFlow);
             default:
                 throw new IllegalStateException("Not implemented : " + node + " -> " + node.getOpcode());
         }

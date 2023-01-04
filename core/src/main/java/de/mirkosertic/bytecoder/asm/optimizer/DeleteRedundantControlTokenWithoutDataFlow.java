@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.asm.optimizer;
 import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.asm.Graph;
 import de.mirkosertic.bytecoder.asm.Node;
+import de.mirkosertic.bytecoder.asm.PotentialSideeffect;
 import de.mirkosertic.bytecoder.asm.Projection;
 
 import java.util.List;
@@ -30,6 +31,7 @@ public class DeleteRedundantControlTokenWithoutDataFlow implements Optimizer {
     public DeleteRedundantControlTokenWithoutDataFlow() {
         patternMatcher = new NodePatternMatcher(
                 NodePredicates.ofType(ControlTokenConsumer.class),
+                NodePredicates.ofType(PotentialSideeffect.class).negate(),
                 NodePredicates.incomingDataFlows(NodePredicates.empty()),
                 NodePredicates.outgoingDataFlows(NodePredicates.empty()),
                 NodePredicates.singlePredWithForwardEdge(),

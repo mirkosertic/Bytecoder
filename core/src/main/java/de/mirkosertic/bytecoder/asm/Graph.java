@@ -129,8 +129,16 @@ public class Graph {
         return register(new ObjectString(value));
     }
 
-    public MethodInvocation newMethodInvocation(final MethodInsnNode insn) {
-        return (MethodInvocation) register(new MethodInvocation(insn));
+    public InstanceMethodInvocation newInstanceMethodInvocation(final MethodInsnNode insn, final ResolvedMethod rm) {
+        return (InstanceMethodInvocation) register(new InstanceMethodInvocation(insn, rm));
+    }
+
+    public VirtualMethodInvocation newVirtualMethodInvocation(final MethodInsnNode insn) {
+        return (VirtualMethodInvocation) register(new VirtualMethodInvocation(insn));
+    }
+
+    public StaticMethodInvocation newStaticMethodInvocation(final MethodInsnNode insn, final ResolvedMethod rm) {
+        return (StaticMethodInvocation) register(new StaticMethodInvocation(insn, rm));
     }
 
     public ReturnNothing newReturnNothing() {

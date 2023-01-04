@@ -20,10 +20,13 @@ import de.mirkosertic.bytecoder.asm.Copy;
 import de.mirkosertic.bytecoder.asm.EdgeType;
 import de.mirkosertic.bytecoder.asm.Graph;
 import de.mirkosertic.bytecoder.asm.If;
-import de.mirkosertic.bytecoder.asm.MethodInvocation;
+import de.mirkosertic.bytecoder.asm.InstanceMethodInvocation;
 import de.mirkosertic.bytecoder.asm.Projection;
 import de.mirkosertic.bytecoder.asm.Region;
 import de.mirkosertic.bytecoder.asm.ReturnNothing;
+import de.mirkosertic.bytecoder.asm.StaticMethodInvocation;
+import de.mirkosertic.bytecoder.asm.Variable;
+import de.mirkosertic.bytecoder.asm.VirtualMethodInvocation;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,6 +34,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class Sequencer {
 
@@ -40,8 +44,8 @@ public class Sequencer {
             LOOP, NORMAL
         }
 
-        private final String label;
-        private final Type type;
+        public final String label;
+        public final Type type;
 
         private final ControlTokenConsumer continueLeadsTo;
 
@@ -59,18 +63,29 @@ public class Sequencer {
 
     private final Graph graph;
 
-    public Sequencer(final Graph g, final DominatorTree dominatorTree) {
+    private final StructuredControlflowCodeGenerator codegenerator;
+
+    public Sequencer(final Graph g, final DominatorTree dominatorTree, final StructuredControlflowCodeGenerator codegenerator) {
         this.graph = g;
         this.dominatorTree = dominatorTree;
+        this.codegenerator = codegenerator;
         final ControlTokenConsumer startNode = g.regionByLabel(Graph.START_REGION_NAME);
+
+        final List<Variable> phis = g.nodes().stream().filter(t -> t instanceof Variable).map(t -> (Variable) t).collect(Collectors.toList());
+        codegenerator.registerVariables(phis);
+
         visit(startNode, new ArrayList<>());
     }
 
     private void visit(final ControlTokenConsumer node, final List<Block> activeStack) {
         if (node instanceof Region) {
             visit((Region) node, activeStack);
-        } else if (node instanceof MethodInvocation) {
-            visit((MethodInvocation) node, activeStack);
+        } else if (node instanceof InstanceMethodInvocation) {
+            visit((InstanceMethodInvocation) node, activeStack);
+        } else if (node instanceof VirtualMethodInvocation) {
+            visit((VirtualMethodInvocation) node, activeStack);
+        } else if (node instanceof StaticMethodInvocation) {
+            visit((StaticMethodInvocation) node, activeStack);
         } else if (node instanceof Copy) {
             visit((Copy) node, activeStack);
         } else if (node instanceof If) {
@@ -82,21 +97,14 @@ public class Sequencer {
         }
     }
 
-    private void printIndent(final int size) {
-        for (int i = 0; i < size; i++) {
-            System.out.print(" ");
-        }
-    }
-
     private void generateGOTO(final ControlTokenConsumer target, final List<Block> activeStack) {
-        printIndent(activeStack.size());
         for (final Block b : activeStack) {
             if (b.breakLeadsTo == target) {
-                System.out.println("Break " + b.label);
+                codegenerator.writeBreakTo(b.label);
                 return;
             }
             if (b.continueLeadsTo == target) {
-                System.out.println("Continue " + b.label);
+                codegenerator.writeContinueTo(b.label);
                 return;
             }
         }
@@ -117,36 +125,35 @@ public class Sequencer {
         }
     }
 
-    private void visit(final MethodInvocation node, final List<Block> activeStack) {
+    private void visit(final InstanceMethodInvocation node, final List<Block> activeStack) {
 
-        printIndent(activeStack.size());
+        codegenerator.write(node);
 
-        System.out.print(node.additionalDebugInfo());
-        System.out.print(" // ");
-        System.out.print(graph.nodes().indexOf(node));
-        System.out.print(" ");
-        System.out.println(node.getClass().getSimpleName());
+        processSuccessors(node, activeStack);
+    }
+
+    private void visit(final VirtualMethodInvocation node, final List<Block> activeStack) {
+
+        codegenerator.write(node);
+
+        processSuccessors(node, activeStack);
+    }
+
+    private void visit(final StaticMethodInvocation node, final List<Block> activeStack) {
+
+        codegenerator.write(node);
 
         processSuccessors(node, activeStack);
     }
 
     private void visit(final Copy node, final List<Block> activeStack) {
 
-        printIndent(activeStack.size());
-
-        System.out.print("Copy ");
-        System.out.print(node.additionalDebugInfo());
-        System.out.print(" // ");
-        System.out.print(graph.nodes().indexOf(node));
-        System.out.print(" ");
-        System.out.println(node.getClass().getSimpleName());
+        codegenerator.write(node);
 
         processSuccessors(node, activeStack);
     }
 
     private void visit(final If node, final List<Block> activeStack) {
-
-        printIndent(activeStack.size());
 
         final Set<ControlTokenConsumer> dominated = dominatorTree.immediatelyDominatedNodesOf(node);
         final Map<ControlTokenConsumer, Set<ControlTokenConsumer>> groupDependencies = new HashMap<>();
@@ -174,18 +181,13 @@ public class Sequencer {
             final Block newBlock = new Block("IF_" + graph.nodes().indexOf(node), Block.Type.NORMAL, null, next);
             newStack.add(newBlock);
 
-            System.out.print(newBlock.label);
-            System.out.print(": ");
+            codegenerator.writeIfAndStartTrueBlock(node, newBlock.label);
+
         } else {
             newStack.add(new Block(node.getClass().getSimpleName() + graph.nodes().indexOf(node), Block.Type.NORMAL, null, null));
-        }
 
-        System.out.print("If ");
-        System.out.print(node.additionalDebugInfo());
-        System.out.print(" // ");
-        System.out.print(graph.nodes().indexOf(node));
-        System.out.print(" ");
-        System.out.println(node.getClass().getSimpleName());
+            codegenerator.writeIfAndStartTrueBlock(node, null);
+        }
 
         for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : node.controlFlowsTo.entrySet()) {
             if (entry.getKey() instanceof Projection.TrueProjection) {
@@ -199,6 +201,8 @@ public class Sequencer {
             }
         }
 
+        codegenerator.startIfElseBlock(node);
+
         for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : node.controlFlowsTo.entrySet()) {
             if (entry.getKey() instanceof Projection.FalseProjection) {
                 for (final ControlTokenConsumer successor : entry.getValue()) {
@@ -211,8 +215,7 @@ public class Sequencer {
             }
         }
 
-        printIndent(activeStack.size());
-        System.out.println("}");
+        codegenerator.finishBlock();
 
         if (groupDependencies.size() > 0) {
             final ControlTokenConsumer next = groupDependencies.keySet().iterator().next();
@@ -231,8 +234,6 @@ public class Sequencer {
             }
         }
 
-        printIndent(activeStack.size());
-
         final Block b;
         if (hasIncomingBackEdges) {
             b = new Block(node.label, Block.Type.LOOP, node, null);
@@ -242,32 +243,21 @@ public class Sequencer {
         final List<Block> newStackForDominatedNodes = new ArrayList<>(activeStack);
         newStackForDominatedNodes.add(b);
 
-        System.out.print(node.label);
-        System.out.print(": {  // ");
-        System.out.print(graph.nodes().indexOf(node));
-        System.out.print(" ");
-        System.out.print(node.getClass().getSimpleName());
-        System.out.print(" ");
-        System.out.print(node.additionalDebugInfo());
-        System.out.print(" Order : ");
-        System.out.println(dominatorTree.getRpo().indexOf(node));
+        if (Graph.START_REGION_NAME.equals(b.label)) {
 
-        processSuccessors(node, newStackForDominatedNodes);
+            processSuccessors(node, newStackForDominatedNodes);
 
-        printIndent(activeStack.size());
-        System.out.println("}");
+        } else {
+            codegenerator.startBlock(b);
+
+            processSuccessors(node, newStackForDominatedNodes);
+
+            codegenerator.finishBlock();
+        }
     }
 
     private void visit(final ReturnNothing node, final List<Block> activeStack) {
 
-        printIndent(activeStack.size());
-
-        System.out.print("Return");
-        System.out.print(" // ");
-        System.out.print(graph.nodes().indexOf(node));
-        System.out.print(" ");
-        System.out.print(node.getClass().getSimpleName());
-        System.out.print(" ");
-        System.out.println(node.additionalDebugInfo());
+        codegenerator.write(node);
     }
 }

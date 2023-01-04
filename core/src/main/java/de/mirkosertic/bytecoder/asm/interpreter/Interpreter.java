@@ -23,7 +23,7 @@ import de.mirkosertic.bytecoder.asm.Goto;
 import de.mirkosertic.bytecoder.asm.Graph;
 import de.mirkosertic.bytecoder.asm.If;
 import de.mirkosertic.bytecoder.asm.Int;
-import de.mirkosertic.bytecoder.asm.MethodInvocation;
+import de.mirkosertic.bytecoder.asm.InstanceMethodInvocation;
 import de.mirkosertic.bytecoder.asm.Node;
 import de.mirkosertic.bytecoder.asm.Projection;
 import de.mirkosertic.bytecoder.asm.Region;
@@ -155,7 +155,7 @@ public class Interpreter {
         return copyNode.flowForProjection(Projection.DefaultProjection.class);
     }
 
-    private ControlTokenConsumer interpret(final MethodInvocation node) {
+    private ControlTokenConsumer interpret(final InstanceMethodInvocation node) {
         return node.flowForProjection(Projection.DefaultProjection.class);
     }
 
@@ -209,8 +209,8 @@ public class Interpreter {
         if (token instanceof Copy) {
             return interpret((Copy) token);
         }
-        if (token instanceof MethodInvocation) {
-            return interpret((MethodInvocation) token);
+        if (token instanceof InstanceMethodInvocation) {
+            return interpret((InstanceMethodInvocation) token);
         }
         if (token instanceof If) {
             return interpret((If) token);
