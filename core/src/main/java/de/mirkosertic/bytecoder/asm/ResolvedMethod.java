@@ -32,6 +32,7 @@ public class ResolvedMethod {
 
         if (((methodNode.access & Opcodes.ACC_ABSTRACT) == 0) && ((methodNode.access & Opcodes.ACC_NATIVE) == 0)) {
             // Method is not abstract and not native
+            System.out.println("Parsing method body of " + owner.type + "," + methodNode.name);
             final GraphParser graphParser = new GraphParser(owner.compileUnit, owner.type, methodNode, analysisStack);
             methodBody = graphParser.graph();
         } else {

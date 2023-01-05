@@ -1276,6 +1276,31 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
+    private List<ControlFlow> parse_GETSTATICFIELD(final ControlFlow currentFlow) {
+        final FieldInsnNode node = (FieldInsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Type t = Type.getType(node.desc);
+        final ResolvedClass targetClass = compileUnit.resolveClass(Type.getObjectType(node.owner), analysisStack);
+        final ResolvedField resolvedField = targetClass.resolveInstanceMethod(node.name, t);
+
+        final ClassFieldExpression field = graph.newClassFieldExpression(t, resolvedField);
+        field.addIncomingData(graph.newTypeReference(targetClass.type));
+        final Variable target = graph.newVariable(t);
+        final Copy copy = graph.newCopy();
+        copy.addIncomingData(field);
+        target.addIncomingData(copy);
+
+        field.addIncomingData(graph.newTypeReference(targetClass.type));
+
+        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+
+        final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(currentState.frame.pushToStack(target));
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
     private List<ControlFlow> parse_PUTFIELD(final ControlFlow currentFlow) {
         final FieldInsnNode node = (FieldInsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
@@ -1303,6 +1328,8 @@ public class GraphParser {
         switch (currentFlow.currentNode.getOpcode()) {
             case Opcodes.GETFIELD:
                 return parse_GETFIELD(currentFlow);
+            case Opcodes.GETSTATIC:
+                return parse_GETSTATICFIELD(currentFlow);
             case Opcodes.PUTFIELD:
                 return parse_PUTFIELD(currentFlow);
             default:

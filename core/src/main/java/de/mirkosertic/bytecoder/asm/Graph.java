@@ -294,6 +294,10 @@ public class Graph {
         return (InstanceFieldExpression) register(new InstanceFieldExpression(type, resolvedField));
     }
 
+    public ClassFieldExpression newClassFieldExpression(final Type type, final ResolvedField resolvedField) {
+        return (ClassFieldExpression) register(new ClassFieldExpression(type, resolvedField));
+    }
+
     public SetInstanceField newSetInstanceField(final Type type, final ResolvedField resolvedField) {
         return (SetInstanceField) register(new SetInstanceField(resolvedField));
     }
