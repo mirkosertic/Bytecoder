@@ -17,6 +17,10 @@ public class SimpleLinkageTest {
 
     public static class Testclass implements Testinterface, Testinterface2 {
 
+        int value;
+
+        private Object value2;
+
         private void doit() {
         }
 
@@ -40,12 +44,31 @@ public class SimpleLinkageTest {
             return 18;
         }
 
+        private int orderTest(final int a, final int b) {
+            return a / b;
+        }
+
         public void testmethod() {
             final Testclass k = new Testclass();
             //k.doit()
             k.doit2();
             getValue();
             getInt(10, k);
+
+            int temp = k.value;
+            k.value = temp;
+
+            Object temp2 = k.value2;
+            k.value2 = temp2;
+
+            int[] x = new int[10];
+            x[0] = 1;
+            int a = x[0];
+            Object[] y = new Object[10];
+            Object o = y[0];
+            y[0] = o;
+
+            orderTest(10, 20);
         }
     }
 

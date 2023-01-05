@@ -18,6 +18,5 @@ package de.mirkosertic.bytecoder.asm;
 public class Goto extends ControlTokenConsumer {
 
     public Goto() {
-        super(null);
     }
 }

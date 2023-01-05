@@ -24,7 +24,6 @@ public class If extends ControlTokenConsumer {
     public final Operation operation;
 
     public If(final Operation operation) {
-        super(null);
         this.operation = operation;
     }
 }

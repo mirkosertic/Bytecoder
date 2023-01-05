@@ -19,7 +19,11 @@ import org.objectweb.asm.Type;
 
 public class MethodArgument extends Value implements Constant {
 
-    public MethodArgument(final Type type, final int local) {
+    public final int index;
+
+    public MethodArgument(final Type type, final int index) {
         super(type);
+
+        this.index = index;
     }
 }

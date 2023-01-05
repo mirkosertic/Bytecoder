@@ -18,6 +18,5 @@ package de.mirkosertic.bytecoder.asm;
 public class ReturnPrimitive extends ControlTokenConsumer {
 
     public ReturnPrimitive() {
-        super(null);
     }
 }

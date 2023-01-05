@@ -16,20 +16,28 @@
 package de.mirkosertic.bytecoder.asm.backend.js;
 
 import de.mirkosertic.bytecoder.asm.Add;
+import de.mirkosertic.bytecoder.asm.ArrayLoad;
+import de.mirkosertic.bytecoder.asm.ArrayStore;
 import de.mirkosertic.bytecoder.asm.CompileUnit;
 import de.mirkosertic.bytecoder.asm.Copy;
+import de.mirkosertic.bytecoder.asm.Div;
 import de.mirkosertic.bytecoder.asm.Graph;
 import de.mirkosertic.bytecoder.asm.If;
+import de.mirkosertic.bytecoder.asm.InstanceFieldExpression;
 import de.mirkosertic.bytecoder.asm.InstanceMethodInvocation;
 import de.mirkosertic.bytecoder.asm.InstanceMethodInvocationExpression;
 import de.mirkosertic.bytecoder.asm.Int;
+import de.mirkosertic.bytecoder.asm.MethodArgument;
 import de.mirkosertic.bytecoder.asm.New;
+import de.mirkosertic.bytecoder.asm.NewArray;
 import de.mirkosertic.bytecoder.asm.Node;
 import de.mirkosertic.bytecoder.asm.PHI;
 import de.mirkosertic.bytecoder.asm.ResolvedClass;
+import de.mirkosertic.bytecoder.asm.ResolvedField;
 import de.mirkosertic.bytecoder.asm.ResolvedMethod;
 import de.mirkosertic.bytecoder.asm.ReturnNothing;
 import de.mirkosertic.bytecoder.asm.ReturnPrimitive;
+import de.mirkosertic.bytecoder.asm.SetInstanceField;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocation;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocationExpression;
 import de.mirkosertic.bytecoder.asm.Sub;
@@ -59,6 +67,10 @@ public class JSBackend {
 
     public String generateClassName(final Type type) {
         return type.getClassName().replace('.', '$');
+    }
+
+    public String generateFieldName(final String name) {
+        return name;
     }
 
     public String generateMethodName(final String name, final Type[] argumentTypes) {
@@ -104,6 +116,8 @@ public class JSBackend {
                 }
                 pw.println(" {");
 
+                generateFieldsFor(pw, compileUnit, cl);
+
                 generateMethodsFor(pw, compileUnit, cl);
 
                 pw.println("};");
@@ -132,6 +146,9 @@ public class JSBackend {
 
                 pw.print(" ");
                 pw.println("{");
+
+                generateFieldsFor(pw, compileUnit, cl);
+
                 pw.println("  constructor() {");
                 if (cl.superClass != null) {
                     pw.println("    super();");
@@ -146,6 +163,25 @@ public class JSBackend {
         }
 
         pw.flush();
+    }
+
+    private void generateFieldsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
+        if (!cl.resolvedFields.isEmpty()) {
+            pw.println();
+            for (final ResolvedField f : cl.resolvedFields) {
+                pw.print("  ");
+                if ((f.access & Opcodes.ACC_STATIC) > 0) {
+                    pw.print("static ");
+                }
+                if ((f.access & Opcodes.ACC_PRIVATE) > 0) {
+                    pw.print("#");
+                }
+                pw.print(generateFieldName(f.name));
+                pw.println(";");
+            }
+
+            pw.println();
+        }
     }
 
     private void generateMethodsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
@@ -319,6 +355,65 @@ public class JSBackend {
                         }
                     }
 
+                    private void writeExpression(final InstanceFieldExpression node) {
+
+                        pw.print("(");
+                        writeExpression(node.incomingDataFlows[0]);
+                        pw.print(".");
+                        if ((node.resolvedField.access & Opcodes.ACC_PRIVATE) > 0) {
+                            pw.print("#");
+                        }
+                        pw.print(generateFieldName(node.resolvedField.name));
+                        pw.print(")");
+                    }
+
+                    private void writeExpression(final NewArray node) {
+
+                        pw.print("(new Array(");
+                        writeExpression(node.incomingDataFlows[0]);
+                        pw.print("))");
+                    }
+
+                    private void writeExpression(final ArrayLoad node) {
+
+                        pw.print("(");
+                        writeExpression(node.incomingDataFlows[0]);
+                        pw.print("[");
+                        writeExpression(node.incomingDataFlows[1]);
+                        pw.print("])");
+                    }
+
+                    private void writeExpression(final MethodArgument node) {
+                        pw.print("arg");
+                        pw.print(node.index);
+                    }
+
+                    @Override
+                    public void write(final SetInstanceField node) {
+
+                        writeIndent();
+                        writeExpression(node.incomingDataFlows[0]);
+                        pw.print(".");
+                        if ((node.resolvedField.access & Opcodes.ACC_PRIVATE) > 0) {
+                            pw.print("#");
+                        }
+                        pw.print(generateFieldName(node.resolvedField.name));
+                        pw.print(" = ");
+                        writeExpression(node.incomingDataFlows[1]);
+                        pw.println(";");
+                    }
+
+                    @Override
+                    public void write(final ArrayStore node) {
+                        writeIndent();
+                        writeExpression(node.incomingDataFlows[0]);
+                        pw.print("[");
+                        writeExpression(node.incomingDataFlows[1]);
+                        pw.print("] = ");
+                        writeExpression(node.incomingDataFlows[2]);
+                        pw.println(";");
+                    }
+
                     @Override
                     public void write(final VirtualMethodInvocation node) {
 
@@ -424,6 +519,8 @@ public class JSBackend {
                             writeExpression((Sub) node);
                         } else if (node instanceof Add) {
                             writeExpression((Add) node);
+                        } else if (node instanceof Div) {
+                            writeExpression((Div) node);
                         } else if (node instanceof Int) {
                             writeExpression((Int) node);
                         } else if (node instanceof New) {
@@ -438,6 +535,14 @@ public class JSBackend {
                             writeExpression((StaticMethodInvocationExpression) node);
                         } else if (node instanceof InstanceMethodInvocationExpression) {
                             writeExpression((InstanceMethodInvocationExpression) node);
+                        } else if (node instanceof InstanceFieldExpression) {
+                            writeExpression((InstanceFieldExpression) node);
+                        } else if (node instanceof NewArray) {
+                            writeExpression((NewArray) node);
+                        } else if (node instanceof ArrayLoad) {
+                            writeExpression((ArrayLoad) node);
+                        } else if (node instanceof MethodArgument) {
+                            writeExpression((MethodArgument) node);
                         } else {
                             throw new IllegalArgumentException("Not implemented : " + node);
                         }
@@ -469,6 +574,14 @@ public class JSBackend {
                         pw.print("(");
                         writeExpression(node.incomingDataFlows[0]);
                         pw.print(" + ");
+                        writeExpression(node.incomingDataFlows[1]);
+                        pw.print(")");
+                    }
+
+                    private void writeExpression(final Div node) {
+                        pw.print("(");
+                        writeExpression(node.incomingDataFlows[0]);
+                        pw.print(" / ");
                         writeExpression(node.incomingDataFlows[1]);
                         pw.print(")");
                     }

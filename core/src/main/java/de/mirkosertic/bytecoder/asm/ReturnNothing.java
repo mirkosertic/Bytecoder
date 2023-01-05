@@ -18,6 +18,5 @@ package de.mirkosertic.bytecoder.asm;
 public class ReturnNothing extends ControlTokenConsumer {
 
     public ReturnNothing() {
-        super(null);
     }
 }

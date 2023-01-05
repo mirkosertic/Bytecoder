@@ -15,8 +15,6 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Type;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,8 +27,7 @@ public abstract class ControlTokenConsumer extends Node {
     public final Map<Projection, List<ControlTokenConsumer>> controlFlowsTo;
     public final List<ControlTokenConsumer> controlComingFrom;
 
-    public ControlTokenConsumer(final Type type) {
-        super(type);
+    public ControlTokenConsumer() {
         controlFlowsTo = new HashMap<>();
         controlComingFrom = new ArrayList<>();
     }

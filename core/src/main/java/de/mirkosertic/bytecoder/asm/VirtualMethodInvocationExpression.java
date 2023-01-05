@@ -18,7 +18,7 @@ package de.mirkosertic.bytecoder.asm;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
 
-public class VirtualMethodInvocationExpression extends Node implements PotentialSideeffect {
+public class VirtualMethodInvocationExpression extends Value implements PotentialSideeffect {
 
     public final MethodInsnNode insnNode;
 

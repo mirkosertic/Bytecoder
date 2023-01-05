@@ -15,11 +15,8 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Type;
-
 public class Copy extends ControlTokenConsumer {
 
-    public Copy(final Type type) {
-        super(type);
+    public Copy() {
     }
 }

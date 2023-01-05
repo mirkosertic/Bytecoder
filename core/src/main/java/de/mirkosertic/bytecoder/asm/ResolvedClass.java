@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.asm;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.util.ArrayList;
@@ -41,6 +42,8 @@ public class ResolvedClass {
 
     public final List<ResolvedMethod> resolvedMethods;
 
+    public final List<ResolvedField> resolvedFields;
+
     public ResolvedClass(final CompileUnit compileUnit, final Type type, final ClassNode classNode, final ResolvedClass superClass, final ResolvedClass[] interfaces) {
         this.compileUnit = compileUnit;
         this.type = type;
@@ -49,6 +52,7 @@ public class ResolvedClass {
         this.interfaces = interfaces;
         this.directSubclasses = new HashSet<>();
         this.resolvedMethods = new ArrayList<>();
+        this.resolvedFields = new ArrayList<>();
 
         if (superClass != null) {
             superClass.registerDirectSubclass(this);
@@ -82,5 +86,21 @@ public class ResolvedClass {
             }
         }
         throw new RuntimeException("No such method : " + methodName + methodType);
+    }
+
+    public ResolvedField resolveInstanceMethod(final String name, final Type t) {
+        for (final ResolvedField f : resolvedFields) {
+            if (f.name.equals(name)) {
+                return f;
+            }
+        }
+        for (final FieldNode f : classNode.fields) {
+            if (f.name.equals(name)) {
+                final ResolvedField rf = new ResolvedField(name, type, f.access);
+                resolvedFields.add(rf);
+                return rf;
+            }
+        }
+        throw new IllegalStateException("No such field " + name + " in " + classNode.name);
     }
 }

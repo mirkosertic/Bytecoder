@@ -18,7 +18,7 @@ package de.mirkosertic.bytecoder.asm;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
 
-public class InstanceMethodInvocationExpression extends Node implements PotentialSideeffect {
+public class InstanceMethodInvocationExpression extends Value implements PotentialSideeffect {
 
     public final MethodInsnNode insnNode;
 

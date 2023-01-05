@@ -15,7 +15,6 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
 
 public class InstanceMethodInvocation extends ControlTokenConsumer implements PotentialSideeffect {
@@ -25,7 +24,6 @@ public class InstanceMethodInvocation extends ControlTokenConsumer implements Po
     public final ResolvedMethod resolvedMethod;
 
     public InstanceMethodInvocation(final MethodInsnNode insnNode, final ResolvedMethod rm) {
-        super(Type.getReturnType(insnNode.desc));
         this.insnNode = insnNode;
         this.resolvedMethod = rm;
     }

@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.asm.sequencer;
 
+import de.mirkosertic.bytecoder.asm.ArrayStore;
 import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.asm.Copy;
 import de.mirkosertic.bytecoder.asm.EdgeType;
@@ -25,6 +26,7 @@ import de.mirkosertic.bytecoder.asm.Projection;
 import de.mirkosertic.bytecoder.asm.Region;
 import de.mirkosertic.bytecoder.asm.ReturnNothing;
 import de.mirkosertic.bytecoder.asm.ReturnPrimitive;
+import de.mirkosertic.bytecoder.asm.SetInstanceField;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocation;
 import de.mirkosertic.bytecoder.asm.Variable;
 import de.mirkosertic.bytecoder.asm.VirtualMethodInvocation;
@@ -95,6 +97,10 @@ public class Sequencer {
             visit((ReturnNothing) node, activeStack);
         } else if (node instanceof ReturnPrimitive) {
             visit((ReturnPrimitive) node, activeStack);
+        } else if (node instanceof SetInstanceField) {
+            visit((SetInstanceField) node, activeStack);
+        } else if (node instanceof ArrayStore) {
+            visit((ArrayStore) node, activeStack);
         } else {
             throw new IllegalStateException("Not implemented : " + node.getClass().getSimpleName());
         }
@@ -150,6 +156,20 @@ public class Sequencer {
     }
 
     private void visit(final Copy node, final List<Block> activeStack) {
+
+        codegenerator.write(node);
+
+        processSuccessors(node, activeStack);
+    }
+
+    private void visit(final SetInstanceField node, final List<Block> activeStack) {
+
+        codegenerator.write(node);
+
+        processSuccessors(node, activeStack);
+    }
+
+    private void visit(final ArrayStore node, final List<Block> activeStack) {
 
         codegenerator.write(node);
 

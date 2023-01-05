@@ -15,7 +15,6 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
 
 public class StaticMethodInvocation extends ControlTokenConsumer implements PotentialSideeffect {
@@ -25,7 +24,6 @@ public class StaticMethodInvocation extends ControlTokenConsumer implements Pote
     public final ResolvedMethod resolvedMethod;
 
     public StaticMethodInvocation(final MethodInsnNode insnNode, final ResolvedMethod resolvedMethod) {
-        super(Type.getReturnType(insnNode.desc));
         this.insnNode = insnNode;
         this.resolvedMethod = resolvedMethod;
     }

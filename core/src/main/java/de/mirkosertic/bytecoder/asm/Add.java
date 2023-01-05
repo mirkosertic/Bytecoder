@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class Add extends Node {
+public class Add extends Value {
 
     public Add(final Type type) {
         super(type);

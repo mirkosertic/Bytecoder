@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,16 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Type;
+public class SetInstanceField extends ControlTokenConsumer implements PotentialSideeffect {
 
-public class Div extends Value {
+    public final ResolvedField resolvedField;
 
-    public Div(final Type type) {
-        super(type);
+    public SetInstanceField(final ResolvedField resolvedField) {
+        this.resolvedField = resolvedField;
+    }
+
+    @Override
+    public String additionalDebugInfo() {
+        return ": " + resolvedField.name;
     }
 }

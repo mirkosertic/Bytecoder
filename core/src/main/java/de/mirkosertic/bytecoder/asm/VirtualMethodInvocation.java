@@ -15,7 +15,6 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
 
 public class VirtualMethodInvocation extends ControlTokenConsumer implements PotentialSideeffect {
@@ -23,7 +22,6 @@ public class VirtualMethodInvocation extends ControlTokenConsumer implements Pot
     public final MethodInsnNode insnNode;
 
     public VirtualMethodInvocation(final MethodInsnNode insnNode) {
-        super(Type.getReturnType(insnNode.desc));
         this.insnNode = insnNode;
     }
 

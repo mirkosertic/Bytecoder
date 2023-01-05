@@ -56,7 +56,7 @@ public class ControlFlowFixup implements Fixup {
                 final Value sourceValue = frame.incomingLocals[i];
                 final Value targetValue = targetFrame.incomingLocals[i];
                 if (sourceValue != null && sourceValue != targetValue) {
-                    final Copy c = g.newCopy(sourceValue.type);
+                    final Copy c = g.newCopy();
                     c.addIncomingData(sourceValue);
                     targetValue.addIncomingData(c);
                     current.addControlFlowTo(p, c);
@@ -68,7 +68,7 @@ public class ControlFlowFixup implements Fixup {
                 final Value sourceValue = frame.incomingStack[i];
                 final Value targetValue = targetFrame.incomingStack[i];
                 if (sourceValue != null && sourceValue != targetValue) {
-                    final Copy c = g.newCopy(sourceValue.type);
+                    final Copy c = g.newCopy();
                     c.addIncomingData(sourceValue);
                     targetValue.addIncomingData(c);
                     current.addControlFlowTo(p, c);

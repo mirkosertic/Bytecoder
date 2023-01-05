@@ -17,8 +17,6 @@ package de.mirkosertic.bytecoder.asm;
 
 public class TryCatch extends Region {
 
-
-
     public TryCatch(final String label) {
         super(label);
     }

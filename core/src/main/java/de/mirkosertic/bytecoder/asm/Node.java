@@ -15,23 +15,18 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Type;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class Node {
 
-    public final Type type;
-
     public Node[] incomingDataFlows;
     public Node[] outgoingFlows;
 
     boolean error;
 
-    public Node(final Type type) {
-        this.type = type;
+    public Node() {
         this.incomingDataFlows = new Node[0];
         this.outgoingFlows = new Node[0];
     }

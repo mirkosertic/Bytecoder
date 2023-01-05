@@ -89,20 +89,24 @@ public class Graph {
         return (This) register(new This(type));
     }
 
-    public MethodArgument newMethodArgument(final Type type, final int local) {
-        return (MethodArgument) register(new MethodArgument(type, local));
+    public MethodArgument newMethodArgument(final Type type, final int index) {
+        return (MethodArgument) register(new MethodArgument(type, index));
     }
 
     public Node newNull() {
         return register(new NullReference());
     }
 
-    public Node newIntNode(final int value) {
-        return register(new Int(value));
+    public Int newIntNode(final int value) {
+        return (Int) register(new Int(value));
     }
 
-    public Node newShortNode(final short value) {
-        return register(new Short(value));
+    public Short newShortNode(final short value) {
+        return (Short) register(new Short(value));
+    }
+
+    public NewArray newNewArray(final Type elementType) {
+        return (NewArray) register(new NewArray(elementType));
     }
 
     public If newIf(final If.Operation operation) {
@@ -163,6 +167,14 @@ public class Graph {
 
     public Add newAdd(final Type type) {
         return (Add) register(new Add(type));
+    }
+
+    public ArrayStore newArrayStore() {
+        return (ArrayStore) register(new ArrayStore());
+    }
+
+    public ArrayLoad newArrayLoad(final Type type) {
+        return (ArrayLoad) register(new ArrayLoad(type));
     }
 
     public Sub newSub(final Type type) {
@@ -234,8 +246,8 @@ public class Graph {
         return (Variable) register(new Variable(type));
     }
 
-    public Copy newCopy(final Type type) {
-        return (Copy) register(new Copy(type));
+    public Copy newCopy() {
+        return (Copy) register(new Copy());
     }
 
     public CaughtException newCaughtException(final Type type) {
@@ -254,8 +266,8 @@ public class Graph {
         return (TryCatch) register(new TryCatch(label));
     }
 
-    public Unwind newUnwind(final Type type) {
-        return (Unwind) register(new Unwind(type));
+    public Unwind newUnwind() {
+        return (Unwind) register(new Unwind());
     }
 
     public TypeReference newTypeReference(final Type type) {
@@ -264,6 +276,14 @@ public class Graph {
 
     public New newNew(final Type type) {
         return (New) register(new New(type));
+    }
+
+    public InstanceFieldExpression newInstanceFieldExpression(final Type type, final ResolvedField resolvedField) {
+        return (InstanceFieldExpression) register(new InstanceFieldExpression(type, resolvedField));
+    }
+
+    public SetInstanceField newSetInstanceField(final Type type, final ResolvedField resolvedField) {
+        return (SetInstanceField) register(new SetInstanceField(resolvedField));
     }
 
     public void deleteNode(final Node node) {

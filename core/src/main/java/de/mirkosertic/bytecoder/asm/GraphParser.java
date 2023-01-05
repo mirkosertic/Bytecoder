@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.asm;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FrameNode;
 import org.objectweb.asm.tree.IincInsnNode;
 import org.objectweb.asm.tree.InsnNode;
@@ -114,6 +115,32 @@ public class GraphParser {
                 // Stop parsing here
                 continue;
             }
+
+            if (flow.currentNode.getOpcode() == Opcodes.IRETURN) {
+                // Stop parsing here
+                continue;
+            }
+
+            if (flow.currentNode.getOpcode() == Opcodes.LRETURN) {
+                // Stop parsing here
+                continue;
+            }
+
+            if (flow.currentNode.getOpcode() == Opcodes.FRETURN) {
+                // Stop parsing here
+                continue;
+            }
+
+            if (flow.currentNode.getOpcode() == Opcodes.DRETURN) {
+                // Stop parsing here
+                continue;
+            }
+
+            if (flow.currentNode.getOpcode() == Opcodes.ARETURN) {
+                // Stop parsing here
+                continue;
+            }
+
             if (flow.currentNode.getOpcode() == Opcodes.ATHROW) {
                 // Stop parsing here
                 continue;
@@ -289,7 +316,7 @@ public class GraphParser {
 
         final Value value = currentState.frame.incomingLocals[local];
         final Variable variable = graph.newVariable(value.type);
-        final Copy copy = graph.newCopy(value.type);
+        final Copy copy = graph.newCopy();
         copy.addIncomingData(value);
         variable.addIncomingData(copy);
         graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
@@ -307,9 +334,9 @@ public class GraphParser {
         final GraphParserState currentState = currentFlow.graphParserState;
         final int local = node.var;
 
-        final Node value = currentState.frame.incomingLocals[local];
+        final Value value = currentState.frame.incomingLocals[local];
         final Variable variable = graph.newVariable(value.type);
-        final Copy copy = graph.newCopy(value.type);
+        final Copy copy = graph.newCopy();
         copy.addIncomingData(value);
         variable.addIncomingData(copy);
         graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
@@ -331,7 +358,7 @@ public class GraphParser {
 
         final Value value = popResult.value;
         final Variable variable = graph.newVariable(value.type);
-        final Copy copy = graph.newCopy(value.type);
+        final Copy copy = graph.newCopy();
         copy.addIncomingData(value);
         variable.addIncomingData(copy);
         graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
@@ -353,7 +380,7 @@ public class GraphParser {
 
         final Value value = popResult.value;
         final Variable variable = graph.newVariable(value.type);
-        final Copy copy = graph.newCopy(value.type);
+        final Copy copy = graph.newCopy();
         copy.addIncomingData(value);
         variable.addIncomingData(copy);
         graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
@@ -394,10 +421,10 @@ public class GraphParser {
         final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
 
         Frame.PopResult latest = currentState.frame.popFromStack();
-        incomingData[0] = latest.value;
+        incomingData[incomingData.length - 1] = latest.value;
         for (int i = 0; i < argumentTypes.length; i++) {
             latest = latest.newFrame.popFromStack();
-            incomingData[i + 1] = latest.value;
+            incomingData[incomingData.length - 2 - i] = latest.value;
         }
 
         final GraphParserState newState;
@@ -415,7 +442,7 @@ public class GraphParser {
             n.addIncomingData(incomingData);
 
             final Variable var = graph.newVariable(methodType.getReturnType());
-            final Copy copy = graph.newCopy(methodType.getReturnType());
+            final Copy copy = graph.newCopy();
             copy.addIncomingData(n);
             var.addIncomingData(copy);
 
@@ -439,10 +466,10 @@ public class GraphParser {
         rc.resolveMethod(node.name, methodType, analysisStack);
 
         Frame.PopResult latest = currentState.frame.popFromStack();
-        incomingData[0] = latest.value;
+        incomingData[incomingData.length - 1] = latest.value;
         for (int i = 0; i < argumentTypes.length; i++) {
             latest = latest.newFrame.popFromStack();
-            incomingData[i + 1] = latest.value;
+            incomingData[incomingData.length - 2 - i] = latest.value;
         }
 
         final GraphParserState newState;
@@ -461,7 +488,7 @@ public class GraphParser {
             n.addIncomingData(incomingData);
 
             final Variable var = graph.newVariable(methodType.getReturnType());
-            final Copy copy = graph.newCopy(methodType.getReturnType());
+            final Copy copy = graph.newCopy();
             copy.addIncomingData(n);
             var.addIncomingData(copy);
 
@@ -488,7 +515,7 @@ public class GraphParser {
         Frame latest = currentState.frame;
         for (int i = 0; i < argumentTypes.length; i++) {
             final Frame.PopResult popresult = latest.popFromStack();
-            incomingData[i] = popresult.value;
+            incomingData[incomingData.length - 1 - i] = popresult.value;
             latest = popresult.newFrame;
         }
 
@@ -509,7 +536,7 @@ public class GraphParser {
             n.addIncomingData(incomingData);
 
             final Variable var = graph.newVariable(methodType.getReturnType());
-            final Copy copy = graph.newCopy(methodType.getReturnType());
+            final Copy copy = graph.newCopy();
             copy.addIncomingData(n);
             var.addIncomingData(copy);
 
@@ -540,9 +567,9 @@ public class GraphParser {
     private List<ControlFlow> parse_BIPUSH(final ControlFlow currentFlow) {
         final IntInsnNode node = (IntInsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
-        final Node value = graph.newIntNode(node.operand);
+        final Value value = graph.newIntNode(node.operand);
         final Variable variable = graph.newVariable(value.type);
-        final Copy copyNode = graph.newCopy(value.type);
+        final Copy copyNode = graph.newCopy();
         copyNode.addIncomingData(value);
         variable.addIncomingData(copyNode);
         graph.registerTranslation(node, new InstructionTranslation(copyNode, currentState.frame));
@@ -559,14 +586,63 @@ public class GraphParser {
         final IntInsnNode node = (IntInsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
 
-        final Node value = graph.newShortNode((short) node.operand);
+        final Value value = graph.newShortNode((short) node.operand);
         final Variable variable = graph.newVariable(value.type);
-        final Copy copyNode = graph.newCopy(value.type);
+        final Copy copyNode = graph.newCopy();
         copyNode.addIncomingData(value);
         variable.addIncomingData(copyNode);
         graph.registerTranslation(node, new InstructionTranslation(copyNode, currentState.frame));
 
         final Frame newFrame = currentState.frame.pushToStack(variable);
+
+        final GraphParserState newState = currentState.controlFlowsTo(copyNode).withFrame(newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
+    private List<ControlFlow> parse_NEWARRAY(final ControlFlow currentFlow) {
+        final IntInsnNode node = (IntInsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Frame.PopResult popresult = currentState.frame.popFromStack();
+
+        final Type elementType;
+        switch (node.operand) {
+            case 4:
+                elementType = Type.BOOLEAN_TYPE;
+                break;
+            case 5:
+                elementType = Type.CHAR_TYPE;
+                break;
+            case 6:
+                elementType = Type.FLOAT_TYPE;
+                break;
+            case 7:
+                elementType = Type.DOUBLE_TYPE;
+                break;
+            case 8:
+                elementType = Type.BYTE_TYPE;
+                break;
+            case 9:
+                elementType = Type.SHORT_TYPE;
+                break;
+            case 10:
+                elementType = Type.INT_TYPE;
+                break;
+            default:
+                throw new IllegalStateException("Not implemented array type : " + node.operand);
+        }
+        final NewArray value = graph.newNewArray(elementType);
+        value.addIncomingData(popresult.value);
+
+        final Variable variable = graph.newVariable(value.type);
+        final Copy copyNode = graph.newCopy();
+        copyNode.addIncomingData(value);
+        variable.addIncomingData(copyNode);
+        graph.registerTranslation(node, new InstructionTranslation(copyNode, currentState.frame));
+
+        final Frame newFrame = popresult.newFrame.pushToStack(variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copyNode).withFrame(newFrame);
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -581,6 +657,8 @@ public class GraphParser {
                 return parse_BIPUSH(currentFlow);
             case Opcodes.SIPUSH:
                 return parse_SIPUSH(currentFlow);
+            case Opcodes.NEWARRAY:
+                return parse_NEWARRAY(currentFlow);
             default:
                 throw new IllegalStateException("Not implemented : " + node + " -> " + node.getOpcode());
         }
@@ -609,9 +687,9 @@ public class GraphParser {
     private List<ControlFlow> parse_ICONSTX(final ControlFlow currentFlow, final int constant) {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
-        final Node value = graph.newIntNode(constant);
+        final Int value = graph.newIntNode(constant);
         final Variable variable = graph.newVariable(value.type);
-        final Copy copy = graph.newCopy(value.type);
+        final Copy copy = graph.newCopy();
         copy.addIncomingData(value);
         variable.addIncomingData(copy);
         graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
@@ -635,7 +713,7 @@ public class GraphParser {
         addNode.addIncomingData(pop1.value, pop2.value);
 
         final Variable variable = graph.newVariable(Type.INT_TYPE);
-        final Copy copy = graph.newCopy(Type.INT_TYPE);
+        final Copy copy = graph.newCopy();
         copy.addIncomingData(addNode);
         variable.addIncomingData(copy);
         graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
@@ -659,7 +737,7 @@ public class GraphParser {
         addNode.addIncomingData(pop1.value, pop2.value);
 
         final Variable variable = graph.newVariable(Type.INT_TYPE);
-        final Copy copy = graph.newCopy(Type.INT_TYPE);
+        final Copy copy = graph.newCopy();
         copy.addIncomingData(addNode);
         variable.addIncomingData(copy);
         graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
@@ -677,7 +755,7 @@ public class GraphParser {
         final GraphParserState currentState = currentFlow.graphParserState;
 
         final Frame.PopResult pop1 = currentState.frame.popFromStack();
-        final ControlTokenConsumer throwNode = graph.newUnwind(pop1.value.type);
+        final ControlTokenConsumer throwNode = graph.newUnwind();
         throwNode.addIncomingData(pop1.value);
 
         graph.registerTranslation(node, new InstructionTranslation(throwNode, currentState.frame));
@@ -691,7 +769,7 @@ public class GraphParser {
         final Frame.PopResult pop1 = currentState.frame.popFromStack();
 
         final Variable dest = graph.newVariable(pop1.value.type);
-        final Copy c = graph.newCopy(pop1.value.type);
+        final Copy c = graph.newCopy();
         c.addIncomingData(pop1.value);
         dest.addIncomingData(c);
 
@@ -712,7 +790,7 @@ public class GraphParser {
         final Frame.PopResult pop1 = currentState.frame.popFromStack();
 
         final Variable dest = graph.newVariable(pop1.value.type);
-        final Copy c = graph.newCopy(pop1.value.type);
+        final Copy c = graph.newCopy();
         c.addIncomingData(pop1.value);
         dest.addIncomingData(c);
 
@@ -735,7 +813,7 @@ public class GraphParser {
         divNode.addIncomingData(pop1.value, pop2.value);
 
         final Variable variable = graph.newVariable(Type.INT_TYPE);
-        final Copy copy = graph.newCopy(Type.INT_TYPE);
+        final Copy copy = graph.newCopy();
         copy.addIncomingData(divNode);
         variable.addIncomingData(copy);
         graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
@@ -743,6 +821,50 @@ public class GraphParser {
         final Frame newFrame = pop1.newFrame.pushToStack(variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
+    private List<ControlFlow> parse_XASTORE(final ControlFlow currentFlow) {
+        final InsnNode node = (InsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Frame.PopResult valuePop = currentState.frame.popFromStack();
+        final Frame.PopResult indexPop = valuePop.newFrame.popFromStack();
+        final Frame.PopResult arrayPop = indexPop.newFrame.popFromStack();
+
+        final ArrayStore store = graph.newArrayStore();
+        store.addIncomingData(arrayPop.value, indexPop.value, valuePop.value);
+
+        graph.registerTranslation(node, new InstructionTranslation(store, currentState.frame));
+
+        final GraphParserState newState = currentState.controlFlowsTo(store).withFrame(arrayPop.newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
+    private List<ControlFlow> parse_XALOAD(final ControlFlow currentFlow, final Type type) {
+        final InsnNode node = (InsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Frame.PopResult indexPop = currentState.frame.popFromStack();
+        final Frame.PopResult arrayPop = indexPop.newFrame.popFromStack();
+
+        final ArrayLoad load = graph.newArrayLoad(arrayPop.value.type);
+        load.addIncomingData(arrayPop.value, indexPop.value);
+
+        final Variable var = graph.newVariable(type);
+        final Copy c = graph.newCopy();
+        c.addIncomingData(load);
+        var.addIncomingData(c);
+
+        final Frame newFrame = arrayPop.newFrame.pushToStack(var);
+
+        graph.registerTranslation(node, new InstructionTranslation(c, currentState.frame));
+
+        final GraphParserState newState = currentState.controlFlowsTo(c).withFrame(newFrame);
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
@@ -781,6 +903,14 @@ public class GraphParser {
                 return parse_DUP(currentFlow);
             case Opcodes.POP:
                 return parse_POP(currentFlow);
+            case Opcodes.IASTORE:
+                return parse_XASTORE(currentFlow);
+            case Opcodes.AASTORE:
+                return parse_XASTORE(currentFlow);
+            case Opcodes.IALOAD:
+                return parse_XALOAD(currentFlow, Type.INT_TYPE);
+            case Opcodes.AALOAD:
+                return parse_XALOAD(currentFlow, Type.getType(Object.class));
             default:
                 throw new IllegalStateException("Not implemented : " + node + " -> " + node.getOpcode());
         }
@@ -868,7 +998,7 @@ public class GraphParser {
 
         final Variable variable = graph.newVariable(Type.INT_TYPE);
 
-        final Copy copy = graph.newCopy(Type.INT_TYPE);
+        final Copy copy = graph.newCopy();
         copy.addIncomingData(addNode);
         variable.addIncomingData(copy);
         graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
@@ -893,7 +1023,7 @@ public class GraphParser {
 
         final Variable variable = graph.newVariable(type);
 
-        final Copy copy = graph.newCopy(type);
+        final Copy copy = graph.newCopy();
         copy.addIncomingData(n);
         variable.addIncomingData(copy);
         graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
@@ -906,10 +1036,95 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
+    private List<ControlFlow> parse_ANEWARRAY(final ControlFlow currentFlow) {
+        final TypeInsnNode node = (TypeInsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Frame.PopResult popresult = currentState.frame.popFromStack();
+
+        final NewArray value = graph.newNewArray(Type.getObjectType(node.desc));
+        value.addIncomingData(popresult.value);
+
+        final Variable variable = graph.newVariable(value.type);
+        final Copy copyNode = graph.newCopy();
+        copyNode.addIncomingData(value);
+        variable.addIncomingData(copyNode);
+        graph.registerTranslation(node, new InstructionTranslation(copyNode, currentState.frame));
+
+        final Frame newFrame = popresult.newFrame.pushToStack(variable);
+
+        final GraphParserState newState = currentState.controlFlowsTo(copyNode).withFrame(newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
     private List<ControlFlow> parseTypeInsnNode(final ControlFlow currentFlow) {
         switch (currentFlow.currentNode.getOpcode()) {
             case Opcodes.NEW:
                 return parse_NEW(currentFlow);
+            case Opcodes.ANEWARRAY:
+                return parse_ANEWARRAY(currentFlow);
+            default:
+                throw new IllegalStateException("Not supported opcode : " + currentFlow.currentNode.getOpcode());
+        }
+    }
+
+    private List<ControlFlow> parse_GETFIELD(final ControlFlow currentFlow) {
+        final FieldInsnNode node = (FieldInsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Type t = Type.getType(node.desc);
+        final ResolvedClass targetClass = compileUnit.resolveClass(Type.getObjectType(node.owner), analysisStack);
+        final ResolvedField resolvedField = targetClass.resolveInstanceMethod(node.name, t);
+
+        final Frame.PopResult reference = currentState.frame.popFromStack();
+
+        final InstanceFieldExpression field = graph.newInstanceFieldExpression(t, resolvedField);
+        final Variable target = graph.newVariable(t);
+        final Copy copy = graph.newCopy();
+        copy.addIncomingData(field);
+        target.addIncomingData(copy);
+
+        field.addIncomingData(reference.value);
+
+        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+
+        final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(reference.newFrame.pushToStack(target));
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
+    private List<ControlFlow> parse_PUTFIELD(final ControlFlow currentFlow) {
+        final FieldInsnNode node = (FieldInsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Type t = Type.getType(node.desc);
+        final ResolvedClass targetClass = compileUnit.resolveClass(Type.getObjectType(node.owner), analysisStack);
+        final ResolvedField resolvedField = targetClass.resolveInstanceMethod(node.name, t);
+
+        final Frame.PopResult valuePop = currentState.frame.popFromStack();
+        final Frame.PopResult referencePop = valuePop.newFrame.popFromStack();
+
+        final SetInstanceField setfield = graph.newSetInstanceField(t, resolvedField);
+
+        setfield.addIncomingData(referencePop.value, valuePop.value);
+
+        graph.registerTranslation(node, new InstructionTranslation(setfield, currentState.frame));
+
+        final GraphParserState newState = currentState.controlFlowsTo(setfield).withFrame(referencePop.newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
+    private List<ControlFlow> parseFieldInsnNode(final ControlFlow currentFlow) {
+        switch (currentFlow.currentNode.getOpcode()) {
+            case Opcodes.GETFIELD:
+                return parse_GETFIELD(currentFlow);
+            case Opcodes.PUTFIELD:
+                return parse_PUTFIELD(currentFlow);
             default:
                 throw new IllegalStateException("Not supported opcode : " + currentFlow.currentNode.getOpcode());
         }
@@ -984,6 +1199,9 @@ public class GraphParser {
         }
         if (currentFlow.currentNode instanceof TypeInsnNode) {
             return parseTypeInsnNode(currentFlow);
+        }
+        if (currentFlow.currentNode instanceof FieldInsnNode) {
+            return parseFieldInsnNode(currentFlow);
         }
         throw new IllegalStateException("Not implemented : " + currentFlow.currentNode + " -> " + currentFlow.currentNode.getOpcode());
     }
