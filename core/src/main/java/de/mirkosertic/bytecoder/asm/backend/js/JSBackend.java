@@ -36,7 +36,7 @@ import de.mirkosertic.bytecoder.asm.ResolvedClass;
 import de.mirkosertic.bytecoder.asm.ResolvedField;
 import de.mirkosertic.bytecoder.asm.ResolvedMethod;
 import de.mirkosertic.bytecoder.asm.ReturnNothing;
-import de.mirkosertic.bytecoder.asm.ReturnPrimitive;
+import de.mirkosertic.bytecoder.asm.ReturnValue;
 import de.mirkosertic.bytecoder.asm.SetInstanceField;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocation;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocationExpression;
@@ -668,7 +668,7 @@ public class JSBackend {
                     }
 
                     @Override
-                    public void write(final ReturnPrimitive node) {
+                    public void write(final ReturnValue node) {
                         writeIndent();
                         pw.print("return ");
                         writeExpression(node.incomingDataFlows[0]);

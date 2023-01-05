@@ -15,8 +15,11 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-public class ReturnPrimitive extends ControlTokenConsumer {
+import org.objectweb.asm.Type;
 
-    public ReturnPrimitive() {
+public class And extends Value {
+
+    public And(final Type type) {
+        super(type);
     }
 }

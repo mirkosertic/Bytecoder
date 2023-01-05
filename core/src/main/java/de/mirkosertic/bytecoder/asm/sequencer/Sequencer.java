@@ -25,7 +25,7 @@ import de.mirkosertic.bytecoder.asm.InstanceMethodInvocation;
 import de.mirkosertic.bytecoder.asm.Projection;
 import de.mirkosertic.bytecoder.asm.Region;
 import de.mirkosertic.bytecoder.asm.ReturnNothing;
-import de.mirkosertic.bytecoder.asm.ReturnPrimitive;
+import de.mirkosertic.bytecoder.asm.ReturnValue;
 import de.mirkosertic.bytecoder.asm.SetInstanceField;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocation;
 import de.mirkosertic.bytecoder.asm.Variable;
@@ -95,8 +95,8 @@ public class Sequencer {
             visit((If) node, activeStack);
         } else if (node instanceof ReturnNothing) {
             visit((ReturnNothing) node, activeStack);
-        } else if (node instanceof ReturnPrimitive) {
-            visit((ReturnPrimitive) node, activeStack);
+        } else if (node instanceof ReturnValue) {
+            visit((ReturnValue) node, activeStack);
         } else if (node instanceof SetInstanceField) {
             visit((SetInstanceField) node, activeStack);
         } else if (node instanceof ArrayStore) {
@@ -284,7 +284,7 @@ public class Sequencer {
         codegenerator.write(node);
     }
 
-    private void visit(final ReturnPrimitive node, final List<Block> activeStack) {
+    private void visit(final ReturnValue node, final List<Block> activeStack) {
 
         codegenerator.write(node);
     }

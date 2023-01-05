@@ -93,8 +93,8 @@ public class Graph {
         return (MethodArgument) register(new MethodArgument(type, index));
     }
 
-    public Node newNull() {
-        return register(new NullReference());
+    public NullReference newNullReference() {
+        return (NullReference) register(new NullReference());
     }
 
     public Int newIntNode(final int value) {
@@ -113,24 +113,36 @@ public class Graph {
         return (If) register(new If(operation));
     }
 
-    public Node newObjectInteger(final Integer value) {
-        return register(new ObjectInteger(value));
+    public ObjectIf newObjectIf(final ObjectIf.Operation operation) {
+        return (ObjectIf) register(new ObjectIf(operation));
     }
 
-    public Node newObjectFloat(final Float value) {
-        return register(new ObjectFloat(value));
+    public USHR newUSHR(final Type type) {
+        return (USHR) register(new USHR(type));
     }
 
-    public Node newObjectLong(final Long value) {
-        return register(new ObjectLong(value));
+    public And newAND(final Type type) {
+        return (And) register(new And(type));
     }
 
-    public Node newObjectDouble(final Double value) {
-        return register(new ObjectDouble(value));
+    public ObjectInteger newObjectInteger(final Integer value) {
+        return (ObjectInteger)register(new ObjectInteger(value));
     }
 
-    public Node newObjectString(final String value) {
-        return register(new ObjectString(value));
+    public ObjectFloat newObjectFloat(final Float value) {
+        return (ObjectFloat) register(new ObjectFloat(value));
+    }
+
+    public ObjectLong newObjectLong(final Long value) {
+        return (ObjectLong) register(new ObjectLong(value));
+    }
+
+    public ObjectDouble newObjectDouble(final Double value) {
+        return (ObjectDouble) register(new ObjectDouble(value));
+    }
+
+    public ObjectString newObjectString(final String value) {
+        return (ObjectString) register(new ObjectString(value));
     }
 
     public InstanceMethodInvocation newInstanceMethodInvocation(final MethodInsnNode insn, final ResolvedMethod rm) {
@@ -161,8 +173,8 @@ public class Graph {
         return (ReturnNothing) register(new ReturnNothing());
     }
 
-    public ReturnPrimitive newReturnPrimitive() {
-        return (ReturnPrimitive) register(new ReturnPrimitive());
+    public ReturnValue newReturnValue() {
+        return (ReturnValue) register(new ReturnValue());
     }
 
     public Add newAdd(final Type type) {

@@ -20,7 +20,7 @@ import de.mirkosertic.bytecoder.asm.Copy;
 import de.mirkosertic.bytecoder.asm.If;
 import de.mirkosertic.bytecoder.asm.InstanceMethodInvocation;
 import de.mirkosertic.bytecoder.asm.ReturnNothing;
-import de.mirkosertic.bytecoder.asm.ReturnPrimitive;
+import de.mirkosertic.bytecoder.asm.ReturnValue;
 import de.mirkosertic.bytecoder.asm.SetInstanceField;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocation;
 import de.mirkosertic.bytecoder.asm.Variable;
@@ -50,7 +50,7 @@ public interface StructuredControlflowCodeGenerator {
 
     void write(ReturnNothing node);
 
-    void write(ReturnPrimitive node);
+    void write(ReturnValue node);
 
     void write(SetInstanceField node);
 
