@@ -17,17 +17,9 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class ClassFieldExpression extends Value {
+public class Neg extends Value {
 
-    public final ResolvedField resolvedField;
-
-    public ClassFieldExpression(final Type type, final ResolvedField resolvedField) {
+    public Neg(final Type type) {
         super(type);
-        this.resolvedField = resolvedField;
-    }
-
-    @Override
-    public String additionalDebugInfo() {
-        return ": " + resolvedField.name;
     }
 }

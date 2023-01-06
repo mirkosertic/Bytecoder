@@ -15,16 +15,8 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
+public class CheckCast extends ControlTokenConsumer {
 
-public class ResolvedField {
-
-    public final ResolvedClass owner;
-    public final String name;
-    public final int access;
-
-    public ResolvedField(final ResolvedClass owner, final String name, final int access) {
-        this.owner = owner;
-        this.name = name;
-        this.access = access;
+    public CheckCast() {
     }
 }

@@ -80,15 +80,19 @@ public class ResolvedClass {
         for (int i = 0; i < classNode.methods.size(); i++) {
             final MethodNode methodNode = classNode.methods.get(i);
             if (methodNode.name.equals(methodName) && methodNode.desc.equals(methodType.getDescriptor())) {
-                final ResolvedMethod r = new ResolvedMethod(this, methodNode, analysisStack);
+                final ResolvedMethod r = new ResolvedMethod(this, methodNode);
                 resolvedMethods.add(r);
+                r.parseBody(analysisStack);
                 return r;
             }
+        }
+        if (superClass != null) {
+            return superClass.resolveMethod(methodName, methodType, analysisStack);
         }
         throw new RuntimeException("No such method : " + methodName + methodType);
     }
 
-    public ResolvedField resolveInstanceMethod(final String name, final Type t) {
+    public ResolvedField resolveField(final String name, final Type t) {
         for (final ResolvedField f : resolvedFields) {
             if (f.name.equals(name)) {
                 return f;
@@ -96,10 +100,13 @@ public class ResolvedClass {
         }
         for (final FieldNode f : classNode.fields) {
             if (f.name.equals(name)) {
-                final ResolvedField rf = new ResolvedField(name, type, f.access);
+                final ResolvedField rf = new ResolvedField(this, name, f.access);
                 resolvedFields.add(rf);
                 return rf;
             }
+        }
+        if (superClass != null) {
+            return superClass.resolveField(name, t);
         }
         throw new IllegalStateException("No such field " + name + " in " + classNode.name);
     }

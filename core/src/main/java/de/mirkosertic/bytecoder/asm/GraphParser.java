@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
+import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
@@ -23,16 +24,24 @@ import org.objectweb.asm.tree.FrameNode;
 import org.objectweb.asm.tree.IincInsnNode;
 import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.IntInsnNode;
+import org.objectweb.asm.tree.InvokeDynamicInsnNode;
 import org.objectweb.asm.tree.JumpInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.LineNumberNode;
+import org.objectweb.asm.tree.LookupSwitchInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.lang.reflect.Field;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+import java.util.function.Supplier;
 
 public class GraphParser {
 
@@ -51,6 +61,25 @@ public class GraphParser {
     private final CompileUnit compileUnit;
 
     private final AnalysisStack analysisStack;
+
+    public static String opcodeToString(final int opcode) {
+        if (opcode == -1) {
+            return null;
+        }
+        final Class cl = Opcodes.class;
+        try {
+            for (final Field f : cl.getDeclaredFields()) {
+                if (!f.getName().startsWith("V") && !f.getName().startsWith("ACC_") && f.get(cl).equals(opcode)) {
+                    return f.getName();
+                }
+            }
+            throw new IllegalStateException("Unknown opcode : " + opcode);
+        } catch (final IllegalStateException e) {
+            throw e;
+        } catch (final Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public GraphParser(final CompileUnit compileUnit, final Type ownerType, final MethodNode methodNode, final AnalysisStack analysisStack) {
         this.methodNode = methodNode;
@@ -83,7 +112,6 @@ public class GraphParser {
         final Type methodType = Type.getMethodType(methodNode.desc);
 
         int localIndex = 0;
-        // TODO: Set correct type for this
         if ((methodNode.access & Opcodes.ACC_STATIC) == 0) {
             initialLocals[localIndex++] = graph.newThis(ownerType);
         }
@@ -105,135 +133,176 @@ public class GraphParser {
         // Step 2: Check for back edges
         final Stack<ControlFlow> controlFlowsToCheck = new Stack<>();
         controlFlowsToCheck.push(new ControlFlow(methodNode.instructions.get(0), initialState));
+        final Set<AbstractInsnNode> alreadyVisited = new HashSet<>();
         while (!controlFlowsToCheck.isEmpty()) {
             final ControlFlow flow = controlFlowsToCheck.pop();
-            AbstractInsnNode next = flow.currentNode.getNext();
-            while ((next instanceof LineNumberNode) || (next instanceof FrameNode)) {
-                next = next.getNext();
-            }
+            if (alreadyVisited.add(flow.currentNode)) {
+                final AbstractInsnNode next = flow.currentNode.getNext();
 
-            if (flow.currentNode.getOpcode() == Opcodes.RETURN) {
-                // Stop parsing here
-                continue;
-            }
-
-            if (flow.currentNode.getOpcode() == Opcodes.IRETURN) {
-                // Stop parsing here
-                continue;
-            }
-
-            if (flow.currentNode.getOpcode() == Opcodes.LRETURN) {
-                // Stop parsing here
-                continue;
-            }
-
-            if (flow.currentNode.getOpcode() == Opcodes.FRETURN) {
-                // Stop parsing here
-                continue;
-            }
-
-            if (flow.currentNode.getOpcode() == Opcodes.DRETURN) {
-                // Stop parsing here
-                continue;
-            }
-
-            if (flow.currentNode.getOpcode() == Opcodes.ARETURN) {
-                // Stop parsing here
-                continue;
-            }
-
-            if (flow.currentNode.getOpcode() == Opcodes.ATHROW) {
-                // Stop parsing here
-                continue;
-            }
-            if ((flow.currentNode instanceof LineNumberNode) || (flow.currentNode instanceof FrameNode)) {
-                controlFlowsToCheck.push(flow.addInstructionAndContinueWith(next, next));
-            } else if (flow.currentNode instanceof LabelNode) {
-                final LabelNode labelNode = (LabelNode) flow.currentNode;
-                 if (next != null) {
-                     controlFlowsToCheck.push(flow.addInstructionAndContinueWith(labelNode, next));
-                     final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(next, k -> new HashMap<>());
-                     jumps.put(flow.currentNode, EdgeType.FORWARD);
-                 }
-                 for (final TryCatchBlockNode tryCatchBlockNode : methodNode.tryCatchBlocks) {
-                     if (tryCatchBlockNode.start == labelNode) {
-                         controlFlowsToCheck.push(flow.addInstructionAndContinueWith(labelNode, tryCatchBlockNode.handler));
-                     }
-                 }
-            } else if (flow.currentNode instanceof JumpInsnNode) {
-                final JumpInsnNode jump = (JumpInsnNode) flow.currentNode;
-                switch (jump.getOpcode()) {
-                    case Opcodes.GOTO: {
-                        if (flow.visited(jump.label)) {
-                            // Back-Edge
-                            final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(jump.label, k -> new HashMap<>());
-                            jumps.put(jump, EdgeType.BACK);
-                        } else {
-                            final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(jump.label, k -> new HashMap<>());
-                            jumps.put(jump, EdgeType.FORWARD);
-                            controlFlowsToCheck.push(flow.addInstructionAndContinueWith(jump.label, jump.label));
-                        }
-                        break;
-                    }
-                    case Opcodes.IFNULL:
-                    case Opcodes.IFNONNULL:
-                    case Opcodes.IFEQ:
-                    case Opcodes.IFNE:
-                    case Opcodes.IFLT:
-                    case Opcodes.IFGE:
-                    case Opcodes.IFGT:
-                    case Opcodes.IFLE:
-                    case Opcodes.IF_ACMPEQ:
-                    case Opcodes.IF_ACMPNE:
-                    case Opcodes.IF_ICMPGE:
-                    case Opcodes.IF_ICMPEQ:
-                    case Opcodes.IF_ICMPNE:
-                    case Opcodes.IF_ICMPLT:
-                    case Opcodes.IF_ICMPGT:
-                    case Opcodes.IF_ICMPLE: {
-                        if (flow.visited(jump.label)) {
-                            // Back-Edge
-                            final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(jump.label, k -> new HashMap<>());
-                            jumps.put(jump, EdgeType.BACK);
-                        } else {
-                            final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(jump.label, k -> new HashMap<>());
-                            jumps.put(jump, EdgeType.FORWARD);
-                            controlFlowsToCheck.push(flow.addInstructionAndContinueWith(jump.label, jump.label));
-                        }
-
-                        if (flow.visited(next)) {
-                            // Back-Edge
-                            final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(next, k -> new HashMap<>());
-                            jumps.put(jump, EdgeType.BACK);
-                        } else {
-                            final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(next, k -> new HashMap<>());
-                            jumps.put(jump, EdgeType.FORWARD);
-
-                            controlFlowsToCheck.push(flow.addInstructionAndContinueWith(next, next));
-                        }
-                        break;
-                    }
-                    default:
-                        throw new IllegalStateException("Not implemented jump : " + jump.getOpcode());
+                if (flow.currentNode.getOpcode() == Opcodes.RETURN) {
+                    // Stop parsing here
+                    continue;
                 }
-            } else {
-                if (next != null) {
-                    final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(next, k -> new HashMap<>());
-                    jumps.put(flow.currentNode, EdgeType.FORWARD);
-                    controlFlowsToCheck.push(flow.addInstructionAndContinueWith(next, next));
+
+                if (flow.currentNode.getOpcode() == Opcodes.IRETURN) {
+                    // Stop parsing here
+                    continue;
+                }
+
+                if (flow.currentNode.getOpcode() == Opcodes.LRETURN) {
+                    // Stop parsing here
+                    continue;
+                }
+
+                if (flow.currentNode.getOpcode() == Opcodes.FRETURN) {
+                    // Stop parsing here
+                    continue;
+                }
+
+                if (flow.currentNode.getOpcode() == Opcodes.DRETURN) {
+                    // Stop parsing here
+                    continue;
+                }
+
+                if (flow.currentNode.getOpcode() == Opcodes.ARETURN) {
+                    // Stop parsing here
+                    continue;
+                }
+
+                if (flow.currentNode.getOpcode() == Opcodes.ATHROW) {
+                    // Stop parsing here
+                    continue;
+                }
+
+                if (flow.currentNode instanceof LabelNode) {
+                    final LabelNode labelNode = (LabelNode) flow.currentNode;
+                    if (next != null) {
+                        controlFlowsToCheck.push(flow.addInstructionAndContinueWith(labelNode, next));
+                        final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(next, k -> new HashMap<>());
+                        jumps.put(flow.currentNode, EdgeType.FORWARD);
+                    }
+                    for (final TryCatchBlockNode tryCatchBlockNode : methodNode.tryCatchBlocks) {
+                        if (tryCatchBlockNode.start == labelNode) {
+                            controlFlowsToCheck.push(flow.addInstructionAndContinueWith(labelNode, tryCatchBlockNode.handler));
+                        }
+                    }
+                } else if (flow.currentNode instanceof TableSwitchInsnNode) {
+                    final TableSwitchInsnNode jump = (TableSwitchInsnNode) flow.currentNode;
+                    if (flow.visited(jump.dflt)) {
+                        // Back-Edge
+                        final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(jump.dflt, k -> new HashMap<>());
+                        jumps.put(jump, EdgeType.BACK);
+                    } else {
+                        final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(jump.dflt, k -> new HashMap<>());
+                        jumps.put(jump, EdgeType.FORWARD);
+                        controlFlowsToCheck.push(flow.addInstructionAndContinueWith(jump, jump.dflt));
+                    }
+                    for (int index = 0; index < jump.labels.size(); index++) {
+                        final AbstractInsnNode target = jump.labels.get(index);
+                        if (flow.visited(target)) {
+                            // Back-Edge
+                            final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(target, k -> new HashMap<>());
+                            jumps.put(jump, EdgeType.BACK);
+                        } else {
+                            final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(target, k -> new HashMap<>());
+                            jumps.put(jump, EdgeType.FORWARD);
+                            controlFlowsToCheck.push(flow.addInstructionAndContinueWith(jump, target));
+                        }
+                    }
+                } else if (flow.currentNode instanceof LookupSwitchInsnNode) {
+                    final LookupSwitchInsnNode jump = (LookupSwitchInsnNode) flow.currentNode;
+                    for (int index = 0; index < jump.labels.size(); index++) {
+                        final AbstractInsnNode target = jump.labels.get(index);
+
+                        if (flow.visited(target)) {
+                            // Back-Edge
+                            final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(target, k -> new HashMap<>());
+                            jumps.put(jump, EdgeType.BACK);
+                        } else {
+                            final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(target, k -> new HashMap<>());
+                            jumps.put(jump, EdgeType.FORWARD);
+                            controlFlowsToCheck.push(flow.addInstructionAndContinueWith(jump, target));
+                        }
+                    }
+                } else if (flow.currentNode instanceof JumpInsnNode) {
+                    final JumpInsnNode jump = (JumpInsnNode) flow.currentNode;
+                    switch (jump.getOpcode()) {
+                        case Opcodes.GOTO: {
+                            if (flow.visited(jump.label)) {
+                                // Back-Edge
+                                final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(jump.label, k -> new HashMap<>());
+                                jumps.put(jump, EdgeType.BACK);
+                            } else {
+                                final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(jump.label, k -> new HashMap<>());
+                                jumps.put(jump, EdgeType.FORWARD);
+                                controlFlowsToCheck.push(flow.addInstructionAndContinueWith(jump, jump.label));
+                            }
+                            break;
+                        }
+                        case Opcodes.IFNULL:
+                        case Opcodes.IFNONNULL:
+                        case Opcodes.IFEQ:
+                        case Opcodes.IFNE:
+                        case Opcodes.IFLT:
+                        case Opcodes.IFGE:
+                        case Opcodes.IFGT:
+                        case Opcodes.IFLE:
+                        case Opcodes.IF_ACMPEQ:
+                        case Opcodes.IF_ACMPNE:
+                        case Opcodes.IF_ICMPGE:
+                        case Opcodes.IF_ICMPEQ:
+                        case Opcodes.IF_ICMPNE:
+                        case Opcodes.IF_ICMPLT:
+                        case Opcodes.IF_ICMPGT:
+                        case Opcodes.IF_ICMPLE: {
+                            if (flow.visited(jump.label)) {
+                                // Back-Edge
+                                final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(jump.label, k -> new HashMap<>());
+                                jumps.put(jump, EdgeType.BACK);
+                            } else {
+                                final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(jump.label, k -> new HashMap<>());
+                                jumps.put(jump, EdgeType.FORWARD);
+                                controlFlowsToCheck.push(flow.addInstructionAndContinueWith(jump, jump.label));
+                            }
+
+                            if (flow.visited(next)) {
+                                // Back-Edge
+                                final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(next, k -> new HashMap<>());
+                                jumps.put(jump, EdgeType.BACK);
+                            } else {
+                                final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(next, k -> new HashMap<>());
+                                jumps.put(jump, EdgeType.FORWARD);
+
+                                controlFlowsToCheck.push(flow.addInstructionAndContinueWith(jump, next));
+                            }
+                            break;
+                        }
+                        default:
+                            throw new IllegalStateException("Not implemented jump : " + jump.getOpcode());
+                    }
                 } else {
-                    System.out.println("no more next!");
+                    if (next != null) {
+                        final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(next, k -> new HashMap<>());
+                        jumps.put(flow.currentNode, EdgeType.FORWARD);
+                        controlFlowsToCheck.push(flow.addInstructionAndContinueWith(flow.currentNode, next));
+                    } else {
+                        System.out.println("no more next!");
+                    }
                 }
             }
         }
 
         // Step 3: We know the back edges,
         // Now we do a forward control flow analysis
-        final Set<AbstractInsnNode> alreadyVisited = new HashSet<>();
+        alreadyVisited.clear();
         controlFlowsToCheck.push(new ControlFlow(methodNode.instructions.get(0), initialState));
         while (!controlFlowsToCheck.isEmpty()) {
             final ControlFlow flow = controlFlowsToCheck.pop();
             if (alreadyVisited.add(flow.currentNode)) {
+                final String opcode = opcodeToString(flow.currentNode.getOpcode());
+                if (opcode != null) {
+                    analysisStack.addDebugMessage("Visiting #" + methodNode.instructions.indexOf(flow.currentNode) + " " + opcode + " Stack size is " + flow.graphParserState.frame.incomingStack.length + " Source line " + flow.graphParserState.lineNumber);
+                }
                 for (final ControlFlow nextOutCome : parse(flow, incomingEdgesPerInstruction)) {
                     if (!alreadyVisited.contains(nextOutCome.currentNode)) {
                         controlFlowsToCheck.push(nextOutCome);
@@ -246,6 +315,52 @@ public class GraphParser {
         startRegion.addControlFlowTo(StandardProjections.DEFAULT,
                 graph.translationFor(methodNode.instructions.getFirst()).main);
 
+
+        try (final PrintWriter pw = new PrintWriter(Files.newOutputStream(new File("flow.dot").toPath()))) {
+            pw.println("digraph debugoutput {");
+            final List<AbstractInsnNode> known = new ArrayList<>();
+            for (final Map.Entry<AbstractInsnNode, Map<AbstractInsnNode, EdgeType>> entry : incomingEdgesPerInstruction.entrySet()) {
+                if (!known.contains(entry.getKey())) {
+                    known.add(entry.getKey());
+                }
+                for (final Map.Entry<AbstractInsnNode, EdgeType> x : entry.getValue().entrySet()) {
+                    if (!known.contains(x.getKey())) {
+                        known.add(x.getKey());
+                    }
+                    switch (x.getValue()) {
+                        case FORWARD:
+                            pw.print(" node");
+                            pw.print(known.indexOf(x.getKey()));
+                            pw.print(" -> node");
+                            pw.print(known.indexOf(entry.getKey()));
+                            pw.println("[dir=\"forward\" color=\"red\" penwidth=\"2\"];");
+                            break;
+                        case BACK:
+                            pw.print(" node");
+                            pw.print(known.indexOf(x.getKey()));
+                            pw.print(" -> node");
+                            pw.print(known.indexOf(entry.getKey()));
+                            pw.println("[dir=\"forward\" color=\"red\" style=\"dashed\" penwidth=\"2\"];");
+                            break;
+                    }
+                }
+            }
+            for (final AbstractInsnNode node : known) {
+                pw.print(" node");
+                pw.print(known.indexOf(node));
+                pw.print("[shape=\"box\" label=\"");
+                pw.print(node);
+                final String op = opcodeToString(node.getOpcode());
+                if (op != null) {
+                    pw.print(" ");
+                    pw.print(op);
+                }
+                pw.println("\"];");
+            }
+            pw.println("}");
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
 
         // Step 5: Fixup stuff not possible during analysis
         graph.applyFixups(incomingEdgesPerInstruction);
@@ -298,14 +413,18 @@ public class GraphParser {
             // Check for exceptional flows
             for (final TryCatchBlockNode tryCatchBlockNode : methodNode.tryCatchBlocks) {
                 if (tryCatchBlockNode.start == node) {
+                    if (tryCatchBlockNode.start != tryCatchBlockNode.handler) {
 
-                    final Type exceptionType =
-                            tryCatchBlockNode.type != null ? Type.getObjectType(tryCatchBlockNode.type) : Type.getType(Throwable.class);
+                        analysisStack.addDebugMessage("Start of try catch block at " + tryCatchBlockNode.start + " with handler " + tryCatchBlockNode.handler.getLabel() +" and type " + tryCatchBlockNode.type);
 
-                    final Region startRegion = getOrCreateRegionNodeFor(tryCatchBlockNode.handler);
-                    final Frame frameWithPushedException = state.frame.pushToStack(graph.newCaughtException(exceptionType));
-                    region.addControlFlowTo(new Projection.ExceptionHandler(exceptionType), startRegion);
-                    flowsToCheck.add(currentFlow.continueWith(tryCatchBlockNode.handler, state.withFrame(frameWithPushedException)));
+                        final Type exceptionType =
+                                tryCatchBlockNode.type != null ? Type.getObjectType(tryCatchBlockNode.type) : Type.getType(Throwable.class);
+
+                        final Region startRegion = getOrCreateRegionNodeFor(tryCatchBlockNode.handler);
+                        final Frame frameWithPushedException = state.frame.pushToStack(graph.newCaughtException(exceptionType));
+                        region.addControlFlowTo(new Projection.ExceptionHandler(exceptionType), startRegion);
+                        flowsToCheck.add(currentFlow.continueWith(tryCatchBlockNode.handler, state.withFrame(frameWithPushedException)));
+                    }
                 }
             }
         }
@@ -315,17 +434,24 @@ public class GraphParser {
 
     private List<ControlFlow> parseLineNumberNode(final ControlFlow currentFlow) {
         final LineNumberNode node = (LineNumberNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+        final LineNumberDebugInfo n = graph.newLineNumberDebugInfo();
 
-        final GraphParserState newState = currentFlow.graphParserState.withLineNumber(node.line);
+        graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+
+        final GraphParserState newState = currentState.controlFlowsTo(n);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
-    private List<ControlFlow> parse_ALOAD(final ControlFlow currentFlow) {
+    private List<ControlFlow> parse_XLOAD(final ControlFlow currentFlow) {
         final VarInsnNode node = (VarInsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
         final int local = node.var;
 
         final Value value = currentState.frame.incomingLocals[local];
+
         final Variable variable = graph.newVariable(value.type);
         final Copy copy = graph.newCopy();
         copy.addIncomingData(value);
@@ -340,49 +466,7 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
-    private List<ControlFlow> parse_ILOAD(final ControlFlow currentFlow) {
-        final VarInsnNode node = (VarInsnNode) currentFlow.currentNode;
-        final GraphParserState currentState = currentFlow.graphParserState;
-        final int local = node.var;
-
-        final Value value = currentState.frame.incomingLocals[local];
-        final Variable variable = graph.newVariable(value.type);
-        final Copy copy = graph.newCopy();
-        copy.addIncomingData(value);
-        variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
-
-        final Frame newFrame = currentFlow.graphParserState.frame.pushToStack(variable);
-
-        final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
-        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
-
-        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
-    }
-
-    private List<ControlFlow> parse_ISTORE(final ControlFlow currentFlow) {
-        final VarInsnNode node = (VarInsnNode) currentFlow.currentNode;
-        final GraphParserState currentState = currentFlow.graphParserState;
-        final int local = node.var;
-
-        final Frame.PopResult popResult = currentState.frame.popFromStack();
-
-        final Value value = popResult.value;
-        final Variable variable = graph.newVariable(value.type);
-        final Copy copy = graph.newCopy();
-        copy.addIncomingData(value);
-        variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
-
-        final Frame newFrame = popResult.newFrame.setLocal(local, variable);
-
-        final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
-        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
-
-        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
-    }
-
-    private List<ControlFlow> parse_ASTORE(final ControlFlow currentFlow) {
+    private List<ControlFlow> parse_XSTORE(final ControlFlow currentFlow) {
         final VarInsnNode node = (VarInsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
         final int local = node.var;
@@ -408,13 +492,17 @@ public class GraphParser {
         final VarInsnNode node = (VarInsnNode) currentFlow.currentNode;
         switch (node.getOpcode()) {
             case Opcodes.ALOAD:
-                return parse_ALOAD(currentFlow);
             case Opcodes.ILOAD:
-                return parse_ILOAD(currentFlow);
+            case Opcodes.LLOAD:
+            case Opcodes.FLOAD:
+            case Opcodes.DLOAD:
+                return parse_XLOAD(currentFlow);
             case Opcodes.ISTORE:
-                return parse_ISTORE(currentFlow);
             case Opcodes.ASTORE:
-                return parse_ASTORE(currentFlow);
+            case Opcodes.FSTORE:
+            case Opcodes.LSTORE:
+            case Opcodes.DSTORE:
+                return parse_XSTORE(currentFlow);
             default:
                 throw new IllegalStateException("Not implemented : " + node + " -> " + node.getOpcode());
         }
@@ -512,18 +600,66 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
+    private List<ControlFlow> parse_INVOKEINTERFACE(final ControlFlow currentFlow) {
+        final MethodInsnNode node = (MethodInsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+        final Type methodType = Type.getMethodType(node.desc);
+        final Type targetClass = Type.getObjectType(node.owner);
+        final Type[] argumentTypes = methodType.getArgumentTypes();
+        final Node[] incomingData = new Node[argumentTypes.length + 1];
+
+        compileUnit.resolveClass(targetClass, analysisStack);
+
+        Frame.PopResult latest = currentState.frame.popFromStack();
+        incomingData[incomingData.length - 1] = latest.value;
+        for (int i = 0; i < argumentTypes.length; i++) {
+            latest = latest.newFrame.popFromStack();
+            incomingData[incomingData.length - 2 - i] = latest.value;
+        }
+
+        final GraphParserState newState;
+        if (methodType.getReturnType().equals(Type.VOID_TYPE)) {
+
+            final InterfaceMethodInvocation n = graph.newInterfaceMethodInvocation(node);
+            n.addIncomingData(incomingData);
+
+            graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+
+            newState = currentState.controlFlowsTo(n).withFrame(latest.newFrame);
+            graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        } else {
+            final InterfaceMethodInvocationExpression n = graph.newInterfaceMethodInvocationExpression(node);
+            n.addIncomingData(incomingData);
+
+            final Variable var = graph.newVariable(methodType.getReturnType());
+            final Copy copy = graph.newCopy();
+            copy.addIncomingData(n);
+            var.addIncomingData(copy);
+
+            graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+
+            newState = currentState.controlFlowsTo(copy).withFrame(latest.newFrame.pushToStack(var));
+            graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+        }
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
+
     private List<ControlFlow> parse_INVOKESTATIC(final ControlFlow currentFlow) {
         final MethodInsnNode node = (MethodInsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
         final Type methodType = Type.getMethodType(node.desc);
         final Type targetClass = Type.getObjectType(node.owner);
         final Type[] argumentTypes = methodType.getArgumentTypes();
-        final Node[] incomingData = new Node[argumentTypes.length];
+        final Node[] incomingData = new Node[argumentTypes.length + 1];
 
         final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
         final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
 
         Frame latest = currentState.frame;
+        incomingData[0] = graph.newTypeReference(targetClass);
         for (int i = 0; i < argumentTypes.length; i++) {
             final Frame.PopResult popresult = latest.popFromStack();
             incomingData[incomingData.length - 1 - i] = popresult.value;
@@ -568,6 +704,8 @@ public class GraphParser {
                 return parse_INVOKESPECIAL(currentFlow);
             case Opcodes.INVOKEVIRTUAL:
                 return parse_INVOKEVIRTUAL(currentFlow);
+            case Opcodes.INVOKEINTERFACE:
+                return parse_INVOKEINTERFACE(currentFlow);
             case Opcodes.INVOKESTATIC:
                 return parse_INVOKESTATIC(currentFlow);
             default:
@@ -641,6 +779,9 @@ public class GraphParser {
             case 10:
                 elementType = Type.INT_TYPE;
                 break;
+            case 11:
+                elementType = Type.LONG_TYPE;
+                break;
             default:
                 throw new IllegalStateException("Not implemented array type : " + node.operand);
         }
@@ -678,7 +819,7 @@ public class GraphParser {
     private List<ControlFlow> parse_RETURN(final ControlFlow currentFlow) {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
-        final ReturnNothing value = graph.newReturnNothing();
+        final Return value = graph.newReturnNothing();
         graph.registerTranslation(node, new InstructionTranslation(value, currentState.frame));
         currentState.controlFlowsTo(value);
         return Collections.emptyList();
@@ -698,7 +839,43 @@ public class GraphParser {
     private List<ControlFlow> parse_ICONSTX(final ControlFlow currentFlow, final int constant) {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
-        final Int value = graph.newIntNode(constant);
+        final PrimitiveInt value = graph.newIntNode(constant);
+        final Variable variable = graph.newVariable(value.type);
+        final Copy copy = graph.newCopy();
+        copy.addIncomingData(value);
+        variable.addIncomingData(copy);
+        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+
+        final Frame newFrame = currentState.frame.pushToStack(variable);
+
+        final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
+    private List<ControlFlow> parse_FCONSTX(final ControlFlow currentFlow, final float constant) {
+        final InsnNode node = (InsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+        final PrimitiveFloat value = graph.newFloat(constant);
+        final Variable variable = graph.newVariable(value.type);
+        final Copy copy = graph.newCopy();
+        copy.addIncomingData(value);
+        variable.addIncomingData(copy);
+        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+
+        final Frame newFrame = currentState.frame.pushToStack(variable);
+
+        final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
+    private List<ControlFlow> parse_LCONSTX(final ControlFlow currentFlow, final long constant) {
+        final InsnNode node = (InsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+        final PrimitiveLong value = graph.newLong(constant);
         final Variable variable = graph.newVariable(value.type);
         final Copy copy = graph.newCopy();
         copy.addIncomingData(value);
@@ -731,19 +908,51 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
-    private List<ControlFlow> parse_IADD(final ControlFlow currentFlow) {
+    private List<ControlFlow> parse_NARYINS(final ControlFlow currentFlow, final Supplier<Value> valueFactory, final int numberArgs) {
+
+        final AbstractInsnNode node = currentFlow.currentNode;
+
+        final List<Value> popped = new ArrayList<>();
+        Frame latestFrame = currentFlow.graphParserState.frame;
+        for (int i = 0; i < numberArgs; i++) {
+            final Frame.PopResult result = latestFrame.popFromStack();
+            popped.add(result.value);
+            latestFrame = result.newFrame;
+        }
+        Collections.reverse(popped);
+
+        final Value v = valueFactory.get();
+        for (final Value value : popped) {
+            v.addIncomingData(value);
+        }
+
+        final Variable variable = graph.newVariable(v.type);
+        final Copy copy = graph.newCopy();
+        copy.addIncomingData(v);
+        variable.addIncomingData(copy);
+        graph.registerTranslation(node, new InstructionTranslation(copy, currentFlow.graphParserState.frame));
+
+        final Frame newFrame = latestFrame.pushToStack(variable);
+
+        final GraphParserState newState = currentFlow.graphParserState.controlFlowsTo(copy).withFrame(newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
+    private List<ControlFlow> parse_CMP(final ControlFlow currentFlow) {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
 
         final Frame.PopResult pop2 = currentState.frame.popFromStack();
         final Frame.PopResult pop1 = pop2.newFrame.popFromStack();
 
-        final Node addNode = graph.newAdd(Type.INT_TYPE);
-        addNode.addIncomingData(pop1.value, pop2.value);
+        final CMP cmpNode = graph.newCMP();
+        cmpNode.addIncomingData(pop1.value, pop2.value);
 
-        final Variable variable = graph.newVariable(Type.INT_TYPE);
+        final Variable variable = graph.newVariable(cmpNode.type);
         final Copy copy = graph.newCopy();
-        copy.addIncomingData(addNode);
+        copy.addIncomingData(cmpNode);
         variable.addIncomingData(copy);
         graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
 
@@ -755,71 +964,21 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
-    private List<ControlFlow> parse_USHR(final ControlFlow currentFlow, final Type type) {
+    private List<ControlFlow> parse_DUP_X1(final ControlFlow currentFlow) {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
 
-        final Frame.PopResult pop2 = currentState.frame.popFromStack();
-        final Frame.PopResult pop1 = pop2.newFrame.popFromStack();
+        final Frame.PopResult value1 = currentState.frame.popFromStack();
+        final Frame.PopResult value2 = value1.newFrame.popFromStack();
 
-        final USHR addNode = graph.newUSHR(type);
-        addNode.addIncomingData(pop1.value, pop2.value);
+        final Variable variable = graph.newVariable(value1.value.type);
 
-        final Variable variable = graph.newVariable(type);
         final Copy copy = graph.newCopy();
-        copy.addIncomingData(addNode);
+        copy.addIncomingData(value1.value);
         variable.addIncomingData(copy);
         graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
 
-        final Frame newFrame = pop1.newFrame.pushToStack(variable);
-
-        final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
-        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
-
-        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
-    }
-
-    private List<ControlFlow> parse_AND(final ControlFlow currentFlow, final Type type) {
-        final InsnNode node = (InsnNode) currentFlow.currentNode;
-        final GraphParserState currentState = currentFlow.graphParserState;
-
-        final Frame.PopResult pop2 = currentState.frame.popFromStack();
-        final Frame.PopResult pop1 = pop2.newFrame.popFromStack();
-
-        final And addNode = graph.newAND(type);
-        addNode.addIncomingData(pop1.value, pop2.value);
-
-        final Variable variable = graph.newVariable(type);
-        final Copy copy = graph.newCopy();
-        copy.addIncomingData(addNode);
-        variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
-
-        final Frame newFrame = pop1.newFrame.pushToStack(variable);
-
-        final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
-        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
-
-        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
-    }
-
-    private List<ControlFlow> parse_ISUB(final ControlFlow currentFlow) {
-        final InsnNode node = (InsnNode) currentFlow.currentNode;
-        final GraphParserState currentState = currentFlow.graphParserState;
-
-        final Frame.PopResult pop2 = currentState.frame.popFromStack();
-        final Frame.PopResult pop1 = pop2.newFrame.popFromStack();
-
-        final Node addNode = graph.newSub(Type.INT_TYPE);
-        addNode.addIncomingData(pop1.value, pop2.value);
-
-        final Variable variable = graph.newVariable(Type.INT_TYPE);
-        final Copy copy = graph.newCopy();
-        copy.addIncomingData(addNode);
-        variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
-
-        final Frame newFrame = pop1.newFrame.pushToStack(variable);
+        final Frame newFrame = value2.newFrame.pushToStack(value1.value).pushToStack(value2.value).pushToStack(variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -860,6 +1019,55 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
+    private List<ControlFlow> parse_DUP2(final ControlFlow currentFlow) {
+        final InsnNode node = (InsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Frame.PopResult pop1 = currentState.frame.popFromStack();
+        if (pop1.value.type.getSize() == 2) {
+
+            final Variable dest = graph.newVariable(pop1.value.type);
+            final Copy c = graph.newCopy();
+            c.addIncomingData(pop1.value);
+            dest.addIncomingData(c);
+
+            graph.registerTranslation(node, new InstructionTranslation(c, currentState.frame));
+
+            final Frame newFrame = pop1.newFrame.pushToStack(pop1.value).pushToStack(dest);
+
+            final GraphParserState newState = currentState.controlFlowsTo(c).withFrame(newFrame);
+            graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+            return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+        } else {
+
+            final Frame.PopResult pop2 = pop1.newFrame.popFromStack();
+
+            final Variable dest1 = graph.newVariable(pop1.value.type);
+            final Variable dest2 = graph.newVariable(pop2.value.type);
+
+            final Copy c = graph.newCopy();
+            c.addIncomingData(pop1.value);
+            dest1.addIncomingData(c);
+
+            final Copy c2 = graph.newCopy();
+            c2.addIncomingData(pop2.value);
+            dest2.addIncomingData(c2);
+
+            c.addControlFlowTo(StandardProjections.DEFAULT,c2);
+
+            graph.registerTranslation(node, new InstructionTranslation(c, currentState.frame));
+
+            final Frame newFrame = pop1.newFrame.pushToStack(pop2.value).pushToStack(pop1.value).pushToStack(dest2).pushToStack(dest1);
+
+            final GraphParserState newState = currentState.controlFlowsTo(c2).withFrame(newFrame);
+            graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+            return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+        }
+
+    }
+
     private List<ControlFlow> parse_POP(final ControlFlow currentFlow) {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
@@ -879,19 +1087,18 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
-    private List<ControlFlow> parse_IDIV(final ControlFlow currentFlow) {
+    private List<ControlFlow> parse_TYPECONVERSION(final ControlFlow currentFlow, final Type type) {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
 
-        final Frame.PopResult pop2 = currentState.frame.popFromStack();
-        final Frame.PopResult pop1 = pop2.newFrame.popFromStack();
+        final Frame.PopResult pop1 = currentState.frame.popFromStack();
 
-        final Node divNode = graph.newDiv(Type.INT_TYPE);
-        divNode.addIncomingData(pop1.value, pop2.value);
+        final TypeConversion mulNode = graph.newTypeConversion(type);
+        mulNode.addIncomingData(pop1.value);
 
-        final Variable variable = graph.newVariable(Type.INT_TYPE);
+        final Variable variable = graph.newVariable(type);
         final Copy copy = graph.newCopy();
-        copy.addIncomingData(divNode);
+        copy.addIncomingData(mulNode);
         variable.addIncomingData(copy);
         graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
 
@@ -975,11 +1182,21 @@ public class GraphParser {
             case Opcodes.ICONST_5:
                 return parse_ICONSTX(currentFlow, 5);
             case Opcodes.IADD:
-                return parse_IADD(currentFlow);
+                return parse_NARYINS(currentFlow, () -> graph.newAdd(Type.INT_TYPE), 2);
+            case Opcodes.LADD:
+                return parse_NARYINS(currentFlow, () -> graph.newAdd(Type.LONG_TYPE), 2);
+            case Opcodes.DADD:
+                return parse_NARYINS(currentFlow, () -> graph.newAdd(Type.DOUBLE_TYPE), 2);
             case Opcodes.IDIV:
-                return parse_IDIV(currentFlow);
+                return parse_NARYINS(currentFlow, () -> graph.newDiv(Type.INT_TYPE), 2);
+            case Opcodes.LDIV:
+                return parse_NARYINS(currentFlow, () -> graph.newDiv(Type.LONG_TYPE), 2);
             case Opcodes.ISUB:
-                return parse_ISUB(currentFlow);
+                return parse_NARYINS(currentFlow, () -> graph.newSub(Type.INT_TYPE), 2);
+            case Opcodes.LSUB:
+                return parse_NARYINS(currentFlow, () -> graph.newSub(Type.LONG_TYPE), 2);
+            case Opcodes.DSUB:
+                return parse_NARYINS(currentFlow, () -> graph.newSub(Type.DOUBLE_TYPE), 2);
             case Opcodes.ATHROW:
                 return parse_ATHROW(currentFlow);
             case Opcodes.DUP:
@@ -990,27 +1207,124 @@ public class GraphParser {
                 return parse_XASTORE(currentFlow);
             case Opcodes.AASTORE:
                 return parse_XASTORE(currentFlow);
+            case Opcodes.BASTORE:
+                return parse_XASTORE(currentFlow);
+            case Opcodes.CASTORE:
+                return parse_XASTORE(currentFlow);
             case Opcodes.IALOAD:
                 return parse_XALOAD(currentFlow, Type.INT_TYPE);
+            case Opcodes.BALOAD:
+                return parse_XALOAD(currentFlow, Type.BYTE_TYPE);
+            case Opcodes.CALOAD:
+                return parse_XALOAD(currentFlow, Type.CHAR_TYPE);
             case Opcodes.AALOAD:
                 return parse_XALOAD(currentFlow, Type.getType(Object.class));
+            case Opcodes.LALOAD:
+                return parse_XALOAD(currentFlow, Type.LONG_TYPE);
+            case Opcodes.DALOAD:
+                return parse_XALOAD(currentFlow, Type.DOUBLE_TYPE);
             case Opcodes.LUSHR:
-                return parse_USHR(currentFlow, Type.LONG_TYPE);
+                return parse_NARYINS(currentFlow, () -> graph.newUSHR(Type.LONG_TYPE), 2);
             case Opcodes.IUSHR:
-                return parse_USHR(currentFlow, Type.INT_TYPE);
+                return parse_NARYINS(currentFlow, () -> graph.newUSHR(Type.INT_TYPE), 2);
             case Opcodes.IAND:
-                return parse_AND(currentFlow, Type.INT_TYPE);
+                return parse_NARYINS(currentFlow, () -> graph.newAND(Type.INT_TYPE), 2);
+            case Opcodes.LAND:
+                return parse_NARYINS(currentFlow, () -> graph.newAND(Type.LONG_TYPE), 2);
+            case Opcodes.ARRAYLENGTH:
+                return parse_NARYINS(currentFlow, graph::newArrayLength, 1);
+            case Opcodes.ISHR:
+                return parse_NARYINS(currentFlow, () -> graph.newSHR(Type.INT_TYPE), 2);
+            case Opcodes.LSHR:
+                return parse_NARYINS(currentFlow, () -> graph.newSHR(Type.LONG_TYPE), 2);
+            case Opcodes.ISHL:
+                return parse_NARYINS(currentFlow, () -> graph.newSHL(Type.INT_TYPE), 2);
+            case Opcodes.LSHL:
+                return parse_NARYINS(currentFlow, () -> graph.newSHL(Type.LONG_TYPE), 2);
+            case Opcodes.INEG:
+                return parse_NARYINS(currentFlow, () -> graph.newNEG(Type.INT_TYPE), 1);
+            case Opcodes.LNEG:
+                return parse_NARYINS(currentFlow, () -> graph.newNEG(Type.LONG_TYPE), 1);
+            case Opcodes.IMUL:
+                return parse_NARYINS(currentFlow, () -> graph.newMul(Type.INT_TYPE), 2);
+            case Opcodes.LMUL:
+                return parse_NARYINS(currentFlow, () -> graph.newMul(Type.LONG_TYPE), 2);
+            case Opcodes.DMUL:
+                return parse_NARYINS(currentFlow, () -> graph.newMul(Type.DOUBLE_TYPE), 2);
+            case Opcodes.IREM:
+                return parse_NARYINS(currentFlow, () -> graph.newRem(Type.INT_TYPE), 2);
+            case Opcodes.LREM:
+                return parse_NARYINS(currentFlow, () -> graph.newRem(Type.LONG_TYPE), 2);
+            case Opcodes.I2B:
+                return parse_TYPECONVERSION(currentFlow, Type.BYTE_TYPE);
+            case Opcodes.I2C:
+                return parse_TYPECONVERSION(currentFlow, Type.CHAR_TYPE);
+            case Opcodes.I2L:
+                return parse_TYPECONVERSION(currentFlow, Type.LONG_TYPE);
+            case Opcodes.I2D:
+                return parse_TYPECONVERSION(currentFlow, Type.DOUBLE_TYPE);
+            case Opcodes.I2S:
+                return parse_TYPECONVERSION(currentFlow, Type.SHORT_TYPE);
+            case Opcodes.L2I:
+                return parse_TYPECONVERSION(currentFlow, Type.INT_TYPE);
+            case Opcodes.L2D:
+                return parse_TYPECONVERSION(currentFlow, Type.DOUBLE_TYPE);
+            case Opcodes.L2F:
+                return parse_TYPECONVERSION(currentFlow, Type.FLOAT_TYPE);
+            case Opcodes.D2I:
+                return parse_TYPECONVERSION(currentFlow, Type.INT_TYPE);
+            case Opcodes.IOR:
+                return parse_NARYINS(currentFlow, () -> graph.newOR(Type.INT_TYPE), 2);
+            case Opcodes.LOR:
+                return parse_NARYINS(currentFlow, () -> graph.newOR(Type.LONG_TYPE), 2);
+            case Opcodes.LCMP:
+                return parse_CMP(currentFlow);
+            case Opcodes.IXOR:
+                return parse_NARYINS(currentFlow, () -> graph.newXOR(Type.INT_TYPE), 2);
+            case Opcodes.LXOR:
+                return parse_NARYINS(currentFlow, () -> graph.newXOR(Type.LONG_TYPE), 2);
+            case Opcodes.MONITORENTER:
+                return parse_MONITORENTER(currentFlow);
+            case Opcodes.MONITOREXIT:
+                return parse_MONITOREXIT(currentFlow);
+            case Opcodes.DUP_X1:
+                return parse_DUP_X1(currentFlow);
+            case Opcodes.FCONST_0:
+                return parse_FCONSTX(currentFlow, 0.0f);
+            case Opcodes.FCONST_1:
+                return parse_FCONSTX(currentFlow, 1.0f);
+            case Opcodes.FCONST_2:
+                return parse_FCONSTX(currentFlow, 2.0f);
+            case Opcodes.FCMPG:
+            case Opcodes.FCMPL:
+                return parse_CMP(currentFlow);
+            case Opcodes.LCONST_0:
+                return parse_LCONSTX(currentFlow, 0L);
+            case Opcodes.LCONST_1:
+                return parse_LCONSTX(currentFlow, 1L);
+            case Opcodes.DUP2:
+                return parse_DUP2(currentFlow);
+
             default:
                 throw new IllegalStateException("Not implemented : " + node + " -> " + node.getOpcode());
         }
     }
 
     private List<ControlFlow> parseFrame(final ControlFlow currentFlow) {
-        final FrameNode frameNode = (FrameNode) currentFlow.currentNode;
-        if (frameNode.stack.size() != currentFlow.graphParserState.frame.incomingStack.length) {
-            System.out.println("Parser stack does not match with compiled bytecode stack!");
+        final FrameNode node = (FrameNode) currentFlow.currentNode;
+        if (node.stack.size() != currentFlow.graphParserState.frame.incomingStack.length) {
+            throw new AnalysisException(new RuntimeException("Parser stack does not match with compiled bytecode stack! Expected " + node.stack.size() + " != actual " + currentFlow.graphParserState.frame.incomingStack.length), analysisStack);
         }
-        return Collections.singletonList(currentFlow.continueWith(currentFlow.currentNode.getNext()));
+
+        final GraphParserState currentState = currentFlow.graphParserState;
+        final FrameDebugInfo n = graph.newFrameDebugInfo();
+
+        graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+
+        final GraphParserState newState = currentState.controlFlowsTo(n);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
     private List<ControlFlow> parse_GOTO(final ControlFlow currentFlow) {
@@ -1216,6 +1530,86 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
+    private List<ControlFlow> parse_INSTANCEOF(final ControlFlow currentFlow) {
+        final TypeInsnNode node = (TypeInsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Frame.PopResult pop1 = currentState.frame.popFromStack();
+
+        final Type type = Type.getObjectType(node.desc);
+
+        final TypeReference typeReference = graph.newTypeReference(type);
+        final InstanceOf n = graph.newInstanceOf();
+        n.addIncomingData(typeReference);
+
+        final Variable variable = graph.newVariable(n.type);
+
+        final Copy copy = graph.newCopy();
+        copy.addIncomingData(n);
+        variable.addIncomingData(copy);
+        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+
+        final Frame newFrame = pop1.newFrame.pushToStack(variable);
+
+        final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
+    private List<ControlFlow> parse_CHECKCAST(final ControlFlow currentFlow) {
+        final TypeInsnNode node = (TypeInsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Frame.PopResult pop1 = currentState.frame.popFromStack();
+
+        final Type type = Type.getObjectType(node.desc);
+
+        final TypeReference typeReference = graph.newTypeReference(type);
+        final CheckCast n = graph.newCheckCast();
+        n.addIncomingData(typeReference);
+        n.addIncomingData(pop1.value);
+
+        graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+
+        final GraphParserState newState = currentState.controlFlowsTo(n).withFrame(currentState.frame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
+    private List<ControlFlow> parse_MONITORENTER(final ControlFlow currentFlow) {
+        final InsnNode node = (InsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Frame.PopResult pop1 = currentState.frame.popFromStack();
+
+        final MonitorEnter n = graph.newMonitorEnter();
+
+        graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+
+        final GraphParserState newState = currentState.controlFlowsTo(n).withFrame(pop1.newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
+    private List<ControlFlow> parse_MONITOREXIT(final ControlFlow currentFlow) {
+        final InsnNode node = (InsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Frame.PopResult pop1 = currentState.frame.popFromStack();
+
+        final MonitorExit n = graph.newMonitorExit();
+
+        graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+
+        final GraphParserState newState = currentState.controlFlowsTo(n).withFrame(pop1.newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
     private List<ControlFlow> parse_ANEWARRAY(final ControlFlow currentFlow) {
         final TypeInsnNode node = (TypeInsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
@@ -1245,6 +1639,10 @@ public class GraphParser {
                 return parse_NEW(currentFlow);
             case Opcodes.ANEWARRAY:
                 return parse_ANEWARRAY(currentFlow);
+            case Opcodes.INSTANCEOF:
+                return parse_INSTANCEOF(currentFlow);
+            case Opcodes.CHECKCAST:
+                return parse_CHECKCAST(currentFlow);
             default:
                 throw new IllegalStateException("Not supported opcode : " + currentFlow.currentNode.getOpcode());
         }
@@ -1256,11 +1654,11 @@ public class GraphParser {
 
         final Type t = Type.getType(node.desc);
         final ResolvedClass targetClass = compileUnit.resolveClass(Type.getObjectType(node.owner), analysisStack);
-        final ResolvedField resolvedField = targetClass.resolveInstanceMethod(node.name, t);
+        final ResolvedField resolvedField = targetClass.resolveField(node.name, t);
 
         final Frame.PopResult reference = currentState.frame.popFromStack();
 
-        final InstanceFieldExpression field = graph.newInstanceFieldExpression(t, resolvedField);
+        final ReadInstanceField field = graph.newInstanceFieldExpression(t, resolvedField);
         final Variable target = graph.newVariable(t);
         final Copy copy = graph.newCopy();
         copy.addIncomingData(field);
@@ -1282,16 +1680,14 @@ public class GraphParser {
 
         final Type t = Type.getType(node.desc);
         final ResolvedClass targetClass = compileUnit.resolveClass(Type.getObjectType(node.owner), analysisStack);
-        final ResolvedField resolvedField = targetClass.resolveInstanceMethod(node.name, t);
+        final ResolvedField resolvedField = targetClass.resolveField(node.name, t);
 
-        final ClassFieldExpression field = graph.newClassFieldExpression(t, resolvedField);
+        final ReadClassField field = graph.newClassFieldExpression(t, resolvedField);
         field.addIncomingData(graph.newTypeReference(targetClass.type));
         final Variable target = graph.newVariable(t);
         final Copy copy = graph.newCopy();
         copy.addIncomingData(field);
         target.addIncomingData(copy);
-
-        field.addIncomingData(graph.newTypeReference(targetClass.type));
 
         graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
 
@@ -1301,24 +1697,48 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
+
     private List<ControlFlow> parse_PUTFIELD(final ControlFlow currentFlow) {
         final FieldInsnNode node = (FieldInsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
 
         final Type t = Type.getType(node.desc);
         final ResolvedClass targetClass = compileUnit.resolveClass(Type.getObjectType(node.owner), analysisStack);
-        final ResolvedField resolvedField = targetClass.resolveInstanceMethod(node.name, t);
+        final ResolvedField resolvedField = targetClass.resolveField(node.name, t);
 
         final Frame.PopResult valuePop = currentState.frame.popFromStack();
         final Frame.PopResult referencePop = valuePop.newFrame.popFromStack();
 
-        final SetInstanceField setfield = graph.newSetInstanceField(t, resolvedField);
-
-        setfield.addIncomingData(referencePop.value, valuePop.value);
+        final SetInstanceField setfield = graph.newSetInstanceField(resolvedField);
+        setfield.addIncomingData(valuePop.value);
+        referencePop.value.addIncomingData(setfield);
 
         graph.registerTranslation(node, new InstructionTranslation(setfield, currentState.frame));
 
         final GraphParserState newState = currentState.controlFlowsTo(setfield).withFrame(referencePop.newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
+    private List<ControlFlow> parse_PUTSTATICFIELD(final ControlFlow currentFlow) {
+        final FieldInsnNode node = (FieldInsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Type t = Type.getType(node.desc);
+        final ResolvedClass targetClass = compileUnit.resolveClass(Type.getObjectType(node.owner), analysisStack);
+        final ResolvedField resolvedField = targetClass.resolveField(node.name, t);
+
+        final Frame.PopResult valuePop = currentState.frame.popFromStack();
+
+        final SetClassField setfield = graph.newSetClassField(resolvedField);
+
+        setfield.addIncomingData(valuePop.value);
+        graph.newTypeReference(targetClass.type).addIncomingData(setfield);
+
+        graph.registerTranslation(node, new InstructionTranslation(setfield, currentState.frame));
+
+        final GraphParserState newState = currentState.controlFlowsTo(setfield).withFrame(valuePop.newFrame);
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
@@ -1332,6 +1752,8 @@ public class GraphParser {
                 return parse_GETSTATICFIELD(currentFlow);
             case Opcodes.PUTFIELD:
                 return parse_PUTFIELD(currentFlow);
+            case Opcodes.PUTSTATIC:
+                return parse_PUTSTATICFIELD(currentFlow);
             default:
                 throw new IllegalStateException("Not supported opcode : " + currentFlow.currentNode.getOpcode());
         }
@@ -1373,6 +1795,57 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
+    private List<ControlFlow> parseTableSwitchInsnNode(final ControlFlow currentFlow) {
+        final TableSwitchInsnNode node = (TableSwitchInsnNode) currentFlow.currentNode;
+
+        final Frame.PopResult valuePop = currentFlow.graphParserState.frame.popFromStack();
+
+        final TableSwitch sw = graph.newTableSwitch(node.min, node.max);
+        sw.addIncomingData(valuePop.value);
+
+        graph.registerTranslation(node, new InstructionTranslation(sw, currentFlow.graphParserState.frame));
+
+        final List<ControlFlow> continueWith = new ArrayList<>();
+
+        final GraphParserState newState = currentFlow.graphParserState.controlFlowsTo(sw).withFrame(valuePop.newFrame);
+
+        continueWith.add(currentFlow.continueWith(node.dflt, newState));
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.dflt));
+
+        for (int i = 0; i < node.labels.size(); i++) {
+            final AbstractInsnNode target = node.labels.get(i);
+            continueWith.add(currentFlow.continueWith(target, newState));
+            graph.addFixup(new ControlFlowFixup(node, newState.frame, new Projection.IndexedProjection(EdgeType.FORWARD, i), target));
+        }
+
+        return continueWith;
+    }
+
+    private List<ControlFlow> parseLookupSwitchInsnNode(final ControlFlow currentFlow) {
+        final LookupSwitchInsnNode node = (LookupSwitchInsnNode) currentFlow.currentNode;
+
+        final Frame.PopResult valuePop = currentFlow.graphParserState.frame.popFromStack();
+
+        final LookupSwitch sw = graph.newLookupSwitch();
+        sw.addIncomingData(valuePop.value);
+
+        graph.registerTranslation(node, new InstructionTranslation(sw, currentFlow.graphParserState.frame));
+
+        final GraphParserState newState = currentFlow.graphParserState.controlFlowsTo(sw).withFrame(valuePop.newFrame);
+
+        final List<ControlFlow> continueWith = new ArrayList<>();
+
+        for (int i = 0; i < node.labels.size(); i++) {
+            final AbstractInsnNode target = node.labels.get(i);
+            final Integer key = node.keys.get(i);
+
+            continueWith.add(currentFlow.continueWith(target, newState));
+            graph.addFixup(new ControlFlowFixup(node, newState.frame, new Projection.KeyedProjection(EdgeType.FORWARD, key), target));
+        }
+
+        return continueWith;
+    }
+
     private List<ControlFlow> parseLdcInsnNode(final ControlFlow currentFlow) {
         switch (currentFlow.currentNode.getOpcode()) {
             case Opcodes.LDC:
@@ -1380,6 +1853,16 @@ public class GraphParser {
             default:
                 throw new IllegalStateException("Not supported opcode : " + currentFlow.currentNode.getOpcode());
         }
+    }
+
+    private List<ControlFlow> parseInvokeDynamicInsnNode(final ControlFlow currentFlow) {
+        final InvokeDynamicInsnNode node = (InvokeDynamicInsnNode) currentFlow.currentNode;
+
+        final Handle h = node.bsm;
+        final ResolvedClass bsmType = compileUnit.resolveClass(Type.getObjectType(h.getOwner()), analysisStack);
+        final ResolvedMethod bsmMethod = bsmType.resolveMethod(h.getName(), Type.getMethodType(h.getDesc()), analysisStack);
+
+        throw new IllegalStateException("Not implemented!");
     }
 
     private List<ControlFlow> parse(final ControlFlow currentFlow, final Map<AbstractInsnNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerInstruction) {
@@ -1424,39 +1907,34 @@ public class GraphParser {
             }
 
             return parseLabelNode(currentFlow);
-        }
-        if (currentFlow.currentNode instanceof LineNumberNode) {
+        } else if (currentFlow.currentNode instanceof LineNumberNode) {
             return parseLineNumberNode(currentFlow);
-        }
-        if (currentFlow.currentNode instanceof VarInsnNode) {
+        } else if (currentFlow.currentNode instanceof VarInsnNode) {
             return parseVarInsnNode(currentFlow);
-        }
-        if (currentFlow.currentNode instanceof MethodInsnNode) {
+        } else if (currentFlow.currentNode instanceof MethodInsnNode) {
             return parseMethodInsNode(currentFlow);
-        }
-        if (currentFlow.currentNode instanceof IntInsnNode) {
+        } else if (currentFlow.currentNode instanceof IntInsnNode) {
             return parseIntInsnNode(currentFlow);
-        }
-        if (currentFlow.currentNode instanceof InsnNode) {
+        } else if (currentFlow.currentNode instanceof InsnNode) {
             return parseInsnNode(currentFlow);
-        }
-        if (currentFlow.currentNode instanceof FrameNode) {
+        } else if (currentFlow.currentNode instanceof FrameNode) {
             return parseFrame(currentFlow);
-        }
-        if (currentFlow.currentNode instanceof JumpInsnNode) {
+        } else if (currentFlow.currentNode instanceof JumpInsnNode) {
             return parseJumpInsnNode(currentFlow);
-        }
-        if (currentFlow.currentNode instanceof IincInsnNode) {
+        } else if (currentFlow.currentNode instanceof IincInsnNode) {
             return parseIincInsnNode(currentFlow);
-        }
-        if (currentFlow.currentNode instanceof TypeInsnNode) {
+        } else if (currentFlow.currentNode instanceof TypeInsnNode) {
             return parseTypeInsnNode(currentFlow);
-        }
-        if (currentFlow.currentNode instanceof FieldInsnNode) {
+        } else if (currentFlow.currentNode instanceof FieldInsnNode) {
             return parseFieldInsnNode(currentFlow);
-        }
-        if (currentFlow.currentNode instanceof LdcInsnNode) {
+        } else if (currentFlow.currentNode instanceof LdcInsnNode) {
             return parseLdcInsnNode(currentFlow);
+        } else if (currentFlow.currentNode instanceof TableSwitchInsnNode) {
+            return parseTableSwitchInsnNode(currentFlow);
+        } else if (currentFlow.currentNode instanceof LookupSwitchInsnNode) {
+            return parseLookupSwitchInsnNode(currentFlow);
+        } else if (currentFlow.currentNode instanceof InvokeDynamicInsnNode) {
+            return parseInvokeDynamicInsnNode(currentFlow);
         }
         throw new IllegalStateException("Not implemented : " + currentFlow.currentNode + " -> " + currentFlow.currentNode.getOpcode());
     }

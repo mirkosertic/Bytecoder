@@ -15,16 +15,13 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
+public class TableSwitch extends ControlTokenConsumer {
 
-public class ResolvedField {
+    public final int min;
+    public final int max;
 
-    public final ResolvedClass owner;
-    public final String name;
-    public final int access;
-
-    public ResolvedField(final ResolvedClass owner, final String name, final int access) {
-        this.owner = owner;
-        this.name = name;
-        this.access = access;
+    public TableSwitch(final int min, final int max) {
+        this.min = min;
+        this.max = max;
     }
 }

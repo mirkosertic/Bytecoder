@@ -15,16 +15,18 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
+import org.objectweb.asm.tree.MethodInsnNode;
 
-public class ResolvedField {
+public class InterfaceMethodInvocation extends ControlTokenConsumer implements PotentialSideeffect {
 
-    public final ResolvedClass owner;
-    public final String name;
-    public final int access;
+    public final MethodInsnNode insnNode;
 
-    public ResolvedField(final ResolvedClass owner, final String name, final int access) {
-        this.owner = owner;
-        this.name = name;
-        this.access = access;
+    public InterfaceMethodInvocation(final MethodInsnNode insnNode) {
+        this.insnNode = insnNode;
+    }
+
+    @Override
+    public String additionalDebugInfo() {
+        return insnNode.owner + "." + insnNode.name + insnNode.desc;
     }
 }

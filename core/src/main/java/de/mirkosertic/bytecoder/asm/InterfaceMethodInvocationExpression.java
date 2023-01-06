@@ -15,16 +15,20 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.MethodInsnNode;
 
-public class ResolvedField {
+public class InterfaceMethodInvocationExpression extends Value implements PotentialSideeffect {
 
-    public final ResolvedClass owner;
-    public final String name;
-    public final int access;
+    public final MethodInsnNode insnNode;
 
-    public ResolvedField(final ResolvedClass owner, final String name, final int access) {
-        this.owner = owner;
-        this.name = name;
-        this.access = access;
+    public InterfaceMethodInvocationExpression(final MethodInsnNode insnNode) {
+        super(Type.getReturnType(insnNode.desc));
+        this.insnNode = insnNode;
+    }
+
+    @Override
+    public String additionalDebugInfo() {
+        return insnNode.owner + "." + insnNode.name + insnNode.desc;
     }
 }

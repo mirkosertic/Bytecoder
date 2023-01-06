@@ -15,8 +15,18 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-public class ReturnNothing extends ControlTokenConsumer {
+import org.objectweb.asm.Type;
+public class PrimitiveInt extends PrimitiveValue {
 
-    public ReturnNothing() {
+    public final int value;
+
+    public PrimitiveInt(final int value) {
+        super(Type.INT_TYPE);
+        this.value = value;
+    }
+
+    @Override
+    public String additionalDebugInfo() {
+        return ": " + value;
     }
 }

@@ -23,21 +23,24 @@ import de.mirkosertic.bytecoder.asm.Copy;
 import de.mirkosertic.bytecoder.asm.Div;
 import de.mirkosertic.bytecoder.asm.Graph;
 import de.mirkosertic.bytecoder.asm.If;
-import de.mirkosertic.bytecoder.asm.InstanceFieldExpression;
 import de.mirkosertic.bytecoder.asm.InstanceMethodInvocation;
 import de.mirkosertic.bytecoder.asm.InstanceMethodInvocationExpression;
-import de.mirkosertic.bytecoder.asm.Int;
+import de.mirkosertic.bytecoder.asm.PrimitiveInt;
 import de.mirkosertic.bytecoder.asm.MethodArgument;
 import de.mirkosertic.bytecoder.asm.New;
 import de.mirkosertic.bytecoder.asm.NewArray;
 import de.mirkosertic.bytecoder.asm.Node;
 import de.mirkosertic.bytecoder.asm.PHI;
+import de.mirkosertic.bytecoder.asm.ReadClassField;
+import de.mirkosertic.bytecoder.asm.ReadInstanceField;
 import de.mirkosertic.bytecoder.asm.ResolvedClass;
 import de.mirkosertic.bytecoder.asm.ResolvedField;
 import de.mirkosertic.bytecoder.asm.ResolvedMethod;
-import de.mirkosertic.bytecoder.asm.ReturnNothing;
+import de.mirkosertic.bytecoder.asm.Return;
 import de.mirkosertic.bytecoder.asm.ReturnValue;
+import de.mirkosertic.bytecoder.asm.SetClassField;
 import de.mirkosertic.bytecoder.asm.SetInstanceField;
+import de.mirkosertic.bytecoder.asm.PrimitiveShort;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocation;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocationExpression;
 import de.mirkosertic.bytecoder.asm.Sub;
@@ -355,7 +358,19 @@ public class JSBackend {
                         }
                     }
 
-                    private void writeExpression(final InstanceFieldExpression node) {
+                    private void writeExpression(final ReadInstanceField node) {
+
+                        pw.print("(");
+                        writeExpression(node.incomingDataFlows[0]);
+                        pw.print(".");
+                        if ((node.resolvedField.access & Opcodes.ACC_PRIVATE) > 0) {
+                            pw.print("#");
+                        }
+                        pw.print(generateFieldName(node.resolvedField.name));
+                        pw.print(")");
+                    }
+
+                    private void writeExpression(final ReadClassField node) {
 
                         pw.print("(");
                         writeExpression(node.incomingDataFlows[0]);
@@ -392,14 +407,29 @@ public class JSBackend {
                     public void write(final SetInstanceField node) {
 
                         writeIndent();
-                        writeExpression(node.incomingDataFlows[0]);
+                        writeExpression(node.outgoingFlows[0]);
                         pw.print(".");
                         if ((node.resolvedField.access & Opcodes.ACC_PRIVATE) > 0) {
                             pw.print("#");
                         }
                         pw.print(generateFieldName(node.resolvedField.name));
                         pw.print(" = ");
-                        writeExpression(node.incomingDataFlows[1]);
+                        writeExpression(node.incomingDataFlows[0]);
+                        pw.println(";");
+                    }
+
+                    @Override
+                    public void write(final SetClassField node) {
+
+                        writeIndent();
+                        writeExpression(node.outgoingFlows[0]);
+                        pw.print(".");
+                        if ((node.resolvedField.access & Opcodes.ACC_PRIVATE) > 0) {
+                            pw.print("#");
+                        }
+                        pw.print(generateFieldName(node.resolvedField.name));
+                        pw.print(" = ");
+                        writeExpression(node.incomingDataFlows[0]);
                         pw.println(";");
                     }
 
@@ -515,14 +545,16 @@ public class JSBackend {
                     private void writeExpression(final Node node) {
                         if (node instanceof Variable) {
                             writeExpression((Variable) node);
+                        } else if (node instanceof PrimitiveShort) {
+                            writeExpression((PrimitiveShort) node);
                         } else if (node instanceof Sub) {
                             writeExpression((Sub) node);
                         } else if (node instanceof Add) {
                             writeExpression((Add) node);
                         } else if (node instanceof Div) {
                             writeExpression((Div) node);
-                        } else if (node instanceof Int) {
-                            writeExpression((Int) node);
+                        } else if (node instanceof PrimitiveInt) {
+                            writeExpression((PrimitiveInt) node);
                         } else if (node instanceof New) {
                             writeExpression((New) node);
                         } else if (node instanceof TypeReference) {
@@ -535,8 +567,10 @@ public class JSBackend {
                             writeExpression((StaticMethodInvocationExpression) node);
                         } else if (node instanceof InstanceMethodInvocationExpression) {
                             writeExpression((InstanceMethodInvocationExpression) node);
-                        } else if (node instanceof InstanceFieldExpression) {
-                            writeExpression((InstanceFieldExpression) node);
+                        } else if (node instanceof ReadInstanceField) {
+                            writeExpression((ReadInstanceField) node);
+                        } else if (node instanceof ReadClassField) {
+                            writeExpression((ReadClassField) node);
                         } else if (node instanceof NewArray) {
                             writeExpression((NewArray) node);
                         } else if (node instanceof ArrayLoad) {
@@ -590,7 +624,11 @@ public class JSBackend {
                         pw.print(variableToName.get(node));
                     }
 
-                    private void writeExpression(final Int node) {
+                    private void writeExpression(final PrimitiveShort node) {
+                        pw.print(node.value);
+                    }
+
+                    private void writeExpression(final PrimitiveInt node) {
                         pw.print(node.value);
                     }
 
@@ -662,7 +700,7 @@ public class JSBackend {
                     }
 
                     @Override
-                    public void write(final ReturnNothing node) {
+                    public void write(final Return node) {
                         writeIndent();
                         pw.println("return;");
                     }

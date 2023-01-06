@@ -16,17 +16,10 @@
 package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
-public class Int extends PrimitiveValue {
 
-    public final int value;
+public class Mul extends Value {
 
-    public Int(final int value) {
-        super(Type.INT_TYPE);
-        this.value = value;
-    }
-
-    @Override
-    public String additionalDebugInfo() {
-        return ": " + value;
+    public Mul(final Type type) {
+        super(type);
     }
 }

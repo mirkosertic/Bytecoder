@@ -32,6 +32,6 @@ public class InstanceMethodInvocationExpression extends Value implements Potenti
 
     @Override
     public String additionalDebugInfo() {
-        return insnNode.owner + "." + insnNode.name + insnNode.desc;
+        return insnNode.name + insnNode.desc;
     }
 }

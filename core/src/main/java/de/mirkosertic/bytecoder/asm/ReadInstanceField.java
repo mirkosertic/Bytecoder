@@ -15,16 +15,19 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
+import org.objectweb.asm.Type;
 
-public class ResolvedField {
+public class ReadInstanceField extends Value {
 
-    public final ResolvedClass owner;
-    public final String name;
-    public final int access;
+    public final ResolvedField resolvedField;
 
-    public ResolvedField(final ResolvedClass owner, final String name, final int access) {
-        this.owner = owner;
-        this.name = name;
-        this.access = access;
+    public ReadInstanceField(final Type type, final ResolvedField resolvedField) {
+        super(type);
+        this.resolvedField = resolvedField;
+    }
+
+    @Override
+    public String additionalDebugInfo() {
+        return ": " + resolvedField.name;
     }
 }

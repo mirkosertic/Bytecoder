@@ -27,14 +27,14 @@ public class TestOption {
 
     public String toDescription() {
         return "backend=" +
-                backendType.toString() +
+                backendType +
                 " minify=" +
                 minify;
     }
 
     public String toFilePrefix() {
         final StringBuilder builder = new StringBuilder();
-        builder.append(backendType.toString());
+        builder.append(backendType);
         if (minify) {
             builder.append("_minify");
         }

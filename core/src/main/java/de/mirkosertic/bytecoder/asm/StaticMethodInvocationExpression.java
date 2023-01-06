@@ -32,6 +32,6 @@ public class StaticMethodInvocationExpression extends Value implements Potential
 
     @Override
     public String additionalDebugInfo() {
-        return insnNode.owner + "." + insnNode.name + insnNode.desc;
+        return insnNode.name + insnNode.desc;
     }
 }

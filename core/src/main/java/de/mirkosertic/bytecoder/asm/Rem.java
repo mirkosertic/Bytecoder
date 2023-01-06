@@ -17,18 +17,9 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class Short extends PrimitiveValue {
+public class Rem extends Value {
 
-    public final short value;
-
-    public Short(final short value) {
-        super(Type.SHORT_TYPE);
-        this.value = value;
-    }
-
-
-    @Override
-    public String additionalDebugInfo() {
-        return ": " + value;
+    public Rem(final Type type) {
+        super(type);
     }
 }

@@ -15,10 +15,61 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Type;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AnalysisStack {
-    public AnalysisStack addTypeImport(final Type type) {
-        return this;
+
+    public static class Action {
+
+        public final String desctiption;
+
+        public Action(final String desctiption) {
+            this.desctiption = desctiption;
+        }
+    }
+
+    private final List<Action> actions;
+
+    private final List<String> debugMessages;
+
+    public AnalysisStack() {
+        actions = new ArrayList<>();
+        debugMessages = new ArrayList<>();
+    }
+
+    AnalysisStack(final List<Action> actions) {
+        this.actions = actions;
+        this.debugMessages = new ArrayList<>();
+    }
+
+    public AnalysisStack addAction(final Action action) {
+        final List<Action> newActions = new ArrayList<>(actions);
+        newActions.add(action);
+        return new AnalysisStack(newActions);
+    }
+
+    public void addDebugMessage(final String message) {
+        debugMessages.add(message);
+    }
+
+    public void dumpAnalysisStack(final PrintStream out) {
+        System.out.println("Current Analysis Stack is : ");
+        for (int i = 0; i < actions.size(); i++) {
+            for (int j = 0; j < i; j++) {
+                out.print(" ");
+            }
+            out.println(actions.get(i).desctiption);
+        }
+
+        final StringBuilder pref = new StringBuilder();
+        for (int j = 0; j < actions.size() + 1; j++) {
+            pref.append(" ");
+        }
+        for (final String debug : debugMessages) {
+            out.print(pref);
+            out.println(debug);
+        }
     }
 }

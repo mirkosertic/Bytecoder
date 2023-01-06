@@ -24,8 +24,9 @@ import de.mirkosertic.bytecoder.asm.If;
 import de.mirkosertic.bytecoder.asm.InstanceMethodInvocation;
 import de.mirkosertic.bytecoder.asm.Projection;
 import de.mirkosertic.bytecoder.asm.Region;
-import de.mirkosertic.bytecoder.asm.ReturnNothing;
+import de.mirkosertic.bytecoder.asm.Return;
 import de.mirkosertic.bytecoder.asm.ReturnValue;
+import de.mirkosertic.bytecoder.asm.SetClassField;
 import de.mirkosertic.bytecoder.asm.SetInstanceField;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocation;
 import de.mirkosertic.bytecoder.asm.Variable;
@@ -93,14 +94,16 @@ public class Sequencer {
             visit((Copy) node, activeStack);
         } else if (node instanceof If) {
             visit((If) node, activeStack);
-        } else if (node instanceof ReturnNothing) {
-            visit((ReturnNothing) node, activeStack);
+        } else if (node instanceof Return) {
+            visit((Return) node, activeStack);
         } else if (node instanceof ReturnValue) {
             visit((ReturnValue) node, activeStack);
         } else if (node instanceof SetInstanceField) {
             visit((SetInstanceField) node, activeStack);
         } else if (node instanceof ArrayStore) {
             visit((ArrayStore) node, activeStack);
+        } else if (node instanceof SetClassField) {
+            visit((SetClassField) node, activeStack);
         } else {
             throw new IllegalStateException("Not implemented : " + node.getClass().getSimpleName());
         }
@@ -163,6 +166,13 @@ public class Sequencer {
     }
 
     private void visit(final SetInstanceField node, final List<Block> activeStack) {
+
+        codegenerator.write(node);
+
+        processSuccessors(node, activeStack);
+    }
+
+    private void visit(final SetClassField node, final List<Block> activeStack) {
 
         codegenerator.write(node);
 
@@ -279,7 +289,7 @@ public class Sequencer {
         }
     }
 
-    private void visit(final ReturnNothing node, final List<Block> activeStack) {
+    private void visit(final Return node, final List<Block> activeStack) {
 
         codegenerator.write(node);
     }

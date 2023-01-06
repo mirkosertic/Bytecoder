@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Mirko Sertic
+ * Copyright 2022 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,20 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
+import org.objectweb.asm.Type;
 
-public class ResolvedField {
+public class PrimitiveShort extends PrimitiveValue {
 
-    public final ResolvedClass owner;
-    public final String name;
-    public final int access;
+    public final short value;
 
-    public ResolvedField(final ResolvedClass owner, final String name, final int access) {
-        this.owner = owner;
-        this.name = name;
-        this.access = access;
+    public PrimitiveShort(final short value) {
+        super(Type.SHORT_TYPE);
+        this.value = value;
+    }
+
+
+    @Override
+    public String additionalDebugInfo() {
+        return ": " + value;
     }
 }

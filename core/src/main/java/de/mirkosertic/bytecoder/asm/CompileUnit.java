@@ -16,7 +16,6 @@
 package de.mirkosertic.bytecoder.asm;
 
 import de.mirkosertic.bytecoder.api.ClassLibProvider;
-
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
@@ -42,7 +41,12 @@ public class CompileUnit {
 
     public ResolvedClass resolveClass(final Type type, final AnalysisStack analysisStack) {
         return resolvedClasses.computeIfAbsent(type, key -> {
-            final String theResourceName = key.getClassName().replace(".", "/") + ".class";
+            final String theResourceName;
+            if (type.getSort() == Type.ARRAY) {
+                theResourceName = key.getElementType().getClassName().replace(".", "/") + ".class";
+            } else {
+                theResourceName = key.getClassName().replace(".", "/") + ".class";
+            }
             for (final ClassLibProvider theProvider : ClassLibProvider.availableProviders()) {
                 final InputStream is = theProvider.getClass().getClassLoader().getResourceAsStream(theProvider.getResourceBase() + "/" + theResourceName);
                 if (is != null) {
@@ -70,7 +74,7 @@ public class CompileUnit {
         final ClassNode classNode = new ClassNode();
         reader.accept(classNode, ClassReader.EXPAND_FRAMES);
 
-        final AnalysisStack importedStack = analysisStack.addTypeImport(type);
+        final AnalysisStack importedStack = analysisStack.addAction(new AnalysisStack.Action("Resolving type " + type));
 
         ResolvedClass superClass = null;
         if (classNode.superName != null) {

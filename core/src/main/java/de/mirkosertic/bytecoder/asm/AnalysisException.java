@@ -15,16 +15,16 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
+public class AnalysisException extends RuntimeException {
 
-public class ResolvedField {
+    private final AnalysisStack analysisStack;
 
-    public final ResolvedClass owner;
-    public final String name;
-    public final int access;
+    public AnalysisException(final Throwable cause, final AnalysisStack analysisStack) {
+        super(cause);
+        this.analysisStack = analysisStack;
+    }
 
-    public ResolvedField(final ResolvedClass owner, final String name, final int access) {
-        this.owner = owner;
-        this.name = name;
-        this.access = access;
+    public AnalysisStack getAnalysisStack() {
+        return analysisStack;
     }
 }

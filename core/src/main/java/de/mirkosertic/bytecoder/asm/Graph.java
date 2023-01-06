@@ -97,12 +97,12 @@ public class Graph {
         return (NullReference) register(new NullReference());
     }
 
-    public Int newIntNode(final int value) {
-        return (Int) register(new Int(value));
+    public PrimitiveInt newIntNode(final int value) {
+        return (PrimitiveInt) register(new PrimitiveInt(value));
     }
 
-    public Short newShortNode(final short value) {
-        return (Short) register(new Short(value));
+    public PrimitiveShort newShortNode(final short value) {
+        return (PrimitiveShort) register(new PrimitiveShort(value));
     }
 
     public NewArray newNewArray(final Type elementType) {
@@ -121,8 +121,28 @@ public class Graph {
         return (USHR) register(new USHR(type));
     }
 
+    public SHR newSHR(final Type type) {
+        return (SHR) register(new SHR(type));
+    }
+
+    public SHL newSHL(final Type type) {
+        return (SHL) register(new SHL(type));
+    }
+
+    public Neg newNEG(final Type type) {
+        return (Neg) register(new Neg(type));
+    }
+
     public And newAND(final Type type) {
         return (And) register(new And(type));
+    }
+
+    public Or newOR(final Type type) {
+        return (Or) register(new Or(type));
+    }
+
+    public XOr newXOR(final Type type) {
+        return (XOr) register(new XOr(type));
     }
 
     public ObjectInteger newObjectInteger(final Integer value) {
@@ -157,8 +177,12 @@ public class Graph {
         return (VirtualMethodInvocation) register(new VirtualMethodInvocation(insn));
     }
 
-    public VirtualMethodInvocationExpression newVirtualMethodInvocationExpression(final MethodInsnNode insn) {
-        return (VirtualMethodInvocationExpression) register(new VirtualMethodInvocationExpression(insn));
+    public InterfaceMethodInvocation newInterfaceMethodInvocation(final MethodInsnNode insn) {
+        return (InterfaceMethodInvocation) register(new InterfaceMethodInvocation(insn));
+    }
+
+    public InterfaceMethodInvocationExpression newInterfaceMethodInvocationExpression(final MethodInsnNode insn) {
+        return (InterfaceMethodInvocationExpression) register(new InterfaceMethodInvocationExpression(insn));
     }
 
     public StaticMethodInvocation newStaticMethodInvocation(final MethodInsnNode insn, final ResolvedMethod rm) {
@@ -169,8 +193,8 @@ public class Graph {
         return (StaticMethodInvocationExpression) register(new StaticMethodInvocationExpression(insn, rm));
     }
 
-    public ReturnNothing newReturnNothing() {
-        return (ReturnNothing) register(new ReturnNothing());
+    public Return newReturnNothing() {
+        return (Return) register(new Return());
     }
 
     public ReturnValue newReturnValue() {
@@ -193,8 +217,16 @@ public class Graph {
         return (Sub) register(new Sub(type));
     }
 
-    public Node newDiv(final Type type) {
-        return register(new Div(type));
+    public Div newDiv(final Type type) {
+        return (Div) register(new Div(type));
+    }
+
+    public Mul newMul(final Type type) {
+        return (Mul) register(new Mul(type));
+    }
+
+    public TypeConversion newTypeConversion(final Type type) {
+        return (TypeConversion) register(new TypeConversion(type));
     }
 
     public void writeDebugTo(final OutputStream fileOutputStream) {
@@ -270,6 +302,14 @@ public class Graph {
         return (Goto) register(new Goto());
     }
 
+    public CMP newCMP() {
+        return (CMP) register(new CMP());
+    }
+
+    public Rem newRem(final Type type) {
+        return (Rem) register(new Rem(type));
+    }
+
     public Region newRegion(final String label) {
         return (Region) register(new Region(label));
     }
@@ -282,7 +322,27 @@ public class Graph {
         return (Unwind) register(new Unwind());
     }
 
+    public MonitorEnter newMonitorEnter() {
+        return (MonitorEnter) register(new MonitorEnter());
+    }
+
+    public MonitorExit newMonitorExit() {
+        return (MonitorExit) register(new MonitorExit());
+    }
+
+    public ArrayLength newArrayLength() {
+        return (ArrayLength) register(new ArrayLength());
+    }
+
     public TypeReference newTypeReference(final Type type) {
+        for (final Node n : nodes) {
+            if (n instanceof TypeReference) {
+                final TypeReference t = (TypeReference) n;
+                if (t.type.equals(type)) {
+                    return t;
+                }
+            }
+        }
         return (TypeReference) register(new TypeReference(type));
     }
 
@@ -290,19 +350,59 @@ public class Graph {
         return (New) register(new New(type));
     }
 
-    public InstanceFieldExpression newInstanceFieldExpression(final Type type, final ResolvedField resolvedField) {
-        return (InstanceFieldExpression) register(new InstanceFieldExpression(type, resolvedField));
+    public InstanceOf newInstanceOf() {
+        return (InstanceOf) register(new InstanceOf());
     }
 
-    public ClassFieldExpression newClassFieldExpression(final Type type, final ResolvedField resolvedField) {
-        return (ClassFieldExpression) register(new ClassFieldExpression(type, resolvedField));
+    public CheckCast newCheckCast() {
+        return (CheckCast) register(new CheckCast());
     }
 
-    public SetInstanceField newSetInstanceField(final Type type, final ResolvedField resolvedField) {
+    public TableSwitch newTableSwitch(final int min, final int max) {
+        return (TableSwitch) register(new TableSwitch(min, max));
+    }
+
+    public LookupSwitch newLookupSwitch() {
+        return (LookupSwitch) register(new LookupSwitch());
+    }
+
+    public ReadInstanceField newInstanceFieldExpression(final Type type, final ResolvedField resolvedField) {
+        return (ReadInstanceField) register(new ReadInstanceField(type, resolvedField));
+    }
+
+    public ReadClassField newClassFieldExpression(final Type type, final ResolvedField resolvedField) {
+        return (ReadClassField) register(new ReadClassField(type, resolvedField));
+    }
+
+    public SetInstanceField newSetInstanceField(final ResolvedField resolvedField) {
         return (SetInstanceField) register(new SetInstanceField(resolvedField));
+    }
+
+    public SetClassField newSetClassField(final ResolvedField resolvedField) {
+        return (SetClassField) register(new SetClassField(resolvedField));
     }
 
     public void deleteNode(final Node node) {
         nodes.remove(node);
+    }
+
+    public PrimitiveFloat newFloat(final float constant) {
+        return (PrimitiveFloat) register(new PrimitiveFloat(constant));
+    }
+
+    public PrimitiveLong newLong(final long constant) {
+        return (PrimitiveLong) register(new PrimitiveLong(constant));
+    }
+
+    public VirtualMethodInvocationExpression newVirtualMethodInvocationExpression(final MethodInsnNode node) {
+        return (VirtualMethodInvocationExpression) register(new VirtualMethodInvocationExpression(node));
+    }
+
+    public LineNumberDebugInfo newLineNumberDebugInfo() {
+        return (LineNumberDebugInfo) register(new LineNumberDebugInfo());
+    }
+
+    public FrameDebugInfo newFrameDebugInfo() {
+        return (FrameDebugInfo) register(new FrameDebugInfo());
     }
 }

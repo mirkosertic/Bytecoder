@@ -30,6 +30,6 @@ public class StaticMethodInvocation extends ControlTokenConsumer implements Pote
 
     @Override
     public String additionalDebugInfo() {
-        return insnNode.owner + "." + insnNode.name + insnNode.desc;
+        return insnNode.name + insnNode.desc;
     }
 }

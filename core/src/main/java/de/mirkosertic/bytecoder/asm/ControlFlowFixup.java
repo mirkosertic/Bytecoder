@@ -16,9 +16,7 @@
 package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.FrameNode;
 import org.objectweb.asm.tree.LabelNode;
-import org.objectweb.asm.tree.LineNumberNode;
 
 import java.util.Map;
 
@@ -39,11 +37,7 @@ public class ControlFlowFixup implements Fixup {
 
     @Override
     public void applyTo(final Graph g, final Map<AbstractInsnNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerInstruction) {
-        AbstractInsnNode target = this.targetInstruction;
-        while ((target instanceof LineNumberNode) || (target instanceof FrameNode)) {
-            target = target.getNext();
-        }
-        final InstructionTranslation translation = g.translationFor(target);
+        final InstructionTranslation translation = g.translationFor(targetInstruction);
         if (translation != null) {
             final InstructionTranslation sourcetranslation = g.translationFor(sourceInstruction);
             if (sourcetranslation == null) {
@@ -55,7 +49,7 @@ public class ControlFlowFixup implements Fixup {
             for (int i = 0; i < frame.incomingLocals.length; i++) {
                 final Value sourceValue = frame.incomingLocals[i];
                 final Value targetValue = targetFrame.incomingLocals[i];
-                if (sourceValue != null && sourceValue != targetValue) {
+                if (sourceValue != null && sourceValue != targetValue && targetValue != null) {
                     final Copy c = g.newCopy();
                     c.addIncomingData(sourceValue);
                     targetValue.addIncomingData(c);
@@ -78,11 +72,7 @@ public class ControlFlowFixup implements Fixup {
             }
 
             // TODO: Check for the correct edge type here!!
-            Map<AbstractInsnNode, EdgeType> incomingEdges = incomingEdgesPerInstruction.get(target);
-            while (incomingEdges == null) {
-                target = target.getPrevious();
-                incomingEdges = incomingEdgesPerInstruction.get(target);
-            }
+            final Map<AbstractInsnNode, EdgeType> incomingEdges = incomingEdgesPerInstruction.get(targetInstruction);
             if (incomingEdges != null) {
                 final EdgeType edgeType = incomingEdges.get(sourceInstruction);
                 if (edgeType != null) {
@@ -94,16 +84,17 @@ public class ControlFlowFixup implements Fixup {
                     }
                 } else {
                     if (sourceInstruction instanceof LabelNode) {
-                        System.out.println("No incoming edges found for " + ((LabelNode) sourceInstruction).getLabel() + " to jump to " + target);
+                        System.out.println("No incoming edges found for " + ((LabelNode) sourceInstruction).getLabel() + " to jump to " + targetInstruction);
                     } else {
-                        System.out.println("No incoming edges found for " + sourceInstruction + " to jump to " + target);
+                        System.out.println("No incoming edges found for " + sourceInstruction + " to jump to " + targetInstruction);
                     }
                 }
             } else {
-                System.out.println("Confused : no incoming edges for " + target + ", original target was " + targetInstruction);
+                System.out.println("Confused : no incoming edges for " + targetInstruction + " from " + sourceInstruction);
+                throw new IllegalStateException("Confused : no incoming edges for " + targetInstruction + " from " + sourceInstruction);
             }
         } else {
-            System.out.println("No translation found for " + target + " opcode " + target.getOpcode());
+            System.out.println("No translation found for " + translation + " opcode " + targetInstruction.getOpcode());
         }
     }
 }

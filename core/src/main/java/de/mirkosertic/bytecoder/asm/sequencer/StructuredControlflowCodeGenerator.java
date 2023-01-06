@@ -19,8 +19,9 @@ import de.mirkosertic.bytecoder.asm.ArrayStore;
 import de.mirkosertic.bytecoder.asm.Copy;
 import de.mirkosertic.bytecoder.asm.If;
 import de.mirkosertic.bytecoder.asm.InstanceMethodInvocation;
-import de.mirkosertic.bytecoder.asm.ReturnNothing;
+import de.mirkosertic.bytecoder.asm.Return;
 import de.mirkosertic.bytecoder.asm.ReturnValue;
+import de.mirkosertic.bytecoder.asm.SetClassField;
 import de.mirkosertic.bytecoder.asm.SetInstanceField;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocation;
 import de.mirkosertic.bytecoder.asm.Variable;
@@ -48,11 +49,13 @@ public interface StructuredControlflowCodeGenerator {
 
     void startBlock(Sequencer.Block node);
 
-    void write(ReturnNothing node);
+    void write(Return node);
 
     void write(ReturnValue node);
 
     void write(SetInstanceField node);
+
+    void write(SetClassField node);
 
     void write(ArrayStore node);
 

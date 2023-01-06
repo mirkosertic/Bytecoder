@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.asm.test;
 
 import com.sun.net.httpserver.HttpServer;
+import de.mirkosertic.bytecoder.asm.AnalysisException;
 import de.mirkosertic.bytecoder.asm.AnalysisStack;
 import de.mirkosertic.bytecoder.asm.CompileUnit;
 import de.mirkosertic.bytecoder.asm.ResolvedClass;
@@ -327,6 +328,9 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                 if (!theLast.getMessage().contains("Test finished OK")) {
                     aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed! Got : " + theLast.getMessage())));
                 }
+            } catch (final AnalysisException e) {
+                e.getAnalysisStack().dumpAnalysisStack(System.out);
+                aRunNotifier.fireTestFailure(new Failure(theDescription, e));
             } catch (final Exception e) {
                 aRunNotifier.fireTestFailure(new Failure(theDescription, e));
             } finally {

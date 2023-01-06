@@ -15,16 +15,11 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
+import org.objectweb.asm.Type;
 
-public class ResolvedField {
+public class ArrayLength extends Value {
 
-    public final ResolvedClass owner;
-    public final String name;
-    public final int access;
-
-    public ResolvedField(final ResolvedClass owner, final String name, final int access) {
-        this.owner = owner;
-        this.name = name;
-        this.access = access;
+    public ArrayLength() {
+        super(Type.INT_TYPE);
     }
 }

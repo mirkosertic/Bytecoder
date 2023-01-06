@@ -21,6 +21,8 @@ public class SimpleLinkageTest {
 
         private Object value2;
 
+        static int x;
+
         private void doit() {
         }
 
@@ -49,26 +51,13 @@ public class SimpleLinkageTest {
         }
 
         public void testmethod() {
-            final Testclass k = new Testclass();
-            //k.doit()
-            k.doit2();
+            gnamph2();
             getValue();
-            getInt(10, k);
+            int a = x;
+            x = 10000;
 
-            int temp = k.value;
-            k.value = temp;
-
-            Object temp2 = k.value2;
-            k.value2 = temp2;
-
-            int[] x = new int[10];
-            x[0] = 1;
-            int a = x[0];
-            Object[] y = new Object[10];
-            Object o = y[0];
-            y[0] = o;
-
-            orderTest(10, 20);
+            Testclass y = new Testclass();
+            y.value = 10000;
         }
     }
 

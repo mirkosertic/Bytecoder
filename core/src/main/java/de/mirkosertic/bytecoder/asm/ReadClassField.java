@@ -17,11 +17,11 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class InstanceFieldExpression extends Value {
+public class ReadClassField extends Value {
 
     public final ResolvedField resolvedField;
 
-    public InstanceFieldExpression(final Type type, final ResolvedField resolvedField) {
+    public ReadClassField(final Type type, final ResolvedField resolvedField) {
         super(type);
         this.resolvedField = resolvedField;
     }

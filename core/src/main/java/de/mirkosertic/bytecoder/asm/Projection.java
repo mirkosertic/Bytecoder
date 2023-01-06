@@ -34,6 +34,52 @@ public abstract class Projection {
         }
     }
 
+    public static class IndexedProjection extends Projection {
+
+        public final int index;
+
+        public IndexedProjection(final EdgeType edgeType, final int index) {
+            super(edgeType);
+            this.index = index;
+        }
+
+        @Override
+        public IndexedProjection withEdgeType(final EdgeType edgeType) {
+            if (edgeType == edgeType()) {
+                return this;
+            }
+            return new IndexedProjection(edgeType, index);
+        }
+
+        @Override
+        public String additionalDebugInfo() {
+            return "INDEX : " + index;
+        }
+    }
+
+    public static class KeyedProjection extends Projection {
+
+        public final int key;
+
+        public KeyedProjection(final EdgeType edgeType, final int key) {
+            super(edgeType);
+            this.key = key;
+        }
+
+        @Override
+        public KeyedProjection withEdgeType(final EdgeType edgeType) {
+            if (edgeType == edgeType()) {
+                return this;
+            }
+            return new KeyedProjection(edgeType, key);
+        }
+
+        @Override
+        public String additionalDebugInfo() {
+            return "KEY : " + key;
+        }
+    }
+
     public static class TryCatchGuardedProjection extends Projection {
 
         public TryCatchGuardedProjection(final EdgeType edgeType) {

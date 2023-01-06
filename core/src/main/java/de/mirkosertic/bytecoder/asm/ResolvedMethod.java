@@ -24,17 +24,25 @@ public class ResolvedMethod {
 
     public final MethodNode methodNode;
 
-    public final Graph methodBody;
+    public Graph methodBody;
 
-    public ResolvedMethod(final ResolvedClass owner, final MethodNode methodNode, final AnalysisStack analysisStack) {
+    public ResolvedMethod(final ResolvedClass owner, final MethodNode methodNode) {
         this.owner = owner;
         this.methodNode = methodNode;
+    }
 
+    public void parseBody(final AnalysisStack analysisStack) {
         if (((methodNode.access & Opcodes.ACC_ABSTRACT) == 0) && ((methodNode.access & Opcodes.ACC_NATIVE) == 0)) {
             // Method is not abstract and not native
-            System.out.println("Parsing method body of " + owner.type + "," + methodNode.name);
-            final GraphParser graphParser = new GraphParser(owner.compileUnit, owner.type, methodNode, analysisStack);
-            methodBody = graphParser.graph();
+            final AnalysisStack newStack = analysisStack.addAction(new AnalysisStack.Action("Parsing method body of " + owner.type + "," + methodNode.name));
+            try {
+                final GraphParser graphParser = new GraphParser(owner.compileUnit, owner.type, methodNode, newStack);
+                methodBody = graphParser.graph();
+            } catch (final AnalysisException e) {
+                throw e;
+            } catch (final RuntimeException e) {
+                throw new AnalysisException(e, newStack);
+            }
         } else {
             methodBody = null;
         }

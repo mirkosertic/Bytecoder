@@ -26,5 +26,4 @@ public abstract class StandardProjections {
     public static final Projection TRYCATCHGUARD = new Projection.TryCatchGuardedProjection(EdgeType.FORWARD);
 
     public static final Projection TRYCATCHEXIT = new Projection.TryCatchGuardedExit(EdgeType.FORWARD);
-
 }
