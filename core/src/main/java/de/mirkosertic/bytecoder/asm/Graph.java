@@ -405,4 +405,20 @@ public class Graph {
     public FrameDebugInfo newFrameDebugInfo() {
         return (FrameDebugInfo) register(new FrameDebugInfo());
     }
+
+    public MethodReference newMethodReference(final ResolvedMethod methood) {
+        return (MethodReference) register(new MethodReference(methood));
+    }
+
+    public ResolveCallsite newResolveCallsite() {
+        return (ResolveCallsite) register(new ResolveCallsite());
+    }
+
+    public MethodType newMethodType(final Type type) {
+        return (MethodType) register(new MethodType(type));
+    }
+
+    public InvokeDynamicExpression newInvokeDynamicExpression(final Type type) {
+        return (InvokeDynamicExpression) register(new InvokeDynamicExpression(type));
+    }
 }

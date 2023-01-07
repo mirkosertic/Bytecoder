@@ -561,6 +561,10 @@ public class GraphParser {
         final Type[] argumentTypes = methodType.getArgumentTypes();
         final Node[] incomingData = new Node[argumentTypes.length + 1];
 
+        if (targetClass.getSort() == Type.ARRAY) {
+            System.out.println("Invoke virtual on array type! : " + node.name + " " + targetClass);
+        }
+
         final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
         rc.resolveMethod(node.name, methodType, analysisStack);
 
@@ -1211,6 +1215,8 @@ public class GraphParser {
                 return parse_XASTORE(currentFlow);
             case Opcodes.CASTORE:
                 return parse_XASTORE(currentFlow);
+            case Opcodes.SASTORE:
+                return parse_XASTORE(currentFlow);
             case Opcodes.IALOAD:
                 return parse_XALOAD(currentFlow, Type.INT_TYPE);
             case Opcodes.BALOAD:
@@ -1223,6 +1229,8 @@ public class GraphParser {
                 return parse_XALOAD(currentFlow, Type.LONG_TYPE);
             case Opcodes.DALOAD:
                 return parse_XALOAD(currentFlow, Type.DOUBLE_TYPE);
+            case Opcodes.SALOAD:
+                return parse_XALOAD(currentFlow, Type.SHORT_TYPE);
             case Opcodes.LUSHR:
                 return parse_NARYINS(currentFlow, () -> graph.newUSHR(Type.LONG_TYPE), 2);
             case Opcodes.IUSHR:
@@ -1251,6 +1259,8 @@ public class GraphParser {
                 return parse_NARYINS(currentFlow, () -> graph.newMul(Type.LONG_TYPE), 2);
             case Opcodes.DMUL:
                 return parse_NARYINS(currentFlow, () -> graph.newMul(Type.DOUBLE_TYPE), 2);
+            case Opcodes.FMUL:
+                return parse_NARYINS(currentFlow, () -> graph.newMul(Type.FLOAT_TYPE), 2);
             case Opcodes.IREM:
                 return parse_NARYINS(currentFlow, () -> graph.newRem(Type.INT_TYPE), 2);
             case Opcodes.LREM:
@@ -1261,6 +1271,8 @@ public class GraphParser {
                 return parse_TYPECONVERSION(currentFlow, Type.CHAR_TYPE);
             case Opcodes.I2L:
                 return parse_TYPECONVERSION(currentFlow, Type.LONG_TYPE);
+            case Opcodes.I2F:
+                return parse_TYPECONVERSION(currentFlow, Type.FLOAT_TYPE);
             case Opcodes.I2D:
                 return parse_TYPECONVERSION(currentFlow, Type.DOUBLE_TYPE);
             case Opcodes.I2S:
@@ -1272,6 +1284,8 @@ public class GraphParser {
             case Opcodes.L2F:
                 return parse_TYPECONVERSION(currentFlow, Type.FLOAT_TYPE);
             case Opcodes.D2I:
+                return parse_TYPECONVERSION(currentFlow, Type.INT_TYPE);
+            case Opcodes.F2I:
                 return parse_TYPECONVERSION(currentFlow, Type.INT_TYPE);
             case Opcodes.IOR:
                 return parse_NARYINS(currentFlow, () -> graph.newOR(Type.INT_TYPE), 2);
@@ -1304,7 +1318,6 @@ public class GraphParser {
                 return parse_LCONSTX(currentFlow, 1L);
             case Opcodes.DUP2:
                 return parse_DUP2(currentFlow);
-
             default:
                 throw new IllegalStateException("Not implemented : " + node + " -> " + node.getOpcode());
         }
@@ -1857,12 +1870,67 @@ public class GraphParser {
 
     private List<ControlFlow> parseInvokeDynamicInsnNode(final ControlFlow currentFlow) {
         final InvokeDynamicInsnNode node = (InvokeDynamicInsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
 
         final Handle h = node.bsm;
+
+        switch (h.getTag()) {
+            case Opcodes.H_INVOKESTATIC:
+                break;
+            default:
+                throw new IllegalStateException("Not supported method handle tag : " + h.getTag());
+        }
+
         final ResolvedClass bsmType = compileUnit.resolveClass(Type.getObjectType(h.getOwner()), analysisStack);
         final ResolvedMethod bsmMethod = bsmType.resolveMethod(h.getName(), Type.getMethodType(h.getDesc()), analysisStack);
 
-        throw new IllegalStateException("Not implemented!");
+        final ResolveCallsite resolveCallsite = graph.newResolveCallsite();
+
+        final Type invokeDynamicDesc = Type.getMethodType(node.desc);
+        resolveCallsite.addIncomingData(graph.newMethodReference(bsmMethod), graph.newObjectString(node.name), graph.newMethodType(invokeDynamicDesc));
+        for (final Object bsmArg : node.bsmArgs) {
+            if (bsmArg instanceof Handle) {
+                final Handle x = (Handle) bsmArg;
+
+                final ResolvedClass argType = compileUnit.resolveClass(Type.getObjectType(x.getOwner()), analysisStack);
+                final ResolvedMethod argMethod = argType.resolveMethod(x.getName(), Type.getMethodType(x.getDesc()), analysisStack);
+
+                resolveCallsite.addIncomingData(graph.newMethodReference(argMethod));
+            } else if (bsmArg instanceof Type) {
+                resolveCallsite.addIncomingData(graph.newMethodType((Type) bsmArg));
+            } else {
+                throw new IllegalArgumentException("Not supported bootstrap method argument type : " + bsmArg);
+            }
+        }
+
+        final InvokeDynamicExpression invokeDynamic = graph.newInvokeDynamicExpression(invokeDynamicDesc.getReturnType());
+        invokeDynamic.addIncomingData(resolveCallsite);
+
+        final Node[] arguments = new Node[invokeDynamicDesc.getArgumentTypes().length];
+        Frame latest = currentState.frame;
+        for (int i = 0; i < arguments.length; i++) {
+            final Frame.PopResult pr = latest.popFromStack();
+            latest = pr.newFrame;
+            arguments[arguments.length - 1 - i] = pr.value;
+        }
+
+        invokeDynamic.addIncomingData(arguments);
+
+        resolveCallsite.addIncomingData();
+
+        final Variable variable = graph.newVariable(invokeDynamic.type);
+
+        final Copy copy = graph.newCopy();
+        copy.addIncomingData(invokeDynamic);
+        variable.addIncomingData(copy);
+        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+
+        final Frame newFrame = latest.pushToStack(variable);
+
+        final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
     private List<ControlFlow> parse(final ControlFlow currentFlow, final Map<AbstractInsnNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerInstruction) {
