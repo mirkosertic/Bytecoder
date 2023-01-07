@@ -557,12 +557,13 @@ public class GraphParser {
         final MethodInsnNode node = (MethodInsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
         final Type methodType = Type.getMethodType(node.desc);
-        final Type targetClass = Type.getObjectType(node.owner);
+        Type targetClass = Type.getObjectType(node.owner);
         final Type[] argumentTypes = methodType.getArgumentTypes();
         final Node[] incomingData = new Node[argumentTypes.length + 1];
 
         if (targetClass.getSort() == Type.ARRAY) {
-            System.out.println("Invoke virtual on array type! : " + node.name + " " + targetClass);
+            // Arrays are objects, hence only the java.lang.Object type can be called
+            targetClass = Type.getType(Object.class);
         }
 
         final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
@@ -894,6 +895,24 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
+    private List<ControlFlow> parse_DCONSTX(final ControlFlow currentFlow, final double constant) {
+        final InsnNode node = (InsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+        final PrimitiveDouble value = graph.newDouble(constant);
+        final Variable variable = graph.newVariable(value.type);
+        final Copy copy = graph.newCopy();
+        copy.addIncomingData(value);
+        variable.addIncomingData(copy);
+        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+
+        final Frame newFrame = currentState.frame.pushToStack(variable);
+
+        final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
     private List<ControlFlow> parse_ACONST_NULL(final ControlFlow currentFlow) {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
@@ -1191,14 +1210,22 @@ public class GraphParser {
                 return parse_NARYINS(currentFlow, () -> graph.newAdd(Type.LONG_TYPE), 2);
             case Opcodes.DADD:
                 return parse_NARYINS(currentFlow, () -> graph.newAdd(Type.DOUBLE_TYPE), 2);
+            case Opcodes.FADD:
+                return parse_NARYINS(currentFlow, () -> graph.newAdd(Type.FLOAT_TYPE), 2);
             case Opcodes.IDIV:
                 return parse_NARYINS(currentFlow, () -> graph.newDiv(Type.INT_TYPE), 2);
             case Opcodes.LDIV:
                 return parse_NARYINS(currentFlow, () -> graph.newDiv(Type.LONG_TYPE), 2);
+            case Opcodes.FDIV:
+                return parse_NARYINS(currentFlow, () -> graph.newDiv(Type.FLOAT_TYPE), 2);
+            case Opcodes.DDIV:
+                return parse_NARYINS(currentFlow, () -> graph.newDiv(Type.DOUBLE_TYPE), 2);
             case Opcodes.ISUB:
                 return parse_NARYINS(currentFlow, () -> graph.newSub(Type.INT_TYPE), 2);
             case Opcodes.LSUB:
                 return parse_NARYINS(currentFlow, () -> graph.newSub(Type.LONG_TYPE), 2);
+            case Opcodes.FSUB:
+                return parse_NARYINS(currentFlow, () -> graph.newSub(Type.FLOAT_TYPE), 2);
             case Opcodes.DSUB:
                 return parse_NARYINS(currentFlow, () -> graph.newSub(Type.DOUBLE_TYPE), 2);
             case Opcodes.ATHROW:
@@ -1273,6 +1300,12 @@ public class GraphParser {
                 return parse_TYPECONVERSION(currentFlow, Type.LONG_TYPE);
             case Opcodes.I2F:
                 return parse_TYPECONVERSION(currentFlow, Type.FLOAT_TYPE);
+            case Opcodes.D2F:
+                return parse_TYPECONVERSION(currentFlow, Type.FLOAT_TYPE);
+            case Opcodes.D2I:
+                return parse_TYPECONVERSION(currentFlow, Type.INT_TYPE);
+            case Opcodes.D2L:
+                return parse_TYPECONVERSION(currentFlow, Type.LONG_TYPE);
             case Opcodes.I2D:
                 return parse_TYPECONVERSION(currentFlow, Type.DOUBLE_TYPE);
             case Opcodes.I2S:
@@ -1281,10 +1314,10 @@ public class GraphParser {
                 return parse_TYPECONVERSION(currentFlow, Type.INT_TYPE);
             case Opcodes.L2D:
                 return parse_TYPECONVERSION(currentFlow, Type.DOUBLE_TYPE);
+            case Opcodes.F2D:
+                return parse_TYPECONVERSION(currentFlow, Type.DOUBLE_TYPE);
             case Opcodes.L2F:
                 return parse_TYPECONVERSION(currentFlow, Type.FLOAT_TYPE);
-            case Opcodes.D2I:
-                return parse_TYPECONVERSION(currentFlow, Type.INT_TYPE);
             case Opcodes.F2I:
                 return parse_TYPECONVERSION(currentFlow, Type.INT_TYPE);
             case Opcodes.IOR:
@@ -1318,6 +1351,10 @@ public class GraphParser {
                 return parse_LCONSTX(currentFlow, 1L);
             case Opcodes.DUP2:
                 return parse_DUP2(currentFlow);
+            case Opcodes.DCONST_0:
+                return parse_DCONSTX(currentFlow, 0d);
+            case Opcodes.DCONST_1:
+                return parse_DCONSTX(currentFlow, 1d);
             default:
                 throw new IllegalStateException("Not implemented : " + node + " -> " + node.getOpcode());
         }
@@ -1598,6 +1635,7 @@ public class GraphParser {
         final Frame.PopResult pop1 = currentState.frame.popFromStack();
 
         final MonitorEnter n = graph.newMonitorEnter();
+        n.addIncomingData(pop1.value);
 
         graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
 
@@ -1614,6 +1652,7 @@ public class GraphParser {
         final Frame.PopResult pop1 = currentState.frame.popFromStack();
 
         final MonitorExit n = graph.newMonitorExit();
+        n.addIncomingData(pop1.value);
 
         graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
 

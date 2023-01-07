@@ -390,6 +390,10 @@ public class Graph {
         return (PrimitiveFloat) register(new PrimitiveFloat(constant));
     }
 
+    public PrimitiveDouble newDouble(final double constant) {
+        return (PrimitiveDouble) register(new PrimitiveDouble(constant));
+    }
+
     public PrimitiveLong newLong(final long constant) {
         return (PrimitiveLong) register(new PrimitiveLong(constant));
     }

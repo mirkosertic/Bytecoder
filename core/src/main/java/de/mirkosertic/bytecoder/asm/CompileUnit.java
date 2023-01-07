@@ -41,12 +41,7 @@ public class CompileUnit {
 
     public ResolvedClass resolveClass(final Type type, final AnalysisStack analysisStack) {
         return resolvedClasses.computeIfAbsent(type, key -> {
-            final String theResourceName;
-            if (type.getSort() == Type.ARRAY) {
-                theResourceName = key.getElementType().getClassName().replace(".", "/") + ".class";
-            } else {
-                theResourceName = key.getClassName().replace(".", "/") + ".class";
-            }
+            final String theResourceName = key.getClassName().replace(".", "/") + ".class";
             for (final ClassLibProvider theProvider : ClassLibProvider.availableProviders()) {
                 final InputStream is = theProvider.getClass().getClassLoader().getResourceAsStream(theProvider.getResourceBase() + "/" + theResourceName);
                 if (is != null) {
