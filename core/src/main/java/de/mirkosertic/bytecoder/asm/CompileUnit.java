@@ -22,6 +22,8 @@ import org.objectweb.asm.tree.ClassNode;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -110,5 +112,17 @@ public class CompileUnit {
         classDependencies.sort(Comparator.comparingInt(dependency::get));
 
         return classDependencies;
+    }
+
+    public void printStatisticsTo(final PrintStream ps) {
+        ps.println("Linkage statistics:");
+        ps.print("  Resolved classes in total    : ");
+        ps.println(resolvedClasses.size());
+        ps.print("    Number of interfaces       : ");
+        ps.println(resolvedClasses.values().stream().filter(t -> Modifier.isInterface(t.classNode.access)).count());
+        ps.print("    Number of abstract classes : ");
+        ps.println(resolvedClasses.values().stream().filter(t -> Modifier.isAbstract(t.classNode.access)).count());
+        ps.print("    Number of final classes    : ");
+        ps.println(resolvedClasses.values().stream().filter(t -> Modifier.isFinal(t.classNode.access)).count());
     }
 }

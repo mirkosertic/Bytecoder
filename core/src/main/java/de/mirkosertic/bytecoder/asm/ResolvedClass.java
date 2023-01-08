@@ -30,7 +30,7 @@ public class ResolvedClass {
 
     public final Type type;
 
-    private final ClassNode classNode;
+    public final ClassNode classNode;
 
     public final ResolvedClass superClass;
 

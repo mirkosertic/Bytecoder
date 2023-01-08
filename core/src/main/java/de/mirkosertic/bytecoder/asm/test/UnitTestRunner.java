@@ -258,6 +258,8 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                 final ResolvedClass resolvedClass = compileUnit.resolveClass(invokedType, analysisStack);
                 final ResolvedMethod method = resolvedClass.resolveMethod(aFrameworkMethod.getName(), Type.getMethodType(Type.VOID_TYPE), analysisStack);
 
+                compileUnit.printStatisticsTo(System.out);
+
                 final ByteArrayOutputStream compiledCode = new ByteArrayOutputStream();
 
                 final JSBackend backend = new JSBackend();

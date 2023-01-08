@@ -37,11 +37,7 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.lang.reflect.Field;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -316,7 +312,7 @@ public class GraphParser {
                 graph.translationFor(methodNode.instructions.getFirst()).main);
 
 
-        try (final PrintWriter pw = new PrintWriter(Files.newOutputStream(new File("flow.dot").toPath()))) {
+/*        try (final PrintWriter pw = new PrintWriter(Files.newOutputStream(new File("flow.dot").toPath()))) {
             pw.println("digraph debugoutput {");
             final List<AbstractInsnNode> known = new ArrayList<>();
             for (final Map.Entry<AbstractInsnNode, Map<AbstractInsnNode, EdgeType>> entry : incomingEdgesPerInstruction.entrySet()) {
@@ -360,7 +356,7 @@ public class GraphParser {
             pw.println("}");
         } catch (final IOException e) {
             throw new RuntimeException(e);
-        }
+        }*/
 
         // Step 5: Fixup stuff not possible during analysis
         graph.applyFixups(incomingEdgesPerInstruction);
@@ -1009,6 +1005,47 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
+    private List<ControlFlow> parse_DUP_X2(final ControlFlow currentFlow) {
+        final InsnNode node = (InsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Frame.PopResult value1 = currentState.frame.popFromStack();
+
+        if (value1.value.type.getSize() == 1) {
+            final Frame.PopResult value2 = value1.newFrame.popFromStack();
+            final Frame.PopResult value3 = value2.newFrame.popFromStack();
+
+            final Variable variable = graph.newVariable(value1.value.type);
+
+            final Copy copy = graph.newCopy();
+            copy.addIncomingData(value1.value);
+            variable.addIncomingData(copy);
+            graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+
+            final Frame newFrame = value3.newFrame.pushToStack(value1.value).pushToStack(value3.value).pushToStack(value2.value).pushToStack(variable);
+
+            final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
+            graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+            return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+        }
+        final Frame.PopResult value2 = value1.newFrame.popFromStack();
+
+        final Variable variable = graph.newVariable(value1.value.type);
+
+        final Copy copy = graph.newCopy();
+        copy.addIncomingData(value1.value);
+        variable.addIncomingData(copy);
+        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+
+        final Frame newFrame = value2.newFrame.pushToStack(value1.value).pushToStack(value2.value).pushToStack(variable);
+
+        final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
     private List<ControlFlow> parse_ATHROW(final ControlFlow currentFlow) {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
@@ -1336,6 +1373,8 @@ public class GraphParser {
                 return parse_MONITOREXIT(currentFlow);
             case Opcodes.DUP_X1:
                 return parse_DUP_X1(currentFlow);
+            case Opcodes.DUP_X2:
+                return parse_DUP_X2(currentFlow);
             case Opcodes.FCONST_0:
                 return parse_FCONSTX(currentFlow, 0.0f);
             case Opcodes.FCONST_1:
