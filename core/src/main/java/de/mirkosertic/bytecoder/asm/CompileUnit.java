@@ -63,7 +63,7 @@ public class CompileUnit {
                 }
             }
             throw new RuntimeException(new ClassNotFoundException(type.getClassName()));
-        });
+        }).requestInitialization(analysisStack);
     }
 
     private ResolvedClass loadClass(final Type type, final InputStream is, final AnalysisStack analysisStack) throws IOException {

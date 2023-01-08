@@ -60,6 +60,7 @@ import org.objectweb.asm.Type;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -93,7 +94,7 @@ public class JSBackend {
 
         for (final ResolvedClass cl : compileUnit.computeClassDependencies()) {
             final String className = generateClassName(cl.type);
-            if (cl.isInterface()) {
+            if (Modifier.isInterface(cl.classNode.access)) {
                 pw.print("const ");
                 pw.print(className);
 

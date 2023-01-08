@@ -1281,6 +1281,10 @@ public class GraphParser {
                 return parse_XASTORE(currentFlow);
             case Opcodes.SASTORE:
                 return parse_XASTORE(currentFlow);
+            case Opcodes.LASTORE:
+                return parse_XASTORE(currentFlow);
+            case Opcodes.DASTORE:
+                return parse_XASTORE(currentFlow);
             case Opcodes.IALOAD:
                 return parse_XALOAD(currentFlow, Type.INT_TYPE);
             case Opcodes.BALOAD:

@@ -15,12 +15,12 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -44,6 +44,10 @@ public class ResolvedClass {
 
     public final List<ResolvedField> resolvedFields;
 
+    boolean needsInitialization;
+
+    private ResolvedMethod classInitializer;
+
     public ResolvedClass(final CompileUnit compileUnit, final Type type, final ClassNode classNode, final ResolvedClass superClass, final ResolvedClass[] interfaces) {
         this.compileUnit = compileUnit;
         this.type = type;
@@ -53,7 +57,8 @@ public class ResolvedClass {
         this.directSubclasses = new HashSet<>();
         this.resolvedMethods = new ArrayList<>();
         this.resolvedFields = new ArrayList<>();
-
+        this.needsInitialization = true;
+        this.classInitializer = null;
         if (superClass != null) {
             superClass.registerDirectSubclass(this);
         }
@@ -62,8 +67,22 @@ public class ResolvedClass {
         }
     }
 
-    public boolean isInterface() {
-        return (classNode.access & Opcodes.ACC_INTERFACE) > 0;
+    public ResolvedClass requestInitialization(final AnalysisStack analysisStack) {
+        if (needsInitialization) {
+            needsInitialization = false;
+            if (superClass != null) {
+                superClass.requestInitialization(analysisStack);
+            }
+            for (final ResolvedClass interf : interfaces) {
+                interf.requestInitialization(analysisStack);
+            }
+            for (final MethodNode m : classNode.methods) {
+                if (Modifier.isStatic(m.access) && "<clinit>".equals(m.name)) {
+                    this.classInitializer = resolveMethod(m.name, Type.getMethodType(m.desc), analysisStack);
+                }
+            }
+        }
+        return this;
     }
 
     public void registerDirectSubclass(final ResolvedClass cl) {
