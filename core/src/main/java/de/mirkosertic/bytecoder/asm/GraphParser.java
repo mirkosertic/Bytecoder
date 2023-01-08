@@ -32,6 +32,7 @@ import org.objectweb.asm.tree.LineNumberNode;
 import org.objectweb.asm.tree.LookupSwitchInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.MultiANewArrayInsnNode;
 import org.objectweb.asm.tree.TableSwitchInsnNode;
 import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.TypeInsnNode;
@@ -1283,6 +1284,8 @@ public class GraphParser {
                 return parse_XASTORE(currentFlow);
             case Opcodes.LASTORE:
                 return parse_XASTORE(currentFlow);
+            case Opcodes.FASTORE:
+                return parse_XASTORE(currentFlow);
             case Opcodes.DASTORE:
                 return parse_XASTORE(currentFlow);
             case Opcodes.IALOAD:
@@ -1299,6 +1302,8 @@ public class GraphParser {
                 return parse_XALOAD(currentFlow, Type.DOUBLE_TYPE);
             case Opcodes.SALOAD:
                 return parse_XALOAD(currentFlow, Type.SHORT_TYPE);
+            case Opcodes.FALOAD:
+                return parse_XALOAD(currentFlow, Type.FLOAT_TYPE);
             case Opcodes.LUSHR:
                 return parse_NARYINS(currentFlow, () -> graph.newUSHR(Type.LONG_TYPE), 2);
             case Opcodes.IUSHR:
@@ -1321,6 +1326,10 @@ public class GraphParser {
                 return parse_NARYINS(currentFlow, () -> graph.newNEG(Type.INT_TYPE), 1);
             case Opcodes.LNEG:
                 return parse_NARYINS(currentFlow, () -> graph.newNEG(Type.LONG_TYPE), 1);
+            case Opcodes.FNEG:
+                return parse_NARYINS(currentFlow, () -> graph.newNEG(Type.FLOAT_TYPE), 1);
+            case Opcodes.DNEG:
+                return parse_NARYINS(currentFlow, () -> graph.newNEG(Type.DOUBLE_TYPE), 1);
             case Opcodes.IMUL:
                 return parse_NARYINS(currentFlow, () -> graph.newMul(Type.INT_TYPE), 2);
             case Opcodes.LMUL:
@@ -1333,6 +1342,10 @@ public class GraphParser {
                 return parse_NARYINS(currentFlow, () -> graph.newRem(Type.INT_TYPE), 2);
             case Opcodes.LREM:
                 return parse_NARYINS(currentFlow, () -> graph.newRem(Type.LONG_TYPE), 2);
+            case Opcodes.FREM:
+                return parse_NARYINS(currentFlow, () -> graph.newRem(Type.FLOAT_TYPE), 2);
+            case Opcodes.DREM:
+                return parse_NARYINS(currentFlow, () -> graph.newRem(Type.DOUBLE_TYPE), 2);
             case Opcodes.I2B:
                 return parse_TYPECONVERSION(currentFlow, Type.BYTE_TYPE);
             case Opcodes.I2C:
@@ -1398,6 +1411,9 @@ public class GraphParser {
                 return parse_DCONSTX(currentFlow, 0d);
             case Opcodes.DCONST_1:
                 return parse_DCONSTX(currentFlow, 1d);
+            case Opcodes.DCMPG:
+            case Opcodes.DCMPL:
+                return parse_CMP(currentFlow);
             default:
                 throw new IllegalStateException("Not implemented : " + node + " -> " + node.getOpcode());
         }
@@ -1705,35 +1721,13 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
-    private List<ControlFlow> parse_ANEWARRAY(final ControlFlow currentFlow) {
-        final TypeInsnNode node = (TypeInsnNode) currentFlow.currentNode;
-        final GraphParserState currentState = currentFlow.graphParserState;
-
-        final Frame.PopResult popresult = currentState.frame.popFromStack();
-
-        final NewArray value = graph.newNewArray(Type.getObjectType(node.desc));
-        value.addIncomingData(popresult.value);
-
-        final Variable variable = graph.newVariable(value.type);
-        final Copy copyNode = graph.newCopy();
-        copyNode.addIncomingData(value);
-        variable.addIncomingData(copyNode);
-        graph.registerTranslation(node, new InstructionTranslation(copyNode, currentState.frame));
-
-        final Frame newFrame = popresult.newFrame.pushToStack(variable);
-
-        final GraphParserState newState = currentState.controlFlowsTo(copyNode).withFrame(newFrame);
-        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
-
-        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
-    }
-
     private List<ControlFlow> parseTypeInsnNode(final ControlFlow currentFlow) {
+        final TypeInsnNode node = (TypeInsnNode) currentFlow.currentNode;
         switch (currentFlow.currentNode.getOpcode()) {
             case Opcodes.NEW:
                 return parse_NEW(currentFlow);
             case Opcodes.ANEWARRAY:
-                return parse_ANEWARRAY(currentFlow);
+                return parse_NARYINS(currentFlow, () -> graph.newNewArray(Type.getObjectType(node.desc)), 1);
             case Opcodes.INSTANCEOF:
                 return parse_INSTANCEOF(currentFlow);
             case Opcodes.CHECKCAST:
@@ -2015,6 +2009,11 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
+    private List<ControlFlow> parseMultiANewArrayInsnNode(final ControlFlow currentFlow) {
+        final MultiANewArrayInsnNode node = (MultiANewArrayInsnNode) currentFlow.currentNode;
+        return parse_NARYINS(currentFlow, () -> graph.neNewMultiArray(Type.getObjectType(node.desc)), node.dims);
+    }
+
     private List<ControlFlow> parse(final ControlFlow currentFlow, final Map<AbstractInsnNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerInstruction) {
         if (currentFlow.currentNode instanceof LabelNode) {
             final LabelNode labelNode = (LabelNode) currentFlow.currentNode;
@@ -2085,6 +2084,8 @@ public class GraphParser {
             return parseLookupSwitchInsnNode(currentFlow);
         } else if (currentFlow.currentNode instanceof InvokeDynamicInsnNode) {
             return parseInvokeDynamicInsnNode(currentFlow);
+        } else if (currentFlow.currentNode instanceof MultiANewArrayInsnNode) {
+            return parseMultiANewArrayInsnNode(currentFlow);
         }
         throw new IllegalStateException("Not implemented : " + currentFlow.currentNode + " -> " + currentFlow.currentNode.getOpcode());
     }

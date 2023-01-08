@@ -109,6 +109,10 @@ public class Graph {
         return (NewArray) register(new NewArray(elementType));
     }
 
+    public NewMultiArray neNewMultiArray(final Type elementType) {
+        return (NewMultiArray) register(new NewMultiArray(elementType));
+    }
+
     public If newIf(final If.Operation operation) {
         return (If) register(new If(operation));
     }
