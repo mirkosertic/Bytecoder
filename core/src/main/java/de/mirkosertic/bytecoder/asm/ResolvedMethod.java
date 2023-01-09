@@ -15,8 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.MethodNode;
+
+import java.lang.reflect.Modifier;
 
 public class ResolvedMethod {
 
@@ -32,7 +33,7 @@ public class ResolvedMethod {
     }
 
     public void parseBody(final AnalysisStack analysisStack) {
-        if (((methodNode.access & Opcodes.ACC_ABSTRACT) == 0) && ((methodNode.access & Opcodes.ACC_NATIVE) == 0)) {
+        if (!Modifier.isAbstract(methodNode.access) && !Modifier.isNative(methodNode.access)) {
             // Method is not abstract and not native
             final AnalysisStack newStack = analysisStack.addAction(new AnalysisStack.Action("Parsing method body of " + owner.type + "," + methodNode.name));
             try {

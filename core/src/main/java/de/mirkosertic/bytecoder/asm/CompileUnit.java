@@ -36,9 +36,16 @@ public class CompileUnit {
 
     private final Map<Type, ResolvedClass> resolvedClasses;
 
-    public CompileUnit(final ClassLoader classLoader) {
+    private final Intrinsic intrinsic;
+
+    public CompileUnit(final ClassLoader classLoader, final Intrinsic intrinsic) {
         this.classLoader = classLoader;
         this.resolvedClasses = new HashMap<>();
+        this.intrinsic = intrinsic;
+    }
+
+    protected Intrinsic getIntrinsic() {
+        return intrinsic;
     }
 
     public ResolvedClass resolveClass(final Type type, final AnalysisStack analysisStack) {
@@ -115,14 +122,46 @@ public class CompileUnit {
     }
 
     public void printStatisticsTo(final PrintStream ps) {
+        int numberOfClasses = 0;
+        int numberOfInterfaces = 0;
+        int numberOfAbstractClasses = 0;
+        int numberOfFinalClasses = 0;
+        int numberOfMethods = 0;
+        int numberOfNativeMethods = 0;
+
+        for (final ResolvedClass cl : resolvedClasses.values()) {
+            numberOfClasses++;
+            if (Modifier.isInterface(cl.classNode.access)) {
+                numberOfInterfaces++;
+            }
+            if (Modifier.isAbstract(cl.classNode.access)) {
+                numberOfAbstractClasses++;
+            }
+            if (Modifier.isFinal(cl.classNode.access)) {
+                numberOfFinalClasses++;
+            }
+            for (final ResolvedMethod m : cl.resolvedMethods) {
+                if (m.owner == cl) {
+                    numberOfMethods++;
+                    if (Modifier.isNative(m.methodNode.access)) {
+                        numberOfNativeMethods++;
+                    }
+                }
+            }
+        }
+
         ps.println("Linkage statistics:");
-        ps.print("  Resolved classes in total    : ");
-        ps.println(resolvedClasses.size());
-        ps.print("    Number of interfaces       : ");
-        ps.println(resolvedClasses.values().stream().filter(t -> Modifier.isInterface(t.classNode.access)).count());
-        ps.print("    Number of abstract classes : ");
-        ps.println(resolvedClasses.values().stream().filter(t -> Modifier.isAbstract(t.classNode.access)).count());
-        ps.print("    Number of final classes    : ");
-        ps.println(resolvedClasses.values().stream().filter(t -> Modifier.isFinal(t.classNode.access)).count());
+        ps.print("  Resolved classes in total : ");
+        ps.println(numberOfClasses);
+        ps.print("    # interfaces            : ");
+        ps.println(numberOfInterfaces);
+        ps.print("    # abstract classes      : ");
+        ps.println(numberOfAbstractClasses);
+        ps.print("    # final classes         : ");
+        ps.println(numberOfFinalClasses);
+        ps.print("  Resolved methods in total : ");
+        ps.println(numberOfMethods);
+        ps.print("    # native methods        : ");
+        ps.println(numberOfNativeMethods);
     }
 }

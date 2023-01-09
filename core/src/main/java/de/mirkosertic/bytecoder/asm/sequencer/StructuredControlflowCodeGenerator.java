@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.asm.sequencer;
 
+import de.mirkosertic.bytecoder.asm.AbstractVar;
 import de.mirkosertic.bytecoder.asm.ArrayStore;
 import de.mirkosertic.bytecoder.asm.Copy;
 import de.mirkosertic.bytecoder.asm.If;
@@ -24,14 +25,13 @@ import de.mirkosertic.bytecoder.asm.ReturnValue;
 import de.mirkosertic.bytecoder.asm.SetClassField;
 import de.mirkosertic.bytecoder.asm.SetInstanceField;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocation;
-import de.mirkosertic.bytecoder.asm.Variable;
 import de.mirkosertic.bytecoder.asm.VirtualMethodInvocation;
 
 import java.util.List;
 
 public interface StructuredControlflowCodeGenerator {
 
-    void registerVariables(List<Variable> phis);
+    void registerVariables(List<AbstractVar> variables);
 
     void write(InstanceMethodInvocation node);
 

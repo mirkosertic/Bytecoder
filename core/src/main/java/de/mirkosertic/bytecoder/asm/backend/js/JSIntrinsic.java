@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.asm;
+package de.mirkosertic.bytecoder.asm.backend.js;
 
-import org.objectweb.asm.Type;
+import de.mirkosertic.bytecoder.asm.ControlFlow;
+import de.mirkosertic.bytecoder.asm.Graph;
+import de.mirkosertic.bytecoder.asm.GraphParser;
+import de.mirkosertic.bytecoder.asm.Intrinsic;
 
-public class Variable extends AbstractVar {
+import java.util.List;
 
-    public Variable(final Type value) {
-        super(value);
-    }
+public class JSIntrinsic implements Intrinsic {
 
     @Override
-    public String additionalDebugInfo() {
-        return ": " + type;
+    public List<ControlFlow> intrinsifyMethodInvocation(final ControlFlow currentControlFlow, final Graph graph, final GraphParser graphParser) {
+        return null;
     }
 }

@@ -113,12 +113,8 @@ public class Graph {
         return (NewMultiArray) register(new NewMultiArray(elementType));
     }
 
-    public If newIf(final If.Operation operation) {
-        return (If) register(new If(operation));
-    }
-
-    public ObjectIf newObjectIf(final ObjectIf.Operation operation) {
-        return (ObjectIf) register(new ObjectIf(operation));
+    public If newIf() {
+        return (If) register(new If());
     }
 
     public USHR newUSHR(final Type type) {
@@ -429,4 +425,17 @@ public class Graph {
     public InvokeDynamicExpression newInvokeDynamicExpression(final Type type) {
         return (InvokeDynamicExpression) register(new InvokeDynamicExpression(type));
     }
+
+    public NumericalTest newNumericalTest(final NumericalTest.Operation operation) {
+        return (NumericalTest) register(new NumericalTest(operation));
+    }
+
+    public NullTest newNullTest(final NullTest.Operation operation) {
+        return (NullTest) register(new NullTest(operation));
+    }
+
+    public ReferenceTest newReferenceTest(final ReferenceTest.Operation operation) {
+        return (ReferenceTest) register(new ReferenceTest(operation));
+    }
+
 }

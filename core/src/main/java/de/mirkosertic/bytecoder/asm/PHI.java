@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class PHI extends Variable {
+public class PHI extends AbstractVar {
 
     public PHI(final Type type) {
         super(type);

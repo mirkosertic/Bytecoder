@@ -15,15 +15,11 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-public class ObjectIf extends ControlTokenConsumer {
+import org.objectweb.asm.Type;
 
-    public enum Operation {
-        NULL, NOTNULL
-    }
+public abstract class Test extends Value {
 
-    public final Operation operation;
-
-    public ObjectIf(final Operation operation) {
-        this.operation = operation;
+    public Test() {
+        super(Type.BOOLEAN_TYPE);
     }
 }

@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.js;
 
+import de.mirkosertic.bytecoder.asm.AbstractVar;
 import de.mirkosertic.bytecoder.asm.Add;
 import de.mirkosertic.bytecoder.asm.ArrayLoad;
 import de.mirkosertic.bytecoder.asm.ArrayStore;
@@ -25,12 +26,15 @@ import de.mirkosertic.bytecoder.asm.Graph;
 import de.mirkosertic.bytecoder.asm.If;
 import de.mirkosertic.bytecoder.asm.InstanceMethodInvocation;
 import de.mirkosertic.bytecoder.asm.InstanceMethodInvocationExpression;
-import de.mirkosertic.bytecoder.asm.PrimitiveInt;
 import de.mirkosertic.bytecoder.asm.MethodArgument;
 import de.mirkosertic.bytecoder.asm.New;
 import de.mirkosertic.bytecoder.asm.NewArray;
 import de.mirkosertic.bytecoder.asm.Node;
+import de.mirkosertic.bytecoder.asm.NullReference;
+import de.mirkosertic.bytecoder.asm.NumericalTest;
 import de.mirkosertic.bytecoder.asm.PHI;
+import de.mirkosertic.bytecoder.asm.PrimitiveInt;
+import de.mirkosertic.bytecoder.asm.PrimitiveShort;
 import de.mirkosertic.bytecoder.asm.ReadClassField;
 import de.mirkosertic.bytecoder.asm.ReadInstanceField;
 import de.mirkosertic.bytecoder.asm.ResolvedClass;
@@ -40,7 +44,6 @@ import de.mirkosertic.bytecoder.asm.Return;
 import de.mirkosertic.bytecoder.asm.ReturnValue;
 import de.mirkosertic.bytecoder.asm.SetClassField;
 import de.mirkosertic.bytecoder.asm.SetInstanceField;
-import de.mirkosertic.bytecoder.asm.PrimitiveShort;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocation;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocationExpression;
 import de.mirkosertic.bytecoder.asm.Sub;
@@ -122,6 +125,8 @@ public class JSBackend {
 
                 generateFieldsFor(pw, compileUnit, cl);
 
+                generateClassInitFor(pw, compileUnit, cl);
+
                 generateMethodsFor(pw, compileUnit, cl);
 
                 pw.println("};");
@@ -159,14 +164,46 @@ public class JSBackend {
                 }
                 pw.println("  }");
 
+                generateClassInitFor(pw, compileUnit, cl);
+
                 generateMethodsFor(pw, compileUnit, cl);
 
-                pw.println("};");
+                pw.println("}");
                 pw.println();
             }
         }
 
         pw.flush();
+    }
+
+    private void generateClassInitFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
+        if (cl.requiresClassInitializer()) {
+            pw.println();
+            pw.println("  static #iguard = false;");
+            pw.println("  static get i() {");
+            pw.print("    if (!");
+            pw.print(generateClassName(cl.type));
+            pw.println(".#iguard) {");
+            pw.print("      ");
+            pw.print(generateClassName(cl.type));
+            pw.println(".#iguard = true;");
+            if (cl.superClass != null && cl.superClass.requiresClassInitializer()) {
+                pw.print("      ");
+                pw.print(generateClassName(cl.superClass.type));
+                pw.println(".i;");
+            }
+
+            pw.print("      ");
+            pw.print(generateClassName(cl.type));
+            pw.print(".");
+            pw.print(generateMethodName("<clinit>", Type.getMethodType(cl.classInitializer.methodNode.desc).getArgumentTypes()));
+            pw.println("();");
+            pw.println("    }");
+            pw.print("    return ");
+            pw.print(generateClassName(cl.type));
+            pw.println(";");
+            pw.println("  }");
+        }
     }
 
     private void generateFieldsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
@@ -181,6 +218,24 @@ public class JSBackend {
                     pw.print("#");
                 }
                 pw.print(generateFieldName(f.name));
+                pw.print(" ");
+                switch (f.type.getSort()) {
+                    case Type.FLOAT:
+                    case Type.DOUBLE:
+                        pw.print(" = 0.0");
+                        break;
+                    case Type.BOOLEAN:
+                        pw.print(" = false");
+                        break;
+                    case Type.ARRAY:
+                    case Type.OBJECT:
+                    case Type.METHOD:
+                        pw.print(" = null");
+                        break;
+                    default:
+                        pw.print(" = 0");
+                        break;
+                }
                 pw.println(";");
             }
 
@@ -245,12 +300,12 @@ public class JSBackend {
 
                     int level = 4;
 
-                    private final Map<Variable, String> variableToName = new HashMap<>();
+                    private final Map<AbstractVar, String> variableToName = new HashMap<>();
 
                     @Override
-                    public void registerVariables(final List<Variable> variables) {
+                    public void registerVariables(final List<AbstractVar> variables) {
                         for (int i = 0; i < variables.size(); i++) {
-                            final Variable v = variables.get(i);
+                            final AbstractVar v = variables.get(i);
                             if (v instanceof PHI) {
                                 final String varName = "phi" + i;
                                 variableToName.put(variables.get(i), "phi" + i);
@@ -404,6 +459,39 @@ public class JSBackend {
                         pw.print(node.index);
                     }
 
+                    private void writeExpression(final NullReference node) {
+                        pw.print("null");
+                    }
+
+                    private void writeExpression(final NumericalTest node) {
+                        writeExpression(node.incomingDataFlows[0]);
+
+                        switch (node.operation) {
+                            case EQ:
+                                pw.print(" == ");
+                                break;
+                            case GE:
+                                pw.print(" >= ");
+                                break;
+                            case GT:
+                                pw.print(" > ");
+                                break;
+                            case LE:
+                                pw.print(" <= ");
+                                break;
+                            case LT:
+                                pw.print(" < ");
+                                break;
+                            case NE:
+                                pw.print(" != ");
+                                break;
+                            default:
+                                throw new IllegalStateException("Not implemented : " + node.operation);
+                        }
+
+                        writeExpression(node.incomingDataFlows[1]);
+                    }
+
                     @Override
                     public void write(final SetInstanceField node) {
 
@@ -487,7 +575,13 @@ public class JSBackend {
 
                         final Type target = Type.getObjectType(node.insnNode.owner);
 
+                        final ResolvedClass resolvedClass = compileUnit.resolveClass(target, null);
+
                         pw.print(generateClassName(target));
+                        if (resolvedClass.requiresClassInitializer()) {
+                            pw.print(".i");
+                        }
+
                         pw.print(".");
                         if ((node.resolvedMethod.methodNode.access & Opcodes.ACC_PRIVATE) > 0) {
                             pw.print("#");
@@ -508,8 +602,13 @@ public class JSBackend {
                         pw.print("(");
 
                         final Type target = Type.getObjectType(node.insnNode.owner);
+                        final ResolvedClass resolvedClass = compileUnit.resolveClass(target, null);
 
                         pw.print(generateClassName(target));
+                        if (resolvedClass.requiresClassInitializer()) {
+                            pw.print(".i");
+                        }
+
                         pw.print(".");
                         if ((node.resolvedMethod.methodNode.access & Opcodes.ACC_PRIVATE) > 0) {
                             pw.print("#");
@@ -544,8 +643,8 @@ public class JSBackend {
                     }
 
                     private void writeExpression(final Node node) {
-                        if (node instanceof Variable) {
-                            writeExpression((Variable) node);
+                        if (node instanceof AbstractVar) {
+                            writeExpression((AbstractVar) node);
                         } else if (node instanceof PrimitiveShort) {
                             writeExpression((PrimitiveShort) node);
                         } else if (node instanceof Sub) {
@@ -578,13 +677,21 @@ public class JSBackend {
                             writeExpression((ArrayLoad) node);
                         } else if (node instanceof MethodArgument) {
                             writeExpression((MethodArgument) node);
+                        } else if (node instanceof NumericalTest) {
+                            writeExpression((NumericalTest) node);
+                        } else if (node instanceof NullReference) {
+                            writeExpression((NullReference) node);
                         } else {
                             throw new IllegalArgumentException("Not implemented : " + node);
                         }
                     }
 
                     private void writeExpression(final TypeReference node) {
+                        final ResolvedClass cl = compileUnit.resolveClass(node.type, null);
                         pw.print(generateClassName(node.type));
+                        if (cl.requiresClassInitializer()) {
+                            pw.print(".i");
+                        }
                     }
 
                     private void writeExpression(final This node) {
@@ -621,7 +728,7 @@ public class JSBackend {
                         pw.print(")");
                     }
 
-                    private void writeExpression(final Variable node) {
+                    private void writeExpression(final AbstractVar node) {
                         pw.print(variableToName.get(node));
                     }
 
@@ -643,31 +750,6 @@ public class JSBackend {
                         pw.print("if (");
 
                         writeExpression(node.incomingDataFlows[0]);
-
-                        switch (node.operation) {
-                            case EQ:
-                                pw.print(" == ");
-                                break;
-                            case GE:
-                                pw.print(" >= ");
-                                break;
-                            case GT:
-                                pw.print(" > ");
-                                break;
-                            case LE:
-                                pw.print(" <= ");
-                                break;
-                            case LT:
-                                pw.print(" < ");
-                                break;
-                            case NE:
-                                pw.print(" != ");
-                                break;
-                            default:
-                                throw new IllegalStateException("Not implemented : " + node.operation);
-                        }
-
-                        writeExpression(node.incomingDataFlows[1]);
 
                         pw.println(") {");
                         level++;

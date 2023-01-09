@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,20 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Type;
+public class NumericalTest extends Test {
 
-public class Variable extends AbstractVar {
+    public enum Operation {
+        EQ, NE, LT, GE, GT, LE
+    }
 
-    public Variable(final Type value) {
-        super(value);
+    public final Operation operation;
+
+    public NumericalTest(final Operation operation) {
+        this.operation = operation;
     }
 
     @Override
     public String additionalDebugInfo() {
-        return ": " + type;
+        return ": " + operation;
     }
 }

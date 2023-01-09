@@ -17,13 +17,6 @@ package de.mirkosertic.bytecoder.asm;
 
 public class If extends ControlTokenConsumer {
 
-    public enum Operation {
-        EQ, NE, LT, GE, GT, LE
-    }
-
-    public final Operation operation;
-
-    public If(final Operation operation) {
-        this.operation = operation;
+    public If() {
     }
 }

@@ -17,9 +17,9 @@ package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
 
-public class Variable extends AbstractVar {
+public class AbstractVar extends Value {
 
-    public Variable(final Type value) {
+    public AbstractVar(final Type value) {
         super(value);
     }
 

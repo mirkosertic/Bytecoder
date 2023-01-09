@@ -15,16 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Type;
+import java.util.List;
 
-public class Variable extends AbstractVar {
+public interface Intrinsic {
 
-    public Variable(final Type value) {
-        super(value);
-    }
-
-    @Override
-    public String additionalDebugInfo() {
-        return ": " + type;
-    }
+    List<ControlFlow> intrinsifyMethodInvocation(final ControlFlow currentControlFlow, final Graph graph, final GraphParser graphParser);
 }

@@ -59,30 +59,30 @@ public class GraphParser {
 
     private final AnalysisStack analysisStack;
 
-    public static String opcodeToString(final int opcode) {
-        if (opcode == -1) {
-            return null;
-        }
-        final Class cl = Opcodes.class;
-        try {
-            for (final Field f : cl.getDeclaredFields()) {
-                if (!f.getName().startsWith("V") && !f.getName().startsWith("ACC_") && f.get(cl).equals(opcode)) {
-                    return f.getName();
-                }
-            }
-            throw new IllegalStateException("Unknown opcode : " + opcode);
-        } catch (final IllegalStateException e) {
-            throw e;
-        } catch (final Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+    private final Map<Integer, String> opcodeToName;
 
     public GraphParser(final CompileUnit compileUnit, final Type ownerType, final MethodNode methodNode, final AnalysisStack analysisStack) {
         this.methodNode = methodNode;
         this.graph = new Graph();
         this.compileUnit = compileUnit;
         this.analysisStack = analysisStack;
+        this.opcodeToName = new HashMap<>();
+
+        for (final Field f : Opcodes.class.getDeclaredFields()) {
+            if (f.getType() == int.class &&
+                !f.getName().startsWith("V") &&
+                !f.getName().startsWith("ACC_") &&
+                !f.getName().startsWith("T_")  &&
+                !f.getName().startsWith("H_") &&
+                !f.getName().startsWith("F_")) {
+                try {
+                    final int code = (int) f.get(Opcodes.class);
+                    opcodeToName.put(code, f.getName());
+                } catch (final Exception e) {
+                    throw new IllegalStateException("Error extracting opcode translations", e);
+                }
+            }
+        }
 
         parse(ownerType);
     }
@@ -296,7 +296,7 @@ public class GraphParser {
         while (!controlFlowsToCheck.isEmpty()) {
             final ControlFlow flow = controlFlowsToCheck.pop();
             if (alreadyVisited.add(flow.currentNode)) {
-                final String opcode = opcodeToString(flow.currentNode.getOpcode());
+                final String opcode = opcodeToName.get(flow.currentNode.getOpcode());
                 if (opcode != null) {
                     analysisStack.addDebugMessage("Visiting #" + methodNode.instructions.indexOf(flow.currentNode) + " " + opcode + " Stack size is " + flow.graphParserState.frame.incomingStack.length + " Source line " + flow.graphParserState.lineNumber);
                 }
@@ -375,19 +375,31 @@ public class GraphParser {
         if (node.getNext() != null) {
             if (region instanceof TryCatch) {
                 LabelNode endNode = null;
-                for (final TryCatchBlockNode tryCatchBlockNode : methodNode.tryCatchBlocks) {
+                TryCatch currentTryCatch = (TryCatch) region;
+                GraphParserState nextState = state;
+                for (int i = methodNode.tryCatchBlocks.size() - 1; i >= 0; i--) {
+                    final TryCatchBlockNode tryCatchBlockNode = methodNode.tryCatchBlocks.get(i);
                     if (tryCatchBlockNode.start == node) {
                         if (endNode == null) {
                             endNode = tryCatchBlockNode.end;
+
+                            final TryCatchGuardStackEntry tryCatchGuardStackEntry = new TryCatchGuardStackEntry((TryCatch) region, node, endNode);
+                            nextState = nextState.withNewTryCatchOnStack(tryCatchGuardStackEntry);
+
                         } else {
                             if (endNode != tryCatchBlockNode.end) {
-                                throw new IllegalStateException("All try catch regions must have the same end for a given label!");
+                                final TryCatch nestedTryCatch = graph.newTryCatch(region.label + "_" + endNode.getLabel().toString());
+                                final TryCatchGuardStackEntry tryCatchGuardStackEntry = new TryCatchGuardStackEntry((TryCatch) region, node, endNode);
+                                nextState = nextState.withNewTryCatchOnStack(tryCatchGuardStackEntry);
+
+                                graph.registerTranslation(node, new InstructionTranslation(nestedTryCatch, state.frame));
+
+                                currentTryCatch.addControlFlowTo(StandardProjections.TRYCATCHGUARD, nestedTryCatch);
+                                currentTryCatch = nestedTryCatch;
                             }
                         }
                     }
                 }
-                final TryCatchGuardStackEntry tryCatchGuardStackEntry = new TryCatchGuardStackEntry((TryCatch) region, node, endNode);
-                final GraphParserState nextState = state.withNewTryCatchOnStack(tryCatchGuardStackEntry);
 
                 graph.addFixup(new ControlFlowFixup(node, nextState.frame, StandardProjections.TRYCATCHGUARD, node.getNext()));
                 flowsToCheck.add(currentFlow.continueWith(node.getNext(), nextState));
@@ -436,7 +448,7 @@ public class GraphParser {
 
         graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
 
-        final GraphParserState newState = currentState.controlFlowsTo(n);
+        final GraphParserState newState = currentState.withLineNumber(node.line).controlFlowsTo(n);
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
@@ -1119,7 +1131,7 @@ public class GraphParser {
 
             graph.registerTranslation(node, new InstructionTranslation(c, currentState.frame));
 
-            final Frame newFrame = pop1.newFrame.pushToStack(pop2.value).pushToStack(pop1.value).pushToStack(dest2).pushToStack(dest1);
+            final Frame newFrame = pop2.newFrame.pushToStack(pop2.value).pushToStack(pop1.value).pushToStack(dest2).pushToStack(dest1);
 
             final GraphParserState newState = currentState.controlFlowsTo(c2).withFrame(newFrame);
             graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -1425,6 +1437,8 @@ public class GraphParser {
             throw new AnalysisException(new RuntimeException("Parser stack does not match with compiled bytecode stack! Expected " + node.stack.size() + " != actual " + currentFlow.graphParserState.frame.incomingStack.length), analysisStack);
         }
 
+        analysisStack.addDebugMessage("Check of stack size is ok");
+
         final GraphParserState currentState = currentFlow.graphParserState;
         final FrameDebugInfo n = graph.newFrameDebugInfo();
 
@@ -1449,20 +1463,24 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(node.label, currentState.controlFlowsTo(target)));
     }
 
-    private List<ControlFlow> parse_IF(final ControlFlow currentFlow, final If.Operation operation) {
+    private List<ControlFlow> parse_IF_TWOARGS(final ControlFlow currentFlow, final Supplier<Test> testSupplier) {
         final JumpInsnNode node = (JumpInsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
 
-        final Frame.PopResult pop1 = currentState.frame.popFromStack();
-        final Frame.PopResult pop2 = pop1.newFrame.popFromStack();
+        final Frame.PopResult pop2 = currentState.frame.popFromStack();
+        final Frame.PopResult pop1 = pop2.newFrame.popFromStack();
 
-        final If ifNode = graph.newIf(operation);
+        final If ifNode = graph.newIf();
         graph.registerTranslation(node, new InstructionTranslation(ifNode, currentState.frame));
-        ifNode.addIncomingData(pop2.value, pop1.value);
+
+        final Test numericalTest = testSupplier.get();
+        numericalTest.addIncomingData(pop1.value, pop2.value);
+
+        ifNode.addIncomingData(numericalTest);
 
         final List<ControlFlow> results = new ArrayList<>();
 
-        final GraphParserState origin = currentState.controlFlowsTo(ifNode).withFrame(pop2.newFrame);
+        final GraphParserState origin = currentState.controlFlowsTo(ifNode).withFrame(pop1.newFrame);
 
         // True-Case
         graph.addFixup(new ControlFlowFixup(node, origin.frame, StandardProjections.TRUE, node.label));
@@ -1476,15 +1494,19 @@ public class GraphParser {
         return results;
     }
 
-    private List<ControlFlow> parse_OBJECTIF(final ControlFlow currentFlow, final ObjectIf.Operation operation) {
+    private List<ControlFlow> parse_IF_ONEARG(final ControlFlow currentFlow, final Supplier<Test> testSupplier) {
         final JumpInsnNode node = (JumpInsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
 
         final Frame.PopResult pop1 = currentState.frame.popFromStack();
 
-        final ObjectIf ifNode = graph.newObjectIf(operation);
+        final If ifNode = graph.newIf();
+
+        final Test t = testSupplier.get();
+        t.addIncomingData(pop1.value);
+
         graph.registerTranslation(node, new InstructionTranslation(ifNode, currentState.frame));
-        ifNode.addIncomingData(pop1.value);
+        ifNode.addIncomingData(t);
 
         final List<ControlFlow> results = new ArrayList<>();
 
@@ -1508,33 +1530,37 @@ public class GraphParser {
 
         final Frame.PopResult pop1 = currentState.frame.popFromStack();
 
-        final If.Operation compareOperation;
+        final NumericalTest.Operation compareOperation;
         switch (currentFlow.currentNode.getOpcode()) {
             case Opcodes.IFEQ:
-                compareOperation = If.Operation.EQ;
+                compareOperation = NumericalTest.Operation.EQ;
                 break;
             case Opcodes.IFNE:
-                compareOperation = If.Operation.NE;
+                compareOperation = NumericalTest.Operation.NE;
                 break;
             case Opcodes.IFLT:
-                compareOperation = If.Operation.LT;
+                compareOperation = NumericalTest.Operation.LT;
                 break;
             case Opcodes.IFGE:
-                compareOperation = If.Operation.GE;
+                compareOperation = NumericalTest.Operation.GE;
                 break;
             case Opcodes.IFGT:
-                compareOperation = If.Operation.GT;
+                compareOperation = NumericalTest.Operation.GT;
                 break;
             case Opcodes.IFLE:
-                compareOperation = If.Operation.LE;
+                compareOperation = NumericalTest.Operation.LE;
                 break;
             default:
                 throw new IllegalStateException("Not implemented : " + currentFlow.currentNode.getOpcode());
         }
 
-        final If ifNode = graph.newIf(compareOperation);
+        final If ifNode = graph.newIf();
         graph.registerTranslation(node, new InstructionTranslation(ifNode, currentState.frame));
-        ifNode.addIncomingData(pop1.value, graph.newIntNode(0));
+
+        final NumericalTest numericalTest = graph.newNumericalTest(compareOperation);
+        numericalTest.addIncomingData(pop1.value, graph.newIntNode(0));
+
+        ifNode.addIncomingData(numericalTest);
 
         final List<ControlFlow> results = new ArrayList<>();
 
@@ -1557,21 +1583,21 @@ public class GraphParser {
             case Opcodes.GOTO:
                 return parse_GOTO(currentFlow);
             case Opcodes.IF_ICMPEQ:
-                return parse_IF(currentFlow, If.Operation.EQ);
+                return parse_IF_TWOARGS(currentFlow, () -> graph.newNumericalTest(NumericalTest.Operation.EQ));
             case Opcodes.IF_ICMPNE:
-                return parse_IF(currentFlow, If.Operation.NE);
+                return parse_IF_TWOARGS(currentFlow, () -> graph.newNumericalTest(NumericalTest.Operation.NE));
             case Opcodes.IF_ICMPLT:
-                return parse_IF(currentFlow, If.Operation.LT);
+                return parse_IF_TWOARGS(currentFlow, () -> graph.newNumericalTest(NumericalTest.Operation.LT));
             case Opcodes.IF_ICMPGE:
-                return parse_IF(currentFlow, If.Operation.GE);
+                return parse_IF_TWOARGS(currentFlow, () -> graph.newNumericalTest(NumericalTest.Operation.GE));
             case Opcodes.IF_ICMPGT:
-                return parse_IF(currentFlow, If.Operation.GT);
+                return parse_IF_TWOARGS(currentFlow, () -> graph.newNumericalTest(NumericalTest.Operation.GT));
             case Opcodes.IF_ICMPLE:
-                return parse_IF(currentFlow, If.Operation.LE);
+                return parse_IF_TWOARGS(currentFlow, () -> graph.newNumericalTest(NumericalTest.Operation.LE));
             case Opcodes.IFNONNULL:
-                return parse_OBJECTIF(currentFlow, ObjectIf.Operation.NOTNULL);
+                return parse_IF_ONEARG(currentFlow, () -> graph.newNullTest(NullTest.Operation.NOTNULL));
             case Opcodes.IFNULL:
-                return parse_OBJECTIF(currentFlow, ObjectIf.Operation.NULL);
+                return parse_IF_ONEARG(currentFlow, () -> graph.newNullTest(NullTest.Operation.NULL));
             case Opcodes.IFEQ:
             case Opcodes.IFNE:
             case Opcodes.IFLT:
@@ -1580,9 +1606,9 @@ public class GraphParser {
             case Opcodes.IFLE:
                 return parse_ZEROIF(currentFlow);
             case Opcodes.IF_ACMPEQ:
-                return parse_IF(currentFlow, If.Operation.EQ);
+                return parse_IF_TWOARGS(currentFlow, () -> graph.newReferenceTest(ReferenceTest.Operation.EQ));
             case Opcodes.IF_ACMPNE:
-                return parse_IF(currentFlow, If.Operation.NE);
+                return parse_IF_TWOARGS(currentFlow, () -> graph.newReferenceTest(ReferenceTest.Operation.EQ));
             default:
                 throw new IllegalStateException("Not supported opcode : " + currentFlow.currentNode.getOpcode());
         }

@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.asm;
 
 import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -46,7 +47,7 @@ public class ResolvedClass {
 
     boolean needsInitialization;
 
-    private ResolvedMethod classInitializer;
+    public ResolvedMethod classInitializer;
 
     public ResolvedClass(final CompileUnit compileUnit, final Type type, final ClassNode classNode, final ResolvedClass superClass, final ResolvedClass[] interfaces) {
         this.compileUnit = compileUnit;
@@ -90,6 +91,14 @@ public class ResolvedClass {
     }
 
     public ResolvedMethod resolveMethod(final String methodName, final Type methodType, final AnalysisStack analysisStack) {
+        final ResolvedMethod m = resolveMethodInternal(methodName, methodType, analysisStack);
+        if (m == null) {
+            throw new IllegalStateException("No such method : " + classNode.name + "." + methodName + methodType);
+        }
+        return m;
+    }
+
+    private ResolvedMethod resolveMethodInternal(final String methodName, final Type methodType, final AnalysisStack analysisStack) {
         for (final ResolvedMethod m : resolvedMethods) {
             final MethodNode methodNode = m.methodNode;
             if (methodNode.name.equals(methodName) && methodNode.desc.equals(methodType.getDescriptor())) {
@@ -98,17 +107,34 @@ public class ResolvedClass {
         }
         for (int i = 0; i < classNode.methods.size(); i++) {
             final MethodNode methodNode = classNode.methods.get(i);
-            if (methodNode.name.equals(methodName) && methodNode.desc.equals(methodType.getDescriptor())) {
-                final ResolvedMethod r = new ResolvedMethod(this, methodNode);
-                resolvedMethods.add(r);
-                r.parseBody(analysisStack);
-                return r;
+            if (methodNode.name.equals(methodName)) {
+                boolean polymorphic = false;
+                if (methodNode.visibleAnnotations != null) {
+                    for (final AnnotationNode node : methodNode.visibleAnnotations) {
+                        if ("Ljava/lang/invoke/MethodHandle$PolymorphicSignature;".equals(node.desc)) {
+                            polymorphic = true;
+                            break;
+                        }
+                    }
+                }
+                if (polymorphic || methodNode.desc.equals(methodType.getDescriptor())) {
+                    final ResolvedMethod r = new ResolvedMethod(this, methodNode);
+                    resolvedMethods.add(r);
+                    r.parseBody(analysisStack);
+                    return r;
+                }
+            }
+        }
+        for (final ResolvedClass interf : interfaces) {
+            final ResolvedMethod m = interf.resolveMethodInternal(methodName, methodType, analysisStack);
+            if (m != null) {
+                return m;
             }
         }
         if (superClass != null) {
-            return superClass.resolveMethod(methodName, methodType, analysisStack);
+            return superClass.resolveMethodInternal(methodName, methodType, analysisStack);
         }
-        throw new RuntimeException("No such method : " + methodName + methodType);
+        return null;
     }
 
     public ResolvedField resolveField(final String name, final Type t) {
@@ -119,7 +145,7 @@ public class ResolvedClass {
         }
         for (final FieldNode f : classNode.fields) {
             if (f.name.equals(name)) {
-                final ResolvedField rf = new ResolvedField(this, name, f.access);
+                final ResolvedField rf = new ResolvedField(this, name, Type.getType(f.desc), f.access);
                 resolvedFields.add(rf);
                 return rf;
             }
@@ -128,5 +154,13 @@ public class ResolvedClass {
             return superClass.resolveField(name, t);
         }
         throw new IllegalStateException("No such field " + name + " in " + classNode.name);
+    }
+
+    public boolean requiresClassInitializer() {
+        boolean requiresClassInitializer = classInitializer != null;
+        if (superClass != null) {
+            requiresClassInitializer = requiresClassInitializer | superClass.requiresClassInitializer();
+        }
+        return requiresClassInitializer;
     }
 }

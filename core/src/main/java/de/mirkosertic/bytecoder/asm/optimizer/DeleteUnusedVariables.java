@@ -15,9 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.optimizer;
 
+import de.mirkosertic.bytecoder.asm.AbstractVar;
 import de.mirkosertic.bytecoder.asm.Graph;
 import de.mirkosertic.bytecoder.asm.Node;
-import de.mirkosertic.bytecoder.asm.Variable;
 
 public class DeleteUnusedVariables implements Optimizer {
 
@@ -25,7 +25,7 @@ public class DeleteUnusedVariables implements Optimizer {
 
     public DeleteUnusedVariables() {
         patternMatcher = new NodePatternMatcher(
-            NodePredicates.ofType(Variable.class),
+            NodePredicates.ofType(AbstractVar.class),
             NodePredicates.incomingDataFlows(NodePredicates.empty())
         );
     }

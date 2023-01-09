@@ -15,12 +15,12 @@
  */
 package de.mirkosertic.bytecoder.asm.optimizer;
 
+import de.mirkosertic.bytecoder.asm.AbstractVar;
 import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.asm.Copy;
 import de.mirkosertic.bytecoder.asm.Graph;
 import de.mirkosertic.bytecoder.asm.Node;
 import de.mirkosertic.bytecoder.asm.Projection;
-import de.mirkosertic.bytecoder.asm.Variable;
 
 import java.util.List;
 import java.util.Map;
@@ -46,7 +46,7 @@ public class DeleteRedundantVariableCopy implements Optimizer {
                 final Copy copy = (Copy) node;
                 final Node incoming = copy.incomingDataFlows[0];
                 final Node outgoing = copy.outgoingFlows[0];
-                if ((incoming instanceof Variable) && (outgoing instanceof Variable) && (incoming.incomingDataFlows.length == 1) && (incoming.incomingDataFlows[0] instanceof Copy)) {
+                if ((incoming instanceof AbstractVar) && (outgoing instanceof AbstractVar) && (incoming.incomingDataFlows.length == 1) && (incoming.incomingDataFlows[0] instanceof Copy)) {
 
                     final Copy rootCopy = (Copy) incoming.incomingDataFlows[0];
                     rootCopy.removeFromOutgoingData(incoming);

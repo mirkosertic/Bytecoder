@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.asm.sequencer;
 
+import de.mirkosertic.bytecoder.asm.AbstractVar;
 import de.mirkosertic.bytecoder.asm.ArrayStore;
 import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.asm.Copy;
@@ -29,7 +30,6 @@ import de.mirkosertic.bytecoder.asm.ReturnValue;
 import de.mirkosertic.bytecoder.asm.SetClassField;
 import de.mirkosertic.bytecoder.asm.SetInstanceField;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocation;
-import de.mirkosertic.bytecoder.asm.Variable;
 import de.mirkosertic.bytecoder.asm.VirtualMethodInvocation;
 
 import java.util.ArrayList;
@@ -75,7 +75,7 @@ public class Sequencer {
         this.codegenerator = codegenerator;
         final ControlTokenConsumer startNode = g.regionByLabel(Graph.START_REGION_NAME);
 
-        final List<Variable> phis = g.nodes().stream().filter(t -> t instanceof Variable).map(t -> (Variable) t).collect(Collectors.toList());
+        final List<AbstractVar> phis = g.nodes().stream().filter(t -> t instanceof AbstractVar).map(t -> (AbstractVar) t).collect(Collectors.toList());
         codegenerator.registerVariables(phis);
 
         visit(startNode, new ArrayList<>());

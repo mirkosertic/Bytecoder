@@ -7,6 +7,10 @@ import org.junit.runner.RunWith;
 @RunWith(UnitTestRunner.class)
 public class SimpleLinkageTest {
 
+    public static class Base {
+        static int x = 100;
+    }
+
     public interface Testinterface {
 
     }
@@ -15,7 +19,9 @@ public class SimpleLinkageTest {
 
     }
 
-    public static class Testclass implements Testinterface, Testinterface2 {
+    public static class Testclass extends Base implements Testinterface, Testinterface2 {
+
+        static int y = 200;
 
         int value;
 
@@ -58,6 +64,8 @@ public class SimpleLinkageTest {
 
             Testclass y = new Testclass();
             y.value = 10000;
+            y.value2 = null;
+            for (int i = 0; i < 100; i++);
         }
     }
 

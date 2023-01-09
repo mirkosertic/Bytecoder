@@ -15,13 +15,13 @@
  */
 package de.mirkosertic.bytecoder.asm.optimizer;
 
+import de.mirkosertic.bytecoder.asm.AbstractVar;
 import de.mirkosertic.bytecoder.asm.Constant;
 import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.asm.Copy;
 import de.mirkosertic.bytecoder.asm.Graph;
 import de.mirkosertic.bytecoder.asm.Node;
 import de.mirkosertic.bytecoder.asm.Projection;
-import de.mirkosertic.bytecoder.asm.Variable;
 
 import java.util.List;
 import java.util.Map;
@@ -47,7 +47,7 @@ public class DeleteCopyToUnusedVariable implements Optimizer {
                 final Copy copy = (Copy) node;
                 final Node incoming = copy.incomingDataFlows[0];
                 final Node outgoing = copy.outgoingFlows[0];
-                if ((incoming instanceof Variable || incoming instanceof Constant) && outgoing instanceof Variable) {
+                if ((incoming instanceof AbstractVar || incoming instanceof Constant) && outgoing instanceof AbstractVar) {
 
                     if (outgoing.outgoingFlows.length == 0 && outgoing.incomingDataFlows.length == 1) {
                         incoming.removeFromOutgoingData(copy);
