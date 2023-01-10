@@ -7,6 +7,10 @@ import org.junit.runner.RunWith;
 @RunWith(UnitTestRunner.class)
 public class SimpleLinkageTest {
 
+    enum TestEnum {
+        a
+    }
+
     public static class Base {
         static int x = 100;
     }
@@ -66,6 +70,9 @@ public class SimpleLinkageTest {
             y.value = 10000;
             y.value2 = null;
             for (int i = 0; i < 100; i++);
+
+            TestEnum x = TestEnum.a;
+            TestEnum.class.getEnumConstants();
         }
     }
 

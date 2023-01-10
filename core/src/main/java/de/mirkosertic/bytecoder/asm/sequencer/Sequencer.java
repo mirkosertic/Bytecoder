@@ -20,9 +20,12 @@ import de.mirkosertic.bytecoder.asm.ArrayStore;
 import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.asm.Copy;
 import de.mirkosertic.bytecoder.asm.EdgeType;
+import de.mirkosertic.bytecoder.asm.FrameDebugInfo;
+import de.mirkosertic.bytecoder.asm.Goto;
 import de.mirkosertic.bytecoder.asm.Graph;
 import de.mirkosertic.bytecoder.asm.If;
 import de.mirkosertic.bytecoder.asm.InstanceMethodInvocation;
+import de.mirkosertic.bytecoder.asm.LineNumberDebugInfo;
 import de.mirkosertic.bytecoder.asm.Projection;
 import de.mirkosertic.bytecoder.asm.Region;
 import de.mirkosertic.bytecoder.asm.Return;
@@ -104,6 +107,12 @@ public class Sequencer {
             visit((ArrayStore) node, activeStack);
         } else if (node instanceof SetClassField) {
             visit((SetClassField) node, activeStack);
+        } else if (node instanceof LineNumberDebugInfo) {
+            visit((LineNumberDebugInfo) node, activeStack);
+        } else if (node instanceof FrameDebugInfo) {
+            visit((FrameDebugInfo) node, activeStack);
+        } else if (node instanceof Goto) {
+            visit((Goto) node, activeStack);
         } else {
             throw new IllegalStateException("Not implemented : " + node.getClass().getSimpleName());
         }
@@ -173,6 +182,27 @@ public class Sequencer {
     }
 
     private void visit(final SetClassField node, final List<Block> activeStack) {
+
+        codegenerator.write(node);
+
+        processSuccessors(node, activeStack);
+    }
+
+    private void visit(final LineNumberDebugInfo node, final List<Block> activeStack) {
+
+        codegenerator.write(node);
+
+        processSuccessors(node, activeStack);
+    }
+
+    private void visit(final FrameDebugInfo node, final List<Block> activeStack) {
+
+        codegenerator.write(node);
+
+        processSuccessors(node, activeStack);
+    }
+
+    private void visit(final Goto node, final List<Block> activeStack) {
 
         codegenerator.write(node);
 

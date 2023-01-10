@@ -68,7 +68,7 @@ public class Graph {
         return translations.get(instruction);
     }
 
-    protected Node register(final Node n) {
+    public Node register(final Node n) {
         nodes.add(n);
         if (n instanceof Region) {
             final Region r = (Region) n;
@@ -402,16 +402,16 @@ public class Graph {
         return (VirtualMethodInvocationExpression) register(new VirtualMethodInvocationExpression(node));
     }
 
-    public LineNumberDebugInfo newLineNumberDebugInfo() {
-        return (LineNumberDebugInfo) register(new LineNumberDebugInfo());
+    public LineNumberDebugInfo newLineNumberDebugInfo(final int lineNumber) {
+        return (LineNumberDebugInfo) register(new LineNumberDebugInfo(lineNumber));
     }
 
-    public FrameDebugInfo newFrameDebugInfo() {
-        return (FrameDebugInfo) register(new FrameDebugInfo());
+    public FrameDebugInfo newFrameDebugInfo(final Frame frame) {
+        return (FrameDebugInfo) register(new FrameDebugInfo(frame));
     }
 
-    public MethodReference newMethodReference(final ResolvedMethod methood) {
-        return (MethodReference) register(new MethodReference(methood));
+    public MethodReference newMethodReference(final ResolvedMethod method) {
+        return (MethodReference) register(new MethodReference(method));
     }
 
     public ResolveCallsite newResolveCallsite() {

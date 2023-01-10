@@ -17,6 +17,9 @@ package de.mirkosertic.bytecoder.asm;
 
 public class LineNumberDebugInfo extends ControlTokenConsumer {
 
-    public LineNumberDebugInfo() {
+    public final int lineNumber;
+
+    public LineNumberDebugInfo(final int lineNumber) {
+        this.lineNumber = lineNumber;
     }
 }

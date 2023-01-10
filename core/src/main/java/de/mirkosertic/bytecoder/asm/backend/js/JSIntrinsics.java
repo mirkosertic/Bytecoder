@@ -13,11 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.asm;
+package de.mirkosertic.bytecoder.asm.backend.js;
 
-import java.util.List;
+import de.mirkosertic.bytecoder.asm.parser.CoreIntrinsics;
 
-public interface Intrinsic {
+import java.util.Collections;
 
-    List<ControlFlow> intrinsifyMethodInvocation(final ControlFlow currentControlFlow, final Graph graph, final GraphParser graphParser);
+public class JSIntrinsics extends CoreIntrinsics {
+
+    public JSIntrinsics() {
+        super(Collections.emptyList());
+    }
 }

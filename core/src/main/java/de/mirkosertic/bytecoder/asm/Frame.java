@@ -28,8 +28,8 @@ public class Frame {
         }
     }
 
-    final Value[] incomingLocals;
-    final Value[] incomingStack;
+    public final Value[] incomingLocals;
+    public final Value[] incomingStack;
 
     public Frame(final Value[] incomingLocals, final Value[] incomingStack) {
         this.incomingLocals = incomingLocals;

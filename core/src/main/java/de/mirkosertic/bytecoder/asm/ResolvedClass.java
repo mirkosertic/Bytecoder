@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
+import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;

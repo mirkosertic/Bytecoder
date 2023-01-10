@@ -19,7 +19,10 @@ import org.objectweb.asm.Type;
 
 public class ObjectString extends Value implements Constant {
 
+    public final String value;
+
     public ObjectString(final java.lang.String value) {
         super(Type.getObjectType("java/lang/String"));
+        this.value = value;
     }
 }

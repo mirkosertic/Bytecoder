@@ -13,8 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.asm;
+package de.mirkosertic.bytecoder.asm.parser;
 
+import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
+import de.mirkosertic.bytecoder.asm.Copy;
+import de.mirkosertic.bytecoder.asm.EdgeType;
+import de.mirkosertic.bytecoder.asm.Fixup;
+import de.mirkosertic.bytecoder.asm.Frame;
+import de.mirkosertic.bytecoder.asm.Graph;
+import de.mirkosertic.bytecoder.asm.InstructionTranslation;
+import de.mirkosertic.bytecoder.asm.Projection;
+import de.mirkosertic.bytecoder.asm.StandardProjections;
+import de.mirkosertic.bytecoder.asm.Value;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 

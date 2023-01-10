@@ -19,7 +19,12 @@ import de.mirkosertic.bytecoder.asm.AbstractVar;
 import de.mirkosertic.bytecoder.asm.Add;
 import de.mirkosertic.bytecoder.asm.ArrayLoad;
 import de.mirkosertic.bytecoder.asm.ArrayStore;
-import de.mirkosertic.bytecoder.asm.CompileUnit;
+import de.mirkosertic.bytecoder.asm.FrameDebugInfo;
+import de.mirkosertic.bytecoder.asm.Goto;
+import de.mirkosertic.bytecoder.asm.LineNumberDebugInfo;
+import de.mirkosertic.bytecoder.asm.ObjectString;
+import de.mirkosertic.bytecoder.asm.ReferenceTest;
+import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
 import de.mirkosertic.bytecoder.asm.Copy;
 import de.mirkosertic.bytecoder.asm.Div;
 import de.mirkosertic.bytecoder.asm.Graph;
@@ -326,6 +331,23 @@ public class JSBackend {
                     }
 
                     @Override
+                    public void write(final LineNumberDebugInfo node) {
+                        writeIndent();
+                        pw.print("// line number ");
+                        pw.println(node.lineNumber);
+                    }
+
+                    @Override
+                    public void write(final Goto node) {
+                        writeIndent();
+                        pw.println("// Here was a goto statement");
+                    }
+
+                    @Override
+                    public void write(final FrameDebugInfo node) {
+                    }
+
+                    @Override
                     public void write(final InstanceMethodInvocation node) {
 
                         final Type invocationTarget = Type.getObjectType(node.insnNode.owner);
@@ -361,9 +383,7 @@ public class JSBackend {
                             pw.print(".call(");
                             writeExpression(node.incomingDataFlows[0]);
                             for (int i = 1; i < node.incomingDataFlows.length; i++) {
-                                if (i > 1) {
-                                    pw.print(",");
-                                }
+                                pw.print(",");
                                 writeExpression(node.incomingDataFlows[i]);
                             }
                             pw.println(");");
@@ -405,9 +425,7 @@ public class JSBackend {
                             pw.print(".call(");
                             writeExpression(node.incomingDataFlows[0]);
                             for (int i = 1; i < node.incomingDataFlows.length; i++) {
-                                if (i > 1) {
-                                    pw.print(",");
-                                }
+                                pw.print(",");
                                 writeExpression(node.incomingDataFlows[i]);
                             }
                             pw.print("))");
@@ -461,6 +479,27 @@ public class JSBackend {
 
                     private void writeExpression(final NullReference node) {
                         pw.print("null");
+                    }
+
+                    private void writeExpression(final ObjectString node) {
+                        pw.print("'");
+                        pw.print(node.value);
+                        pw.print("'");
+                    }
+
+                    private void writeExpression(final ReferenceTest node) {
+                        writeExpression(node.incomingDataFlows[0]);
+                        switch (node.operation) {
+                            case EQ:
+                                pw.print(" == ");
+                                break;
+                            case NE:
+                                pw.print(" != ");
+                                break;
+                            default:
+                                throw new IllegalStateException("Not implemented operation : " + node.operation);
+                        }
+                        writeExpression(node.incomingDataFlows[1]);
                     }
 
                     private void writeExpression(final NumericalTest node) {
@@ -681,6 +720,10 @@ public class JSBackend {
                             writeExpression((NumericalTest) node);
                         } else if (node instanceof NullReference) {
                             writeExpression((NullReference) node);
+                        } else if (node instanceof ObjectString) {
+                            writeExpression((ObjectString) node);
+                        } else if (node instanceof ReferenceTest) {
+                            writeExpression((ReferenceTest) node);
                         } else {
                             throw new IllegalArgumentException("Not implemented : " + node);
                         }

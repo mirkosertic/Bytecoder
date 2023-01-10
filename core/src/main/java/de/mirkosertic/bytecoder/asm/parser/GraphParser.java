@@ -13,8 +13,67 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.asm;
+package de.mirkosertic.bytecoder.asm.parser;
 
+import de.mirkosertic.bytecoder.asm.AnalysisException;
+import de.mirkosertic.bytecoder.asm.AnalysisStack;
+import de.mirkosertic.bytecoder.asm.ArrayLoad;
+import de.mirkosertic.bytecoder.asm.ArrayStore;
+import de.mirkosertic.bytecoder.asm.CMP;
+import de.mirkosertic.bytecoder.asm.CheckCast;
+import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
+import de.mirkosertic.bytecoder.asm.Copy;
+import de.mirkosertic.bytecoder.asm.EdgeType;
+import de.mirkosertic.bytecoder.asm.Frame;
+import de.mirkosertic.bytecoder.asm.FrameDebugInfo;
+import de.mirkosertic.bytecoder.asm.Goto;
+import de.mirkosertic.bytecoder.asm.Graph;
+import de.mirkosertic.bytecoder.asm.If;
+import de.mirkosertic.bytecoder.asm.InstanceMethodInvocation;
+import de.mirkosertic.bytecoder.asm.InstanceOf;
+import de.mirkosertic.bytecoder.asm.InstructionTranslation;
+import de.mirkosertic.bytecoder.asm.InterfaceMethodInvocation;
+import de.mirkosertic.bytecoder.asm.InterfaceMethodInvocationExpression;
+import de.mirkosertic.bytecoder.asm.InvokeDynamicExpression;
+import de.mirkosertic.bytecoder.asm.LineNumberDebugInfo;
+import de.mirkosertic.bytecoder.asm.LookupSwitch;
+import de.mirkosertic.bytecoder.asm.MonitorEnter;
+import de.mirkosertic.bytecoder.asm.MonitorExit;
+import de.mirkosertic.bytecoder.asm.New;
+import de.mirkosertic.bytecoder.asm.NewArray;
+import de.mirkosertic.bytecoder.asm.Node;
+import de.mirkosertic.bytecoder.asm.NullReference;
+import de.mirkosertic.bytecoder.asm.NullTest;
+import de.mirkosertic.bytecoder.asm.NumericalTest;
+import de.mirkosertic.bytecoder.asm.PHI;
+import de.mirkosertic.bytecoder.asm.PrimitiveDouble;
+import de.mirkosertic.bytecoder.asm.PrimitiveFloat;
+import de.mirkosertic.bytecoder.asm.PrimitiveInt;
+import de.mirkosertic.bytecoder.asm.PrimitiveLong;
+import de.mirkosertic.bytecoder.asm.Projection;
+import de.mirkosertic.bytecoder.asm.ReadClassField;
+import de.mirkosertic.bytecoder.asm.ReadInstanceField;
+import de.mirkosertic.bytecoder.asm.ReferenceTest;
+import de.mirkosertic.bytecoder.asm.Region;
+import de.mirkosertic.bytecoder.asm.ResolveCallsite;
+import de.mirkosertic.bytecoder.asm.ResolvedClass;
+import de.mirkosertic.bytecoder.asm.ResolvedField;
+import de.mirkosertic.bytecoder.asm.ResolvedMethod;
+import de.mirkosertic.bytecoder.asm.Return;
+import de.mirkosertic.bytecoder.asm.ReturnValue;
+import de.mirkosertic.bytecoder.asm.SetClassField;
+import de.mirkosertic.bytecoder.asm.SetInstanceField;
+import de.mirkosertic.bytecoder.asm.StandardProjections;
+import de.mirkosertic.bytecoder.asm.StaticMethodInvocation;
+import de.mirkosertic.bytecoder.asm.TableSwitch;
+import de.mirkosertic.bytecoder.asm.Test;
+import de.mirkosertic.bytecoder.asm.TryCatch;
+import de.mirkosertic.bytecoder.asm.TryCatchGuardStackEntry;
+import de.mirkosertic.bytecoder.asm.TypeConversion;
+import de.mirkosertic.bytecoder.asm.TypeReference;
+import de.mirkosertic.bytecoder.asm.Value;
+import de.mirkosertic.bytecoder.asm.Variable;
+import de.mirkosertic.bytecoder.asm.VirtualMethodInvocation;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -444,7 +503,7 @@ public class GraphParser {
     private List<ControlFlow> parseLineNumberNode(final ControlFlow currentFlow) {
         final LineNumberNode node = (LineNumberNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
-        final LineNumberDebugInfo n = graph.newLineNumberDebugInfo();
+        final LineNumberDebugInfo n = graph.newLineNumberDebugInfo(node.line);
 
         graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
 
@@ -523,10 +582,7 @@ public class GraphParser {
         final Type methodType = Type.getMethodType(node.desc);
         final Type targetClass = Type.getObjectType(node.owner);
         final Type[] argumentTypes = methodType.getArgumentTypes();
-        final Node[] incomingData = new Node[argumentTypes.length + 1];
-
-        final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
-        final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
+        final Value[] incomingData = new Value[argumentTypes.length + 1];
 
         Frame.PopResult latest = currentState.frame.popFromStack();
         incomingData[incomingData.length - 1] = latest.value;
@@ -539,6 +595,9 @@ public class GraphParser {
 
         if (methodType.getReturnType().equals(Type.VOID_TYPE)) {
 
+            final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
+            final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
+
             final InstanceMethodInvocation n = graph.newInstanceMethodInvocation(node, rm);
             n.addIncomingData(incomingData);
             graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
@@ -546,8 +605,15 @@ public class GraphParser {
             newState = currentState.controlFlowsTo(n).withFrame(latest.newFrame);
             graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
         } else {
-            final InstanceMethodInvocationExpression n = graph.newInstanceMethodInvocationExpression(node, rm);
-            n.addIncomingData(incomingData);
+
+            Value n = compileUnit.getIntrinsic().intrinsifyMethodInvocationWithReturnValue(compileUnit, analysisStack, node, incomingData, graph, this);
+            if (n == null) {
+                final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
+                final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
+
+                n = graph.newInstanceMethodInvocationExpression(node, rm);
+                n.addIncomingData(incomingData);
+            }
 
             final Variable var = graph.newVariable(methodType.getReturnType());
             final Copy copy = graph.newCopy();
@@ -568,15 +634,12 @@ public class GraphParser {
         final Type methodType = Type.getMethodType(node.desc);
         Type targetClass = Type.getObjectType(node.owner);
         final Type[] argumentTypes = methodType.getArgumentTypes();
-        final Node[] incomingData = new Node[argumentTypes.length + 1];
+        final Value[] incomingData = new Value[argumentTypes.length + 1];
 
         if (targetClass.getSort() == Type.ARRAY) {
             // Arrays are objects, hence only the java.lang.Object type can be called
             targetClass = Type.getType(Object.class);
         }
-
-        final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
-        rc.resolveMethod(node.name, methodType, analysisStack);
 
         Frame.PopResult latest = currentState.frame.popFromStack();
         incomingData[incomingData.length - 1] = latest.value;
@@ -588,6 +651,9 @@ public class GraphParser {
         final GraphParserState newState;
         if (methodType.getReturnType().equals(Type.VOID_TYPE)) {
 
+            final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
+            rc.resolveMethod(node.name, methodType, analysisStack);
+
             final VirtualMethodInvocation n = graph.newVirtualMethodInvocation(node);
             n.addIncomingData(incomingData);
 
@@ -597,8 +663,14 @@ public class GraphParser {
             graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
         } else {
-            final VirtualMethodInvocationExpression n = graph.newVirtualMethodInvocationExpression(node);
-            n.addIncomingData(incomingData);
+            Value n = compileUnit.getIntrinsic().intrinsifyMethodInvocationWithReturnValue(compileUnit, analysisStack, node, incomingData, graph, this);
+            if (n == null) {
+                final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
+                rc.resolveMethod(node.name, methodType, analysisStack);
+
+                n = graph.newVirtualMethodInvocationExpression(node);
+                n.addIncomingData(incomingData);
+            }
 
             final Variable var = graph.newVariable(methodType.getReturnType());
             final Copy copy = graph.newCopy();
@@ -667,10 +739,7 @@ public class GraphParser {
         final Type methodType = Type.getMethodType(node.desc);
         final Type targetClass = Type.getObjectType(node.owner);
         final Type[] argumentTypes = methodType.getArgumentTypes();
-        final Node[] incomingData = new Node[argumentTypes.length + 1];
-
-        final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
-        final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
+        final Value[] incomingData = new Value[argumentTypes.length + 1];
 
         Frame latest = currentState.frame;
         incomingData[0] = graph.newTypeReference(targetClass);
@@ -684,6 +753,9 @@ public class GraphParser {
 
         if (methodType.getReturnType().equals(Type.VOID_TYPE)) {
 
+            final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
+            final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
+
             final StaticMethodInvocation n = graph.newStaticMethodInvocation(node, rm);
             n.addIncomingData(incomingData);
             graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
@@ -692,9 +764,15 @@ public class GraphParser {
             graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
         } else {
+            Value n = compileUnit.getIntrinsic().intrinsifyMethodInvocationWithReturnValue(compileUnit, analysisStack, node, incomingData, graph, this);
+            if (n == null) {
 
-            final StaticMethodInvocationExpression n = graph.newStaticMethodInvocationExpression(node, rm);
-            n.addIncomingData(incomingData);
+                final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
+                final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
+
+                n = graph.newStaticMethodInvocationExpression(node, rm);
+                n.addIncomingData(incomingData);
+            }
 
             final Variable var = graph.newVariable(methodType.getReturnType());
             final Copy copy = graph.newCopy();
@@ -1160,6 +1238,48 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
+    private List<ControlFlow> parse_POP2(final ControlFlow currentFlow) {
+        final InsnNode node = (InsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Frame.PopResult pop1 = currentState.frame.popFromStack();
+        if (pop1.value.type.getSize() == 1) {
+
+            final Frame.PopResult pop2 = pop1.newFrame.popFromStack();
+
+            final Variable dest1 = graph.newVariable(pop1.value.type);
+            final Copy copy1 = graph.newCopy();
+            copy1.addIncomingData(pop1.value);
+            dest1.addIncomingData(copy1);
+
+            final Variable dest2 = graph.newVariable(pop2.value.type);
+            final Copy copy2 = graph.newCopy();
+            copy2.addIncomingData(pop2.value);
+            dest2.addIncomingData(copy2);
+
+            copy1.addControlFlowTo(StandardProjections.DEFAULT, copy2);
+
+            graph.registerTranslation(node, new InstructionTranslation(copy1, currentState.frame));
+
+            final GraphParserState newState = currentState.controlFlowsTo(copy2).withFrame(pop2.newFrame);
+            graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+            return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+        }
+
+        final Variable dest = graph.newVariable(pop1.value.type);
+        final Copy c = graph.newCopy();
+        c.addIncomingData(pop1.value);
+        dest.addIncomingData(c);
+
+        graph.registerTranslation(node, new InstructionTranslation(c, currentState.frame));
+
+        final GraphParserState newState = currentState.controlFlowsTo(c).withFrame(pop1.newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
     private List<ControlFlow> parse_TYPECONVERSION(final ControlFlow currentFlow, final Type type) {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
@@ -1284,6 +1404,8 @@ public class GraphParser {
                 return parse_DUP(currentFlow);
             case Opcodes.POP:
                 return parse_POP(currentFlow);
+            case Opcodes.POP2:
+                return parse_POP2(currentFlow);
             case Opcodes.IASTORE:
                 return parse_XASTORE(currentFlow);
             case Opcodes.AASTORE:
@@ -1386,6 +1508,8 @@ public class GraphParser {
                 return parse_TYPECONVERSION(currentFlow, Type.FLOAT_TYPE);
             case Opcodes.F2I:
                 return parse_TYPECONVERSION(currentFlow, Type.INT_TYPE);
+            case Opcodes.F2L:
+                return parse_TYPECONVERSION(currentFlow, Type.LONG_TYPE);
             case Opcodes.IOR:
                 return parse_NARYINS(currentFlow, () -> graph.newOR(Type.INT_TYPE), 2);
             case Opcodes.LOR:
@@ -1440,7 +1564,7 @@ public class GraphParser {
         analysisStack.addDebugMessage("Check of stack size is ok");
 
         final GraphParserState currentState = currentFlow.graphParserState;
-        final FrameDebugInfo n = graph.newFrameDebugInfo();
+        final FrameDebugInfo n = graph.newFrameDebugInfo(currentState.frame);
 
         graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
 

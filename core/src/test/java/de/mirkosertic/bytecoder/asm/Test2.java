@@ -1,9 +1,11 @@
 package de.mirkosertic.bytecoder.asm;
 
+import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
+import de.mirkosertic.bytecoder.asm.parser.CoreIntrinsics;
 import org.junit.Test;
 import org.objectweb.asm.Type;
 
-import java.util.List;
+import java.util.Collections;
 
 public class Test2 {
 
@@ -12,12 +14,7 @@ public class Test2 {
         final AnalysisStack analysisStack = new AnalysisStack();
 
         final ClassLoader cl = Test.class.getClassLoader();
-        final CompileUnit compileUnit = new CompileUnit(cl, new Intrinsic() {
-            @Override
-            public List<ControlFlow> intrinsifyMethodInvocation(ControlFlow currentControlFlow, Graph graph, GraphParser graphParser) {
-                return null;
-            }
-        });
+        final CompileUnit compileUnit = new CompileUnit(cl, new CoreIntrinsics(Collections.emptyList()));
         final Type invokedType = Type.getObjectType("jdk/internal/loader/AbstractClassLoaderValue$Memoizer");
         final ResolvedClass resolvedClass = compileUnit.resolveClass(invokedType, analysisStack);
         try {

@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
+import de.mirkosertic.bytecoder.asm.parser.GraphParser;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.lang.reflect.Modifier;

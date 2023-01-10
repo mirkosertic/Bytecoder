@@ -19,7 +19,7 @@ public class Region extends ControlTokenConsumer {
 
     public final String label;
 
-    Frame frame;
+    public Frame frame;
 
     public Region(final String label) {
         this.label = label;

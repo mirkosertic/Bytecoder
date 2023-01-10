@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.asm;
+package de.mirkosertic.bytecoder.asm.parser;
 
+import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
+import de.mirkosertic.bytecoder.asm.Frame;
+import de.mirkosertic.bytecoder.asm.TryCatchGuardStackEntry;
 import org.objectweb.asm.tree.LabelNode;
 
 public class GraphParserState {

@@ -17,6 +17,9 @@ package de.mirkosertic.bytecoder.asm;
 
 public class FrameDebugInfo extends ControlTokenConsumer {
 
-    public FrameDebugInfo() {
+    public final Frame frame;
+
+    public FrameDebugInfo(final Frame frame) {
+        this.frame = frame;
     }
 }

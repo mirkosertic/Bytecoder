@@ -18,8 +18,11 @@ package de.mirkosertic.bytecoder.asm.sequencer;
 import de.mirkosertic.bytecoder.asm.AbstractVar;
 import de.mirkosertic.bytecoder.asm.ArrayStore;
 import de.mirkosertic.bytecoder.asm.Copy;
+import de.mirkosertic.bytecoder.asm.FrameDebugInfo;
+import de.mirkosertic.bytecoder.asm.Goto;
 import de.mirkosertic.bytecoder.asm.If;
 import de.mirkosertic.bytecoder.asm.InstanceMethodInvocation;
+import de.mirkosertic.bytecoder.asm.LineNumberDebugInfo;
 import de.mirkosertic.bytecoder.asm.Return;
 import de.mirkosertic.bytecoder.asm.ReturnValue;
 import de.mirkosertic.bytecoder.asm.SetClassField;
@@ -49,6 +52,12 @@ public interface StructuredControlflowCodeGenerator {
 
     void startBlock(Sequencer.Block node);
 
+    void write(LineNumberDebugInfo node);
+
+    void write(FrameDebugInfo node);
+
+    void write(Goto node);
+
     void write(Return node);
 
     void write(ReturnValue node);
@@ -62,4 +71,5 @@ public interface StructuredControlflowCodeGenerator {
     void writeBreakTo(String label);
 
     void writeContinueTo(String label);
+
 }

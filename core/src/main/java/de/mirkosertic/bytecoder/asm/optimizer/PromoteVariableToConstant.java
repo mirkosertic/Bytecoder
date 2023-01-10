@@ -21,7 +21,6 @@ import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.asm.Copy;
 import de.mirkosertic.bytecoder.asm.Graph;
 import de.mirkosertic.bytecoder.asm.Node;
-import de.mirkosertic.bytecoder.asm.PHI;
 import de.mirkosertic.bytecoder.asm.Projection;
 import de.mirkosertic.bytecoder.asm.Variable;
 
@@ -49,7 +48,7 @@ public class PromoteVariableToConstant implements Optimizer {
                 final Copy copy = (Copy) node;
                 final Node incoming = copy.incomingDataFlows[0];
                 final Node outgoing = copy.outgoingFlows[0];
-                if (incoming instanceof Constant && !(incoming instanceof CaughtException) && outgoing instanceof Variable && !(outgoing instanceof PHI)) {
+                if (incoming instanceof Constant && !(incoming instanceof CaughtException) && outgoing instanceof Variable) {
 
                     incoming.removeFromOutgoingData(copy);
                     outgoing.clearIncomingData();

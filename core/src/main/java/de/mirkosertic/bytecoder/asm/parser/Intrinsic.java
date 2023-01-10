@@ -13,19 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.asm.backend.js;
+package de.mirkosertic.bytecoder.asm.parser;
 
-import de.mirkosertic.bytecoder.asm.ControlFlow;
+import de.mirkosertic.bytecoder.asm.AnalysisStack;
 import de.mirkosertic.bytecoder.asm.Graph;
-import de.mirkosertic.bytecoder.asm.GraphParser;
-import de.mirkosertic.bytecoder.asm.Intrinsic;
+import de.mirkosertic.bytecoder.asm.Value;
+import org.objectweb.asm.tree.MethodInsnNode;
 
-import java.util.List;
+public interface Intrinsic {
 
-public class JSIntrinsic implements Intrinsic {
-
-    @Override
-    public List<ControlFlow> intrinsifyMethodInvocation(final ControlFlow currentControlFlow, final Graph graph, final GraphParser graphParser) {
-        return null;
-    }
+    Value intrinsifyMethodInvocationWithReturnValue(final CompileUnit compileUnit, final AnalysisStack analysisStack, final MethodInsnNode node, final Value[] incomingData, final Graph graph, final GraphParser graphParser);
 }
