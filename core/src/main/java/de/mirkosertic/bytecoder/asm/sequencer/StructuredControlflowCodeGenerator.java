@@ -23,12 +23,16 @@ import de.mirkosertic.bytecoder.asm.Goto;
 import de.mirkosertic.bytecoder.asm.If;
 import de.mirkosertic.bytecoder.asm.InstanceMethodInvocation;
 import de.mirkosertic.bytecoder.asm.LineNumberDebugInfo;
+import de.mirkosertic.bytecoder.asm.MonitorEnter;
+import de.mirkosertic.bytecoder.asm.MonitorExit;
 import de.mirkosertic.bytecoder.asm.Return;
 import de.mirkosertic.bytecoder.asm.ReturnValue;
 import de.mirkosertic.bytecoder.asm.SetClassField;
 import de.mirkosertic.bytecoder.asm.SetInstanceField;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocation;
+import de.mirkosertic.bytecoder.asm.Unwind;
 import de.mirkosertic.bytecoder.asm.VirtualMethodInvocation;
+import org.objectweb.asm.Type;
 
 import java.util.List;
 
@@ -58,6 +62,12 @@ public interface StructuredControlflowCodeGenerator {
 
     void write(Goto node);
 
+    void write(MonitorEnter node);
+
+    void write(MonitorExit node);
+
+    void write(Unwind node);
+
     void write(Return node);
 
     void write(ReturnValue node);
@@ -72,4 +82,15 @@ public interface StructuredControlflowCodeGenerator {
 
     void writeContinueTo(String label);
 
+    void startTryCatch(Sequencer.Block b);
+
+    void startCatchBlock();
+
+    void startCatchHandler(Type type);
+
+    void endCatchHandler();
+
+    void startFinallyBlock();
+
+    void endTryCatch();
 }

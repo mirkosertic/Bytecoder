@@ -25,4 +25,9 @@ public class ObjectString extends Value implements Constant {
         super(Type.getObjectType("java/lang/String"));
         this.value = value;
     }
+
+    @Override
+    public String additionalDebugInfo() {
+        return ": " + value;
+    }
 }

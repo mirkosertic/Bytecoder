@@ -73,6 +73,12 @@ public class SimpleLinkageTest {
 
             TestEnum x = TestEnum.a;
             TestEnum.class.getEnumConstants();
+
+            synchronized (this) {
+                int k = 0;
+            }
+
+            //String lala = new String(new byte[] {65});
         }
     }
 

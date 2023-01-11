@@ -17,11 +17,11 @@ package de.mirkosertic.bytecoder.asm;
 
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -109,15 +109,7 @@ public class ResolvedClass {
         for (int i = 0; i < classNode.methods.size(); i++) {
             final MethodNode methodNode = classNode.methods.get(i);
             if (methodNode.name.equals(methodName)) {
-                boolean polymorphic = false;
-                if (methodNode.visibleAnnotations != null) {
-                    for (final AnnotationNode node : methodNode.visibleAnnotations) {
-                        if ("Ljava/lang/invoke/MethodHandle$PolymorphicSignature;".equals(node.desc)) {
-                            polymorphic = true;
-                            break;
-                        }
-                    }
-                }
+                final boolean polymorphic = AnnotationUtils.hasAnnotation("Ljava/lang/invoke/MethodHandle$PolymorphicSignature;", methodNode.visibleAnnotations);
                 if (polymorphic || methodNode.desc.equals(methodType.getDescriptor())) {
                     final ResolvedMethod r = new ResolvedMethod(this, methodNode);
                     resolvedMethods.add(r);
@@ -146,7 +138,7 @@ public class ResolvedClass {
         }
         for (final FieldNode f : classNode.fields) {
             if (f.name.equals(name)) {
-                final ResolvedField rf = new ResolvedField(this, name, Type.getType(f.desc), f.access);
+                final ResolvedField rf = new ResolvedField(this, name, Type.getType(f.desc), f.value, f.access);
                 resolvedFields.add(rf);
                 return rf;
             }

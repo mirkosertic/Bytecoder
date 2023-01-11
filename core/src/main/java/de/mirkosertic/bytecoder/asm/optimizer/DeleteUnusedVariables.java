@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.asm.optimizer;
 import de.mirkosertic.bytecoder.asm.AbstractVar;
 import de.mirkosertic.bytecoder.asm.Graph;
 import de.mirkosertic.bytecoder.asm.Node;
+import de.mirkosertic.bytecoder.asm.ResolvedMethod;
 
 public class DeleteUnusedVariables implements Optimizer {
 
@@ -31,10 +32,10 @@ public class DeleteUnusedVariables implements Optimizer {
     }
 
     @Override
-    public boolean optimize(final Graph g) {
+    public boolean optimize(final ResolvedMethod method, final Graph g) {
         boolean changed = false;
         for (final Node node : g.nodes()) {
-            if (patternMatcher.test(node)) {
+            if (patternMatcher.test(g, node)) {
                 changed = true;
                 g.deleteNode(node);
             }

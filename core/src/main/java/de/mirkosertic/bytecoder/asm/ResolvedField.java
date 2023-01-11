@@ -22,12 +22,14 @@ public class ResolvedField {
     public final ResolvedClass owner;
     public final String name;
     public final Type type;
+    public final Object defaultValue;
     public final int access;
 
-    public ResolvedField(final ResolvedClass owner, final String name, final Type type, final int access) {
+    public ResolvedField(final ResolvedClass owner, final String name, final Type type, final Object defaultValue, final int access) {
         this.owner = owner;
         this.name = name;
         this.type = type;
+        this.defaultValue = defaultValue;
         this.access = access;
     }
 }

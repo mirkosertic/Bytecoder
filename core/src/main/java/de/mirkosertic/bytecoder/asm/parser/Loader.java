@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.asm.optimizer;
+package de.mirkosertic.bytecoder.asm.parser;
 
-import de.mirkosertic.bytecoder.asm.Graph;
-import de.mirkosertic.bytecoder.asm.ResolvedMethod;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.ClassNode;
 
-public interface Optimizer {
+import java.io.IOException;
 
-    boolean optimize(final ResolvedMethod method, final Graph g);
+public interface Loader {
+
+    ClassNode loadClassFor(final Type type) throws IOException, ClassNotFoundException;
 }

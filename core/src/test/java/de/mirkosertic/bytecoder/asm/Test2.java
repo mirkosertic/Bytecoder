@@ -1,7 +1,9 @@
 package de.mirkosertic.bytecoder.asm;
 
+import de.mirkosertic.bytecoder.asm.loader.BytecoderLoader;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
 import de.mirkosertic.bytecoder.asm.parser.CoreIntrinsics;
+import de.mirkosertic.bytecoder.asm.parser.Loader;
 import org.junit.Test;
 import org.objectweb.asm.Type;
 
@@ -14,7 +16,8 @@ public class Test2 {
         final AnalysisStack analysisStack = new AnalysisStack();
 
         final ClassLoader cl = Test.class.getClassLoader();
-        final CompileUnit compileUnit = new CompileUnit(cl, new CoreIntrinsics(Collections.emptyList()));
+        final Loader loader = new BytecoderLoader(cl);
+        final CompileUnit compileUnit = new CompileUnit(loader, new CoreIntrinsics(Collections.emptyList()));
         final Type invokedType = Type.getObjectType("jdk/internal/loader/AbstractClassLoaderValue$Memoizer");
         final ResolvedClass resolvedClass = compileUnit.resolveClass(invokedType, analysisStack);
         try {

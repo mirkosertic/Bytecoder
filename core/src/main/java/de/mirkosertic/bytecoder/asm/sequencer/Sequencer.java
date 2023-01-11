@@ -26,6 +26,8 @@ import de.mirkosertic.bytecoder.asm.Graph;
 import de.mirkosertic.bytecoder.asm.If;
 import de.mirkosertic.bytecoder.asm.InstanceMethodInvocation;
 import de.mirkosertic.bytecoder.asm.LineNumberDebugInfo;
+import de.mirkosertic.bytecoder.asm.MonitorEnter;
+import de.mirkosertic.bytecoder.asm.MonitorExit;
 import de.mirkosertic.bytecoder.asm.Projection;
 import de.mirkosertic.bytecoder.asm.Region;
 import de.mirkosertic.bytecoder.asm.Return;
@@ -33,6 +35,8 @@ import de.mirkosertic.bytecoder.asm.ReturnValue;
 import de.mirkosertic.bytecoder.asm.SetClassField;
 import de.mirkosertic.bytecoder.asm.SetInstanceField;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocation;
+import de.mirkosertic.bytecoder.asm.TryCatch;
+import de.mirkosertic.bytecoder.asm.Unwind;
 import de.mirkosertic.bytecoder.asm.VirtualMethodInvocation;
 
 import java.util.ArrayList;
@@ -41,6 +45,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public class Sequencer {
@@ -85,7 +90,9 @@ public class Sequencer {
     }
 
     private void visit(final ControlTokenConsumer node, final List<Block> activeStack) {
-        if (node instanceof Region) {
+        if (node instanceof TryCatch) {
+            visit((TryCatch) node, activeStack);
+        } else if (node instanceof Region) {
             visit((Region) node, activeStack);
         } else if (node instanceof InstanceMethodInvocation) {
             visit((InstanceMethodInvocation) node, activeStack);
@@ -113,6 +120,12 @@ public class Sequencer {
             visit((FrameDebugInfo) node, activeStack);
         } else if (node instanceof Goto) {
             visit((Goto) node, activeStack);
+        } else if (node instanceof MonitorEnter) {
+            visit((MonitorEnter) node, activeStack);
+        } else if (node instanceof MonitorExit) {
+            visit((MonitorExit) node, activeStack);
+        } else if (node instanceof Unwind) {
+            visit((Unwind) node, activeStack);
         } else {
             throw new IllegalStateException("Not implemented : " + node.getClass().getSimpleName());
         }
@@ -134,13 +147,19 @@ public class Sequencer {
     }
 
     private void processSuccessors(final ControlTokenConsumer node, final List<Block> activeStack) {
+        processSuccessors(node, activeStack, projection -> true);
+    }
+
+    private void processSuccessors(final ControlTokenConsumer node, final List<Block> activeStack, final Predicate<Projection> projectionPredicate) {
         for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : node.controlFlowsTo.entrySet()) {
-            for (final ControlTokenConsumer successor : entry.getValue()) {
-                if (dominatorTree.dominates(node, successor)) {
-                    // We can continue to the child
-                    visit(successor, activeStack);
-                } else {
-                    generateGOTO(successor, activeStack);
+            if (projectionPredicate.test(entry.getKey())) {
+                for (final ControlTokenConsumer successor : entry.getValue()) {
+                    if (dominatorTree.dominates(node, successor)) {
+                        // We can continue to the child
+                        visit(successor, activeStack);
+                    } else {
+                        generateGOTO(successor, activeStack);
+                    }
                 }
             }
         }
@@ -209,6 +228,27 @@ public class Sequencer {
         processSuccessors(node, activeStack);
     }
 
+    private void visit(final MonitorEnter node, final List<Block> activeStack) {
+
+        codegenerator.write(node);
+
+        processSuccessors(node, activeStack);
+    }
+
+    private void visit(final MonitorExit node, final List<Block> activeStack) {
+
+        codegenerator.write(node);
+
+        processSuccessors(node, activeStack);
+    }
+
+    private void visit(final Unwind node, final List<Block> activeStack) {
+
+        codegenerator.write(node);
+
+        processSuccessors(node, activeStack);
+    }
+
     private void visit(final ArrayStore node, final List<Block> activeStack) {
 
         codegenerator.write(node);
@@ -238,7 +278,7 @@ public class Sequencer {
         final List<Block> newStack = new ArrayList<>(activeStack);
         if (groupDependencies.size() > 0) {
             if (groupDependencies.size() > 1) {
-                throw new IllegalStateException("More than one post-if node.");
+                throw new IllegalStateException("More than one post-if node (" + groupDependencies.size() + ") for If # " + dominatorTree.getRpo().indexOf(node));
             }
             final ControlTokenConsumer next = groupDependencies.keySet().iterator().next();
             final Block newBlock = new Block("IF_" + graph.nodes().indexOf(node), Block.Type.NORMAL, null, next);
@@ -281,6 +321,87 @@ public class Sequencer {
         codegenerator.finishBlock();
 
         if (groupDependencies.size() > 0) {
+            final ControlTokenConsumer next = groupDependencies.keySet().iterator().next();
+            visit(next, activeStack);
+        }
+    }
+
+    private void visit(final TryCatch node, final List<Block> activeStack) {
+
+        boolean hasIncomingBackEdges = false;
+        for (final ControlTokenConsumer pred : node.controlComingFrom) {
+            for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : pred.controlFlowsTo.entrySet()) {
+                if (entry.getKey().edgeType() == EdgeType.BACK && entry.getValue().contains(node)) {
+                    hasIncomingBackEdges = true;
+                }
+            }
+        }
+
+        final Set<ControlTokenConsumer> dominated = dominatorTree.immediatelyDominatedNodesOf(node);
+        final Map<ControlTokenConsumer, Set<ControlTokenConsumer>> groupDependencies = new HashMap<>();
+        for (final ControlTokenConsumer dom : dominated) {
+            final Set<ControlTokenConsumer> domset = dominatorTree.domSetOf(dom);
+            for (final ControlTokenConsumer d : domset) {
+                for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : d.controlFlowsTo.entrySet()) {
+                    for (final ControlTokenConsumer target : entry.getValue()) {
+                        if (!domset.contains(target) && dominated.contains(target)) {
+                            // Jump out of the current domination set
+                            final Set<ControlTokenConsumer> jumpTargets = groupDependencies.computeIfAbsent(target, x -> new HashSet<>());
+                            jumpTargets.add(d);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (hasIncomingBackEdges) {
+            throw new IllegalStateException("Not implemented : trycatch as loop header!");
+        }
+
+        final Block b = new Block(node.label, Block.Type.NORMAL, null, null);
+        final List<Block> newStackForDominatedNodes = new ArrayList<>(activeStack);
+        newStackForDominatedNodes.add(b);
+
+        final boolean hasExceptionHandler = node.controlFlowsTo.keySet().stream().anyMatch(t -> t instanceof Projection.ExceptionHandler);
+
+        if (hasExceptionHandler) {
+            codegenerator.startTryCatch(b);
+        }
+
+        processSuccessors(node, newStackForDominatedNodes, p -> p instanceof Projection.TryCatchGuardedProjection);
+
+        if (hasExceptionHandler) {
+            boolean first = true;
+            for (final Map.Entry<Projection, List<ControlTokenConsumer>> handler : node.controlFlowsTo.entrySet()) {
+                if (handler.getKey() instanceof Projection.ExceptionHandler) {
+                    if (first) {
+                        first = false;
+                        codegenerator.startCatchBlock();
+                    }
+
+                    final Projection.ExceptionHandler exceptionHandler = (Projection.ExceptionHandler) handler.getKey();
+                    if (handler.getValue().size() != 1) {
+                        throw new IllegalStateException("Wrong number of handler nodes : #" + handler.getValue().size());
+                    }
+
+                    codegenerator.startCatchHandler(exceptionHandler.type);
+
+                    visit(handler.getValue().get(0), activeStack);
+
+                    codegenerator.endCatchHandler();
+                }
+            }
+        }
+
+        if (hasExceptionHandler) {
+            codegenerator.endTryCatch();
+        }
+
+        if (groupDependencies.size() > 0) {
+            if (groupDependencies.size() > 1) {
+                throw new IllegalStateException("More than one post-trycatch node (" + groupDependencies.size() + ") for If # " + dominatorTree.getRpo().indexOf(node));
+            }
+
             final ControlTokenConsumer next = groupDependencies.keySet().iterator().next();
             visit(next, activeStack);
         }

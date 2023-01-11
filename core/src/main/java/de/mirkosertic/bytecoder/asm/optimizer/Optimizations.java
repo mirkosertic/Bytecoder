@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.asm.optimizer;
 
 import de.mirkosertic.bytecoder.asm.Graph;
+import de.mirkosertic.bytecoder.asm.ResolvedMethod;
 
 public enum Optimizations implements Optimizer {
     DISABLED(new Optimizer[] {}),
@@ -23,8 +24,8 @@ public enum Optimizations implements Optimizer {
                 new DeleteUnusedConstants(),
                 new DeleteUnusedVariables(),
                 new DeleteRedundantControlTokenWithoutDataFlow(),
-                //new PromoteVariableToConstant(),
-                //new DeleteCopyToUnusedVariable(),
+                new PromoteVariableToConstant(),
+                new DeleteCopyToUnusedVariable(),
                 //new DeleteRedundantVariableCopy(),
                 //new VariableShouldBePHI()
             }),
@@ -36,10 +37,10 @@ public enum Optimizations implements Optimizer {
         this.optimizers = optimizers;
     }
 
-    public boolean optimize(final Graph graph) {
+    public boolean optimize(final ResolvedMethod method, final Graph graph) {
         boolean graphchanged = false;
         for (final Optimizer o : optimizers) {
-            graphchanged = graphchanged | o.optimize(graph);
+            graphchanged = graphchanged | o.optimize(method, graph);
         }
         return graphchanged;
     }

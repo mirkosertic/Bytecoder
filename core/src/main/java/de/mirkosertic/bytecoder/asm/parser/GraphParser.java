@@ -488,6 +488,8 @@ public class GraphParser {
                         final Type exceptionType =
                                 tryCatchBlockNode.type != null ? Type.getObjectType(tryCatchBlockNode.type) : Type.getType(Throwable.class);
 
+                        final ResolvedClass exceptionClass = compileUnit.resolveClass(exceptionType, analysisStack);
+
                         final Region startRegion = getOrCreateRegionNodeFor(tryCatchBlockNode.handler);
                         final Frame frameWithPushedException = state.frame.pushToStack(graph.newCaughtException(exceptionType));
                         region.addControlFlowTo(new Projection.ExceptionHandler(exceptionType), startRegion);

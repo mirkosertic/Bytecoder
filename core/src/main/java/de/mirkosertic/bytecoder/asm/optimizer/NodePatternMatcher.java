@@ -16,21 +16,21 @@
 package de.mirkosertic.bytecoder.asm.optimizer;
 
 import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
+import de.mirkosertic.bytecoder.asm.Graph;
 import de.mirkosertic.bytecoder.asm.Node;
 import de.mirkosertic.bytecoder.asm.Projection;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiPredicate;
 
 public class NodePatternMatcher {
 
-    private final BiPredicate<Node, NodeContext> chainedpredicate;
+    private final GraphNodePredicate chainedpredicate;
 
-    public NodePatternMatcher(final BiPredicate<Node, NodeContext>... predicates) {
-        BiPredicate<Node, NodeContext> chained = null;
-        for (final BiPredicate<Node, NodeContext> p : predicates) {
+    public NodePatternMatcher(final GraphNodePredicate... predicates) {
+        GraphNodePredicate chained = null;
+        for (final GraphNodePredicate p : predicates) {
             if (chained == null) {
                 chained = p;
             } else {
@@ -40,7 +40,7 @@ public class NodePatternMatcher {
         this.chainedpredicate = chained;
     }
 
-    public boolean test(final Node node) {
+    public boolean test(final Graph g, final Node node) {
         final NodeContext nodeContext = new NodeContext();
         if (node instanceof ControlTokenConsumer) {
             final ControlTokenConsumer controlTokenConsumer = (ControlTokenConsumer) node;
@@ -61,6 +61,6 @@ public class NodePatternMatcher {
             nodeContext.predsToSucc = predsToSucc;
             nodeContext.nodeToSucc = nodeToSucc;
         }
-        return chainedpredicate.test(node, nodeContext);
+        return chainedpredicate.test(g, node, nodeContext);
     }
 }

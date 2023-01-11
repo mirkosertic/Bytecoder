@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,19 @@
 package de.mirkosertic.bytecoder.asm.optimizer;
 
 import de.mirkosertic.bytecoder.asm.Graph;
-import de.mirkosertic.bytecoder.asm.ResolvedMethod;
+import de.mirkosertic.bytecoder.asm.Node;
 
-public interface Optimizer {
+public interface GraphNodePredicate {
 
-    boolean optimize(final ResolvedMethod method, final Graph g);
+    boolean test(final Graph graph, final Node node, final NodeContext context);
+
+    default GraphNodePredicate and(final GraphNodePredicate p) {
+        final GraphNodePredicate original = this;
+        return (graph, node, context) -> original.test(graph, node, context) && p.test(graph, node, context);
+    }
+
+    default GraphNodePredicate negate() {
+        final GraphNodePredicate original = this;
+        return (graph, node, context) -> !original.test(graph, node, context);
+    }
 }

@@ -19,13 +19,12 @@ import de.mirkosertic.bytecoder.asm.EdgeType;
 import de.mirkosertic.bytecoder.asm.Node;
 import de.mirkosertic.bytecoder.asm.Projection;
 
-import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 public class NodePredicates {
 
-    public static BiPredicate<Node, NodeContext> ofType(final Class nodeClass) {
-        return (node, context) -> nodeClass.isAssignableFrom(node.getClass());
+    public static GraphNodePredicate ofType(final Class nodeClass) {
+        return (graph, node, context) -> nodeClass.isAssignableFrom(node.getClass());
     }
 
     public static Predicate<Node[]> empty() {
@@ -36,26 +35,22 @@ public class NodePredicates {
         return nodes -> nodes.length == expected;
     }
 
-    public static Predicate<Node[]> notEmpty() {
-        return nodes -> nodes.length > 0;
+    public static GraphNodePredicate incomingDataFlows(final Predicate<Node[]> pred) {
+        return (graph, node, context) -> pred.test(node.incomingDataFlows);
     }
 
-    public static BiPredicate<Node, NodeContext> incomingDataFlows(final Predicate<Node[]> pred) {
-        return (node, context) -> pred.test(node.incomingDataFlows);
+    public static GraphNodePredicate outgoingDataFlows(final Predicate<Node[]> pred) {
+        return (graph, node, context) -> pred.test(node.outgoingFlows);
     }
 
-    public static BiPredicate<Node, NodeContext> outgoingDataFlows(final Predicate<Node[]> pred) {
-        return (node, context) -> pred.test(node.outgoingFlows);
-    }
-
-    public static BiPredicate<Node, NodeContext> singlePredWithForwardEdge() {
-        return (node, nodeContext) -> nodeContext.predsToSucc != null && nodeContext.predsToSucc.size() == 1 &&
+    public static GraphNodePredicate singlePredWithForwardEdge() {
+        return (graph, node, nodeContext) -> nodeContext.predsToSucc != null && nodeContext.predsToSucc.size() == 1 &&
                 (nodeContext.predsToSucc.get(0).projection instanceof Projection.DefaultProjection) &&
                 nodeContext.predsToSucc.get(0).projection.edgeType() == EdgeType.FORWARD;
     }
 
-    public static BiPredicate<Node, NodeContext> singleSuccWithForwardEdge() {
-        return (node, nodeContext) -> nodeContext.nodeToSucc != null && nodeContext.nodeToSucc.size() == 1 &&
+    public static GraphNodePredicate singleSuccWithForwardEdge() {
+        return (graph, node, nodeContext) -> nodeContext.nodeToSucc != null && nodeContext.nodeToSucc.size() == 1 &&
                 (nodeContext.nodeToSucc.get(0).projection instanceof Projection.DefaultProjection) &&
                 nodeContext.nodeToSucc.get(0).projection.edgeType() == EdgeType.FORWARD;
     }

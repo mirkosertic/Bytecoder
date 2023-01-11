@@ -22,6 +22,7 @@ import de.mirkosertic.bytecoder.asm.Copy;
 import de.mirkosertic.bytecoder.asm.Graph;
 import de.mirkosertic.bytecoder.asm.Node;
 import de.mirkosertic.bytecoder.asm.Projection;
+import de.mirkosertic.bytecoder.asm.ResolvedMethod;
 
 import java.util.List;
 import java.util.Map;
@@ -41,9 +42,9 @@ public class DeleteCopyToUnusedVariable implements Optimizer {
     }
 
     @Override
-    public boolean optimize(final Graph g) {
+    public boolean optimize(final ResolvedMethod method, final Graph g) {
         for (final Node node : g.nodes()) {
-            if (patternMatcher.test(node)) {
+            if (patternMatcher.test(g, node)) {
                 final Copy copy = (Copy) node;
                 final Node incoming = copy.incomingDataFlows[0];
                 final Node outgoing = copy.outgoingFlows[0];

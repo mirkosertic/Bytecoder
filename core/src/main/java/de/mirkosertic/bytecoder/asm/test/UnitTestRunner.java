@@ -22,7 +22,9 @@ import de.mirkosertic.bytecoder.asm.ResolvedClass;
 import de.mirkosertic.bytecoder.asm.ResolvedMethod;
 import de.mirkosertic.bytecoder.asm.backend.js.JSBackend;
 import de.mirkosertic.bytecoder.asm.backend.js.JSIntrinsics;
+import de.mirkosertic.bytecoder.asm.loader.BytecoderLoader;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
+import de.mirkosertic.bytecoder.asm.parser.Loader;
 import de.mirkosertic.bytecoder.unittest.BytecoderTestOption;
 import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
@@ -251,10 +253,11 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
 
             try {
 
+                final ClassLoader cl = testClass.getJavaClass().getClassLoader();
+                final Loader loader = new BytecoderLoader(cl);
                 final AnalysisStack analysisStack = new AnalysisStack();
 
-                final ClassLoader cl = testClass.getJavaClass().getClassLoader();
-                final CompileUnit compileUnit = new CompileUnit(cl, new JSIntrinsics());
+                final CompileUnit compileUnit = new CompileUnit(loader, new JSIntrinsics());
                 final Type invokedType = Type.getType(testClass.getJavaClass());
                 final ResolvedClass resolvedClass = compileUnit.resolveClass(invokedType, analysisStack);
                 final ResolvedMethod method = resolvedClass.resolveMethod(aFrameworkMethod.getName(), Type.getMethodType(Type.VOID_TYPE), analysisStack);

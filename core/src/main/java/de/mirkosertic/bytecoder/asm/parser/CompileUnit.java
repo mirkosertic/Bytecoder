@@ -15,16 +15,13 @@
  */
 package de.mirkosertic.bytecoder.asm.parser;
 
-import de.mirkosertic.bytecoder.api.ClassLibProvider;
 import de.mirkosertic.bytecoder.asm.AnalysisStack;
+import de.mirkosertic.bytecoder.asm.AnnotationUtils;
 import de.mirkosertic.bytecoder.asm.ResolvedClass;
 import de.mirkosertic.bytecoder.asm.ResolvedMethod;
-import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -35,14 +32,14 @@ import java.util.Map;
 
 public class CompileUnit {
 
-    private final ClassLoader classLoader;
+    private final Loader loader;
 
-    private final Map<Type, ResolvedClass> resolvedClasses;
+    private final Map<String, ResolvedClass> resolvedClasses;
 
     private final Intrinsic intrinsic;
 
-    public CompileUnit(final ClassLoader classLoader, final Intrinsic intrinsic) {
-        this.classLoader = classLoader;
+    public CompileUnit(final Loader loader, final Intrinsic intrinsic) {
+        this.loader = loader;
         this.resolvedClasses = new HashMap<>();
         this.intrinsic = intrinsic;
     }
@@ -52,39 +49,24 @@ public class CompileUnit {
     }
 
     public ResolvedClass resolveClass(final Type type, final AnalysisStack analysisStack) {
-        return resolvedClasses.computeIfAbsent(type, key -> {
-            final String theResourceName = key.getClassName().replace(".", "/") + ".class";
-            for (final ClassLibProvider theProvider : ClassLibProvider.availableProviders()) {
-                final InputStream is = theProvider.getClass().getClassLoader().getResourceAsStream(theProvider.getResourceBase() + "/" + theResourceName);
-                if (is != null) {
-                    try {
-                        return loadClass(key, is, analysisStack);
-                    } catch (final IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
+        final String resourceName = type.getClassName().replace(".", "/") + ".class";
+        return resolvedClasses.computeIfAbsent(resourceName, key -> {
+            try {
+                return loadClass(type, loader.loadClassFor(type), analysisStack);
+            } catch (final RuntimeException e) {
+                throw e;
+            } catch (final Exception e) {
+                throw new RuntimeException(e);
             }
-            final InputStream fromRoot = classLoader.getResourceAsStream(theResourceName);
-            if (fromRoot != null) {
-                try {
-                    return loadClass(key, fromRoot, analysisStack);
-                } catch (final IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-            throw new RuntimeException(new ClassNotFoundException(type.getClassName()));
         }).requestInitialization(analysisStack);
     }
 
-    private ResolvedClass loadClass(final Type type, final InputStream is, final AnalysisStack analysisStack) throws IOException {
-        final ClassReader reader = new ClassReader(is);
-        final ClassNode classNode = new ClassNode();
-        reader.accept(classNode, ClassReader.EXPAND_FRAMES);
+    private ResolvedClass loadClass(final Type type, final ClassNode classNode, final AnalysisStack analysisStack) {
 
         final AnalysisStack importedStack = analysisStack.addAction(new AnalysisStack.Action("Resolving type " + type));
 
         ResolvedClass superClass = null;
-        if (classNode.superName != null) {
+        if (classNode.superName != null && !AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/IsObject;", classNode.visibleAnnotations)) {
             superClass = resolveClass(Type.getObjectType(classNode.superName), importedStack);
         }
         final List<ResolvedClass> interfaces = new ArrayList<>();

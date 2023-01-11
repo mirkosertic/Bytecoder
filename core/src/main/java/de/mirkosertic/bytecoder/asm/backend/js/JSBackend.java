@@ -19,11 +19,16 @@ import de.mirkosertic.bytecoder.asm.AbstractVar;
 import de.mirkosertic.bytecoder.asm.Add;
 import de.mirkosertic.bytecoder.asm.ArrayLoad;
 import de.mirkosertic.bytecoder.asm.ArrayStore;
+import de.mirkosertic.bytecoder.asm.CaughtException;
 import de.mirkosertic.bytecoder.asm.FrameDebugInfo;
 import de.mirkosertic.bytecoder.asm.Goto;
 import de.mirkosertic.bytecoder.asm.LineNumberDebugInfo;
+import de.mirkosertic.bytecoder.asm.MonitorEnter;
+import de.mirkosertic.bytecoder.asm.MonitorExit;
+import de.mirkosertic.bytecoder.asm.NullTest;
 import de.mirkosertic.bytecoder.asm.ObjectString;
 import de.mirkosertic.bytecoder.asm.ReferenceTest;
+import de.mirkosertic.bytecoder.asm.Unwind;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
 import de.mirkosertic.bytecoder.asm.Copy;
 import de.mirkosertic.bytecoder.asm.Div;
@@ -62,7 +67,6 @@ import de.mirkosertic.bytecoder.asm.optimizer.Optimizer;
 import de.mirkosertic.bytecoder.asm.sequencer.DominatorTree;
 import de.mirkosertic.bytecoder.asm.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.asm.sequencer.StructuredControlflowCodeGenerator;
-import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import java.io.IOException;
@@ -94,7 +98,8 @@ public class JSBackend {
                 .replace('<', '$')
                 .replace('>', '$')
                 .replace('/', '$')
-                .replace(';', '$');
+                .replace(';', '$')
+                .replace('[', '$');
     }
 
     public void generateCodeFor(final CompileUnit compileUnit, final OutputStream out) {
@@ -216,10 +221,9 @@ public class JSBackend {
             pw.println();
             for (final ResolvedField f : cl.resolvedFields) {
                 pw.print("  ");
-                if ((f.access & Opcodes.ACC_STATIC) > 0) {
+                if (Modifier.isStatic(f.access)) {
                     pw.print("static ");
-                }
-                if ((f.access & Opcodes.ACC_PRIVATE) > 0) {
+                } else if (Modifier.isPrivate(f.access)) {
                     pw.print("#");
                 }
                 pw.print(generateFieldName(f.name));
@@ -251,12 +255,15 @@ public class JSBackend {
     private void generateMethodsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
         for (final ResolvedMethod m : cl.resolvedMethods) {
             if (m.methodBody != null) {
+
+                System.out.println("Writing method for " + cl.type + " . " + m.methodNode.name + m.methodNode.desc);
+
                 pw.println();
                 pw.print("  ");
-                if ((m.methodNode.access & Opcodes.ACC_STATIC) > 0) {
+                if (Modifier.isStatic(m.methodNode.access)) {
                     pw.print("static ");
                 }
-                if ((m.methodNode.access & Opcodes.ACC_PRIVATE) > 0) {
+                if (Modifier.isPrivate(m.methodNode.access)) {
                     pw.print("#");
                 }
                 final String methodName = generateMethodName(m.methodNode.name, Type.getArgumentTypes(m.methodNode.desc));
@@ -283,7 +290,7 @@ public class JSBackend {
                     throw new RuntimeException(e);
                 }
 
-                while (o.optimize(g)) {
+                while (o.optimize(m, g)) {
                     //
                 }
 
@@ -348,6 +355,30 @@ public class JSBackend {
                     }
 
                     @Override
+                    public void write(final MonitorEnter node) {
+                        writeIndent();
+                        pw.print("// Monitor enter on ");
+                        writeExpression(node.incomingDataFlows[0]);
+                        pw.println();
+                    }
+
+                    @Override
+                    public void write(final MonitorExit node) {
+                        writeIndent();
+                        pw.print("// Monitor exit on ");
+                        writeExpression(node.incomingDataFlows[0]);
+                        pw.println();
+                    }
+
+                    @Override
+                    public void write(final Unwind node) {
+                        writeIndent();
+                        pw.print("throw ");
+                        writeExpression(node.incomingDataFlows[0]);
+                        pw.println();
+                    }
+
+                    @Override
                     public void write(final InstanceMethodInvocation node) {
 
                         final Type invocationTarget = Type.getObjectType(node.insnNode.owner);
@@ -358,7 +389,7 @@ public class JSBackend {
 
                             pw.print(".");
 
-                            if ((node.resolvedMethod.methodNode.access & Opcodes.ACC_PRIVATE) > 0) {
+                            if (Modifier.isPrivate(node.resolvedMethod.methodNode.access)) {
                                 pw.print("#");
                             }
 
@@ -375,7 +406,7 @@ public class JSBackend {
                             pw.print(generateClassName(invocationTarget));
                             pw.print(".prototype.");
 
-                            if ((node.resolvedMethod.methodNode.access & Opcodes.ACC_PRIVATE) > 0) {
+                            if (Modifier.isPrivate(node.resolvedMethod.methodNode.access)) {
                                 pw.print("#");
                             }
 
@@ -400,7 +431,7 @@ public class JSBackend {
 
                             pw.print(".");
 
-                            if ((node.resolvedMethod.methodNode.access & Opcodes.ACC_PRIVATE) > 0) {
+                            if (Modifier.isPrivate(node.resolvedMethod.methodNode.access)) {
                                 pw.print("#");
                             }
 
@@ -417,7 +448,7 @@ public class JSBackend {
                             pw.print(generateClassName(invocationTarget));
                             pw.print(".prototype.");
 
-                            if ((node.resolvedMethod.methodNode.access & Opcodes.ACC_PRIVATE) > 0) {
+                            if (Modifier.isPrivate(node.resolvedMethod.methodNode.access)) {
                                 pw.print("#");
                             }
 
@@ -437,7 +468,7 @@ public class JSBackend {
                         pw.print("(");
                         writeExpression(node.incomingDataFlows[0]);
                         pw.print(".");
-                        if ((node.resolvedField.access & Opcodes.ACC_PRIVATE) > 0) {
+                        if (Modifier.isPrivate(node.resolvedField.access)) {
                             pw.print("#");
                         }
                         pw.print(generateFieldName(node.resolvedField.name));
@@ -449,9 +480,6 @@ public class JSBackend {
                         pw.print("(");
                         writeExpression(node.incomingDataFlows[0]);
                         pw.print(".");
-                        if ((node.resolvedField.access & Opcodes.ACC_PRIVATE) > 0) {
-                            pw.print("#");
-                        }
                         pw.print(generateFieldName(node.resolvedField.name));
                         pw.print(")");
                     }
@@ -502,6 +530,24 @@ public class JSBackend {
                         writeExpression(node.incomingDataFlows[1]);
                     }
 
+                    private void writeExpression(final NullTest node) {
+                        writeExpression(node.incomingDataFlows[0]);
+                        switch (node.operation) {
+                            case NOTNULL:
+                                pw.print(" != null");
+                                break;
+                            case NULL:
+                                pw.print(" == null");
+                                break;
+                            default:
+                                throw new IllegalStateException("Not implemented operation : " + node.operation);
+                        }
+                    }
+
+                    private void writeExpression(final CaughtException node) {
+                        pw.print("__ex");
+                    }
+
                     private void writeExpression(final NumericalTest node) {
                         writeExpression(node.incomingDataFlows[0]);
 
@@ -537,7 +583,7 @@ public class JSBackend {
                         writeIndent();
                         writeExpression(node.outgoingFlows[0]);
                         pw.print(".");
-                        if ((node.resolvedField.access & Opcodes.ACC_PRIVATE) > 0) {
+                        if (Modifier.isPrivate(node.resolvedField.access)) {
                             pw.print("#");
                         }
                         pw.print(generateFieldName(node.resolvedField.name));
@@ -552,9 +598,6 @@ public class JSBackend {
                         writeIndent();
                         writeExpression(node.outgoingFlows[0]);
                         pw.print(".");
-                        if ((node.resolvedField.access & Opcodes.ACC_PRIVATE) > 0) {
-                            pw.print("#");
-                        }
                         pw.print(generateFieldName(node.resolvedField.name));
                         pw.print(" = ");
                         writeExpression(node.incomingDataFlows[0]);
@@ -622,7 +665,7 @@ public class JSBackend {
                         }
 
                         pw.print(".");
-                        if ((node.resolvedMethod.methodNode.access & Opcodes.ACC_PRIVATE) > 0) {
+                        if (Modifier.isPrivate(node.resolvedMethod.methodNode.access)) {
                             pw.print("#");
                         }
                         pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
@@ -649,7 +692,7 @@ public class JSBackend {
                         }
 
                         pw.print(".");
-                        if ((node.resolvedMethod.methodNode.access & Opcodes.ACC_PRIVATE) > 0) {
+                        if (Modifier.isPrivate(node.resolvedMethod.methodNode.access)) {
                             pw.print("#");
                         }
                         pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
@@ -724,6 +767,10 @@ public class JSBackend {
                             writeExpression((ObjectString) node);
                         } else if (node instanceof ReferenceTest) {
                             writeExpression((ReferenceTest) node);
+                        } else if (node instanceof NullTest) {
+                            writeExpression((NullTest) node);
+                        } else if (node instanceof CaughtException) {
+                            writeExpression((CaughtException) node);
                         } else {
                             throw new IllegalArgumentException("Not implemented : " + node);
                         }
@@ -823,6 +870,53 @@ public class JSBackend {
                         }
                         pw.println("{");
                         level++;
+                    }
+
+                    @Override
+                    public void startTryCatch(final Sequencer.Block block) {
+                        writeIndent();
+                        pw.print(block.label);
+                        pw.println(": try {");
+                        level++;
+                    }
+
+                    @Override
+                    public void startCatchBlock() {
+                        level--;
+                        writeIndent();
+                        pw.println("} catch (__ex) {");
+                        level++;
+                    }
+
+                    @Override
+                    public void startCatchHandler(final Type type) {
+                        writeIndent();
+                        pw.print("if (__ex instanceof ");
+                        pw.print(generateClassName(type));
+                        pw.println(") {");
+                        level++;
+                    }
+
+                    @Override
+                    public void endCatchHandler() {
+                        level--;
+                        writeIndent();
+                        pw.println("}");
+                    }
+
+                    @Override
+                    public void startFinallyBlock() {
+                        level--;
+                        writeIndent();
+                        pw.println("} finally {");
+                        level++;
+                    }
+
+                    @Override
+                    public void endTryCatch() {
+                        level--;
+                        writeIndent();
+                        pw.println("}");
                     }
 
                     @Override

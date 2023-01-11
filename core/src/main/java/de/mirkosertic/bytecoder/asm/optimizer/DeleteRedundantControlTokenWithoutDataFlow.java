@@ -20,6 +20,7 @@ import de.mirkosertic.bytecoder.asm.Graph;
 import de.mirkosertic.bytecoder.asm.Node;
 import de.mirkosertic.bytecoder.asm.PotentialSideeffect;
 import de.mirkosertic.bytecoder.asm.Projection;
+import de.mirkosertic.bytecoder.asm.ResolvedMethod;
 
 import java.util.List;
 import java.util.Map;
@@ -40,9 +41,9 @@ public class DeleteRedundantControlTokenWithoutDataFlow implements Optimizer {
     }
 
     @Override
-    public boolean optimize(final Graph g) {
+    public boolean optimize(final ResolvedMethod method, final Graph g) {
         for (final Node node : g.nodes()) {
-            if (patternMatcher.test(node)) {
+            if (patternMatcher.test(g, node)) {
                 final ControlTokenConsumer controlTokenConsumer = (ControlTokenConsumer) node;
                 final ControlTokenConsumer prevNode = controlTokenConsumer.controlComingFrom.get(0);
 

@@ -22,6 +22,7 @@ import de.mirkosertic.bytecoder.asm.Copy;
 import de.mirkosertic.bytecoder.asm.Graph;
 import de.mirkosertic.bytecoder.asm.Node;
 import de.mirkosertic.bytecoder.asm.Projection;
+import de.mirkosertic.bytecoder.asm.ResolvedMethod;
 import de.mirkosertic.bytecoder.asm.Variable;
 
 import java.util.List;
@@ -42,13 +43,13 @@ public class PromoteVariableToConstant implements Optimizer {
     }
 
     @Override
-    public boolean optimize(final Graph g) {
+    public boolean optimize(final ResolvedMethod method, final Graph g) {
         for (final Node node : g.nodes()) {
-            if (patternMatcher.test(node)) {
+            if (patternMatcher.test(g, node)) {
                 final Copy copy = (Copy) node;
                 final Node incoming = copy.incomingDataFlows[0];
                 final Node outgoing = copy.outgoingFlows[0];
-                if (incoming instanceof Constant && !(incoming instanceof CaughtException) && outgoing instanceof Variable) {
+                if (incoming instanceof Constant && !(incoming instanceof CaughtException) && outgoing instanceof Variable && outgoing.incomingDataFlows.length == 1) {
 
                     incoming.removeFromOutgoingData(copy);
                     outgoing.clearIncomingData();
@@ -58,8 +59,6 @@ public class PromoteVariableToConstant implements Optimizer {
                     }
 
                     final ControlTokenConsumer prevNode = copy.controlComingFrom.get(0);
-
-                    // TODO: Maybe check for edge types here?
 
                     for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : copy.controlFlowsTo.entrySet()) {
                         for (final ControlTokenConsumer targetnode : entry.getValue()) {
