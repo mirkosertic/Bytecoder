@@ -61,11 +61,9 @@ public class DominatorTree {
 
     private void computeRPO(final ControlTokenConsumer current, final List<ControlTokenConsumer> finished, final Set<ControlTokenConsumer> visited) {
         if (visited.add(current)) {
-            for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : current.controlFlowsTo.entrySet()) {
+            for (final Map.Entry<Projection, ControlTokenConsumer> entry : current.controlFlowsTo.entrySet()) {
                 if (entry.getKey().edgeType() == EdgeType.FORWARD) {
-                    for (final ControlTokenConsumer succ : entry.getValue()) {
-                        computeRPO(succ, finished, visited);
-                    }
+                    computeRPO(entry.getValue(), finished, visited);
                 }
             }
             finished.add(current);
@@ -214,22 +212,20 @@ public class DominatorTree {
                 pw.println("];");
             }
 
-            for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : n.controlFlowsTo.entrySet()) {
-                for (final ControlTokenConsumer no : entry.getValue()) {
-                    pw.print(" node_" + graphNodes.indexOf(n) + " -> node_" + graphNodes.indexOf(no) + "[dir=\"forward\"");
-                    if (entry.getKey().isControlFlow()) {
-                        pw.print(" color=\"red\" penwidth=\"1\"");
-                    } else {
-                        pw.print(" color=\"azure4\" penwidth=\"1\"");
-                    }
-                    pw.print(" label=\"");
-                    pw.print(entry.getKey().additionalDebugInfo());
-                    pw.print("\"");
-                    if (entry.getKey().edgeType() == EdgeType.BACK) {
-                        pw.print(" style=\"dashed\"");
-                    }
-                    pw.println("];");
+            for (final Map.Entry<Projection, ControlTokenConsumer> entry : n.controlFlowsTo.entrySet()) {
+                pw.print(" node_" + graphNodes.indexOf(n) + " -> node_" + graphNodes.indexOf(entry.getValue()) + "[dir=\"forward\"");
+                if (entry.getKey().isControlFlow()) {
+                    pw.print(" color=\"red\" penwidth=\"1\"");
+                } else {
+                    pw.print(" color=\"azure4\" penwidth=\"1\"");
                 }
+                pw.print(" label=\"");
+                pw.print(entry.getKey().additionalDebugInfo());
+                pw.print("\"");
+                if (entry.getKey().edgeType() == EdgeType.BACK) {
+                    pw.print(" style=\"dashed\"");
+                }
+                pw.println("];");
             }
         }
         pw.println("}");

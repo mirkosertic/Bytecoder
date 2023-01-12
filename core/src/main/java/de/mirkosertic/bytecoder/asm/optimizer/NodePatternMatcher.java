@@ -46,17 +46,13 @@ public class NodePatternMatcher {
             final ControlTokenConsumer controlTokenConsumer = (ControlTokenConsumer) node;
             final List<NodeContext.ControlFlowEdge> predsToSucc = new ArrayList<>();
             for (final ControlTokenConsumer pred : controlTokenConsumer.controlComingFrom) {
-                for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : pred.controlFlowsTo.entrySet()) {
-                    for (final ControlTokenConsumer n : entry.getValue()) {
-                        predsToSucc.add(new NodeContext.ControlFlowEdge(entry.getKey(), n));
-                    }
+                for (final Map.Entry<Projection, ControlTokenConsumer> entry : pred.controlFlowsTo.entrySet()) {
+                    predsToSucc.add(new NodeContext.ControlFlowEdge(entry.getKey(), entry.getValue()));
                 }
             }
             final List<NodeContext.ControlFlowEdge> nodeToSucc = new ArrayList<>();
-            for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : controlTokenConsumer.controlFlowsTo.entrySet()) {
-                for (final ControlTokenConsumer n : entry.getValue()) {
-                    nodeToSucc.add(new NodeContext.ControlFlowEdge(entry.getKey(), n));
-                }
+            for (final Map.Entry<Projection, ControlTokenConsumer> entry : controlTokenConsumer.controlFlowsTo.entrySet()) {
+                nodeToSucc.add(new NodeContext.ControlFlowEdge(entry.getKey(), entry.getValue()));
             }
             nodeContext.predsToSucc = predsToSucc;
             nodeContext.nodeToSucc = nodeToSucc;

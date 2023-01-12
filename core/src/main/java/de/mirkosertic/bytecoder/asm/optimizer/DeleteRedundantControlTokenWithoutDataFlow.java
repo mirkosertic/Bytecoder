@@ -22,7 +22,6 @@ import de.mirkosertic.bytecoder.asm.PotentialSideeffect;
 import de.mirkosertic.bytecoder.asm.Projection;
 import de.mirkosertic.bytecoder.asm.ResolvedMethod;
 
-import java.util.List;
 import java.util.Map;
 
 public class DeleteRedundantControlTokenWithoutDataFlow implements Optimizer {
@@ -48,11 +47,9 @@ public class DeleteRedundantControlTokenWithoutDataFlow implements Optimizer {
                 final ControlTokenConsumer prevNode = controlTokenConsumer.controlComingFrom.get(0);
 
                 // TODO: Maybe check for edge types here?
-                for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : controlTokenConsumer.controlFlowsTo.entrySet()) {
-                    for (final ControlTokenConsumer targetnode : entry.getValue()) {
-                        targetnode.deleteControlFlowFrom(controlTokenConsumer);
-                        prevNode.addControlFlowTo(entry.getKey(), targetnode);
-                    }
+                for (final Map.Entry<Projection, ControlTokenConsumer> entry : controlTokenConsumer.controlFlowsTo.entrySet()) {
+                    entry.getValue().deleteControlFlowFrom(controlTokenConsumer);
+                    prevNode.addControlFlowTo(entry.getKey(), entry.getValue());
                 }
 
                 prevNode.deleteControlFlowTo(controlTokenConsumer);

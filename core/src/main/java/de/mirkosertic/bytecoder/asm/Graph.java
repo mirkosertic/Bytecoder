@@ -257,22 +257,20 @@ public class Graph {
             }
             if (n instanceof ControlTokenConsumer) {
                 final ControlTokenConsumer c = (ControlTokenConsumer) n;
-                for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : c.controlFlowsTo.entrySet()) {
-                    for (final ControlTokenConsumer no : entry.getValue()) {
-                        pw.print(" node_" + i + " -> node_" + nodes.indexOf(no) + "[dir=\"forward\"");
-                        if (entry.getKey().isControlFlow()) {
-                            pw.print(" color=\"red\" penwidth=\"2\"");
-                        } else {
-                            pw.print(" color=\"azure4\" penwidth=\"1\"");
-                        }
-                        pw.print(" label=\"");
-                        pw.print(entry.getKey().additionalDebugInfo());
-                        pw.print("\"");
-                        if (entry.getKey().edgeType() == EdgeType.BACK) {
-                            pw.print(" style=\"dashed\"");
-                        }
-                        pw.println("];");
+                for (final Map.Entry<Projection, ControlTokenConsumer> entry : c.controlFlowsTo.entrySet()) {
+                    pw.print(" node_" + i + " -> node_" + nodes.indexOf(entry.getValue()) + "[dir=\"forward\"");
+                    if (entry.getKey().isControlFlow()) {
+                        pw.print(" color=\"red\" penwidth=\"2\"");
+                    } else {
+                        pw.print(" color=\"azure4\" penwidth=\"1\"");
                     }
+                    pw.print(" label=\"");
+                    pw.print(entry.getKey().additionalDebugInfo());
+                    pw.print("\"");
+                    if (entry.getKey().edgeType() == EdgeType.BACK) {
+                        pw.print(" style=\"dashed\"");
+                    }
+                    pw.println("];");
                 }
 
             }

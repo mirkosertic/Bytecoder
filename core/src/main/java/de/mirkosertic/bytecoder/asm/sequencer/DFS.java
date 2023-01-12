@@ -39,9 +39,9 @@ public class DFS {
         while(!currentPath.isEmpty()) {
             final ControlTokenConsumer currentNode = currentPath.peek();
             final List<ControlTokenConsumer> forwardNodes = new ArrayList<>();
-            for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : currentNode.controlFlowsTo.entrySet()) {
+            for (final Map.Entry<Projection, ControlTokenConsumer> entry : currentNode.controlFlowsTo.entrySet()) {
                 if (entry.getKey().edgeType() == EdgeType.FORWARD) {
-                    forwardNodes.addAll(entry.getValue());
+                    forwardNodes.add(entry.getValue());
                 }
             }
             if (!forwardNodes.isEmpty()) {

@@ -24,7 +24,7 @@ import java.util.Set;
 
 public abstract class ControlTokenConsumer extends Node {
 
-    public final Map<Projection, List<ControlTokenConsumer>> controlFlowsTo;
+    public final Map<Projection, ControlTokenConsumer> controlFlowsTo;
     public final List<ControlTokenConsumer> controlComingFrom;
 
     public ControlTokenConsumer() {
@@ -36,30 +36,14 @@ public abstract class ControlTokenConsumer extends Node {
         if (node == this) {
             throw new IllegalStateException("FIXME: Infinite control flow recursion");
         }
-        if (controlFlowsTo.containsKey(projection)) {
-            System.out.println("There is already a control flow with projection " + projection);
-        }
-        final List<ControlTokenConsumer> list = controlFlowsTo.computeIfAbsent(projection, t -> new ArrayList<>());
-        list.add(node);
+        controlFlowsTo.put(projection, node);
         node.controlComingFrom.add(this);
-    }
-
-    public ControlTokenConsumer flowForProjection(final Class<?> p) {
-        for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : controlFlowsTo.entrySet()) {
-            if (entry.getKey().getClass().isAssignableFrom(p)) {
-                return entry.getValue().get(0);
-            }
-        }
-        return null;
     }
 
     public void deleteControlFlowTo(final ControlTokenConsumer consumer) {
         final Set<Projection> keysToDelete = new HashSet<>();
-        for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : controlFlowsTo.entrySet()) {
-            if (entry.getValue().remove(consumer)) {
-                consumer.controlComingFrom.remove(this);
-            }
-            if (entry.getValue().isEmpty()) {
+        for (final Map.Entry<Projection, ControlTokenConsumer> entry : controlFlowsTo.entrySet()) {
+            if (entry.getValue() == consumer) {
                 keysToDelete.add(entry.getKey());
             }
         }
@@ -70,7 +54,6 @@ public abstract class ControlTokenConsumer extends Node {
 
     public void deleteControlFlowFrom(final ControlTokenConsumer consumer) {
         controlComingFrom.remove(consumer);
-        consumer.deleteControlFlowTo(consumer);
+        consumer.deleteControlFlowTo(this);
     }
-
 }

@@ -23,7 +23,6 @@ import de.mirkosertic.bytecoder.asm.Projection;
 import de.mirkosertic.bytecoder.asm.ResolvedMethod;
 import de.mirkosertic.bytecoder.asm.Variable;
 
-import java.util.List;
 import java.util.Map;
 
 public class DeleteRedundantVariableCopy implements Optimizer {
@@ -59,11 +58,9 @@ public class DeleteRedundantVariableCopy implements Optimizer {
 
                     final ControlTokenConsumer prevNode = copy.controlComingFrom.get(0);
 
-                    for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : copy.controlFlowsTo.entrySet()) {
-                        for (final ControlTokenConsumer targetnode : entry.getValue()) {
-                            prevNode.addControlFlowTo(entry.getKey(), targetnode);
-                            targetnode.deleteControlFlowFrom(copy);
-                        }
+                    for (final Map.Entry<Projection, ControlTokenConsumer> entry : copy.controlFlowsTo.entrySet()) {
+                        prevNode.addControlFlowTo(entry.getKey(), entry.getValue());
+                        entry.getValue().deleteControlFlowFrom(copy);
                     }
 
                     prevNode.deleteControlFlowTo(copy);

@@ -169,15 +169,13 @@ public class Sequencer {
     }
 
     private void processSuccessors(final ControlTokenConsumer node, final List<Block> activeStack, final Predicate<Projection> projectionPredicate) {
-        for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : node.controlFlowsTo.entrySet()) {
+        for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
             if (projectionPredicate.test(entry.getKey())) {
-                for (final ControlTokenConsumer successor : entry.getValue()) {
-                    if (dominatorTree.dominates(node, successor)) {
-                        // We can continue to the child
-                        visit(successor, activeStack);
-                    } else {
-                        generateGOTO(successor, activeStack);
-                    }
+                if (dominatorTree.dominates(node, entry.getValue())) {
+                    // We can continue to the child
+                    visit(entry.getValue(), activeStack);
+                } else {
+                    generateGOTO(entry.getValue(), activeStack);
                 }
             }
         }
@@ -288,13 +286,11 @@ public class Sequencer {
         for (final ControlTokenConsumer dom : dominated) {
             final Set<ControlTokenConsumer> domset = dominatorTree.domSetOf(dom);
             for (final ControlTokenConsumer d : domset) {
-                for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : d.controlFlowsTo.entrySet()) {
-                    for (final ControlTokenConsumer target : entry.getValue()) {
-                        if (!domset.contains(target) && dominated.contains(target)) {
-                            // Jump out of the current domination set
-                            final Set<ControlTokenConsumer> jumpTargets = groupDependencies.computeIfAbsent(target, x -> new HashSet<>());
-                            jumpTargets.add(d);
-                        }
+                for (final Map.Entry<Projection, ControlTokenConsumer> entry : d.controlFlowsTo.entrySet()) {
+                    if (!domset.contains(entry.getValue()) && dominated.contains(entry.getValue())) {
+                        // Jump out of the current domination set
+                        final Set<ControlTokenConsumer> jumpTargets = groupDependencies.computeIfAbsent(entry.getValue(), x -> new HashSet<>());
+                        jumpTargets.add(d);
                     }
                 }
             }
@@ -330,28 +326,24 @@ public class Sequencer {
 
         codegenerator.writeIfAndStartTrueBlock(node);
 
-        for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : node.controlFlowsTo.entrySet()) {
+        for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
             if (entry.getKey() instanceof Projection.TrueProjection) {
-                for (final ControlTokenConsumer successor : entry.getValue()) {
-                    if (dominatorTree.dominates(node, successor)) {
-                        visit(successor, newStack);
-                    } else {
-                        generateGOTO(successor, newStack);
-                    }
+                if (dominatorTree.dominates(node, entry.getValue())) {
+                    visit(entry.getValue(), newStack);
+                } else {
+                    generateGOTO(entry.getValue(), newStack);
                 }
             }
         }
 
         codegenerator.startIfElseBlock(node);
 
-        for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : node.controlFlowsTo.entrySet()) {
+        for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
             if (entry.getKey() instanceof Projection.FalseProjection) {
-                for (final ControlTokenConsumer successor : entry.getValue()) {
-                    if (dominatorTree.dominates(node, successor)) {
-                        visit(successor, newStack);
-                    } else {
-                        generateGOTO(successor, newStack);
-                    }
+                if (dominatorTree.dominates(node, entry.getValue())) {
+                    visit(entry.getValue(), newStack);
+                } else {
+                    generateGOTO(entry.getValue(), newStack);
                 }
             }
         }
@@ -374,13 +366,11 @@ public class Sequencer {
         for (final ControlTokenConsumer dom : dominated) {
             final Set<ControlTokenConsumer> domset = dominatorTree.domSetOf(dom);
             for (final ControlTokenConsumer d : domset) {
-                for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : d.controlFlowsTo.entrySet()) {
-                    for (final ControlTokenConsumer target : entry.getValue()) {
-                        if (!domset.contains(target) && dominated.contains(target)) {
-                            // Jump out of the current domination set
-                            final Set<ControlTokenConsumer> jumpTargets = groupDependencies.computeIfAbsent(target, x -> new HashSet<>());
-                            jumpTargets.add(d);
-                        }
+                for (final Map.Entry<Projection, ControlTokenConsumer> entry : d.controlFlowsTo.entrySet()) {
+                    if (!domset.contains(entry.getValue()) && dominated.contains(entry.getValue())) {
+                        // Jump out of the current domination set
+                        final Set<ControlTokenConsumer> jumpTargets = groupDependencies.computeIfAbsent(entry.getValue(), x -> new HashSet<>());
+                        jumpTargets.add(d);
                     }
                 }
             }
@@ -412,32 +402,28 @@ public class Sequencer {
 
         codegenerator.writeSwitch(node);
 
-        for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : node.controlFlowsTo.entrySet()) {
+        for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
             if (entry.getKey() instanceof Projection.IndexedProjection) {
                 final Projection.IndexedProjection indexedProjection = (Projection.IndexedProjection) entry.getKey();
-                for (final ControlTokenConsumer successor : entry.getValue()) {
-                    codegenerator.writeSwitchCase(indexedProjection.index);
-                    if (dominatorTree.dominates(node, successor)) {
-                        visit(successor, newStack);
-                    } else {
-                        generateGOTO(successor, newStack);
-                    }
-                    codegenerator.finishSwitchCase();
+                codegenerator.writeSwitchCase(indexedProjection.index);
+                if (dominatorTree.dominates(node, entry.getValue())) {
+                    visit(entry.getValue(), newStack);
+                } else {
+                    generateGOTO(entry.getValue(), newStack);
                 }
+                codegenerator.finishSwitchCase();
             }
         }
 
-        for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : node.controlFlowsTo.entrySet()) {
+        for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
             if (entry.getKey() instanceof Projection.DefaultProjection) {
-                for (final ControlTokenConsumer successor : entry.getValue()) {
-                    codegenerator.writeSwitchDefaultCase();
-                    if (dominatorTree.dominates(node, successor)) {
-                        visit(successor, newStack);
-                    } else {
-                        generateGOTO(successor, newStack);
-                    }
-                    codegenerator.finishSwitchCase();
+                codegenerator.writeSwitchDefaultCase();
+                if (dominatorTree.dominates(node, entry.getValue())) {
+                    visit(entry.getValue(), newStack);
+                } else {
+                    generateGOTO(entry.getValue(), newStack);
                 }
+                codegenerator.finishSwitchCase();
             }
         }
 
@@ -459,13 +445,11 @@ public class Sequencer {
         for (final ControlTokenConsumer dom : dominated) {
             final Set<ControlTokenConsumer> domset = dominatorTree.domSetOf(dom);
             for (final ControlTokenConsumer d : domset) {
-                for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : d.controlFlowsTo.entrySet()) {
-                    for (final ControlTokenConsumer target : entry.getValue()) {
-                        if (!domset.contains(target) && dominated.contains(target)) {
-                            // Jump out of the current domination set
-                            final Set<ControlTokenConsumer> jumpTargets = groupDependencies.computeIfAbsent(target, x -> new HashSet<>());
-                            jumpTargets.add(d);
-                        }
+                for (final Map.Entry<Projection, ControlTokenConsumer> entry : d.controlFlowsTo.entrySet()) {
+                    if (!domset.contains(entry.getValue()) && dominated.contains(entry.getValue())) {
+                        // Jump out of the current domination set
+                        final Set<ControlTokenConsumer> jumpTargets = groupDependencies.computeIfAbsent(entry.getValue(), x -> new HashSet<>());
+                        jumpTargets.add(d);
                     }
                 }
             }
@@ -501,32 +485,28 @@ public class Sequencer {
 
         codegenerator.writeSwitch(node);
 
-        for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : node.controlFlowsTo.entrySet()) {
+        for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
             if (entry.getKey() instanceof Projection.KeyedProjection) {
                 final Projection.KeyedProjection indexedProjection = (Projection.KeyedProjection) entry.getKey();
-                for (final ControlTokenConsumer successor : entry.getValue()) {
-                    codegenerator.writeSwitchCase(indexedProjection.key);
-                    if (dominatorTree.dominates(node, successor)) {
-                        visit(successor, newStack);
-                    } else {
-                        generateGOTO(successor, newStack);
-                    }
-                    codegenerator.finishSwitchCase();
+                codegenerator.writeSwitchCase(indexedProjection.key);
+                if (dominatorTree.dominates(node, entry.getValue())) {
+                    visit(entry.getValue(), newStack);
+                } else {
+                    generateGOTO(entry.getValue(), newStack);
                 }
+                codegenerator.finishSwitchCase();
             }
         }
 
-        for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : node.controlFlowsTo.entrySet()) {
+        for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
             if (entry.getKey() instanceof Projection.DefaultProjection) {
-                for (final ControlTokenConsumer successor : entry.getValue()) {
-                    codegenerator.writeSwitchDefaultCase();
-                    if (dominatorTree.dominates(node, successor)) {
-                        visit(successor, newStack);
-                    } else {
-                        generateGOTO(successor, newStack);
-                    }
-                    codegenerator.finishSwitchCase();
+                codegenerator.writeSwitchDefaultCase();
+                if (dominatorTree.dominates(node, entry.getValue())) {
+                    visit(entry.getValue(), newStack);
+                } else {
+                    generateGOTO(entry.getValue(), newStack);
                 }
+                codegenerator.finishSwitchCase();
             }
         }
 
@@ -546,8 +526,8 @@ public class Sequencer {
 
         boolean hasIncomingBackEdges = false;
         for (final ControlTokenConsumer pred : node.controlComingFrom) {
-            for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : pred.controlFlowsTo.entrySet()) {
-                if (entry.getKey().edgeType() == EdgeType.BACK && entry.getValue().contains(node)) {
+            for (final Map.Entry<Projection, ControlTokenConsumer> entry : pred.controlFlowsTo.entrySet()) {
+                if (entry.getKey().edgeType() == EdgeType.BACK && entry.getValue() == node) {
                     hasIncomingBackEdges = true;
                 }
             }
@@ -558,13 +538,11 @@ public class Sequencer {
         for (final ControlTokenConsumer dom : dominated) {
             final Set<ControlTokenConsumer> domset = dominatorTree.domSetOf(dom);
             for (final ControlTokenConsumer d : domset) {
-                for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : d.controlFlowsTo.entrySet()) {
-                    for (final ControlTokenConsumer target : entry.getValue()) {
-                        if (!domset.contains(target) && dominated.contains(target)) {
-                            // Jump out of the current domination set
-                            final Set<ControlTokenConsumer> jumpTargets = groupDependencies.computeIfAbsent(target, x -> new HashSet<>());
-                            jumpTargets.add(d);
-                        }
+                for (final Map.Entry<Projection, ControlTokenConsumer> entry : d.controlFlowsTo.entrySet()) {
+                    if (!domset.contains(entry.getValue()) && dominated.contains(entry.getValue())) {
+                        // Jump out of the current domination set
+                        final Set<ControlTokenConsumer> jumpTargets = groupDependencies.computeIfAbsent(entry.getValue(), x -> new HashSet<>());
+                        jumpTargets.add(d);
                     }
                 }
             }
@@ -610,7 +588,7 @@ public class Sequencer {
 
         if (hasExceptionHandler) {
             boolean first = true;
-            for (final Map.Entry<Projection, List<ControlTokenConsumer>> handler : node.controlFlowsTo.entrySet()) {
+            for (final Map.Entry<Projection, ControlTokenConsumer> handler : node.controlFlowsTo.entrySet()) {
                 if (handler.getKey() instanceof Projection.ExceptionHandler) {
                     if (first) {
                         first = false;
@@ -618,13 +596,10 @@ public class Sequencer {
                     }
 
                     final Projection.ExceptionHandler exceptionHandler = (Projection.ExceptionHandler) handler.getKey();
-                    if (handler.getValue().size() != 1) {
-                        throw new IllegalStateException("Wrong number of handler nodes : #" + handler.getValue().size());
-                    }
 
                     codegenerator.startCatchHandler(exceptionHandler.type);
 
-                    visit(handler.getValue().get(0), activeStack);
+                    visit(handler.getValue(), activeStack);
 
                     codegenerator.endCatchHandler();
                 }
@@ -648,8 +623,8 @@ public class Sequencer {
 
         boolean hasIncomingBackEdges = false;
         for (final ControlTokenConsumer pred : node.controlComingFrom) {
-            for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : pred.controlFlowsTo.entrySet()) {
-                if (entry.getKey().edgeType() == EdgeType.BACK && entry.getValue().contains(node)) {
+            for (final Map.Entry<Projection, ControlTokenConsumer> entry : pred.controlFlowsTo.entrySet()) {
+                if (entry.getKey().edgeType() == EdgeType.BACK && entry.getValue() == node) {
                     hasIncomingBackEdges = true;
                 }
             }
