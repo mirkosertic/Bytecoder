@@ -17,6 +17,8 @@ package de.mirkosertic.bytecoder.asm.sequencer;
 
 import de.mirkosertic.bytecoder.asm.AbstractVar;
 import de.mirkosertic.bytecoder.asm.ArrayStore;
+import de.mirkosertic.bytecoder.asm.CheckCast;
+import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.asm.Copy;
 import de.mirkosertic.bytecoder.asm.FrameDebugInfo;
 import de.mirkosertic.bytecoder.asm.Goto;
@@ -48,7 +50,7 @@ public interface StructuredControlflowCodeGenerator {
 
     void write(Copy node);
 
-    void writeIfAndStartTrueBlock(If node, String optionalLabel);
+    void writeIfAndStartTrueBlock(If node);
 
     void startIfElseBlock(If node);
 
@@ -78,11 +80,13 @@ public interface StructuredControlflowCodeGenerator {
 
     void write(ArrayStore node);
 
+    void write(CheckCast node);
+
     void writeBreakTo(String label);
 
     void writeContinueTo(String label);
 
-    void startTryCatch(Sequencer.Block b);
+    void startTryCatch(String label);
 
     void startCatchBlock();
 
@@ -92,5 +96,11 @@ public interface StructuredControlflowCodeGenerator {
 
     void startFinallyBlock();
 
-    void endTryCatch();
+    void writeSwitch(final ControlTokenConsumer node);
+
+    void writeSwitchCase(int index);
+
+    void writeSwitchDefaultCase();
+
+    void finishSwitchCase();
 }

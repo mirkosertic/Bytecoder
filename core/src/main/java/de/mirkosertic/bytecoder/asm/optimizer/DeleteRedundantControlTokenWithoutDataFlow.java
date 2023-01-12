@@ -50,8 +50,8 @@ public class DeleteRedundantControlTokenWithoutDataFlow implements Optimizer {
                 // TODO: Maybe check for edge types here?
                 for (final Map.Entry<Projection, List<ControlTokenConsumer>> entry : controlTokenConsumer.controlFlowsTo.entrySet()) {
                     for (final ControlTokenConsumer targetnode : entry.getValue()) {
-                        prevNode.addControlFlowTo(entry.getKey(), targetnode);
                         targetnode.deleteControlFlowFrom(controlTokenConsumer);
+                        prevNode.addControlFlowTo(entry.getKey(), targetnode);
                     }
                 }
 

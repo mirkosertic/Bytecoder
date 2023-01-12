@@ -41,18 +41,18 @@ public class SimpleLinkageTest {
         }
 
         private static void gnamph() {
-            int x = 10;
+            final int x = 10;
         }
 
         public static void gnamph2() {
-            int x = 20;
+            final int x = 20;
         }
 
         public static int getValue() {
             return 42;
         }
 
-        private int getInt(final int value, Object obj) {
+        private int getInt(final int value, final Object obj) {
             return 18;
         }
 
@@ -61,24 +61,11 @@ public class SimpleLinkageTest {
         }
 
         public void testmethod() {
-            gnamph2();
-            getValue();
-            int a = x;
-            x = 10000;
-
-            Testclass y = new Testclass();
-            y.value = 10000;
-            y.value2 = null;
-            for (int i = 0; i < 100; i++);
-
-            TestEnum x = TestEnum.a;
-            TestEnum.class.getEnumConstants();
-
+            int x = 10;
             synchronized (this) {
-                int k = 0;
+                x = 20;
             }
-
-            //String lala = new String(new byte[] {65});
+            x = x + 100;
         }
     }
 

@@ -185,6 +185,10 @@ public class DominatorTree {
     }
 
     public void writeDebugTo(final OutputStream fileOutputStream) {
+        writeDebugTo(fileOutputStream, null, null);
+    }
+
+    public void writeDebugTo(final OutputStream fileOutputStream, final ControlTokenConsumer sourceHighlight, final Set<ControlTokenConsumer> destHighlight) {
         final PrintWriter pw = new PrintWriter(fileOutputStream);
         final List<Node> graphNodes = graph.nodes();
         pw.println("digraph debugoutput {");
@@ -192,7 +196,15 @@ public class DominatorTree {
             final String label = graphNodes.indexOf(n) + " " + n.getClass().getSimpleName() + " " + n.additionalDebugInfo() + " Order : " + rpo.indexOf(n);
 
             pw.print(" node_" + graphNodes.indexOf(n) + "[label=\"" + label + "\" ");
-            pw.print("shape=\"box\" fillcolor=\"orangered\" style=\"filled\"");
+            if (n == sourceHighlight) {
+                pw.print("shape=\"box\" fillcolor=\"green\" style=\"filled\"");
+            } else {
+                if (destHighlight != null && destHighlight.contains(n)) {
+                    pw.print("shape=\"box\" fillcolor=\"blue\" style=\"filled\"");
+                } else {
+                    pw.print("shape=\"box\" fillcolor=\"orangered\" style=\"filled\"");
+                }
+            }
             pw.println("];");
 
             final ControlTokenConsumer id = idom.get(n);

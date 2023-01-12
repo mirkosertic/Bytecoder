@@ -19,7 +19,10 @@ import org.objectweb.asm.Type;
 
 public class ObjectLong extends Value implements Constant {
 
+    public final Long value;
+
     public ObjectLong(final java.lang.Long value) {
         super(Type.LONG_TYPE);
+        this.value = value;
     }
 }

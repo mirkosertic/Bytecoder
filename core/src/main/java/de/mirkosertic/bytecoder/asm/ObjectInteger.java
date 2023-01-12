@@ -19,7 +19,10 @@ import org.objectweb.asm.Type;
 
 public class ObjectInteger extends Value implements Constant {
 
+    public final Integer value;
+
     public ObjectInteger(final java.lang.Integer value) {
         super(Type.INT_TYPE);
+        this.value = value;
     }
 }

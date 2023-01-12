@@ -74,6 +74,7 @@ import de.mirkosertic.bytecoder.asm.TypeReference;
 import de.mirkosertic.bytecoder.asm.Value;
 import de.mirkosertic.bytecoder.asm.Variable;
 import de.mirkosertic.bytecoder.asm.VirtualMethodInvocation;
+import de.mirkosertic.bytecoder.classlib.Array;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -167,21 +168,40 @@ public class GraphParser {
 
         final Type methodType = Type.getMethodType(methodNode.desc);
 
+        final Frame startFrame = new Frame(initialLocals, initialStack);
+        final Region startRegion = (Region) graph.register(new Region(Graph.START_REGION_NAME));
+
+        ControlTokenConsumer start = startRegion;
         int localIndex = 0;
         if ((methodNode.access & Opcodes.ACC_STATIC) == 0) {
-            initialLocals[localIndex++] = graph.newThis(ownerType);
+            final Value t = graph.newThis(ownerType);
+            final Variable v = graph.newVariable(t.type);
+            final Copy c = graph.newCopy();
+            c.addIncomingData(t);
+            v.addIncomingData(c);
+            start.addControlFlowTo(StandardProjections.DEFAULT, c);
+            start = c;
+
+            initialLocals[localIndex++] = v;
         }
         for (int i = 0; i < methodType.getArgumentTypes().length; i ++)  {
             final Type t = methodType.getArgumentTypes()[i];
-            initialLocals[localIndex] = graph.newMethodArgument(t, i);
+
+            final Value t1 = graph.newMethodArgument(t, i);
+            final Variable v = graph.newVariable(t1.type);
+            final Copy c = graph.newCopy();
+            c.addIncomingData(t1);
+            v.addIncomingData(c);
+            start.addControlFlowTo(StandardProjections.DEFAULT, c);
+            start = c;
+
+            initialLocals[localIndex] = v;
             localIndex+= t.getSize();
         }
 
-        final Frame startFrame = new Frame(initialLocals, initialStack);
-        final Region startRegion = (Region) graph.register(new Region(Graph.START_REGION_NAME));
         startRegion.frame = startFrame;
 
-        final GraphParserState initialState = new GraphParserState(startFrame, startRegion, -1, new TryCatchGuardStackEntry[0]);
+        final GraphParserState initialState = new GraphParserState(startFrame, start, -1, new TryCatchGuardStackEntry[0]);
 
         // Step 1: We collect all jump targets
         final Map<AbstractInsnNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerInstruction = new HashMap<>();
@@ -280,6 +300,11 @@ public class GraphParser {
                             controlFlowsToCheck.push(flow.addInstructionAndContinueWith(jump, target));
                         }
                     }
+
+                    final Map<AbstractInsnNode, EdgeType> jumps = incomingEdgesPerInstruction.computeIfAbsent(jump.dflt, k -> new HashMap<>());
+                    jumps.put(jump, EdgeType.FORWARD);
+                    controlFlowsToCheck.push(flow.addInstructionAndContinueWith(jump, jump.dflt));
+
                 } else if (flow.currentNode instanceof JumpInsnNode) {
                     final JumpInsnNode jump = (JumpInsnNode) flow.currentNode;
                     switch (jump.getOpcode()) {
@@ -1771,6 +1796,7 @@ public class GraphParser {
         final GraphParserState currentState = currentFlow.graphParserState;
 
         final Type type = Type.getObjectType(node.desc);
+        compileUnit.resolveClass(type, analysisStack);
 
         final TypeReference typeReference = graph.newTypeReference(type);
         final New n = graph.newNew(type);
@@ -1798,9 +1824,13 @@ public class GraphParser {
         final Frame.PopResult pop1 = currentState.frame.popFromStack();
 
         final Type type = Type.getObjectType(node.desc);
+        if (type.getSort() == Type.OBJECT) {
+            compileUnit.resolveClass(type, analysisStack);
+        }
 
         final TypeReference typeReference = graph.newTypeReference(type);
         final InstanceOf n = graph.newInstanceOf();
+        n.addIncomingData(pop1.value);
         n.addIncomingData(typeReference);
 
         final Variable variable = graph.newVariable(n.type);
@@ -1825,6 +1855,9 @@ public class GraphParser {
         final Frame.PopResult pop1 = currentState.frame.popFromStack();
 
         final Type type = Type.getObjectType(node.desc);
+        if (type.getSort() == Type.OBJECT) {
+            compileUnit.resolveClass(type, analysisStack);
+        }
 
         final TypeReference typeReference = graph.newTypeReference(type);
         final CheckCast n = graph.newCheckCast();
@@ -2016,6 +2049,13 @@ public class GraphParser {
         } else if (node.cst instanceof String) {
             source = graph.newObjectString((String) node.cst);
         } else if (node.cst instanceof Type) {
+            final Type t = (Type) node.cst;
+            if (t.getSort() == Type.ARRAY) {
+                compileUnit.resolveClass(Type.getType(Array.class), analysisStack);
+            }
+            if (t.getSort() == Type.OBJECT) {
+                compileUnit.resolveClass(t, analysisStack);
+            }
             source = graph.newTypeReference((Type) node.cst);
         } else {
             throw new IllegalStateException("Unsupported constant : " + node.cst);
@@ -2083,6 +2123,9 @@ public class GraphParser {
             continueWith.add(currentFlow.continueWith(target, newState));
             graph.addFixup(new ControlFlowFixup(node, newState.frame, new Projection.KeyedProjection(EdgeType.FORWARD, key), target));
         }
+
+        continueWith.add(currentFlow.continueWith(node.dflt, newState));
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, new Projection.DefaultProjection(EdgeType.FORWARD), node.dflt));
 
         return continueWith;
     }

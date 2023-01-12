@@ -19,7 +19,10 @@ import org.objectweb.asm.Type;
 
 public class ObjectDouble extends Value implements Constant {
 
-    public ObjectDouble(final java.lang.Double value) {
+    public final Double value;
+
+    public ObjectDouble(final Double value) {
         super(Type.DOUBLE_TYPE);
+        this.value = value;
     }
 }

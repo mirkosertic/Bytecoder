@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.asm.parser;
 
+import de.mirkosertic.bytecoder.asm.Constant;
 import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.asm.Copy;
 import de.mirkosertic.bytecoder.asm.EdgeType;
@@ -60,12 +61,16 @@ public class ControlFlowFixup implements Fixup {
                 final Value sourceValue = frame.incomingLocals[i];
                 final Value targetValue = targetFrame.incomingLocals[i];
                 if (sourceValue != null && sourceValue != targetValue && targetValue != null) {
-                    final Copy c = g.newCopy();
-                    c.addIncomingData(sourceValue);
-                    targetValue.addIncomingData(c);
-                    current.addControlFlowTo(p, c);
-                    current = c;
-                    p = StandardProjections.DEFAULT;
+                    if (!(targetValue instanceof Constant)) {
+                        final Copy c = g.newCopy();
+                        c.addIncomingData(sourceValue);
+                        targetValue.addIncomingData(c);
+                        current.addControlFlowTo(p, c);
+                        current = c;
+                        p = StandardProjections.DEFAULT;
+                    } else {
+                        System.out.println("Copy to constant?");
+                    }
                 }
             }
             for (int i = 0; i < frame.incomingStack.length; i++) {

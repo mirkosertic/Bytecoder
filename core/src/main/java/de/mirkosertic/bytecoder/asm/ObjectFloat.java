@@ -19,7 +19,10 @@ import org.objectweb.asm.Type;
 
 public class ObjectFloat extends Value implements Constant {
 
-    public ObjectFloat(final java.lang.Float value) {
+    public final Float value;
+
+    public ObjectFloat(final Float value) {
         super(Type.FLOAT_TYPE);
+        this.value = value;
     }
 }
