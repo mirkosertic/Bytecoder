@@ -393,7 +393,7 @@ public class GraphParser {
         }
 
         // Step 4: Fix the initial control flow
-        startRegion.addControlFlowTo(StandardProjections.DEFAULT,
+        start.addControlFlowTo(StandardProjections.DEFAULT,
                 graph.translationFor(methodNode.instructions.getFirst()).main);
 
 

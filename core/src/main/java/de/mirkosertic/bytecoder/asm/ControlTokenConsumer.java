@@ -70,6 +70,7 @@ public abstract class ControlTokenConsumer extends Node {
 
     public void deleteControlFlowFrom(final ControlTokenConsumer consumer) {
         controlComingFrom.remove(consumer);
+        consumer.deleteControlFlowTo(consumer);
     }
 
 }
