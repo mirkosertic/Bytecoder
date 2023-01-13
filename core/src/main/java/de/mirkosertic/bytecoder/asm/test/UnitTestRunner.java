@@ -65,6 +65,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
+import static de.mirkosertic.bytecoder.asm.backend.js.JSHelpers.generateClassName;
+import static de.mirkosertic.bytecoder.asm.backend.js.JSHelpers.generateMethodName;
+
+
 public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> {
 
     private static final Slf4JLogger LOGGER = new Slf4JLogger();
@@ -275,8 +279,8 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
 
                 theCodeWriter.println(compiledCode);
 
-                final String theClassName = backend.generateClassName(invokedType);
-                final String theMethodName = backend.generateMethodName(method.methodNode.name, Type.getArgumentTypes(method.methodNode.desc));
+                final String theClassName = generateClassName(invokedType);
+                final String theMethodName = generateMethodName(method.methodNode.name, Type.getArgumentTypes(method.methodNode.desc));
 
                 final String theFilename = theClassName + "." + theMethodName + "_" + aTestOption.toFilePrefix() + ".html";
 

@@ -43,13 +43,13 @@ import de.mirkosertic.bytecoder.asm.Unwind;
 import de.mirkosertic.bytecoder.asm.VirtualMethodInvocation;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Predicate;
+import java.util.Stack;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Sequencer {
@@ -81,8 +81,6 @@ public class Sequencer {
 
     private final StructuredControlflowCodeGenerator codegenerator;
 
-    private final Set<ControlTokenConsumer> alreadySeen;
-
     public Sequencer(final Graph g, final DominatorTree dominatorTree, final StructuredControlflowCodeGenerator codegenerator) {
         this.graph = g;
         this.dominatorTree = dominatorTree;
@@ -92,64 +90,111 @@ public class Sequencer {
         final List<AbstractVar> phis = g.nodes().stream().filter(t -> t instanceof AbstractVar).map(t -> (AbstractVar) t).collect(Collectors.toList());
         codegenerator.registerVariables(phis);
 
-        this.alreadySeen = new HashSet<>();
-
-        visit(startNode, new ArrayList<>());
+        visitDominationTreeOf(startNode, new Stack<>());
     }
 
-    private void visit(final ControlTokenConsumer node, final List<Block> activeStack) {
-        if (alreadySeen.add(node)) {
-            if (node instanceof TryCatch) {
-                visit((TryCatch) node, activeStack);
-            } else if (node instanceof Region) {
-                visit((Region) node, activeStack);
-            } else if (node instanceof InstanceMethodInvocation) {
-                visit((InstanceMethodInvocation) node, activeStack);
-            } else if (node instanceof VirtualMethodInvocation) {
-                visit((VirtualMethodInvocation) node, activeStack);
-            } else if (node instanceof StaticMethodInvocation) {
-                visit((StaticMethodInvocation) node, activeStack);
-            } else if (node instanceof Copy) {
-                visit((Copy) node, activeStack);
-            } else if (node instanceof If) {
-                visit((If) node, activeStack);
-            } else if (node instanceof Return) {
-                visit((Return) node, activeStack);
-            } else if (node instanceof ReturnValue) {
-                visit((ReturnValue) node, activeStack);
-            } else if (node instanceof SetInstanceField) {
-                visit((SetInstanceField) node, activeStack);
-            } else if (node instanceof ArrayStore) {
-                visit((ArrayStore) node, activeStack);
-            } else if (node instanceof SetClassField) {
-                visit((SetClassField) node, activeStack);
-            } else if (node instanceof LineNumberDebugInfo) {
-                visit((LineNumberDebugInfo) node, activeStack);
-            } else if (node instanceof FrameDebugInfo) {
-                visit((FrameDebugInfo) node, activeStack);
-            } else if (node instanceof Goto) {
-                visit((Goto) node, activeStack);
-            } else if (node instanceof MonitorEnter) {
-                visit((MonitorEnter) node, activeStack);
-            } else if (node instanceof MonitorExit) {
-                visit((MonitorExit) node, activeStack);
-            } else if (node instanceof Unwind) {
-                visit((Unwind) node, activeStack);
-            } else if (node instanceof CheckCast) {
-                visit((CheckCast) node, activeStack);
-            } else if (node instanceof TableSwitch) {
-                visit((TableSwitch) node, activeStack);
-            } else if (node instanceof LookupSwitch) {
-                visit((LookupSwitch) node, activeStack);
-            } else {
-                throw new IllegalStateException("Not implemented : " + node.getClass().getSimpleName());
+    private void visitDominationTreeOf(final ControlTokenConsumer startNode, final Stack<Block> activeStack) {
+        final int startHeight = activeStack.size();
+
+        ControlTokenConsumer current = startNode;
+
+        final Function<ControlTokenConsumer, ControlTokenConsumer> followUpProcessor = controlTokenConsumer -> {
+            for (final Map.Entry<Projection, ControlTokenConsumer> entry : controlTokenConsumer.controlFlowsTo.entrySet()) {
+                if (dominatorTree.getIDom(entry.getValue()) == controlTokenConsumer) {
+                    // We can continue to the child
+                    return entry.getValue();
+                }
+                generateGOTO(entry.getValue(), activeStack);
             }
-        } else {
-            System.out.println("Infinite loop?");
+            return null;
+        };
+
+        while (current != null) {
+            if (current instanceof TryCatch) {
+                // Special-Case : branching
+                visit((TryCatch) current, activeStack);
+                current = null;
+            } else if (current instanceof If) {
+                // Special-Case : branching
+                visit((If) current, activeStack);
+                current = null;
+            } else if (current instanceof TableSwitch) {
+                // Special-Case : branching
+                visit((TableSwitch) current, activeStack);
+                current = null;
+            } else if (current instanceof LookupSwitch) {
+                // Special-Case : branching
+                visit((LookupSwitch) current, activeStack);
+                current = null;
+            } else {
+                // Regular case
+                if (current instanceof Region) {
+                    visit((Region) current, activeStack);
+                    current = followUpProcessor.apply(current);
+                } else if (current instanceof InstanceMethodInvocation) {
+                    codegenerator.write((InstanceMethodInvocation) current);
+                    current = followUpProcessor.apply(current);
+                } else if (current instanceof VirtualMethodInvocation) {
+                    codegenerator.write((VirtualMethodInvocation) current);
+                    current = followUpProcessor.apply(current);
+                } else if (current instanceof StaticMethodInvocation) {
+                    codegenerator.write((StaticMethodInvocation) current);
+                    current = followUpProcessor.apply(current);
+                } else if (current instanceof Copy) {
+                    codegenerator.write((Copy) current);
+                    current = followUpProcessor.apply(current);
+                } else if (current instanceof Return) {
+                    codegenerator.write((Return) current);
+                    // We are finished here
+                    current = null;
+                } else if (current instanceof ReturnValue) {
+                    codegenerator.write((ReturnValue) current);
+                    // We are finished here
+                    current = null;
+                } else if (current instanceof SetInstanceField) {
+                    codegenerator.write((SetInstanceField) current);
+                    current = followUpProcessor.apply(current);
+                } else if (current instanceof ArrayStore) {
+                    codegenerator.write((ArrayStore) current);
+                    current = followUpProcessor.apply(current);
+                } else if (current instanceof SetClassField) {
+                    codegenerator.write((SetClassField) current);
+                    current = followUpProcessor.apply(current);
+                } else if (current instanceof LineNumberDebugInfo) {
+                    codegenerator.write((LineNumberDebugInfo) current);
+                    current = followUpProcessor.apply(current);
+                } else if (current instanceof FrameDebugInfo) {
+                    codegenerator.write((FrameDebugInfo) current);
+                    current = followUpProcessor.apply(current);
+                } else if (current instanceof Goto) {
+                    codegenerator.write((Goto) current);
+                    current = followUpProcessor.apply(current);
+                } else if (current instanceof MonitorEnter) {
+                    codegenerator.write((MonitorEnter) current);
+                    current = followUpProcessor.apply(current);
+                } else if (current instanceof MonitorExit) {
+                    codegenerator.write((MonitorExit) current);
+                    current = followUpProcessor.apply(current);
+                } else if (current instanceof Unwind) {
+                    // We are finished here
+                    codegenerator.write((Unwind) current);
+                    current = null;
+                } else if (current instanceof CheckCast) {
+                    codegenerator.write((CheckCast) current);
+                    current = followUpProcessor.apply(current);
+                } else {
+                    throw new IllegalStateException("Not implemented : " + current.getClass().getSimpleName());
+                }
+            }
+        }
+
+        while (activeStack.size() > startHeight) {
+            final Block pop = activeStack.pop();
+            codegenerator.finishBlock();
         }
     }
 
-    private void generateGOTO(final ControlTokenConsumer target, final List<Block> activeStack) {
+    private void generateGOTO(final ControlTokenConsumer target, final Stack<Block> activeStack) {
         for (final Block b : activeStack) {
             if (b.breakLeadsTo == target) {
                 codegenerator.writeBreakTo(b.label);
@@ -164,122 +209,7 @@ public class Sequencer {
         System.out.println("GOTO " + graph.nodes().indexOf(target) + " " + target.getClass().getSimpleName() + " " + target.additionalDebugInfo());
     }
 
-    private void processSuccessors(final ControlTokenConsumer node, final List<Block> activeStack) {
-        processSuccessors(node, activeStack, projection -> true);
-    }
-
-    private void processSuccessors(final ControlTokenConsumer node, final List<Block> activeStack, final Predicate<Projection> projectionPredicate) {
-        for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
-            if (projectionPredicate.test(entry.getKey())) {
-                if (dominatorTree.dominates(node, entry.getValue())) {
-                    // We can continue to the child
-                    visit(entry.getValue(), activeStack);
-                } else {
-                    generateGOTO(entry.getValue(), activeStack);
-                }
-            }
-        }
-    }
-
-    private void visit(final InstanceMethodInvocation node, final List<Block> activeStack) {
-
-        codegenerator.write(node);
-
-        processSuccessors(node, activeStack);
-    }
-
-    private void visit(final VirtualMethodInvocation node, final List<Block> activeStack) {
-
-        codegenerator.write(node);
-
-        processSuccessors(node, activeStack);
-    }
-
-    private void visit(final StaticMethodInvocation node, final List<Block> activeStack) {
-
-        codegenerator.write(node);
-
-        processSuccessors(node, activeStack);
-    }
-
-    private void visit(final Copy node, final List<Block> activeStack) {
-
-        codegenerator.write(node);
-
-        processSuccessors(node, activeStack);
-    }
-
-    private void visit(final SetInstanceField node, final List<Block> activeStack) {
-
-        codegenerator.write(node);
-
-        processSuccessors(node, activeStack);
-    }
-
-    private void visit(final SetClassField node, final List<Block> activeStack) {
-
-        codegenerator.write(node);
-
-        processSuccessors(node, activeStack);
-    }
-
-    private void visit(final LineNumberDebugInfo node, final List<Block> activeStack) {
-
-        codegenerator.write(node);
-
-        processSuccessors(node, activeStack);
-    }
-
-    private void visit(final FrameDebugInfo node, final List<Block> activeStack) {
-
-        codegenerator.write(node);
-
-        processSuccessors(node, activeStack);
-    }
-
-    private void visit(final Goto node, final List<Block> activeStack) {
-
-        codegenerator.write(node);
-
-        processSuccessors(node, activeStack);
-    }
-
-    private void visit(final MonitorEnter node, final List<Block> activeStack) {
-
-        codegenerator.write(node);
-
-        processSuccessors(node, activeStack);
-    }
-
-    private void visit(final MonitorExit node, final List<Block> activeStack) {
-
-        codegenerator.write(node);
-
-        processSuccessors(node, activeStack);
-    }
-
-    private void visit(final Unwind node, final List<Block> activeStack) {
-
-        codegenerator.write(node);
-
-        processSuccessors(node, activeStack);
-    }
-
-    private void visit(final CheckCast node, final List<Block> activeStack) {
-
-        codegenerator.write(node);
-
-        processSuccessors(node, activeStack);
-    }
-
-    private void visit(final ArrayStore node, final List<Block> activeStack) {
-
-        codegenerator.write(node);
-
-        processSuccessors(node, activeStack);
-    }
-
-    private void visit(final If node, final List<Block> activeStack) {
+    private void visit(final If node, final Stack<Block> activeStack) {
 
         final Set<ControlTokenConsumer> dominated = dominatorTree.immediatelyDominatedNodesOf(node);
         final Map<ControlTokenConsumer, Set<ControlTokenConsumer>> groupDependencies = new HashMap<>();
@@ -296,19 +226,14 @@ public class Sequencer {
             }
         }
 
-        final List<Block> newStack = new ArrayList<>(activeStack);
-
         final List<ControlTokenConsumer> orderedBlocks = new ArrayList<>(groupDependencies.keySet());
-        orderedBlocks.sort(new Comparator<ControlTokenConsumer>() {
-            @Override
-            public int compare(final ControlTokenConsumer o1, final ControlTokenConsumer o2) {
-                final int a = dominatorTree.getRpo().indexOf(o1);
-                final int b = dominatorTree.getRpo().indexOf(o2);
-                if ((a == -1) || (b == 1)) {
-                    throw new IllegalStateException("Don't know what to do");
-                }
-                return Integer.compare(a, b);
+        orderedBlocks.sort((o1, o2) -> {
+            final int a = dominatorTree.getRpo().indexOf(o1);
+            final int b = dominatorTree.getRpo().indexOf(o2);
+            if ((a == -1) || (b == 1)) {
+                throw new IllegalStateException("Don't know what to do");
             }
+            return Integer.compare(a, b);
         });
 
         for (int i = 0; i < orderedBlocks.size(); i++) {
@@ -318,8 +243,9 @@ public class Sequencer {
             if (i < orderedBlocks.size() - 1) {
                 next = orderedBlocks.get(i + 1);
             }
+
             final Block newBlock = new Block("PREJUMP_IF_" + graph.nodes().indexOf(node) + "_" + i, Block.Type.NORMAL, null, target);
-            newStack.add(newBlock);
+            activeStack.push(newBlock);
 
             codegenerator.startBlock(newBlock);
         }
@@ -328,10 +254,10 @@ public class Sequencer {
 
         for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
             if (entry.getKey() instanceof Projection.TrueProjection) {
-                if (dominatorTree.dominates(node, entry.getValue())) {
-                    visit(entry.getValue(), newStack);
+                if (dominatorTree.getIDom(entry.getValue()) == node) {
+                    visitDominationTreeOf(entry.getValue(), activeStack);
                 } else {
-                    generateGOTO(entry.getValue(), newStack);
+                    generateGOTO(entry.getValue(), activeStack);
                 }
             }
         }
@@ -340,10 +266,10 @@ public class Sequencer {
 
         for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
             if (entry.getKey() instanceof Projection.FalseProjection) {
-                if (dominatorTree.dominates(node, entry.getValue())) {
-                    visit(entry.getValue(), newStack);
+                if (dominatorTree.getIDom(entry.getValue()) == node) {
+                    visitDominationTreeOf(entry.getValue(), activeStack);
                 } else {
-                    generateGOTO(entry.getValue(), newStack);
+                    generateGOTO(entry.getValue(), activeStack);
                 }
             }
         }
@@ -354,12 +280,13 @@ public class Sequencer {
             final ControlTokenConsumer target = orderedBlocks.get(i);
 
             codegenerator.finishBlock();
+            activeStack.pop();
 
-            visit(target, activeStack);
+            visitDominationTreeOf(target, activeStack);
         }
     }
 
-    private void visit(final TableSwitch node, final List<Block> activeStack) {
+    private void visit(final TableSwitch node, final Stack<Block> activeStack) {
 
         final Set<ControlTokenConsumer> dominated = dominatorTree.immediatelyDominatedNodesOf(node);
         final Map<ControlTokenConsumer, Set<ControlTokenConsumer>> groupDependencies = new HashMap<>();
@@ -376,26 +303,21 @@ public class Sequencer {
             }
         }
 
-        final List<Block> newStack = new ArrayList<>(activeStack);
-
         final List<ControlTokenConsumer> orderedBlocks = new ArrayList<>(groupDependencies.keySet());
-        orderedBlocks.sort(new Comparator<ControlTokenConsumer>() {
-            @Override
-            public int compare(final ControlTokenConsumer o1, final ControlTokenConsumer o2) {
-                final int a = dominatorTree.getRpo().indexOf(o1);
-                final int b = dominatorTree.getRpo().indexOf(o2);
-                if ((a == -1) || (b == 1)) {
-                    throw new IllegalStateException("Don't know what to do");
-                }
-                return Integer.compare(a, b);
+        orderedBlocks.sort((o1, o2) -> {
+            final int a = dominatorTree.getRpo().indexOf(o1);
+            final int b = dominatorTree.getRpo().indexOf(o2);
+            if ((a == -1) || (b == 1)) {
+                throw new IllegalStateException("Don't know what to do");
             }
+            return Integer.compare(a, b);
         });
 
         for (int i = 0; i < orderedBlocks.size(); i++) {
             final ControlTokenConsumer target = orderedBlocks.get(i);
 
             final Block newBlock = new Block("PREJUMP_TABLESWITCH_" + graph.nodes().indexOf(node) + "_" + i, Block.Type.NORMAL, null, target);
-            newStack.add(newBlock);
+            activeStack.push(newBlock);
 
             codegenerator.startBlock(newBlock);
         }
@@ -406,10 +328,10 @@ public class Sequencer {
             if (entry.getKey() instanceof Projection.IndexedProjection) {
                 final Projection.IndexedProjection indexedProjection = (Projection.IndexedProjection) entry.getKey();
                 codegenerator.writeSwitchCase(indexedProjection.index);
-                if (dominatorTree.dominates(node, entry.getValue())) {
-                    visit(entry.getValue(), newStack);
+                if (dominatorTree.getIDom(entry.getValue()) == node) {
+                    visitDominationTreeOf(entry.getValue(), activeStack);
                 } else {
-                    generateGOTO(entry.getValue(), newStack);
+                    generateGOTO(entry.getValue(), activeStack);
                 }
                 codegenerator.finishSwitchCase();
             }
@@ -418,10 +340,10 @@ public class Sequencer {
         for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
             if (entry.getKey() instanceof Projection.DefaultProjection) {
                 codegenerator.writeSwitchDefaultCase();
-                if (dominatorTree.dominates(node, entry.getValue())) {
-                    visit(entry.getValue(), newStack);
+                if (dominatorTree.getIDom(entry.getValue()) == node) {
+                    visitDominationTreeOf(entry.getValue(), activeStack);
                 } else {
-                    generateGOTO(entry.getValue(), newStack);
+                    generateGOTO(entry.getValue(), activeStack);
                 }
                 codegenerator.finishSwitchCase();
             }
@@ -433,12 +355,13 @@ public class Sequencer {
             final ControlTokenConsumer target = orderedBlocks.get(i);
 
             codegenerator.finishBlock();
+            activeStack.pop();
 
-            visit(target, activeStack);
+            visitDominationTreeOf(target, activeStack);
         }
     }
 
-    private void visit(final LookupSwitch node, final List<Block> activeStack) {
+    private void visit(final LookupSwitch node, final Stack<Block> activeStack) {
 
         final Set<ControlTokenConsumer> dominated = dominatorTree.immediatelyDominatedNodesOf(node);
         final Map<ControlTokenConsumer, Set<ControlTokenConsumer>> groupDependencies = new HashMap<>();
@@ -455,19 +378,14 @@ public class Sequencer {
             }
         }
 
-        final List<Block> newStack = new ArrayList<>(activeStack);
-
         final List<ControlTokenConsumer> orderedBlocks = new ArrayList<>(groupDependencies.keySet());
-        orderedBlocks.sort(new Comparator<ControlTokenConsumer>() {
-            @Override
-            public int compare(final ControlTokenConsumer o1, final ControlTokenConsumer o2) {
-                final int a = dominatorTree.getRpo().indexOf(o1);
-                final int b = dominatorTree.getRpo().indexOf(o2);
-                if ((a == -1) || (b == 1)) {
-                    throw new IllegalStateException("Don't know what to do");
-                }
-                return Integer.compare(a, b);
+        orderedBlocks.sort((o1, o2) -> {
+            final int a = dominatorTree.getRpo().indexOf(o1);
+            final int b = dominatorTree.getRpo().indexOf(o2);
+            if ((a == -1) || (b == 1)) {
+                throw new IllegalStateException("Don't know what to do");
             }
+            return Integer.compare(a, b);
         });
 
         for (int i = 0; i < orderedBlocks.size(); i++) {
@@ -478,7 +396,7 @@ public class Sequencer {
                 next = orderedBlocks.get(i + 1);
             }
             final Block newBlock = new Block("PREJUMP_LOOKUPSWITCH_" + graph.nodes().indexOf(node) + "_" + i, Block.Type.NORMAL, null, target);
-            newStack.add(newBlock);
+            activeStack.push(newBlock);
 
             codegenerator.startBlock(newBlock);
         }
@@ -489,10 +407,10 @@ public class Sequencer {
             if (entry.getKey() instanceof Projection.KeyedProjection) {
                 final Projection.KeyedProjection indexedProjection = (Projection.KeyedProjection) entry.getKey();
                 codegenerator.writeSwitchCase(indexedProjection.key);
-                if (dominatorTree.dominates(node, entry.getValue())) {
-                    visit(entry.getValue(), newStack);
+                if (dominatorTree.getIDom(entry.getValue()) == node) {
+                    visitDominationTreeOf(entry.getValue(), activeStack);
                 } else {
-                    generateGOTO(entry.getValue(), newStack);
+                    generateGOTO(entry.getValue(), activeStack);
                 }
                 codegenerator.finishSwitchCase();
             }
@@ -501,10 +419,10 @@ public class Sequencer {
         for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
             if (entry.getKey() instanceof Projection.DefaultProjection) {
                 codegenerator.writeSwitchDefaultCase();
-                if (dominatorTree.dominates(node, entry.getValue())) {
-                    visit(entry.getValue(), newStack);
+                if (dominatorTree.getIDom(entry.getValue()) == node) {
+                    visitDominationTreeOf(entry.getValue(), activeStack);
                 } else {
-                    generateGOTO(entry.getValue(), newStack);
+                    generateGOTO(entry.getValue(), activeStack);
                 }
                 codegenerator.finishSwitchCase();
             }
@@ -516,13 +434,13 @@ public class Sequencer {
             final ControlTokenConsumer target = orderedBlocks.get(i);
 
             codegenerator.finishBlock();
+            activeStack.pop();
 
-            visit(target, activeStack);
-
+            visitDominationTreeOf(target, activeStack);
         }
     }
 
-    private void visit(final TryCatch node, final List<Block> activeStack) {
+    private void visit(final TryCatch node, final Stack<Block> activeStack) {
 
         boolean hasIncomingBackEdges = false;
         for (final ControlTokenConsumer pred : node.controlComingFrom) {
@@ -549,24 +467,20 @@ public class Sequencer {
         }
 
         final List<ControlTokenConsumer> orderedBlocks = new ArrayList<>(groupDependencies.keySet());
-        orderedBlocks.sort(new Comparator<ControlTokenConsumer>() {
-            @Override
-            public int compare(final ControlTokenConsumer o1, final ControlTokenConsumer o2) {
-                final int a = dominatorTree.getRpo().indexOf(o1);
-                final int b = dominatorTree.getRpo().indexOf(o2);
-                if ((a == -1) || (b == 1)) {
-                    throw new IllegalStateException("Don't know what to do");
-                }
-                return Integer.compare(a, b);
+        orderedBlocks.sort((o1, o2) -> {
+            final int a = dominatorTree.getRpo().indexOf(o1);
+            final int b = dominatorTree.getRpo().indexOf(o2);
+            if ((a == -1) || (b == 1)) {
+                throw new IllegalStateException("Don't know what to do");
             }
+            return Integer.compare(a, b);
         });
 
-        final List<Block> newStackForDominatedNodes = new ArrayList<>(activeStack);
         for (int i = 0; i < orderedBlocks.size(); i++) {
             final ControlTokenConsumer target = orderedBlocks.get(i);
 
             final Block newBlock = new Block("PREJUMP_TRYCATCH_" + graph.nodes().indexOf(node) + "_" + i, Block.Type.NORMAL, null, target);
-            newStackForDominatedNodes.add(newBlock);
+            activeStack.push(newBlock);
 
             codegenerator.startBlock(newBlock);
         }
@@ -576,7 +490,7 @@ public class Sequencer {
         if (hasExceptionHandler) {
             if (hasIncomingBackEdges) {
                 final Block newBlock = new Block("TRYCATCH_" + graph.nodes().indexOf(node), Block.Type.LOOP, node, null);
-                newStackForDominatedNodes.add(newBlock);
+                activeStack.push(newBlock);
 
                 codegenerator.startTryCatch(newBlock.label);
             } else {
@@ -584,7 +498,16 @@ public class Sequencer {
             }
         }
 
-        processSuccessors(node, newStackForDominatedNodes, p -> p instanceof Projection.TryCatchGuardedProjection);
+        for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
+            if (entry.getKey() instanceof Projection.TryCatchGuardedProjection) {
+                if (dominatorTree.getIDom(entry.getValue()) == node) {
+                    // We can continue to the child
+                    visitDominationTreeOf(entry.getValue(), activeStack);
+                } else {
+                    generateGOTO(entry.getValue(), activeStack);
+                }
+            }
+        }
 
         if (hasExceptionHandler) {
             boolean first = true;
@@ -599,7 +522,7 @@ public class Sequencer {
 
                     codegenerator.startCatchHandler(exceptionHandler.type);
 
-                    visit(handler.getValue(), activeStack);
+                    visitDominationTreeOf(handler.getValue(), activeStack);
 
                     codegenerator.endCatchHandler();
                 }
@@ -608,18 +531,22 @@ public class Sequencer {
 
         if (hasExceptionHandler) {
             codegenerator.finishBlock();
+            if (hasIncomingBackEdges) {
+                activeStack.pop();
+            }
         }
 
         for (int i = orderedBlocks.size() - 1; i >= 0; i--) {
             final ControlTokenConsumer target = orderedBlocks.get(i);
 
             codegenerator.finishBlock();
+            activeStack.pop();
 
-            visit(target, activeStack);
+            visitDominationTreeOf(target, activeStack);
         }
     }
 
-    private void visit(final Region node, final List<Block> activeStack) {
+    private void visit(final Region node, final Stack<Block> activeStack) {
 
         boolean hasIncomingBackEdges = false;
         for (final ControlTokenConsumer pred : node.controlComingFrom) {
@@ -636,30 +563,10 @@ public class Sequencer {
         } else {
             b = new Block(node.label, Block.Type.NORMAL, null, null);
         }
-        final List<Block> newStackForDominatedNodes = new ArrayList<>(activeStack);
-        newStackForDominatedNodes.add(b);
 
-        if (Graph.START_REGION_NAME.equals(b.label)) {
-
-            processSuccessors(node, newStackForDominatedNodes);
-
-        } else {
+        if (!Graph.START_REGION_NAME.equals(b.label) && hasIncomingBackEdges) {
+            activeStack.push(b);
             codegenerator.startBlock(b);
-
-            processSuccessors(node, newStackForDominatedNodes);
-
-            codegenerator.finishBlock();
         }
     }
-
-    private void visit(final Return node, final List<Block> activeStack) {
-
-        codegenerator.write(node);
-    }
-
-    private void visit(final ReturnValue node, final List<Block> activeStack) {
-
-        codegenerator.write(node);
-    }
-
 }

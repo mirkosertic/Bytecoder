@@ -26,4 +26,9 @@ public class MethodArgument extends Value implements Constant {
 
         this.index = index;
     }
+
+    @Override
+    public String additionalDebugInfo() {
+        return ": #" + index;
+    }
 }
