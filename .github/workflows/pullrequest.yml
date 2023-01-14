@@ -4,7 +4,7 @@ on:
     branches: [ master ]
 jobs:
   build_jvm:
-    runs-on: 'ubuntu-latest'
+    runs-on: 'ubuntu-20.04'
     strategy:
       matrix:
         java: [8,11,17]
@@ -27,7 +27,7 @@ jobs:
           sudo update-alternatives --install /usr/bin/wasm-ld wasm-ld /usr/bin/wasm-ld-11 1000
       - run: mvn --no-transfer-progress --batch-mode verify -P jvmtestsonly
   build_js_backend:
-    runs-on: 'ubuntu-latest'
+    runs-on: 'ubuntu-20.04'
     strategy:
       matrix:
         java: [8,11,17]
@@ -50,7 +50,7 @@ jobs:
          sudo update-alternatives --install /usr/bin/wasm-ld wasm-ld /usr/bin/wasm-ld-11 1000
      - run: mvn --no-transfer-progress --batch-mode verify -P jstestsonly
   build_wasm_stackify_backend:
-    runs-on: 'ubuntu-latest'
+    runs-on: 'ubuntu-20.04'
     strategy:
       matrix:
         java: [8,11,17]
@@ -73,7 +73,7 @@ jobs:
           sudo update-alternatives --install /usr/bin/wasm-ld wasm-ld /usr/bin/wasm-ld-11 1000
       - run: mvn --no-transfer-progress --batch-mode verify -P wasmtestsonly_stackify
   build_wasm_reloop_backend:
-    runs-on: 'ubuntu-latest'
+    runs-on: 'ubuntu-20.04'
     strategy:
       matrix:
         java: [8,11,17]
@@ -95,7 +95,7 @@ jobs:
           sudo apt-get install -y ocl-icd-opencl-dev clang-11 lldb-11 lld-11 clangd-11
       - run: mvn --no-transfer-progress --batch-mode verify -P wasmtestsonly_reloop
   build_wasmllvm_backend:
-    runs-on: 'ubuntu-latest'
+    runs-on: 'ubuntu-20.04'
     strategy:
       matrix:
         java: [8,11,17]
