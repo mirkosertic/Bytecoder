@@ -62,11 +62,10 @@ public class SimpleLinkageTest {
 
         public void testmethod() {
             int x = 10;
-            int y = 20;
-            for (int i = 0; i < 100; i++) {
-                x = x + y + i;
+            synchronized (this) {
+                x = x + 10;
             }
-            x = x + 20;
+            //new String(new byte[] {65});
         }
     }
 

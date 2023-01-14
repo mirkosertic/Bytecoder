@@ -192,78 +192,81 @@ public class JSBackend {
         }
     }
 
-    private void generateMethodsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
+    public void generateMethodsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
         for (final ResolvedMethod m : cl.resolvedMethods) {
             if (m.methodBody != null) {
-
-                System.out.println("Writing method for " + cl.type + " . " + m.methodNode.name + m.methodNode.desc);
-
-                pw.println();
-                pw.print("  ");
-                if (Modifier.isStatic(m.methodNode.access)) {
-                    pw.print("static ");
-                }
-                if (Modifier.isPrivate(m.methodNode.access)) {
-                    pw.print("#");
-                }
-                final String methodName = generateMethodName(m.methodNode.name, Type.getArgumentTypes(m.methodNode.desc));
-                pw.print(methodName);
-
-                final Type[] arguments = Type.getArgumentTypes(m.methodNode.desc);
-
-                pw.print("(");
-                for (int i = 0; i < arguments.length; i++) {
-                    if (i > 0) {
-                        pw.print(",");
-                    }
-                    pw.print("arg");
-                    pw.print(i);
-                }
-                pw.println(") {");
-
-                final Graph g = m.methodBody;
-                final Optimizer o = Optimizations.DEFAULT;
-
-
-                while (o.optimize(m, g)) {
-                    //
-                }
-
-                final DominatorTree dt = new DominatorTree(g);
-
-                try {
-                    if (cl.classNode.sourceFile != null) {
-                        pw.print("    // source file is ");
-                        pw.println(cl.classNode.sourceFile);
-                    }
-
-                    new Sequencer(g, dt, new JSStructuredControlflowCodeGenerator(compileUnit, cl, pw));
-
-                } catch (final Exception ex) {
-
-                    try {
-                        g.writeDebugTo(Files.newOutputStream(Paths.get(generateClassName(cl.type) + "." + methodName + "_debug.dot")));
-                    } catch (final IOException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    try {
-                        g.writeDebugTo(Files.newOutputStream(Paths.get(generateClassName(cl.type) + "." + methodName + "_debug_optimized.dot")));
-                    } catch (final IOException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    try {
-                        dt.writeDebugTo(Files.newOutputStream(Paths.get(generateClassName(cl.type) + "." + methodName + "_dominatortree.dot")));
-                    } catch (final IOException e) {
-                        throw new RuntimeException(e);
-                    }
-
-                    throw ex;
-                }
-
-                pw.println("  }");
+                generateMethod(pw, compileUnit, cl, m);
             }
         }
+    }
+
+    public void generateMethod(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m) {
+        System.out.println("Writing method for " + cl.type + " . " + m.methodNode.name + m.methodNode.desc);
+
+        pw.println();
+        pw.print("  ");
+        if (Modifier.isStatic(m.methodNode.access)) {
+            pw.print("static ");
+        }
+        if (Modifier.isPrivate(m.methodNode.access)) {
+            pw.print("#");
+        }
+        final String methodName = generateMethodName(m.methodNode.name, Type.getArgumentTypes(m.methodNode.desc));
+        pw.print(methodName);
+
+        final Type[] arguments = Type.getArgumentTypes(m.methodNode.desc);
+
+        pw.print("(");
+        for (int i = 0; i < arguments.length; i++) {
+            if (i > 0) {
+                pw.print(",");
+            }
+            pw.print("arg");
+            pw.print(i);
+        }
+        pw.println(") {");
+
+        final Graph g = m.methodBody;
+        final Optimizer o = Optimizations.DEFAULT;
+
+
+        while (o.optimize(m, g)) {
+            //
+        }
+
+        final DominatorTree dt = new DominatorTree(g);
+
+        try {
+            g.writeDebugTo(Files.newOutputStream(Paths.get(generateClassName(cl.type) + "." + methodName + "_debug.dot")));
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        try {
+            g.writeDebugTo(Files.newOutputStream(Paths.get(generateClassName(cl.type) + "." + methodName + "_debug_optimized.dot")));
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        try {
+            dt.writeDebugTo(Files.newOutputStream(Paths.get(generateClassName(cl.type) + "." + methodName + "_dominatortree.dot")));
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        try {
+            if (cl.classNode.sourceFile != null) {
+                pw.print("    // source file is ");
+                pw.println(cl.classNode.sourceFile);
+            }
+
+            new Sequencer(g, dt, new JSStructuredControlflowCodeGenerator(compileUnit, cl, pw));
+
+        } catch (final Exception ex) {
+
+            throw ex;
+        }
+
+        pw.println("  }");
     }
 }

@@ -56,4 +56,15 @@ public abstract class ControlTokenConsumer extends Node {
         controlComingFrom.remove(consumer);
         consumer.deleteControlFlowTo(this);
     }
+
+    public boolean hasIncomingBackEdges() {
+        for (final ControlTokenConsumer pred : controlComingFrom) {
+            for (final Map.Entry<Projection, ControlTokenConsumer> entry : pred.controlFlowsTo.entrySet()) {
+                if (entry.getKey().edgeType() == EdgeType.BACK && entry.getValue() == this) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }

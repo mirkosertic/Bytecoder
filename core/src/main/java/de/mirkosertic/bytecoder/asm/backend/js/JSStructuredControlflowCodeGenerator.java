@@ -15,7 +15,6 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.js;
 
-import com.sun.org.apache.xalan.internal.xsltc.cmdline.Compile;
 import de.mirkosertic.bytecoder.asm.AbstractVar;
 import de.mirkosertic.bytecoder.asm.Add;
 import de.mirkosertic.bytecoder.asm.And;
@@ -1057,5 +1056,12 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         level--;
         writeIndent();
         pw.println("}");
+    }
+
+    @Override
+    public void writeDebugNote(final String message) {
+        writeIndent();
+        pw.print("// ");
+        pw.println(message);
     }
 }

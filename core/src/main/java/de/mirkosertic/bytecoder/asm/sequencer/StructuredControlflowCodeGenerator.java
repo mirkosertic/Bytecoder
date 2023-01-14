@@ -103,4 +103,6 @@ public interface StructuredControlflowCodeGenerator {
     void writeSwitchDefaultCase();
 
     void finishSwitchCase();
+
+    void writeDebugNote(String message);
 }
