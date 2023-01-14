@@ -1,0 +1,6 @@
+    int NOP = 0;
+    int DUP2_X1 = 93;
+    int DUP2_X2 = 94;
+    int SWAP = 95;
+    int JSR = 168;
+    int RET = 169;

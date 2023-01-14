@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,63 +15,145 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
+import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Modifier;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Map;
+import java.util.List;
 import java.util.Set;
 
 public class ResolvedClass {
 
-    public enum Flag {
-        USED_BY_METHOD_SIGNATURE,
-        USED_AS_STATIC_CALL_TARGET,
-        HAS_CLASS_INITIALIZER
-    }
+    public final Type type;
 
-    final CompilationUnit compilationUnit;
-    final ClassNode classNode;
-    final Set<ResolvedClass> superTypes;
-    final Set<ResolvedClass> subTypes;
-    final Set<Flag> flags;
-    final Map<String, ResolvedMethod> resolvedMethods;
+    public final ClassNode classNode;
 
-    public ResolvedClass(final CompilationUnit compilationUnit, final ClassNode classNode) {
-        this.compilationUnit = compilationUnit;
+    public final ResolvedClass superClass;
+
+    public final ResolvedClass[] interfaces;
+
+    public final CompileUnit compileUnit;
+
+    public final Set<ResolvedClass> directSubclasses;
+
+    public final List<ResolvedMethod> resolvedMethods;
+
+    public final List<ResolvedField> resolvedFields;
+
+    boolean needsInitialization;
+
+    public ResolvedMethod classInitializer;
+
+    public ResolvedClass(final CompileUnit compileUnit, final Type type, final ClassNode classNode, final ResolvedClass superClass, final ResolvedClass[] interfaces) {
+        this.compileUnit = compileUnit;
+        this.type = type;
         this.classNode = classNode;
-        this.superTypes = new HashSet<>();
-        this.subTypes = new HashSet<>();
-        this.flags = new HashSet<>();
-        this.resolvedMethods = new HashMap<>();
-    }
-
-    public void flagWith(final Flag flag) {
-        flags.add(flag);
-    }
-
-    public ResolvedMethod resolveStaticMethod(final String methodName, final String methodDescriptor) {
-        final String key = methodName + " " + methodDescriptor;
-        final ResolvedMethod known = resolvedMethods.get(key);
-        if (known != null) {
-            return known;
+        this.superClass = superClass;
+        this.interfaces = interfaces;
+        this.directSubclasses = new HashSet<>();
+        this.resolvedMethods = new ArrayList<>();
+        this.resolvedFields = new ArrayList<>();
+        this.needsInitialization = true;
+        this.classInitializer = null;
+        if (superClass != null) {
+            superClass.registerDirectSubclass(this);
         }
+        for (final ResolvedClass interf : interfaces) {
+            interf.registerDirectSubclass(this);
+        }
+    }
 
-        for (final MethodNode methodNode : classNode.methods) {
-            if (methodNode.name.equals(methodName) && methodNode.desc.equals(methodDescriptor) && Modifier.isStatic(methodNode.access)) {
-                final ResolvedMethod newResolvedMethod = new ResolvedMethod(methodNode);
-                resolvedMethods.put(key, newResolvedMethod);
-
-                if (!Modifier.isAbstract(methodNode.access)) {
-                    compilationUnit.enqueue(new AnalyzeMethodCommand(this, newResolvedMethod));
+    public ResolvedClass requestInitialization(final AnalysisStack analysisStack) {
+        if (needsInitialization) {
+            needsInitialization = false;
+            if (superClass != null) {
+                superClass.requestInitialization(analysisStack);
+            }
+            for (final ResolvedClass interf : interfaces) {
+                interf.requestInitialization(analysisStack);
+            }
+            for (final MethodNode m : classNode.methods) {
+                if (Modifier.isStatic(m.access) && "<clinit>".equals(m.name)) {
+                    this.classInitializer = resolveMethod(m.name, Type.getMethodType(m.desc), analysisStack);
                 }
-
-                return newResolvedMethod;
             }
         }
-        throw new IllegalArgumentException("No such method : " + methodName + "(" + methodDescriptor + ") in class " + Type.getObjectType(classNode.name).getClassName());
+        return this;
+    }
+
+    public void registerDirectSubclass(final ResolvedClass cl) {
+        directSubclasses.add(cl);
+    }
+
+    public ResolvedMethod resolveMethod(final String methodName, final Type methodType, final AnalysisStack analysisStack) {
+        final ResolvedMethod m = resolveMethodInternal(methodName, methodType, analysisStack);
+        if (m == null) {
+            throw new IllegalStateException("No such method : " + classNode.name + "." + methodName + methodType);
+        }
+        return m;
+    }
+
+    private ResolvedMethod resolveMethodInternal(final String methodName, final Type methodType, final AnalysisStack analysisStack) {
+        for (final ResolvedMethod m : resolvedMethods) {
+            final MethodNode methodNode = m.methodNode;
+            if (methodNode.name.equals(methodName) && methodNode.desc.equals(methodType.getDescriptor())) {
+                return m;
+            }
+        }
+        for (int i = 0; i < classNode.methods.size(); i++) {
+            final MethodNode methodNode = classNode.methods.get(i);
+            if (methodNode.name.equals(methodName)) {
+                final boolean polymorphic = AnnotationUtils.hasAnnotation("Ljava/lang/invoke/MethodHandle$PolymorphicSignature;", methodNode.visibleAnnotations);
+                if (polymorphic || methodNode.desc.equals(methodType.getDescriptor())) {
+                    final ResolvedMethod r = new ResolvedMethod(this, methodNode);
+                    resolvedMethods.add(r);
+                    r.parseBody(analysisStack);
+                    return r;
+                }
+            }
+        }
+        for (final ResolvedClass interf : interfaces) {
+            final ResolvedMethod m = interf.resolveMethodInternal(methodName, methodType, analysisStack);
+            if (m != null) {
+                return m;
+            }
+        }
+        if (superClass != null) {
+            return superClass.resolveMethodInternal(methodName, methodType, analysisStack);
+        }
+        return null;
+    }
+
+    public ResolvedField resolveField(final String name, final Type t) {
+        for (final ResolvedField f : resolvedFields) {
+            if (f.name.equals(name)) {
+                return f;
+            }
+        }
+        for (final FieldNode f : classNode.fields) {
+            if (f.name.equals(name)) {
+                final ResolvedField rf = new ResolvedField(this, name, Type.getType(f.desc), f.value, f.access);
+                resolvedFields.add(rf);
+                return rf;
+            }
+        }
+        if (superClass != null) {
+            return superClass.resolveField(name, t);
+        }
+        throw new IllegalStateException("No such field " + name + " in " + classNode.name);
+    }
+
+    public boolean requiresClassInitializer() {
+        boolean requiresClassInitializer = classInitializer != null;
+        if (superClass != null) {
+            requiresClassInitializer = requiresClassInitializer | superClass.requiresClassInitializer();
+        }
+        return requiresClassInitializer;
     }
 }
