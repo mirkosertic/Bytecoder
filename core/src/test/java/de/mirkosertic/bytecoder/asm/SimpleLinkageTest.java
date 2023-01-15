@@ -65,6 +65,7 @@ public class SimpleLinkageTest {
             synchronized (this) {
                 x = x + 10;
             }
+
             //new String(new byte[] {65});
         }
     }
