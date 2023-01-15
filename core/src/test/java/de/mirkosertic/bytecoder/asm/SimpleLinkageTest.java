@@ -66,7 +66,8 @@ public class SimpleLinkageTest {
                 x = x + 10;
             }
 
-            //new String(new byte[] {65});
+            // Writing method for Ljava/util/Properties$LineReader; . readLine()I
+            new String(new byte[] {65});
         }
     }
 
