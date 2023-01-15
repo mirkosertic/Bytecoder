@@ -269,7 +269,7 @@ public class Sequencer {
 
             for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
                 if (entry.getKey() instanceof Projection.TrueProjection) {
-                    if (entry.getValue().incomingDataFlows.length > 1) {
+                    if (entry.getValue().controlComingFrom.size() > 1) {
                         // Merge nodes are handled in block form
                         generateGOTO(node, entry.getValue(), blocks);
                     } else {
@@ -282,7 +282,7 @@ public class Sequencer {
 
             for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
                 if (entry.getKey() instanceof Projection.FalseProjection) {
-                    if (entry.getValue().incomingDataFlows.length > 1) {
+                    if (entry.getValue().controlComingFrom.size() > 1) {
                         // Merge nodes are handled in block form
                         generateGOTO(node, entry.getValue(), blocks);
                     } else {
@@ -304,7 +304,7 @@ public class Sequencer {
                 if (entry.getKey() instanceof Projection.IndexedProjection) {
                     final Projection.IndexedProjection indexedProjection = (Projection.IndexedProjection) entry.getKey();
                     codegenerator.writeSwitchCase(indexedProjection.index);
-                    if (entry.getValue().incomingDataFlows.length > 1) {
+                    if (entry.getValue().controlComingFrom.size() > 1) {
                         // Merge nodes are handled in block form
                         generateGOTO(node, entry.getValue(), blocks);
                     } else {
@@ -317,7 +317,7 @@ public class Sequencer {
             for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
                 if (entry.getKey() instanceof Projection.DefaultProjection) {
                     codegenerator.writeSwitchDefaultCase();
-                    if (entry.getValue().incomingDataFlows.length > 1) {
+                    if (entry.getValue().controlComingFrom.size() > 1) {
                         // Merge nodes are handled in block form
                         generateGOTO(node, entry.getValue(), blocks);
                     } else {
@@ -340,7 +340,7 @@ public class Sequencer {
                 if (entry.getKey() instanceof Projection.KeyedProjection) {
                     final Projection.KeyedProjection indexedProjection = (Projection.KeyedProjection) entry.getKey();
                     codegenerator.writeSwitchCase(indexedProjection.key);
-                    if (entry.getValue().incomingDataFlows.length > 1) {
+                    if (entry.getValue().controlComingFrom.size() > 1) {
                         // Merge nodes are handled in block form
                         generateGOTO(node, entry.getValue(), blocks);
                     } else {
@@ -353,7 +353,7 @@ public class Sequencer {
             for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
                 if (entry.getKey() instanceof Projection.DefaultProjection) {
                     codegenerator.writeSwitchDefaultCase();
-                    if (entry.getValue().incomingDataFlows.length > 1) {
+                    if (entry.getValue().controlComingFrom.size() > 1) {
                         // Merge nodes are handled in block form
                         generateGOTO(node, entry.getValue(), blocks);
                     } else {
