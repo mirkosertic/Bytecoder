@@ -32,6 +32,9 @@ public class JSHelpers {
         for (final Type arg : argumentTypes) {
             builder.append("$").append(arg);
         }
+        if (argumentTypes.length == 0) {
+            builder.append("$$");
+        }
         return builder.toString()
                 .replace('<', '$')
                 .replace('>', '$')
