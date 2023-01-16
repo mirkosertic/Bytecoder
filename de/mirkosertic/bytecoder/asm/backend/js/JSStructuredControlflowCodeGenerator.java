@@ -33,6 +33,7 @@ import de.mirkosertic.bytecoder.asm.If;
 import de.mirkosertic.bytecoder.asm.InstanceMethodInvocation;
 import de.mirkosertic.bytecoder.asm.InstanceMethodInvocationExpression;
 import de.mirkosertic.bytecoder.asm.InstanceOf;
+import de.mirkosertic.bytecoder.asm.InterfaceMethodInvocation;
 import de.mirkosertic.bytecoder.asm.InterfaceMethodInvocationExpression;
 import de.mirkosertic.bytecoder.asm.InvokeDynamicExpression;
 import de.mirkosertic.bytecoder.asm.LineNumberDebugInfo;
@@ -45,6 +46,7 @@ import de.mirkosertic.bytecoder.asm.Mul;
 import de.mirkosertic.bytecoder.asm.Neg;
 import de.mirkosertic.bytecoder.asm.New;
 import de.mirkosertic.bytecoder.asm.NewArray;
+import de.mirkosertic.bytecoder.asm.NewMultiArray;
 import de.mirkosertic.bytecoder.asm.Node;
 import de.mirkosertic.bytecoder.asm.NullReference;
 import de.mirkosertic.bytecoder.asm.NullTest;
@@ -92,7 +94,6 @@ import de.mirkosertic.bytecoder.classlib.Array;
 import org.objectweb.asm.Type;
 
 import java.io.PrintWriter;
-import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -207,10 +208,6 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
             pw.print(".");
 
-            if (Modifier.isPrivate(node.resolvedMethod.methodNode.access)) {
-                pw.print("#");
-            }
-
             pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
             pw.print("(");
             for (int i = 1; i < node.incomingDataFlows.length; i++) {
@@ -223,10 +220,6 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         } else {
             pw.print(generateClassName(invocationTarget));
             pw.print(".prototype.");
-
-            if (Modifier.isPrivate(node.resolvedMethod.methodNode.access)) {
-                pw.print("#");
-            }
 
             pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
             pw.print(".call(");
@@ -249,10 +242,6 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
             pw.print(".");
 
-            if (Modifier.isPrivate(node.resolvedMethod.methodNode.access)) {
-                pw.print("#");
-            }
-
             pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
             pw.print("(");
             for (int i = 1; i < node.incomingDataFlows.length; i++) {
@@ -265,10 +254,6 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         } else {
             pw.print(generateClassName(invocationTarget));
             pw.print(".prototype.");
-
-            if (Modifier.isPrivate(node.resolvedMethod.methodNode.access)) {
-                pw.print("#");
-            }
 
             pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
             pw.print(".call(");
@@ -301,9 +286,6 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         pw.print("(");
         writeExpression(node.incomingDataFlows[0]);
         pw.print(".");
-        if (Modifier.isPrivate(node.resolvedField.access)) {
-            pw.print("#");
-        }
         pw.print(generateFieldName(node.resolvedField.name));
         pw.print(")");
     }
@@ -343,9 +325,9 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     private void writeExpression(final ObjectString node) {
-        pw.print("'");
-        pw.print(node.value);
-        pw.print("'");
+        pw.print("bytecoder.stringconstants[");
+        pw.print(node.value.index);
+        pw.print("]");
     }
 
     private void writeExpression(final ReferenceTest node) {
@@ -507,10 +489,33 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     private void writeExpression(final CMP node) {
-        pw.print("cmp(");
+        pw.print("bytecoder.cmp(");
         writeExpression(node.incomingDataFlows[0]);
         pw.print(",");
         writeExpression(node.incomingDataFlows[1]);
+        pw.print(")");
+    }
+
+    private void writeExpression(final NewMultiArray node) {
+        pw.print("bytecoder.multiarray(");
+        for (int i = 0; i < node.incomingDataFlows.length; i++) {
+            if (i > 0) {
+                pw.print(", ");
+            }
+            writeExpression(node.incomingDataFlows[i]);
+        }
+        pw.print(",");
+        switch (node.type.getSort()) {
+            case Type.OBJECT:
+                pw.print("null");
+                break;
+            case Type.BOOLEAN:
+                pw.print("false");
+                break;
+            default:
+                pw.print("0");
+                break;
+        }
         pw.print(")");
     }
 
@@ -593,9 +598,6 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         writeIndent();
         writeExpression(node.outgoingFlows[0]);
         pw.print(".");
-        if (Modifier.isPrivate(node.resolvedField.access)) {
-            pw.print("#");
-        }
         pw.print(generateFieldName(node.resolvedField.name));
         pw.print(" = ");
         writeExpression(node.incomingDataFlows[0]);
@@ -627,6 +629,24 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
     @Override
     public void write(final VirtualMethodInvocation node) {
+
+        writeIndent();
+        writeExpression(node.incomingDataFlows[0]);
+
+        pw.print(".");
+        pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
+        pw.print("(");
+        for (int i = 1; i < node.incomingDataFlows.length; i++) {
+            if (i > 1) {
+                pw.print(",");
+            }
+            writeExpression(node.incomingDataFlows[i]);
+        }
+        pw.println(");");
+    }
+
+    @Override
+    public void write(final InterfaceMethodInvocation node) {
 
         writeIndent();
         writeExpression(node.incomingDataFlows[0]);
@@ -692,9 +712,6 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         }
 
         pw.print(".");
-        if (Modifier.isPrivate(node.resolvedMethod.methodNode.access)) {
-            pw.print("#");
-        }
         pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
         pw.print("(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
@@ -719,9 +736,6 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         }
 
         pw.print(".");
-        if (Modifier.isPrivate(node.resolvedMethod.methodNode.access)) {
-            pw.print("#");
-        }
         pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
         pw.print("(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
@@ -847,6 +861,8 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             writeExpression((Rem) node);
         } else if (node instanceof InstanceOf) {
             writeExpression((InstanceOf) node);
+        } else if (node instanceof NewMultiArray) {
+            writeExpression((NewMultiArray) node);
         } else {
             throw new IllegalArgumentException("Not implemented : " + node);
         }

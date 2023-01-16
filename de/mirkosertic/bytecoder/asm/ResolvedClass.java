@@ -21,12 +21,12 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
-import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Stack;
 
 public class ResolvedClass {
 
@@ -155,5 +155,33 @@ public class ResolvedClass {
             requiresClassInitializer = requiresClassInitializer | superClass.requiresClassInitializer();
         }
         return requiresClassInitializer;
+    }
+
+    public void finalizeLinkingHierarchy(final AnalysisStack analysisStack) {
+        for (final ResolvedClass leaf : leafSubclasses()) {
+            final List<ResolvedMethod> methods = new ArrayList<>(resolvedMethods);
+            for (final ResolvedMethod m : methods) {
+                if (!Modifier.isStatic(m.methodNode.access)) {
+                    leaf.resolveMethodInternal(m.methodNode.name, Type.getMethodType(m.methodNode.desc), analysisStack);
+                }
+            }
+        }
+    }
+
+    public Set<ResolvedClass> leafSubclasses() {
+        final Set<ResolvedClass> subClasses = new HashSet<>();
+        final Stack<ResolvedClass> workingStack = new Stack<>();
+        workingStack.push(this);
+        while (!workingStack.isEmpty()) {
+            final ResolvedClass entry = workingStack.pop();
+            if (entry.directSubclasses.isEmpty()) {
+                subClasses.add(entry);
+            } else {
+                for (final ResolvedClass subclass : entry.directSubclasses) {
+                    workingStack.push(subclass);
+                }
+            }
+        }
+        return subClasses;
     }
 }
