@@ -29,8 +29,12 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 
 public class CompileUnit {
+
+    public static final String MAIN_ENTRY_POINT_EXPORT = "main";
 
     private final Loader loader;
 
@@ -38,27 +42,41 @@ public class CompileUnit {
 
     private final Intrinsic intrinsic;
 
+    private final Map<String, ResolvedMethod> exportedMethods;
+
+    private final ConstantPool constantPool;
+
     public CompileUnit(final Loader loader, final Intrinsic intrinsic) {
         this.loader = loader;
         this.resolvedClasses = new HashMap<>();
         this.intrinsic = intrinsic;
+        this.exportedMethods = new HashMap<>();
+        this.constantPool = new ConstantPool();
     }
 
     protected Intrinsic getIntrinsic() {
         return intrinsic;
     }
 
+    public ConstantPool getConstantPool() {
+        return constantPool;
+    }
+
     public ResolvedClass resolveClass(final Type type, final AnalysisStack analysisStack) {
         final String resourceName = type.getClassName().replace(".", "/") + ".class";
-        return resolvedClasses.computeIfAbsent(resourceName, key -> {
-            try {
-                return loadClass(type, loader.loadClassFor(type), analysisStack);
-            } catch (final RuntimeException e) {
-                throw e;
-            } catch (final Exception e) {
-                throw new RuntimeException(e);
-            }
-        }).requestInitialization(analysisStack);
+        ResolvedClass rs = resolvedClasses.get(resourceName);
+        if (rs != null) {
+            return rs;
+        }
+        try {
+            rs = loadClass(type, loader.loadClassFor(type), analysisStack);
+        } catch (final RuntimeException e) {
+            throw e;
+        } catch (final Exception e) {
+            throw new RuntimeException(e);
+        }
+        resolvedClasses.put(resourceName, rs);
+        return rs.requestInitialization(analysisStack);
     }
 
     private ResolvedClass loadClass(final Type type, final ClassNode classNode, final AnalysisStack analysisStack) {
@@ -106,6 +124,30 @@ public class CompileUnit {
         return classDependencies;
     }
 
+    public ResolvedMethod resolveMainMethod(final Type invokedType, final String methodName, final Type methodType) {
+        final AnalysisStack analysisStack = new AnalysisStack();
+        final ResolvedClass resolvedClass = resolveClass(invokedType, analysisStack);
+        final ResolvedMethod method = resolvedClass.resolveMethod(methodName, methodType, analysisStack);
+
+        exportedMethods.put(MAIN_ENTRY_POINT_EXPORT, method);
+
+        return method;
+    }
+
+    public void finalizeLinkingHierarchy() {
+        System.out.println("Finalizing linking hierarchy");
+        final AnalysisStack analysisStack = new AnalysisStack();
+        boolean modified = true;
+        final Supplier<List<ResolvedClass>> currentList = () -> new ArrayList<>(resolvedClasses.values());
+        while (modified) {
+            final List<ResolvedClass> lst = currentList.get();
+            for (final ResolvedClass cl : lst) {
+                cl.finalizeLinkingHierarchy(analysisStack);
+            }
+            modified = currentList.get().size() != lst.size();
+        }
+    }
+
     public void printStatisticsTo(final PrintStream ps) {
         int numberOfClasses = 0;
         int numberOfInterfaces = 0;
@@ -148,5 +190,26 @@ public class CompileUnit {
         ps.println(numberOfMethods);
         ps.print("    # native methods        : ");
         ps.println(numberOfNativeMethods);
+
+        for (final ResolvedClass cl : resolvedClasses.values()) {
+            for (final ResolvedMethod m : cl.resolvedMethods) {
+                if (m.owner == cl) {
+                    if (Modifier.isNative(m.methodNode.access)) {
+                        ps.print("        ");
+                        ps.print(cl.type.getClassName());
+                        ps.print(".");
+                        ps.print(m.methodNode.name);
+                        ps.println(m.methodNode.desc);
+                    }
+                }
+            }
+        }
+
+    }
+
+    public void processExportedMethods(final BiConsumer<String, ResolvedMethod> processor) {
+        for (final Map.Entry<String, ResolvedMethod> entry : exportedMethods.entrySet()) {
+            processor.accept(entry.getKey(), entry.getValue());
+        }
     }
 }

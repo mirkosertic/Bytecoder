@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,19 +15,11 @@
  */
 package de.mirkosertic.bytecoder.asm;
 
-import org.objectweb.asm.Type;
+public class StringConstant {
 
-public class ObjectString extends Value implements Constant {
+    public final int index;
 
-    public final StringConstant value;
-
-    public ObjectString(final StringConstant value) {
-        super(Type.getObjectType("java/lang/String"));
-        this.value = value;
-    }
-
-    @Override
-    public String additionalDebugInfo() {
-        return ": " + value.index;
+    public StringConstant(final int index) {
+        this.index = index;
     }
 }

@@ -161,7 +161,7 @@ public class Graph {
         return (ObjectDouble) register(new ObjectDouble(value));
     }
 
-    public ObjectString newObjectString(final String value) {
+    public ObjectString newObjectString(final StringConstant value) {
         return (ObjectString) register(new ObjectString(value));
     }
 
@@ -435,5 +435,4 @@ public class Graph {
     public ReferenceTest newReferenceTest(final ReferenceTest.Operation operation) {
         return (ReferenceTest) register(new ReferenceTest(operation));
     }
-
 }

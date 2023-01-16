@@ -25,6 +25,7 @@ import de.mirkosertic.bytecoder.asm.Goto;
 import de.mirkosertic.bytecoder.asm.Graph;
 import de.mirkosertic.bytecoder.asm.If;
 import de.mirkosertic.bytecoder.asm.InstanceMethodInvocation;
+import de.mirkosertic.bytecoder.asm.InterfaceMethodInvocation;
 import de.mirkosertic.bytecoder.asm.LineNumberDebugInfo;
 import de.mirkosertic.bytecoder.asm.LookupSwitch;
 import de.mirkosertic.bytecoder.asm.MonitorEnter;
@@ -137,6 +138,9 @@ public class Sequencer {
                 } else if (current instanceof StaticMethodInvocation) {
                     codegenerator.write((StaticMethodInvocation) current);
                     current = followUpProcessor.apply(current);
+                } else if (current instanceof InterfaceMethodInvocation) {
+                    codegenerator.write((InterfaceMethodInvocation) current);
+                    current = followUpProcessor.apply(current);
                 } else if (current instanceof Copy) {
                     codegenerator.write((Copy) current);
                     current = followUpProcessor.apply(current);
@@ -231,10 +235,9 @@ public class Sequencer {
         final String prefix = node.getClass().getSimpleName() + "_";
         final int selfIndex = nodes.indexOf(node);
 
-        if (hasIncomingBackEdges) {
-            final Block b = new Block(prefix + selfIndex, Block.Type.LOOP, node, null);
-            activeStack.push(b);
-        }
+        final Block b = new Block(prefix + selfIndex, Block.Type.LOOP, node, null);
+        activeStack.push(b);
+        codegenerator.startBlock(b);
 
         for (int i = 0; i < orderedBlocks.size(); i++) {
             final ControlTokenConsumer target = orderedBlocks.get(i);
@@ -256,10 +259,10 @@ public class Sequencer {
             visitDominationTreeOf(target, activeStack);
         }
 
-        if (hasIncomingBackEdges) {
+        //if (hasIncomingBackEdges) {
             codegenerator.finishBlock();
             activeStack.pop();
-        }
+        //}
 
     }
 
@@ -372,7 +375,9 @@ public class Sequencer {
         visitBranchingNodeTemplate(node, as, blocks -> {
 
             final boolean hasExceptionHandler = node.controlFlowsTo.keySet().stream().anyMatch(t -> t instanceof Projection.ExceptionHandler);
-            codegenerator.startTryCatch(null);
+            if (hasExceptionHandler) {
+                codegenerator.startTryCatch(null);
+            }
 
             for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
                 if (entry.getKey() instanceof Projection.TryCatchGuardedProjection) {
@@ -398,9 +403,9 @@ public class Sequencer {
                         codegenerator.endCatchHandler();
                     }
                 }
-            }
 
-            codegenerator.finishBlock();
+                codegenerator.finishBlock();
+            }
         });
     }
 

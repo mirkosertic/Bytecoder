@@ -65,6 +65,7 @@ import de.mirkosertic.bytecoder.asm.SetClassField;
 import de.mirkosertic.bytecoder.asm.SetInstanceField;
 import de.mirkosertic.bytecoder.asm.StandardProjections;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocation;
+import de.mirkosertic.bytecoder.asm.StringConstant;
 import de.mirkosertic.bytecoder.asm.TableSwitch;
 import de.mirkosertic.bytecoder.asm.Test;
 import de.mirkosertic.bytecoder.asm.TryCatch;
@@ -2047,7 +2048,8 @@ public class GraphParser {
         } else if (node.cst instanceof Double) {
             source = graph.newObjectDouble((Double) node.cst);
         } else if (node.cst instanceof String) {
-            source = graph.newObjectString((String) node.cst);
+            final StringConstant pooledConstant = compileUnit.getConstantPool().resolveFromPool((String) node.cst);
+            source = graph.newObjectString(pooledConstant);
         } else if (node.cst instanceof Type) {
             final Type t = (Type) node.cst;
             if (t.getSort() == Type.ARRAY) {
@@ -2158,7 +2160,7 @@ public class GraphParser {
         final ResolveCallsite resolveCallsite = graph.newResolveCallsite();
 
         final Type invokeDynamicDesc = Type.getMethodType(node.desc);
-        resolveCallsite.addIncomingData(graph.newMethodReference(bsmMethod), graph.newObjectString(node.name), graph.newMethodType(invokeDynamicDesc));
+        resolveCallsite.addIncomingData(graph.newMethodReference(bsmMethod), graph.newObjectString(compileUnit.getConstantPool().resolveFromPool(node.name)), graph.newMethodType(invokeDynamicDesc));
         for (final Object bsmArg : node.bsmArgs) {
             if (bsmArg instanceof Handle) {
                 final Handle x = (Handle) bsmArg;

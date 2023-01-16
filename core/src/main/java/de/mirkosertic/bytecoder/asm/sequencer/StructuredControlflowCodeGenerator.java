@@ -24,6 +24,7 @@ import de.mirkosertic.bytecoder.asm.FrameDebugInfo;
 import de.mirkosertic.bytecoder.asm.Goto;
 import de.mirkosertic.bytecoder.asm.If;
 import de.mirkosertic.bytecoder.asm.InstanceMethodInvocation;
+import de.mirkosertic.bytecoder.asm.InterfaceMethodInvocation;
 import de.mirkosertic.bytecoder.asm.LineNumberDebugInfo;
 import de.mirkosertic.bytecoder.asm.MonitorEnter;
 import de.mirkosertic.bytecoder.asm.MonitorExit;
@@ -47,6 +48,8 @@ public interface StructuredControlflowCodeGenerator {
     void write(VirtualMethodInvocation node);
 
     void write(StaticMethodInvocation node);
+
+    void write(InterfaceMethodInvocation node);
 
     void write(Copy node);
 
@@ -105,4 +108,5 @@ public interface StructuredControlflowCodeGenerator {
     void finishSwitchCase();
 
     void writeDebugNote(String message);
+
 }

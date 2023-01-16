@@ -22,6 +22,7 @@ import de.mirkosertic.bytecoder.asm.ResolvedMethod;
 import de.mirkosertic.bytecoder.asm.optimizer.Optimizations;
 import de.mirkosertic.bytecoder.asm.optimizer.Optimizer;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
+import de.mirkosertic.bytecoder.asm.parser.ConstantPool;
 import de.mirkosertic.bytecoder.asm.sequencer.DominatorTree;
 import de.mirkosertic.bytecoder.asm.sequencer.Sequencer;
 import org.objectweb.asm.Type;
@@ -32,6 +33,7 @@ import java.io.PrintWriter;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 
 import static de.mirkosertic.bytecoder.asm.backend.js.JSHelpers.generateClassName;
 import static de.mirkosertic.bytecoder.asm.backend.js.JSHelpers.generateFieldName;
@@ -39,8 +41,24 @@ import static de.mirkosertic.bytecoder.asm.backend.js.JSHelpers.generateMethodNa
 
 public class JSBackend {
 
+    private void generateHeader(final PrintWriter pw) {
+        pw.println("const bytecoder = {");
+        pw.println("  imports: {},");
+        pw.println("  exports: {},");
+        pw.println("  stringconstants: [],");
+        pw.println("  cmp: function(a,b) {");
+        pw.println("    if (a > b) return 1;");
+        pw.println("    if (a < b) return -1;");
+        pw.println("    return 0;");
+        pw.println("  }");
+        pw.println("};");
+        pw.println();
+    }
+
     public void generateCodeFor(final CompileUnit compileUnit, final OutputStream out) {
         final PrintWriter pw = new PrintWriter(out);
+
+        generateHeader(pw);
 
         for (final ResolvedClass cl : compileUnit.computeClassDependencies()) {
             final String className = generateClassName(cl.type);
@@ -120,6 +138,26 @@ public class JSBackend {
             }
         }
 
+        // Generate string pool
+        final ConstantPool constantPool = compileUnit.getConstantPool();
+        final List<String> pooledStrings = constantPool.getPooledStrings();
+        for (int i = 0; i < pooledStrings.size(); i++) {
+            pw.print("bytecoder.stringconstants[");
+            pw.print(i);
+            pw.println("] = '';");
+        }
+
+        // Generate exports
+        compileUnit.processExportedMethods((s, method) -> {
+            pw.print("bytecoder.exports['");
+            pw.print(s);
+            pw.print("'] = ");
+            pw.print(generateClassName(method.owner.type));
+            pw.print(".");
+            pw.print(generateMethodName(method.methodNode.name, Type.getArgumentTypes(method.methodNode.desc)));
+            pw.println(";");
+        });
+
         pw.flush();
     }
 
@@ -146,8 +184,8 @@ public class JSBackend {
                 pw.print(".");
                 pw.print(generateMethodName("<clinit>", Type.getMethodType(cl.classInitializer.methodNode.desc).getArgumentTypes()));
                 pw.println("();");
-                pw.println("    }");
             }
+            pw.println("    }");
             pw.print("    return ");
             pw.print(generateClassName(cl.type));
             pw.println(";");
@@ -163,8 +201,6 @@ public class JSBackend {
                 pw.print("  ");
                 if (Modifier.isStatic(f.access)) {
                     pw.print("static ");
-                } else if (Modifier.isPrivate(f.access)) {
-                    pw.print("#");
                 }
                 pw.print(generateFieldName(f.name));
                 pw.print(" ");
@@ -194,10 +230,72 @@ public class JSBackend {
 
     public void generateMethodsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
         for (final ResolvedMethod m : cl.resolvedMethods) {
-            if (m.methodBody != null) {
-                generateMethod(pw, compileUnit, cl, m);
+            if (m.owner == cl) {
+                if (m.methodBody != null) {
+                    generateMethod(pw, compileUnit, cl, m);
+                } else {
+                    if (Modifier.isNative(m.methodNode.access)) {
+                        generateNativeMethod(pw, compileUnit, cl, m);
+                    }
+                }
             }
         }
+    }
+
+    public void generateNativeMethod(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m) {
+        System.out.println("Writing native method for " + cl.type + " . " + m.methodNode.name + m.methodNode.desc);
+
+        pw.println();
+        pw.print("  ");
+        if (Modifier.isStatic(m.methodNode.access)) {
+            pw.print("static ");
+        }
+        final String methodName = generateMethodName(m.methodNode.name, Type.getArgumentTypes(m.methodNode.desc));
+        pw.print(methodName);
+
+        final Type[] arguments = Type.getArgumentTypes(m.methodNode.desc);
+        final Type returnType = Type.getReturnType(m.methodNode.desc);
+
+        pw.print("(");
+        for (int i = 0; i < arguments.length; i++) {
+            if (i > 0) {
+                pw.print(",");
+            }
+            pw.print("arg");
+            pw.print(i);
+        }
+        pw.println(") {");
+
+        if (!returnType.equals(Type.VOID_TYPE)) {
+            pw.print("    return ");
+        } else {
+            pw.print("    ");
+        }
+        pw.print("bytecoder.imports['");
+        pw.print(m.owner.type.getClassName());
+        pw.print(".");
+        pw.print(methodName);
+        pw.print("'](");
+
+        if (!Modifier.isStatic(m.methodNode.access)) {
+            pw.print("this");
+            for (int i = 0; i < arguments.length; i++) {
+                pw.print(", arg");
+                pw.print(i);
+            }
+        } else {
+            for (int i = 0; i < arguments.length; i++) {
+                if (i > 0) {
+                    pw.print(", ");
+                }
+                pw.print("arg");
+                pw.print(i);
+            }
+        }
+
+        pw.println(");");
+
+        pw.println("  }");
     }
 
     public void generateMethod(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m) {
@@ -207,9 +305,6 @@ public class JSBackend {
         pw.print("  ");
         if (Modifier.isStatic(m.methodNode.access)) {
             pw.print("static ");
-        }
-        if (Modifier.isPrivate(m.methodNode.access)) {
-            pw.print("#");
         }
         final String methodName = generateMethodName(m.methodNode.name, Type.getArgumentTypes(m.methodNode.desc));
         pw.print(methodName);
@@ -237,24 +332,6 @@ public class JSBackend {
         final DominatorTree dt = new DominatorTree(g);
 
         try {
-            g.writeDebugTo(Files.newOutputStream(Paths.get(generateClassName(cl.type) + "." + methodName + "_debug.dot")));
-        } catch (final IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        try {
-            g.writeDebugTo(Files.newOutputStream(Paths.get(generateClassName(cl.type) + "." + methodName + "_debug_optimized.dot")));
-        } catch (final IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        try {
-            dt.writeDebugTo(Files.newOutputStream(Paths.get(generateClassName(cl.type) + "." + methodName + "_dominatortree.dot")));
-        } catch (final IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        try {
             if (cl.classNode.sourceFile != null) {
                 pw.print("    // source file is ");
                 pw.println(cl.classNode.sourceFile);
@@ -263,6 +340,24 @@ public class JSBackend {
             new Sequencer(g, dt, new JSStructuredControlflowCodeGenerator(compileUnit, cl, pw));
 
         } catch (final Exception ex) {
+
+            try {
+                g.writeDebugTo(Files.newOutputStream(Paths.get(generateClassName(cl.type) + "." + methodName + "_debug.dot")));
+            } catch (final IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            try {
+                g.writeDebugTo(Files.newOutputStream(Paths.get(generateClassName(cl.type) + "." + methodName + "_debug_optimized.dot")));
+            } catch (final IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            try {
+                dt.writeDebugTo(Files.newOutputStream(Paths.get(generateClassName(cl.type) + "." + methodName + "_dominatortree.dot")));
+            } catch (final IOException e) {
+                throw new RuntimeException(e);
+            }
 
             throw ex;
         }
