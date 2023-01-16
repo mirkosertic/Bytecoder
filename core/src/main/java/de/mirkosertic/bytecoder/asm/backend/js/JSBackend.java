@@ -166,12 +166,8 @@ public class JSBackend {
             pw.println();
             pw.println("  static #iguard = false;");
             pw.println("  static get i() {");
-            pw.print("    if (!");
-            pw.print(generateClassName(cl.type));
-            pw.println(".#iguard) {");
-            pw.print("      ");
-            pw.print(generateClassName(cl.type));
-            pw.println(".#iguard = true;");
+            pw.println("    if (!this.#iguard) {");
+            pw.println("      this.#iguard = true;");
             if (cl.superClass != null && cl.superClass.requiresClassInitializer()) {
                 pw.print("      ");
                 pw.print(generateClassName(cl.superClass.type));
@@ -179,16 +175,12 @@ public class JSBackend {
             }
 
             if (cl.classInitializer != null) {
-                pw.print("      ");
-                pw.print(generateClassName(cl.type));
-                pw.print(".");
+                pw.print("      this.");
                 pw.print(generateMethodName("<clinit>", Type.getMethodType(cl.classInitializer.methodNode.desc).getArgumentTypes()));
                 pw.println("();");
             }
             pw.println("    }");
-            pw.print("    return ");
-            pw.print(generateClassName(cl.type));
-            pw.println(";");
+            pw.println("    return this;");
 
             pw.println("  }");
         }

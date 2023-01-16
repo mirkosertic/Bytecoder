@@ -558,7 +558,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     private void writeExpression(final InstanceOf node) {
         pw.print("((");
         writeExpression(node.incomingDataFlows[0]);
-        pw.print("  instanceof ");
+        pw.print(" instanceof ");
         writeExpression(node.incomingDataFlows[1]);
         pw.print(") ? 1 : 0)");
     }
@@ -872,13 +872,13 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         final Type type = node.type;
         if (type.getSort() == Type.ARRAY) {
             final ResolvedClass cl = compileUnit.resolveClass(Type.getType(Array.class), null);
-            pw.print(generateClassName(node.type));
+            pw.print(generateClassName(cl.type));
             if (cl.requiresClassInitializer()) {
                 pw.print(".i");
             }
         } else {
             final ResolvedClass cl = compileUnit.resolveClass(type, null);
-            pw.print(generateClassName(node.type));
+            pw.print(generateClassName(cl.type));
             if (cl.requiresClassInitializer()) {
                 pw.print(".i");
             }
