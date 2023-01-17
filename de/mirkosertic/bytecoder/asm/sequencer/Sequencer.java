@@ -235,9 +235,11 @@ public class Sequencer {
         final String prefix = node.getClass().getSimpleName() + "_";
         final int selfIndex = nodes.indexOf(node);
 
-        final Block b = new Block(prefix + selfIndex, Block.Type.LOOP, node, null);
-        activeStack.push(b);
-        codegenerator.startBlock(b);
+        if (hasIncomingBackEdges) {
+            final Block b = new Block(prefix + selfIndex, Block.Type.LOOP, node, null);
+            activeStack.push(b);
+            codegenerator.startBlock(b);
+        }
 
         for (int i = 0; i < orderedBlocks.size(); i++) {
             final ControlTokenConsumer target = orderedBlocks.get(i);
@@ -259,11 +261,10 @@ public class Sequencer {
             visitDominationTreeOf(target, activeStack);
         }
 
-        //if (hasIncomingBackEdges) {
+        if (hasIncomingBackEdges) {
             codegenerator.finishBlock();
             activeStack.pop();
-        //}
-
+        }
     }
 
     private void visit(final If node, final Stack<Block> activeStack) {

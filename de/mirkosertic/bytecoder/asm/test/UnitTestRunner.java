@@ -273,69 +273,69 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                 backend.generateCodeFor(compileUnit, compiledCode);
 
 
-                final StringWriter theStrWriter = new StringWriter();
-                final PrintWriter theCodeWriter = new PrintWriter(theStrWriter);
+                final StringWriter strWriter = new StringWriter();
+                final PrintWriter codeWriter = new PrintWriter(strWriter);
 
-                theCodeWriter.println(compiledCode);
+                codeWriter.println(compiledCode);
 
-                final String theClassName = generateClassName(invokedType);
-                final String theMethodName = generateMethodName(method.methodNode.name, Type.getArgumentTypes(method.methodNode.desc));
+                final String className = generateClassName(invokedType);
+                final String methodName = generateMethodName(method.methodNode.name, Type.getArgumentTypes(method.methodNode.desc));
 
-                final String theFilename = theClassName + "." + theMethodName + "_" + aTestOption.toFilePrefix() + ".html";
+                final String filename = className + "." + methodName + "_" + aTestOption.toFilePrefix() + ".html";
 
-                theCodeWriter.println();
+                codeWriter.println();
 
-                theCodeWriter.println("console.log(\"Starting test\");");
-                theCodeWriter.println("var theTestInstance = new " + theClassName + "();");
-                theCodeWriter.println("try {");
-                theCodeWriter.println("     theTestInstance." + theMethodName + "();");
-                theCodeWriter.println("     console.log(\"Test finished OK\");");
-                theCodeWriter.println("} catch (e) {");
-                theCodeWriter.println("     if (e.exception) {");
-                theCodeWriter.println("         console.log(\"Test finished with exception. Message = \" + bytecoder.toJSString(e.exception.message));");
-                theCodeWriter.println("     } else {");
-                theCodeWriter.println("         console.log(\"Test finished with exception.\");");
-                theCodeWriter.println("     }");
-                theCodeWriter.println("     console.log(e.stack);");
-                theCodeWriter.println("}");
+                codeWriter.println("console.log(\"Starting test\");");
+                codeWriter.println("var theTestInstance = new " + className + "();");
+                codeWriter.println("try {");
+                codeWriter.println("     theTestInstance." + methodName + "();");
+                codeWriter.println("     console.log(\"Test finished OK\");");
+                codeWriter.println("} catch (e) {");
+                codeWriter.println("     if (e.exception) {");
+                codeWriter.println("         console.log(\"Test finished with exception. Message = \" + bytecoder.toJSString(e.exception.message));");
+                codeWriter.println("     } else {");
+                codeWriter.println("         console.log(\"Test finished with exception.\");");
+                codeWriter.println("     }");
+                codeWriter.println("     console.log(e.stack);");
+                codeWriter.println("}");
 
-                theCodeWriter.flush();
+                codeWriter.flush();
 
-                final File theWorkingDirectory = new File(".");
+                final File workingDirectory = new File(".");
 
-                final File theMavenTargetDir = new File(theWorkingDirectory, "target");
-                final File theGeneratedFilesDir = new File(theMavenTargetDir, "bytecoder_js_new");
-                theGeneratedFilesDir.mkdirs();
+                final File mavenTargetDir = new File(workingDirectory, "target");
+                final File generatedFilesDir = new File(mavenTargetDir, "bytecoder_js_new");
+                generatedFilesDir.mkdirs();
 
-                final File theGeneratedFile = new File(theGeneratedFilesDir, theFilename);
-                final PrintWriter theWriter = new PrintWriter(theGeneratedFile);
-                theWriter.println("<html><body><script>");
-                theWriter.println(theStrWriter);
-                theWriter.println("</script></body></html>");
-                theWriter.flush();
-                theWriter.close();
+                final File generatedFile = new File(generatedFilesDir, filename);
+                final PrintWriter writer = new PrintWriter(generatedFile);
+                writer.println("<html><body><script>");
+                writer.println(strWriter);
+                writer.println("</script></body></html>");
+                writer.flush();
+                writer.close();
 
                 initializeTestWebServer();
 
-                final BrowserWebDriverContainer theContainer = initializeSeleniumContainer();
+                final BrowserWebDriverContainer browserContainer = initializeSeleniumContainer();
 
-                initializeWebRoot(theGeneratedFile.getParentFile());
+                initializeWebRoot(generatedFile.getParentFile());
 
-                final URL theTestURL = getTestFileUrl(theGeneratedFile);
-                final WebDriver theDriver = theContainer.getWebDriver();
-                theDriver.get(theTestURL.toString());
+                final URL testURL = getTestFileUrl(generatedFile);
+                final WebDriver driver = browserContainer.getWebDriver();
+                driver.get(testURL.toString());
 
-                final List<LogEntry> theAll = theDriver.manage().logs().get(LogType.BROWSER).getAll();
-                if (1 > theAll.size()) {
+                final List<LogEntry> logs = driver.manage().logs().get(LogType.BROWSER).getAll();
+                if (1 > logs.size()) {
                     aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("No console output from browser")));
                 }
-                for (final LogEntry theEntry : theAll) {
-                    LOGGER.info(theEntry.getMessage());
+                for (final LogEntry entry : logs) {
+                    LOGGER.info(entry.getMessage());
                 }
-                final LogEntry theLast = theAll.get(theAll.size() - 1);
+                final LogEntry lastLogEntry = logs.get(logs.size() - 1);
 
-                if (!theLast.getMessage().contains("Test finished OK")) {
-                    aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed! Got : " + theLast.getMessage())));
+                if (!lastLogEntry.getMessage().contains("Test finished OK")) {
+                    aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed! Got : " + lastLogEntry.getMessage())));
                 }
             } catch (final AnalysisException e) {
                 e.getAnalysisStack().dumpAnalysisStack(System.out);

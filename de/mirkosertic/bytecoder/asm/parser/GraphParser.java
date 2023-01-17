@@ -2041,6 +2041,8 @@ public class GraphParser {
         final Value source;
         if (node.cst instanceof Integer) {
             source = graph.newObjectInteger((Integer) node.cst);
+        } else if (node.cst instanceof Short) {
+            source = graph.newObjectShort((Short) node.cst);
         } else if (node.cst instanceof Float) {
             source = graph.newObjectFloat((Float) node.cst);
         } else if (node.cst instanceof Long) {
@@ -2058,7 +2060,10 @@ public class GraphParser {
             if (t.getSort() == Type.OBJECT) {
                 compileUnit.resolveClass(t, analysisStack);
             }
-            source = graph.newTypeReference((Type) node.cst);
+
+            final TypeReference typeRef = graph.newTypeReference((Type) node.cst);
+            source = graph.newRuntimeClass();
+            source.addIncomingData(typeRef);
         } else {
             throw new IllegalStateException("Unsupported constant : " + node.cst);
         }
