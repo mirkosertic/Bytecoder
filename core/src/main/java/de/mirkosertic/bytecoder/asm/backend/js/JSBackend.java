@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.js;
 
+import de.mirkosertic.bytecoder.asm.AnnotationUtils;
 import de.mirkosertic.bytecoder.asm.Graph;
 import de.mirkosertic.bytecoder.asm.ResolvedClass;
 import de.mirkosertic.bytecoder.asm.ResolvedField;
@@ -31,6 +32,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
@@ -42,14 +44,49 @@ import static de.mirkosertic.bytecoder.asm.backend.js.JSHelpers.generateMethodNa
 public class JSBackend {
 
     private void generateHeader(final PrintWriter pw) {
+
         pw.println("const bytecoder = {");
-        pw.println("  imports: {},");
+        pw.println("  imports: {");
+        pw.println("    \"java.lang.Math.min$I$I\": function(a,b) {");
+        pw.println("        return Math.min(a,b);");
+        pw.println("    },");
+        pw.println("    \"java.lang.Math.min$F$F\": function(a,b) {");
+        pw.println("        return Math.min(a,b);");
+        pw.println("    },");
+        pw.println("    \"java.lang.Math.max$I$I\": function(a,b) {");
+        pw.println("        return Math.max(a,b);");
+        pw.println("    },");
+        pw.println("    \"java.lang.StringUTF16.isBigEndian$$\": function(a,b) {");
+        pw.println("        return 1;");
+        pw.println("    },");
+        pw.println("    \"java.lang.Class.getClassLoader$$\": function(classRef) {");
+        pw.println("        return null;");
+        pw.println("    },");
+        pw.println("    \"java.lang.Class.forName$Ljava$lang$String$$Z$Ljava$lang$ClassLoader$\": function(className, initialize, classLoader) {");
+        pw.println("        return sun$nio$cs$ISO_8859_1.$rt;");
+        pw.println("    }");
+        pw.println("  },");
         pw.println("  exports: {},");
         pw.println("  stringconstants: [],");
         pw.println("  cmp: function(a,b) {");
         pw.println("    if (a > b) return 1;");
         pw.println("    if (a < b) return -1;");
         pw.println("    return 0;");
+        pw.println("  },");
+        pw.println("  newRuntimeClassFor: function(type) {");
+        pw.println("    return {");
+        pw.println("      getClassLoader$$: function() {");
+        pw.println("         return null;");
+        pw.println("      },");
+        pw.println("      desiredAssertionStatus$$: function() {");
+        pw.println("         return false;");
+        pw.println("      },");
+        pw.println("      newInstance$$: function() {");
+        pw.println("         const x = new type.$i();");
+        pw.println("         x.$init$$$();");
+        pw.println("         return x;");
+        pw.println("      }");
+        pw.println("    };");
         pw.println("  }");
         pw.println("};");
         pw.println();
@@ -139,12 +176,32 @@ public class JSBackend {
         }
 
         // Generate string pool
+        pw.println("const cs = sun$nio$cs$UTF_8.$rt.newInstance$$();");
+        final String stringInitConstructor = generateMethodName("<init>", Type.getMethodType("([BLjava/nio/charset/Charset;)V").getArgumentTypes());
         final ConstantPool constantPool = compileUnit.getConstantPool();
         final List<String> pooledStrings = constantPool.getPooledStrings();
         for (int i = 0; i < pooledStrings.size(); i++) {
             pw.print("bytecoder.stringconstants[");
             pw.print(i);
-            pw.println("] = '';");
+            pw.print("] = new ");
+            pw.print(generateClassName(Type.getType(String.class)));
+            pw.println(".$i();");
+            pw.print("bytecoder.stringconstants[");
+            pw.print(i);
+            pw.print("].");
+            pw.print(stringInitConstructor);
+            pw.print("([");
+
+            final byte[] b = pooledStrings.get(i).getBytes(StandardCharsets.UTF_8);
+            for (int j = 0;j < b.length; j++) {
+                if (j > 0) {
+                    pw.print(",");
+                }
+                pw.print(b[j]);
+            }
+
+            pw.println("], cs);");
+
         }
 
         // Generate exports
@@ -162,16 +219,29 @@ public class JSBackend {
     }
 
     private void generateClassInitFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
+
+        pw.println();
+        pw.println("  static #rt = undefined;");
+        pw.println("  static get $rt() {");
+        pw.println("    if (!this.#rt) {");
+        pw.print("      this.#rt = bytecoder.newRuntimeClassFor(");
+        pw.print(generateClassName(cl.type));
+        pw.println(");");
+
+        pw.println("    }");
+        pw.println("    return this.#rt;");
+        pw.println("  }");
+
         if (cl.requiresClassInitializer()) {
             pw.println();
             pw.println("  static #iguard = false;");
-            pw.println("  static get i() {");
+            pw.println("  static get $i() {");
             pw.println("    if (!this.#iguard) {");
             pw.println("      this.#iguard = true;");
             if (cl.superClass != null && cl.superClass.requiresClassInitializer()) {
                 pw.print("      ");
                 pw.print(generateClassName(cl.superClass.type));
-                pw.println(".i;");
+                pw.println(".$i;");
             }
 
             if (cl.classInitializer != null) {
@@ -223,11 +293,11 @@ public class JSBackend {
     public void generateMethodsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
         for (final ResolvedMethod m : cl.resolvedMethods) {
             if (m.owner == cl) {
-                if (m.methodBody != null) {
-                    generateMethod(pw, compileUnit, cl, m);
+                if (Modifier.isNative(m.methodNode.access) || AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/EmulatedByRuntime;", m.methodNode.visibleAnnotations)) {
+                    generateNativeMethod(pw, compileUnit, cl, m);
                 } else {
-                    if (Modifier.isNative(m.methodNode.access)) {
-                        generateNativeMethod(pw, compileUnit, cl, m);
+                    if (m.methodBody != null) {
+                        generateMethod(pw, compileUnit, cl, m);
                     }
                 }
             }

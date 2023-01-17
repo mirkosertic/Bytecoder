@@ -72,6 +72,7 @@ import de.mirkosertic.bytecoder.asm.ResolvedClass;
 import de.mirkosertic.bytecoder.asm.ResolvedMethod;
 import de.mirkosertic.bytecoder.asm.Return;
 import de.mirkosertic.bytecoder.asm.ReturnValue;
+import de.mirkosertic.bytecoder.asm.RuntimeClass;
 import de.mirkosertic.bytecoder.asm.SHL;
 import de.mirkosertic.bytecoder.asm.SHR;
 import de.mirkosertic.bytecoder.asm.SetClassField;
@@ -136,6 +137,24 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             writeIndent();
             pw.print("var ");
             pw.print(varName);
+
+            if (v.type == null) {
+                pw.print(" = null");
+            } else {
+                switch (v.type.getSort()) {
+                    case Type.FLOAT:
+                    case Type.DOUBLE:
+                        pw.print(" = .0");
+                        break;
+                    case Type.OBJECT:
+                        pw.print(" = null");
+                        break;
+                    default:
+                        pw.print(" = 0");
+                        break;
+                }
+            }
+
             pw.println(";");
         }
     }
@@ -519,6 +538,21 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         pw.print(")");
     }
 
+    private void writeExpression(final RuntimeClass node) {
+        final TypeReference typeReference = (TypeReference) node.incomingDataFlows[0];
+        final Type t = typeReference.type;
+        switch (t.getSort()) {
+            case Type.ARRAY:
+                pw.print(generateClassName(Type.getType(Array.class)));
+                pw.print(".$rt");
+                break;
+            default:
+                pw.print(generateClassName(typeReference.type));
+                pw.print(".$rt");
+                break;
+        }
+    }
+
     private void writeExpression(final PrimitiveLong node) {
         pw.print(node.value);
     }
@@ -708,7 +742,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
         pw.print(generateClassName(target));
         if (resolvedClass.requiresClassInitializer()) {
-            pw.print(".i");
+            pw.print(".$i");
         }
 
         pw.print(".");
@@ -732,7 +766,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
         pw.print(generateClassName(target));
         if (resolvedClass.requiresClassInitializer()) {
-            pw.print(".i");
+            pw.print(".$i");
         }
 
         pw.print(".");
@@ -863,6 +897,8 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             writeExpression((InstanceOf) node);
         } else if (node instanceof NewMultiArray) {
             writeExpression((NewMultiArray) node);
+        } else if (node instanceof RuntimeClass) {
+            writeExpression((RuntimeClass) node);
         } else {
             throw new IllegalArgumentException("Not implemented : " + node);
         }
@@ -874,13 +910,13 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             final ResolvedClass cl = compileUnit.resolveClass(Type.getType(Array.class), null);
             pw.print(generateClassName(cl.type));
             if (cl.requiresClassInitializer()) {
-                pw.print(".i");
+                pw.print(".$i");
             }
         } else {
             final ResolvedClass cl = compileUnit.resolveClass(type, null);
             pw.print(generateClassName(cl.type));
             if (cl.requiresClassInitializer()) {
-                pw.print(".i");
+                pw.print(".$i");
             }
         }
     }

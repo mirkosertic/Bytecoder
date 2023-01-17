@@ -157,6 +157,10 @@ public class Graph {
         return (ObjectLong) register(new ObjectLong(value));
     }
 
+    public ObjectShort newObjectShort(final Short value) {
+        return (ObjectShort) register(new ObjectShort(value));
+    }
+
     public ObjectDouble newObjectDouble(final Double value) {
         return (ObjectDouble) register(new ObjectDouble(value));
     }
@@ -434,5 +438,9 @@ public class Graph {
 
     public ReferenceTest newReferenceTest(final ReferenceTest.Operation operation) {
         return (ReferenceTest) register(new ReferenceTest(operation));
+    }
+
+    public RuntimeClass newRuntimeClass() {
+        return (RuntimeClass) register(new RuntimeClass());
     }
 }

@@ -131,11 +131,14 @@ public class CompileUnit {
 
         exportedMethods.put(MAIN_ENTRY_POINT_EXPORT, method);
 
+        // We need the String class and this very specific constructor for code generation
+        final ResolvedClass cl = resolveClass(Type.getType(String.class), analysisStack);
+        cl.resolveMethod("<init>", Type.getMethodType("([BLjava/nio/charset/Charset;)V"), analysisStack);
+
         return method;
     }
 
     public void finalizeLinkingHierarchy() {
-        System.out.println("Finalizing linking hierarchy");
         final AnalysisStack analysisStack = new AnalysisStack();
         boolean modified = true;
         final Supplier<List<ResolvedClass>> currentList = () -> new ArrayList<>(resolvedClasses.values());
