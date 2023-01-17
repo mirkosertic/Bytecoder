@@ -19,6 +19,7 @@ import de.mirkosertic.bytecoder.api.ClassLibProvider;
 import de.mirkosertic.bytecoder.asm.AnnotationUtils;
 import de.mirkosertic.bytecoder.asm.parser.Loader;
 import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
@@ -27,6 +28,7 @@ import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.TypeInsnNode;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -151,6 +153,13 @@ public class BytecoderLoader implements Loader {
                         final MethodInsnNode mi = (MethodInsnNode) n;
                         if (mi.owner.equals(patch.name)) {
                             mi.owner = original.name;
+                        }
+                    } else if (n instanceof TypeInsnNode) {
+                        final TypeInsnNode t = (TypeInsnNode) n;
+                        if (t.getOpcode() == Opcodes.NEW) {
+                            if (t.desc.equals(patch.name)) {
+                                t.desc = original.name;
+                            }
                         }
                     }
                     n = n.getNext();
