@@ -227,7 +227,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
             pw.print(".");
 
-            pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
+            pw.print(generateMethodName(node.insnNode.name, Type.getMethodType(node.insnNode.desc)));
             pw.print("(");
             for (int i = 1; i < node.incomingDataFlows.length; i++) {
                 if (i > 1) {
@@ -240,7 +240,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             pw.print(generateClassName(invocationTarget));
             pw.print(".prototype.");
 
-            pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
+            pw.print(generateMethodName(node.insnNode.name, Type.getMethodType(node.insnNode.desc)));
             pw.print(".call(");
             writeExpression(node.incomingDataFlows[0]);
             for (int i = 1; i < node.incomingDataFlows.length; i++) {
@@ -261,7 +261,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
             pw.print(".");
 
-            pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
+            pw.print(generateMethodName(node.insnNode.name, Type.getMethodType(node.insnNode.desc)));
             pw.print("(");
             for (int i = 1; i < node.incomingDataFlows.length; i++) {
                 if (i > 1) {
@@ -274,7 +274,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             pw.print(generateClassName(invocationTarget));
             pw.print(".prototype.");
 
-            pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
+            pw.print(generateMethodName(node.insnNode.name, Type.getMethodType(node.insnNode.desc)));
             pw.print(".call(");
             writeExpression(node.incomingDataFlows[0]);
             for (int i = 1; i < node.incomingDataFlows.length; i++) {
@@ -478,7 +478,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         final ResolvedMethod m = node.resolvedMethod;
         pw.print(generateClassName(m.owner.type));
         pw.print(".");
-        pw.print(generateMethodName(m.methodNode.name, node.type.getArgumentTypes()));
+        pw.print(generateMethodName(m.methodNode.name, node.type));
     }
 
     private void writeType(final Type type) {
@@ -668,7 +668,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         writeExpression(node.incomingDataFlows[0]);
 
         pw.print(".");
-        pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
+        pw.print(generateMethodName(node.insnNode.name, Type.getMethodType(node.insnNode.desc)));
         pw.print("(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {
@@ -686,7 +686,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         writeExpression(node.incomingDataFlows[0]);
 
         pw.print(".");
-        pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
+        pw.print(generateMethodName(node.insnNode.name, Type.getMethodType(node.insnNode.desc)));
         pw.print("(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {
@@ -703,7 +703,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         writeExpression(node.incomingDataFlows[0]);
 
         pw.print(".");
-        pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
+        pw.print(generateMethodName(node.insnNode.name, Type.getMethodType(node.insnNode.desc)));
         pw.print("(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {
@@ -720,7 +720,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         writeExpression(node.incomingDataFlows[0]);
 
         pw.print(".");
-        pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
+        pw.print(generateMethodName(node.insnNode.name, Type.getMethodType(node.insnNode.desc)));
         pw.print("(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {
@@ -746,7 +746,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         }
 
         pw.print(".");
-        pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
+        pw.print(generateMethodName(node.insnNode.name, Type.getMethodType(node.insnNode.desc)));
         pw.print("(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {
@@ -770,7 +770,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         }
 
         pw.print(".");
-        pw.print(generateMethodName(node.insnNode.name, Type.getArgumentTypes(node.insnNode.desc)));
+        pw.print(generateMethodName(node.insnNode.name, Type.getMethodType(node.insnNode.desc)));
         pw.print("(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {

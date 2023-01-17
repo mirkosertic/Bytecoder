@@ -27,12 +27,13 @@ public class JSHelpers {
         return name;
     }
 
-    public static String generateMethodName(final String name, final Type[] argumentTypes) {
-        final StringBuilder builder = new StringBuilder(name);
-        for (final Type arg : argumentTypes) {
+    public static String generateMethodName(final String name, final Type methodType) {
+        final StringBuilder builder = new StringBuilder(methodType.getReturnType().toString());
+        builder.append("$").append(name);
+        for (final Type arg : methodType.getArgumentTypes()) {
             builder.append("$").append(arg);
         }
-        if (argumentTypes.length == 0) {
+        if (methodType.getArgumentTypes().length == 0) {
             builder.append("$$");
         }
         return builder.toString()
