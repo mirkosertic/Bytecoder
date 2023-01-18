@@ -17,12 +17,17 @@ package de.mirkosertic.bytecoder.asm.test;
 
 import com.sun.net.httpserver.HttpServer;
 import de.mirkosertic.bytecoder.asm.AnalysisException;
+import de.mirkosertic.bytecoder.asm.AnalysisStack;
 import de.mirkosertic.bytecoder.asm.ResolvedMethod;
+import de.mirkosertic.bytecoder.asm.backend.js.CompileOptions;
 import de.mirkosertic.bytecoder.asm.backend.js.JSBackend;
+import de.mirkosertic.bytecoder.asm.backend.js.JSCompileResult;
 import de.mirkosertic.bytecoder.asm.backend.js.JSIntrinsics;
 import de.mirkosertic.bytecoder.asm.loader.BytecoderLoader;
+import de.mirkosertic.bytecoder.asm.optimizer.Optimizations;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
 import de.mirkosertic.bytecoder.asm.parser.Loader;
+import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.unittest.BytecoderTestOption;
 import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
@@ -46,8 +51,8 @@ import org.openqa.selenium.remote.CapabilityType;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.BrowserWebDriverContainer;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -258,32 +263,37 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                 final ClassLoader cl = testClass.getJavaClass().getClassLoader();
                 final Loader loader = new BytecoderLoader(cl);
 
-                final CompileUnit compileUnit = new CompileUnit(loader, new JSIntrinsics());
+                final CompileUnit compileUnit = new CompileUnit(loader, LOGGER, new JSIntrinsics());
                 final Type invokedType = Type.getType(testClass.getJavaClass());
 
                 final ResolvedMethod method = compileUnit.resolveMainMethod(invokedType, aFrameworkMethod.getName(), Type.getMethodType(Type.VOID_TYPE));
+
+                for (final String className : additionalClassesToLink) {
+                    compileUnit.resolveClass(Type.getObjectType(className.replace('.', '/')), new AnalysisStack());
+                }
 
                 compileUnit.finalizeLinkingHierarchy();
 
                 compileUnit.printStatisticsTo(System.out);
 
-                final ByteArrayOutputStream compiledCode = new ByteArrayOutputStream();
-
-                final JSBackend backend = new JSBackend();
-                backend.generateCodeFor(compileUnit, compiledCode);
-
-
                 final StringWriter strWriter = new StringWriter();
                 final PrintWriter codeWriter = new PrintWriter(strWriter);
 
-                codeWriter.println(compiledCode);
+                final CompileOptions compileOptions = new CompileOptions(Optimizations.DISABLED, additionalResources);
+
+                final JSBackend backend = new JSBackend();
+                final JSCompileResult result = backend.generateCodeFor(compileUnit, compileOptions);
+
+                for (final CompileResult.Content c : result.getContent()) {
+                    if (c instanceof CompileResult.StringContent) {
+                        codeWriter.println(c.asString());
+                    }
+                }
 
                 final String className = generateClassName(invokedType);
                 final String methodName = generateMethodName(method.methodNode.name, Type.getMethodType(method.methodNode.desc));
 
                 final String filename = className + "." + methodName + "_" + aTestOption.toFilePrefix() + ".html";
-
-                codeWriter.println();
 
                 codeWriter.println("console.log(\"Starting test\");");
                 codeWriter.println("var theTestInstance = new " + className + "();");
@@ -291,8 +301,8 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                 codeWriter.println("     theTestInstance." + methodName + "();");
                 codeWriter.println("     console.log(\"Test finished OK\");");
                 codeWriter.println("} catch (e) {");
-                codeWriter.println("     if (e.exception) {");
-                codeWriter.println("         console.log(\"Test finished with exception. Message = \" + bytecoder.toJSString(e.exception.message));");
+                codeWriter.println("     if (e instanceof java$lang$Throwable) {");
+                codeWriter.println("         console.log(\"Test finished with exception \" + e.constructor.name + \". Message = \" + bytecoder.toJSString(e.message));");
                 codeWriter.println("     } else {");
                 codeWriter.println("         console.log(\"Test finished with exception.\");");
                 codeWriter.println("     }");
@@ -306,6 +316,15 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                 final File mavenTargetDir = new File(workingDirectory, "target");
                 final File generatedFilesDir = new File(mavenTargetDir, "bytecoder_js_new");
                 generatedFilesDir.mkdirs();
+
+                for (final CompileResult.Content c : result.getContent()) {
+                    if (!(c instanceof CompileResult.StringContent)) {
+                        final File output = new File(generatedFilesDir, c.getFileName());
+                        try (final FileOutputStream fos = new FileOutputStream(output)) {
+                            c.writeTo(fos);
+                        }
+                    }
+                }
 
                 final File generatedFile = new File(generatedFilesDir, filename);
                 final PrintWriter writer = new PrintWriter(generatedFile);

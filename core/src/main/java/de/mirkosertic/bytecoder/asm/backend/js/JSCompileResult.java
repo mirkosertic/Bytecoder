@@ -13,20 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.asm.parser;
+package de.mirkosertic.bytecoder.asm.backend.js;
 
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
+import de.mirkosertic.bytecoder.backend.CompileResult;
 
-import java.io.IOException;
-import java.net.URL;
-import java.util.Enumeration;
-
-public interface Loader {
-
-    ClassNode loadClassFor(final Type type) throws IOException, ClassNotFoundException;
-
-    Enumeration<URL> getResources(final String resourceName) throws IOException;
-
-    URL getResource(final String resourceName);
+public class JSCompileResult extends CompileResult {
 }

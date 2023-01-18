@@ -211,9 +211,9 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     @Override
     public void write(final Unwind node) {
         writeIndent();
-        pw.print("throw ");
+        pw.print("throw bytecoder.registerStack(");
         writeExpression(node.incomingDataFlows[0]);
-        pw.println();
+        pw.println(", new Error().stack);");
     }
 
     @Override
@@ -320,7 +320,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
     private void writeExpression(final NewArray node) {
 
-        pw.print("(new Array(");
+        pw.print("(bytecoder.newarray(");
         writeExpression(node.incomingDataFlows[0]);
         pw.print("))");
     }
@@ -329,7 +329,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
         pw.print("(");
         writeExpression(node.incomingDataFlows[0]);
-        pw.print("[");
+        pw.print(".data[");
         writeExpression(node.incomingDataFlows[1]);
         pw.print("])");
     }
@@ -403,7 +403,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
     private void writeExpression(final ArrayLength node) {
         writeExpression(node.incomingDataFlows[0]);
-        pw.print(".length");
+        pw.print(".data.length");
     }
 
     private void writeExpression(final ObjectLong node) {
@@ -654,7 +654,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     public void write(final ArrayStore node) {
         writeIndent();
         writeExpression(node.incomingDataFlows[0]);
-        pw.print("[");
+        pw.print(".data[");
         writeExpression(node.incomingDataFlows[1]);
         pw.print("] = ");
         writeExpression(node.incomingDataFlows[2]);

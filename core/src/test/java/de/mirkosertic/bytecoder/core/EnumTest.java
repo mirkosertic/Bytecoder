@@ -15,12 +15,12 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.asm.test.UnitTestRunner;
+import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-@RunWith(UnitTestRunner.class)
+@RunWith(BytecoderUnitTestRunner.class)
 public class EnumTest {
 
     public enum Value {

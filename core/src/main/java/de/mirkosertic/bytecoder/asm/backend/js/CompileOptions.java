@@ -13,20 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.asm.parser;
+package de.mirkosertic.bytecoder.asm.backend.js;
 
-import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.ClassNode;
+import de.mirkosertic.bytecoder.asm.optimizer.Optimizer;
 
-import java.io.IOException;
-import java.net.URL;
-import java.util.Enumeration;
+public class CompileOptions {
 
-public interface Loader {
+    private final Optimizer optimizer;
+    private final String[] additionalResources;
 
-    ClassNode loadClassFor(final Type type) throws IOException, ClassNotFoundException;
+    public CompileOptions(final Optimizer optimizer, final String[] additionalResources) {
+        this.optimizer = optimizer;
+        this.additionalResources = additionalResources;
+    }
 
-    Enumeration<URL> getResources(final String resourceName) throws IOException;
+    public Optimizer getOptimizer() {
+        return optimizer;
+    }
 
-    URL getResource(final String resourceName);
+    public String[] getAdditionalResources() {
+        return additionalResources;
+    }
 }

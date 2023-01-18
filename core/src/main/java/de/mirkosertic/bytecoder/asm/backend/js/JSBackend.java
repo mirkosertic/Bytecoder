@@ -15,26 +15,31 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.js;
 
+import de.mirkosertic.bytecoder.api.ClassLibProvider;
 import de.mirkosertic.bytecoder.asm.AnnotationUtils;
 import de.mirkosertic.bytecoder.asm.Graph;
 import de.mirkosertic.bytecoder.asm.ResolvedClass;
 import de.mirkosertic.bytecoder.asm.ResolvedField;
 import de.mirkosertic.bytecoder.asm.ResolvedMethod;
-import de.mirkosertic.bytecoder.asm.optimizer.Optimizations;
 import de.mirkosertic.bytecoder.asm.optimizer.Optimizer;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
 import de.mirkosertic.bytecoder.asm.parser.ConstantPool;
 import de.mirkosertic.bytecoder.asm.sequencer.DominatorTree;
 import de.mirkosertic.bytecoder.asm.sequencer.Sequencer;
+import de.mirkosertic.bytecoder.backend.CompileResult;
+import de.mirkosertic.bytecoder.core.ReflectionConfiguration;
 import org.objectweb.asm.Type;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.Modifier;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static de.mirkosertic.bytecoder.asm.backend.js.JSHelpers.generateClassName;
@@ -43,10 +48,70 @@ import static de.mirkosertic.bytecoder.asm.backend.js.JSHelpers.generateMethodNa
 
 public class JSBackend {
 
-    private void generateHeader(final PrintWriter pw) {
+    private void generateHeader(final CompileUnit compileUnit, final PrintWriter pw) {
 
+        pw.println("function decodeUtf16(w) {\n" +
+                "    var i = 0;\n" +
+                "    var len = w.length;\n" +
+                "    var w1, w2;\n" +
+                "    var charCodes = [];\n" +
+                "    while (i < len) {\n" +
+                "        var w1 = w[i++];\n" +
+                "        if ((w1 & 0xF800) !== 0xD800) { // w1 < 0xD800 || w1 > 0xDFFF\n" +
+                "            if (w1 != 0) charCodes.push(w1);\n" +
+                "            continue;\n" +
+                "        }\n" +
+                "        if ((w1 & 0xFC00) === 0xD800) { // w1 >= 0xD800 && w1 <= 0xDBFF\n" +
+                "            throw new RangeError('Invalid octet 0x' + w1.toString(16) + ' at offset ' + (i - 1));\n" +
+                "        }\n" +
+                "        if (i === len) {\n" +
+                "            throw new RangeError('Expected additional octet');\n" +
+                "        }\n" +
+                "        w2 = w[i++];\n" +
+                "        if ((w2 & 0xFC00) !== 0xDC00) { // w2 < 0xDC00 || w2 > 0xDFFF)\n" +
+                "            throw new RangeError('Invalid octet 0x' + w2.toString(16) + ' at offset ' + (i - 1));\n" +
+                "        }\n" +
+                "        charCodes.push(((w1 & 0x3ff) << 10) + (w2 & 0x3ff) + 0x10000);\n" +
+                "    }\n" +
+                "    return String.fromCharCode.apply(String, charCodes);\n" +
+                "};");
         pw.println("const bytecoder = {");
         pw.println("  imports: {");
+        pw.println("    \"java.lang.Object.Ljava$lang$Class$$getClass$$\": function(inst) {");
+        pw.println("        return inst.constructor.$rt;");
+        pw.println("    },");
+        pw.println("    \"de.mirkosertic.bytecoder.classlib.VM.Ljava$lang$Class$$bytePrimitiveClass$$\": function() {");
+        pw.println("        return bytecoder.primitives.byte;");
+        pw.println("    },");
+        pw.println("    \"de.mirkosertic.bytecoder.classlib.VM.Ljava$lang$Class$$charPrimitiveClass$$\": function() {");
+        pw.println("        return bytecoder.primitives.char;");
+        pw.println("    },");
+        pw.println("    \"de.mirkosertic.bytecoder.classlib.VM.Ljava$lang$Class$$shortPrimitiveClass$$\": function() {");
+        pw.println("        return bytecoder.primitives.short;");
+        pw.println("    },");
+        pw.println("    \"de.mirkosertic.bytecoder.classlib.VM.Ljava$lang$Class$$intPrimitiveClass$$\": function() {");
+        pw.println("        return bytecoder.primitives.int;");
+        pw.println("    },");
+        pw.println("    \"de.mirkosertic.bytecoder.classlib.VM.Ljava$lang$Class$$floatPrimitiveClass$$\": function() {");
+        pw.println("        return bytecoder.primitives.float;");
+        pw.println("    },");
+        pw.println("    \"de.mirkosertic.bytecoder.classlib.VM.Ljava$lang$Class$$doublePrimitiveClass$$\": function() {");
+        pw.println("        return bytecoder.primitives.double;");
+        pw.println("    },");
+        pw.println("    \"de.mirkosertic.bytecoder.classlib.VM.Ljava$lang$Class$$longPrimitiveClass$$\": function() {");
+        pw.println("        return bytecoder.primitives.long;");
+        pw.println("    },");
+        pw.println("    \"de.mirkosertic.bytecoder.classlib.VM.Ljava$lang$Class$$booleanPrimitiveClass$$\": function() {");
+        pw.println("        return bytecoder.primitives.boolean;");
+        pw.println("    },");
+        pw.println("    \"jdk.internal.misc.ScopedMemoryAccess.V$registerNatives$$\": function() {");
+        pw.println("    },");
+        pw.println("    \"java.lang.Float.I$floatToRawIntBits$F\": function(value) {");
+        pw.println("        let fl = new Float32Array(1);");
+        pw.println("        fl[0] = value;");
+        pw.println("        let br = new Int32Array(fl.buffer);");
+        pw.println("        return br[0];");
+        pw.println("    },");
         pw.println("    \"java.lang.Math.I$min$I$I\": function(a,b) {");
         pw.println("        return Math.min(a,b);");
         pw.println("    },");
@@ -56,22 +121,159 @@ public class JSBackend {
         pw.println("    \"java.lang.Math.I$max$I$I\": function(a,b) {");
         pw.println("        return Math.max(a,b);");
         pw.println("    },");
-        pw.println("    \"java.lang.StringUTF16.Z$isBigEndian$$\": function(a,b) {");
+        pw.println("    \"java.lang.StringUTF16.Z$isBigEndian$$\": function() {");
         pw.println("        return 1;");
+        pw.println("    },");
+        pw.println("    \"java.io.UnixFileSystem.I$getBooleanAttributes0$Ljava$lang$String$\": function(fsref, path) {");
+        pw.println("        let jsPath = bytecoder.toJSString(path);");
+        pw.println("        try {");
+        pw.println("          let request = new XMLHttpRequest();");
+        pw.println("          request.open('HEAD',jsPath,false);");
+        pw.println("          request.send(null);");
+        pw.println("          if (request.status == 200) {");
+        pw.println("            let length = request.getResponseHeader('content-length');");
+        pw.println("            return 0x01;");
+        pw.println("          }");
+        pw.println("          return 0;");
+        pw.println("        } catch(e) {");
+        pw.println("          return 0;");
+        pw.println("        }");
         pw.println("    },");
         pw.println("    \"java.lang.Class.Ljava$lang$ClassLoader$$getClassLoader$$\": function(classRef) {");
         pw.println("        return null;");
         pw.println("    },");
+        pw.println("    \"java.io.FileInputStream.I$open0$Ljava$lang$String$\": function(fis, name) {");
+        pw.println("        let handle = bytecoder.openForRead(bytecoder.toJSString(name));");
+        pw.println("        if (handle >= 0) fis.fd.handle = handle;");
+        pw.println("        return handle;");
+        pw.println("    },");
+        pw.println("    \"java.io.FileInputStream.J$skip0$I\": function(fis, amount) {");
+        pw.println("        let handle = fis.fd.handle;");
+        pw.println("        let x = bytecoder.filehandles[handle];");
+        pw.println("        return x.J$skip0$I(handle, amount);");
+        pw.println("    },");
+        pw.println("    \"java.io.FileInputStream.I$available0$$\": function(fis) {");
+        pw.println("        let handle = fis.fd.handle;");
+        pw.println("        let x = bytecoder.filehandles[handle];");
+        pw.println("        return x.I$available0$$(handle);");
+        pw.println("    },");
+        pw.println("    \"java.io.FileInputStream.I$read0$$\": function(fis) {");
+        pw.println("        let handle = fis.fd.handle;");
+        pw.println("        let x = bytecoder.filehandles[handle];");
+        pw.println("        return x.I$read0$$(handle);");
+        pw.println("    },");
+        pw.println("    \"java.io.FileInputStream.I$readBytes$$B$I$I\": function(fis, b, off, len) {");
+        pw.println("        let handle = fis.fd.handle;");
+        pw.println("        let x = bytecoder.filehandles[handle];");
+        pw.println("        return x.I$readBytes$$B$I$I(handle, b, off, len);");
+        pw.println("    },");
         pw.println("    \"java.lang.Class.Ljava$lang$Class$$forName$Ljava$lang$String$$Z$Ljava$lang$ClassLoader$\": function(className, initialize, classLoader) {");
-        pw.println("        return sun$nio$cs$ISO_8859_1.$rt;");
+
+        for (final ReflectionConfiguration.ReflectiveClass rc : compileUnit.getReflectionConfiguration().configuredClasses()) {
+            if (rc.supportsClassForName()) {
+                final Type cl = Type.getObjectType(rc.getName().replace('.', '/'));
+                final int idx = compileUnit.getConstantPool().getPooledStrings().indexOf(rc.getName());
+                pw.print("        if (bytecoder.stringconstants[");
+                pw.print(idx);
+                pw.println("].Z$equals$Ljava$lang$Object$(className)) {");
+                pw.print("          // ");
+                pw.println(compileUnit.getConstantPool().getPooledStrings().get(idx));
+                pw.print("          return ");
+                pw.print(generateClassName(cl));
+                pw.println(".$rt;");
+                pw.println("        }");
+            }
+        }
+
+        pw.println("        throw 'Not supported class for reflective access';");
         pw.println("    }");
         pw.println("  },");
         pw.println("  exports: {},");
+        pw.println("  filehandles : [],");
         pw.println("  stringconstants: [],");
         pw.println("  cmp: function(a,b) {");
         pw.println("    if (a > b) return 1;");
         pw.println("    if (a < b) return -1;");
         pw.println("    return 0;");
+        pw.println("  },");
+        pw.println("  registerStack: function(exception, stack) {");
+        pw.println("    exception.stack = stack;");
+        pw.println("    return exception;");
+        pw.println("  },");
+        pw.println("  toJSString: function(str) {");
+        pw.println("    if (str.value.data) {return decodeUtf16(str.value.data);} else return '';");
+        pw.println("  },");
+        pw.println("  newarray: function(len) {");
+        pw.println("    let x = new de$mirkosertic$bytecoder$classlib$Array();");
+        pw.println("    x.data = new Array(len);");
+        pw.println("    return x;");
+        pw.println("  },");
+        pw.println("  primitives: {");
+        pw.println("    byte: {");
+        pw.println("    },");
+        pw.println("    char: {");
+        pw.println("    },");
+        pw.println("    short: {");
+        pw.println("    },");
+        pw.println("    int: {");
+        pw.println("    },");
+        pw.println("    float: {");
+        pw.println("    },");
+        pw.println("    double: {");
+        pw.println("    },");
+        pw.println("    long: {");
+        pw.println("    },");
+        pw.println("    boolean: {");
+        pw.println("    }");
+        pw.println("  },");
+        pw.println("  openForRead :  function(path) {");
+        pw.println("    try {");
+        pw.println("      let request = new XMLHttpRequest();");
+        pw.println("      request.open('GET',path,false);");
+        pw.println("      request.overrideMimeType('text/plain; charset=x-user-defined');");
+        pw.println("      request.send(null);");
+        pw.println("      if (request.status==200) {");
+        pw.println("        let length = request.getResponseHeader('content-length');");
+        pw.println("        let responsetext = request.response;");
+        pw.println("        let buf = new ArrayBuffer(responsetext.length);");
+        pw.println("        let bufView = new Uint8Array(buf);");
+        pw.println("        for (var i=0, strLen=responsetext.length; i<strLen; i++) {");
+        pw.println("          bufView[i] = responsetext.charCodeAt(i) & 0xff;");
+        pw.println("        }");
+        pw.println("        let handle = bytecoder.filehandles.length;");
+        pw.println("        bytecoder.filehandles[handle] = {");
+        pw.println("          currentpos: 0,");
+        pw.println("          data: bufView,");
+        pw.println("          size: length,");
+        pw.println("          J$skip0$I: function(handle, amount) {");
+        pw.println("            let remaining = this.size - this.currentpos;");
+        pw.println("            let possible = Math.min(remaining, amount);");
+        pw.println("            this.currentpos += possible;");
+        pw.println("            return possible;");
+        pw.println("          },");
+        pw.println("          I$available0$$: function(handle) {");
+        pw.println("            return this.size - this.currentpos;");
+        pw.println("          },");
+        pw.println("          I$read0$$: function(handle) {");
+        pw.println("            return this.data[this.currentpos++];");
+        pw.println("          },");
+        pw.println("          I$readBytes$$B$I$I: function(handle, target, offset, length) {");
+        pw.println("            if (length === 0) {return 0;}");
+        pw.println("            let remaining = this.size - this.currentpos;");
+        pw.println("            let possible = Math.min(remaining, length);");
+        pw.println("            if (possible === 0) {return -1;}");
+        pw.println("            for (var j=0;j<possible;j++) {");
+        pw.println("              target.data[offset++] = this.data[this.currentpos++];");
+        pw.println("            }");
+        pw.println("            return possible;");
+        pw.println("          }");
+        pw.println("        };");
+        pw.println("        return handle;");
+        pw.println("      }");
+        pw.println("      return -1;");
+        pw.println("    } catch(e) {");
+        pw.println("      return -1;");
+        pw.println("    }");
         pw.println("  },");
         pw.println("  newRuntimeClassFor: function(type) {");
         pw.println("    return {");
@@ -85,17 +287,22 @@ public class JSBackend {
         pw.println("         const x = new type.$i();");
         pw.println("         x.V$$init$$$();");
         pw.println("         return x;");
-        pw.println("      }");
+        pw.println("      },");
+        pw.println("      $Ljava$lang$Object$$getEnumConstants$$: function() {");
+        pw.println("         return type.$i.$VALUES;");
+        pw.println("      },");
         pw.println("    };");
         pw.println("  }");
         pw.println("};");
         pw.println();
     }
 
-    public void generateCodeFor(final CompileUnit compileUnit, final OutputStream out) {
-        final PrintWriter pw = new PrintWriter(out);
+    public JSCompileResult generateCodeFor(final CompileUnit compileUnit, final CompileOptions compileOptions) {
 
-        generateHeader(pw);
+        final StringWriter sw = new StringWriter();
+        final PrintWriter pw = new PrintWriter(sw);
+
+        generateHeader(compileUnit, pw);
 
         for (final ResolvedClass cl : compileUnit.computeClassDependencies()) {
             final String className = generateClassName(cl.type);
@@ -129,7 +336,7 @@ public class JSBackend {
 
                 generateClassInitFor(pw, compileUnit, cl);
 
-                generateMethodsFor(pw, compileUnit, cl);
+                generateMethodsFor(pw, compileUnit, cl, compileOptions);
 
                 pw.println("};");
                 pw.println();
@@ -168,7 +375,7 @@ public class JSBackend {
 
                 generateClassInitFor(pw, compileUnit, cl);
 
-                generateMethodsFor(pw, compileUnit, cl);
+                generateMethodsFor(pw, compileUnit, cl, compileOptions);
 
                 pw.println("}");
                 pw.println();
@@ -176,11 +383,24 @@ public class JSBackend {
         }
 
         // Generate string pool
-        pw.println("const cs = sun$nio$cs$UTF_8.$rt.Ljava$lang$Object$$newInstance$$();");
-        final String stringInitConstructor = generateMethodName("<init>", Type.getMethodType("([BLjava/nio/charset/Charset;)V"));
+        final String stringInitConstructor = generateMethodName("<init>", Type.getMethodType("([BB)V"));
         final ConstantPool constantPool = compileUnit.getConstantPool();
         final List<String> pooledStrings = constantPool.getPooledStrings();
         for (int i = 0; i < pooledStrings.size(); i++) {
+            pw.print("arr");
+            pw.print(i);
+            pw.println(" = bytecoder.newarray(0);");
+            pw.print("arr");
+            pw.print(i);
+            pw.print(".data = [");
+            final byte[] b = pooledStrings.get(i).getBytes(StandardCharsets.ISO_8859_1);
+            for (int j = 0;j < b.length; j++) {
+                if (j > 0) {
+                    pw.print(",");
+                }
+                pw.print(b[j]);
+            }
+            pw.println("];");
             pw.print("bytecoder.stringconstants[");
             pw.print(i);
             pw.print("] = new ");
@@ -190,17 +410,9 @@ public class JSBackend {
             pw.print(i);
             pw.print("].");
             pw.print(stringInitConstructor);
-            pw.print("([");
-
-            final byte[] b = pooledStrings.get(i).getBytes(StandardCharsets.UTF_8);
-            for (int j = 0;j < b.length; j++) {
-                if (j > 0) {
-                    pw.print(",");
-                }
-                pw.print(b[j]);
-            }
-
-            pw.println("], cs);");
+            pw.print("(arr");
+            pw.print(i);
+            pw.println(", 0);");
 
         }
 
@@ -216,6 +428,27 @@ public class JSBackend {
         });
 
         pw.flush();
+
+        final JSCompileResult result = new JSCompileResult();
+        result.add(new CompileResult.StringContent("classes.js", sw.toString()));
+
+        final List<String> resourcesToInclude = new ArrayList<>();
+        for (final ClassLibProvider provider : ClassLibProvider.availableProviders()) {
+            Collections.addAll(resourcesToInclude, provider.additionalResources());
+        }
+        Collections.addAll(resourcesToInclude, compileOptions.getAdditionalResources());
+
+        // Finally, we add the list of additional resources to the result
+        for (final String theResource : resourcesToInclude) {
+            final URL theUrl = compileUnit.getLoader().getResource(theResource);
+            if (theUrl != null) {
+                result.add(new CompileResult.URLContent(theResource, theUrl));
+            } else {
+                //aOptions.getLogger().warn("Cannot find resource {}", theResource);
+            }
+        }
+
+        return result;
     }
 
     private void generateClassInitFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
@@ -290,14 +523,14 @@ public class JSBackend {
         }
     }
 
-    public void generateMethodsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
+    public void generateMethodsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final CompileOptions compileOptions) {
         for (final ResolvedMethod m : cl.resolvedMethods) {
             if (m.owner == cl) {
                 if (Modifier.isNative(m.methodNode.access) || AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/EmulatedByRuntime;", m.methodNode.visibleAnnotations)) {
                     generateNativeMethod(pw, compileUnit, cl, m);
                 } else {
                     if (m.methodBody != null) {
-                        generateMethod(pw, compileUnit, cl, m);
+                        generateMethod(pw, compileUnit, cl, m, compileOptions);
                     }
                 }
             }
@@ -360,7 +593,7 @@ public class JSBackend {
         pw.println("  }");
     }
 
-    public void generateMethod(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m) {
+    public void generateMethod(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m, final CompileOptions options) {
         System.out.println("Writing method for " + cl.type + " . " + m.methodNode.name + m.methodNode.desc);
 
         pw.println();
@@ -384,7 +617,7 @@ public class JSBackend {
         pw.println(") {");
 
         final Graph g = m.methodBody;
-        final Optimizer o = Optimizations.DEFAULT;
+        final Optimizer o = options.getOptimizer();
 
 
         while (o.optimize(m, g)) {
