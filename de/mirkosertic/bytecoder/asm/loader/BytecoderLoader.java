@@ -32,6 +32,8 @@ import org.objectweb.asm.tree.TypeInsnNode;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
+import java.util.Enumeration;
 import java.util.Map;
 
 public class BytecoderLoader implements Loader {
@@ -40,6 +42,16 @@ public class BytecoderLoader implements Loader {
 
     public BytecoderLoader(final ClassLoader classLoader) {
         this.classLoader = classLoader;
+    }
+
+    @Override
+    public Enumeration<URL> getResources(final String resourceName) throws IOException {
+        return classLoader.getResources(resourceName);
+    }
+
+    @Override
+    public URL getResource(final String resourceName) {
+        return classLoader.getResource(resourceName);
     }
 
     @Override
@@ -112,14 +124,17 @@ public class BytecoderLoader implements Loader {
             original.fields.addAll(patch.fields);
 
             for (final MethodNode patchMethod : patch.methods) {
-                search: for (final MethodNode originalMethod : original.methods) {
-                    if (originalMethod.name.equals(patchMethod.name) && originalMethod.desc.equals(patchMethod.desc)) {
-                        // We have something to patch
-                        original.methods.remove(originalMethod);
-                        break search;
+                if (!"<init>".equals(patchMethod.name)) {
+                    search:
+                    for (final MethodNode originalMethod : original.methods) {
+                        if (originalMethod.name.equals(patchMethod.name) && originalMethod.desc.equals(patchMethod.desc)) {
+                            // We have something to patch
+                            original.methods.remove(originalMethod);
+                            break search;
+                        }
                     }
+                    original.methods.add(patchMethod);
                 }
-                original.methods.add(patchMethod);
             }
         }
 

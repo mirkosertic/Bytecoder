@@ -1760,7 +1760,7 @@ public class GraphParser {
             case Opcodes.IF_ACMPEQ:
                 return parse_IF_TWOARGS(currentFlow, () -> graph.newReferenceTest(ReferenceTest.Operation.EQ));
             case Opcodes.IF_ACMPNE:
-                return parse_IF_TWOARGS(currentFlow, () -> graph.newReferenceTest(ReferenceTest.Operation.EQ));
+                return parse_IF_TWOARGS(currentFlow, () -> graph.newReferenceTest(ReferenceTest.Operation.NE));
             default:
                 throw new IllegalStateException("Not supported opcode : " + currentFlow.currentNode.getOpcode());
         }

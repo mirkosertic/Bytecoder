@@ -15,17 +15,22 @@
  */
 package de.mirkosertic.bytecoder.asm.parser;
 
+import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.asm.AnalysisStack;
 import de.mirkosertic.bytecoder.asm.AnnotationUtils;
 import de.mirkosertic.bytecoder.asm.ResolvedClass;
 import de.mirkosertic.bytecoder.asm.ResolvedMethod;
+import de.mirkosertic.bytecoder.core.ReflectionConfiguration;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.Modifier;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,12 +51,24 @@ public class CompileUnit {
 
     private final ConstantPool constantPool;
 
-    public CompileUnit(final Loader loader, final Intrinsic intrinsic) {
+    private final ReflectionConfiguration reflectionConfiguration;
+
+    public CompileUnit(final Loader loader, final Logger logger, final Intrinsic intrinsic) {
         this.loader = loader;
         this.resolvedClasses = new HashMap<>();
         this.intrinsic = intrinsic;
         this.exportedMethods = new HashMap<>();
         this.constantPool = new ConstantPool();
+        this.reflectionConfiguration = new ReflectionConfiguration();
+        try {
+            final Enumeration<URL> reflectionConfigs = loader.getResources("bytecoder-reflection.json");
+            while(reflectionConfigs.hasMoreElements()) {
+                final URL url = reflectionConfigs.nextElement();
+                reflectionConfiguration.mergeWithConfigFrom(url, logger);
+            }
+        } catch (final IOException e) {
+            logger.warn("Failed to load reflection configuration files : {}", e.getMessage());
+        }
     }
 
     protected Intrinsic getIntrinsic() {
@@ -60,6 +77,14 @@ public class CompileUnit {
 
     public ConstantPool getConstantPool() {
         return constantPool;
+    }
+
+    public ReflectionConfiguration getReflectionConfiguration() {
+        return reflectionConfiguration;
+    }
+
+    public Loader getLoader() {
+        return loader;
     }
 
     public ResolvedClass resolveClass(final Type type, final AnalysisStack analysisStack) {
@@ -126,6 +151,15 @@ public class CompileUnit {
 
     public ResolvedMethod resolveMainMethod(final Type invokedType, final String methodName, final Type methodType) {
         final AnalysisStack analysisStack = new AnalysisStack();
+
+        for (final ReflectionConfiguration.ReflectiveClass cl : reflectionConfiguration.configuredClasses()) {
+            constantPool.resolveFromPool(cl.getName());
+            final ResolvedClass rc = resolveClass(Type.getObjectType(cl.getName().replace('.', '/')), analysisStack);
+            if (cl.supportsClassForName()) {
+                rc.resolveMethod("<init>", Type.getMethodType(Type.VOID_TYPE), analysisStack);
+            }
+        }
+
         final ResolvedClass resolvedClass = resolveClass(invokedType, analysisStack);
         final ResolvedMethod method = resolvedClass.resolveMethod(methodName, methodType, analysisStack);
 
@@ -133,7 +167,7 @@ public class CompileUnit {
 
         // We need the String class and this very specific constructor for code generation
         final ResolvedClass cl = resolveClass(Type.getType(String.class), analysisStack);
-        cl.resolveMethod("<init>", Type.getMethodType("([BLjava/nio/charset/Charset;)V"), analysisStack);
+        cl.resolveMethod("<init>", Type.getMethodType("([BB)V"), analysisStack);
 
         return method;
     }

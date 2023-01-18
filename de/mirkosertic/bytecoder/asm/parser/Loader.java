@@ -19,8 +19,14 @@ import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 
 import java.io.IOException;
+import java.net.URL;
+import java.util.Enumeration;
 
 public interface Loader {
 
     ClassNode loadClassFor(final Type type) throws IOException, ClassNotFoundException;
+
+    Enumeration<URL> getResources(final String resourceName) throws IOException;
+
+    URL getResource(final String resourceName);
 }

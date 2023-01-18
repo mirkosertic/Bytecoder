@@ -360,7 +360,7 @@ public class CompileTarget {
         for (final ClassLibProvider provider : ClassLibProvider.availableProviders()) {
             Collections.addAll(resourcesToInclude, provider.additionalResources());
         }
-        // Don't forget user specific ressources
+        // Don't forget user specific resources
         Collections.addAll(resourcesToInclude, aOptions.getAdditionalResources());
 
         // Finally, we add the list of additional resources to the result
