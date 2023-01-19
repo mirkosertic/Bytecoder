@@ -184,4 +184,16 @@ public class ResolvedClass {
         }
         return subClasses;
     }
+
+    public Set<ResolvedClass> allTypesOf() {
+       final Set<ResolvedClass> result = new HashSet<>();
+       result.add(this);
+       for (final ResolvedClass interf : interfaces) {
+           result.addAll(interf.allTypesOf());
+       }
+       if (this.superClass != null) {
+           result.addAll(this.superClass.allTypesOf());
+       }
+       return result;
+    }
 }

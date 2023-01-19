@@ -121,8 +121,40 @@ public class JSBackend {
         pw.println("    \"java.lang.Math.I$max$I$I\": function(a,b) {");
         pw.println("        return Math.max(a,b);");
         pw.println("    },");
+        pw.println("    \"java.lang.Math.D$floor$D\": function(a) {");
+        pw.println("        return Math.floor(a);");
+        pw.println("    },");
+        pw.println("    \"java.lang.Math.F$floor$F\": function(a) {");
+        pw.println("        return Math.floor(a);");
+        pw.println("    },");
+        pw.println("    \"java.lang.Math.D$ceil$D\": function(a) {");
+        pw.println("        return Math.ceil(a);");
+        pw.println("    },");
+        pw.println("    \"java.lang.Math.F$ceil$F\": function(a) {");
+        pw.println("        return Math.ceil(a);");
+        pw.println("    },");
+        pw.println("    \"java.lang.Math.D$toRadians$D\": function(a) {");
+        pw.println("        return a * (Math.PI/180.0);");
+        pw.println("    },");
+        pw.println("    \"java.lang.Math.D$cos$D\": function(a) {");
+        pw.println("        return Math.cos(a);");
+        pw.println("    },");
+        pw.println("    \"java.lang.Math.D$sin$D\": function(a) {");
+        pw.println("        return Math.sin(a);");
+        pw.println("    },");
         pw.println("    \"java.lang.StringUTF16.Z$isBigEndian$$\": function() {");
         pw.println("        return 1;");
+        pw.println("    },");
+        pw.println("    \"jdk.internal.misc.CDS.Z$isDumpingClassList0$$\": function() {");
+        pw.println("        return 0;");
+        pw.println("    },");
+        pw.println("    \"jdk.internal.misc.CDS.Z$isDumpingArchive0$$\": function() {");
+        pw.println("        return 0;");
+        pw.println("    },");
+        pw.println("    \"jdk.internal.misc.CDS.Z$isSharingEnabled0$$\": function() {");
+        pw.println("        return 0;");
+        pw.println("    },");
+        pw.println("    \"jdk.internal.misc.CDS.V$initializeFromArchive$Ljava$lang$Class$\": function(cls) {");
         pw.println("    },");
         pw.println("    \"java.io.UnixFileSystem.I$getBooleanAttributes0$Ljava$lang$String$\": function(fsref, path) {");
         pw.println("        let jsPath = bytecoder.toJSString(path);");
@@ -196,6 +228,13 @@ public class JSBackend {
         pw.println("    if (a < b) return -1;");
         pw.println("    return 0;");
         pw.println("  },");
+        pw.println("  instanceOf: function(a,b) {");
+        pw.println("    if (a) {");
+        pw.println("        let rt = a.constructor.$rt;");
+        pw.println("        return rt.instanceOf(a, b);");
+        pw.println("    }");
+        pw.println("    return 0;");
+        pw.println("  },");
         pw.println("  registerStack: function(exception, stack) {");
         pw.println("    exception.stack = stack;");
         pw.println("    return exception;");
@@ -232,12 +271,12 @@ public class JSBackend {
         pw.println("      request.open('GET',path,false);");
         pw.println("      request.overrideMimeType('text/plain; charset=x-user-defined');");
         pw.println("      request.send(null);");
-        pw.println("      if (request.status==200) {");
+        pw.println("      if (request.status == 200) {");
         pw.println("        let length = request.getResponseHeader('content-length');");
         pw.println("        let responsetext = request.response;");
         pw.println("        let buf = new ArrayBuffer(responsetext.length);");
         pw.println("        let bufView = new Uint8Array(buf);");
-        pw.println("        for (var i=0, strLen=responsetext.length; i<strLen; i++) {");
+        pw.println("        for (var i=0, strLen = responsetext.length; i < strLen; i++) {");
         pw.println("          bufView[i] = responsetext.charCodeAt(i) & 0xff;");
         pw.println("        }");
         pw.println("        let handle = bytecoder.filehandles.length;");
@@ -275,9 +314,12 @@ public class JSBackend {
         pw.println("      return -1;");
         pw.println("    }");
         pw.println("  },");
-        pw.println("  newRuntimeClassFor: function(type) {");
+        pw.println("  newRuntimeClassFor: function(type,supportedtypes) {");
         pw.println("    return {");
         pw.println("      Ljava$lang$ClassLoader$$getClassLoader$$: function() {");
+        pw.println("         return null;");
+        pw.println("      },");
+        pw.println("      Ljava$lang$ClassLoader$$getClassLoader0$$: function() {");
         pw.println("         return null;");
         pw.println("      },");
         pw.println("      Z$desiredAssertionStatus$$: function() {");
@@ -290,6 +332,12 @@ public class JSBackend {
         pw.println("      },");
         pw.println("      $Ljava$lang$Object$$getEnumConstants$$: function() {");
         pw.println("         return type.$i.$VALUES;");
+        pw.println("      },");
+        pw.println("      instanceOf: function(a, b) {");
+        pw.println("         if (supportedtypes.includes(b)) {");
+        pw.println("           return 1;");
+        pw.println("         }");
+        pw.println("         return 0;");
         pw.println("      },");
         pw.println("    };");
         pw.println("  }");
@@ -459,7 +507,17 @@ public class JSBackend {
         pw.println("    if (!this.#rt) {");
         pw.print("      this.#rt = bytecoder.newRuntimeClassFor(");
         pw.print(generateClassName(cl.type));
-        pw.println(");");
+        pw.print(",[");
+        boolean f = true;
+        for (final ResolvedClass type : cl.allTypesOf()) {
+            if (f) {
+                f = false;
+            } else {
+                pw.print(",");
+            }
+            pw.print(generateClassName(type.type));
+        }
+        pw.println("]);");
 
         pw.println("    }");
         pw.println("    return this.#rt;");

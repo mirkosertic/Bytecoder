@@ -19,14 +19,13 @@ public class Test2 {
         final ClassLoader cl = Test.class.getClassLoader();
         final Loader loader = new BytecoderLoader(cl);
         final CompileUnit compileUnit = new CompileUnit(loader, new Slf4JLogger(), new CoreIntrinsics(Collections.emptyList()));
-        final Type invokedType = Type.getObjectType("jdk/internal/loader/AbstractClassLoaderValue$Memoizer");
-        final ResolvedClass resolvedClass = compileUnit.resolveClass(invokedType, analysisStack);
         try {
-            final ResolvedMethod method = resolvedClass.resolveMethod("get", Type.getMethodType(Type.getType(Object.class)), analysisStack);
+            final ResolvedMethod method = compileUnit.resolveMainMethod(Type.getType(InterfaceLinkTest.class), "testCompute", Type.getMethodType(Type.VOID_TYPE));
             analysisStack.dumpAnalysisStack(System.out);
         } catch (final AnalysisException e) {
             e.getAnalysisStack().dumpAnalysisStack(System.out);
             throw e;
         }
+        compileUnit.finalizeLinkingHierarchy();
     }
 }
