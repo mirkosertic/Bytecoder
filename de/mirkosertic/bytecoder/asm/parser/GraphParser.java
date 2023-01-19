@@ -722,8 +722,6 @@ public class GraphParser {
         final Type[] argumentTypes = methodType.getArgumentTypes();
         final Node[] incomingData = new Node[argumentTypes.length + 1];
 
-        compileUnit.resolveClass(targetClass, analysisStack);
-
         Frame.PopResult latest = currentState.frame.popFromStack();
         incomingData[incomingData.length - 1] = latest.value;
         for (int i = 0; i < argumentTypes.length; i++) {
@@ -734,6 +732,9 @@ public class GraphParser {
         final GraphParserState newState;
         if (methodType.getReturnType().equals(Type.VOID_TYPE)) {
 
+            final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
+            rc.resolveMethod(node.name, methodType, analysisStack);
+
             final InterfaceMethodInvocation n = graph.newInterfaceMethodInvocation(node);
             n.addIncomingData(incomingData);
 
@@ -743,6 +744,9 @@ public class GraphParser {
             graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
         } else {
+            final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
+            rc.resolveMethod(node.name, methodType, analysisStack);
+
             final InterfaceMethodInvocationExpression n = graph.newInterfaceMethodInvocationExpression(node);
             n.addIncomingData(incomingData);
 

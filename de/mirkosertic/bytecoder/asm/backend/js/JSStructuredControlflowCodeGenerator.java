@@ -590,11 +590,11 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     private void writeExpression(final InstanceOf node) {
-        pw.print("((");
+        pw.print("bytecoder.instanceOf(");
         writeExpression(node.incomingDataFlows[0]);
-        pw.print(" instanceof ");
+        pw.print(",");
         writeExpression(node.incomingDataFlows[1]);
-        pw.print(") ? 1 : 0)");
+        pw.print(")");
     }
 
     private void writeExpression(final NumericalTest node) {
