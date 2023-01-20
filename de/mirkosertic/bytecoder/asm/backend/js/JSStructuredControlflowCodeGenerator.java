@@ -24,7 +24,6 @@ import de.mirkosertic.bytecoder.asm.ArrayStore;
 import de.mirkosertic.bytecoder.asm.CMP;
 import de.mirkosertic.bytecoder.asm.CaughtException;
 import de.mirkosertic.bytecoder.asm.CheckCast;
-import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.asm.Copy;
 import de.mirkosertic.bytecoder.asm.Div;
 import de.mirkosertic.bytecoder.asm.FrameDebugInfo;
@@ -37,6 +36,7 @@ import de.mirkosertic.bytecoder.asm.InterfaceMethodInvocation;
 import de.mirkosertic.bytecoder.asm.InterfaceMethodInvocationExpression;
 import de.mirkosertic.bytecoder.asm.InvokeDynamicExpression;
 import de.mirkosertic.bytecoder.asm.LineNumberDebugInfo;
+import de.mirkosertic.bytecoder.asm.LookupSwitch;
 import de.mirkosertic.bytecoder.asm.MethodArgument;
 import de.mirkosertic.bytecoder.asm.MethodReference;
 import de.mirkosertic.bytecoder.asm.MethodType;
@@ -80,6 +80,7 @@ import de.mirkosertic.bytecoder.asm.SetInstanceField;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocation;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocationExpression;
 import de.mirkosertic.bytecoder.asm.Sub;
+import de.mirkosertic.bytecoder.asm.TableSwitch;
 import de.mirkosertic.bytecoder.asm.This;
 import de.mirkosertic.bytecoder.asm.TypeConversion;
 import de.mirkosertic.bytecoder.asm.TypeReference;
@@ -320,9 +321,18 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
     private void writeExpression(final NewArray node) {
 
-        pw.print("(bytecoder.newarray(");
+        pw.print("bytecoder.newarray((");
         writeExpression(node.incomingDataFlows[0]);
-        pw.print("))");
+        pw.print("),");
+        switch (node.type.getSort()) {
+            case Type.OBJECT:
+                pw.print("null");
+                break;
+            default:
+                pw.print("0");
+                break;
+        }
+        pw.print(")");
     }
 
     private void writeExpression(final ArrayLoad node) {
@@ -1041,6 +1051,12 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     @Override
+    public void writeRethrowException() {
+        writeIndent();
+        pw.println("throw __ex;");
+    }
+
+    @Override
     public void startFinallyBlock() {
         level--;
         writeIndent();
@@ -1079,7 +1095,34 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     @Override
-    public void writeSwitch(final ControlTokenConsumer node) {
+    public void writeSwitch(final TableSwitch node) {
+        writeIndent();
+        pw.print("if ((");
+        writeExpression(node.incomingDataFlows[0]);
+        pw.print(") >= ");
+        pw.print(node.min);
+        pw.print(" && (");
+        writeExpression(node.incomingDataFlows[0]);
+        pw.print(") <= ");
+        pw.print(node.max);
+        pw.print(") switch ((");
+        writeExpression(node.incomingDataFlows[0]);
+        pw.print(") - ");
+        pw.print(node.min);
+        pw.println(") {");
+        level++;
+    }
+
+    @Override
+    public void startTableSwitchDefaultBlock() {
+        level--;
+        writeIndent();
+        pw.println("} else {");
+        level++;
+    }
+
+    @Override
+    public void writeSwitch(final LookupSwitch node) {
         writeIndent();
         pw.print("switch (");
         writeExpression(node.incomingDataFlows[0]);

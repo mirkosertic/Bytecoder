@@ -31,25 +31,14 @@ public class TFileDescriptor {
 
     public static final FileDescriptor err = (FileDescriptor) (Object) new TFileDescriptor(2);
 
-    private final int num;
-    private long handle;
+    private final int fd;
 
     public TFileDescriptor() {
-        num = -1;
-        handle = -1;
+        this.fd = -1;
     }
 
-    TFileDescriptor(final int aNum) {
-        num = aNum;
-        handle = -1;
-    }
-
-    public long getHandle() {
-        return handle;
-    }
-
-    public void setHandle(final long handle) {
-        this.handle = handle;
+    TFileDescriptor(final int fd) {
+        this.fd = fd;
     }
 
     public void attach(final Closeable aClosable) {
@@ -70,8 +59,8 @@ public class TFileDescriptor {
 
     @Export("initDefaultFileHandles")
     public static void initDefaultFileHandles(final int stdIn, final int stdOut, final int stdErr) {
-        ((TFileDescriptor) (Object) FileDescriptor.in).setHandle(stdIn);
-        ((TFileDescriptor) (Object) FileDescriptor.out).setHandle(stdOut);
-        ((TFileDescriptor) (Object) FileDescriptor.err).setHandle(stdErr);
+        //((TFileDescriptor) (Object) FileDescriptor.in).setHandle(stdIn);
+        //((TFileDescriptor) (Object) FileDescriptor.out).setHandle(stdOut);
+        //((TFileDescriptor) (Object) FileDescriptor.err).setHandle(stdErr);
     }
 }

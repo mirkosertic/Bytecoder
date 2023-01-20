@@ -18,7 +18,6 @@ package de.mirkosertic.bytecoder.asm.sequencer;
 import de.mirkosertic.bytecoder.asm.AbstractVar;
 import de.mirkosertic.bytecoder.asm.ArrayStore;
 import de.mirkosertic.bytecoder.asm.CheckCast;
-import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.asm.Copy;
 import de.mirkosertic.bytecoder.asm.FrameDebugInfo;
 import de.mirkosertic.bytecoder.asm.Goto;
@@ -26,6 +25,7 @@ import de.mirkosertic.bytecoder.asm.If;
 import de.mirkosertic.bytecoder.asm.InstanceMethodInvocation;
 import de.mirkosertic.bytecoder.asm.InterfaceMethodInvocation;
 import de.mirkosertic.bytecoder.asm.LineNumberDebugInfo;
+import de.mirkosertic.bytecoder.asm.LookupSwitch;
 import de.mirkosertic.bytecoder.asm.MonitorEnter;
 import de.mirkosertic.bytecoder.asm.MonitorExit;
 import de.mirkosertic.bytecoder.asm.Return;
@@ -33,6 +33,7 @@ import de.mirkosertic.bytecoder.asm.ReturnValue;
 import de.mirkosertic.bytecoder.asm.SetClassField;
 import de.mirkosertic.bytecoder.asm.SetInstanceField;
 import de.mirkosertic.bytecoder.asm.StaticMethodInvocation;
+import de.mirkosertic.bytecoder.asm.TableSwitch;
 import de.mirkosertic.bytecoder.asm.Unwind;
 import de.mirkosertic.bytecoder.asm.VirtualMethodInvocation;
 import org.objectweb.asm.Type;
@@ -97,9 +98,15 @@ public interface StructuredControlflowCodeGenerator {
 
     void endCatchHandler();
 
+    void writeRethrowException();
+
     void startFinallyBlock();
 
-    void writeSwitch(final ControlTokenConsumer node);
+    void writeSwitch(final TableSwitch node);
+
+    void startTableSwitchDefaultBlock();
+
+    void writeSwitch(final LookupSwitch node);
 
     void writeSwitchCase(int index);
 

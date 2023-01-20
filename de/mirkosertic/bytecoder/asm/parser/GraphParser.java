@@ -518,7 +518,7 @@ public class GraphParser {
 
                         final Region startRegion = getOrCreateRegionNodeFor(tryCatchBlockNode.handler);
                         final Frame frameWithPushedException = state.frame.pushToStack(graph.newCaughtException(exceptionType));
-                        region.addControlFlowTo(new Projection.ExceptionHandler(exceptionType), startRegion);
+                        region.addControlFlowTo(new Projection.ExceptionHandler(exceptionType, methodNode.tryCatchBlocks.indexOf(tryCatchBlockNode)), startRegion);
                         flowsToCheck.add(currentFlow.continueWith(tryCatchBlockNode.handler, state.withFrame(frameWithPushedException)));
                     }
                 }
@@ -1781,19 +1781,31 @@ public class GraphParser {
         final Node addNode = graph.newAdd(Type.INT_TYPE);
         addNode.addIncomingData(currentValue, amountNode);
 
-        final Variable variable = graph.newVariable(Type.INT_TYPE);
+        if (currentValue instanceof PHI) {
+            final Copy copy = graph.newCopy();
+            copy.addIncomingData(addNode);
+            currentValue.addIncomingData(copy);
+            graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
 
-        final Copy copy = graph.newCopy();
-        copy.addIncomingData(addNode);
-        variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+            final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(currentState.frame);
+            graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
-        final Frame newFrame = currentState.frame.setLocal(local, variable);
+            return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+        } else {
+            final Variable variable = graph.newVariable(Type.INT_TYPE);
 
-        final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
-        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+            final Copy copy = graph.newCopy();
+            copy.addIncomingData(addNode);
+            variable.addIncomingData(copy);
+            graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
 
-        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+            final Frame newFrame = currentState.frame.setLocal(local, variable);
+
+            final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
+            graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+            return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+        }
     }
 
     private List<ControlFlow> parse_NEW(final ControlFlow currentFlow) {
@@ -2220,14 +2232,23 @@ public class GraphParser {
         return parse_NARYINS(currentFlow, () -> graph.neNewMultiArray(Type.getObjectType(node.desc)), node.dims);
     }
 
+    private boolean isStartOfTryCatch(final LabelNode labelNode) {
+        for (final TryCatchBlockNode tryCatchBlockNode : methodNode.tryCatchBlocks) {
+            if (tryCatchBlockNode.start == labelNode) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private List<ControlFlow> parse(final ControlFlow currentFlow, final Map<AbstractInsnNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerInstruction) {
         if (currentFlow.currentNode instanceof LabelNode) {
             final LabelNode labelNode = (LabelNode) currentFlow.currentNode;
 
             final Map<AbstractInsnNode, EdgeType> incomingEdges = incomingEdgesPerInstruction.get(labelNode);
             if (incomingEdges != null) {
-                if (incomingEdges.size() > 1) {
-                    // We do have multiple incoming edges
+                if (incomingEdges.size() > 1 || isStartOfTryCatch(labelNode)) {
+                    // We do have multiple incoming edges or we are the start of a try catch block.
                     // Now we have to make sure that every entry on the stack or on local variables
                     // is a PHI. Data copy is handled during the graph fixup phase
                     // We just have to make sure that there are phi variables there to handle everything

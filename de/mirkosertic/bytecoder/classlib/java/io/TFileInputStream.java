@@ -75,41 +75,36 @@ public class TFileInputStream extends InputStream {
         if (handle < 0) {
             throw new FileNotFoundException(name);
         }
-        ((TFileDescriptor) (Object) fd).setHandle(handle);
+        //((TFileDescriptor) (Object) fd).setHandle(handle);
     }
 
     public int read() throws IOException {
-        final int handle = (int) ((TFileDescriptor) (Object) fd).getHandle();
-        return read0(handle);
+        return read0();
     }
 
-    private native int read0(int handle) throws IOException;
+    private native int read0() throws IOException;
 
-    private native int readBytes(int handle, byte b[], int off, int len) throws IOException;
+    private native int readBytes(byte[] b, int off, int len) throws IOException;
 
     public int read(final byte[] b) throws IOException {
-        final int handle = (int) ((TFileDescriptor) (Object) fd).getHandle();
-        return readBytes(handle, b, 0, b.length);
+        return readBytes(b, 0, b.length);
     }
 
     public int read(final byte[] b, final int off, final int len) throws IOException {
-        final int handle = (int) ((TFileDescriptor) (Object) fd).getHandle();
-        return readBytes(handle, b, off, len);
+        return readBytes(b, off, len);
     }
 
     public long skip(final long n) throws IOException {
-        final int handle = (int) ((TFileDescriptor) (Object) fd).getHandle();
-        return skip0(handle, (int) n);
+        return skip0((int) n);
     }
 
-    private native long skip0(int handle, int n) throws IOException;
+    private native long skip0(int n) throws IOException;
 
     public int available() throws IOException {
-        final int handle = (int) ((TFileDescriptor) (Object) fd).getHandle();
-        return available0(handle);
+        return available0();
     }
 
-    private native int available0(int handle) throws IOException;
+    private native int available0() throws IOException;
 
     public void close() {
         if (closed) {

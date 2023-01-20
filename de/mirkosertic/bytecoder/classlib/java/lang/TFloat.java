@@ -70,4 +70,6 @@ public class TFloat {
         theBuilder.append(aValue);
         return theBuilder.toString();
     }
+
+    public static native boolean isNaN(final float aValue);
 }
