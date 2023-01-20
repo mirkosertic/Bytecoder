@@ -62,37 +62,33 @@ public class TFileOutputStream extends OutputStream {
 
     private native int open0(String name, boolean append) throws FileNotFoundException;
 
-    private native void close0(int handle);
+    private native void close0();
 
     private void open(final String name, final boolean append) throws FileNotFoundException {
-        ((TFileDescriptor) (Object) fd).setHandle(open0(name, append));
+        open0(name, append);
     }
 
     public void write(final int b) throws IOException {
-        final int handle = (int) ((TFileDescriptor) (Object) fd).getHandle();
-        writeInt(handle, b);
+        writeInt(b);
     }
 
-    public native void writeInt(int handle, int b) throws IOException;
+    public native void writeInt(int b) throws IOException;
 
-    private native void writeBytes(int handle, byte b[], int off, int len);
+    private native void writeBytes(byte[] b, int off, int len);
 
     public void write(final byte[] b) {
-        final int handle = (int) ((TFileDescriptor) (Object) fd).getHandle();
-        writeBytes(handle, b, 0, b.length);
+        writeBytes(b, 0, b.length);
     }
 
     public void write(final byte[] b, final int off, final int len) {
-        final int handle = (int) ((TFileDescriptor) (Object) fd).getHandle();
-        writeBytes(handle, b, off, len);
+        writeBytes(b, off, len);
     }
 
     public void close() {
         if (closed) {
             return;
         }
-        final int handle = (int) ((TFileDescriptor) (Object) fd).getHandle();
-        close0(handle);
+        close0();
         closed = true;
     }
 

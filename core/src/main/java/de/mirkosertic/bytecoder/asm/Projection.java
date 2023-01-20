@@ -168,10 +168,12 @@ public abstract class Projection {
     public static class ExceptionHandler extends Projection {
 
         public final Type type;
+        public final int position;
 
-        public ExceptionHandler(final Type type) {
+        public ExceptionHandler(final Type type, final int position) {
             super(EdgeType.FORWARD);
             this.type = type;
+            this.position = position;
         }
 
         @Override

@@ -15,8 +15,8 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.io;
 
+import de.mirkosertic.bytecoder.asm.test.UnitTestRunner;
 import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,7 +27,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
-@RunWith(BytecoderUnitTestRunner.class)
+@RunWith(UnitTestRunner.class)
 @BytecoderTestOptions(includeJVM = false, additionalResources = {"testfile.txt"})
 public class FileTest {
 
@@ -58,6 +58,6 @@ public class FileTest {
         }
         fos.close();
         Assert.assertEquals("hello world!", theBuilder.toString());
-        System.out.println(theBuilder.toString());
+        //System.out.println(theBuilder.toString());
     }
 }

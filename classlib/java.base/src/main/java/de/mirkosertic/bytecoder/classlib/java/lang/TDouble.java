@@ -81,9 +81,7 @@ public class TDouble {
         return new Double(aValue);
     }
 
-    public static boolean isNaN(final double aValue) {
-        return !(aValue == aValue);
-    }
+    public static native boolean isNaN(final double aValue);
 
     public static String toString(final double aValue) {
         final StringBuilder theBuffer = new StringBuilder();

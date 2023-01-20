@@ -304,30 +304,38 @@ public class Sequencer {
         visitBranchingNodeTemplate(node, as, blocks -> {
             codegenerator.writeSwitch(node);
 
-            for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
-                if (entry.getKey() instanceof Projection.IndexedProjection) {
-                    final Projection.IndexedProjection indexedProjection = (Projection.IndexedProjection) entry.getKey();
-                    codegenerator.writeSwitchCase(indexedProjection.index);
-                    if (entry.getValue().controlComingFrom.size() > 1) {
-                        // Merge nodes are handled in block form
-                        generateGOTO(node, entry.getValue(), blocks);
-                    } else {
-                        visitDominationTreeOf(entry.getValue(), blocks);
-                    }
-                    codegenerator.finishSwitchCase();
+            final List<Map.Entry<Projection, ControlTokenConsumer>> sortedProjections =
+                    node.controlFlowsTo.entrySet().stream()
+                            .filter(entry -> entry.getKey() instanceof Projection.IndexedProjection)
+                            .sorted((o1, o2) -> {
+                                final Projection.IndexedProjection a = (Projection.IndexedProjection) o1.getKey();
+                                final Projection.IndexedProjection b = (Projection.IndexedProjection) o2.getKey();
+                                return Integer.compare(a.index, b.index);
+
+                            }).collect(Collectors.toList());
+
+            for (final Map.Entry<Projection, ControlTokenConsumer> entry : sortedProjections) {
+                final Projection.IndexedProjection indexedProjection = (Projection.IndexedProjection) entry.getKey();
+                codegenerator.writeSwitchCase(indexedProjection.index);
+                if (entry.getValue().controlComingFrom.size() > 1) {
+                    // Merge nodes are handled in block form
+                    generateGOTO(node, entry.getValue(), blocks);
+                } else {
+                    visitDominationTreeOf(entry.getValue(), blocks);
                 }
+                codegenerator.finishSwitchCase();
             }
+
+            codegenerator.startTableSwitchDefaultBlock();
 
             for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
                 if (entry.getKey() instanceof Projection.DefaultProjection) {
-                    codegenerator.writeSwitchDefaultCase();
                     if (entry.getValue().controlComingFrom.size() > 1) {
                         // Merge nodes are handled in block form
                         generateGOTO(node, entry.getValue(), blocks);
                     } else {
                         visitDominationTreeOf(entry.getValue(), blocks);
                     }
-                    codegenerator.finishSwitchCase();
                 }
             }
 
@@ -388,22 +396,31 @@ public class Sequencer {
 
             if (hasExceptionHandler) {
                 boolean first = true;
-                for (final Map.Entry<Projection, ControlTokenConsumer> handler : node.controlFlowsTo.entrySet()) {
-                    if (handler.getKey() instanceof Projection.ExceptionHandler) {
-                        if (first) {
-                            first = false;
-                            codegenerator.startCatchBlock();
-                        }
+                final List<Map.Entry<Projection, ControlTokenConsumer>> sortedProjections =
+                        node.controlFlowsTo.entrySet().stream()
+                                .filter(entry -> entry.getKey() instanceof Projection.ExceptionHandler)
+                                .sorted((o1, o2) -> {
+                                    final Projection.ExceptionHandler a = (Projection.ExceptionHandler) o1.getKey();
+                                    final Projection.ExceptionHandler b = (Projection.ExceptionHandler) o2.getKey();
+                                    return Integer.compare(a.position, b.position);
+                                }).collect(Collectors.toList());
 
-                        final Projection.ExceptionHandler exceptionHandler = (Projection.ExceptionHandler) handler.getKey();
-
-                        codegenerator.startCatchHandler(exceptionHandler.type);
-
-                        visitDominationTreeOf(handler.getValue(), blocks);
-
-                        codegenerator.endCatchHandler();
+                for (final Map.Entry<Projection, ControlTokenConsumer> handler : sortedProjections) {
+                    if (first) {
+                        first = false;
+                        codegenerator.startCatchBlock();
                     }
+
+                    final Projection.ExceptionHandler exceptionHandler = (Projection.ExceptionHandler) handler.getKey();
+
+                    codegenerator.startCatchHandler(exceptionHandler.type);
+
+                    visitDominationTreeOf(handler.getValue(), blocks);
+
+                    codegenerator.endCatchHandler();
                 }
+
+                codegenerator.writeRethrowException();
 
                 codegenerator.finishBlock();
             }
