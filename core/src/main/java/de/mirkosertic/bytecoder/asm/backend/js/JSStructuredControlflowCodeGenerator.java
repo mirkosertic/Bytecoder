@@ -291,6 +291,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         // Resolve callsite
         writeExpression(node.incomingDataFlows[0]);
         // Invoke callsite
+        //TODO: Resolve Target of call site and thenn invokeExact on that!
         pw.print(".invokeExact(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {
@@ -486,19 +487,56 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
     private void writeExpression(final MethodReference node) {
         final ResolvedMethod m = node.resolvedMethod;
+        pw.print("bytecoder.methodHandle(");
         pw.print(generateClassName(m.owner.type));
         pw.print(".");
         pw.print(generateMethodName(m.methodNode.name, node.type));
+        pw.print(",");
+        pw.print(m.methodNode.access);
+        pw.print(")");
     }
 
     private void writeType(final Type type) {
         switch (type.getSort()) {
             case Type.OBJECT:
+                final ResolvedClass rc = compileUnit.findClass(type);
+                if (rc == null) {
+                    throw new IllegalStateException("Cannot find resolved class for " + type);
+                }
                 pw.print(generateClassName(type));
                 break;
-            default:
-                pw.print("null");
+            case Type.VOID:
+                pw.print("bytecoder.primitives.void");
                 break;
+            case Type.FLOAT:
+                pw.print("bytecoder.primitives.float");
+                break;
+            case Type.DOUBLE:
+                pw.print("bytecoder.primitives.double");
+                break;
+            case Type.SHORT:
+                pw.print("bytecoder.primitives.short");
+                break;
+            case Type.BYTE:
+                pw.print("bytecoder.primitives.byte");
+                break;
+            case Type.CHAR:
+                pw.print("bytecoder.primitives.char");
+                break;
+            case Type.INT:
+                pw.print("bytecoder.primitives.int");
+                break;
+            case Type.LONG:
+                pw.print("bytecoder.primitives.long");
+                break;
+            case Type.BOOLEAN:
+                pw.print("bytecoder.primitives.boolean");
+                break;
+            case Type.ARRAY:
+                pw.print(generateClassName(Type.getType(Object.class)));
+                break;
+            default:
+                throw new IllegalStateException("Not implemented type for type reference : " + type + ", sort = " + type.getSort());
         }
     }
 

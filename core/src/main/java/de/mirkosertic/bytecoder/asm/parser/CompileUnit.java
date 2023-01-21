@@ -87,6 +87,11 @@ public class CompileUnit {
         return loader;
     }
 
+    public ResolvedClass findClass(final Type type) {
+        final String resourceName = type.getClassName().replace(".", "/") + ".class";
+        return resolvedClasses.get(resourceName);
+    }
+
     public ResolvedClass resolveClass(final Type type, final AnalysisStack analysisStack) {
         final String resourceName = type.getClassName().replace(".", "/") + ".class";
         ResolvedClass rs = resolvedClasses.get(resourceName);
