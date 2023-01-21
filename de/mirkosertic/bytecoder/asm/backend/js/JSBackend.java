@@ -237,6 +237,9 @@ public class JSBackend {
         }
 
         pw.println("        throw 'Not supported class for reflective access';");
+        pw.println("    },");
+        pw.println("    \"java.lang.invoke.LambdaMetafactory.Ljava$lang$invoke$CallSite$$metafactory$Ljava$lang$invoke$MethodHandles$Lookup$$Ljava$lang$String$$Ljava$lang$invoke$MethodType$$Ljava$lang$invoke$MethodType$$Ljava$lang$invoke$MethodHandle$$Ljava$lang$invoke$MethodType$\": function(lookups, methodName, InvokedType, samMethodType,implMethod, aInstantiatedMethodType) {");
+        pw.println("        throw 'Not implemented';");
         pw.println("    }");
         pw.println("  },");
         pw.println("  exports: {},");
@@ -267,6 +270,15 @@ public class JSBackend {
         pw.println("    x.data.fill(defaultvalue);");
         pw.println("    return x;");
         pw.println("  },");
+        pw.println("  methodHandle: function(method, access) {");
+        pw.println("    return {");
+        pw.println("        impl: method,");
+        pw.println("        access: access,");
+        pw.println("        invokeExact: function() {");
+        pw.println("          throw 'not implemented!';");
+        pw.println("        }");
+        pw.println("    };");
+        pw.println("  },");
         pw.println("  primitives: {");
         pw.println("    byte: {");
         pw.println("    },");
@@ -283,6 +295,8 @@ public class JSBackend {
         pw.println("    long: {");
         pw.println("    },");
         pw.println("    boolean: {");
+        pw.println("    },");
+        pw.println("    void: {");
         pw.println("    }");
         pw.println("  },");
         pw.println("  openForRead :  function(path) {");
@@ -420,6 +434,12 @@ public class JSBackend {
                 generateMethodsFor(pw, compileUnit, cl, compileOptions);
 
                 pw.println("};");
+
+                pw.print(className);
+                pw.print(".$modifiers = ");
+                pw.print(cl.classNode.access);
+                pw.println(";");
+
                 pw.println();
             } else {
                 pw.print("class ");
@@ -445,6 +465,10 @@ public class JSBackend {
 
                 pw.print(" ");
                 pw.println("{");
+
+                pw.print("  static $modifiers = ");
+                pw.print(cl.classNode.access);
+                pw.println(";");
 
                 generateFieldsFor(pw, compileUnit, cl);
 
