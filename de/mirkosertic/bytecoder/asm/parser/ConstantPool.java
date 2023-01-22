@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.asm.parser;
 
-import de.mirkosertic.bytecoder.asm.StringConstant;
+import de.mirkosertic.bytecoder.asm.ir.StringConstant;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -15,9 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.parser;
 
-import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
-import de.mirkosertic.bytecoder.asm.Frame;
-import de.mirkosertic.bytecoder.asm.TryCatchGuardStackEntry;
+import de.mirkosertic.bytecoder.asm.ir.ControlTokenConsumer;
+import de.mirkosertic.bytecoder.asm.ir.Frame;
+import de.mirkosertic.bytecoder.asm.ir.TryCatchGuardStackEntry;
 import org.objectweb.asm.tree.LabelNode;
 
 public class GraphParserState {

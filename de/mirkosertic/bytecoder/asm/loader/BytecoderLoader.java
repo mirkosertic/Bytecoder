@@ -16,7 +16,7 @@
 package de.mirkosertic.bytecoder.asm.loader;
 
 import de.mirkosertic.bytecoder.api.ClassLibProvider;
-import de.mirkosertic.bytecoder.asm.AnnotationUtils;
+import de.mirkosertic.bytecoder.asm.ir.AnnotationUtils;
 import de.mirkosertic.bytecoder.asm.parser.Loader;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;

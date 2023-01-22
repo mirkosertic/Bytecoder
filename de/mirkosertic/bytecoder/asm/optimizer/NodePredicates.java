@@ -15,9 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.optimizer;
 
-import de.mirkosertic.bytecoder.asm.EdgeType;
-import de.mirkosertic.bytecoder.asm.Node;
-import de.mirkosertic.bytecoder.asm.Projection;
+import de.mirkosertic.bytecoder.asm.ir.EdgeType;
+import de.mirkosertic.bytecoder.asm.ir.Node;
+import de.mirkosertic.bytecoder.asm.ir.Projection;
 
 import java.util.function.Predicate;
 
