@@ -41,6 +41,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import static de.mirkosertic.bytecoder.asm.backend.js.JSHelpers.generateClassName;
 import static de.mirkosertic.bytecoder.asm.backend.js.JSHelpers.generateFieldName;
@@ -250,7 +251,24 @@ public class JSBackend {
         pw.println("          return {");
         pw.println("            lambdaref: this,");
         pw.println("            invokeExact: function() {");
-        pw.println("              throw 'not implemented';");
+        pw.println("              let staticargs = arguments;");
+        pw.println("              let implmethod = this.lambdaref.implMethod;");
+        pw.println("              let instType = this.lambdaref.invokedType[0];");
+        pw.println("              let inst = null;");
+        pw.println("              if (instType.$modifiers & 512 > 0) {");
+        pw.println("                let cl = class extends instType(java$lang$Object) {");
+        pw.println("                };");
+        pw.println("                inst = new cl();");
+        pw.println("              } else {");
+        pw.println("                inst = new instType();");
+        pw.println("              }");
+        pw.println("              inst.$lambdaimpl = function() {");
+        pw.println("                let dynamicargs = arguments;");
+        pw.println("                let statargs = staticargs;");
+        pw.println("                let impl = implmethod;");
+        pw.println("                impl.impl();");
+        pw.println("              };");
+        pw.println("              return inst;");
         pw.println("            }");
         pw.println("          };");
         pw.println("        }");
@@ -290,7 +308,7 @@ public class JSBackend {
         pw.println("        impl: method,");
         pw.println("        access: access,");
         pw.println("        invokeExact: function() {");
-        pw.println("          throw 'not implemented!';");
+        pw.println("          //throw 'not implemented';");
         pw.println("        }");
         pw.println("    };");
         pw.println("  },");
@@ -446,6 +464,8 @@ public class JSBackend {
 
                 generateClassInitFor(pw, compileUnit, cl);
 
+                generateLambdaLogicFor(pw, compileUnit, cl);
+
                 generateMethodsFor(pw, compileUnit, cl, compileOptions);
 
                 pw.println("};");
@@ -494,6 +514,8 @@ public class JSBackend {
                 pw.println("  }");
 
                 generateClassInitFor(pw, compileUnit, cl);
+
+                generateLambdaLogicFor(pw, compileUnit, cl);
 
                 generateMethodsFor(pw, compileUnit, cl, compileOptions);
 
@@ -569,6 +591,21 @@ public class JSBackend {
         }
 
         return result;
+    }
+
+    private void generateLambdaLogicFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
+        pw.println();
+        pw.println("  set $lambdaimpl(impl) {");
+
+        final Set<ResolvedMethod> abstractMethods = cl.abstractResolvedMethods();
+        if (abstractMethods.size() == 1) {
+            final ResolvedMethod m = abstractMethods.iterator().next();
+            final String methodName = generateMethodName(m.methodNode.name, Type.getMethodType(m.methodNode.desc));
+            pw.print("    this.");
+            pw.print(methodName);
+            pw.println(" = impl;");
+        }
+        pw.println("  }");
     }
 
     private void generateClassInitFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {

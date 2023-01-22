@@ -196,4 +196,20 @@ public class ResolvedClass {
        }
        return result;
     }
+
+    public Set<ResolvedMethod> abstractResolvedMethods() {
+        final Set<ResolvedMethod> result = new HashSet<>();
+        for (final ResolvedMethod m : resolvedMethods) {
+            if (m.owner == this && Modifier.isAbstract(m.methodNode.access)) {
+                result.add(m);
+            }
+        }
+        for (final ResolvedClass interf : interfaces) {
+            result.addAll(interf.abstractResolvedMethods());
+        }
+        if (superClass != null) {
+            result.addAll(superClass.abstractResolvedMethods());
+        }
+        return result;
+    }
 }

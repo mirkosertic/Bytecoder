@@ -43,8 +43,9 @@ public class InvokeDynamicTest {
         final int x = 1;
         final int y = 2;
         final Runnable theRun = () -> {
-            compute(x, y);
+            System.out.println(compute(x, y));
         };
+        theRun.run();
     }
 
     interface Adder {
