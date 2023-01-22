@@ -238,8 +238,23 @@ public class JSBackend {
 
         pw.println("        throw 'Not supported class for reflective access';");
         pw.println("    },");
-        pw.println("    \"java.lang.invoke.LambdaMetafactory.Ljava$lang$invoke$CallSite$$metafactory$Ljava$lang$invoke$MethodHandles$Lookup$$Ljava$lang$String$$Ljava$lang$invoke$MethodType$$Ljava$lang$invoke$MethodType$$Ljava$lang$invoke$MethodHandle$$Ljava$lang$invoke$MethodType$\": function(lookups, methodName, InvokedType, samMethodType,implMethod, aInstantiatedMethodType) {");
-        pw.println("        throw 'Not implemented';");
+        pw.println("    \"java.lang.invoke.LambdaMetafactory.Ljava$lang$invoke$CallSite$$metafactory$Ljava$lang$invoke$MethodHandles$Lookup$$Ljava$lang$String$$Ljava$lang$invoke$MethodType$$Ljava$lang$invoke$MethodType$$Ljava$lang$invoke$MethodHandle$$Ljava$lang$invoke$MethodType$\": function(lookups, methodName, invokedType, samMethodType,implMethod, aInstantiatedMethodType) {");
+        pw.println("      return {");
+        pw.println("        lookups: lookups,");
+        pw.println("        methodName: methodName,");
+        pw.println("        invokedType: invokedType,");
+        pw.println("        samMethodType: samMethodType,");
+        pw.println("        implMethod: implMethod,");
+        pw.println("        aInstantiatedMethodType: aInstantiatedMethodType,");
+        pw.println("        Ljava$lang$invoke$MethodHandle$$getTarget$$: function() {");
+        pw.println("          return {");
+        pw.println("            lambdaref: this,");
+        pw.println("            invokeExact: function() {");
+        pw.println("              throw 'not implemented';");
+        pw.println("            }");
+        pw.println("          };");
+        pw.println("        }");
+        pw.println("      };");
         pw.println("    }");
         pw.println("  },");
         pw.println("  exports: {},");

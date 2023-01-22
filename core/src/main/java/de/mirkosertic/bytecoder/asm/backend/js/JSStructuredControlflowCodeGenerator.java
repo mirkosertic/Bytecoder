@@ -96,6 +96,7 @@ import de.mirkosertic.bytecoder.classlib.Array;
 import org.objectweb.asm.Type;
 
 import java.io.PrintWriter;
+import java.lang.invoke.MethodHandle;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -290,9 +291,12 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
         // Resolve callsite
         writeExpression(node.incomingDataFlows[0]);
-        // Invoke callsite
-        //TODO: Resolve Target of call site and thenn invokeExact on that!
-        pw.print(".invokeExact(");
+        // Get target of callsite
+        final String getTargetMethodName = generateMethodName("getTarget", Type.getMethodType(Type.getType(MethodHandle.class)));
+        pw.print(".");
+        pw.print(getTargetMethodName);
+        // Invoke methodhandle using invokeExact semantics
+        pw.print("().invokeExact(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {
                 pw.print(", ");
@@ -476,7 +480,11 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     private void writeExpression(final ResolveCallsite node) {
-        writeExpression(node.incomingDataFlows[0]);
+        final MethodReference methodReference = (MethodReference) node.incomingDataFlows[0];
+        final ResolvedMethod m = methodReference.resolvedMethod;
+        pw.print(generateClassName(m.owner.type));
+        pw.print(".");
+        pw.print(generateMethodName(m.methodNode.name, Type.getMethodType(m.methodNode.desc)));
         pw.print("(null"); // First arg: MethodHandles.Lookup
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             pw.print(", ");
