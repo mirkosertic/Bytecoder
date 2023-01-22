@@ -16,10 +16,10 @@
 package de.mirkosertic.bytecoder.asm.parser;
 
 import de.mirkosertic.bytecoder.api.Logger;
-import de.mirkosertic.bytecoder.asm.AnalysisStack;
-import de.mirkosertic.bytecoder.asm.AnnotationUtils;
-import de.mirkosertic.bytecoder.asm.ResolvedClass;
-import de.mirkosertic.bytecoder.asm.ResolvedMethod;
+import de.mirkosertic.bytecoder.asm.ir.AnalysisStack;
+import de.mirkosertic.bytecoder.asm.ir.AnnotationUtils;
+import de.mirkosertic.bytecoder.asm.ir.ResolvedClass;
+import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.ReflectionConfiguration;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;

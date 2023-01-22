@@ -15,14 +15,14 @@
  */
 package de.mirkosertic.bytecoder.asm.optimizer;
 
-import de.mirkosertic.bytecoder.asm.AbstractVar;
-import de.mirkosertic.bytecoder.asm.Constant;
-import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
-import de.mirkosertic.bytecoder.asm.Copy;
-import de.mirkosertic.bytecoder.asm.Graph;
-import de.mirkosertic.bytecoder.asm.Node;
-import de.mirkosertic.bytecoder.asm.Projection;
-import de.mirkosertic.bytecoder.asm.ResolvedMethod;
+import de.mirkosertic.bytecoder.asm.ir.AbstractVar;
+import de.mirkosertic.bytecoder.asm.ir.Constant;
+import de.mirkosertic.bytecoder.asm.ir.ControlTokenConsumer;
+import de.mirkosertic.bytecoder.asm.ir.Copy;
+import de.mirkosertic.bytecoder.asm.ir.Graph;
+import de.mirkosertic.bytecoder.asm.ir.Node;
+import de.mirkosertic.bytecoder.asm.ir.Projection;
+import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 
 import java.util.Map;
 

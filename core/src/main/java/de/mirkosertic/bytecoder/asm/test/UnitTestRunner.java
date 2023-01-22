@@ -16,9 +16,9 @@
 package de.mirkosertic.bytecoder.asm.test;
 
 import com.sun.net.httpserver.HttpServer;
-import de.mirkosertic.bytecoder.asm.AnalysisException;
-import de.mirkosertic.bytecoder.asm.AnalysisStack;
-import de.mirkosertic.bytecoder.asm.ResolvedMethod;
+import de.mirkosertic.bytecoder.asm.ir.AnalysisException;
+import de.mirkosertic.bytecoder.asm.ir.AnalysisStack;
+import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.asm.backend.js.CompileOptions;
 import de.mirkosertic.bytecoder.asm.backend.js.JSBackend;
 import de.mirkosertic.bytecoder.asm.backend.js.JSCompileResult;

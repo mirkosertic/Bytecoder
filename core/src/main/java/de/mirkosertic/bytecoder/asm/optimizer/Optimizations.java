@@ -15,8 +15,8 @@
  */
 package de.mirkosertic.bytecoder.asm.optimizer;
 
-import de.mirkosertic.bytecoder.asm.Graph;
-import de.mirkosertic.bytecoder.asm.ResolvedMethod;
+import de.mirkosertic.bytecoder.asm.ir.Graph;
+import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 
 public enum Optimizations implements Optimizer {
     DISABLED(new Optimizer[] {}),

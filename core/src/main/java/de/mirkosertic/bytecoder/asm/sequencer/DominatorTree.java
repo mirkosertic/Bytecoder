@@ -15,12 +15,12 @@
  */
 package de.mirkosertic.bytecoder.asm.sequencer;
 
-import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
-import de.mirkosertic.bytecoder.asm.EdgeType;
-import de.mirkosertic.bytecoder.asm.Graph;
-import de.mirkosertic.bytecoder.asm.Node;
-import de.mirkosertic.bytecoder.asm.Projection;
-import de.mirkosertic.bytecoder.asm.Region;
+import de.mirkosertic.bytecoder.asm.ir.ControlTokenConsumer;
+import de.mirkosertic.bytecoder.asm.ir.EdgeType;
+import de.mirkosertic.bytecoder.asm.ir.Graph;
+import de.mirkosertic.bytecoder.asm.ir.Node;
+import de.mirkosertic.bytecoder.asm.ir.Projection;
+import de.mirkosertic.bytecoder.asm.ir.Region;
 
 import java.io.OutputStream;
 import java.io.PrintWriter;

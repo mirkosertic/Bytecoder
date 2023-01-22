@@ -15,10 +15,10 @@
  */
 package de.mirkosertic.bytecoder.asm.optimizer;
 
-import de.mirkosertic.bytecoder.asm.AbstractVar;
-import de.mirkosertic.bytecoder.asm.Graph;
-import de.mirkosertic.bytecoder.asm.Node;
-import de.mirkosertic.bytecoder.asm.ResolvedMethod;
+import de.mirkosertic.bytecoder.asm.ir.AbstractVar;
+import de.mirkosertic.bytecoder.asm.ir.Graph;
+import de.mirkosertic.bytecoder.asm.ir.Node;
+import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 
 public class DeleteUnusedVariables implements Optimizer {
 

@@ -1,5 +1,8 @@
 package de.mirkosertic.bytecoder.asm;
 
+import de.mirkosertic.bytecoder.asm.ir.AnalysisException;
+import de.mirkosertic.bytecoder.asm.ir.AnalysisStack;
+import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.asm.loader.BytecoderLoader;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
 import de.mirkosertic.bytecoder.asm.parser.CoreIntrinsics;

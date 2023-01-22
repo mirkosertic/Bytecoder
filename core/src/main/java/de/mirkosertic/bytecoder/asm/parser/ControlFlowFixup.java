@@ -15,17 +15,17 @@
  */
 package de.mirkosertic.bytecoder.asm.parser;
 
-import de.mirkosertic.bytecoder.asm.Constant;
-import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
-import de.mirkosertic.bytecoder.asm.Copy;
-import de.mirkosertic.bytecoder.asm.EdgeType;
-import de.mirkosertic.bytecoder.asm.Fixup;
-import de.mirkosertic.bytecoder.asm.Frame;
-import de.mirkosertic.bytecoder.asm.Graph;
-import de.mirkosertic.bytecoder.asm.InstructionTranslation;
-import de.mirkosertic.bytecoder.asm.Projection;
-import de.mirkosertic.bytecoder.asm.StandardProjections;
-import de.mirkosertic.bytecoder.asm.Value;
+import de.mirkosertic.bytecoder.asm.ir.Constant;
+import de.mirkosertic.bytecoder.asm.ir.ControlTokenConsumer;
+import de.mirkosertic.bytecoder.asm.ir.Copy;
+import de.mirkosertic.bytecoder.asm.ir.EdgeType;
+import de.mirkosertic.bytecoder.asm.ir.Fixup;
+import de.mirkosertic.bytecoder.asm.ir.Frame;
+import de.mirkosertic.bytecoder.asm.ir.Graph;
+import de.mirkosertic.bytecoder.asm.ir.InstructionTranslation;
+import de.mirkosertic.bytecoder.asm.ir.Projection;
+import de.mirkosertic.bytecoder.asm.ir.StandardProjections;
+import de.mirkosertic.bytecoder.asm.ir.Value;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 

@@ -16,11 +16,11 @@
 package de.mirkosertic.bytecoder.asm.backend.js;
 
 import de.mirkosertic.bytecoder.api.ClassLibProvider;
-import de.mirkosertic.bytecoder.asm.AnnotationUtils;
-import de.mirkosertic.bytecoder.asm.Graph;
-import de.mirkosertic.bytecoder.asm.ResolvedClass;
-import de.mirkosertic.bytecoder.asm.ResolvedField;
-import de.mirkosertic.bytecoder.asm.ResolvedMethod;
+import de.mirkosertic.bytecoder.asm.ir.AnnotationUtils;
+import de.mirkosertic.bytecoder.asm.ir.Graph;
+import de.mirkosertic.bytecoder.asm.ir.ResolvedClass;
+import de.mirkosertic.bytecoder.asm.ir.ResolvedField;
+import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.asm.optimizer.Optimizer;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
 import de.mirkosertic.bytecoder.asm.parser.ConstantPool;

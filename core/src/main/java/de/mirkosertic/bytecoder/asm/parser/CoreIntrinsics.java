@@ -15,9 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.parser;
 
-import de.mirkosertic.bytecoder.asm.AnalysisStack;
-import de.mirkosertic.bytecoder.asm.Graph;
-import de.mirkosertic.bytecoder.asm.Value;
+import de.mirkosertic.bytecoder.asm.ir.AnalysisStack;
+import de.mirkosertic.bytecoder.asm.ir.Graph;
+import de.mirkosertic.bytecoder.asm.ir.Value;
 import org.objectweb.asm.tree.MethodInsnNode;
 
 import java.util.ArrayList;

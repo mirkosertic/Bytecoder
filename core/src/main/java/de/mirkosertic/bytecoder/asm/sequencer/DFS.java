@@ -15,9 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.sequencer;
 
-import de.mirkosertic.bytecoder.asm.ControlTokenConsumer;
-import de.mirkosertic.bytecoder.asm.EdgeType;
-import de.mirkosertic.bytecoder.asm.Projection;
+import de.mirkosertic.bytecoder.asm.ir.ControlTokenConsumer;
+import de.mirkosertic.bytecoder.asm.ir.EdgeType;
+import de.mirkosertic.bytecoder.asm.ir.Projection;
 
 import java.util.ArrayList;
 import java.util.HashSet;
