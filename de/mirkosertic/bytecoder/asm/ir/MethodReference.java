@@ -20,11 +20,18 @@ import org.objectweb.asm.Type;
 
 public class MethodReference extends PrimitiveValue {
 
+    public enum Kind {
+        INVOKESTATIC;
+    }
+
     public final ResolvedMethod resolvedMethod;
+
+    public final Kind kind;
 
     public MethodReference(final ResolvedMethod resolvedMethod) {
         super(Type.getMethodType(resolvedMethod.methodNode.desc));
         this.resolvedMethod = resolvedMethod;
+        this.kind = Kind.INVOKESTATIC;
     }
 
 
