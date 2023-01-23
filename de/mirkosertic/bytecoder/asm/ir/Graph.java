@@ -157,10 +157,6 @@ public class Graph {
         return (ObjectLong) register(new ObjectLong(value));
     }
 
-    public ObjectShort newObjectShort(final Short value) {
-        return (ObjectShort) register(new ObjectShort(value));
-    }
-
     public ObjectDouble newObjectDouble(final Double value) {
         return (ObjectDouble) register(new ObjectDouble(value));
     }

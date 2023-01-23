@@ -1251,6 +1251,57 @@ public class GraphParser {
 
     }
 
+    private List<ControlFlow> parse_DUP2_X1(final ControlFlow currentFlow) {
+        final InsnNode node = (InsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Frame.PopResult pop1 = currentState.frame.popFromStack();
+        if (pop1.value.type.getSize() == 2) {
+
+            final Frame.PopResult pop2 = pop1.newFrame.popFromStack();
+
+            final Variable dest = graph.newVariable(pop1.value.type);
+            final Copy c = graph.newCopy();
+            c.addIncomingData(pop1.value);
+            dest.addIncomingData(c);
+
+            graph.registerTranslation(node, new InstructionTranslation(c, currentState.frame));
+
+            final Frame newFrame = pop2.newFrame.pushToStack(pop1.value).pushToStack(pop2.value).pushToStack(dest);
+
+            final GraphParserState newState = currentState.controlFlowsTo(c).withFrame(newFrame);
+            graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+            return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+        } else {
+            final Frame.PopResult pop2 = pop1.newFrame.popFromStack();
+            final Frame.PopResult pop3 = pop2.newFrame.popFromStack();
+
+            final Variable dest1 = graph.newVariable(pop1.value.type);
+            final Variable dest2 = graph.newVariable(pop2.value.type);
+
+            final Copy c = graph.newCopy();
+            c.addIncomingData(pop1.value);
+            dest1.addIncomingData(c);
+
+            final Copy c2 = graph.newCopy();
+            c2.addIncomingData(pop2.value);
+            dest2.addIncomingData(c2);
+
+            c.addControlFlowTo(StandardProjections.DEFAULT,c2);
+
+            graph.registerTranslation(node, new InstructionTranslation(c, currentState.frame));
+
+            final Frame newFrame = pop3.newFrame.pushToStack(pop2.value).pushToStack(pop1.value).pushToStack(pop3.value).pushToStack(dest2).pushToStack(dest1);
+
+            final GraphParserState newState = currentState.controlFlowsTo(c2).withFrame(newFrame);
+            graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+            return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+        }
+
+    }
+
     private List<ControlFlow> parse_POP(final ControlFlow currentFlow) {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
@@ -1575,6 +1626,8 @@ public class GraphParser {
                 return parse_LCONSTX(currentFlow, 1L);
             case Opcodes.DUP2:
                 return parse_DUP2(currentFlow);
+            case Opcodes.DUP2_X1:
+                return parse_DUP2_X1(currentFlow);
             case Opcodes.DCONST_0:
                 return parse_DCONSTX(currentFlow, 0d);
             case Opcodes.DCONST_1:
@@ -2057,8 +2110,6 @@ public class GraphParser {
         final Value source;
         if (node.cst instanceof Integer) {
             source = graph.newObjectInteger((Integer) node.cst);
-        } else if (node.cst instanceof Short) {
-            source = graph.newObjectShort((Short) node.cst);
         } else if (node.cst instanceof Float) {
             source = graph.newObjectFloat((Float) node.cst);
         } else if (node.cst instanceof Long) {
@@ -2162,6 +2213,21 @@ public class GraphParser {
         }
     }
 
+    private void resolveMethodType(final Type type) {
+        switch (type.getReturnType().getSort()) {
+            case Type.OBJECT:
+                compileUnit.resolveClass(type.getReturnType(), analysisStack);
+                break;
+        }
+        for (final Type argument : type.getArgumentTypes()) {
+            switch (argument.getSort()) {
+                case Type.OBJECT:
+                    compileUnit.resolveClass(argument, analysisStack);
+                    break;
+            }
+        }
+    }
+
     private List<ControlFlow> parseInvokeDynamicInsnNode(final ControlFlow currentFlow) {
         final InvokeDynamicInsnNode node = (InvokeDynamicInsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
@@ -2181,6 +2247,7 @@ public class GraphParser {
         final ResolveCallsite resolveCallsite = graph.newResolveCallsite();
 
         final Type invokeDynamicDesc = Type.getMethodType(node.desc);
+        resolveMethodType(invokeDynamicDesc);
         resolveCallsite.addIncomingData(graph.newMethodReference(bsmMethod), graph.newObjectString(compileUnit.getConstantPool().resolveFromPool(node.name)), graph.newMethodType(invokeDynamicDesc));
         for (final Object bsmArg : node.bsmArgs) {
             if (bsmArg instanceof Handle) {
@@ -2191,7 +2258,9 @@ public class GraphParser {
 
                 resolveCallsite.addIncomingData(graph.newMethodReference(argMethod));
             } else if (bsmArg instanceof Type) {
-                resolveCallsite.addIncomingData(graph.newMethodType((Type) bsmArg));
+                final Type t = (Type) bsmArg;
+                resolveMethodType(t);
+                resolveCallsite.addIncomingData(graph.newMethodType(t));
             } else {
                 throw new IllegalArgumentException("Not supported bootstrap method argument type : " + bsmArg);
             }
