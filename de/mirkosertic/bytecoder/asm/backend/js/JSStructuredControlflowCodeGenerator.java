@@ -97,6 +97,7 @@ import org.objectweb.asm.Type;
 
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandle;
+import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -497,10 +498,14 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         final ResolvedMethod m = node.resolvedMethod;
         pw.print("bytecoder.methodHandle(");
         pw.print(generateClassName(m.owner.type));
-        pw.print(".");
+        pw.print(",'");
         pw.print(generateMethodName(m.methodNode.name, node.type));
+        pw.print("',");
+        pw.print("<init>".equals(m.methodNode.name));
         pw.print(",");
-        pw.print(m.methodNode.access);
+        pw.print(Modifier.isStatic(m.methodNode.access));
+        pw.print(",");
+        pw.print(Modifier.isInterface(m.owner.classNode.access));
         pw.print(")");
     }
 

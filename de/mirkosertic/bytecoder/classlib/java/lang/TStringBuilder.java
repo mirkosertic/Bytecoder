@@ -16,18 +16,18 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-import de.mirkosertic.bytecoder.classlib.VM;
+import de.mirkosertic.bytecoder.classlib.StringHelper;
 
 @SubstitutesInClass(completeReplace = false)
 public class TStringBuilder {
 
     public StringBuilder append(final float aValue) {
-        VM.appendInternal((StringBuilder) (Object) this, aValue, 1000000000);
+        StringHelper.appendInternal((StringBuilder) (Object) this, aValue, 1000000000);
         return (StringBuilder) (Object) this;
     }
 
     public StringBuilder append(final double aValue) {
-        VM.appendInternal((StringBuilder) (Object) this, aValue, 1000000000);
+        StringHelper.appendInternal((StringBuilder) (Object) this, aValue, 1000000000);
         return (StringBuilder) (Object) this;
     }
 

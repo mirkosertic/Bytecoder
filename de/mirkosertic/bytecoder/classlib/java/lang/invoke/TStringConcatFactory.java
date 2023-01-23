@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.classlib.java.lang.invoke;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.LambdaHelper;
 import de.mirkosertic.bytecoder.classlib.VM;
 
 import java.lang.invoke.CallSite;
@@ -27,9 +28,9 @@ public class TStringConcatFactory {
 
     public static CallSite makeConcat(final MethodHandles.Lookup aLookup, final String aName, final MethodType aConcatType) {
 
-        return new VM.ImplementingCallsite(null) {
+        return LambdaHelper.callsiteWith(new LambdaHelper.MethodHandleImpl() {
             @Override
-            public Object invokeExact(final Object... args) throws Throwable {
+            public Object invokeExact(Object... args) throws Throwable {
                 final StringBuilder theResult = new StringBuilder();
                 if (args != null) {
                     for (int i=0;i<args.length;i++) {
@@ -38,7 +39,7 @@ public class TStringConcatFactory {
                 }
                 return theResult.toString();
             }
-        };
+        });
     }
 
     private static void appendTo(final StringBuilder aTarget, final Object[] aArray, final int aArrayIndex,  final MethodType aType, final int aIndex) {
@@ -65,9 +66,9 @@ public class TStringConcatFactory {
 
     public static CallSite makeConcatWithConstants(final MethodHandles.Lookup aLookup, final String aName, final MethodType aConcatType, final String aRecipe, final Object... aConstants) {
 
-        return new VM.ImplementingCallsite(null) {
+        return LambdaHelper.callsiteWith(new LambdaHelper.MethodHandleImpl() {
             @Override
-            public Object invokeExact(final Object... args) throws Throwable {
+            public Object invokeExact(Object... args) throws Throwable {
                 int theConstIndex = 0;
                 int theDynIndex = 0;
                 int totalIndex = 0;
@@ -84,6 +85,6 @@ public class TStringConcatFactory {
                 }
                 return theResult.toString();
             }
-        };
+        });
     }
 }
