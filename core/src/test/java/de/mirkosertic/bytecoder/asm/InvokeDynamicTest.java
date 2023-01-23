@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.asm;
 
 import de.mirkosertic.bytecoder.asm.test.UnitTestRunner;
 import org.junit.Assert;
@@ -138,7 +138,7 @@ public class InvokeDynamicTest {
         System.out.println(b.test());
         Assert.assertEquals("InterfaceA", b.test());
     }
-  
+
     interface OrderTest {
         int compute(int a, float b, int c, int d, float e, float f);
     }

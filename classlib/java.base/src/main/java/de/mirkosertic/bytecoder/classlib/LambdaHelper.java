@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Mirko Sertic
+ * Copyright 2017 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,26 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.util;
+package de.mirkosertic.bytecoder.classlib;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import java.lang.invoke.CallSite;
 
-import java.util.Random;
+public class LambdaHelper {
 
-@RunWith(BytecoderUnitTestRunner.class)
-public class RandomTest {
-
-    @Test
-    public void testNextInt() {
-        final int x1 = new Random().nextInt();
-        final int x2 = new Random().nextInt(10);
+    public interface MethodHandleImpl {
+        Object invokeExact(final Object... args) throws Throwable;
     }
 
-    @Test
-    public void testNextFloat() {
-        final float x1 = new Random().nextFloat();
-    }
-
+    public static native CallSite callsiteWith(final MethodHandleImpl impl);
 }

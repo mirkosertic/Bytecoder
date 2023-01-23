@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.io;
+package de.mirkosertic.bytecoder.asm.classlib.java.io;
 
 import de.mirkosertic.bytecoder.asm.test.UnitTestRunner;
 import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;

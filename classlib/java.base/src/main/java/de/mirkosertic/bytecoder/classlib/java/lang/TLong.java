@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+import de.mirkosertic.bytecoder.classlib.StringHelper;
 import de.mirkosertic.bytecoder.classlib.VM;
 
 @SubstitutesInClass(completeReplace = true)
@@ -174,8 +175,8 @@ public class TLong extends Number {
             q = i / 100;
             r = (int)((q * 100) - i);
             i = q;
-            buf[--charPos] = VM.DigitOnes[r];
-            buf[--charPos] = VM.DigitTens[r];
+            buf[--charPos] = StringHelper.DigitOnes[r];
+            buf[--charPos] = StringHelper.DigitTens[r];
         }
 
         // Get 2 digits/iteration using ints
@@ -185,8 +186,8 @@ public class TLong extends Number {
             q2 = i2 / 100;
             r  = (q2 * 100) - i2;
             i2 = q2;
-            buf[--charPos] = VM.DigitOnes[r];
-            buf[--charPos] = VM.DigitTens[r];
+            buf[--charPos] = StringHelper.DigitOnes[r];
+            buf[--charPos] = StringHelper.DigitTens[r];
         }
 
         // We know there are at most two digits left at this point.
