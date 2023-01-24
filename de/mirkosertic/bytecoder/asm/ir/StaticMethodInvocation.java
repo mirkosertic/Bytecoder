@@ -15,21 +15,16 @@
  */
 package de.mirkosertic.bytecoder.asm.ir;
 
-import org.objectweb.asm.tree.MethodInsnNode;
-
 public class StaticMethodInvocation extends ControlTokenConsumer implements PotentialSideeffect {
-
-    public final MethodInsnNode insnNode;
 
     public final ResolvedMethod resolvedMethod;
 
-    public StaticMethodInvocation(final MethodInsnNode insnNode, final ResolvedMethod resolvedMethod) {
-        this.insnNode = insnNode;
+    public StaticMethodInvocation(final ResolvedMethod resolvedMethod) {
         this.resolvedMethod = resolvedMethod;
     }
 
     @Override
     public String additionalDebugInfo() {
-        return insnNode.name + insnNode.desc;
+        return resolvedMethod.methodNode.name + resolvedMethod.methodNode.desc;
     }
 }

@@ -145,22 +145,6 @@ public class Graph {
         return (XOr) register(new XOr(type));
     }
 
-    public ObjectInteger newObjectInteger(final Integer value) {
-        return (ObjectInteger)register(new ObjectInteger(value));
-    }
-
-    public ObjectFloat newObjectFloat(final Float value) {
-        return (ObjectFloat) register(new ObjectFloat(value));
-    }
-
-    public ObjectLong newObjectLong(final Long value) {
-        return (ObjectLong) register(new ObjectLong(value));
-    }
-
-    public ObjectDouble newObjectDouble(final Double value) {
-        return (ObjectDouble) register(new ObjectDouble(value));
-    }
-
     public ObjectString newObjectString(final StringConstant value) {
         return (ObjectString) register(new ObjectString(value));
     }
@@ -185,12 +169,12 @@ public class Graph {
         return (InterfaceMethodInvocationExpression) register(new InterfaceMethodInvocationExpression(insn));
     }
 
-    public StaticMethodInvocation newStaticMethodInvocation(final MethodInsnNode insn, final ResolvedMethod rm) {
-        return (StaticMethodInvocation) register(new StaticMethodInvocation(insn, rm));
+    public StaticMethodInvocation newStaticMethodInvocation(final ResolvedMethod rm) {
+        return (StaticMethodInvocation) register(new StaticMethodInvocation(rm));
     }
 
-    public StaticMethodInvocationExpression newStaticMethodInvocationExpression(final MethodInsnNode insn, final ResolvedMethod rm) {
-        return (StaticMethodInvocationExpression) register(new StaticMethodInvocationExpression(insn, rm));
+    public StaticMethodInvocationExpression newStaticMethodInvocationExpression(final ResolvedMethod rm) {
+        return (StaticMethodInvocationExpression) register(new StaticMethodInvocationExpression(rm));
     }
 
     public Return newReturnNothing() {
@@ -408,8 +392,8 @@ public class Graph {
         return (FrameDebugInfo) register(new FrameDebugInfo(frame));
     }
 
-    public MethodReference newMethodReference(final ResolvedMethod method) {
-        return (MethodReference) register(new MethodReference(method));
+    public MethodReference newMethodReference(final ResolvedMethod method, final MethodReference.Kind kind) {
+        return (MethodReference) register(new MethodReference(method, kind));
     }
 
     public ResolveCallsite newResolveCallsite() {

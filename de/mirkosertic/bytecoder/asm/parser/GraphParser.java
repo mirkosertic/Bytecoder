@@ -29,14 +29,12 @@ import de.mirkosertic.bytecoder.asm.ir.FrameDebugInfo;
 import de.mirkosertic.bytecoder.asm.ir.Goto;
 import de.mirkosertic.bytecoder.asm.ir.Graph;
 import de.mirkosertic.bytecoder.asm.ir.If;
-import de.mirkosertic.bytecoder.asm.ir.InstanceMethodInvocation;
 import de.mirkosertic.bytecoder.asm.ir.InstanceOf;
 import de.mirkosertic.bytecoder.asm.ir.InstructionTranslation;
-import de.mirkosertic.bytecoder.asm.ir.InterfaceMethodInvocation;
-import de.mirkosertic.bytecoder.asm.ir.InterfaceMethodInvocationExpression;
 import de.mirkosertic.bytecoder.asm.ir.InvokeDynamicExpression;
 import de.mirkosertic.bytecoder.asm.ir.LineNumberDebugInfo;
 import de.mirkosertic.bytecoder.asm.ir.LookupSwitch;
+import de.mirkosertic.bytecoder.asm.ir.MethodReference;
 import de.mirkosertic.bytecoder.asm.ir.MonitorEnter;
 import de.mirkosertic.bytecoder.asm.ir.MonitorExit;
 import de.mirkosertic.bytecoder.asm.ir.New;
@@ -64,7 +62,6 @@ import de.mirkosertic.bytecoder.asm.ir.ReturnValue;
 import de.mirkosertic.bytecoder.asm.ir.SetClassField;
 import de.mirkosertic.bytecoder.asm.ir.SetInstanceField;
 import de.mirkosertic.bytecoder.asm.ir.StandardProjections;
-import de.mirkosertic.bytecoder.asm.ir.StaticMethodInvocation;
 import de.mirkosertic.bytecoder.asm.ir.StringConstant;
 import de.mirkosertic.bytecoder.asm.ir.TableSwitch;
 import de.mirkosertic.bytecoder.asm.ir.Test;
@@ -74,7 +71,6 @@ import de.mirkosertic.bytecoder.asm.ir.TypeConversion;
 import de.mirkosertic.bytecoder.asm.ir.TypeReference;
 import de.mirkosertic.bytecoder.asm.ir.Value;
 import de.mirkosertic.bytecoder.asm.ir.Variable;
-import de.mirkosertic.bytecoder.asm.ir.VirtualMethodInvocation;
 import de.mirkosertic.bytecoder.classlib.Array;
 import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
@@ -623,11 +619,14 @@ public class GraphParser {
 
         if (methodType.getReturnType().equals(Type.VOID_TYPE)) {
 
-            final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
-            final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
+            ControlTokenConsumer n = compileUnit.getIntrinsic().intrinsifyMethodInvocation(compileUnit, analysisStack, node, incomingData, graph, this);
+            if (n == null) {
+                final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
+                final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
 
-            final InstanceMethodInvocation n = graph.newInstanceMethodInvocation(node, rm);
-            n.addIncomingData(incomingData);
+                n = graph.newInstanceMethodInvocation(node, rm);
+                n.addIncomingData(incomingData);
+            }
             graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
 
             newState = currentState.controlFlowsTo(n).withFrame(latest.newFrame);
@@ -679,11 +678,14 @@ public class GraphParser {
         final GraphParserState newState;
         if (methodType.getReturnType().equals(Type.VOID_TYPE)) {
 
-            final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
-            rc.resolveMethod(node.name, methodType, analysisStack);
+            ControlTokenConsumer n = compileUnit.getIntrinsic().intrinsifyMethodInvocation(compileUnit, analysisStack, node, incomingData, graph, this);
+            if (n == null) {
+                final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
+                rc.resolveMethod(node.name, methodType, analysisStack);
 
-            final VirtualMethodInvocation n = graph.newVirtualMethodInvocation(node);
-            n.addIncomingData(incomingData);
+                n = graph.newVirtualMethodInvocation(node);
+                n.addIncomingData(incomingData);
+            }
 
             graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
 
@@ -720,7 +722,7 @@ public class GraphParser {
         final Type methodType = Type.getMethodType(node.desc);
         final Type targetClass = Type.getObjectType(node.owner);
         final Type[] argumentTypes = methodType.getArgumentTypes();
-        final Node[] incomingData = new Node[argumentTypes.length + 1];
+        final Value[] incomingData = new Value[argumentTypes.length + 1];
 
         Frame.PopResult latest = currentState.frame.popFromStack();
         incomingData[incomingData.length - 1] = latest.value;
@@ -731,12 +733,14 @@ public class GraphParser {
 
         final GraphParserState newState;
         if (methodType.getReturnType().equals(Type.VOID_TYPE)) {
+            ControlTokenConsumer n = compileUnit.getIntrinsic().intrinsifyMethodInvocation(compileUnit, analysisStack, node, incomingData, graph, this);
+            if (n == null) {
+                final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
+                rc.resolveMethod(node.name, methodType, analysisStack);
 
-            final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
-            rc.resolveMethod(node.name, methodType, analysisStack);
-
-            final InterfaceMethodInvocation n = graph.newInterfaceMethodInvocation(node);
-            n.addIncomingData(incomingData);
+                n = graph.newInterfaceMethodInvocation(node);
+                n.addIncomingData(incomingData);
+            }
 
             graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
 
@@ -744,11 +748,14 @@ public class GraphParser {
             graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
         } else {
-            final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
-            rc.resolveMethod(node.name, methodType, analysisStack);
+            Value n = compileUnit.getIntrinsic().intrinsifyMethodInvocationWithReturnValue(compileUnit, analysisStack, node, incomingData, graph, this);
+            if (n == null) {
+                final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
+                rc.resolveMethod(node.name, methodType, analysisStack);
 
-            final InterfaceMethodInvocationExpression n = graph.newInterfaceMethodInvocationExpression(node);
-            n.addIncomingData(incomingData);
+                n = graph.newInterfaceMethodInvocationExpression(node);
+                n.addIncomingData(incomingData);
+            }
 
             final Variable var = graph.newVariable(methodType.getReturnType());
             final Copy copy = graph.newCopy();
@@ -785,11 +792,15 @@ public class GraphParser {
 
         if (methodType.getReturnType().equals(Type.VOID_TYPE)) {
 
-            final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
-            final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
+            ControlTokenConsumer n = compileUnit.getIntrinsic().intrinsifyMethodInvocation(compileUnit, analysisStack, node, incomingData, graph, this);
+            if (n == null) {
+                final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
+                final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
 
-            final StaticMethodInvocation n = graph.newStaticMethodInvocation(node, rm);
-            n.addIncomingData(incomingData);
+                n = graph.newStaticMethodInvocation(rm);
+                n.addIncomingData(incomingData);
+            }
+
             graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
 
             newState = currentState.controlFlowsTo(n).withFrame(latest);
@@ -802,7 +813,7 @@ public class GraphParser {
                 final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
                 final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
 
-                n = graph.newStaticMethodInvocationExpression(node, rm);
+                n = graph.newStaticMethodInvocationExpression(rm);
                 n.addIncomingData(incomingData);
             }
 
@@ -2109,13 +2120,13 @@ public class GraphParser {
 
         final Value source;
         if (node.cst instanceof Integer) {
-            source = graph.newObjectInteger((Integer) node.cst);
+            source = graph.newIntNode((Integer) node.cst);
         } else if (node.cst instanceof Float) {
-            source = graph.newObjectFloat((Float) node.cst);
+            source = graph.newFloat((Float) node.cst);
         } else if (node.cst instanceof Long) {
-            source = graph.newObjectLong((Long) node.cst);
+            source = graph.newLong((Long) node.cst);
         } else if (node.cst instanceof Double) {
-            source = graph.newObjectDouble((Double) node.cst);
+            source = graph.newDouble((Double) node.cst);
         } else if (node.cst instanceof String) {
             final StringConstant pooledConstant = compileUnit.getConstantPool().resolveFromPool((String) node.cst);
             source = graph.newObjectString(pooledConstant);
@@ -2248,15 +2259,36 @@ public class GraphParser {
 
         final Type invokeDynamicDesc = Type.getMethodType(node.desc);
         resolveMethodType(invokeDynamicDesc);
-        resolveCallsite.addIncomingData(graph.newMethodReference(bsmMethod), graph.newObjectString(compileUnit.getConstantPool().resolveFromPool(node.name)), graph.newMethodType(invokeDynamicDesc));
+        resolveCallsite.addIncomingData(graph.newMethodReference(bsmMethod, MethodReference.Kind.INVOKESTATIC), graph.newObjectString(compileUnit.getConstantPool().resolveFromPool(node.name)), graph.newMethodType(invokeDynamicDesc));
         for (final Object bsmArg : node.bsmArgs) {
             if (bsmArg instanceof Handle) {
                 final Handle x = (Handle) bsmArg;
 
                 final ResolvedClass argType = compileUnit.resolveClass(Type.getObjectType(x.getOwner()), analysisStack);
                 final ResolvedMethod argMethod = argType.resolveMethod(x.getName(), Type.getMethodType(x.getDesc()), analysisStack);
+                final MethodReference.Kind invocationKind;
+                if ("<init>".equals(x.getName())) {
+                    invocationKind = MethodReference.Kind.INVOKECONSTRUCTOR;
+                } else {
+                    switch (x.getTag()) {
+                        case Opcodes.H_INVOKESTATIC:
+                            invocationKind = MethodReference.Kind.INVOKESTATIC;
+                            break;
+                        case Opcodes.H_INVOKEVIRTUAL:
+                            invocationKind = MethodReference.Kind.INVOKEVIRTUAL;
+                            break;
+                        case Opcodes.H_INVOKEINTERFACE:
+                            invocationKind = MethodReference.Kind.INVOKEINTERFACE;
+                            break;
+                        case Opcodes.H_INVOKESPECIAL:
+                            invocationKind = MethodReference.Kind.INVOKESPECIAL;
+                            break;
+                        default:
+                            throw new IllegalStateException("Not supported invocation kind for method handle : " + x.getTag() + " " + argType.type + "." + argMethod.methodNode.name + argMethod.methodNode.desc);
+                    }
+                }
 
-                resolveCallsite.addIncomingData(graph.newMethodReference(argMethod));
+                resolveCallsite.addIncomingData(graph.newMethodReference(argMethod, invocationKind));
             } else if (bsmArg instanceof Type) {
                 final Type t = (Type) bsmArg;
                 resolveMethodType(t);

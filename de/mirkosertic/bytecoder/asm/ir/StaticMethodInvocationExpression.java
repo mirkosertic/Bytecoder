@@ -16,22 +16,18 @@
 package de.mirkosertic.bytecoder.asm.ir;
 
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.MethodInsnNode;
 
 public class StaticMethodInvocationExpression extends Value implements PotentialSideeffect {
 
-    public final MethodInsnNode insnNode;
-
     public final ResolvedMethod resolvedMethod;
 
-    public StaticMethodInvocationExpression(final MethodInsnNode insnNode, final ResolvedMethod resolvedMethod) {
-        super(Type.getReturnType(insnNode.desc));
-        this.insnNode = insnNode;
+    public StaticMethodInvocationExpression(final ResolvedMethod resolvedMethod) {
+        super(Type.getReturnType(resolvedMethod.methodNode.desc));
         this.resolvedMethod = resolvedMethod;
     }
 
     @Override
     public String additionalDebugInfo() {
-        return insnNode.name + insnNode.desc;
+        return resolvedMethod.owner.classNode.name + resolvedMethod.methodNode.desc;
     }
 }

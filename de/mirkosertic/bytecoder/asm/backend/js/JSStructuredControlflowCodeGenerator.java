@@ -51,10 +51,6 @@ import de.mirkosertic.bytecoder.asm.ir.Node;
 import de.mirkosertic.bytecoder.asm.ir.NullReference;
 import de.mirkosertic.bytecoder.asm.ir.NullTest;
 import de.mirkosertic.bytecoder.asm.ir.NumericalTest;
-import de.mirkosertic.bytecoder.asm.ir.ObjectDouble;
-import de.mirkosertic.bytecoder.asm.ir.ObjectFloat;
-import de.mirkosertic.bytecoder.asm.ir.ObjectInteger;
-import de.mirkosertic.bytecoder.asm.ir.ObjectLong;
 import de.mirkosertic.bytecoder.asm.ir.ObjectString;
 import de.mirkosertic.bytecoder.asm.ir.Or;
 import de.mirkosertic.bytecoder.asm.ir.PHI;
@@ -97,7 +93,6 @@ import org.objectweb.asm.Type;
 
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandle;
-import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -422,26 +417,6 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         pw.print(".data.length");
     }
 
-    private void writeExpression(final ObjectLong node) {
-        // TODO
-        pw.print(node.value);
-    }
-
-    private void writeExpression(final ObjectInteger node) {
-        // TODO
-        pw.print(node.value);
-    }
-
-    private void writeExpression(final ObjectDouble node) {
-        // TODO
-        pw.print(node.value);
-    }
-
-    private void writeExpression(final ObjectFloat node) {
-        // TODO
-        pw.print(node.value);
-    }
-
     private void writeExpression(final SHR node) {
         pw.print("(");
         writeExpression(node.incomingDataFlows[0]);
@@ -501,11 +476,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         pw.print(",'");
         pw.print(generateMethodName(m.methodNode.name, node.type));
         pw.print("',");
-        pw.print("<init>".equals(m.methodNode.name));
-        pw.print(",");
-        pw.print(Modifier.isStatic(m.methodNode.access));
-        pw.print(",");
-        pw.print(Modifier.isInterface(m.owner.classNode.access));
+        pw.print(node.kind.id());
         pw.print(")");
     }
 
@@ -797,17 +768,15 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
         writeIndent();
 
-        final Type target = Type.getObjectType(node.insnNode.owner);
+        final ResolvedClass resolvedClass = node.resolvedMethod.owner;
 
-        final ResolvedClass resolvedClass = compileUnit.resolveClass(target, null);
-
-        pw.print(generateClassName(target));
+        pw.print(generateClassName(resolvedClass.type));
         if (resolvedClass.requiresClassInitializer()) {
             pw.print(".$i");
         }
 
         pw.print(".");
-        pw.print(generateMethodName(node.insnNode.name, Type.getMethodType(node.insnNode.desc)));
+        pw.print(generateMethodName(node.resolvedMethod.methodNode.name, Type.getMethodType(node.resolvedMethod.methodNode.desc)));
         pw.print("(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {
@@ -822,16 +791,15 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
         pw.print("(");
 
-        final Type target = Type.getObjectType(node.insnNode.owner);
-        final ResolvedClass resolvedClass = compileUnit.resolveClass(target, null);
+        final ResolvedClass resolvedClass = node.resolvedMethod.owner;
 
-        pw.print(generateClassName(target));
+        pw.print(generateClassName(node.resolvedMethod.owner.type));
         if (resolvedClass.requiresClassInitializer()) {
             pw.print(".$i");
         }
 
         pw.print(".");
-        pw.print(generateMethodName(node.insnNode.name, Type.getMethodType(node.insnNode.desc)));
+        pw.print(generateMethodName(node.resolvedMethod.methodNode.name, Type.getMethodType(node.resolvedMethod.methodNode.desc)));
         pw.print("(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {
@@ -916,14 +884,6 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             writeExpression((TypeConversion) node);
         } else if (node instanceof ArrayLength) {
             writeExpression((ArrayLength) node);
-        } else if (node instanceof ObjectLong) {
-            writeExpression((ObjectLong) node);
-        } else if (node instanceof ObjectInteger) {
-            writeExpression((ObjectInteger) node);
-        } else if (node instanceof ObjectDouble) {
-            writeExpression((ObjectDouble) node);
-        } else if (node instanceof ObjectFloat) {
-            writeExpression((ObjectFloat) node);
         } else if (node instanceof SHR) {
             writeExpression((SHR) node);
         } else if (node instanceof SHL) {
@@ -1009,11 +969,19 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     private void writeExpression(final Div node) {
-        pw.print("(");
-        writeExpression(node.incomingDataFlows[0]);
-        pw.print(" / ");
-        writeExpression(node.incomingDataFlows[1]);
-        pw.print(")");
+        if (node.type == Type.DOUBLE_TYPE || node.type == Type.FLOAT_TYPE) {
+            pw.print("(");
+            writeExpression(node.incomingDataFlows[0]);
+            pw.print(" / ");
+            writeExpression(node.incomingDataFlows[1]);
+            pw.print(")");
+        } else {
+            pw.print("Math.floor(");
+            writeExpression(node.incomingDataFlows[0]);
+            pw.print(" / ");
+            writeExpression(node.incomingDataFlows[1]);
+            pw.print(")");
+        }
     }
 
     private void writeExpression(final AbstractVar node) {
