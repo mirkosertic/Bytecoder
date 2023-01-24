@@ -13,30 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang.math;
+package de.mirkosertic.bytecoder.asm.classlib.java.lang.math;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import de.mirkosertic.bytecoder.asm.test.UnitTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-
-@RunWith(BytecoderUnitTestRunner.class)
-public class BigDecimalTest {
+@RunWith(UnitTestRunner.class)
+public class SignumTest {
 
     @Test
-    public void testCurrentValue() {
-        final BigDecimal value = BigDecimal.ONE;
-        Assert.assertEquals(1, value.intValue());
+    public void testSignum() {
+        Assert.assertEquals(1, Math.signum(1f), 0);
+        Assert.assertEquals(1, Math.signum(1d), 0);
     }
 
     @Test
-    public void testAdd2() {
-        final BigDecimal value = BigDecimal.ONE;
-        final BigDecimal added = value.add(BigDecimal.valueOf(2));
-        Assert.assertEquals(3, added.intValue());
+    public void testSignumPrimitives() {
+        Assert.assertEquals(1, Integer.signum(1));
+        Assert.assertEquals(1, Long.signum(1));
     }
-
 }

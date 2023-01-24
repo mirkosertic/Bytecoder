@@ -20,6 +20,7 @@ import de.mirkosertic.bytecoder.asm.ir.AnalysisStack;
 import de.mirkosertic.bytecoder.asm.ir.AnnotationUtils;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
+import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.core.ReflectionConfiguration;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
@@ -61,7 +62,7 @@ public class CompileUnit {
         this.constantPool = new ConstantPool();
         this.reflectionConfiguration = new ReflectionConfiguration();
         try {
-            final Enumeration<URL> reflectionConfigs = loader.getResources("bytecoder-reflection.json");
+            final Enumeration<URL> reflectionConfigs = loader.getResources("xbytecoder-reflection.json");
             while(reflectionConfigs.hasMoreElements()) {
                 final URL url = reflectionConfigs.nextElement();
                 reflectionConfiguration.mergeWithConfigFrom(url, logger);
@@ -173,6 +174,8 @@ public class CompileUnit {
         // We need the String class and this very specific constructor for code generation
         final ResolvedClass cl = resolveClass(Type.getType(String.class), analysisStack);
         cl.resolveMethod("<init>", Type.getMethodType("([BB)V"), analysisStack);
+
+        resolveClass(Type.getType(Array.class), analysisStack);
 
         return method;
     }

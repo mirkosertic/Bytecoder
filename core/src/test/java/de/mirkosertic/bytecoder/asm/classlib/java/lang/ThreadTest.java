@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Mirko Sertic
+ * Copyright 2019 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,25 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang.math;
+package de.mirkosertic.bytecoder.asm.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import de.mirkosertic.bytecoder.asm.test.UnitTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-@RunWith(BytecoderUnitTestRunner.class)
-public class SignumTest {
+@RunWith(UnitTestRunner.class)
+public class ThreadTest {
 
     @Test
-    public void testSignum() {
-        Assert.assertEquals(1, Math.signum(1f), 0);
-        Assert.assertEquals(1, Math.signum(1d), 0);
+    public void testThreadGroupName() {
+        final ThreadGroup g = Thread.currentThread().getThreadGroup();
+        final String name = g.getName();
+        Assert.assertEquals("main", name);
     }
 
     @Test
-    public void testSignumPrimitives() {
-        Assert.assertEquals(1, Integer.signum(1));
-        Assert.assertEquals(1, Long.signum(1));
+    public void testThreadName() {
+        final Thread t = Thread.currentThread();
+        final String name = t.getName();
+        Assert.assertEquals("main", name);
     }
 }

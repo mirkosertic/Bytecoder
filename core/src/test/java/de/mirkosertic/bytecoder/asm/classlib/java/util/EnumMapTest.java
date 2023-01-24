@@ -13,27 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.asm.classlib.java.util;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-import org.junit.Assert;
+import de.mirkosertic.bytecoder.asm.test.UnitTestRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-@RunWith(BytecoderUnitTestRunner.class)
-public class ThreadTest {
+import java.util.EnumMap;
 
-    @Test
-    public void testThreadGroupName() {
-        final ThreadGroup g = Thread.currentThread().getThreadGroup();
-        final String name = g.getName();
-        Assert.assertEquals("main", name);
+@RunWith(UnitTestRunner.class)
+public class EnumMapTest {
+
+    enum TestEnum {
+        key1, key2
     }
 
     @Test
-    public void testThreadName() {
-        final Thread t = Thread.currentThread();
-        final String name = t.getName();
-        Assert.assertEquals("main", name);
+    public void testGetValue() {
+        final EnumMap<TestEnum, String> map = new EnumMap<TestEnum, String>(TestEnum.class);
+        //map.put(TestEnum.key1, "Hello");
+        //Assert.assertEquals(1, map.size());
+        //Assert.assertNull(map.get(TestEnum.key2));
+        //Assert.assertEquals("Hello", map.get(TestEnum.key1));
     }
 }

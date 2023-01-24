@@ -13,18 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.util;
+package de.mirkosertic.bytecoder.asm.classlib.java.util;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import de.mirkosertic.bytecoder.asm.test.UnitTestRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-
-@RunWith(BytecoderUnitTestRunner.class)
+@RunWith(UnitTestRunner.class)
 public class ListTest {
 
     @Test
