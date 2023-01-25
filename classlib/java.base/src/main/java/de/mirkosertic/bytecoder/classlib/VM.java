@@ -35,7 +35,7 @@ public class VM {
             super(target);
         }
 
-        public abstract Object invokeExact(Object... args) throws Throwable;
+        public abstract Object invokeExact(Object... args);
     }
 
     public static class LambdaStaticImplCallsite extends ImplementingCallsite {
@@ -137,48 +137,6 @@ public class VM {
 
     public static Object newInstanceFromDefaultConstructor(final Class clz) {
         return null;
-    }
-
-    public static final char NEWLINE = '\n';
-
-    public static long stringToLong(final CharSequence aString) {
-        return stringToLong(aString,10);
-    }
-
-    public static long stringToLong(final CharSequence aString, final int aRadix) {
-        long theResult = 0;
-        long theMultiplier = 1;
-        for (int k=aString.length()-1;k>=0;k--) {
-            final char theCharAt = aString.charAt(k);
-            if (k==0 && theCharAt == '-') {
-                theResult=-theResult;
-            } else {
-                theResult += Character.getNumericValue(theCharAt) * theMultiplier;
-                theMultiplier *= aRadix;
-            }
-        }
-        return theResult;
-    }
-
-    public static String longToHex(long aValue) {
-        if (aValue == 0) {
-            return "0";
-        }
-        boolean negative = false;
-        if (aValue < 0) {
-            negative = true;
-            aValue = - aValue;
-        }
-        final StringBuilder theResult = new StringBuilder();
-        while(aValue > 0) {
-            final int theModulo = (int) (aValue % 16);
-            theResult.append(Character.forDigit(theModulo, 16));
-            aValue = aValue >> 4;
-        }
-        if (negative) {
-            return "-" + theResult.reverse().toString();
-        }
-        return theResult.reverse().toString();
     }
 
     private static String newStringInternal(final byte[] aData) {

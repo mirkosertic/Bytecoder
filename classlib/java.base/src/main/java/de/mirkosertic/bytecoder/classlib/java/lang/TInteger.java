@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,29 +19,29 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 import de.mirkosertic.bytecoder.classlib.VM;
 
 @SubstitutesInClass(completeReplace = true)
-public class TDouble extends Number {
+public class TInteger extends Number {
 
-    public static final Class<Double> TYPE = (Class<Double>) VM.doublePrimitiveClass();
+    public static final Class<Integer> TYPE = (Class<Integer>) VM.intPrimitiveClass();
 
-    private final double value;
+    private final int value;
 
-    public TDouble(final double value) {
+    public TInteger(final int value) {
         this.value = value;
     }
 
     @Override
     public int intValue() {
-        return (int) value;
+        return value;
     }
 
     @Override
     public long longValue() {
-        return (long) value;
+        return value;
     }
 
     @Override
     public float floatValue() {
-        return (float) value;
+        return value;
     }
 
     @Override
@@ -49,7 +49,7 @@ public class TDouble extends Number {
         return value;
     }
 
-    public static int compare(final double d1, final double d2) {
+    public static int compare(final int d1, final int d2) {
         if (d1 < d2) {
             return -1;
         }
@@ -67,29 +67,42 @@ public class TDouble extends Number {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        final Double obj = (Double) o;
+        final Integer obj = (Integer) o;
 
-        return value == obj.doubleValue();
+        return value == obj.intValue();
     }
-
-    public static native double parseDouble(final String aValue);
 
     @Override
     public native String toString();
 
-    public static Double valueOf(final String aValue) {
-        return parseDouble(aValue);
+    public static native int numberOfLeadingZeros(final int i);
+
+    public static native int numberOfTrailingZeros(final int i);
+
+    public static native int bitCount(final int i);
+
+    public static Integer valueOf(final int i) {
+        return new Integer(i);
     }
 
-    public static Double valueOf(final double aValue) {
-        return new Double(aValue);
+    public static Integer valueOf(final String str) {
+        return new Integer(parseInt(str));
     }
 
-    public static native boolean isNaN(final double aValue);
+    public static String toString(final int i) {
+        return toString(i, 10);
+    }
+    public static native String toString(int i, int radix);
 
-    public native static String toString(final double aValue);
+    public static native String toHexString(int i);
 
-    public static int signum(final double value) {
+    public static int parseInt(final String s) {
+        return parseInt(s, 10);
+    }
+
+    public static native int parseInt(String s, int radix);
+
+    public static int signum(final int value) {
         if (value < 0) {
             return -1;
         }
@@ -98,5 +111,4 @@ public class TDouble extends Number {
         }
         return 0;
     }
-
 }

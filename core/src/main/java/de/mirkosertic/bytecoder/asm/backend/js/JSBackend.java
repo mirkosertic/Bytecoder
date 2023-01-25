@@ -29,6 +29,7 @@ import de.mirkosertic.bytecoder.asm.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.core.ReflectionConfiguration;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.objectweb.asm.Type;
 
 import java.io.IOException;
@@ -68,8 +69,6 @@ public class JSBackend {
                 pw.print("  if (bytecoder.stringconstants[");
                 pw.print(idx);
                 pw.println("].Z$equals$Ljava$lang$Object$(className)) {");
-                pw.print("    // ");
-                pw.println(compileUnit.getConstantPool().getPooledStrings().get(idx));
                 pw.print("    return ");
                 pw.print(generateClassName(cl));
                 pw.println(".$rt;");
@@ -182,37 +181,14 @@ public class JSBackend {
         }
 
         // Generate string pool
-        final String stringInitConstructor = generateMethodName("<init>", Type.getMethodType("([BB)V"));
         final ConstantPool constantPool = compileUnit.getConstantPool();
         final List<String> pooledStrings = constantPool.getPooledStrings();
         for (int i = 0; i < pooledStrings.size(); i++) {
-            pw.print("arr");
-            pw.print(i);
-            pw.println(" = bytecoder.newarray(0);");
-            pw.print("arr");
-            pw.print(i);
-            pw.print(".data = [");
-            final byte[] b = pooledStrings.get(i).getBytes(StandardCharsets.ISO_8859_1);
-            for (int j = 0;j < b.length; j++) {
-                if (j > 0) {
-                    pw.print(",");
-                }
-                pw.print(b[j]);
-            }
-            pw.println("];");
             pw.print("bytecoder.stringconstants[");
             pw.print(i);
-            pw.print("] = new ");
-            pw.print(generateClassName(Type.getType(String.class)));
-            pw.println(".$i();");
-            pw.print("bytecoder.stringconstants[");
-            pw.print(i);
-            pw.print("].");
-            pw.print(stringInitConstructor);
-            pw.print("(arr");
-            pw.print(i);
-            pw.println(", 0);");
-
+            pw.print("] = bytecoder.toBytecoderString('");
+            pw.print(StringEscapeUtils.escapeEcmaScript(pooledStrings.get(i)));
+            pw.println("');");
         }
 
         // Generate exports
@@ -322,7 +298,6 @@ public class JSBackend {
                     pw.print("static ");
                 }
                 pw.print(generateFieldName(f.name));
-                pw.print(" ");
                 switch (f.type.getSort()) {
                     case Type.FLOAT:
                     case Type.DOUBLE:

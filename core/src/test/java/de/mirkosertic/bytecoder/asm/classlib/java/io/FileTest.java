@@ -57,7 +57,7 @@ public class FileTest {
             }
         }
         fos.close();
+        System.out.println(theBuilder.toString());
         Assert.assertEquals("hello world!", theBuilder.toString());
-        //System.out.println(theBuilder.toString());
     }
 }

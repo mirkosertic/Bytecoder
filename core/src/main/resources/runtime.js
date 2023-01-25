@@ -1,29 +1,3 @@
-function decodeUtf16(w) {
-    var i = 0;
-    var len = w.length;
-    var w1, w2;
-    var charCodes = [];
-    while (i < len) {
-        var w1 = w[i++];
-        if ((w1 & 0xF800) !== 0xD800) { // w1 < 0xD800 || w1 > 0xDFFF
-            if (w1 != 0) charCodes.push(w1);
-            continue;
-        }
-        if ((w1 & 0xFC00) === 0xD800) { // w1 >= 0xD800 && w1 <= 0xDBFF
-            throw new RangeError('Invalid octet 0x' + w1.toString(16) + ' at offset ' + (i - 1));
-        }
-        if (i === len) {
-            throw new RangeError('Expected additional octet');
-        }
-        w2 = w[i++];
-        if ((w2 & 0xFC00) !== 0xDC00) { // w2 < 0xDC00 || w2 > 0xDFFF)
-            throw new RangeError('Invalid octet 0x' + w2.toString(16) + ' at offset ' + (i - 1));
-        }
-        charCodes.push(((w1 & 0x3ff) << 10) + (w2 & 0x3ff) + 0x10000);
-    }
-    return String.fromCharCode.apply(String, charCodes);
-}
-
 const bytecoder = {
     imports: {
         "java.lang.Object.Ljava$lang$Class$$getClass$$": function(inst) {
@@ -108,9 +82,6 @@ const bytecoder = {
         },
         "java.lang.Math.D$random$$": function() {
             return Math.random();
-        },
-        "java.lang.StringUTF16.Z$isBigEndian$$": function() {
-            return 1;
         },
         "java.lang.reflect.Array.Ljava$lang$Object$$newArray$Ljava$lang$Class$$I": function(t, l) {
             return bytecoder.newarray(l, null);
@@ -254,6 +225,204 @@ const bytecoder = {
                     };
                 }
             };
+        },
+        'java.lang.String.I$length$$': function(str) {
+            return str.nativeObject.length;
+        },
+        'java.lang.String.V$getChars$I$I$$C$I': function(str, srcBegin, srcEnd, dst, dstBegin) {
+            let dstOffset = dstBegin;
+            let s = str.nativeObject;
+            for (let i = srcBegin; i < srcEnd; i++) {
+                dst.data[dstOffset] = s.codePointAt(i);
+                dstOffset++;
+            }
+        },
+        'de.mirkosertic.bytecoder.classlib.BytecoderCharsetDecoder.$C$decodeFromBytes$Ljava$nio$charset$Charset$$$B' : function(decoder, cs, data) {
+            let targetCharacterSet = cs.canonicalName.nativeObject;
+            let byteData = new Uint8Array(data.data);
+            let dec = new TextDecoder(targetCharacterSet);
+
+            let str = dec.decode(byteData);
+
+            let charArray = bytecoder.newarray(str.length, 0);
+            for (let i = 0; i < str.length; i++) {
+                charArray.data[i] = str.codePointAt(i);
+            }
+            return charArray;
+        },
+        'de.mirkosertic.bytecoder.classlib.BytecoderCharsetEncoder.$B$encodeToBytes$Ljava$nio$charset$Charset$$$C': function(encoder, cs, data) {
+
+            let str = '';
+            for (var i = 0; i < data.data.length; i++) {
+                str += String.fromCodePoint(data.data[i]);
+            }
+
+            let targetCharacterSet = cs.canonicalName.nativeObject;
+            if (targetCharacterSet !== 'UTF-8') {
+                throw 'Not supported character set!';
+            }
+
+            let enc = new TextEncoder();
+            let byteData = enc.encode(str);
+
+            let bytes = bytecoder.newarray(byteData.length, 0);
+            for (var i = 0; i < byteData.length; i++) {
+                bytes.data[i] = byteData[i];
+            }
+
+            return bytes;
+        },
+        'java.lang.StringBuilder.V$initializeWith$I': function(builder, size) {
+            builder.nativeObject = '';
+        },
+        'java.lang.StringBuilder.Ljava$lang$StringBuilder$$append$Ljava$lang$String$': function(builder, str) {
+            builder.nativeObject += str.nativeObject;
+            return builder;
+        },
+        'java.lang.StringBuilder.Ljava$lang$StringBuilder$$append$C': function(builder, char) {
+            builder.nativeObject += String.fromCodePoint(char);
+            return builder;
+        },
+        'java.lang.StringBuilder.Ljava$lang$StringBuilder$$append$I': function(builder, value) {
+            builder.nativeObject += value;
+            return builder;
+        },
+        'java.lang.StringBuilder.Ljava$lang$String$$toString$$': function(builder) {
+            return bytecoder.toBytecoderString(builder.nativeObject);
+        },
+        'java.lang.String.C$charAt$I': function(str, index) {
+            return str.nativeObject.codePointAt(index);
+        },
+        'java.lang.String.I$indexOf$I': function(str, cp) {
+            return str.nativeObject.indexOf(String.fromCodePoint(cp));
+        },
+        'java.lang.String.Ljava$lang$String$$repeat$I': function(str, amount) {
+            return bytecoder.toBytecoderString(str.nativeObject.repeat(amount));
+        },
+        'java.lang.String.Z$equals0$Ljava$lang$String$': function(str, otherstr) {
+            if (str.nativeObject === otherstr.nativeObject) {
+                return 1;
+            }
+            return 0;
+        },
+        'java.lang.String.Z$equalsIgnoreCase$Ljava$lang$String$': function(str, otherstr) {
+            if (str == null) {
+                return 0;
+            }
+            if (otherstr == null) {
+                return 0;
+            }
+            if (str.nativeObject.toUpperCase() === otherstr.nativeObject.toUpperCase()) {
+                return 1;
+            }
+            return 0;
+        },
+        'java.lang.Character.Z$isDigit$C': function(char) {
+            if ("0123456789".indexOf(String.fromCodePoint(char)) >= 0) {
+                return 1;
+            }
+            return 0;
+        },
+        'java.lang.Character.Z$isLowerCase$C': function(char) {
+            let str = String.fromCodePoint(char);
+            if (str.toLowerCase() === str) {
+                return 1;
+            }
+            return 0;
+        },
+        'java.lang.Character.Z$isUpperCase$C': function(char) {
+            let str = String.fromCodePoint(char);
+            if (str.toUpperCase() === str) {
+                return 1;
+            }
+            return 0;
+        },
+        'java.lang.Character.C$toLowerCase$C': function(char) {
+            let str = String.fromCodePoint(char).toLowerCase();
+            return str.codePointAt(0);
+        },
+        'java.lang.Character.C$toUpperCase$C': function(char) {
+            let str = String.fromCodePoint(char).toUpperCase();
+            return str.codePointAt(0);
+        },
+        'java.lang.Character.I$digit$C$I': function(char, radix) {
+            let str = String.fromCodePoint(char).toUpperCase();
+            if ('0' === str) {
+                return 0;
+            }
+            if ('1' === str) {
+                return 1;
+            }
+            if ('2' === str) {
+                return 2;
+            }
+            if ('3' === str) {
+                return 3;
+            }
+            if ('4' === str) {
+                return 4;
+            }
+            if ('5' === str) {
+                return 5;
+            }
+            if ('6' === str) {
+                return 6;
+            }
+            if ('7' === str) {
+                return 7;
+            }
+            if ('8' === str) {
+                return 8;
+            }
+            if ('9' === str) {
+                return 9;
+            }
+            if ('A' === str) {
+                return 10;
+            }
+            if ('B' === str) {
+                return 11;
+            }
+            if ('C' === str) {
+                return 12;
+            }
+            if ('D' === str) {
+                return 13;
+            }
+            if ('E' === str) {
+                return 14;
+            }
+            if ('15' === str) {
+                return 15;
+            }
+            return -1;
+        },
+        'java.lang.Integer.Ljava$lang$String$$toString$I': function(value) {
+            return bytecoder.toBytecoderString(value.toString());
+        },
+        'java.lang.Integer.Ljava$lang$String$$toHexString$I': function(value) {
+            return bytecoder.toBytecoderString(value.toString(16));
+        },
+        'java.lang.Integer.I$parseInt$Ljava$lang$String$$I': function(value, radix) {
+            return parseInt(value.nativeObject, radix);
+        },
+        'java.lang.Long.Ljava$lang$String$$toString$$': function(value) {
+            return bytecoder.toBytecoderString(value.longValue.toString());
+        },
+        'java.lang.Long.Ljava$lang$String$$toString$J$I': function(value, radix) {
+            return bytecoder.toBytecoderString(value.longValue.toString(radix));
+        },
+        'java.lang.Long.J$parseLong$Ljava$lang$String$$I': function(value, radix) {
+            return parseInt(value.nativeObject, radix);
+        },
+        'java.lang.Byte.Ljava$lang$String$$toString$B': function(value) {
+            return bytecoder.toBytecoderString(value.toString());
+        },
+        'java.lang.Float.Ljava$lang$String$$toString$F': function(value) {
+            return bytecoder.toBytecoderString(value.toString());
+        },
+        'java.lang.Float.F$parseFloat$Ljava$lang$String$': function(value) {
+            return parseFloat(value.nativeObject);
         }
     },
     exports: {},
@@ -276,12 +445,21 @@ const bytecoder = {
         return exception;
     },
     toJSString: function(str) {
-        if (str && str.value.data) {return decodeUtf16(str.value.data);} else return '';
+        if (str) {
+            return str.nativeObject;
+        }
+        return '';
     },
     newarray: function(len, defaultvalue) {
         let x = new de$mirkosertic$bytecoder$classlib$Array();
         x.data = new Array(len);
         x.data.fill(defaultvalue);
+        return x;
+    },
+    toBytecoderString: function(jsstring) {
+        const x = new java$lang$String();
+        x.V$$init$$$();
+        x.nativeObject = jsstring;
         return x;
     },
     methodHandle: function(owner, methodName, kind) {

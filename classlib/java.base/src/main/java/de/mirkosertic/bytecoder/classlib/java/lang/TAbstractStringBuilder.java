@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.util.logging;
+package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-import java.util.logging.Level;
-
-@SubstitutesInClass(completeReplace = false)
-public class TLevel {
-
-    @SubstitutesInClass(completeReplace = true)
-    static final class KnownLevel {
-
-        public static void add(final Level level) {
-        }
-    }
+@SubstitutesInClass(completeReplace = true)
+public class TAbstractStringBuilder {
 }

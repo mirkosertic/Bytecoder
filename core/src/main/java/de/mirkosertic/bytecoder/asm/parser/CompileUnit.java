@@ -21,6 +21,7 @@ import de.mirkosertic.bytecoder.asm.ir.AnnotationUtils;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.classlib.Array;
+import de.mirkosertic.bytecoder.classlib.BytecoderCharsetEncoder;
 import de.mirkosertic.bytecoder.core.ReflectionConfiguration;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
@@ -29,6 +30,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.Modifier;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Enumeration;
@@ -172,8 +174,8 @@ public class CompileUnit {
         exportedMethods.put(MAIN_ENTRY_POINT_EXPORT, method);
 
         // We need the String class and this very specific constructor for code generation
-        final ResolvedClass cl = resolveClass(Type.getType(String.class), analysisStack);
-        cl.resolveMethod("<init>", Type.getMethodType("([BB)V"), analysisStack);
+        resolveClass(Type.getType(String.class), analysisStack).resolveMethod("<init>", Type.getMethodType(Type.VOID_TYPE), analysisStack);
+        resolveClass(Type.getType(BytecoderCharsetEncoder.class), analysisStack).resolveMethod("<init>", Type.getMethodType(Type.VOID_TYPE, Type.getType(Charset.class)), analysisStack);
 
         resolveClass(Type.getType(Array.class), analysisStack);
 

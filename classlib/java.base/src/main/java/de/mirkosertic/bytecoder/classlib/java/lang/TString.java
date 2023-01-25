@@ -17,10 +17,121 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-@SubstitutesInClass(completeReplace = false)
-public class TString {
+@SubstitutesInClass(completeReplace = true)
+public class TString implements CharSequence {
 
-    public String intern() {
+    private Object nativeObject;
+
+    public TString() {
+        nativeObject = null;
+    }
+
+    public TString(final byte[] data, final byte coder) {
+        this();
+        initializeWith(data, 0, data.length, coder);
+    }
+
+    public TString(final byte[] data, final int offset, final int count) {
+        this();
+        initializeWith(data, offset, count, (byte) 0);
+    }
+
+    public TString(final char[] data, final int offset, final int count) {
+        this();
+        initializeWith(data, offset, count);
+    }
+
+    public TString(final char[] data) {
+        this();
+        initializeWith(data, 0, data.length);
+    }
+
+    native void initializeWith(byte[] data, int offset, int count, byte coder);
+
+    native void initializeWith(char[] data, int offset, int count);
+
+    public String toString() {
         return (String) (Object) this;
+    }
+
+    static String valueOf(final Object obj) {
+        if (obj == null) {
+            return "null";
+        }
+        return obj.toString();
+    }
+
+    public static String valueOf(final byte b) {
+        return Byte.toString(b);
+    }
+
+    public static String valueOf(final char c) {
+        return Character.toString(c);
+    }
+
+    public static String valueOf(final short s) {
+        return Short.toString(s);
+    }
+
+    public static String valueOf(final int i) {
+        return Integer.toString(i);
+    }
+
+    public static String valueOf(final long l) {
+        return Long.toString(l);
+    }
+
+    public static String valueOf(final float f) {
+        return Float.toString(f);
+    }
+
+    public static String valueOf(final double d) {
+        return Double.toString(d);
+    }
+
+    public native char[] toCharArray();
+
+    public native void getChars(int srcBegin, int srcEnd, char dst[], int dstBegin);
+
+    public static native String format(final String pattern, Object[] values);
+
+    public native boolean equalsIgnoreCase(final String str);
+
+    public boolean equals(final Object o) {
+        if (o == null) {
+            return false;
+        }
+        if (o == this) {
+            return true;
+        }
+        return equals0(o.toString());
+    }
+
+    public native boolean equals0(final String str);
+
+    public native int indexOf(final int c);
+
+    public native int lastIndexOf(final int c);
+
+    public native int compareTo(final String str);
+
+    public native String repeat(int amount);
+
+    public native String substring(int pos, int len);
+
+    public native String substring(int pos);
+
+    public native boolean startsWith(final String value);
+
+    public native String trim();
+
+    public native int length();
+
+    @Override
+    public native char charAt(int index);
+
+    @Override
+    public CharSequence subSequence(final int start, final int end) {
+        return substring(start, end - start);
     }
 }

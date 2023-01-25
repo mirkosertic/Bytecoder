@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,29 +19,29 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 import de.mirkosertic.bytecoder.classlib.VM;
 
 @SubstitutesInClass(completeReplace = true)
-public class TDouble extends Number {
+public class TByte extends Number {
 
-    public static final Class<Double> TYPE = (Class<Double>) VM.doublePrimitiveClass();
+    public static final Class<Byte> TYPE = (Class<Byte>) VM.bytePrimitiveClass();
 
-    private final double value;
+    private final byte value;
 
-    public TDouble(final double value) {
+    public TByte(final byte value) {
         this.value = value;
     }
 
     @Override
     public int intValue() {
-        return (int) value;
+        return value;
     }
 
     @Override
     public long longValue() {
-        return (long) value;
+        return value;
     }
 
     @Override
     public float floatValue() {
-        return (float) value;
+        return value;
     }
 
     @Override
@@ -49,7 +49,7 @@ public class TDouble extends Number {
         return value;
     }
 
-    public static int compare(final double d1, final double d2) {
+    public static int compare(final byte d1, final byte d2) {
         if (d1 < d2) {
             return -1;
         }
@@ -67,29 +67,27 @@ public class TDouble extends Number {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        final Double obj = (Double) o;
+        final Byte obj = (Byte) o;
 
-        return value == obj.doubleValue();
+        return value == obj.byteValue();
     }
-
-    public static native double parseDouble(final String aValue);
 
     @Override
     public native String toString();
 
-    public static Double valueOf(final String aValue) {
-        return parseDouble(aValue);
+    public static Byte valueOf(final byte b) {
+        return new Byte(b);
     }
 
-    public static Double valueOf(final double aValue) {
-        return new Double(aValue);
+    public static Byte valueOf(final String str) {
+        return new Byte(parseByte(str));
     }
 
-    public static native boolean isNaN(final double aValue);
+    public static native byte parseByte(final String aString);
 
-    public native static String toString(final double aValue);
+    public static native String toString(byte b);
 
-    public static int signum(final double value) {
+    public static int signum(final byte value) {
         if (value < 0) {
             return -1;
         }

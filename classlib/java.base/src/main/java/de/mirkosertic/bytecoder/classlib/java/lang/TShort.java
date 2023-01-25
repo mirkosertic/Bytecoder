@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,29 +19,29 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 import de.mirkosertic.bytecoder.classlib.VM;
 
 @SubstitutesInClass(completeReplace = true)
-public class TDouble extends Number {
+public class TShort extends Number {
 
-    public static final Class<Double> TYPE = (Class<Double>) VM.doublePrimitiveClass();
+    public static final Class<Short> TYPE = (Class<Short>) VM.shortPrimitiveClass();
 
-    private final double value;
+    private final short value;
 
-    public TDouble(final double value) {
+    public TShort(final short value) {
         this.value = value;
     }
 
     @Override
     public int intValue() {
-        return (int) value;
+        return value;
     }
 
     @Override
     public long longValue() {
-        return (long) value;
+        return value;
     }
 
     @Override
     public float floatValue() {
-        return (float) value;
+        return value;
     }
 
     @Override
@@ -49,7 +49,7 @@ public class TDouble extends Number {
         return value;
     }
 
-    public static int compare(final double d1, final double d2) {
+    public static int compare(final short d1, final short d2) {
         if (d1 < d2) {
             return -1;
         }
@@ -67,29 +67,27 @@ public class TDouble extends Number {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        final Double obj = (Double) o;
+        final Short obj = (Short) o;
 
-        return value == obj.doubleValue();
+        return value == obj.shortValue();
     }
 
-    public static native double parseDouble(final String aValue);
+    public static Short valueOf(final short s) {
+        return new Short(s);
+    }
+
+    public static Short valueOf(final String str) {
+        return new Short(parseShort(str));
+    }
+
+    public static native short parseShort(final String aString);
 
     @Override
     public native String toString();
 
-    public static Double valueOf(final String aValue) {
-        return parseDouble(aValue);
-    }
+    public static native String toString(short b);
 
-    public static Double valueOf(final double aValue) {
-        return new Double(aValue);
-    }
-
-    public static native boolean isNaN(final double aValue);
-
-    public native static String toString(final double aValue);
-
-    public static int signum(final double value) {
+    public static int signum(final short value) {
         if (value < 0) {
             return -1;
         }
