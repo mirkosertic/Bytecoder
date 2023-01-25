@@ -18,6 +18,8 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 import de.mirkosertic.bytecoder.classlib.VM;
 
+import java.lang.annotation.Native;
+
 @SubstitutesInClass(completeReplace = true)
 public class TFloat extends Number {
 
@@ -27,6 +29,7 @@ public class TFloat extends Number {
     public static final float POSITIVE_INFINITY = 1 / 0.0f;
     public static final float NEGATIVE_INFINITY = -POSITIVE_INFINITY;
 
+    @Native
     private final float value;
 
     public TFloat(final float value) {

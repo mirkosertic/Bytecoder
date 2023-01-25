@@ -18,11 +18,14 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 import de.mirkosertic.bytecoder.classlib.VM;
 
+import java.lang.annotation.Native;
+
 @SubstitutesInClass(completeReplace = true)
 public class TInteger extends Number {
 
     public static final Class<Integer> TYPE = (Class<Integer>) VM.intPrimitiveClass();
 
+    @Native
     private final int value;
 
     public TInteger(final int value) {

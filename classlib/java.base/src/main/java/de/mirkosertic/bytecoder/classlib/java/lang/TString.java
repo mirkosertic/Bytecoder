@@ -17,9 +17,12 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+import java.lang.annotation.Native;
+
 @SubstitutesInClass(completeReplace = true)
 public class TString implements CharSequence {
 
+    @Native
     private Object nativeObject;
 
     public TString() {
