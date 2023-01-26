@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.asm.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import de.mirkosertic.bytecoder.asm.test.UnitTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,7 +23,7 @@ import org.junit.runner.RunWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-@RunWith(BytecoderUnitTestRunner.class)
+@RunWith(UnitTestRunner.class)
 public class DoubleTest {
 
     @Test
@@ -34,7 +34,7 @@ public class DoubleTest {
     }
 
     @Test
-    public void testEquals() throws Exception {
+    public void testEquals() {
         final Double theDouble = 10d;
         assertEquals(theDouble,theDouble);
         assertNotEquals(theDouble, 11d);
@@ -43,37 +43,37 @@ public class DoubleTest {
     }
 
     @Test
-    public void testHashCode() throws Exception {
+    public void testHashCode() {
         assertEquals(10d, 10d, 0);
     }
 
     @Test
-    public void testIntValue() throws Exception {
+    public void testIntValue() {
         assertEquals(10, new Double(10d).intValue(), 0);
     }
 
     @Test
-    public void testByteValue() throws Exception {
+    public void testByteValue() {
         assertEquals(10, new Double(10d).byteValue(), 0);
     }
 
     @Test
-    public void testShortValue() throws Exception {
+    public void testShortValue() {
         assertEquals(10, new Double(10d).shortValue(), 0);
     }
 
     @Test
-    public void testFloatValue() throws Exception {
+    public void testFloatValue() {
         assertEquals(10, new Double(10d).floatValue(), 0);
     }
 
     @Test
-    public void testLongValue() throws Exception {
+    public void testLongValue() {
         assertEquals(10, new Double(10d).longValue(), 0);
     }
 
     @Test
-    public void testDoubleValue() throws Exception {
+    public void testDoubleValue() {
         assertEquals(10, new Double(10d).doubleValue(), 0);
     }
 

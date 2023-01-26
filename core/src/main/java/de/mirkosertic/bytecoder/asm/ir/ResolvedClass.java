@@ -92,14 +92,14 @@ public class ResolvedClass {
     }
 
     public ResolvedMethod resolveMethod(final String methodName, final Type methodType, final AnalysisStack analysisStack) {
-        final ResolvedMethod m = resolveMethodInternal(methodName, methodType, analysisStack);
+        final ResolvedMethod m = resolveMethodInternal(methodName, methodType, analysisStack, false);
         if (m == null) {
             throw new IllegalStateException("No such method : " + classNode.name + "." + methodName + methodType);
         }
         return m;
     }
 
-    private ResolvedMethod resolveMethodInternal(final String methodName, final Type methodType, final AnalysisStack analysisStack) {
+    private ResolvedMethod resolveMethodInternal(final String methodName, final Type methodType, final AnalysisStack analysisStack, final boolean onlyImplementations) {
         for (final ResolvedMethod m : resolvedMethods) {
             final MethodNode methodNode = m.methodNode;
             if (methodNode.name.equals(methodName) && methodNode.desc.equals(methodType.getDescriptor())) {
@@ -111,6 +111,9 @@ public class ResolvedClass {
             if (methodNode.name.equals(methodName)) {
                 final boolean polymorphic = AnnotationUtils.hasAnnotation("Ljava/lang/invoke/MethodHandle$PolymorphicSignature;", methodNode.visibleAnnotations);
                 if (polymorphic || methodNode.desc.equals(methodType.getDescriptor())) {
+                    if (onlyImplementations && (Modifier.isAbstract(methodNode.access) || Modifier.isNative(methodNode.access))) {
+                        continue;
+                    }
                     final ResolvedMethod r = new ResolvedMethod(this, methodNode);
                     resolvedMethods.add(r);
                     r.parseBody(analysisStack);
@@ -119,13 +122,19 @@ public class ResolvedClass {
             }
         }
         for (final ResolvedClass interf : interfaces) {
-            final ResolvedMethod m = interf.resolveMethodInternal(methodName, methodType, analysisStack);
+            final ResolvedMethod m = interf.resolveMethodInternal(methodName, methodType, analysisStack, onlyImplementations);
             if (m != null) {
-                return m;
+                if (onlyImplementations) {
+                    if (!(Modifier.isAbstract(m.methodNode.access) || Modifier.isNative(m.methodNode.access))) {
+                        return m;
+                    }
+                } else {
+                    return m;
+                }
             }
         }
         if (superClass != null) {
-            return superClass.resolveMethodInternal(methodName, methodType, analysisStack);
+            return superClass.resolveMethodInternal(methodName, methodType, analysisStack, onlyImplementations);
         }
         return null;
     }
@@ -162,7 +171,7 @@ public class ResolvedClass {
             final List<ResolvedMethod> methods = new ArrayList<>(resolvedMethods);
             for (final ResolvedMethod m : methods) {
                 if (!Modifier.isStatic(m.methodNode.access)) {
-                    leaf.resolveMethodInternal(m.methodNode.name, Type.getMethodType(m.methodNode.desc), analysisStack);
+                    leaf.resolveMethodInternal(m.methodNode.name, Type.getMethodType(m.methodNode.desc), analysisStack, true);
                 }
             }
         }

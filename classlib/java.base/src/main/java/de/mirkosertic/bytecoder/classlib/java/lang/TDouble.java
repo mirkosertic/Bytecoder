@@ -21,7 +21,7 @@ import de.mirkosertic.bytecoder.classlib.VM;
 import java.lang.annotation.Native;
 
 @SubstitutesInClass(completeReplace = true)
-public class TDouble extends Number {
+public class TDouble extends Number implements Comparable<Double> {
 
     public static final Class<Double> TYPE = (Class<Double>) VM.doublePrimitiveClass();
 
@@ -52,16 +52,6 @@ public class TDouble extends Number {
         return value;
     }
 
-    public static int compare(final double d1, final double d2) {
-        if (d1 < d2) {
-            return -1;
-        }
-        if (d1 > d2) {
-            return 1;
-        }
-        return 0;
-    }
-
     @Override
     public boolean equals(final Object o) {
         if (this == o)
@@ -75,10 +65,17 @@ public class TDouble extends Number {
         return value == obj.doubleValue();
     }
 
+    @Override
+    public int hashCode() {
+        return (int) value;
+    }
+
     public static native double parseDouble(final String aValue);
 
     @Override
-    public native String toString();
+    public String toString() {
+        return toString(value);
+    }
 
     public static Double valueOf(final String aValue) {
         return parseDouble(aValue);
@@ -90,7 +87,7 @@ public class TDouble extends Number {
 
     public static native boolean isNaN(final double aValue);
 
-    public native static String toString(final double aValue);
+    public static native String toString(final double aValue);
 
     public static int signum(final double value) {
         if (value < 0) {
@@ -102,4 +99,12 @@ public class TDouble extends Number {
         return 0;
     }
 
+    @Override
+    public int compareTo(final Double o) {
+        return compare(this.value, o.doubleValue());
+    }
+
+    public static int compare(final double x, final double y) {
+        return (x < y) ? -1 : ((x == y) ? 0 : 1);
+    }
 }

@@ -1,5 +1,8 @@
 const bytecoder = {
     imports: {
+        "java.lang.System.J$currentTimeMillis$$": function() {
+            return Date.now();
+        },
         "java.lang.Object.Ljava$lang$Class$$getClass$$": function(inst) {
             return inst.constructor.$rt;
         },
@@ -40,6 +43,9 @@ const bytecoder = {
         },
         "java.lang.Float.Z$isNaN$F": function(a) {
             return isNaN(a) ? 1 : 0
+        },
+        "java.lang.Float.Z$isInfinite$F": function(a) {
+            return (a === Number.POSITIVE_INFINITY || a === Number.NEGATIVE_INFINITY) ? 1 : 0
         },
         "java.lang.Math.I$min$I$I": function(a,b) {
             return Math.min(a,b);
@@ -272,6 +278,15 @@ const bytecoder = {
 
             return bytes;
         },
+        'java.lang.StringBuffer.V$initializeWith$I': function(buffer, size) {
+            buffer.nativeObject = '';
+        },
+        'java.lang.StringBuffer.Ljava$lang$StringBuffer$$append$Ljava$lang$String$': function(buffer, str) {
+            buffer.nativeObject += str.nativeObject;
+        },
+        'java.lang.StringBuffer.Ljava$lang$String$$toString$$': function(buffer) {
+            return bytecoder.toBytecoderString(buffer.nativeObject);
+        },
         'java.lang.StringBuilder.V$initializeWith$I': function(builder, size) {
             builder.nativeObject = '';
         },
@@ -279,16 +294,19 @@ const bytecoder = {
             builder.nativeObject += str.nativeObject;
             return builder;
         },
-        'java.lang.StringBuilder.Ljava$lang$StringBuilder$$append$C': function(builder, char) {
-            builder.nativeObject += String.fromCodePoint(char);
-            return builder;
-        },
-        'java.lang.StringBuilder.Ljava$lang$StringBuilder$$append$I': function(builder, value) {
-            builder.nativeObject += value;
-            return builder;
-        },
         'java.lang.StringBuilder.Ljava$lang$String$$toString$$': function(builder) {
             return bytecoder.toBytecoderString(builder.nativeObject);
+        },
+        'java.lang.StringBuilder.I$length$$': function(builder) {
+            return builder.nativeObject.length;
+        },
+        'java.lang.StringBuilder.V$setLength$I': function(builder, size) {
+        },
+        'java.lang.StringBuilder.Ljava$lang$StringBuilder$$append$$C$I$I': function(builder, chars, offset, count) {
+            for (var i = offset; i < offset + count; i++) {
+                builder.nativeObject += String.fromCodePoint(chars.data[i]);
+            }
+            return builder;
         },
         'java.lang.String.C$charAt$I': function(str, index) {
             return str.nativeObject.codePointAt(index);
@@ -316,6 +334,19 @@ const bytecoder = {
                 return 1;
             }
             return 0;
+        },
+        'java.lang.String.V$initializeWith$$C$I$I': function(str, chars, offset, count) {
+            str.nativeObject = '';
+            for (var i = offset; i < offset + count; i++) {
+                str.nativeObject += String.fromCodePoint(chars.data[i]);
+            }
+        },
+        'java.lang.String.$C$toCharArray$$': function(str) {
+            let arr = bytecoder.newarray(str.nativeObject.length, 0);
+            for (var i = 0; i < str.nativeObject.length; i++) {
+                arr.data[i] = str.nativeObject.codePointAt(i);
+            }
+            return arr;
         },
         'java.lang.Character.Z$isDigit$C': function(char) {
             if ("0123456789".indexOf(String.fromCodePoint(char)) >= 0) {
@@ -397,8 +428,26 @@ const bytecoder = {
             }
             return -1;
         },
-        'java.lang.Integer.Ljava$lang$String$$toString$I': function(value) {
-            return bytecoder.toBytecoderString(value.toString());
+        'java.lang.Character.Ljava$lang$String$$toString$C': function(char) {
+            return bytecoder.toBytecoderString(String.fromCodePoint(char));
+        },
+        'java.lang.Byte.Ljava$lang$String$$toString$$': function(obj) {
+            return bytecoder.toBytecoderString(obj.value.toString());
+        },
+        'java.lang.Byte.Ljava$lang$String$$toString$B$I': function(value, radix) {
+            return bytecoder.toBytecoderString(value.toString(radix));
+        },
+        'java.lang.Byte.B$parseByte$Ljava$lang$String$': function(str) {
+            return parseInt(str.nativeObject);
+        },
+        'java.lang.Short.Ljava$lang$String$$toString$S$I': function(value, radix) {
+            return bytecoder.toBytecoderString(value.toString(radix));
+        },
+        'java.lang.Short.S$parseShort$Ljava$lang$String$$I': function(value, radix) {
+            return parseInt(value.nativeObject, radix);
+        },
+        'java.lang.Integer.Ljava$lang$String$$toString$I$I': function(value, radix) {
+            return bytecoder.toBytecoderString(value.toString(radix));
         },
         'java.lang.Integer.Ljava$lang$String$$toHexString$I': function(value) {
             return bytecoder.toBytecoderString(value.toString(16));
@@ -406,23 +455,31 @@ const bytecoder = {
         'java.lang.Integer.I$parseInt$Ljava$lang$String$$I': function(value, radix) {
             return parseInt(value.nativeObject, radix);
         },
-        'java.lang.Long.Ljava$lang$String$$toString$$': function(value) {
-            return bytecoder.toBytecoderString(value.longValue.toString());
-        },
         'java.lang.Long.Ljava$lang$String$$toString$J$I': function(value, radix) {
-            return bytecoder.toBytecoderString(value.longValue.toString(radix));
+            return bytecoder.toBytecoderString(value.toString(radix));
         },
         'java.lang.Long.J$parseLong$Ljava$lang$String$$I': function(value, radix) {
             return parseInt(value.nativeObject, radix);
         },
-        'java.lang.Byte.Ljava$lang$String$$toString$B': function(value) {
-            return bytecoder.toBytecoderString(value.toString());
-        },
         'java.lang.Float.Ljava$lang$String$$toString$F': function(value) {
-            return bytecoder.toBytecoderString(value.toString());
+            let str = value.toString();
+            if (str.indexOf(".") < 0) {
+                str += '.0';
+            }
+            return bytecoder.toBytecoderString(str);
         },
         'java.lang.Float.F$parseFloat$Ljava$lang$String$': function(value) {
             return parseFloat(value.nativeObject);
+        },
+        'java.lang.Double.Ljava$lang$String$$toString$D': function(value) {
+            let str = value.toString();
+            if (str.indexOf(".") < 0) {
+                str += '.0';
+            }
+            return bytecoder.toBytecoderString(str);
+        },
+        'java.lang.Double.D$parseDouble$Ljava$lang$String$': function(str) {
+            return parseFloat(str.nativeObject);
         }
     },
     exports: {},
@@ -455,6 +512,18 @@ const bytecoder = {
         x.data = new Array(len);
         x.data.fill(defaultvalue);
         return x;
+    },
+    multiarray: function(aDimensions, aDefault) {
+        var theLength = aDimensions[0];
+        var theArray = bytecoder.newarray(theLength, aDefault);
+        if (aDimensions.length > 1) {
+            var theNewDimensions = aDimensions.slice(0);
+            theNewDimensions.shift();
+            for (var i = 0; i < theLength; i++) {
+                theArray.data[i] = bytecoder.multiarray(theNewDimensions,aDefault);
+            }
+        }
+        return theArray;
     },
     toBytecoderString: function(jsstring) {
         const x = new java$lang$String();

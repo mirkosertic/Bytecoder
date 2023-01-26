@@ -21,7 +21,7 @@ import de.mirkosertic.bytecoder.classlib.VM;
 import java.lang.annotation.Native;
 
 @SubstitutesInClass(completeReplace = true)
-public class TByte extends Number {
+public class TByte extends Number implements Comparable<Byte> {
 
     public static final Class<Byte> TYPE = (Class<Byte>) VM.bytePrimitiveClass();
 
@@ -52,16 +52,6 @@ public class TByte extends Number {
         return value;
     }
 
-    public static int compare(final byte d1, final byte d2) {
-        if (d1 < d2) {
-            return -1;
-        }
-        if (d1 > d2) {
-            return 1;
-        }
-        return 0;
-    }
-
     @Override
     public boolean equals(final Object o) {
         if (this == o)
@@ -76,7 +66,14 @@ public class TByte extends Number {
     }
 
     @Override
-    public native String toString();
+    public int hashCode() {
+        return value;
+    }
+
+    @Override
+    public String toString() {
+        return toString(value, 10);
+    }
 
     public static Byte valueOf(final byte b) {
         return new Byte(b);
@@ -88,7 +85,11 @@ public class TByte extends Number {
 
     public static native byte parseByte(final String aString);
 
-    public static native String toString(byte b);
+    public static String toString(final byte b) {
+        return toString(b, 10);
+    }
+
+    public static native String toString(byte b, int radix);
 
     public static int signum(final byte value) {
         if (value < 0) {
@@ -100,4 +101,12 @@ public class TByte extends Number {
         return 0;
     }
 
+    @Override
+    public int compareTo(final Byte o) {
+        return compare(this.value, o.byteValue());
+    }
+
+    public static int compare(final byte x, final byte y) {
+        return (x < y) ? -1 : ((x == y) ? 0 : 1);
+    }
 }

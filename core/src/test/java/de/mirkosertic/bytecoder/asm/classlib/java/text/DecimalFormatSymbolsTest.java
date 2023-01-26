@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.text;
+package de.mirkosertic.bytecoder.asm.classlib.java.text;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import de.mirkosertic.bytecoder.asm.test.UnitTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,7 +23,7 @@ import org.junit.runner.RunWith;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 
-@RunWith(BytecoderUnitTestRunner.class)
+@RunWith(UnitTestRunner.class)
 public class DecimalFormatSymbolsTest {
 
     private static String toString(final char c) {
@@ -69,36 +69,4 @@ public class DecimalFormatSymbolsTest {
         Assert.assertEquals(",", toString(theSymbols.getMonetaryDecimalSeparator()));
         Assert.assertEquals("E", theSymbols.getExponentSeparator());
     }
-
-    /*public static void main(String[] args) {
-        Locale[] locales = new Locale[] {new Locale("en", "US"), new Locale("de","DE")};
-        double myNumber = -1234.56;
-        NumberFormat form;
-        for (int j=0; j<4; ++j) {
-            System.out.println("FORMAT");
-            for (int i = 0; i < locales.length; ++i) {
-                if (locales[i].getCountry().length() == 0) {
-                    continue; // Skip language-only locales
-                }
-                System.out.print(locales[i].getDisplayName());
-                switch (j) {
-                    case 0:
-                        form = NumberFormat.getInstance(locales[i]); break;
-                    case 1:
-                        form = NumberFormat.getIntegerInstance(locales[i]); break;
-                    case 2:
-                        form = NumberFormat.getCurrencyInstance(locales[i]); break;
-                    default:
-                        form = NumberFormat.getPercentInstance(locales[i]); break;
-                }
-                if (form instanceof DecimalFormat) {
-                    System.out.print(": " + ((DecimalFormat) form).toPattern());
-                }
-                System.out.print(" -> " + form.format(myNumber));
-                try {
-                    System.out.println(" -> " + form.parse(form.format(myNumber)));
-                } catch (ParseException e) {}
-            }
-        }
-    }*/
 }

@@ -17,24 +17,59 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+import java.lang.annotation.Native;
+
 @SubstitutesInClass(completeReplace = true)
 public class TStringBuffer {
 
+    @Native
+    private Object nativeObject;
+
+    public TStringBuffer() {
+        this(10);
+    }
+
+    public TStringBuffer(final int capacity) {
+        nativeObject = null;
+        initializeWith(capacity);
+    }
+
+    public TStringBuffer(final String str) {
+        this();
+        append(str);
+    }
+
+    native void initializeWith(int capacity);
+
     public native StringBuffer append(final String str);
 
-    public native StringBuffer append(final byte value);
+    public StringBuffer append(final byte value) {
+        return append(Byte.toString(value));
+    }
 
-    public native StringBuffer append(final char value);
+    public StringBuffer append(final char value) {
+        return append(Character.toString(value));
+    }
 
-    public native StringBuffer append(final short value);
+    public StringBuffer append(final short value) {
+        return append(Short.toString(value));
+    }
 
-    public native StringBuffer append(final int value);
+    public StringBuffer append(final int value) {
+        return append(Integer.toString(value));
+    }
 
-    public native StringBuffer append(final long value);
+    public StringBuffer append(final long value) {
+        return append(Long.toString(value));
+    }
 
-    public native StringBuffer append(final float value);
+    public StringBuffer append(final float value) {
+        return append(Float.toString(value));
+    }
 
-    public native StringBuffer append(final double value);
+    public StringBuffer append(final double value) {
+        return append(Double.toString(value));
+    }
 
     public StringBuffer append(final Object value) {
         if (value == null) {

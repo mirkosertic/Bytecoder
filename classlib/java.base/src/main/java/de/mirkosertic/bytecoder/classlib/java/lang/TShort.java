@@ -21,7 +21,7 @@ import de.mirkosertic.bytecoder.classlib.VM;
 import java.lang.annotation.Native;
 
 @SubstitutesInClass(completeReplace = true)
-public class TShort extends Number {
+public class TShort extends Number implements Comparable<Short> {
 
     public static final Class<Short> TYPE = (Class<Short>) VM.shortPrimitiveClass();
 
@@ -52,16 +52,6 @@ public class TShort extends Number {
         return value;
     }
 
-    public static int compare(final short d1, final short d2) {
-        if (d1 < d2) {
-            return -1;
-        }
-        if (d1 > d2) {
-            return 1;
-        }
-        return 0;
-    }
-
     @Override
     public boolean equals(final Object o) {
         if (this == o)
@@ -75,6 +65,11 @@ public class TShort extends Number {
         return value == obj.shortValue();
     }
 
+    @Override
+    public int hashCode() {
+        return (int) value;
+    }
+
     public static Short valueOf(final short s) {
         return new Short(s);
     }
@@ -83,12 +78,22 @@ public class TShort extends Number {
         return new Short(parseShort(str));
     }
 
-    public static native short parseShort(final String aString);
+    public static short parseShort(final String aString) {
+        return parseShort(aString, 10);
+    }
+
+    public static native short parseShort(final String aString, int radix);
 
     @Override
-    public native String toString();
+    public String toString() {
+        return toString(value, 10);
+    }
 
-    public static native String toString(short b);
+    public static String toString(final short b) {
+        return toString(b, 10);
+    }
+
+    public static native String toString(short b, int radix);
 
     public static int signum(final short value) {
         if (value < 0) {
@@ -98,6 +103,15 @@ public class TShort extends Number {
             return 1;
         }
         return 0;
+    }
+
+    @Override
+    public int compareTo(final Short o) {
+        return compare(this.value, o.shortValue());
+    }
+
+    public static int compare(final short x, final short y) {
+        return (x < y) ? -1 : ((x == y) ? 0 : 1);
     }
 
 }

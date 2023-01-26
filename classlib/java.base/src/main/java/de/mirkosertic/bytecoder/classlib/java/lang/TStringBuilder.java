@@ -19,29 +19,53 @@ public class TStringBuilder implements CharSequence {
         initializeWith(capacity);
     }
 
+    public TStringBuilder(final String str) {
+        this();
+        append(str);
+    }
+
     native void initializeWith(int capacity);
 
     public native StringBuilder append(final String value);
 
-    public native StringBuilder append(final byte value);
+    public StringBuilder append(final byte value) {
+        return append(Byte.toString(value));
+    }
 
-    public native StringBuilder append(final char value);
+    public StringBuilder append(final char value) {
+        return append(Character.toString(value));
+    }
 
-    public native StringBuilder append(final short value);
+    public StringBuilder append(final short value) {
+        return append(Short.toString(value));
+    }
 
-    public native StringBuilder append(final int value);
+    public StringBuilder append(final int value) {
+        return append(Integer.toString(value));
+    }
 
-    public native StringBuilder append(final long value);
+    public StringBuilder append(final long value) {
+        return append(Long.toString(value));
+    }
 
-    public native StringBuilder append(final float value);
+    public StringBuilder append(final float value) {
+        return append(Float.toString(value));
+    }
 
-    public native StringBuilder append(final double value);
+    public StringBuilder append(final double value) {
+        return append(Double.toString(value));
+    }
 
-    public native StringBuilder append(final Object value);
+    public StringBuilder append(final Object value) {
+        if (value != null) {
+            return append(value.toString());
+        }
+        return append("null");
+    }
 
     public native StringBuilder append(final CharSequence value, int a, int b);
 
-    public native StringBuilder append(final char[] data, int a, int b);
+    public native StringBuilder append(final char[] data, int offset, int len);
 
     public native StringBuilder reverse();
 

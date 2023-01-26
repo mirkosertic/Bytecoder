@@ -21,7 +21,7 @@ import de.mirkosertic.bytecoder.classlib.VM;
 import java.lang.annotation.Native;
 
 @SubstitutesInClass(completeReplace = true)
-public class TInteger extends Number {
+public class TInteger extends Number implements Comparable<Integer> {
 
     public static final Class<Integer> TYPE = (Class<Integer>) VM.intPrimitiveClass();
 
@@ -52,14 +52,9 @@ public class TInteger extends Number {
         return value;
     }
 
-    public static int compare(final int d1, final int d2) {
-        if (d1 < d2) {
-            return -1;
-        }
-        if (d1 > d2) {
-            return 1;
-        }
-        return 0;
+    @Override
+    public int hashCode() {
+        return value;
     }
 
     @Override
@@ -76,13 +71,44 @@ public class TInteger extends Number {
     }
 
     @Override
-    public native String toString();
+    public String toString() {
+        return toString(value, 10);
+    }
 
-    public static native int numberOfLeadingZeros(final int i);
+    public static int numberOfLeadingZeros(int i) {
+        // HD, Figure 5-6
+        if (i == 0)
+            return 32;
+        int n = 1;
+        if (i >>> 16 == 0) { n += 16; i <<= 16; }
+        if (i >>> 24 == 0) { n +=  8; i <<=  8; }
+        if (i >>> 28 == 0) { n +=  4; i <<=  4; }
+        if (i >>> 30 == 0) { n +=  2; i <<=  2; }
+        n -= i >>> 31;
+        return n;
+    }
 
-    public static native int numberOfTrailingZeros(final int i);
+    public static int numberOfTrailingZeros(int i) {
+        // HD, Figure 5-14
+        int y;
+        if (i == 0) return 32;
+        int n = 31;
+        y = i <<16; if (y != 0) { n = n -16; i = y; }
+        y = i << 8; if (y != 0) { n = n - 8; i = y; }
+        y = i << 4; if (y != 0) { n = n - 4; i = y; }
+        y = i << 2; if (y != 0) { n = n - 2; i = y; }
+        return n - ((i << 1) >>> 31);
+    }
 
-    public static native int bitCount(final int i);
+    public static int bitCount(int i) {
+        // HD, Figure 5-2
+        i = i - ((i >>> 1) & 0x55555555);
+        i = (i & 0x33333333) + ((i >>> 2) & 0x33333333);
+        i = (i + (i >>> 4)) & 0x0f0f0f0f;
+        i = i + (i >>> 8);
+        i = i + (i >>> 16);
+        return i & 0x3f;
+    }
 
     public static Integer valueOf(final int i) {
         return new Integer(i);
@@ -95,6 +121,7 @@ public class TInteger extends Number {
     public static String toString(final int i) {
         return toString(i, 10);
     }
+
     public static native String toString(int i, int radix);
 
     public static native String toHexString(int i);
@@ -114,4 +141,14 @@ public class TInteger extends Number {
         }
         return 0;
     }
+
+    @Override
+    public int compareTo(final Integer o) {
+        return compare(this.value, o.intValue());
+    }
+
+    public static int compare(final int x, final int y) {
+        return (x < y) ? -1 : ((x == y) ? 0 : 1);
+    }
+
 }

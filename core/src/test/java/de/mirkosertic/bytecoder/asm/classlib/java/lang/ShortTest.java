@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.classlib.java.lang;
+package de.mirkosertic.bytecoder.asm.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import de.mirkosertic.bytecoder.asm.test.UnitTestRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-@RunWith(BytecoderUnitTestRunner.class)
+@RunWith(UnitTestRunner.class)
 public class ShortTest {
 
     @Test
-    public void testEquals() throws Exception {
+    public void testEquals() {
         Short theShort = new Short((short) 10);
         assertEquals(theShort,theShort);
         assertNotEquals(theShort, new Short((short) 11));
@@ -35,37 +35,37 @@ public class ShortTest {
     }
 
     @Test
-    public void testHashCode() throws Exception {
+    public void testHashCode() {
         assertEquals(new Short((short) 10), new Short((short) 10));
     }
 
     @Test
-    public void testIntValue() throws Exception {
+    public void testIntValue() {
         assertEquals(10, new Short((short) 10).intValue(), 0);
     }
 
     @Test
-    public void testByteValue() throws Exception {
+    public void testByteValue() {
         assertEquals(10, new Short((short) 10).byteValue(), 0);
     }
 
     @Test
-    public void testShortValue() throws Exception {
+    public void testShortValue() {
         assertEquals(10, new Short((short) 10).shortValue(), 0);
     }
 
     @Test
-    public void testFloatValue() throws Exception {
+    public void testFloatValue() {
         assertEquals(10, new Short((short) 10).floatValue(), 0);
     }
 
     @Test
-    public void testLongValue() throws Exception {
+    public void testLongValue() {
         assertEquals(10, new Short((short) 10).longValue(), 0);
     }
 
     @Test
-    public void testDoubleValue() throws Exception {
+    public void testDoubleValue() {
         assertEquals(10, new Short((short) 10).doubleValue(), 0);
     }
 

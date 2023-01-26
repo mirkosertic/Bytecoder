@@ -20,7 +20,7 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 import java.lang.annotation.Native;
 
 @SubstitutesInClass(completeReplace = true)
-public class TString implements CharSequence {
+public class TString implements CharSequence, Comparable<String> {
 
     @Native
     private Object nativeObject;
@@ -116,7 +116,27 @@ public class TString implements CharSequence {
 
     public native int lastIndexOf(final int c);
 
-    public native int compareTo(final String str);
+    public int compareTo(final String anotherString) {
+        final char[] currentvalues = toCharArray();
+        final char[] othervalues = anotherString.toCharArray();
+
+        final int len1 = currentvalues.length;
+        final int len2 = othervalues.length;
+        final int lim = Math.min(len1, len2);
+        final char[] v1 = currentvalues;
+        final char[] v2 = othervalues;
+
+        int k = 0;
+        while (k < lim) {
+            final char c1 = v1[k];
+            final char c2 = v2[k];
+            if (c1 != c2) {
+                return c1 - c2;
+            }
+            k++;
+        }
+        return len1 - len2;
+    }
 
     public native String repeat(int amount);
 

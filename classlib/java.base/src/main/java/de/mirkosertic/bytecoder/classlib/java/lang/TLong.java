@@ -21,7 +21,7 @@ import de.mirkosertic.bytecoder.classlib.VM;
 import java.lang.annotation.Native;
 
 @SubstitutesInClass(completeReplace = true)
-public class TLong extends Number {
+public class TLong extends Number implements Comparable<Long> {
 
     public static final Class<Long> TYPE = (Class<Long>) VM.longPrimitiveClass();
 
@@ -57,16 +57,6 @@ public class TLong extends Number {
         return value;
     }
 
-    public static int compare(final long d1, final long d2) {
-        if (d1 < d2) {
-            return -1;
-        }
-        if (d1 > d2) {
-            return 1;
-        }
-        return 0;
-    }
-
     @Override
     public boolean equals(final Object o) {
         if (this == o)
@@ -81,7 +71,9 @@ public class TLong extends Number {
     }
 
     @Override
-    public native String toString();
+    public String toString() {
+        return toString(value, 10);
+    }
 
     public static Long valueOf(final long aValue) {
         return new Long(aValue);
@@ -138,5 +130,14 @@ public class TLong extends Number {
             return 1;
         }
         return 0;
+    }
+
+    @Override
+    public int compareTo(final Long o) {
+        return compare(this.value, o.longValue());
+    }
+
+    public static int compare(final long x, final long y) {
+        return (x < y) ? -1 : ((x == y) ? 0 : 1);
     }
 }

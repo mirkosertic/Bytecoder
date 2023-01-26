@@ -21,7 +21,7 @@ import de.mirkosertic.bytecoder.classlib.VM;
 import java.lang.annotation.Native;
 
 @SubstitutesInClass(completeReplace = true)
-public class TFloat extends Number {
+public class TFloat extends Number implements Comparable<Float> {
 
     public static final Class<Float> TYPE = (Class<Float>) VM.floatPrimitiveClass();
 
@@ -62,17 +62,7 @@ public class TFloat extends Number {
 
     @Override
     public String toString() {
-        return toString(((Float) (Object) this).floatValue());
-    }
-
-    public static int compare(final float d1, final float d2) {
-        if (d1 < d2) {
-            return -1;
-        }
-        if (d1 > d2) {
-            return 1;
-        }
-        return 0;
+        return toString(value);
     }
 
     @Override
@@ -88,6 +78,12 @@ public class TFloat extends Number {
         return value == obj.floatValue();
     }
 
+    @Override
+    public int hashCode() {
+        return (int) value;
+    }
+
+
     public static native float parseFloat(final String aValue);
 
     public static Float valueOf(final String aValue) {
@@ -101,6 +97,8 @@ public class TFloat extends Number {
     public native static String toString(final float aValue);
 
     public static native boolean isNaN(final float aValue);
+
+    public static native boolean isInfinite(final float aValue);
 
     private static float binaryExponent(int n) {
         float result = 1;
@@ -188,4 +186,12 @@ public class TFloat extends Number {
         return 0;
     }
 
+    @Override
+    public int compareTo(final Float o) {
+        return compare(this.value, o.floatValue());
+    }
+
+    public static int compare(final float x, final float y) {
+        return (x < y) ? -1 : ((x == y) ? 0 : 1);
+    }
 }
