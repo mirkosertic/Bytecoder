@@ -89,6 +89,9 @@ const bytecoder = {
         "java.lang.Math.D$random$$": function() {
             return Math.random();
         },
+        "java.lang.StrictMath.D$sqrt$D": function(a) {
+            return Math.sqrt(a);
+        },
         "java.lang.reflect.Array.Ljava$lang$Object$$newArray$Ljava$lang$Class$$I": function(t, l) {
             return bytecoder.newarray(l, null);
         },
@@ -303,7 +306,7 @@ const bytecoder = {
         'java.lang.StringBuilder.V$setLength$I': function(builder, size) {
         },
         'java.lang.StringBuilder.Ljava$lang$StringBuilder$$append$$C$I$I': function(builder, chars, offset, count) {
-            for (var i = offset; i < offset + count; i++) {
+            for (let i = offset; i < offset + count; i++) {
                 builder.nativeObject += String.fromCodePoint(chars.data[i]);
             }
             return builder;
@@ -337,13 +340,13 @@ const bytecoder = {
         },
         'java.lang.String.V$initializeWith$$C$I$I': function(str, chars, offset, count) {
             str.nativeObject = '';
-            for (var i = offset; i < offset + count; i++) {
+            for (let i = offset; i < offset + count; i++) {
                 str.nativeObject += String.fromCodePoint(chars.data[i]);
             }
         },
         'java.lang.String.$C$toCharArray$$': function(str) {
             let arr = bytecoder.newarray(str.nativeObject.length, 0);
-            for (var i = 0; i < str.nativeObject.length; i++) {
+            for (let i = 0; i < str.nativeObject.length; i++) {
                 arr.data[i] = str.nativeObject.codePointAt(i);
             }
             return arr;
@@ -514,12 +517,12 @@ const bytecoder = {
         return x;
     },
     multiarray: function(aDimensions, aDefault) {
-        var theLength = aDimensions[0];
-        var theArray = bytecoder.newarray(theLength, aDefault);
+        const theLength = aDimensions[0];
+        const theArray = bytecoder.newarray(theLength, aDefault);
         if (aDimensions.length > 1) {
-            var theNewDimensions = aDimensions.slice(0);
+            const theNewDimensions = aDimensions.slice(0);
             theNewDimensions.shift();
-            for (var i = 0; i < theLength; i++) {
+            for (let i = 0; i < theLength; i++) {
                 theArray.data[i] = bytecoder.multiarray(theNewDimensions,aDefault);
             }
         }

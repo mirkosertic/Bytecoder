@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.complex;
+package de.mirkosertic.bytecoder.asm.complex;
 
-public interface PromiseResolver<T> {
+public interface PromiseRejector<V> {
 
-    void resolve(T aValue);
+    void reject(V aReason, Exception aOptionalException);
 }
