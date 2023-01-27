@@ -87,6 +87,12 @@ public class TDouble extends Number implements Comparable<Double> {
 
     public static native boolean isNaN(final double aValue);
 
+    public static native boolean isInfinite(final double b);
+
+    public static boolean isFinite(final double aValue) {
+        return !isInfinite(aValue) && !isNaN(aValue);
+    }
+
     public static native String toString(final double aValue);
 
     public static int signum(final double value) {
@@ -106,5 +112,17 @@ public class TDouble extends Number implements Comparable<Double> {
 
     public static int compare(final double x, final double y) {
         return (x < y) ? -1 : ((x == y) ? 0 : 1);
+    }
+
+    public static long doubleToLongBits(final double aValue) {
+        return 0;
+    }
+
+    public static double longBitsToDouble(final long aValue) {
+        return 0d;
+    }
+
+    public static long doubleToRawLongBits(final double value) {
+        return doubleToLongBits(value);
     }
 }

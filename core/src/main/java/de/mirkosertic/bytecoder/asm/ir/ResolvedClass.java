@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.ir;
 
+import de.mirkosertic.bytecoder.api.Callback;
+import de.mirkosertic.bytecoder.api.NativeReferenceHolder;
+import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
@@ -50,6 +53,12 @@ public class ResolvedClass {
 
     public ResolvedMethod classInitializer;
 
+    private Boolean isOpaqueReferenceType;
+
+    private Boolean isCallback;
+
+    private Boolean isNativeReferenceHolder;
+
     public ResolvedClass(final CompileUnit compileUnit, final Type type, final ClassNode classNode, final ResolvedClass superClass, final ResolvedClass[] interfaces) {
         this.compileUnit = compileUnit;
         this.type = type;
@@ -67,6 +76,18 @@ public class ResolvedClass {
         for (final ResolvedClass interf : interfaces) {
             interf.registerDirectSubclass(this);
         }
+    }
+
+    public boolean isOpaqueReferenceType() {
+        return isOpaqueReferenceType;
+    }
+
+    public boolean isCallback() {
+        return isCallback;
+    }
+
+    public boolean isNativeReferenceHolder() {
+        return isNativeReferenceHolder;
     }
 
     public ResolvedClass requestInitialization(final AnalysisStack analysisStack) {
@@ -220,5 +241,30 @@ public class ResolvedClass {
             result.addAll(superClass.abstractResolvedMethods());
         }
         return result;
+    }
+
+    public void computeOpaqueReferenceTypeAndCallbackStatus(final AnalysisStack analysisStack) {
+        if (isOpaqueReferenceType == null) {
+            isOpaqueReferenceType = allTypesOf().stream().anyMatch(t -> t.type.getClassName().equals(OpaqueReferenceType.class.getName()));
+        }
+        if (isNativeReferenceHolder == null) {
+            isNativeReferenceHolder = allTypesOf().stream().anyMatch(t -> t.type.getClassName().equals(NativeReferenceHolder.class.getName()));
+        }
+        if (isCallback == null) {
+            isCallback = allTypesOf().stream().anyMatch(t -> t.type.getClassName().equals(Callback.class.getName()));
+            if (isCallback) {
+                for (final MethodNode m : classNode.methods) {
+                    if (!Modifier.isStatic(m.access) && !("<init>".equals(m.name)) && !("<clinit>".equals(m.name))) {
+                        final Type mt = Type.getMethodType(m.desc);
+                        resolveMethod(m.name, mt, analysisStack);
+                        for (final Type argument : mt.getArgumentTypes()) {
+                            if (argument.getSort() == Type.OBJECT) {
+                                compileUnit.resolveClass(argument, analysisStack);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

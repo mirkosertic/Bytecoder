@@ -43,7 +43,9 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static de.mirkosertic.bytecoder.asm.backend.js.JSHelpers.generateClassName;
 import static de.mirkosertic.bytecoder.asm.backend.js.JSHelpers.generateFieldName;
@@ -60,7 +62,7 @@ public class JSBackend {
             throw new RuntimeException(e);
         }
 
-        pw.println("bytecoder.imports[\"java.lang.Class.Ljava$lang$Class$$forName$Ljava$lang$String$$Z$Ljava$lang$ClassLoader$\"] = function(className, initialize, classLoader) {");
+        pw.println("bytecoder.imports[\"java.lang.Class\"][\"Ljava$lang$Class$$forName$Ljava$lang$String$$Z$Ljava$lang$ClassLoader$\"] = function(className, initialize, classLoader) {");
 
         for (final ReflectionConfiguration.ReflectiveClass rc : compileUnit.getReflectionConfiguration().configuredClasses()) {
             if (rc.supportsClassForName()) {
@@ -290,6 +292,11 @@ public class JSBackend {
     }
 
     private void generateFieldsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
+
+        if (cl.isNativeReferenceHolder()) {
+            pw.println("  nativeObject = null;");
+        }
+
         if (!cl.resolvedFields.isEmpty()) {
             pw.println();
             for (final ResolvedField f : cl.resolvedFields) {
@@ -323,6 +330,7 @@ public class JSBackend {
     }
 
     public void generateMethodsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final CompileOptions compileOptions) {
+
         for (final ResolvedMethod m : cl.resolvedMethods) {
             if (m.owner == cl) {
                 if (Modifier.isNative(m.methodNode.access) || AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/EmulatedByRuntime;", m.methodNode.visibleAnnotations)) {
@@ -330,6 +338,8 @@ public class JSBackend {
                 } else {
                     if (m.methodBody != null) {
                         generateMethod(pw, compileUnit, cl, m, compileOptions);
+                    } else if (cl.isOpaqueReferenceType()) {
+                        generateOpaqueAdapterMethod(pw, compileUnit, cl, m);
                     }
                 }
             }
@@ -360,34 +370,302 @@ public class JSBackend {
         }
         pw.println(") {");
 
+        if (cl.isOpaqueReferenceType()) {
+
+            pw.print("   return bytecoder.wrapNativeIntoTypeInstance(");
+
+            pw.print(generateClassName(returnType));
+            pw.print(",");
+
+            String moduleName = m.owner.type.getClassName();
+            String functionName = methodName;
+
+            if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/Import;", m.methodNode.visibleAnnotations)) {
+                final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/Import;", m.methodNode.visibleAnnotations);
+                moduleName = (String) values.get("module");
+                functionName = (String) values.get("name");
+            }
+
+            pw.print("bytecoder.imports['");
+            pw.print(moduleName);
+            pw.print("'].");
+            pw.print(functionName);
+            pw.print("(");
+
+            if (!Modifier.isStatic(m.methodNode.access)) {
+                pw.print("this");
+                for (int i = 0; i < arguments.length; i++) {
+                    pw.print(", arg");
+                    pw.print(i);
+                }
+            } else {
+                for (int i = 0; i < arguments.length; i++) {
+                    if (i > 0) {
+                        pw.print(", ");
+                    }
+                    pw.print("arg");
+                    pw.print(i);
+                }
+            }
+
+            pw.println("));");
+
+            pw.println("  }");
+        } else {
+
+            if (!returnType.equals(Type.VOID_TYPE)) {
+                pw.print("    return ");
+            } else {
+                pw.print("    ");
+            }
+
+            String moduleName = m.owner.type.getClassName();
+            String functionName = methodName;
+
+            if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/Import;", m.methodNode.visibleAnnotations)) {
+                final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/Import;", m.methodNode.visibleAnnotations);
+                moduleName = (String) values.get("module");
+                functionName = (String) values.get("name");
+            }
+
+            pw.print("bytecoder.imports['");
+            pw.print(moduleName);
+            pw.print("'].");
+            pw.print(functionName);
+            pw.print("(");
+
+            if (!Modifier.isStatic(m.methodNode.access)) {
+                pw.print("this");
+                for (int i = 0; i < arguments.length; i++) {
+                    pw.print(", arg");
+                    pw.print(i);
+                }
+            } else {
+                for (int i = 0; i < arguments.length; i++) {
+                    if (i > 0) {
+                        pw.print(", ");
+                    }
+                    pw.print("arg");
+                    pw.print(i);
+                }
+            }
+
+            pw.println(");");
+
+            pw.println("  }");
+        }
+    }
+
+    public void generateOpaqueAdapterMethod(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m) {
+        System.out.println("Writing opaque method for " + cl.type + " . " + m.methodNode.name + m.methodNode.desc);
+
+        pw.println();
+        pw.print("  ");
+        final String methodName = generateMethodName(m.methodNode.name, Type.getMethodType(m.methodNode.desc));
+        pw.print(methodName);
+
+        final Type[] arguments = Type.getArgumentTypes(m.methodNode.desc);
+        final Type returnType = Type.getReturnType(m.methodNode.desc);
+
+        pw.print("(");
+        for (int i = 0; i < arguments.length; i++) {
+            if (i > 0) {
+                pw.print(",");
+            }
+            pw.print("arg");
+            pw.print(i);
+        }
+        pw.println(") {");
+
+        boolean wrapped = false;
+
         if (!returnType.equals(Type.VOID_TYPE)) {
             pw.print("    return ");
+            if (returnType.getSort()  == Type.OBJECT) {
+                wrapped = true;
+                pw.print("bytecoder.wrapNativeIntoTypeInstance(");
+                pw.print(generateClassName(returnType));
+                pw.print(",");
+            }
         } else {
             pw.print("    ");
         }
-        pw.print("bytecoder.imports['");
-        pw.print(m.owner.type.getClassName());
-        pw.print(".");
-        pw.print(methodName);
-        pw.print("'](");
 
-        if (!Modifier.isStatic(m.methodNode.access)) {
-            pw.print("this");
-            for (int i = 0; i < arguments.length; i++) {
-                pw.print(", arg");
-                pw.print(i);
+        pw.print("this.nativeObject");
+
+        if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueProperty;", m.methodNode.visibleAnnotations)) {
+
+            final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueProperty;", m.methodNode.visibleAnnotations);
+            final String propertyName = (String) values.get("value");
+            pw.print(".");
+            if (propertyName != null) {
+                pw.print(propertyName);
+            } else {
+                pw.print(m.methodNode.name);
             }
+            if (arguments.length > 0) {
+                if (arguments[0].getSort() == Type.OBJECT) {
+                    final ResolvedClass targetType = compileUnit.findClass(arguments[0]);
+                    if (targetType.isNativeReferenceHolder()) {
+                        pw.print(" = arg0.nativeObject");
+                    } else {
+                        throw new IllegalStateException("Type " + arguments[0] + " is not supported as an opaque property type.");
+                    }
+                } else {
+                    pw.print(" = arg0");
+                }
+            }
+        } else if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueIndexed;", m.methodNode.visibleAnnotations)) {
+
+            pw.print("[arg0]");
+
+            if (arguments.length > 1) {
+                if (arguments[1].getSort() == Type.OBJECT) {
+                    pw.print(" = arg1.nativeObject");
+                } else {
+                    pw.print(" = arg1");
+                }
+            }
+
         } else {
+
+            pw.print(".");
+            pw.print(m.methodNode.name);
+            pw.print("(");
+
             for (int i = 0; i < arguments.length; i++) {
                 if (i > 0) {
                     pw.print(", ");
                 }
-                pw.print("arg");
-                pw.print(i);
+
+                final Type argType = arguments[i];
+                if (argType == Type.BYTE_TYPE) {
+                    pw.print("arg");
+                    pw.print(i);
+                } else if (argType == Type.CHAR_TYPE) {
+                    pw.print("arg");
+                    pw.print(i);
+                } else if (argType == Type.SHORT_TYPE) {
+                    pw.print("arg");
+                    pw.print(i);
+                } else if (argType == Type.INT_TYPE) {
+                    pw.print("arg");
+                    pw.print(i);
+                } else if (argType == Type.LONG_TYPE) {
+                    pw.print("arg");
+                    pw.print(i);
+                } else if (argType == Type.FLOAT_TYPE) {
+                    pw.print("arg");
+                    pw.print(i);
+                } else if (argType == Type.DOUBLE_TYPE) {
+                    pw.print("arg");
+                    pw.print(i);
+                } else {
+                    final ResolvedClass typeClass = compileUnit.findClass(argType);
+                    if (typeClass.isCallback()) {
+                        if (!Modifier.isInterface(typeClass.classNode.access)) {
+                            throw new IllegalStateException("Only callback interfaces are allowed in method signatures!");
+                        }
+
+                        final List<ResolvedMethod> callbackMethods = typeClass.resolvedMethods.stream().filter(t -> !t.methodNode.name.equals("init")).collect(Collectors.toList());
+                        if (callbackMethods.size() != 1) {
+                            throw new IllegalStateException("Unexpected number of callback methods, expected 1, got " + callbackMethods.size() + " for type " + typeClass.type);
+                        }
+                        final ResolvedMethod callbackMethod = callbackMethods.get(0);
+                        final Type methodType = Type.getMethodType(callbackMethod.methodNode.desc);
+
+                        pw.print("function(");
+                        for (int j = 0; j < methodType.getArgumentTypes().length; j++) {
+                            if (j > 0) {
+                                pw.print(", ");
+                            }
+                            pw.print("arg");
+                            pw.print(j);
+                        }
+                        pw.print(") {this.");
+                        pw.print(generateMethodName(callbackMethod.methodNode.name, methodType));
+                        pw.print("(");
+                        for (int j = 0; j < methodType.getArgumentTypes().length; j++) {
+                            if (j > 0) {
+                                pw.print(", ");
+                            }
+                            switch (methodType.getArgumentTypes()[j].getSort()) {
+                                case Type.BYTE: {
+                                    pw.print("arg");
+                                    pw.print(j);
+                                    break;
+                                }
+                                case Type.CHAR: {
+                                    pw.print("arg");
+                                    pw.print(j);
+                                    break;
+                                }
+                                case Type.SHORT: {
+                                    pw.print("arg");
+                                    pw.print(j);
+                                    break;
+                                }
+                                case Type.INT: {
+                                    pw.print("arg");
+                                    pw.print(j);
+                                    break;
+                                }
+                                case Type.LONG: {
+                                    pw.print("arg");
+                                    pw.print(j);
+                                    break;
+                                }
+                                case Type.FLOAT: {
+                                    pw.print("arg");
+                                    pw.print(j);
+                                    break;
+                                }
+                                case Type.DOUBLE: {
+                                    pw.print("arg");
+                                    pw.print(j);
+                                    break;
+                                }
+                                case Type.OBJECT: {
+                                    if (methodType.getArgumentTypes()[j].getClassName().equals(String.class.getName())) {
+                                        pw.print("bytecoder.toBytecoderString(arg");
+                                        pw.print(j);
+                                        pw.print(")");
+                                    } else {
+                                        pw.print("bytecoder.wrapNativeIntoTypeInstance(");
+                                        pw.print(generateClassName(methodType.getArgumentTypes()[j]));
+                                        pw.print(", arg");
+                                        pw.print(j);
+                                        pw.print(")");
+                                    }
+                                    break;
+                                }
+                                default: {
+                                    throw new IllegalStateException("Type " + methodType.getArgumentTypes()[j] + " not supported in opaque reference method of " + callbackMethod.owner.type + "." + callbackMethod.methodNode.name);
+                                }
+                            }
+                        }
+                        pw.print(")");
+                        pw.print("}.bind(arg");
+                        pw.print(i);
+                        pw.print(")");
+                    } else if (typeClass.isNativeReferenceHolder()) {
+                        pw.print("arg");
+                        pw.print(i);
+                        pw.print(".nativeObject");
+                    } else {
+                        throw new IllegalStateException("Type " + argType + " not supported in opaque reference method of " + typeClass.type + "." + methodName);
+                    }
+                }
             }
+
+            pw.print(")");
         }
 
-        pw.println(");");
+        if (wrapped) {
+            pw.print(")");
+        }
+
+        pw.println(";");
 
         pw.println("  }");
     }

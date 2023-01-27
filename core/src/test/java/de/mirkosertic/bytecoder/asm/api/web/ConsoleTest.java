@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.asm.api.web;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-import org.junit.Assert;
+import de.mirkosertic.bytecoder.api.web.Console;
+import de.mirkosertic.bytecoder.asm.test.UnitTestRunner;
+import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-@RunWith(BytecoderUnitTestRunner.class)
-public class MultiArrayTest {
+@RunWith(UnitTestRunner.class)
+@BytecoderTestOptions(includeJVM = false)
+public class ConsoleTest {
 
     @Test
-    public void testMultiStringArray() {
-        String[][] theStrings = new String[5][12];
-        theStrings[0][0] = "Hello";
-        theStrings[4][11] = "World";
-        Assert.assertEquals("Hello", theStrings[0][0]);
-        Assert.assertEquals("World", theStrings[4][11]);
+    public void testConsoleLog() {
+        final Console console = Console.console();
+        console.log("Hello world!");
     }
 }

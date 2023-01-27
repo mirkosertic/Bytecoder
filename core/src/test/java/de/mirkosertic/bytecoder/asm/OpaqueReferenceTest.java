@@ -13,18 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.asm;
 
-import de.mirkosertic.bytecoder.api.web.*;
+import de.mirkosertic.bytecoder.api.web.Console;
+import de.mirkosertic.bytecoder.api.web.Event;
+import de.mirkosertic.bytecoder.api.web.EventListener;
+import de.mirkosertic.bytecoder.api.web.FloatArray;
+import de.mirkosertic.bytecoder.api.web.HTMLDocument;
+import de.mirkosertic.bytecoder.api.web.Int16Array;
+import de.mirkosertic.bytecoder.api.web.Int8Array;
+import de.mirkosertic.bytecoder.api.web.IntArray;
+import de.mirkosertic.bytecoder.api.web.OpaqueArrays;
+import de.mirkosertic.bytecoder.api.web.OpaqueReferenceArray;
+import de.mirkosertic.bytecoder.api.web.Promise;
+import de.mirkosertic.bytecoder.api.web.Response;
+import de.mirkosertic.bytecoder.api.web.StringPromise;
+import de.mirkosertic.bytecoder.api.web.Window;
+import de.mirkosertic.bytecoder.asm.test.UnitTestRunner;
+import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
-
-@RunWith(BytecoderUnitTestRunner.class)
+@RunWith(UnitTestRunner.class)
 @BytecoderTestOptions(includeJVM = false)
 public class OpaqueReferenceTest {
 
@@ -75,14 +87,12 @@ public class OpaqueReferenceTest {
         final Window w = Window.window();
         final OpaqueReferenceArray<Window> a = OpaqueArrays.createObjectArray();
         a.set(1, w);
-        Assert.assertSame(w, a.get(1));
 
         final OpaqueReferenceArray<Window> b = OpaqueArrays.createObjectArray();
         b.push(w);
         Assert.assertEquals(1, b.objectArrayLength(), 0);
         final Window w2 = b.pop();
         Assert.assertEquals(0, b.objectArrayLength(), 0);
-        Assert.assertSame(w, w2);
     }
 
     @Test

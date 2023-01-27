@@ -15,18 +15,13 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.api.NativeReferenceHolder;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-import java.lang.annotation.Native;
-
 @SubstitutesInClass(completeReplace = true)
-public class TString implements CharSequence, Comparable<String> {
-
-    @Native
-    private Object nativeObject;
+public class TString implements CharSequence, Comparable<String>, NativeReferenceHolder {
 
     public TString() {
-        nativeObject = null;
     }
 
     public TString(final byte[] data, final byte coder) {
@@ -115,6 +110,8 @@ public class TString implements CharSequence, Comparable<String> {
     public native int indexOf(final int c);
 
     public native int lastIndexOf(final int c);
+
+    public native int lastIndexOf(final String str);
 
     public int compareTo(final String anotherString) {
         final char[] currentvalues = toCharArray();

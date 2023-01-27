@@ -1,21 +1,16 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.api.NativeReferenceHolder;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-import java.lang.annotation.Native;
-
 @SubstitutesInClass(completeReplace = true)
-public class TStringBuilder implements CharSequence {
-
-    @Native
-    private Object nativeObject;
+public class TStringBuilder implements CharSequence, NativeReferenceHolder {
 
     public TStringBuilder() {
         this(10);
     }
 
     public TStringBuilder(final int capacity) {
-        nativeObject = null;
         initializeWith(capacity);
     }
 

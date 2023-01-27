@@ -120,6 +120,9 @@ public class BytecoderLoader implements Loader {
 
             original.fields.clear();
             original.fields.addAll(patch.fields);
+
+            original.interfaces.clear();
+            original.interfaces.addAll(patch.interfaces);
         } else {
             original.fields.addAll(patch.fields);
 

@@ -183,12 +183,14 @@ public class CompileUnit {
     }
 
     public void finalizeLinkingHierarchy() {
+
         final AnalysisStack analysisStack = new AnalysisStack();
         boolean modified = true;
         final Supplier<List<ResolvedClass>> currentList = () -> new ArrayList<>(resolvedClasses.values());
         while (modified) {
             final List<ResolvedClass> lst = currentList.get();
             for (final ResolvedClass cl : lst) {
+                cl.computeOpaqueReferenceTypeAndCallbackStatus(analysisStack);
                 cl.finalizeLinkingHierarchy(analysisStack);
             }
             modified = currentList.get().size() != lst.size();

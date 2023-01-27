@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,19 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.api.web;
+package de.mirkosertic.bytecoder.api;
 
-import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
-
-public abstract class OpaqueArrays implements OpaqueReferenceType {
-
-    public static native FloatArray createFloatArray(int aLength);
-
-    public static native IntArray createIntArray(int aLength);
-
-    public static native Int8Array createInt8Array(int aLength);
-
-    public static native Int16Array createInt16Array(int aLength);
-
-    public static native <V extends OpaqueReferenceType> OpaqueReferenceArray<V> createObjectArray();
+public interface NativeReferenceHolder {
 }
