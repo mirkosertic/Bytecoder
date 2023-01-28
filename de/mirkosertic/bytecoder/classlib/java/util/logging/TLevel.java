@@ -19,6 +19,7 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 import java.util.logging.Level;
 
+@SubstitutesInClass(completeReplace = false)
 public class TLevel {
 
     @SubstitutesInClass(completeReplace = true)

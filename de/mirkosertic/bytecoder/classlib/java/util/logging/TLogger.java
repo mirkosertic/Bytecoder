@@ -15,18 +15,17 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util.logging;
 
-import de.mirkosertic.bytecoder.api.AnyTypeMatches;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @SubstitutesInClass(completeReplace = true)
 public class TLogger {
 
-    public static AnyTypeMatches getLogger(final String name) {
-        return (AnyTypeMatches) new SystemOutLogger(name, Level.INFO);
+    public static Logger getLogger(final String name) {
+        return (Logger) new SystemOutLogger(name, Level.INFO);
     }
-
     private final String name;
     private Level level;
     private final int offValue;

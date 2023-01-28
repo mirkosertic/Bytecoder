@@ -16,63 +16,63 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-import de.mirkosertic.bytecoder.classlib.StringHelper;
 import de.mirkosertic.bytecoder.classlib.VM;
 
+import java.lang.annotation.Native;
+
 @SubstitutesInClass(completeReplace = true)
-public class TLong extends Number {
+public class TLong extends Number implements Comparable<Long> {
 
-    public static final Class<Long> TYPE = (Class<Long>) TClass.getPrimitiveClass("long");
+    public static final Class<Long> TYPE = (Class<Long>) VM.longPrimitiveClass();
 
-    private final long longValue;
+    @Native
+    private final long value;
 
     public TLong(final long aLongValue) {
-        longValue = aLongValue;
+        value = aLongValue;
+    }
+
+    @Override
+    public int hashCode() {
+        return (int) value;
+    }
+
+    @Override
+    public int intValue() {
+        return (int) value;
+    }
+
+    @Override
+    public float floatValue() {
+        return (float) value;
+    }
+
+    @Override
+    public long longValue() {
+        return value;
+    }
+
+    @Override
+    public double doubleValue() {
+        return value;
     }
 
     @Override
     public boolean equals(final Object o) {
         if (this == o)
             return true;
+
         if (o == null || getClass() != o.getClass())
             return false;
 
-        final Long tLong = (Long) o;
+        final Long obj = (Long) o;
 
-        if (longValue != tLong.longValue())
-            return false;
-
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        return (int) longValue;
-    }
-
-    @Override
-    public int intValue() {
-        return (int) longValue;
-    }
-
-    @Override
-    public float floatValue() {
-        return (float) longValue;
-    }
-
-    @Override
-    public long longValue() {
-        return longValue;
-    }
-
-    @Override
-    public double doubleValue() {
-        return longValue;
+        return value == obj.longValue();
     }
 
     @Override
     public String toString() {
-        return toString(longValue);
+        return toString(value, 10);
     }
 
     public static Long valueOf(final long aValue) {
@@ -80,39 +80,25 @@ public class TLong extends Number {
     }
 
     public static Long valueOf(final String aValue) {
-        return new Long(VM.stringToLong(aValue));
+        return new Long(parseLong(aValue));
     }
 
     public static long parseLong(final String aString) {
-        return VM.stringToLong(aString);
+        return parseLong(aString, 10);
     }
 
-    public static long parseLong(final String aString, final int radix) {
-        return VM.stringToLong(aString, radix);
-    }
+    public static native long parseLong(final String aString, final int radix);
 
-    public static long parseLong(final CharSequence aString, final int beginIndex, final int endIndex, final int radix) {
-        return VM.stringToLong(aString.subSequence(beginIndex, endIndex), radix);
-    }
+    public static native long parseLong(final CharSequence aString, final int beginIndex, final int endIndex, final int radix);
 
     public static String toString(final long aValue) {
-        final StringBuilder theBuffer = new StringBuilder();
-        theBuffer.append(aValue);
-        return theBuffer.toString();
+        return toString(aValue, 10);
     }
 
-    public static String toString(final long aValue, final int aBase) {
-        if (aBase == 10) {
-            final StringBuilder theBuffer = new StringBuilder();
-            theBuffer.append(aValue);
-            return theBuffer.toString();
-        } else {
-            return toHexString(aValue);
-        }
-    }
+    public static native String toString(final long aValue, final int aBase);
 
     public static String toHexString(final long aValue) {
-        return VM.longToHex(aValue);
+        return toString(aValue, 16);
     }
 
     public static int numberOfLeadingZeros(final long i) {
@@ -136,76 +122,6 @@ public class TLong extends Number {
         return (int)i & 0x7f;
     }
 
-    public static int compare(final long a, final long b) {
-        if (a > b) {
-            return 1;
-        } else if (a < b) {
-            return -1;
-        }
-        return 0;
-    }
-
-    static int stringSize(long x) {
-        int d = 1;
-        if (x >= 0) {
-            d = 0;
-            x = -x;
-        }
-        long p = -10;
-        for (int i = 1; i < 19; i++) {
-            if (x > p)
-                return i + d;
-            p = 10 * p;
-        }
-        return 19 + d;
-    }
-
-    static int getChars(long i, final int index, final byte[] buf) {
-        long q;
-        int r;
-        int charPos = index;
-
-        final boolean negative = (i < 0);
-        if (!negative) {
-            i = -i;
-        }
-
-        // Get 2 digits/iteration using longs until quotient fits into an int
-        while (i <= Integer.MIN_VALUE) {
-            q = i / 100;
-            r = (int)((q * 100) - i);
-            i = q;
-            buf[--charPos] = StringHelper.DigitOnes[r];
-            buf[--charPos] = StringHelper.DigitTens[r];
-        }
-
-        // Get 2 digits/iteration using ints
-        int q2;
-        int i2 = (int)i;
-        while (i2 <= -100) {
-            q2 = i2 / 100;
-            r  = (q2 * 100) - i2;
-            i2 = q2;
-            buf[--charPos] = StringHelper.DigitOnes[r];
-            buf[--charPos] = StringHelper.DigitTens[r];
-        }
-
-        // We know there are at most two digits left at this point.
-        q2 = i2 / 10;
-        r  = (q2 * 10) - i2;
-        buf[--charPos] = (byte)('0' + r);
-
-        // Whatever left is the remaining digit.
-        if (q2 < 0) {
-            buf[--charPos] = (byte)('0' - q2);
-        }
-
-        if (negative) {
-            buf[--charPos] = (byte)'-';
-        }
-        return charPos;
-    }
-
     public static int signum(final long value) {
         if (value < 0) {
             return -1;
@@ -216,5 +132,12 @@ public class TLong extends Number {
         return 0;
     }
 
+    @Override
+    public int compareTo(final Long o) {
+        return compare(this.value, o.longValue());
+    }
 
+    public static int compare(final long x, final long y) {
+        return (x < y) ? -1 : ((x == y) ? 0 : 1);
+    }
 }

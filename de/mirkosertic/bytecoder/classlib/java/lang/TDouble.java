@@ -18,63 +18,67 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 import de.mirkosertic.bytecoder.classlib.VM;
 
-@SubstitutesInClass(completeReplace = false)
-public class TDouble {
+import java.lang.annotation.Native;
+
+@SubstitutesInClass(completeReplace = true)
+public class TDouble extends Number implements Comparable<Double> {
+
+    public static final Class<Double> TYPE = (Class<Double>) VM.doublePrimitiveClass();
+
+    @Native
+    private final double value;
+
+    public TDouble(final double value) {
+        this.value = value;
+    }
+
+    @Override
+    public int intValue() {
+        return (int) value;
+    }
+
+    @Override
+    public long longValue() {
+        return (long) value;
+    }
+
+    @Override
+    public float floatValue() {
+        return (float) value;
+    }
+
+    @Override
+    public double doubleValue() {
+        return value;
+    }
 
     @Override
     public boolean equals(final Object o) {
         if (this == o)
             return true;
+
         if (o == null || getClass() != o.getClass())
             return false;
 
-        final Double aDouble = (Double) o;
+        final Double obj = (Double) o;
 
-        if (compare(aDouble.doubleValue(), ((Double) (Object) this).doubleValue()) != 0) {
-            return false;
-        }
-
-        return true;
-    }
-
-    public static int compare(final double d1, final double d2) {
-        if (d1 < d2) {
-            return -1;
-        }
-        if (d1 > d2) {
-            return 1;
-        }
-        return 0;
-    }
-
-    public static double parseDouble(final String aValue) {
-        final int p = aValue.indexOf('.');
-        if (p<0) {
-            return VM.stringToLong(aValue);
-        }
-        final String thePrefix = aValue.substring(0, p);
-        final String theSuffix = aValue.substring(p + 1);
-        final long theA = VM.stringToLong(thePrefix);
-        final long theB = VM.stringToLong(theSuffix);
-        int theMultiplier = 1;
-        int theLength = Long.toString(theB).length();
-        while(theLength > 0) {
-            theMultiplier *= 10;
-            theLength--;
-        }
-        if (theA > 0) {
-            return theA + ((double) theB) / theMultiplier;
-        }
-        return theA - ((double) theB) / theMultiplier;
+        return value == obj.doubleValue();
     }
 
     @Override
+    public int hashCode() {
+        return (int) value;
+    }
+
+    public static native double parseDouble(final String aValue);
+
+    @Override
     public String toString() {
-        return toString(((Double) (Object) this).doubleValue());
+        return toString(value);
     }
 
     public static Double valueOf(final String aValue) {
-        return new Double(parseDouble(aValue));
+        return parseDouble(aValue);
     }
 
     public static Double valueOf(final double aValue) {
@@ -83,9 +87,42 @@ public class TDouble {
 
     public static native boolean isNaN(final double aValue);
 
-    public static String toString(final double aValue) {
-        final StringBuilder theBuffer = new StringBuilder();
-        theBuffer.append(aValue);
-        return theBuffer.toString();
+    public static native boolean isInfinite(final double b);
+
+    public static boolean isFinite(final double aValue) {
+        return !isInfinite(aValue) && !isNaN(aValue);
+    }
+
+    public static native String toString(final double aValue);
+
+    public static int signum(final double value) {
+        if (value < 0) {
+            return -1;
+        }
+        if (value > 0) {
+            return 1;
+        }
+        return 0;
+    }
+
+    @Override
+    public int compareTo(final Double o) {
+        return compare(this.value, o.doubleValue());
+    }
+
+    public static int compare(final double x, final double y) {
+        return (x < y) ? -1 : ((x == y) ? 0 : 1);
+    }
+
+    public static long doubleToLongBits(final double aValue) {
+        return 0;
+    }
+
+    public static double longBitsToDouble(final long aValue) {
+        return 0d;
+    }
+
+    public static long doubleToRawLongBits(final double value) {
+        return doubleToLongBits(value);
     }
 }

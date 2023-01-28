@@ -29,6 +29,7 @@ public enum Optimizations implements Optimizer {
                 //new DeleteRedundantVariableCopy(),
                 //new VariableShouldBePHI()
             }),
+    ALL(new Optimizer[] {}),
     ;
 
     private final Optimizer[] optimizers;

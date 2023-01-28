@@ -40,7 +40,9 @@ public class TSystem {
 
     public static final PrintStream err = new PrintStream(new FileOutputStream(FileDescriptor.err));
 
-    public static native long nanoTime();
+    public static long nanoTime() {
+        return currentTimeMillis() * 1000000;
+    }
 
     public static native long currentTimeMillis();
 

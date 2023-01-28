@@ -19,7 +19,7 @@ import com.sun.net.httpserver.HttpServer;
 import de.mirkosertic.bytecoder.asm.ir.AnalysisException;
 import de.mirkosertic.bytecoder.asm.ir.AnalysisStack;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
-import de.mirkosertic.bytecoder.asm.backend.js.CompileOptions;
+import de.mirkosertic.bytecoder.asm.backend.CompileOptions;
 import de.mirkosertic.bytecoder.asm.backend.js.JSBackend;
 import de.mirkosertic.bytecoder.asm.backend.js.JSCompileResult;
 import de.mirkosertic.bytecoder.asm.backend.js.JSIntrinsics;
@@ -274,12 +274,12 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
 
                 compileUnit.finalizeLinkingHierarchy();
 
-                compileUnit.printStatisticsTo(System.out);
+                compileUnit.logStatistics();
 
                 final StringWriter strWriter = new StringWriter();
                 final PrintWriter codeWriter = new PrintWriter(strWriter);
 
-                final CompileOptions compileOptions = new CompileOptions(Optimizations.DISABLED, additionalResources);
+                final CompileOptions compileOptions = new CompileOptions(Optimizations.DISABLED, additionalResources, "");
 
                 final JSBackend backend = new JSBackend();
                 final JSCompileResult result = backend.generateCodeFor(compileUnit, compileOptions);

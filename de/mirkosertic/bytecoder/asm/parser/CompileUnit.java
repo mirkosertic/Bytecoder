@@ -21,14 +21,15 @@ import de.mirkosertic.bytecoder.asm.ir.AnnotationUtils;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.classlib.Array;
+import de.mirkosertic.bytecoder.classlib.BytecoderCharsetEncoder;
 import de.mirkosertic.bytecoder.core.ReflectionConfiguration;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.lang.reflect.Modifier;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Enumeration;
@@ -54,6 +55,8 @@ public class CompileUnit {
 
     private final ReflectionConfiguration reflectionConfiguration;
 
+    private final Logger logger;
+
     public CompileUnit(final Loader loader, final Logger logger, final Intrinsic intrinsic) {
         this.loader = loader;
         this.resolvedClasses = new HashMap<>();
@@ -61,6 +64,7 @@ public class CompileUnit {
         this.exportedMethods = new HashMap<>();
         this.constantPool = new ConstantPool();
         this.reflectionConfiguration = new ReflectionConfiguration();
+        this.logger = logger;
         try {
             final Enumeration<URL> reflectionConfigs = loader.getResources("xbytecoder-reflection.json");
             while(reflectionConfigs.hasMoreElements()) {
@@ -172,8 +176,8 @@ public class CompileUnit {
         exportedMethods.put(MAIN_ENTRY_POINT_EXPORT, method);
 
         // We need the String class and this very specific constructor for code generation
-        final ResolvedClass cl = resolveClass(Type.getType(String.class), analysisStack);
-        cl.resolveMethod("<init>", Type.getMethodType("([BB)V"), analysisStack);
+        resolveClass(Type.getType(String.class), analysisStack).resolveMethod("<init>", Type.getMethodType(Type.VOID_TYPE), analysisStack);
+        resolveClass(Type.getType(BytecoderCharsetEncoder.class), analysisStack).resolveMethod("<init>", Type.getMethodType(Type.VOID_TYPE, Type.getType(Charset.class)), analysisStack);
 
         resolveClass(Type.getType(Array.class), analysisStack);
 
@@ -181,19 +185,21 @@ public class CompileUnit {
     }
 
     public void finalizeLinkingHierarchy() {
+
         final AnalysisStack analysisStack = new AnalysisStack();
         boolean modified = true;
         final Supplier<List<ResolvedClass>> currentList = () -> new ArrayList<>(resolvedClasses.values());
         while (modified) {
             final List<ResolvedClass> lst = currentList.get();
             for (final ResolvedClass cl : lst) {
+                cl.computeOpaqueReferenceTypeAndCallbackStatus(analysisStack);
                 cl.finalizeLinkingHierarchy(analysisStack);
             }
             modified = currentList.get().size() != lst.size();
         }
     }
 
-    public void printStatisticsTo(final PrintStream ps) {
+    public void logStatistics() {
         int numberOfClasses = 0;
         int numberOfInterfaces = 0;
         int numberOfAbstractClasses = 0;
@@ -222,29 +228,19 @@ public class CompileUnit {
             }
         }
 
-        ps.println("Linkage statistics:");
-        ps.print("  Resolved classes in total : ");
-        ps.println(numberOfClasses);
-        ps.print("    # interfaces            : ");
-        ps.println(numberOfInterfaces);
-        ps.print("    # abstract classes      : ");
-        ps.println(numberOfAbstractClasses);
-        ps.print("    # final classes         : ");
-        ps.println(numberOfFinalClasses);
-        ps.print("  Resolved methods in total : ");
-        ps.println(numberOfMethods);
-        ps.print("    # native methods        : ");
-        ps.println(numberOfNativeMethods);
+        logger.info("Linkage statistics:");
+        logger.info("  Resolved classes in total : {}", numberOfClasses);
+        logger.info("    # interfaces            : {}", numberOfInterfaces);
+        logger.info("    # abstract classes      : {}", numberOfAbstractClasses);
+        logger.info("    # final classes         : {}", numberOfFinalClasses);
+        logger.info("  Resolved methods in total : {}", numberOfMethods);
+        logger.info("    # native methods        : {}", numberOfNativeMethods);
 
         for (final ResolvedClass cl : resolvedClasses.values()) {
             for (final ResolvedMethod m : cl.resolvedMethods) {
                 if (m.owner == cl) {
                     if (Modifier.isNative(m.methodNode.access)) {
-                        ps.print("        ");
-                        ps.print(cl.type.getClassName());
-                        ps.print(".");
-                        ps.print(m.methodNode.name);
-                        ps.println(m.methodNode.desc);
+                        logger.info("        {}.{}{}", cl.type.getClassName(), m.methodNode.name, m.methodNode.desc);
                     }
                 }
             }

@@ -548,14 +548,14 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     private void writeExpression(final NewMultiArray node) {
-        pw.print("bytecoder.multiarray(");
+        pw.print("bytecoder.multiarray([");
         for (int i = 0; i < node.incomingDataFlows.length; i++) {
             if (i > 0) {
                 pw.print(", ");
             }
             writeExpression(node.incomingDataFlows[i]);
         }
-        pw.print(",");
+        pw.print("], ");
         switch (node.type.getSort()) {
             case Type.OBJECT:
                 pw.print("null");

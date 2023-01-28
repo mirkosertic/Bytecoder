@@ -15,5 +15,5 @@
  */
 package de.mirkosertic.bytecoder.api;
 
-public interface OpaqueReferenceType {
+public interface OpaqueReferenceType extends NativeReferenceHolder {
 }

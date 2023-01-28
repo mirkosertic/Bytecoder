@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.api.web;
 
 import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 
-public abstract class OpaqueArrays {
+public abstract class OpaqueArrays implements OpaqueReferenceType {
 
     public static native FloatArray createFloatArray(int aLength);
 

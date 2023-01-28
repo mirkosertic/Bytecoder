@@ -276,6 +276,9 @@ public class Graph {
         return (Copy) register(new Copy());
     }
 
+    public Nop newNop() {
+        return (Nop) register(new Nop());
+    }
     public CaughtException newCaughtException(final Type type) {
         return (CaughtException) register(new CaughtException(type));
     }

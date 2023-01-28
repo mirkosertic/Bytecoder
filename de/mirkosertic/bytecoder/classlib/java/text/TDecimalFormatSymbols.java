@@ -21,6 +21,7 @@ import de.mirkosertic.bytecoder.classlib.VM;
 import java.text.DecimalFormatSymbols;
 import java.util.Currency;
 import java.util.Locale;
+import java.util.ResourceBundle;
 
 @SubstitutesInClass(completeReplace = true)
 public class TDecimalFormatSymbols {
@@ -37,23 +38,23 @@ public class TDecimalFormatSymbols {
     }
 
     public TDecimalFormatSymbols(final Locale aLocale) {
-//        final ResourceBundle bundle = ResourceBundle.getBundle("localedata", aLocale);
+        final ResourceBundle bundle = ResourceBundle.getBundle("localedata", aLocale);
 
-        zeroDigit= '0';
-        groupingSeparator= ',';
-        decimalSeparator= '.';
-        perMill = '\u2030';
-        percent = '%';
-        digit = '#';
-        patternSeparator = ';';
-        infinity = "\u221e";
-        NaN = "NaN";
-        minusSign='-';
-        currencySymbol="$";
-        intlCurrencySymbol="USD";
-        monetarySeparator='.';
-        exponential='E';
-        exponentialSeparator="E";
+        zeroDigit = bundle.getString("DecimalFormatSymbols.zeroDigit").charAt(0);
+        groupingSeparator = bundle.getString("DecimalFormatSymbols.groupingSeparator").charAt(0);
+        decimalSeparator = bundle.getString("DecimalFormatSymbols.decimalSeparator").charAt(0);
+        perMill = bundle.getString("DecimalFormatSymbols.perMill").charAt(0);
+        percent = bundle.getString("DecimalFormatSymbols.percent").charAt(0);
+        digit = bundle.getString("DecimalFormatSymbols.digit").charAt(0);
+        patternSeparator = bundle.getString("DecimalFormatSymbols.patternSeparator").charAt(0);
+        infinity = bundle.getString("DecimalFormatSymbols.infinity");
+        NaN = bundle.getString("DecimalFormatSymbols.NaN");
+        minusSign = bundle.getString("DecimalFormatSymbols.minusSign").charAt(0);
+        currencySymbol = bundle.getString("DecimalFormatSymbols.currencySymbol");
+        intlCurrencySymbol = bundle.getString("DecimalFormatSymbols.intlCurrencySymbol");
+        monetarySeparator = bundle.getString("DecimalFormatSymbols.monetarySeparator").charAt(0);
+        exponential = bundle.getString("DecimalFormatSymbols.exponential").charAt(0);
+        exponentialSeparator = bundle.getString("exponentialSeparator.exponentialSeparator");
 
         locale = aLocale;
     }

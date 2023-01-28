@@ -40,6 +40,7 @@ import de.mirkosertic.bytecoder.asm.ir.MonitorExit;
 import de.mirkosertic.bytecoder.asm.ir.New;
 import de.mirkosertic.bytecoder.asm.ir.NewArray;
 import de.mirkosertic.bytecoder.asm.ir.Node;
+import de.mirkosertic.bytecoder.asm.ir.Nop;
 import de.mirkosertic.bytecoder.asm.ir.NullReference;
 import de.mirkosertic.bytecoder.asm.ir.NullTest;
 import de.mirkosertic.bytecoder.asm.ir.NumericalTest;
@@ -960,6 +961,19 @@ public class GraphParser {
         return Collections.emptyList();
     }
 
+    private List<ControlFlow> parse_NOP(final ControlFlow currentFlow) {
+        final InsnNode node = (InsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Nop nop = graph.newNop();
+        graph.registerTranslation(node, new InstructionTranslation(nop, currentState.frame));
+
+        final GraphParserState newState = currentState.controlFlowsTo(nop);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
     private List<ControlFlow> parse_RETURNVALUE(final ControlFlow currentFlow) {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
@@ -1444,6 +1458,8 @@ public class GraphParser {
     private List<ControlFlow> parseInsnNode(final ControlFlow currentFlow) {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         switch (node.getOpcode()) {
+            case Opcodes.NOP:
+                return parse_NOP(currentFlow);
             case Opcodes.RETURN:
                 return parse_RETURN(currentFlow);
             case Opcodes.LRETURN:

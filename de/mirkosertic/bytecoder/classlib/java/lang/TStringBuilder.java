@@ -1,67 +1,79 @@
-/*
- * Copyright 2018 Mirko Sertic
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.api.NativeReferenceHolder;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-import de.mirkosertic.bytecoder.classlib.StringHelper;
 
-@SubstitutesInClass(completeReplace = false)
-public class TStringBuilder {
+@SubstitutesInClass(completeReplace = true)
+public class TStringBuilder implements CharSequence, NativeReferenceHolder {
 
-    public StringBuilder append(final float aValue) {
-        StringHelper.appendInternal((StringBuilder) (Object) this, aValue, 1000000000);
-        return (StringBuilder) (Object) this;
+    public TStringBuilder() {
+        this(10);
     }
 
-    public StringBuilder append(final double aValue) {
-        StringHelper.appendInternal((StringBuilder) (Object) this, aValue, 1000000000);
-        return (StringBuilder) (Object) this;
+    public TStringBuilder(final int capacity) {
+        initializeWith(capacity);
     }
 
-    public StringBuilder append(long aValue) {
-        boolean isNegative = false;
-        if (aValue < 0) {
-            isNegative = true;
-            aValue=-aValue;
-        }
-        final char[] theCharacters = new char[20];
-        int theOffset = 0;
-
-        do {
-            final int theRemainder = (int) (aValue % 10);
-            theCharacters[theOffset++] = Character.forDigit(theRemainder, 10);
-            aValue = aValue / 10;
-        } while (aValue > 0);
-
-        final char[] theNewData;
-        final int theStart;
-        if (isNegative) {
-            theNewData = new char[theOffset + 1];
-            theNewData[0] = '-';
-            theStart = 1;
-        } else {
-            theNewData = new char[theOffset];
-            theStart = 0;
-        }
-        for (int i=0;i<theOffset;i++) {
-            theNewData[theStart + i] = theCharacters[theOffset - 1 - i];
-        }
-
-        final StringBuilder sb = (StringBuilder) (Object) this;
-        sb.append(theNewData);
-        return sb;
+    public TStringBuilder(final String str) {
+        this();
+        append(str);
     }
+
+    native void initializeWith(int capacity);
+
+    public native StringBuilder append(final String value);
+
+    public StringBuilder append(final byte value) {
+        return append(Byte.toString(value));
+    }
+
+    public StringBuilder append(final char value) {
+        return append(Character.toString(value));
+    }
+
+    public StringBuilder append(final short value) {
+        return append(Short.toString(value));
+    }
+
+    public StringBuilder append(final int value) {
+        return append(Integer.toString(value));
+    }
+
+    public StringBuilder append(final long value) {
+        return append(Long.toString(value));
+    }
+
+    public StringBuilder append(final float value) {
+        return append(Float.toString(value));
+    }
+
+    public StringBuilder append(final double value) {
+        return append(Double.toString(value));
+    }
+
+    public StringBuilder append(final Object value) {
+        if (value != null) {
+            return append(value.toString());
+        }
+        return append("null");
+    }
+
+    public native StringBuilder append(final CharSequence value, int a, int b);
+
+    public native StringBuilder append(final char[] data, int offset, int len);
+
+    public native StringBuilder reverse();
+
+    native void setLength(int size);
+
+    public native String toString();
+
+    @Override
+    public native int length();
+
+    @Override
+    public native char charAt(int index);
+
+    @Override
+    public native CharSequence subSequence(int start, int end);
 }
