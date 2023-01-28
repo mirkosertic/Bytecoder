@@ -31,6 +31,7 @@ import de.mirkosertic.bytecoder.asm.ir.LookupSwitch;
 import de.mirkosertic.bytecoder.asm.ir.MonitorEnter;
 import de.mirkosertic.bytecoder.asm.ir.MonitorExit;
 import de.mirkosertic.bytecoder.asm.ir.Node;
+import de.mirkosertic.bytecoder.asm.ir.Nop;
 import de.mirkosertic.bytecoder.asm.ir.Projection;
 import de.mirkosertic.bytecoder.asm.ir.Region;
 import de.mirkosertic.bytecoder.asm.ir.Return;
@@ -182,6 +183,8 @@ public class Sequencer {
                     current = null;
                 } else if (current instanceof CheckCast) {
                     codegenerator.write((CheckCast) current);
+                    current = followUpProcessor.apply(current);
+                } else if (current instanceof Nop) {
                     current = followUpProcessor.apply(current);
                 } else {
                     throw new IllegalStateException("Not implemented : " + current.getClass().getSimpleName());

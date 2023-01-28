@@ -16,6 +16,14 @@
 package de.mirkosertic.bytecoder.maven;
 
 import de.mirkosertic.bytecoder.allocator.Allocator;
+import de.mirkosertic.bytecoder.asm.backend.js.JSBackend;
+import de.mirkosertic.bytecoder.asm.backend.js.JSCompileResult;
+import de.mirkosertic.bytecoder.asm.backend.js.JSIntrinsics;
+import de.mirkosertic.bytecoder.asm.ir.AnalysisStack;
+import de.mirkosertic.bytecoder.asm.loader.BytecoderLoader;
+import de.mirkosertic.bytecoder.asm.optimizer.Optimizations;
+import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
+import de.mirkosertic.bytecoder.asm.parser.Loader;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.backend.CompileTarget;
@@ -35,6 +43,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.objectweb.asm.Type;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -155,28 +164,59 @@ public class BytecoderMavenMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException {
-        final File theBaseDirectory = new File(buildDirectory);
-        final File theBytecoderDirectory = new File(theBaseDirectory, "bytecoder");
-        theBytecoderDirectory.mkdirs();
+        final File baseDirectory = new File(buildDirectory);
+        final File bytecoderDirectory = new File(baseDirectory, "bytecoder");
+        bytecoderDirectory.mkdirs();
 
         try {
-            final ClassLoader theLoader = prepareClassLoader();
-            final Class<?> theTargetClass = theLoader.loadClass(mainClass);
+            final ClassLoader classLoader = prepareClassLoader();
 
-            final CompileTarget theCompileTarget = new CompileTarget(theLoader, CompileTarget.BackendType.valueOf(backend));
+            if ("js".equals(backend)) {
+                final Loader loader = new BytecoderLoader(classLoader);
 
-            final BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
-                    new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1) });
+                final CompileUnit compileUnit = new CompileUnit(loader, new Slf4JLogger(), new JSIntrinsics());
+                final Type invokedType = Type.getObjectType(mainClass.replace('.','/'));
 
-            final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.valueOf(optimizationLevel), enableExceptionHandling, filenamePrefix, wasmInitialPages, wasmMaximumPages, minifyCompileResult, preferStackifier, Allocator.valueOf(registerAllocator), additionalClassesToLink, additionalResources, LLVMOptimizationLevel.valueOf(llvmOptimizationLevel), escapeAnalysisEnabled);
-            final CompileResult theCode = theCompileTarget.compile(theOptions, theTargetClass, "main", theSignature);
-            for (final CompileResult.Content content : theCode.getContent()) {
-                final File theBytecoderFileName = new File(theBytecoderDirectory, content.getFileName());
-                try (final FileOutputStream theFos = new FileOutputStream(theBytecoderFileName)) {
-                    content.writeTo(theFos);
+                compileUnit.resolveMainMethod(invokedType, "main", Type.getMethodType(Type.VOID_TYPE, Type.getType("[Ljava/lang/String;")));
+
+                for (final String className : additionalClassesToLink) {
+                    compileUnit.resolveClass(Type.getObjectType(className.replace('.', '/')), new AnalysisStack());
+                }
+
+                compileUnit.finalizeLinkingHierarchy();
+
+                compileUnit.logStatistics();
+
+                final de.mirkosertic.bytecoder.asm.backend.CompileOptions compileOptions =
+                        new de.mirkosertic.bytecoder.asm.backend.CompileOptions(Optimizations.valueOf(optimizationLevel), additionalResources, filenamePrefix);
+
+                final JSBackend backend = new JSBackend();
+                final JSCompileResult result = backend.generateCodeFor(compileUnit, compileOptions);
+
+                for (final CompileResult.Content content : result.getContent()) {
+                    final File theBytecoderFileName = new File(bytecoderDirectory, content.getFileName());
+                    try (final FileOutputStream theFos = new FileOutputStream(theBytecoderFileName)) {
+                        content.writeTo(theFos);
+                    }
+                }
+
+            } else {
+                final Class<?> theTargetClass = classLoader.loadClass(mainClass);
+
+                final CompileTarget theCompileTarget = new CompileTarget(classLoader, CompileTarget.BackendType.valueOf(backend));
+
+                final BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
+                        new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1)});
+
+                final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.valueOf(optimizationLevel), enableExceptionHandling, filenamePrefix, wasmInitialPages, wasmMaximumPages, minifyCompileResult, preferStackifier, Allocator.valueOf(registerAllocator), additionalClassesToLink, additionalResources, LLVMOptimizationLevel.valueOf(llvmOptimizationLevel), escapeAnalysisEnabled);
+                final CompileResult theCode = theCompileTarget.compile(theOptions, theTargetClass, "main", theSignature);
+                for (final CompileResult.Content content : theCode.getContent()) {
+                    final File theBytecoderFileName = new File(bytecoderDirectory, content.getFileName());
+                    try (final FileOutputStream theFos = new FileOutputStream(theBytecoderFileName)) {
+                        content.writeTo(theFos);
+                    }
                 }
             }
-
         } catch (final Exception e) {
             throw new MojoExecutionException("Error running bytecoder", e);
         }

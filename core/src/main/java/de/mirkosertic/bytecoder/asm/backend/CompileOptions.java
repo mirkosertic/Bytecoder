@@ -13,18 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.asm.backend.js;
+package de.mirkosertic.bytecoder.asm.backend;
 
 import de.mirkosertic.bytecoder.asm.optimizer.Optimizer;
 
 public class CompileOptions {
 
     private final Optimizer optimizer;
+
     private final String[] additionalResources;
 
-    public CompileOptions(final Optimizer optimizer, final String[] additionalResources) {
+    private final String filenamePrefix;
+
+    public CompileOptions(final Optimizer optimizer, final String[] additionalResources, final String filenamePrefix) {
         this.optimizer = optimizer;
         this.additionalResources = additionalResources;
+        this.filenamePrefix = filenamePrefix;
     }
 
     public Optimizer getOptimizer() {
@@ -33,5 +37,9 @@ public class CompileOptions {
 
     public String[] getAdditionalResources() {
         return additionalResources;
+    }
+
+    public String getFilenamePrefix() {
+        return filenamePrefix;
     }
 }

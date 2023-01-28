@@ -161,25 +161,7 @@
                         <configuration>
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
                             <backend>js</backend>
-                            <enableExceptionHandling>false</enableExceptionHandling>
-                            <minifyCompileResult>true</minifyCompileResult>
                             <filenamePrefix>jbox2d_js</filenamePrefix>
-                            <debugOutput>false</debugOutput>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>javascript-stackified</id>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                        <configuration>
-                            <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
-                            <backend>js</backend>
-                            <enableExceptionHandling>false</enableExceptionHandling>
-                            <preferStackifier>true</preferStackifier>
-                            <minifyCompileResult>true</minifyCompileResult>
-                            <filenamePrefix>jbox2d_js_stackified</filenamePrefix>
-                            <debugOutput>false</debugOutput>
                         </configuration>
                     </execution>
                     <execution>
@@ -190,13 +172,10 @@
                         <configuration>
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulationKotlin</mainClass>
                             <backend>js</backend>
-                            <enableExceptionHandling>false</enableExceptionHandling>
-                            <minifyCompileResult>true</minifyCompileResult>
                             <filenamePrefix>jbox2d_kotlin_js</filenamePrefix>
-                            <debugOutput>false</debugOutput>
                         </configuration>
                     </execution>
-                    <execution>
+<!--                    <execution>
                         <id>wasm</id>
                         <goals>
                             <goal>compile</goal>
@@ -274,7 +253,7 @@
                             <filenamePrefix>vue_wasmllvm</filenamePrefix>
                             <debugOutput>false</debugOutput>
                         </configuration>
-                    </execution>
+                    </execution>-->
                     <execution>
                         <id>lua-js</id>
                         <goals>
@@ -283,13 +262,10 @@
                         <configuration>
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.LuaDemo</mainClass>
                             <backend>js</backend>
-                            <enableExceptionHandling>false</enableExceptionHandling>
-                            <minifyCompileResult>true</minifyCompileResult>
                             <filenamePrefix>lua_js</filenamePrefix>
-                            <debugOutput>false</debugOutput>
                         </configuration>
                     </execution>
-                    <execution>
+<!--                    <execution>
                         <id>lua-wasm</id>
                         <goals>
                             <goal>compile</goal>
@@ -314,7 +290,7 @@
                             <filenamePrefix>lua_wasmllvm</filenamePrefix>
                             <debugOutput>false</debugOutput>
                         </configuration>
-                    </execution>
+                    </execution>-->
                 </executions>
             </plugin>
 

@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.asm.backend.js;
 
 import de.mirkosertic.bytecoder.api.ClassLibProvider;
+import de.mirkosertic.bytecoder.asm.backend.CompileOptions;
 import de.mirkosertic.bytecoder.asm.ir.AnnotationUtils;
 import de.mirkosertic.bytecoder.asm.ir.Graph;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedClass;
@@ -29,6 +30,7 @@ import de.mirkosertic.bytecoder.asm.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.core.ReflectionConfiguration;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringEscapeUtils;
 import org.objectweb.asm.Type;
 
@@ -207,7 +209,11 @@ public class JSBackend {
         pw.flush();
 
         final JSCompileResult result = new JSCompileResult();
-        result.add(new CompileResult.StringContent("classes.js", sw.toString()));
+        if (!StringUtils.isEmpty(compileOptions.getFilenamePrefix())) {
+            result.add(new CompileResult.StringContent(compileOptions.getFilenamePrefix() + "classes.js ", sw.toString()));
+        } else {
+            result.add(new CompileResult.StringContent("classes.js ", sw.toString()));
+        }
 
         final List<String> resourcesToInclude = new ArrayList<>();
         for (final ClassLibProvider provider : ClassLibProvider.availableProviders()) {
@@ -347,8 +353,6 @@ public class JSBackend {
     }
 
     public void generateNativeMethod(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m) {
-        System.out.println("Writing native method for " + cl.type + " . " + m.methodNode.name + m.methodNode.desc);
-
         pw.println();
         pw.print("  ");
         if (Modifier.isStatic(m.methodNode.access)) {
@@ -457,8 +461,6 @@ public class JSBackend {
     }
 
     public void generateOpaqueAdapterMethod(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m) {
-        System.out.println("Writing opaque method for " + cl.type + " . " + m.methodNode.name + m.methodNode.desc);
-
         pw.println();
         pw.print("  ");
         final String methodName = generateMethodName(m.methodNode.name, Type.getMethodType(m.methodNode.desc));
@@ -512,7 +514,11 @@ public class JSBackend {
                         throw new IllegalStateException("Type " + arguments[0] + " is not supported as an opaque property type.");
                     }
                 } else {
-                    pw.print(" = arg0");
+                    if (arguments[0].getSort() == Type.BOOLEAN) {
+                        pw.print(" = (arg0 == 1 ? true : false)");
+                    } else {
+                        pw.print(" = arg0");
+                    }
                 }
             }
         } else if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueIndexed;", m.methodNode.visibleAnnotations)) {
@@ -560,8 +566,15 @@ public class JSBackend {
                 } else if (argType == Type.DOUBLE_TYPE) {
                     pw.print("arg");
                     pw.print(i);
+                } else if (argType == Type.BOOLEAN_TYPE) {
+                    pw.print("(arg");
+                    pw.print(i);
+                    pw.print(" == 1 ? true : false)");
                 } else {
                     final ResolvedClass typeClass = compileUnit.findClass(argType);
+                    if (typeClass == null) {
+                        throw new IllegalStateException("Cannot find linked class for type " + argType);
+                    }
                     if (typeClass.isCallback()) {
                         if (!Modifier.isInterface(typeClass.classNode.access)) {
                             throw new IllegalStateException("Only callback interfaces are allowed in method signatures!");
@@ -625,6 +638,12 @@ public class JSBackend {
                                     pw.print(j);
                                     break;
                                 }
+                                case Type.BOOLEAN: {
+                                    pw.print("(arg");
+                                    pw.print(j);
+                                    pw.print(" ? 1 : 0)");
+                                    break;
+                                }
                                 case Type.OBJECT: {
                                     if (methodType.getArgumentTypes()[j].getClassName().equals(String.class.getName())) {
                                         pw.print("bytecoder.toBytecoderString(arg");
@@ -671,8 +690,6 @@ public class JSBackend {
     }
 
     public void generateMethod(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m, final CompileOptions options) {
-        System.out.println("Writing method for " + cl.type + " . " + m.methodNode.name + m.methodNode.desc);
-
         pw.println();
         pw.print("  ");
         if (Modifier.isStatic(m.methodNode.access)) {
