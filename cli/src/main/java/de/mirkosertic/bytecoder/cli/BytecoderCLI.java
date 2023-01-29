@@ -16,6 +16,14 @@
 package de.mirkosertic.bytecoder.cli;
 
 import de.mirkosertic.bytecoder.allocator.Allocator;
+import de.mirkosertic.bytecoder.asm.backend.js.JSBackend;
+import de.mirkosertic.bytecoder.asm.backend.js.JSCompileResult;
+import de.mirkosertic.bytecoder.asm.backend.js.JSIntrinsics;
+import de.mirkosertic.bytecoder.asm.ir.AnalysisStack;
+import de.mirkosertic.bytecoder.asm.loader.BytecoderLoader;
+import de.mirkosertic.bytecoder.asm.optimizer.Optimizations;
+import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
+import de.mirkosertic.bytecoder.asm.parser.Loader;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.backend.CompileTarget;
@@ -27,6 +35,7 @@ import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
 import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
+import org.objectweb.asm.Type;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -121,19 +130,51 @@ public class BytecoderCLI {
         final ClassLoader theLoader = BytecoderCLI.class.getClassLoader();
         final URLClassLoader classLoader = new URLClassLoader(new URL[] {new File(theCLIOptions.classpath).toURI().toURL()}, theLoader);
 
-        final Class theTargetClass = classLoader.loadClass(theCLIOptions.mainClass);
+        if ("js".equals(theCLIOptions.backend)) {
 
-        final CompileTarget theCompileTarget = new CompileTarget(classLoader, CompileTarget.BackendType.valueOf(theCLIOptions.backend));
+            final Loader loader = new BytecoderLoader(classLoader);
 
-        final BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
-                new BytecodeTypeRef[] { new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1) });
+            final CompileUnit compileUnit = new CompileUnit(loader, new Slf4JLogger(), new JSIntrinsics());
+            final Type invokedType = Type.getObjectType(theCLIOptions.mainClass.replace('.','/'));
 
-        final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), theCLIOptions.debugOutput, KnownOptimizer.valueOf(theCLIOptions.optimizationLevel), theCLIOptions.enableExceptionHandling, theCLIOptions.filenamePrefix, theCLIOptions.wasmInitialPages, theCLIOptions.wasmMaximumPages, theCLIOptions.minifyCompileResult, theCLIOptions.preferStackifier, Allocator.valueOf(theCLIOptions.registerAllocator), theCLIOptions.additionalClassesToLink, theCLIOptions.additionalResources, LLVMOptimizationLevel.valueOf(theCLIOptions.llvmOptimizationLevel), theCLIOptions.escapeAnalysisEnabled);
-        final CompileResult theCode = theCompileTarget.compile(theOptions, theTargetClass, "main", theSignature);
-        for (final CompileResult.Content content : theCode.getContent()) {
-            final File theBytecoderFileName = new File(theBytecoderDirectory, content.getFileName());
-            try (final FileOutputStream theFos = new FileOutputStream(theBytecoderFileName)) {
-                content.writeTo(theFos);
+            compileUnit.resolveMainMethod(invokedType, "main", Type.getMethodType(Type.VOID_TYPE, Type.getType("[Ljava/lang/String;")));
+
+            for (final String className : theCLIOptions.additionalClassesToLink) {
+                compileUnit.resolveClass(Type.getObjectType(className.replace('.', '/')), new AnalysisStack());
+            }
+
+            compileUnit.finalizeLinkingHierarchy();
+
+            compileUnit.logStatistics();
+
+            final de.mirkosertic.bytecoder.asm.backend.CompileOptions compileOptions =
+                    new de.mirkosertic.bytecoder.asm.backend.CompileOptions(Optimizations.valueOf(theCLIOptions.optimizationLevel), theCLIOptions.additionalResources, theCLIOptions.filenamePrefix);
+
+            final JSBackend backend = new JSBackend();
+            final JSCompileResult result = backend.generateCodeFor(compileUnit, compileOptions);
+
+            for (final CompileResult.Content content : result.getContent()) {
+                final File theBytecoderFileName = new File(theBytecoderDirectory, content.getFileName());
+                try (final FileOutputStream theFos = new FileOutputStream(theBytecoderFileName)) {
+                    content.writeTo(theFos);
+                }
+            }
+
+        } else {
+            final CompileTarget theCompileTarget = new CompileTarget(classLoader, CompileTarget.BackendType.valueOf(theCLIOptions.backend));
+
+            final BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
+                    new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1)});
+
+            final Class theTargetClass = classLoader.loadClass(theCLIOptions.mainClass);
+
+            final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), theCLIOptions.debugOutput, KnownOptimizer.valueOf(theCLIOptions.optimizationLevel), theCLIOptions.enableExceptionHandling, theCLIOptions.filenamePrefix, theCLIOptions.wasmInitialPages, theCLIOptions.wasmMaximumPages, theCLIOptions.minifyCompileResult, theCLIOptions.preferStackifier, Allocator.valueOf(theCLIOptions.registerAllocator), theCLIOptions.additionalClassesToLink, theCLIOptions.additionalResources, LLVMOptimizationLevel.valueOf(theCLIOptions.llvmOptimizationLevel), theCLIOptions.escapeAnalysisEnabled);
+            final CompileResult theCode = theCompileTarget.compile(theOptions, theTargetClass, "main", theSignature);
+            for (final CompileResult.Content content : theCode.getContent()) {
+                final File theBytecoderFileName = new File(theBytecoderDirectory, content.getFileName());
+                try (final FileOutputStream theFos = new FileOutputStream(theBytecoderFileName)) {
+                    content.writeTo(theFos);
+                }
             }
         }
     }
