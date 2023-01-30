@@ -17,7 +17,7 @@
 <body>
 <canvas id="benchmark-canvas" width="600" height="600"></canvas>
 <script type="text/javascript" src="stats.min.js"></script>
-<script type="text/javascript" src="jbox2d_kotlin_js.js"></script>
+<script type="text/javascript" src="jbox2d_kotlin_jsclasses.js"></script>
 <button id="button" value="Click me" style="display: none">Click Me</button>
 <table border="1">
     <tr>
@@ -88,9 +88,6 @@
             stats.end();
         }
     };
-
-    console.log("Init");
-    bytecoder.bootstrap();
 
     bytecoder.exports.main();
     console.log("Ready");

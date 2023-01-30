@@ -474,7 +474,7 @@ public class GraphParser {
                                 final TryCatchGuardStackEntry tryCatchGuardStackEntry = new TryCatchGuardStackEntry((TryCatch) region, node, endNode);
                                 nextState = nextState.withNewTryCatchOnStack(tryCatchGuardStackEntry);
 
-                                graph.registerTranslation(node, new InstructionTranslation(nestedTryCatch, state.frame));
+                                //graph.registerTranslation(node, new InstructionTranslation(nestedTryCatch, state.frame));
 
                                 currentTryCatch.addControlFlowTo(StandardProjections.TRYCATCHGUARD, nestedTryCatch);
                                 currentTryCatch = nestedTryCatch;
@@ -601,6 +601,24 @@ public class GraphParser {
         }
     }
 
+    private void linkType(final Type type) {
+        switch (type.getSort()) {
+            case Type.OBJECT:
+                compileUnit.resolveClass(type, analysisStack);
+                break;
+            case Type.ARRAY:
+                linkType(type.getElementType());
+                break;
+        }
+    }
+
+    private void linkArgumentsAndReturnType(final Type type) {
+        linkType(type.getReturnType());
+        for (final Type t : type.getArgumentTypes()) {
+            linkType(type);
+        }
+    }
+
     private List<ControlFlow> parse_INVOKESPECIAL(final ControlFlow currentFlow) {
         final MethodInsnNode node = (MethodInsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
@@ -622,6 +640,9 @@ public class GraphParser {
 
             ControlTokenConsumer n = compileUnit.getIntrinsic().intrinsifyMethodInvocation(compileUnit, analysisStack, node, incomingData, graph, this);
             if (n == null) {
+
+                linkArgumentsAndReturnType(methodType);
+
                 final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
                 final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
 
@@ -636,6 +657,9 @@ public class GraphParser {
 
             Value n = compileUnit.getIntrinsic().intrinsifyMethodInvocationWithReturnValue(compileUnit, analysisStack, node, incomingData, graph, this);
             if (n == null) {
+
+                linkArgumentsAndReturnType(methodType);
+
                 final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
                 final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
 
@@ -681,10 +705,13 @@ public class GraphParser {
 
             ControlTokenConsumer n = compileUnit.getIntrinsic().intrinsifyMethodInvocation(compileUnit, analysisStack, node, incomingData, graph, this);
             if (n == null) {
-                final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
-                rc.resolveMethod(node.name, methodType, analysisStack);
 
-                n = graph.newVirtualMethodInvocation(node);
+                linkArgumentsAndReturnType(methodType);
+
+                final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
+                final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
+
+                n = graph.newVirtualMethodInvocation(node, rm);
                 n.addIncomingData(incomingData);
             }
 
@@ -696,10 +723,13 @@ public class GraphParser {
         } else {
             Value n = compileUnit.getIntrinsic().intrinsifyMethodInvocationWithReturnValue(compileUnit, analysisStack, node, incomingData, graph, this);
             if (n == null) {
-                final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
-                rc.resolveMethod(node.name, methodType, analysisStack);
 
-                n = graph.newVirtualMethodInvocationExpression(node);
+                linkArgumentsAndReturnType(methodType);
+
+                final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
+                final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
+
+                n = graph.newVirtualMethodInvocationExpression(node, rm);
                 n.addIncomingData(incomingData);
             }
 
@@ -736,10 +766,13 @@ public class GraphParser {
         if (methodType.getReturnType().equals(Type.VOID_TYPE)) {
             ControlTokenConsumer n = compileUnit.getIntrinsic().intrinsifyMethodInvocation(compileUnit, analysisStack, node, incomingData, graph, this);
             if (n == null) {
-                final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
-                rc.resolveMethod(node.name, methodType, analysisStack);
 
-                n = graph.newInterfaceMethodInvocation(node);
+                linkArgumentsAndReturnType(methodType);
+
+                final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
+                final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
+
+                n = graph.newInterfaceMethodInvocation(node, rm);
                 n.addIncomingData(incomingData);
             }
 
@@ -751,10 +784,13 @@ public class GraphParser {
         } else {
             Value n = compileUnit.getIntrinsic().intrinsifyMethodInvocationWithReturnValue(compileUnit, analysisStack, node, incomingData, graph, this);
             if (n == null) {
-                final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
-                rc.resolveMethod(node.name, methodType, analysisStack);
 
-                n = graph.newInterfaceMethodInvocationExpression(node);
+                linkArgumentsAndReturnType(methodType);
+
+                final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
+                final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
+
+                n = graph.newInterfaceMethodInvocationExpression(node, rm);
                 n.addIncomingData(incomingData);
             }
 
@@ -795,6 +831,9 @@ public class GraphParser {
 
             ControlTokenConsumer n = compileUnit.getIntrinsic().intrinsifyMethodInvocation(compileUnit, analysisStack, node, incomingData, graph, this);
             if (n == null) {
+
+                linkArgumentsAndReturnType(methodType);
+
                 final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
                 final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
 
@@ -810,6 +849,8 @@ public class GraphParser {
         } else {
             Value n = compileUnit.getIntrinsic().intrinsifyMethodInvocationWithReturnValue(compileUnit, analysisStack, node, incomingData, graph, this);
             if (n == null) {
+
+                linkArgumentsAndReturnType(methodType);
 
                 final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
                 final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);

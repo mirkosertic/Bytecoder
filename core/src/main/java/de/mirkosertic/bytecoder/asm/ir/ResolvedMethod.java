@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.asm.ir;
 
 import de.mirkosertic.bytecoder.asm.parser.GraphParser;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.lang.reflect.Modifier;
@@ -28,9 +29,12 @@ public class ResolvedMethod {
 
     public Graph methodBody;
 
-    public ResolvedMethod(final ResolvedClass owner, final MethodNode methodNode) {
+    public final Type methodType;
+
+    public ResolvedMethod(final ResolvedClass owner, final MethodNode methodNode, final Type methodType) {
         this.owner = owner;
         this.methodNode = methodNode;
+        this.methodType = methodType;
     }
 
     public void parseBody(final AnalysisStack analysisStack) {

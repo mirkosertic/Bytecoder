@@ -22,9 +22,12 @@ public class InterfaceMethodInvocationExpression extends Value implements Potent
 
     public final MethodInsnNode insnNode;
 
-    public InterfaceMethodInvocationExpression(final MethodInsnNode insnNode) {
+    public final ResolvedMethod method;
+
+    public InterfaceMethodInvocationExpression(final MethodInsnNode insnNode, final ResolvedMethod method) {
         super(Type.getReturnType(insnNode.desc));
         this.insnNode = insnNode;
+        this.method = method;
     }
 
     @Override

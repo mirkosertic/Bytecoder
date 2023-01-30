@@ -202,7 +202,7 @@ public class JSBackend {
             pw.print("'] = ");
             pw.print(generateClassName(method.owner.type));
             pw.print(".");
-            pw.print(generateMethodName(method.methodNode.name, Type.getMethodType(method.methodNode.desc)));
+            pw.print(generateMethodName(method.methodNode.name, method.methodType));
             pw.println(";");
         });
 
@@ -210,9 +210,9 @@ public class JSBackend {
 
         final JSCompileResult result = new JSCompileResult();
         if (!StringUtils.isEmpty(compileOptions.getFilenamePrefix())) {
-            result.add(new CompileResult.StringContent(compileOptions.getFilenamePrefix() + "classes.js ", sw.toString()));
+            result.add(new CompileResult.StringContent(compileOptions.getFilenamePrefix() + "classes.js", sw.toString()));
         } else {
-            result.add(new CompileResult.StringContent("classes.js ", sw.toString()));
+            result.add(new CompileResult.StringContent("classes.js", sw.toString()));
         }
 
         final List<String> resourcesToInclude = new ArrayList<>();
@@ -241,7 +241,7 @@ public class JSBackend {
         final Set<ResolvedMethod> abstractMethods = cl.abstractResolvedMethods();
         if (abstractMethods.size() == 1) {
             final ResolvedMethod m = abstractMethods.iterator().next();
-            final String methodName = generateMethodName(m.methodNode.name, Type.getMethodType(m.methodNode.desc));
+            final String methodName = generateMethodName(m.methodNode.name, m.methodType);
             pw.print("    this.");
             pw.print(methodName);
             pw.println(" = impl;");
@@ -287,7 +287,7 @@ public class JSBackend {
 
             if (cl.classInitializer != null) {
                 pw.print("      this.");
-                pw.print(generateMethodName("<clinit>", Type.getMethodType(cl.classInitializer.methodNode.desc)));
+                pw.print(generateMethodName("<clinit>", cl.classInitializer.methodType));
                 pw.println("();");
             }
             pw.println("    }");
@@ -358,7 +358,7 @@ public class JSBackend {
         if (Modifier.isStatic(m.methodNode.access)) {
             pw.print("static ");
         }
-        final String methodName = generateMethodName(m.methodNode.name, Type.getMethodType(m.methodNode.desc));
+        final String methodName = generateMethodName(m.methodNode.name, m.methodType);
         pw.print(methodName);
 
         final Type[] arguments = Type.getArgumentTypes(m.methodNode.desc);
@@ -463,7 +463,7 @@ public class JSBackend {
     public void generateOpaqueAdapterMethod(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m) {
         pw.println();
         pw.print("  ");
-        final String methodName = generateMethodName(m.methodNode.name, Type.getMethodType(m.methodNode.desc));
+        final String methodName = generateMethodName(m.methodNode.name, m.methodType);
         pw.print(methodName);
 
         final Type[] arguments = Type.getArgumentTypes(m.methodNode.desc);
@@ -585,7 +585,7 @@ public class JSBackend {
                             throw new IllegalStateException("Unexpected number of callback methods, expected 1, got " + callbackMethods.size() + " for type " + typeClass.type);
                         }
                         final ResolvedMethod callbackMethod = callbackMethods.get(0);
-                        final Type methodType = Type.getMethodType(callbackMethod.methodNode.desc);
+                        final Type methodType = callbackMethod.methodType;
 
                         pw.print("function(");
                         for (int j = 0; j < methodType.getArgumentTypes().length; j++) {
@@ -695,7 +695,7 @@ public class JSBackend {
         if (Modifier.isStatic(m.methodNode.access)) {
             pw.print("static ");
         }
-        final String methodName = generateMethodName(m.methodNode.name, Type.getMethodType(m.methodNode.desc));
+        final String methodName = generateMethodName(m.methodNode.name, m.methodType);
         pw.print(methodName);
 
         final Type[] arguments = Type.getArgumentTypes(m.methodNode.desc);

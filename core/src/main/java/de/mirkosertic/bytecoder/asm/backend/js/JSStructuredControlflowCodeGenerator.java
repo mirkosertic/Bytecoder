@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.asm.backend.js;
 import de.mirkosertic.bytecoder.asm.ir.AbstractVar;
 import de.mirkosertic.bytecoder.asm.ir.Add;
 import de.mirkosertic.bytecoder.asm.ir.And;
+import de.mirkosertic.bytecoder.asm.ir.AnnotationUtils;
 import de.mirkosertic.bytecoder.asm.ir.ArrayLength;
 import de.mirkosertic.bytecoder.asm.ir.ArrayLoad;
 import de.mirkosertic.bytecoder.asm.ir.ArrayStore;
@@ -93,9 +94,11 @@ import org.objectweb.asm.Type;
 
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandle;
+import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static de.mirkosertic.bytecoder.asm.backend.js.JSHelpers.generateClassName;
 import static de.mirkosertic.bytecoder.asm.backend.js.JSHelpers.generateFieldName;
@@ -225,7 +228,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
             pw.print(".");
 
-            pw.print(generateMethodName(node.insnNode.name, Type.getMethodType(node.insnNode.desc)));
+            pw.print(generateMethodName(node.insnNode.name, node.resolvedMethod.methodType));
             pw.print("(");
             for (int i = 1; i < node.incomingDataFlows.length; i++) {
                 if (i > 1) {
@@ -238,7 +241,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             pw.print(generateClassName(invocationTarget));
             pw.print(".prototype.");
 
-            pw.print(generateMethodName(node.insnNode.name, Type.getMethodType(node.insnNode.desc)));
+            pw.print(generateMethodName(node.insnNode.name, node.resolvedMethod.methodType));
             pw.print(".call(");
             writeExpression(node.incomingDataFlows[0]);
             for (int i = 1; i < node.incomingDataFlows.length; i++) {
@@ -259,7 +262,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
             pw.print(".");
 
-            pw.print(generateMethodName(node.insnNode.name, Type.getMethodType(node.insnNode.desc)));
+            pw.print(generateMethodName(node.insnNode.name, node.resolvedMethod.methodType));
             pw.print("(");
             for (int i = 1; i < node.incomingDataFlows.length; i++) {
                 if (i > 1) {
@@ -272,7 +275,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             pw.print(generateClassName(invocationTarget));
             pw.print(".prototype.");
 
-            pw.print(generateMethodName(node.insnNode.name, Type.getMethodType(node.insnNode.desc)));
+            pw.print(generateMethodName(node.insnNode.name, node.resolvedMethod.methodType));
             pw.print(".call(");
             writeExpression(node.incomingDataFlows[0]);
             for (int i = 1; i < node.incomingDataFlows.length; i++) {
@@ -700,25 +703,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         writeExpression(node.incomingDataFlows[0]);
 
         pw.print(".");
-        pw.print(generateMethodName(node.insnNode.name, Type.getMethodType(node.insnNode.desc)));
-        pw.print("(");
-        for (int i = 1; i < node.incomingDataFlows.length; i++) {
-            if (i > 1) {
-                pw.print(",");
-            }
-            writeExpression(node.incomingDataFlows[i]);
-        }
-        pw.println(");");
-    }
-
-    @Override
-    public void write(final InterfaceMethodInvocation node) {
-
-        writeIndent();
-        writeExpression(node.incomingDataFlows[0]);
-
-        pw.print(".");
-        pw.print(generateMethodName(node.insnNode.name, Type.getMethodType(node.insnNode.desc)));
+        pw.print(generateMethodName(node.insnNode.name, node.resolvedMethod.methodType));
         pw.print("(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {
@@ -746,21 +731,433 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         pw.print("))");
     }
 
+    private String derivePropertyNameFromMethodName(String methodName) {
+        if (methodName.startsWith("get")) {
+            methodName = methodName.substring(3);
+            methodName = Character.toLowerCase(methodName.charAt(0)) + methodName.substring(1);
+        } else if (methodName.startsWith("is")) {
+            methodName = methodName.substring(2);
+            methodName = Character.toLowerCase(methodName.charAt(0)) + methodName.substring(1);
+        } else if (methodName.startsWith("set")) {
+            methodName = methodName.substring(3);
+            methodName = Character.toLowerCase(methodName.charAt(0)) + methodName.substring(1);
+        }
+
+        return methodName;
+    }
+
+    @Override
+    public void write(final InterfaceMethodInvocation node) {
+
+        writeIndent();
+        final ResolvedClass cl = compileUnit.findClass(Type.getObjectType(node.insnNode.owner));
+        if (cl.isOpaqueReferenceType()) {
+
+            final ResolvedMethod method = node.method;
+            final Type[] arguments = Type.getArgumentTypes(method.methodNode.desc);
+
+            if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueProperty;", method.methodNode.visibleAnnotations)) {
+                final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueProperty;", method.methodNode.visibleAnnotations);
+                final String propertyName = (String) values.get("value");
+
+                writeExpression(node.incomingDataFlows[0]);
+                pw.print(".nativeObject.");
+                if (propertyName != null) {
+                    pw.print(propertyName);
+                } else {
+                    pw.print(derivePropertyNameFromMethodName(method.methodNode.name));
+                }
+                if (arguments.length > 0) {
+                    pw.print(" = ");
+                    switch (arguments[0].getSort()) {
+                        case Type.BOOLEAN: {
+                            pw.print("(");
+                            writeExpression(node.incomingDataFlows[1]);
+                            pw.print(" === 1 ? true : false)");
+                            break;
+                        }
+                        case Type.OBJECT: {
+                            final ResolvedClass targetType = compileUnit.findClass(arguments[0]);
+                            if (targetType.isNativeReferenceHolder()) {
+                                writeExpression(node.incomingDataFlows[1]);
+                                pw.print(".nativeObject");
+                                break;
+                            } else {
+                                throw new IllegalStateException("Type " + arguments[0] + " is not supported as an opaque property type.");
+                            }
+                        }
+                        default: {
+                            writeExpression(node.incomingDataFlows[1]);
+                            break;
+                        }
+                    }
+                }
+                pw.println(";");
+
+            } else if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueIndexed;", method.methodNode.visibleAnnotations)) {
+
+                writeExpression(node.incomingDataFlows[0]);
+                pw.print(".nativeObject.");
+                pw.print("[");
+                writeExpression(node.incomingDataFlows[1]);
+                pw.print("]");
+
+                if (arguments.length > 1) {
+                    pw.print(" = ");
+                    writeExpression(node.incomingDataFlows[2]);
+                    if (arguments[2].getSort() == Type.OBJECT) {
+                        pw.print(".nativeObject");
+                    }
+                }
+                pw.println(";");
+
+            } else {
+
+                writeExpression(node.incomingDataFlows[0]);
+                pw.print(".nativeObject.");
+                pw.print(method.methodNode.name);
+                pw.print("(");
+
+                for (int i = 0; i < arguments.length; i++) {
+                    if (i > 0) {
+                        pw.print(", ");
+                    }
+                    final Type argType = arguments[i];
+                    switch (argType.getSort()) {
+                        case Type.BOOLEAN: {
+                            pw.print("(");
+                            writeExpression(node.incomingDataFlows[i + 1]);
+                            pw.print(" === 1 ? true : false)");
+                            break;
+                        }
+                        case Type.OBJECT: {
+                            final ResolvedClass typeClass = compileUnit.findClass(argType);
+                            if (typeClass == null) {
+                                throw new IllegalStateException("Cannot find linked class for type " + argType);
+                            }
+                            if (typeClass.isCallback()) {
+                                if (!Modifier.isInterface(typeClass.classNode.access)) {
+                                    throw new IllegalStateException("Only callback interfaces are allowed in method signatures!");
+                                }
+
+                                final List<ResolvedMethod> callbackMethods = typeClass.resolvedMethods.stream().filter(t -> !t.methodNode.name.equals("init")).collect(Collectors.toList());
+                                if (callbackMethods.size() != 1) {
+                                    throw new IllegalStateException("Unexpected number of callback methods, expected 1, got " + callbackMethods.size() + " for type " + typeClass.type);
+                                }
+                                final ResolvedMethod callbackMethod = callbackMethods.get(0);
+                                final Type methodType = Type.getMethodType(callbackMethod.methodNode.desc);
+
+                                pw.print("function(");
+                                for (int j = 0; j < methodType.getArgumentTypes().length; j++) {
+                                    if (j > 0) {
+                                        pw.print(", ");
+                                    }
+                                    pw.print("arg");
+                                    pw.print(j);
+                                }
+                                pw.print(") {this.");
+                                pw.print(generateMethodName(callbackMethod.methodNode.name, methodType));
+                                pw.print("(");
+                                for (int j = 0; j < methodType.getArgumentTypes().length; j++) {
+                                    if (j > 0) {
+                                        pw.print(", ");
+                                    }
+                                    switch (methodType.getArgumentTypes()[j].getSort()) {
+                                        case Type.BOOLEAN: {
+                                            pw.print("(arg");
+                                            pw.print(j);
+                                            pw.print(" ? 1 : 0)");
+                                            break;
+                                        }
+                                        case Type.OBJECT: {
+                                            if (methodType.getArgumentTypes()[j].getClassName().equals(String.class.getName())) {
+                                                pw.print("bytecoder.toBytecoderString(arg");
+                                                pw.print(j);
+                                                pw.print(")");
+                                            } else {
+                                                pw.print("bytecoder.wrapNativeIntoTypeInstance(");
+                                                pw.print(generateClassName(methodType.getArgumentTypes()[j]));
+                                                pw.print(", arg");
+                                                pw.print(j);
+                                                pw.print(")");
+                                            }
+                                            break;
+                                        }
+                                        default: {
+                                            pw.print("arg");
+                                            pw.print(j);
+                                            break;
+                                        }
+                                    }
+                                }
+                                pw.print(")");
+                                pw.print("}.bind(");
+                                writeExpression(node.incomingDataFlows[i + 1]);
+                                pw.print(")");
+                            } else if (typeClass.isNativeReferenceHolder()) {
+                                writeExpression(node.incomingDataFlows[i + 1]);
+                                pw.print(".nativeObject");
+                            } else {
+                                throw new IllegalStateException("Type " + argType + " not supported in opaque reference method of " + typeClass.type + "." + method.methodNode.name);
+                            }
+                            break;
+                        }
+                        default: {
+                            writeExpression(node.incomingDataFlows[i + 1]);
+                            break;
+                        }
+                    }
+                }
+
+                pw.println(");");
+            }
+
+        } else {
+            writeExpression(node.incomingDataFlows[0]);
+            pw.print(".");
+            pw.print(generateMethodName(node.insnNode.name, node.method.methodType));
+            pw.print("(");
+            for (int i = 1; i < node.incomingDataFlows.length; i++) {
+                if (i > 1) {
+                    pw.print(",");
+                }
+                writeExpression(node.incomingDataFlows[i]);
+            }
+            pw.println(");");
+        }
+    }
+
     private void writeExpression(final InterfaceMethodInvocationExpression node) {
 
-        pw.print("(");
-        writeExpression(node.incomingDataFlows[0]);
+        final ResolvedMethod method = node.method;
+        final ResolvedClass cl = method.owner;
 
-        pw.print(".");
-        pw.print(generateMethodName(node.insnNode.name, Type.getMethodType(node.insnNode.desc)));
-        pw.print("(");
-        for (int i = 1; i < node.incomingDataFlows.length; i++) {
-            if (i > 1) {
-                pw.print(",");
+        if (cl.isOpaqueReferenceType()) {
+
+            final Type[] arguments = Type.getArgumentTypes(method.methodNode.desc);
+
+            if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueProperty;", method.methodNode.visibleAnnotations)) {
+                final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueProperty;", method.methodNode.visibleAnnotations);
+                final String propertyName = (String) values.get("value");
+
+                final Type methodType = method.methodType;
+                switch (methodType.getReturnType().getSort()) {
+                    case Type.BOOLEAN: {
+                        pw.print("bytecoder.toBytecoderBoolean(");
+                        break;
+                    }
+                    case Type.OBJECT: {
+                        if (String.class.getName().equals(methodType.getReturnType().getClassName())) {
+                            pw.print("bytecoder.toBytecoderString(");
+                            break;
+                        } else {
+                            final ResolvedClass targetType = compileUnit.findClass(methodType.getReturnType());
+                            if (targetType.isOpaqueReferenceType()) {
+                                pw.print("bytecoder.wrapNativeIntoTypeInstance(");
+                                pw.print(generateClassName(methodType.getReturnType()));
+                                pw.print(",");
+                            } else {
+                                throw new IllegalStateException("Type " + methodType.getReturnType() + " not supported as return type");
+                            }
+                        }
+                        break;
+                    }
+                    default: {
+                        pw.print("(");
+                        break;
+                    }
+                }
+
+                writeExpression(node.incomingDataFlows[0]);
+                pw.print(".nativeObject.");
+                if (propertyName != null) {
+                    pw.print(propertyName);
+                } else {
+                    pw.print(derivePropertyNameFromMethodName(method.methodNode.name));
+                }
+                if (arguments.length > 0) {
+                    pw.print(" = ");
+                    switch (arguments[0].getSort()) {
+                        case Type.BOOLEAN: {
+                            pw.print(" = (");
+                            writeExpression(node.incomingDataFlows[1]);
+                            pw.print(" === 1 ? true : false)");
+                            break;
+                        }
+                        case Type.OBJECT: {
+                            final ResolvedClass targetType = compileUnit.findClass(arguments[0]);
+                            writeExpression(node.incomingDataFlows[1]);
+                            if (targetType.isNativeReferenceHolder()) {
+                                pw.print(".nativeObject");
+                            } else {
+                                throw new IllegalStateException("Type " + arguments[0] + " is not supported as an opaque property type.");
+                            }
+                            break;
+                        }
+                        default: {
+                            pw.print(" = ");
+                            writeExpression(node.incomingDataFlows[1]);
+                            break;
+                        }
+                    }
+                }
+
+                pw.print(")");
+
+            } else if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueIndexed;", method.methodNode.visibleAnnotations)) {
+
+                writeExpression(node.incomingDataFlows[0]);
+                pw.print(".nativeObject.");
+                pw.print("[");
+                writeExpression(node.incomingDataFlows[1]);
+                pw.print("]");
+
+                if (arguments.length > 1) {
+                    pw.print(" = ");
+                    writeExpression(node.incomingDataFlows[2]);
+                    if (arguments[2].getSort() == Type.OBJECT) {
+                        pw.print(".nativeObject");
+                    }
+                }
+            } else {
+
+                final Type returnType = node.method.methodType.getReturnType();
+                switch (returnType.getSort()) {
+                    case Type.OBJECT: {
+                        if (String.class.getName().equals(returnType.getClassName())) {
+                            pw.print("bytecoder.toBytecoderString(");
+                        } else {
+                            pw.print("bytecoder.wrapNativeIntoTypeInstance(");
+                            pw.print(generateClassName(returnType));
+                            pw.print(",");
+                        }
+                        break;
+                    }
+                    case Type.BOOLEAN: {
+                        pw.print("bytecoder.toBytecoderBoolean(");
+                        break;
+                    }
+                    default: {
+                        pw.print("(");
+                        break;
+                    }
+                }
+
+                writeExpression(node.incomingDataFlows[0]);
+                pw.print(".nativeObject.");
+                pw.print(method.methodNode.name);
+                pw.print("(");
+
+                for (int i = 0; i < arguments.length; i++) {
+                    if (i > 0) {
+                        pw.print(", ");
+                    }
+                    final Type argType = arguments[i];
+                    switch (argType.getSort()) {
+                        case Type.BOOLEAN: {
+                            pw.print("(");
+                            writeExpression(node.incomingDataFlows[i + 1]);
+                            pw.print(" === 1 ? true : false)");
+                            break;
+                        }
+                        case Type.OBJECT: {
+                            final ResolvedClass typeClass = compileUnit.findClass(argType);
+                            if (typeClass == null) {
+                                throw new IllegalStateException("Cannot find linked class for type " + argType);
+                            }
+                            if (typeClass.isCallback()) {
+                                if (!Modifier.isInterface(typeClass.classNode.access)) {
+                                    throw new IllegalStateException("Only callback interfaces are allowed in method signatures!");
+                                }
+
+                                final List<ResolvedMethod> callbackMethods = typeClass.resolvedMethods.stream().filter(t -> !t.methodNode.name.equals("init")).collect(Collectors.toList());
+                                if (callbackMethods.size() != 1) {
+                                    throw new IllegalStateException("Unexpected number of callback methods, expected 1, got " + callbackMethods.size() + " for type " + typeClass.type);
+                                }
+                                final ResolvedMethod callbackMethod = callbackMethods.get(0);
+                                final Type methodType = callbackMethod.methodType;
+
+                                pw.print("function(");
+                                for (int j = 0; j < methodType.getArgumentTypes().length; j++) {
+                                    if (j > 0) {
+                                        pw.print(", ");
+                                    }
+                                    pw.print("arg");
+                                    pw.print(j);
+                                }
+                                pw.print(") {this.");
+                                pw.print(generateMethodName(callbackMethod.methodNode.name, methodType));
+                                pw.print("(");
+                                for (int j = 0; j < methodType.getArgumentTypes().length; j++) {
+                                    if (j > 0) {
+                                        pw.print(", ");
+                                    }
+                                    switch (methodType.getArgumentTypes()[j].getSort()) {
+                                        case Type.BOOLEAN: {
+                                            pw.print("bytecoder.toBytecoderBoolean(arg");
+                                            pw.print(j);
+                                            pw.print(")");
+                                            break;
+                                        }
+                                        case Type.OBJECT: {
+                                            if (methodType.getArgumentTypes()[j].getClassName().equals(String.class.getName())) {
+                                                pw.print("bytecoder.toBytecoderString(arg");
+                                                pw.print(j);
+                                                pw.print(")");
+                                            } else {
+                                                pw.print("bytecoder.wrapNativeIntoTypeInstance(");
+                                                pw.print(generateClassName(methodType.getArgumentTypes()[j]));
+                                                pw.print(", arg");
+                                                pw.print(j);
+                                                pw.print(")");
+                                            }
+                                            break;
+                                        }
+                                        default: {
+                                            pw.print("arg");
+                                            pw.print(j);
+                                            break;
+                                        }
+                                    }
+                                }
+                                pw.print(")");
+                                pw.print("}.bind(");
+                                writeExpression(node.incomingDataFlows[i + 1]);
+                                pw.print(")");
+                            } else if (typeClass.isNativeReferenceHolder()) {
+                                writeExpression(node.incomingDataFlows[i + 1]);
+                                pw.print(".nativeObject");
+                            } else {
+                                throw new IllegalStateException("Type " + argType + " not supported in opaque reference method of " + typeClass.type + "." + method.methodNode.name);
+                            }
+                            break;
+                        }
+                        default: {
+                            writeExpression(node.incomingDataFlows[i + 1]);
+                            break;
+                        }
+                    }
+                }
+
+                pw.print("))");
             }
-            writeExpression(node.incomingDataFlows[i]);
+
+        } else {
+            pw.print("(");
+
+            writeExpression(node.incomingDataFlows[0]);
+            pw.print(".");
+            pw.print(generateMethodName(node.insnNode.name, node.method.methodType));
+            pw.print("(");
+            for (int i = 1; i < node.incomingDataFlows.length; i++) {
+                if (i > 1) {
+                    pw.print(",");
+                }
+                writeExpression(node.incomingDataFlows[i]);
+            }
+            pw.print(")");
+            pw.print(")");
         }
-        pw.print("))");
     }
 
     @Override
@@ -776,7 +1173,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         }
 
         pw.print(".");
-        pw.print(generateMethodName(node.resolvedMethod.methodNode.name, Type.getMethodType(node.resolvedMethod.methodNode.desc)));
+        pw.print(generateMethodName(node.resolvedMethod.methodNode.name, node.resolvedMethod.methodType));
         pw.print("(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {
@@ -799,7 +1196,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         }
 
         pw.print(".");
-        pw.print(generateMethodName(node.resolvedMethod.methodNode.name, Type.getMethodType(node.resolvedMethod.methodNode.desc)));
+        pw.print(generateMethodName(node.resolvedMethod.methodNode.name, node.resolvedMethod.methodType));
         pw.print("(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {

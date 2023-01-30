@@ -23,8 +23,11 @@ public class VirtualMethodInvocation extends ControlTokenConsumer implements Pot
 
     public final MethodInsnNode insnNode;
 
-    public VirtualMethodInvocation(final MethodInsnNode insnNode) {
+    public final ResolvedMethod resolvedMethod;
+
+    public VirtualMethodInvocation(final MethodInsnNode insnNode, final ResolvedMethod resolvedMethod) {
         this.insnNode = insnNode;
+        this.resolvedMethod = resolvedMethod;
     }
 
     @Override
