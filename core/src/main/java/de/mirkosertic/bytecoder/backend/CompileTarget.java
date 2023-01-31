@@ -17,7 +17,6 @@ package de.mirkosertic.bytecoder.backend;
 
 import de.mirkosertic.bytecoder.api.ClassLibProvider;
 import de.mirkosertic.bytecoder.backend.cpp.CPPCompilerBackend;
-import de.mirkosertic.bytecoder.backend.js.JSSSACompilerBackend;
 import de.mirkosertic.bytecoder.backend.llvm.LLVMCompilerBackend;
 import de.mirkosertic.bytecoder.backend.wasm.WASMSSAASTCompilerBackend;
 import de.mirkosertic.bytecoder.classlib.VM;
@@ -55,12 +54,6 @@ import java.util.stream.Collectors;
 public class CompileTarget {
 
     public enum BackendType {
-        js {
-            @Override
-            public CompileBackend createBackend() {
-                return new JSSSACompilerBackend(NaiveProgramGenerator.FACTORY);
-            }
-        },
         wasm {
             @Override
             public CompileBackend createBackend() {

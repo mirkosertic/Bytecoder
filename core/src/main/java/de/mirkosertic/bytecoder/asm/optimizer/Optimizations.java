@@ -15,7 +15,6 @@
  */
 package de.mirkosertic.bytecoder.asm.optimizer;
 
-import de.mirkosertic.bytecoder.asm.ir.Graph;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 
 public enum Optimizations implements Optimizer {
@@ -38,10 +37,10 @@ public enum Optimizations implements Optimizer {
         this.optimizers = optimizers;
     }
 
-    public boolean optimize(final ResolvedMethod method, final Graph graph) {
+    public boolean optimize(final ResolvedMethod method) {
         boolean graphchanged = false;
         for (final Optimizer o : optimizers) {
-            graphchanged = graphchanged | o.optimize(method, graph);
+            graphchanged = graphchanged | o.optimize(method);
         }
         return graphchanged;
     }

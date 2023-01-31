@@ -1,6 +1,6 @@
 ---
 title: "The Command-Line Interface (CLI)"
-date: 2019-11-22T14:49:24+02:00
+date: 2023-01-30T00:00:00+02:00
 draft: false
 weight: 1
 ---
@@ -37,7 +37,7 @@ wget https://repo.maven.apache.org/maven2/de/mirkosertic/bytecoder/bytecoder-cli
 **Step 2: Invoke the CLI and compile to JavaScript**:
 
 ```
-java -jar bytecoder-cli-{{% siteparam "bytecoderversion" %}}-executable.jar -classpath=. -mainclass=bytecodertest.HelloWorld -builddirectory=. -backend=js -minify=false
+java -jar bytecoder-cli-{{% siteparam "bytecoderversion" %}}-executable.jar compile js -classpath=. -mainclass=bytecodertest.HelloWorld -builddirectory=.
 ```
 
 **Step 3: Create an embedding HTML document**:
@@ -53,10 +53,6 @@ HTML file embedding the Bytecoder JavaScript and invoking it:
     <body>
         <script type="text/javascript" src="bytecoder.js"></script>
         <script type="text/javascript">
-
-            console.log("Init");
-            bytecoder.bootstrap();
-            bytecoder.initializeFileIO();
 
             bytecoder.exports.main();
             console.log("Done");

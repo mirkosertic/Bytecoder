@@ -1,6 +1,6 @@
 ---
 title: "The Maven Plugin"
-date: 2019-10-25T14:49:24+02:00
+date: 2023-01-30T00:00:00+02:00
 draft: false
 weight: 2
 ---
@@ -56,7 +56,6 @@ The following configuration options are available:
             <configuration>
                 <mainClass>de.mirkosertic.bytecoder.integrationtest.SimpleMainClass</mainClass>
                 <backend>js</backend>
-                <enableExceptionHandling>true</enableExceptionHandling>
                 <optimizationLevel>ALL</optimizationLevel>
             </configuration>
             <executions>

@@ -23,8 +23,8 @@ import org.junit.runner.RunWith;
 
 import java.lang.reflect.InvocationTargetException;
 
-@RunWith(BytecoderUnitTestRunner.class)
-@BytecoderTestOptions(includeJVM = false, additionalClassesToLink = {"de.mirkosertic.bytecoder.core.RuntimeClassTest", "java.lang.Object"})
+/*@RunWith(BytecoderUnitTestRunner.class)
+@BytecoderTestOptions(includeJVM = false, additionalClassesToLink = {"de.mirkosertic.bytecoder.core.RuntimeClassTest", "java.lang.Object"})*/
 public class RuntimeClassTest {
 
     @Test

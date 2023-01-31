@@ -15,9 +15,12 @@
  */
 package de.mirkosertic.bytecoder.asm.backend;
 
+import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.asm.optimizer.Optimizer;
 
 public class CompileOptions {
+
+    private final Logger logger;
 
     private final Optimizer optimizer;
 
@@ -25,10 +28,15 @@ public class CompileOptions {
 
     private final String filenamePrefix;
 
-    public CompileOptions(final Optimizer optimizer, final String[] additionalResources, final String filenamePrefix) {
+    public CompileOptions(final Logger logger, final Optimizer optimizer, final String[] additionalResources, final String filenamePrefix) {
+        this.logger = logger;
         this.optimizer = optimizer;
         this.additionalResources = additionalResources;
         this.filenamePrefix = filenamePrefix;
+    }
+
+    public Logger getLogger() {
+        return logger;
     }
 
     public Optimizer getOptimizer() {

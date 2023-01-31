@@ -40,8 +40,6 @@ import java.io.StringWriter;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -714,42 +712,18 @@ public class JSBackend {
         final Optimizer o = options.getOptimizer();
 
 
-        while (o.optimize(m, g)) {
+        while (o.optimize(m)) {
             //
         }
 
         final DominatorTree dt = new DominatorTree(g);
 
-        try {
-            if (cl.classNode.sourceFile != null) {
-                pw.print("    // source file is ");
-                pw.println(cl.classNode.sourceFile);
-            }
-
-            new Sequencer(g, dt, new JSStructuredControlflowCodeGenerator(compileUnit, cl, pw));
-
-        } catch (final Exception ex) {
-
-            try {
-                g.writeDebugTo(Files.newOutputStream(Paths.get(generateClassName(cl.type) + "." + methodName + "_debug.dot")));
-            } catch (final IOException e) {
-                throw new RuntimeException(e);
-            }
-
-            try {
-                g.writeDebugTo(Files.newOutputStream(Paths.get(generateClassName(cl.type) + "." + methodName + "_debug_optimized.dot")));
-            } catch (final IOException e) {
-                throw new RuntimeException(e);
-            }
-
-            try {
-                dt.writeDebugTo(Files.newOutputStream(Paths.get(generateClassName(cl.type) + "." + methodName + "_dominatortree.dot")));
-            } catch (final IOException e) {
-                throw new RuntimeException(e);
-            }
-
-            throw ex;
+        if (cl.classNode.sourceFile != null) {
+            pw.print("    // source file is ");
+            pw.println(cl.classNode.sourceFile);
         }
+
+        new Sequencer(g, dt, new JSStructuredControlflowCodeGenerator(compileUnit, cl, pw));
 
         pw.println("  }");
     }

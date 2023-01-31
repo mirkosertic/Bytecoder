@@ -29,12 +29,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-@RunWith(BytecoderUnitTestRunner.class)
+/*@RunWith(BytecoderUnitTestRunner.class)
 @BytecoderTestOptions(additionalClassesToLink = {"de.mirkosertic.bytecoder.core.ReflectionTest$ReflectionTarget",
         "de.mirkosertic.bytecoder.core.ReflectionTest$BaseClass"},
     value = {@BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = true),
             @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = false),
-            @BytecoderTestOption(backend = CompileTarget.BackendType.wasm_llvm, minify = false)})
+            @BytecoderTestOption(backend = CompileTarget.BackendType.wasm_llvm, minify = false)})*/
 public class ReflectionTest {
 
     public static class BaseClass {

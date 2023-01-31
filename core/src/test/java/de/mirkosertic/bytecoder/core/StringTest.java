@@ -20,7 +20,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-@RunWith(BytecoderUnitTestRunner.class)
+//@RunWith(BytecoderUnitTestRunner.class)
 public class StringTest {
 
     public static String getString() {

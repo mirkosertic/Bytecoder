@@ -16,7 +16,6 @@
 package de.mirkosertic.bytecoder.optimizer;
 
 import de.mirkosertic.bytecoder.backend.CompileBackend;
-import de.mirkosertic.bytecoder.backend.js.JSSSACompilerBackend;
 import de.mirkosertic.bytecoder.core.AnalysisStack;
 import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
 import de.mirkosertic.bytecoder.ssa.ControlFlowGraph;
@@ -45,7 +44,7 @@ public enum KnownOptimizer implements Optimizer {
             theOptimizer.add(new InlineMethodParameterOptimizer());
             theOptimizer.add(new InlineConstVariablesOptimizer());
             theOptimizer.add(new SinglePassOptimizer(new OptimizerStage[] {
-                    aBackend instanceof JSSSACompilerBackend ? new OptimizerStage.NullOptimizerStage() : new InvokeVirtualOptimizerStage(),
+                    new InvokeVirtualOptimizerStage(),
                     new InefficientCompareOptimizerStage(),
                     new InlineCallArgumentsOptimizerStage(),
                     new MemberFieldReadOptimizerStage(),

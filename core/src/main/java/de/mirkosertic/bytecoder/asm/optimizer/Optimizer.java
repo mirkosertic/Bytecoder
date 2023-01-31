@@ -15,10 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.optimizer;
 
-import de.mirkosertic.bytecoder.asm.ir.Graph;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 
 public interface Optimizer {
 
-    boolean optimize(final ResolvedMethod method, final Graph g);
+    boolean optimize(final ResolvedMethod method);
 }

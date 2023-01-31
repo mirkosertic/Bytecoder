@@ -15,14 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core;
 
-import de.mirkosertic.bytecoder.backend.CompileTarget;
-import de.mirkosertic.bytecoder.unittest.BytecoderTestOption;
-import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -32,13 +27,6 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-@RunWith(BytecoderUnitTestRunner.class)
-@BytecoderTestOptions(value = {
-        @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = false, preferStackifier = false),
-        @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = true, preferStackifier = false),
-        @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = false, preferStackifier = true),
-        @BytecoderTestOption(backend = CompileTarget.BackendType.js, minify = true, preferStackifier = true)
-})
 public class CharsetTest {
 
     @Test
@@ -77,7 +65,7 @@ public class CharsetTest {
         Assert.assertEquals(101, result[6]);
         Assert.assertEquals(114, result[7]);
     }
-    
+
     @Test
     public void testByteArray() {
         final String muenster = "Münster";
