@@ -21,8 +21,11 @@ public class InterfaceMethodInvocation extends ControlTokenConsumer implements P
 
     public final MethodInsnNode insnNode;
 
-    public InterfaceMethodInvocation(final MethodInsnNode insnNode) {
+    public final ResolvedMethod method;
+
+    public InterfaceMethodInvocation(final MethodInsnNode insnNode, final ResolvedMethod method) {
         this.insnNode = insnNode;
+        this.method = method;
     }
 
     @Override

@@ -135,7 +135,7 @@ public class ResolvedClass {
                     if (onlyImplementations && (Modifier.isAbstract(methodNode.access) || Modifier.isNative(methodNode.access))) {
                         continue;
                     }
-                    final ResolvedMethod r = new ResolvedMethod(this, methodNode);
+                    final ResolvedMethod r = new ResolvedMethod(this, methodNode, Type.getMethodType(methodNode.desc));
                     resolvedMethods.add(r);
                     r.parseBody(analysisStack);
                     return r;
@@ -192,7 +192,7 @@ public class ResolvedClass {
             final List<ResolvedMethod> methods = new ArrayList<>(resolvedMethods);
             for (final ResolvedMethod m : methods) {
                 if (!Modifier.isStatic(m.methodNode.access)) {
-                    leaf.resolveMethodInternal(m.methodNode.name, Type.getMethodType(m.methodNode.desc), analysisStack, true);
+                    leaf.resolveMethodInternal(m.methodNode.name, m.methodType, analysisStack, true);
                 }
             }
         }

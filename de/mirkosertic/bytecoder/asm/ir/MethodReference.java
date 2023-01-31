@@ -16,8 +16,6 @@
  */
 package de.mirkosertic.bytecoder.asm.ir;
 
-import org.objectweb.asm.Type;
-
 public class MethodReference extends PrimitiveValue {
 
     public enum Kind {
@@ -40,7 +38,7 @@ public class MethodReference extends PrimitiveValue {
     public final Kind kind;
 
     public MethodReference(final ResolvedMethod resolvedMethod, final Kind kind) {
-        super(Type.getMethodType(resolvedMethod.methodNode.desc));
+        super(resolvedMethod.methodType);
         this.resolvedMethod = resolvedMethod;
         this.kind = kind;
     }

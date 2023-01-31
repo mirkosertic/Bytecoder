@@ -23,8 +23,10 @@ import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.BytecoderCharsetEncoder;
 import de.mirkosertic.bytecoder.core.ReflectionConfiguration;
+import org.apache.commons.lang3.StringUtils;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodNode;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
@@ -111,6 +113,20 @@ public class CompileUnit {
             throw new RuntimeException(e);
         }
         resolvedClasses.put(resourceName, rs);
+
+        // If there are any methods annotated with Export, we resolve them, too
+        for (final MethodNode mn : rs.classNode.methods) {
+            if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/Export;", mn.visibleAnnotations)) {
+                final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/Export;", mn.visibleAnnotations);
+                String exportName = (String) values.get("value");
+                if (StringUtils.isEmpty(exportName)) {
+                    exportName = mn.name;
+                }
+                final ResolvedMethod m = rs.resolveMethod(mn.name, Type.getMethodType(mn.desc), analysisStack);
+                exportedMethods.put(exportName, m);
+            }
+        }
+
         return rs.requestInitialization(analysisStack);
     }
 

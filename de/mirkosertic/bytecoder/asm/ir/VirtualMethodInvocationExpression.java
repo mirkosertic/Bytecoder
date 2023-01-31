@@ -15,16 +15,18 @@
  */
 package de.mirkosertic.bytecoder.asm.ir;
 
-import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
 
 public class VirtualMethodInvocationExpression extends Value implements PotentialSideeffect {
 
     public final MethodInsnNode insnNode;
 
-    public VirtualMethodInvocationExpression(final MethodInsnNode insnNode) {
-        super(Type.getReturnType(insnNode.desc));
+    public final ResolvedMethod resolvedMethod;
+
+    public VirtualMethodInvocationExpression(final MethodInsnNode insnNode, final ResolvedMethod resolvedMethod) {
+        super(resolvedMethod.methodType.getReturnType());
         this.insnNode = insnNode;
+        this.resolvedMethod = resolvedMethod;
     }
 
     @Override

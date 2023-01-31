@@ -625,6 +625,9 @@ const bytecoder = {
         x.nativeObject = jsstring;
         return x;
     },
+    toBytecoderBoolean: function(v) {
+        return v ? 1: 0;
+    },
     methodHandle: function(owner, methodName, kind) {
         return {
             owner: owner,

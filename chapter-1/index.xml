@@ -14,7 +14,7 @@
     <item>
       <title>The Command-Line Interface (CLI)</title>
       <link>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-a/</link>
-      <pubDate>Fri, 22 Nov 2019 14:49:24 +0200</pubDate>
+      <pubDate>Mon, 30 Jan 2023 00:00:00 +0200</pubDate>
       
       <guid>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-a/</guid>
       <description>Jump-Start Lets assume we have the following Java class, and we want to compile it to JavaScript and run it in the Browser:
@@ -25,7 +25,7 @@ javac HelloWorld.java  Now, we have the compiled .</description>
     <item>
       <title>The Maven Plugin</title>
       <link>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-b/</link>
-      <pubDate>Fri, 25 Oct 2019 14:49:24 +0200</pubDate>
+      <pubDate>Mon, 30 Jan 2023 00:00:00 +0200</pubDate>
       
       <guid>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-b/</guid>
       <description>Maven Plugin usage Bytecoder comes with a handy Maven plugin. This plugins supports the JavaScript and WebAssembly backends and can compile JVM Bytecode as part of the Maven project lifecycle without any third party or command-line tools.

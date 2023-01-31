@@ -279,7 +279,7 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                 final StringWriter strWriter = new StringWriter();
                 final PrintWriter codeWriter = new PrintWriter(strWriter);
 
-                final CompileOptions compileOptions = new CompileOptions(Optimizations.DISABLED, additionalResources, "");
+                final CompileOptions compileOptions = new CompileOptions(LOGGER, Optimizations.DISABLED, additionalResources, "");
 
                 final JSBackend backend = new JSBackend();
                 final JSCompileResult result = backend.generateCodeFor(compileUnit, compileOptions);

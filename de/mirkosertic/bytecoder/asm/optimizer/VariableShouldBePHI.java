@@ -41,7 +41,8 @@ public class VariableShouldBePHI implements Optimizer {
     }
 
     @Override
-    public boolean optimize(final ResolvedMethod method, final Graph g) {
+    public boolean optimize(final ResolvedMethod method) {
+        final Graph g = method.methodBody;
         for (final Node node : g.nodes()) {
             if (patternMatcher.test(g, node)) {
                 final Copy copy = (Copy) node;

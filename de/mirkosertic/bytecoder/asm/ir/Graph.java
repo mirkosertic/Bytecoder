@@ -157,16 +157,16 @@ public class Graph {
         return (InstanceMethodInvocationExpression) register(new InstanceMethodInvocationExpression(insn, rm));
     }
 
-    public VirtualMethodInvocation newVirtualMethodInvocation(final MethodInsnNode insn) {
-        return (VirtualMethodInvocation) register(new VirtualMethodInvocation(insn));
+    public VirtualMethodInvocation newVirtualMethodInvocation(final MethodInsnNode insn, final ResolvedMethod resolvedMethod) {
+        return (VirtualMethodInvocation) register(new VirtualMethodInvocation(insn, resolvedMethod));
     }
 
-    public InterfaceMethodInvocation newInterfaceMethodInvocation(final MethodInsnNode insn) {
-        return (InterfaceMethodInvocation) register(new InterfaceMethodInvocation(insn));
+    public InterfaceMethodInvocation newInterfaceMethodInvocation(final MethodInsnNode insn, final ResolvedMethod rm) {
+        return (InterfaceMethodInvocation) register(new InterfaceMethodInvocation(insn, rm));
     }
 
-    public InterfaceMethodInvocationExpression newInterfaceMethodInvocationExpression(final MethodInsnNode insn) {
-        return (InterfaceMethodInvocationExpression) register(new InterfaceMethodInvocationExpression(insn));
+    public InterfaceMethodInvocationExpression newInterfaceMethodInvocationExpression(final MethodInsnNode insn, final ResolvedMethod rm) {
+        return (InterfaceMethodInvocationExpression) register(new InterfaceMethodInvocationExpression(insn, rm));
     }
 
     public StaticMethodInvocation newStaticMethodInvocation(final ResolvedMethod rm) {
@@ -383,8 +383,8 @@ public class Graph {
         return (PrimitiveLong) register(new PrimitiveLong(constant));
     }
 
-    public VirtualMethodInvocationExpression newVirtualMethodInvocationExpression(final MethodInsnNode node) {
-        return (VirtualMethodInvocationExpression) register(new VirtualMethodInvocationExpression(node));
+    public VirtualMethodInvocationExpression newVirtualMethodInvocationExpression(final MethodInsnNode node, final ResolvedMethod resolvedMethod) {
+        return (VirtualMethodInvocationExpression) register(new VirtualMethodInvocationExpression(node, resolvedMethod));
     }
 
     public LineNumberDebugInfo newLineNumberDebugInfo(final int lineNumber) {

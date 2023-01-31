@@ -32,7 +32,8 @@ public class DeleteUnusedConstants implements Optimizer {
     }
 
     @Override
-    public boolean optimize(final ResolvedMethod method, final Graph g) {
+    public boolean optimize(final ResolvedMethod method) {
+        final Graph g = method.methodBody;
         boolean changed = false;
         for (final Node node : g.nodes()) {
             if (patternMatcher.test(g, node)) {
