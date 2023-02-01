@@ -28,11 +28,14 @@ public class CompileOptions {
 
     private final String filenamePrefix;
 
-    public CompileOptions(final Logger logger, final Optimizer optimizer, final String[] additionalResources, final String filenamePrefix) {
+    private boolean debugOutput;
+
+    public CompileOptions(final Logger logger, final Optimizer optimizer, final String[] additionalResources, final String filenamePrefix, final boolean debugOutput) {
         this.logger = logger;
         this.optimizer = optimizer;
         this.additionalResources = additionalResources;
         this.filenamePrefix = filenamePrefix;
+        this.debugOutput = debugOutput;
     }
 
     public Logger getLogger() {
@@ -49,5 +52,9 @@ public class CompileOptions {
 
     public String getFilenamePrefix() {
         return filenamePrefix;
+    }
+
+    public boolean isDebugOutput() {
+        return debugOutput;
     }
 }
