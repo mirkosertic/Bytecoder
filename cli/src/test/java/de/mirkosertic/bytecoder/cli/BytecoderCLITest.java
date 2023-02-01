@@ -36,6 +36,11 @@ public class BytecoderCLITest {
     }
 
     @Test
+    public void testCompileToWasm() {
+        Assert.assertEquals(new CommandLine(new BytecoderCommand()).execute("compile", "wasm", "-builddirectory=./target", "-classpath=.", "-mainclass=de.mirkosertic.bytecoder.cli.BytecoderCLITest"), 0);
+    }
+
+    @Test
     public void testGenerateGraph() {
         Assert.assertEquals(new CommandLine(new BytecoderCommand()).execute("graph", "generate", "-builddirectory=./target", "-classpath=.", "-mainclass=de.mirkosertic.bytecoder.cli.BytecoderCLITest"), 0);
     }

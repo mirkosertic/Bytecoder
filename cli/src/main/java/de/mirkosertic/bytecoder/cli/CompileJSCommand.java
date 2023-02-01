@@ -92,7 +92,7 @@ public class CompileJSCommand implements Callable<Integer> {
         compileUnit.logStatistics();
 
         final CompileOptions compileOptions =
-                new CompileOptions(logger, Optimizations.valueOf(optimizationLevel), additionalResources, filenamePrefix);
+                new CompileOptions(logger, Optimizations.valueOf(optimizationLevel), additionalResources, filenamePrefix, false);
 
         final JSBackend backend = new JSBackend();
         final JSCompileResult result = backend.generateCodeFor(compileUnit, compileOptions);

@@ -17,6 +17,6 @@ package de.mirkosertic.bytecoder.cli;
 
 import static picocli.CommandLine.*;
 
-@Command(name = "compile", subcommands = {CompileJSCommand.class}, mixinStandardHelpOptions = true)
+@Command(name = "compile", subcommands = {CompileJSCommand.class, CompileWasmCommand.class}, mixinStandardHelpOptions = true)
 public class CompileCommand {
 }

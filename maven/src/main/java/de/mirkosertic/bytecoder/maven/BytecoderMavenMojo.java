@@ -188,7 +188,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
                 compileUnit.logStatistics();
 
                 final de.mirkosertic.bytecoder.asm.backend.CompileOptions compileOptions =
-                        new de.mirkosertic.bytecoder.asm.backend.CompileOptions(new Slf4JLogger(), Optimizations.valueOf(optimizationLevel), additionalResources, filenamePrefix);
+                        new de.mirkosertic.bytecoder.asm.backend.CompileOptions(new Slf4JLogger(), Optimizations.valueOf(optimizationLevel), additionalResources, filenamePrefix, debugOutput);
 
                 final JSBackend backend = new JSBackend();
                 final JSCompileResult result = backend.generateCodeFor(compileUnit, compileOptions);
