@@ -40,12 +40,11 @@ public class ModuleTest {
 
         final StringWriter theStringWriter = new StringWriter();
         final ByteArrayOutputStream theBinaryOutput = new ByteArrayOutputStream();
-        final StringWriter theBinarySourceMap = new StringWriter();
         try {
             final PrintWriter theWriter = new PrintWriter(theStringWriter);
             final Exporter exporter = new Exporter(options);
             exporter.export(module, theWriter);
-            exporter.export(module, theBinaryOutput, theBinarySourceMap);
+            exporter.export(module, theBinaryOutput);
 
             theBinaryOutput.flush();
             theStringWriter.flush();

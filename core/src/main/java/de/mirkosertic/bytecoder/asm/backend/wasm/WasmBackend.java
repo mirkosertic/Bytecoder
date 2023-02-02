@@ -117,12 +117,11 @@ public class WasmBackend {
 
         final StringWriter theStringWriter = new StringWriter();
         final ByteArrayOutputStream theBinaryOutput = new ByteArrayOutputStream();
-        final StringWriter theBinarySourceMap = new StringWriter();
         try {
             final PrintWriter theWriter = new PrintWriter(theStringWriter);
             final Exporter exporter = new Exporter(compileOptions);
             exporter.export(module, theWriter);
-            exporter.export(module, theBinaryOutput, theBinarySourceMap);
+            exporter.export(module, theBinaryOutput);
 
             theBinaryOutput.flush();
             theStringWriter.flush();
@@ -134,7 +133,7 @@ public class WasmBackend {
 
         final WasmCompileResult result = new WasmCompileResult();
         result.add(new CompileResult.BinaryContent(compileOptions.getFilenamePrefix() + "wasmclasses.wasm", theBinaryOutput.toByteArray()));
-        result.add(new CompileResult.StringContent(compileOptions.getFilenamePrefix() + "wasmclasses.wasm.map", theStringWriter.toString()));
+        result.add(new CompileResult.StringContent(compileOptions.getFilenamePrefix() + "wasmclasses.wat", theStringWriter.toString()));
 
         return result;
     }
