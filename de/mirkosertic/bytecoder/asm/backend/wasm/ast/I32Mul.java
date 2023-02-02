@@ -15,11 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 public class I32Mul extends BinaryExpression {
 
-    I32Mul(final WASMValue left, final WASMValue right, final Expression expression) {
-        super(left, right, "i32.mul", (byte) 0x6c, expression);
+    I32Mul(final WasmValue left, final WasmValue right) {
+        super(left, right, "i32.mul", (byte) 0x6c);
     }
 }

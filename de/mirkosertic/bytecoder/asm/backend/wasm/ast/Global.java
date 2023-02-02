@@ -22,11 +22,11 @@ public class Global {
 
     private final ExportsSection exportsSection;
     private final String label;
-    private final PrimitiveType type;
+    private final WasmType type;
     private final boolean mutable;
-    private final WASMValue initializer;
+    private final WasmValue initializer;
 
-    Global(final ExportsSection exportsSection, final String name, final PrimitiveType type, final boolean mutable, final WASMValue initializer) {
+    Global(final ExportsSection exportsSection, final String name, final WasmType type, final boolean mutable, final WasmValue initializer) {
         this.exportsSection = exportsSection;
         this.label = name;
         this.type = type;
@@ -38,7 +38,7 @@ public class Global {
         return label;
     }
 
-    public PrimitiveType getType() {
+    public WasmType getType() {
         return type;
     }
 
@@ -52,10 +52,10 @@ public class Global {
             textWriter.opening();
             textWriter.write("mut");
             textWriter.space();
-            type.writeTo(textWriter);
+            type.writeRefTo(textWriter);
             textWriter.closing();
         } else {
-            type.writeTo(textWriter);
+            type.writeRefTo(textWriter);
         }
         textWriter.space();
         initializer.writeTo(textWriter, null);

@@ -15,21 +15,17 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 import java.io.IOException;
 import java.util.List;
 
-public class ThrowException implements WASMExpression {
+public class ThrowException implements WasmExpression {
 
-    private final WASMEvent exception;
-    private final List<WASMValue> arguments;
-    private final Expression expression;
+    private final WasmEvent exception;
+    private final List<WasmValue> arguments;
 
-    public ThrowException(final WASMEvent exception, final List<WASMValue> arguments, final Expression expression) {
+    public ThrowException(final WasmEvent exception, final List<WasmValue> arguments) {
         this.exception = exception;
         this.arguments = arguments;
-        this.expression = expression;
     }
 
     @Override
@@ -38,7 +34,7 @@ public class ThrowException implements WASMExpression {
         textWriter.write("throw");
         textWriter.space();
         textWriter.writeLabel(exception.getLabel());
-        for (final WASMValue argument : arguments) {
+        for (final WasmValue argument : arguments) {
             textWriter.space();
             argument.writeTo(textWriter, context);
         }
@@ -48,10 +44,9 @@ public class ThrowException implements WASMExpression {
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        for (final WASMValue value : arguments) {
+        for (final WasmValue value : arguments) {
             value.writeTo(codeWriter, context);
         }
-        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x08);
         codeWriter.writeSignedLeb128(context.eventIndex().indexOf(exception));
     }

@@ -1,5 +1,7 @@
 (module
-  (type $vt_resolver (func (param i32) (result funcref)))
+  (type $simplefunction (func (param i32) (result i32)))
+
+  (type $vt_resolver (func (param i32) (result i32)))
 
   (type $runtimetype_s (struct (field $vt_resolver (ref $vt_resolver))))
 
@@ -15,8 +17,8 @@
     (struct.new $runtimetype_s (ref.func $lava$lang$Object_vt))
   )
 
-  (func $lava$lang$Object_vt (param $mid i32) (result funcref)
-     (return (ref.func $lava$lang$Object_vt))
+  (func $lava$lang$Object_vt (param $mid i32) (result i32)
+    (return (i32.const 10))
   )
 
   (func $new_string (result (ref $java$lang$String_s))
@@ -29,6 +31,27 @@
   (func $new_object (result (ref $lava$lang$Object_s))
     (struct.new $lava$lang$Object_s
         (global.get $$lava$lang$Object_rt)
+    )
+  )
+
+  (func $dosomething (type $simplefunction) (param $a i32) (result i32)
+    (return (i32.const 200))
+  )
+
+  (table 100 funcref)
+  (elem (i32.const 10) $dosomething)
+
+  (func $virtualcall (param $obj (ref $lava$lang$Object_s)) (result i32)
+    (return
+        (call_indirect (type $simplefunction)
+            (call_ref $vt_resolver
+                (i32.const 42)
+                (struct.get $runtimetype_s $vt_resolver
+                    (struct.get $lava$lang$Object_s $runtimetype (local.get $obj))
+                )
+            )
+            (i32.const 100)
+        )
     )
   )
 )

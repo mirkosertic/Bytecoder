@@ -15,5 +15,5 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-public interface WASMExpression extends WASMValue {
+public interface WasmExpression extends WasmValue {
 }

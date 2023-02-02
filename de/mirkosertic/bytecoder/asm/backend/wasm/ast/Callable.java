@@ -18,7 +18,7 @@ package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 public interface Callable {
     String getLabel();
 
-    PrimitiveType resolveResultType(WASMValue.ExportContext context);
+    PrimitiveType resolveResultType(WasmValue.ExportContext context);
 
-    int resolveIndex(WASMValue.ExportContext context);
+    int resolveIndex(WasmValue.ExportContext context);
 }

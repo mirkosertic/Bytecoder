@@ -49,21 +49,21 @@ public class ImportsSection extends ModuleSection {
     }
 
     public Function importFunction(final ImportReference importReference, final String label, final List<Param> parameter, final PrimitiveType result) {
-        final WASMType type = getModule().getTypes().typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()), result);
+        final WasmType type = getModule().getTypes().functionType(parameter.stream().map(Param::getType).collect(Collectors.toList()), result);
         final Function function = new Function(getModule(), type, label, parameter, result);
         imports.add(new ImportEntry(importReference, function));
         return function;
     }
 
     public Function importFunction(final ImportReference importReference, final String label, final List<Param> parameter) {
-        final WASMType type = getModule().getTypes().typeFor(parameter.stream().map(Param::getType).collect(Collectors.toList()));
+        final WasmType type = getModule().getTypes().functionType(parameter.stream().map(Param::getType).collect(Collectors.toList()));
         final Function function = new Function(getModule(), type, label, parameter);
         imports.add(new ImportEntry(importReference, function));
         return function;
     }
 
     public Function importFunction(final ImportReference importReference, final String label, final PrimitiveType result) {
-        final WASMType type = getModule().getTypes().typeFor(result);
+        final WasmType type = getModule().getTypes().functionType(result);
         final Function function = new Function(getModule(), type, label, result);
         imports.add(new ImportEntry(importReference, function));
         return function;
@@ -114,9 +114,9 @@ public class ImportsSection extends ModuleSection {
                 } else if (value instanceof Memory) {
                     sectionWriter.writeByte(ExternalKind.EXTERNAL_KIND_MEMORY);
                     sectionWriter.writeUnsignedLeb128(memoryIndex.indexOf((Memory) value));
-                } else if (value instanceof WASMEvent) {
+                } else if (value instanceof WasmEvent) {
                     sectionWriter.writeByte(ExternalKind.EXTERNAL_KIND_EXCEPTION);
-                    sectionWriter.writeUnsignedLeb128(exceptionIndex.indexOf((WASMEvent) value));
+                    sectionWriter.writeUnsignedLeb128(exceptionIndex.indexOf((WasmEvent) value));
                 } else {
                     throw new IllegalStateException("Not Implemented yet for " + value);
                 }

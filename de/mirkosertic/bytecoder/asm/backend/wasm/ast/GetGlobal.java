@@ -15,18 +15,14 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 import java.io.IOException;
 
-public class GetGlobal implements WASMExpression {
+public class GetGlobal implements WasmExpression {
 
     private final Global global;
-    private final Expression expression;
 
-    GetGlobal(final Global global, final Expression expression) {
+    GetGlobal(final Global global) {
         this.global = global;
-        this.expression = expression;
     }
 
     @Override
@@ -40,7 +36,6 @@ public class GetGlobal implements WASMExpression {
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x23);
         codeWriter.writeUnsignedLeb128(context.globalsIndex().indexOf(global));
     }

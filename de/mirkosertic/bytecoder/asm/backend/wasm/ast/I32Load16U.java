@@ -15,26 +15,22 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 import java.io.IOException;
 
-public class I32Load16U implements WASMExpression {
+public class I32Load16U implements WasmExpression {
 
     private final Alignment alignment;
     private final int offset;
-    private final WASMValue ptr;
-    private final Expression expression;
+    private final WasmValue ptr;
 
-    I32Load16U(final int offset, final WASMValue ptr, final Expression expression) {
-        this(Alignment.TWO, offset, ptr, expression);
+    I32Load16U(final int offset, final WasmValue ptr) {
+        this(Alignment.TWO, offset, ptr);
     }
 
-    I32Load16U(final Alignment alignment, final int offset, final WASMValue ptr, final Expression expression) {
+    I32Load16U(final Alignment alignment, final int offset, final WasmValue ptr) {
         this.alignment = alignment;
         this.offset = offset;
         this.ptr = ptr;
-        this.expression = expression;
     }
 
     @Override
@@ -53,7 +49,6 @@ public class I32Load16U implements WASMExpression {
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         ptr.writeTo(codeWriter, context);
-        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x2f);
         codeWriter.writeUnsignedLeb128(alignment.log2Value());
         codeWriter.writeUnsignedLeb128(offset);

@@ -21,52 +21,46 @@ import java.util.List;
 
 public class TypesSection extends ModuleSection {
 
-    private final List<WASMType> types;
+    private final List<WasmType> types;
 
     TypesSection(final Module aModule) {
         super(aModule);
         this.types = new ArrayList<>();
     }
 
-    public WASMType typeFor(final List<PrimitiveType> parameter, final PrimitiveType resultType) {
-        for (final WASMType known : types) {
-            if (known.matches(parameter, resultType)) {
-                return known;
-            }
-        }
-        final WASMType type = new WASMType(this, parameter, resultType);
-        types.add(type);
-        return type;
+    public FunctionType functionType(final List<WasmType> arguments, final WasmType returnType) {
+        return register(new FunctionType(this, arguments, returnType));
     }
 
-    public WASMType typeFor(final List<PrimitiveType> parameter) {
-        for (final WASMType known : types) {
-            if (known.matches(parameter, null)) {
-                return known;
-            }
-        }
-        final WASMType type = new WASMType(this, parameter);
-        types.add(type);
-        return type;
+    public FunctionType functionType(final List<WasmType> arguments) {
+        return register(new FunctionType(this, arguments));
     }
 
-    public WASMType typeFor(final PrimitiveType resultType) {
-        for (final WASMType known : types) {
-            if (known.matches(null, resultType)) {
-                return known;
-            }
-        }
-        final WASMType type = new WASMType(this, resultType);
-        types.add(type);
-        return type;
+    public FunctionType functionType(final WasmType returnType) {
+        return register(new FunctionType(this, returnType));
     }
 
-    int indexOf(final WASMType type) {
+    public StructType structType(final String name, final List<StructType.Field> fields) {
+        return register(new StructType(this, name, fields));
+    }
+
+    public StructSubtype structSubtype(final String name, final StructType superType, final List<StructType.Field> fields) {
+        return register(new StructSubtype(this, name, superType, fields));
+    }
+
+    <T extends WasmType> T register(final T wasmType) {
+        if (!types.contains(wasmType)) {
+            types.add(wasmType);
+        }
+        return wasmType;
+    }
+
+    public int indexOf(final WasmType type) {
         return types.indexOf(type);
     }
 
     public void writeTo(final TextWriter textWriter) {
-        for (final WASMType type : types) {
+        for (final WasmType type : types) {
             type.writeTo(textWriter);
             textWriter.newLine();
         }
@@ -75,7 +69,7 @@ public class TypesSection extends ModuleSection {
     public void writeTo(final BinaryWriter binaryWriter) throws IOException {
         try (final BinaryWriter.SectionWriter writer = binaryWriter.typeSection()) {
             writer.writeUnsignedLeb128(types.size());
-            for (final WASMType type : types) {
+            for (final WasmType type : types) {
                 type.writeTo(writer);
             }
         }
@@ -83,7 +77,7 @@ public class TypesSection extends ModuleSection {
 
     public TypeIndex typesIndex() {
         final TypeIndex result = new TypeIndex();
-        for (final WASMType t : types) {
+        for (final WasmType t : types) {
             result.add(t);
         }
         return result;

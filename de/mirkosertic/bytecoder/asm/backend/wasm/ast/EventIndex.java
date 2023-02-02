@@ -21,18 +21,18 @@ import java.util.Objects;
 
 public class EventIndex {
 
-    private final List<WASMEvent> events;
+    private final List<WasmEvent> events;
 
     EventIndex() {
         events = new ArrayList<>();
     }
 
-    public void add(final WASMEvent event) {
+    public void add(final WasmEvent event) {
         events.add(event);
     }
 
-    public WASMEvent byLabel(final String eventName) {
-        for (final WASMEvent g : events) {
+    public WasmEvent byLabel(final String eventName) {
+        for (final WasmEvent g : events) {
             if (Objects.equals(eventName, g.getLabel())) {
                 return g;
             }
@@ -44,11 +44,11 @@ public class EventIndex {
         return events.size();
     }
 
-    public WASMEvent get(final int i) {
+    public WasmEvent get(final int i) {
         return events.get(i);
     }
 
-    public int indexOf(final WASMEvent event) {
+    public int indexOf(final WasmEvent event) {
         return events.indexOf(event);
     }
 

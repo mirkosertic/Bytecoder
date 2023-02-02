@@ -15,14 +15,10 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
 
-public class Return implements WASMExpression {
+public class Return implements WasmExpression {
 
-    private final Expression expression;
-
-    Return(final Expression expression) {
-        this.expression = expression;
+    Return() {
     }
 
     @Override
@@ -35,7 +31,6 @@ public class Return implements WASMExpression {
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) {
-        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x0f);
     }
 }

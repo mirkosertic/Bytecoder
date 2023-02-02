@@ -15,23 +15,19 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 import java.io.IOException;
 import java.util.List;
 
-public class CallIndirect implements WASMExpression {
+public class CallIndirect implements WasmExpression {
 
-    private final WASMType functionType;
-    private final List<WASMValue> arguments;
-    private final WASMValue functionIndex;
-    private final Expression expression;
+    private final FunctionType functionType;
+    private final List<WasmValue> arguments;
+    private final WasmValue functionIndex;
 
-    CallIndirect(final WASMType functionType, final List<WASMValue> arguments, final WASMValue functionIndex, final Expression expression) {
+    CallIndirect(final FunctionType functionType, final List<WasmValue> arguments, final WasmValue functionIndex) {
         this.functionType = functionType;
         this.arguments = arguments;
         this.functionIndex = functionIndex;
-        this.expression = expression;
     }
 
     @Override
@@ -40,7 +36,7 @@ public class CallIndirect implements WASMExpression {
         textWriter.write("call_indirect");
         textWriter.space();
         functionType.writeRefTo(textWriter);
-        for (final WASMValue argument : arguments) {
+        for (final WasmValue argument : arguments) {
             textWriter.space();
             argument.writeTo(textWriter, context);
         }
@@ -54,11 +50,10 @@ public class CallIndirect implements WASMExpression {
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        for (final WASMValue argument : arguments) {
+        for (final WasmValue argument : arguments) {
             argument.writeTo(codeWriter, context);
         }
         functionIndex.writeTo(codeWriter, context);
-        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x11);
         codeWriter.writeUnsignedLeb128(context.typeIndex().indexOf(functionType));
         codeWriter.writeByte((byte) 0);

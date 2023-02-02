@@ -15,16 +15,13 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
 
-public class F32Const implements WASMValue {
+public class F32Const implements WasmValue {
 
     private final float value;
-    private final Expression expression;
 
-    F32Const(final float value, final Expression expression) {
+    F32Const(final float value) {
         this.value = value;
-        this.expression = expression;
     }
 
     @Override
@@ -44,7 +41,6 @@ public class F32Const implements WASMValue {
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) {
-        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x43);
         codeWriter.writeFloat32(value);
     }

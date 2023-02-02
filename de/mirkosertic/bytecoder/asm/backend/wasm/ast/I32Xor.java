@@ -15,11 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 public class I32Xor extends BinaryExpression {
 
-    I32Xor(final WASMValue left, final WASMValue right, final Expression expression) {
-        super(left, right,"i32.xor", (byte) 0x73, expression);
+    I32Xor(final WasmValue left, final WasmValue right) {
+        super(left, right,"i32.xor", (byte) 0x73);
     }
 }

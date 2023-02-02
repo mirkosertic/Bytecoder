@@ -15,18 +15,14 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 import java.io.IOException;
 
-public class RethrowException implements WASMExpression {
+public class RethrowException implements WasmExpression {
 
-    private final WASMValue value;
-    private final Expression expression;
+    private final WasmValue value;
 
-    RethrowException(final WASMValue value, final Expression expression) {
+    RethrowException(final WasmValue value) {
         this.value = value;
-        this.expression = expression;
     }
 
     @Override
@@ -46,7 +42,6 @@ public class RethrowException implements WASMExpression {
         if (value != null) {
             value.writeTo(codeWriter, context);
         }
-        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x09);
     }
 }

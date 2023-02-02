@@ -15,26 +15,22 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 import java.io.IOException;
 
-public class F32Load implements WASMExpression {
+public class F32Load implements WasmExpression {
 
     private final Alignment alignment;
     private final int offset;
-    private final WASMValue ptr;
-    private final Expression expression;
+    private final WasmValue ptr;
 
-    F32Load(final int offset, final WASMValue ptr, final Expression expression) {
-        this(Alignment.FOUR, offset, ptr, expression);
+    F32Load(final int offset, final WasmValue ptr) {
+        this(Alignment.FOUR, offset, ptr);
     }
 
-    F32Load(final Alignment alignment, final int offset, final WASMValue ptr, final Expression expression) {
+    F32Load(final Alignment alignment, final int offset, final WasmValue ptr) {
         this.alignment = alignment;
         this.offset = offset;
         this.ptr = ptr;
-        this.expression = expression;
     }
 
     @Override
@@ -53,7 +49,6 @@ public class F32Load implements WASMExpression {
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         ptr.writeTo(codeWriter, context);
-        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x2a);
         codeWriter.writeUnsignedLeb128(alignment.log2Value());
         codeWriter.writeUnsignedLeb128(offset);

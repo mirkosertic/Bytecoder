@@ -15,28 +15,24 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 import java.io.IOException;
 
-public class I32Store implements WASMExpression {
+public class I32Store implements WasmExpression {
 
     private final Alignment alignment;
     private final int offset;
-    private final WASMValue ptr;
-    private final WASMValue value;
-    private final Expression expression;
+    private final WasmValue ptr;
+    private final WasmValue value;
 
-    I32Store(final int offset, final WASMValue ptr, final WASMValue value, final Expression expression) {
-        this(Alignment.FOUR, offset, ptr, value, expression);
+    I32Store(final int offset, final WasmValue ptr, final WasmValue value) {
+        this(Alignment.FOUR, offset, ptr, value);
     }
 
-    I32Store(final Alignment alignment, final int offset, final WASMValue ptr, final WASMValue value, final Expression expression) {
+    I32Store(final Alignment alignment, final int offset, final WasmValue ptr, final WasmValue value) {
         this.alignment = alignment;
         this.offset = offset;
         this.ptr = ptr;
         this.value = value;
-        this.expression = expression;
     }
 
     @Override
@@ -59,7 +55,6 @@ public class I32Store implements WASMExpression {
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         ptr.writeTo(codeWriter, context);
         value.writeTo(codeWriter, context);
-        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x36);
         codeWriter.writeUnsignedLeb128(alignment.log2Value());
         codeWriter.writeUnsignedLeb128(offset);

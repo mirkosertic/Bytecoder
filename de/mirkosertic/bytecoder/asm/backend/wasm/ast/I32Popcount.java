@@ -15,11 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 public class I32Popcount extends UnaryExpression {
 
-    I32Popcount(final WASMValue value, final Expression expression) {
-        super(value, "i32.popcnt", (byte) 0x69, expression);
+    I32Popcount(final WasmValue value) {
+        super(value, "i32.popcnt", (byte) 0x69);
     }
 }

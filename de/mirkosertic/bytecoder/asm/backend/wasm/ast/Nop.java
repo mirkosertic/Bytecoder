@@ -15,14 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
+public class Nop implements WasmExpression {
 
-public class Nop implements WASMExpression {
-
-    private final Expression expression;
-
-    Nop(final Expression expression) {
-        this.expression = expression;
+    Nop() {
     }
 
     @Override
@@ -35,7 +30,6 @@ public class Nop implements WASMExpression {
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) {
-        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x01);
     }
 }

@@ -28,13 +28,13 @@ public class GlobalsSection extends ModuleSection {
         this.globals = new ArrayList<>();
     }
 
-    public Global newMutableGlobal(final String name, final PrimitiveType type, final WASMValue initializer) {
+    public Global newMutableGlobal(final String name, final WasmType type, final WasmValue initializer) {
         final Global global = new Global(getModule().getExports(), name, type, true, initializer);
         globals.add(global);
         return global;
     }
 
-    public Global newConstantGlobal(final String name, final PrimitiveType type, final WASMValue initializer) {
+    public Global newConstantGlobal(final String name, final WasmType type, final WasmValue initializer) {
         final Global global = new Global(getModule().getExports(), name, type, false, initializer);
         globals.add(global);
         return global;

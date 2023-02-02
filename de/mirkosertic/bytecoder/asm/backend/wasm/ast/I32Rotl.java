@@ -15,11 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 public class I32Rotl extends BinaryExpression {
 
-    I32Rotl(final WASMValue left, final WASMValue right, final Expression expression) {
-        super(left, right, "i32.rotl", (byte) 0x77, expression);
+    I32Rotl(final WasmValue left, final WasmValue right) {
+        super(left, right, "i32.rotl", (byte) 0x77);
     }
 }

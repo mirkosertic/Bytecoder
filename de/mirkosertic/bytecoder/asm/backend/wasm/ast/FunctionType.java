@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,31 +19,31 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
-public class WASMType {
+public class FunctionType implements ReferencableType {
 
     private final TypesSection typesSection;
-    private final List<PrimitiveType> parameter;
-    private final PrimitiveType resultType;
+    private final List<WasmType> parameter;
+    private final WasmType resultType;
 
-    WASMType(final TypesSection section, final List<PrimitiveType> parameter, final PrimitiveType resultType) {
+    FunctionType(final TypesSection section, final List<WasmType> parameter, final WasmType resultType) {
         this.typesSection = section;
         this.parameter = parameter;
         this.resultType = resultType;
     }
 
-    WASMType(final TypesSection section, final List<PrimitiveType> parameter) {
+    FunctionType(final TypesSection section, final List<WasmType> parameter) {
         this.typesSection = section;
         this.parameter = parameter;
         this.resultType = null;
     }
 
-    WASMType(final TypesSection section, final PrimitiveType resultType) {
+    FunctionType(final TypesSection section, final WasmType resultType) {
         this.typesSection = section;
         this.parameter = null;
         this.resultType = resultType;
     }
 
-    public boolean matches(final List<PrimitiveType> otherParameter, final PrimitiveType otherResultType) {
+    public boolean matches(final List<WasmType> otherParameter, final WasmType otherResultType) {
         return Objects.equals(parameter, otherParameter)
                 && Objects.equals(resultType, otherResultType);
     }
@@ -52,10 +52,11 @@ public class WASMType {
         return resultType == null;
     }
 
-    public PrimitiveType getResultType() {
+    public WasmType getResultType() {
         return resultType;
     }
 
+    @Override
     public void writeTo(final TextWriter writer) {
         writer.opening();
         writer.write("type");
@@ -66,7 +67,7 @@ public class WASMType {
         writer.opening();
         writer.write("func");
         if (null != parameter) {
-            for (final PrimitiveType param : parameter) {
+            for (final WasmType param : parameter) {
                 writer.space();
                 writer.opening();
                 writer.write("param");
@@ -87,33 +88,36 @@ public class WASMType {
         writer.closing();
     }
 
+    @Override
     public void writeRefTo(final TextWriter writer) {
         writer.opening();
         writer.write("type");
         writer.space();
         writer.write("$t");
-        writer.write(Integer.toString(typesSection.indexOf(this)));
+        writer.write(Integer.toString(index()));
         writer.closing();
     }
 
-    public void writeTo(final BinaryWriter.SectionWriter sectionWriter) throws IOException {
-        sectionWriter.writeByte(PrimitiveType.func.getBinaryType());
+    @Override
+    public void writeTo(final BinaryWriter.Writer writer) throws IOException {
+        writer.writeByte(PrimitiveType.func.getBinaryType());
         if (null != parameter) {
-            sectionWriter.writeUnsignedLeb128(parameter.size());
-            for (final PrimitiveType type : parameter) {
-                type.writeTo(sectionWriter);
+            writer.writeUnsignedLeb128(parameter.size());
+            for (final WasmType type : parameter) {
+                type.writeTo(writer);
             }
         } else {
-            sectionWriter.writeUnsignedLeb128(0);
+            writer.writeUnsignedLeb128(0);
         }
         if (null != resultType) {
-            sectionWriter.writeUnsignedLeb128(1);
-            resultType.writeTo(sectionWriter);
+            writer.writeUnsignedLeb128(1);
+            resultType.writeTo(writer);
         } else {
-            sectionWriter.writeUnsignedLeb128(0);
+            writer.writeUnsignedLeb128(0);
         }
     }
 
+    @Override
     public int index() {
         return typesSection.indexOf(this);
     }

@@ -15,22 +15,18 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 import java.io.IOException;
 
-public abstract class UnaryExpression implements WASMExpression {
+public abstract class UnaryExpression implements WasmExpression {
 
-    private final WASMValue value;
+    private final WasmValue value;
     private final String textCode;
     private final byte binaryCode;
-    private final Expression expression;
 
-    protected UnaryExpression(final WASMValue value, final String textCode, final byte binaryCode, final Expression expression) {
+    protected UnaryExpression(final WasmValue value, final String textCode, final byte binaryCode) {
         this.value = value;
         this.textCode = textCode;
         this.binaryCode = binaryCode;
-        this.expression = expression;
     }
 
     @Override
@@ -45,7 +41,6 @@ public abstract class UnaryExpression implements WASMExpression {
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         value.writeTo(codeWriter, context);
-        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte(binaryCode);
     }
 }

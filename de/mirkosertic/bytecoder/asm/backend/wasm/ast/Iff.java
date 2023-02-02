@@ -15,21 +15,19 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Iff extends LabeledContainer implements WASMExpression {
+public class Iff extends LabeledContainer implements WasmExpression {
 
     public final Expressions falseFlow;
 
-    private final WASMValue condition;
-    private final List<WASMExpression> falseChildren;
+    private final WasmValue condition;
+    private final List<WasmExpression> falseChildren;
 
-    Iff(final Container parent, final String label, final WASMValue condition, final Expression expression) {
-        super(parent, label, expression);
+    Iff(final Container parent, final String label, final WasmValue condition) {
+        super(parent, label);
         this.condition = condition;
 
         this.falseChildren = new ArrayList<>();
@@ -40,12 +38,12 @@ public class Iff extends LabeledContainer implements WASMExpression {
             }
 
             @Override
-            public List<WASMExpression> getChildren() {
+            public List<WasmExpression> getChildren() {
                 return falseChildren;
             }
 
             @Override
-            public void addChild(final WASMExpression e) {
+            public void addChild(final WasmExpression e) {
                 falseChildren.add(e);
             }
 
@@ -80,7 +78,7 @@ public class Iff extends LabeledContainer implements WASMExpression {
         textWriter.write("then");
         textWriter.newLine();
         if (hasChildren()) {
-            for (final WASMValue child : getChildren()) {
+            for (final WasmValue child : getChildren()) {
                 child.writeTo(textWriter, context);
             }
             textWriter.closing();
@@ -92,7 +90,7 @@ public class Iff extends LabeledContainer implements WASMExpression {
             textWriter.opening();
             textWriter.write("else");
             textWriter.newLine();
-            for (final WASMValue child : falseChildren) {
+            for (final WasmValue child : falseChildren) {
                 child.writeTo(textWriter, context);
             }
             textWriter.closing();
@@ -106,15 +104,14 @@ public class Iff extends LabeledContainer implements WASMExpression {
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         condition.writeTo(codeWriter, context);
 
-        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x04);
         PrimitiveType.empty_pseudo_block.writeTo(codeWriter);
-        for (final WASMExpression e : getChildren()) {
+        for (final WasmExpression e : getChildren()) {
             e.writeTo(codeWriter, context.subWith(this));
         }
         if (!falseChildren.isEmpty()) {
             codeWriter.writeByte((byte) 0x05);
-            for (final WASMExpression e : falseChildren) {
+            for (final WasmExpression e : falseChildren) {
                 e.writeTo(codeWriter, context.subWith(this));
             }
         }

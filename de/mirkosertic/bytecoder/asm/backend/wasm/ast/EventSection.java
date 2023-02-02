@@ -16,7 +16,6 @@
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
 import java.io.IOException;
-import java.util.List;
 
 public class EventSection extends ModuleSection {
 
@@ -31,21 +30,13 @@ public class EventSection extends ModuleSection {
         return eventIndex;
     }
 
-    public WASMEvent newException(final String label, final List<PrimitiveType> arguments) {
-        final WASMType type = getModule().getTypes().typeFor(arguments);
-
-        final WASMEvent e = new WASMEvent(getModule().getTypes(), label, type);
-        eventIndex.add(e);
-        return e;
-    }
-
     public void writeCodeTo(final BinaryWriter writer) throws IOException {
         if (!eventIndex.isEmpty()) {
             try (final BinaryWriter.SectionWriter sectionWriter = writer.eventSection()) {
                 sectionWriter.writeUTF8("event");
                 sectionWriter.writeUnsignedLeb128(eventIndex.size());
                 for (int i = 0; i< eventIndex.size(); i++) {
-                    final WASMEvent event = eventIndex.get(i);
+                    final WasmEvent event = eventIndex.get(i);
                     event.writeTo(sectionWriter);
                 }
             }
@@ -54,7 +45,7 @@ public class EventSection extends ModuleSection {
 
     public void writeCodeTo(final TextWriter writer) throws IOException {
         for (int i = 0; i< eventIndex.size(); i++) {
-            final WASMEvent event = eventIndex.get(i);
+            final WasmEvent event = eventIndex.get(i);
             event.writeTo(writer);
         }
     }
