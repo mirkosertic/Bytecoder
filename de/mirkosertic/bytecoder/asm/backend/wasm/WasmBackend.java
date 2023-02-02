@@ -58,60 +58,80 @@ public class WasmBackend {
         final StructType rtType = types.structType("runtimetype", rtFields);
 
         final Map<ResolvedClass, StructType> objectTypeMappings = new HashMap<>();
+        final Map<ResolvedClass, StructType> rtTypeMappings = new HashMap<>();
         ResolvedClass objectClass = null;
 
         for (final ResolvedClass cl : compileUnit.computeClassDependencies()) {
-            if (!Modifier.isInterface(cl.classNode.access)) {
-                // Class objects for
-                final String className = WasmHelpers.generateClassName(cl.type);
+            // Class objects for
+            final String className = WasmHelpers.generateClassName(cl.type);
 
-                final List<StructType.Field> fields = new ArrayList<>();
-                if (cl.superClass == null) {
-                    fields.add(new StructType.Field("runtimetype", ConstExpressions.ref(rtType)));
-                }
+            final List<StructType.Field> instanceFields = new ArrayList<>();
+            if (cl.superClass == null) {
+                instanceFields.add(new StructType.Field("runtimetype", ConstExpressions.ref(rtType)));
+            }
 
-                for (final ResolvedField rf : cl.resolvedFields) {
-                    if ((rf.owner == cl) && (!Modifier.isStatic(rf.access))) {
-                        final String fieldName = WasmHelpers.generateFieldName(rf.name);
-                        switch (rf.type.getSort()) {
-                            case Type.BYTE:
-                                fields.add(new StructType.Field(fieldName, PrimitiveType.i32));
-                                break;
-                            case Type.CHAR:
-                                fields.add(new StructType.Field(fieldName, PrimitiveType.i32));
-                                break;
-                            case Type.SHORT:
-                                fields.add(new StructType.Field(fieldName, PrimitiveType.i32));
-                                break;
-                            case Type.INT:
-                                fields.add(new StructType.Field(fieldName, PrimitiveType.i32));
-                                break;
-                            case Type.LONG:
-                                fields.add(new StructType.Field(fieldName, PrimitiveType.i64));
-                                break;
-                            case Type.FLOAT:
-                                fields.add(new StructType.Field(fieldName, PrimitiveType.f32));
-                                break;
-                            case Type.DOUBLE:
-                                fields.add(new StructType.Field(fieldName, PrimitiveType.f64));
-                                break;
-                            case Type.OBJECT:
-                                fields.add(new StructType.Field(fieldName, ConstExpressions.ref(objectTypeMappings.get(objectClass))));
-                                break;
-                            case Type.ARRAY:
-                                //TODO
-                                break;
+            if (cl.isNativeReferenceHolder()) {
+                instanceFields.add(new StructType.Field("nativeObject", PrimitiveType.anyref));
+            }
+
+            final List<StructType.Field> classFields = new ArrayList<>();
+
+            for (final ResolvedField rf : cl.resolvedFields) {
+                if (rf.owner == cl) {
+                    final String fieldName = WasmHelpers.generateFieldName(rf.name);
+
+                    StructType.Field field = null;
+
+                    switch (rf.type.getSort()) {
+                        case Type.BYTE:
+                            field = new StructType.Field(fieldName, PrimitiveType.i32);
+                            break;
+                        case Type.CHAR:
+                            field = new StructType.Field(fieldName, PrimitiveType.i32);
+                            break;
+                        case Type.SHORT:
+                            field = new StructType.Field(fieldName, PrimitiveType.i32);
+                            break;
+                        case Type.INT:
+                            field = new StructType.Field(fieldName, PrimitiveType.i32);
+                            break;
+                        case Type.LONG:
+                            field = new StructType.Field(fieldName, PrimitiveType.i64);
+                            break;
+                        case Type.FLOAT:
+                            field = new StructType.Field(fieldName, PrimitiveType.f32);
+                            break;
+                        case Type.DOUBLE:
+                            field = new StructType.Field(fieldName, PrimitiveType.f64);
+                            break;
+                        case Type.OBJECT:
+                            field = new StructType.Field(fieldName, ConstExpressions.ref(objectTypeMappings.get(objectClass)));
+                            break;
+                        case Type.ARRAY:
+                            //TODO
+                            break;
+                    }
+
+                    if (field != null) {
+                        if (Modifier.isStatic(rf.access)) {
+                            classFields.add(field);
+                        } else {
+                            instanceFields.add(field);
                         }
                     }
                 }
+            }
 
+            if (!Modifier.isInterface(cl.classNode.access)) {
                 if (cl.superClass == null) {
                     objectClass = cl;
-                    objectTypeMappings.put(cl, types.structType(className, fields));
+                    objectTypeMappings.put(cl, types.structType(className, instanceFields));
                 } else {
-                    objectTypeMappings.put(cl, types.structSubtype(className, objectTypeMappings.get(cl.superClass), fields));
+                    objectTypeMappings.put(cl, types.structSubtype(className, objectTypeMappings.get(cl.superClass), instanceFields));
                 }
             }
+
+            rtTypeMappings.put(cl, types.structSubtype(className + "_rt", rtType, classFields));
         }
 
 
