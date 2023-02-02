@@ -20,7 +20,7 @@ import java.util.List;
 
 public class ExportableFunction extends Function implements Exportable {
 
-    private class DefaultExportContext implements WASMValue.ExportContext {
+    private class DefaultExportContext implements WasmValue.ExportContext {
 
         private final Container owningContainer;
         private final FunctionIndex functionIndex;
@@ -51,7 +51,7 @@ public class ExportableFunction extends Function implements Exportable {
         }
 
         @Override
-        public WASMValue.ExportContext subWith(final Container container) {
+        public WasmValue.ExportContext subWith(final Container container) {
             return new DefaultExportContext(container, functionIndex);
         }
 
@@ -73,17 +73,17 @@ public class ExportableFunction extends Function implements Exportable {
 
     private final LocalIndex localIndex;
 
-    ExportableFunction(final Module aModule, final WASMType functionType, final String label, final List<Param> params, final PrimitiveType result) {
+    ExportableFunction(final Module aModule, final WasmType functionType, final String label, final List<Param> params, final PrimitiveType result) {
         super(aModule, functionType, label, params, result);
         this.localIndex = new LocalIndex(params);
     }
 
-    ExportableFunction(final Module aModule, final WASMType functionType, final String label, final List<Param> params) {
+    ExportableFunction(final Module aModule, final WasmType functionType, final String label, final List<Param> params) {
         super(aModule, functionType, label, params);
         this.localIndex = new LocalIndex(params);
     }
 
-    ExportableFunction(final Module aModule, final WASMType functionType, final String label, final PrimitiveType result) {
+    ExportableFunction(final Module aModule, final WasmType functionType, final String label, final PrimitiveType result) {
         super(aModule, functionType, label, result);
         this.localIndex = new LocalIndex();
     }
@@ -141,7 +141,7 @@ public class ExportableFunction extends Function implements Exportable {
             textWriter.newLine();
         }
         final DefaultExportContext context = new DefaultExportContext(this, getModule().functionIndex());
-        for (final WASMExpression expression : getChildren()) {
+        for (final WasmExpression expression : getChildren()) {
             expression.writeTo(textWriter, context);
         }
         textWriter.closing();
@@ -169,7 +169,7 @@ public class ExportableFunction extends Function implements Exportable {
 
             final DefaultExportContext context = new DefaultExportContext(this, functionIndex);
 
-            for (final WASMExpression expression : getChildren()) {
+            for (final WasmExpression expression : getChildren()) {
                 expression.writeTo(codeWriter, context);
             }
 

@@ -15,17 +15,15 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 import java.io.IOException;
 
-public class Try extends LabeledContainer implements WASMExpression {
+public class Try extends LabeledContainer implements WasmExpression {
 
     private final PrimitiveType blockType;
     public final Catch catchBlock;
 
-    Try(final Container parent, final PrimitiveType blockType, final String label, final Expression expression) {
-        super(parent, label, expression);
+    Try(final Container parent, final PrimitiveType blockType, final String label) {
+        super(parent, label);
         this.blockType = blockType;
         catchBlock = new Catch(this);
     }
@@ -46,7 +44,7 @@ public class Try extends LabeledContainer implements WASMExpression {
         }
         textWriter.newLine();
 
-        for (final WASMExpression e : getChildren()) {
+        for (final WasmExpression e : getChildren()) {
             e.writeTo(textWriter, context.subWith(this));
         }
 
@@ -57,14 +55,13 @@ public class Try extends LabeledContainer implements WASMExpression {
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x06);
         if (blockType != null) {
             blockType.writeTo(codeWriter);
         } else {
             PrimitiveType.empty_pseudo_block.writeTo(codeWriter);
         }
-        for (final WASMExpression e : getChildren()) {
+        for (final WasmExpression e : getChildren()) {
             e.writeTo(codeWriter, context.subWith(this));
         }
         catchBlock.writeTo(codeWriter, context);

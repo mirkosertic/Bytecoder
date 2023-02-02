@@ -15,18 +15,14 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 import java.io.IOException;
 
-public class Drop implements WASMExpression {
+public class Drop implements WasmExpression {
 
-    private final WASMValue value;
-    private final Expression expression;
+    private final WasmValue value;
 
-    Drop(final WASMValue value, final Expression expression) {
+    Drop(final WasmValue value) {
         this.value = value;
-        this.expression = expression;
     }
 
     @Override
@@ -42,7 +38,6 @@ public class Drop implements WASMExpression {
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         value.writeTo(codeWriter, context);
-        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x1a);
     }
 }

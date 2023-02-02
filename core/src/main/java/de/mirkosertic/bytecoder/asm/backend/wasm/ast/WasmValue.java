@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
 import java.io.IOException;
 
-public interface WASMValue {
+public interface WasmValue {
 
     interface ExportContext {
 

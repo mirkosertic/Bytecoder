@@ -20,17 +20,17 @@ import java.util.List;
 
 public class TypeIndex {
 
-    private final List<WASMType> types;
+    private final List<WasmType> types;
 
     TypeIndex() {
         types = new ArrayList<>();
     }
 
-    public void add(final WASMType type) {
+    public void add(final WasmType type) {
         types.add(type);
     }
 
-    public int indexOf(final WASMType type) {
+    public int indexOf(final WasmType type) {
         return types.indexOf(type);
     }
 }

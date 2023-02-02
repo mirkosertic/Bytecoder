@@ -15,11 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 public class F32Nearest extends UnaryExpression {
 
-    F32Nearest(final WASMValue value, final Expression expression) {
-        super(value, "f32.nearest", (byte) 0x90, expression);
+    F32Nearest(final WasmValue value) {
+        super(value, "f32.nearest", (byte) 0x90);
     }
 }

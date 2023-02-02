@@ -15,20 +15,16 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 import java.io.IOException;
 
-public class BranchIff implements WASMExpression {
+public class BranchIff implements WasmExpression {
 
     private final LabeledContainer outerBlock;
-    private final WASMValue condition;
-    private final Expression expression;
+    private final WasmValue condition;
 
-    BranchIff(final LabeledContainer surroundingBlock, final WASMValue condition, final Expression expression) {
+    BranchIff(final LabeledContainer surroundingBlock, final WasmValue condition) {
         this.outerBlock = surroundingBlock;
         this.condition = condition;
-        this.expression = expression;
     }
 
     @Override
@@ -50,7 +46,6 @@ public class BranchIff implements WASMExpression {
         condition.writeTo(codeWriter, context);
         final int relativeDepth = context.owningContainer().relativeDepthTo(outerBlock);
 
-        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x0d);
         codeWriter.writeUnsignedLeb128(relativeDepth);
     }

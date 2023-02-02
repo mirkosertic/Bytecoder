@@ -15,11 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 public class F32Add extends BinaryExpression {
 
-    F32Add(final WASMValue left, final WASMValue right, final Expression expression) {
-        super(left, right, "f32.add", (byte) 0x92, expression);
+    F32Add(final WasmValue left, final WasmValue right) {
+        super(left, right, "f32.add", (byte) 0x92);
     }
 }

@@ -15,22 +15,18 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 import java.io.IOException;
 
-public class Select implements WASMExpression {
+public class Select implements WasmExpression {
 
-    private final WASMValue leftValue;
-    private final WASMValue rightValue;
-    private final WASMValue condition;
-    private final Expression expression;
+    private final WasmValue leftValue;
+    private final WasmValue rightValue;
+    private final WasmValue condition;
 
-    Select(final WASMValue leftValue, final WASMValue rightValue, final WASMValue condition, final Expression expression) {
+    Select(final WasmValue leftValue, final WasmValue rightValue, final WasmValue condition) {
         this.leftValue = leftValue;
         this.rightValue = rightValue;
         this.condition = condition;
-        this.expression = expression;
     }
 
     @Override
@@ -51,7 +47,6 @@ public class Select implements WASMExpression {
         leftValue.writeTo(codeWriter, context);
         rightValue.writeTo(codeWriter, context);
         condition.writeTo(codeWriter, context);
-        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x1b);
     }
 }

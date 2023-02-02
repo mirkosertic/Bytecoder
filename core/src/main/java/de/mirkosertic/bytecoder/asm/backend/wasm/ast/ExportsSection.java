@@ -60,9 +60,9 @@ public class ExportsSection extends ModuleSection {
                 } else if (value instanceof Memory) {
                     exportWriter.writeByte(ExternalKind.EXTERNAL_KIND_MEMORY);
                     exportWriter.writeUnsignedLeb128(memoryIndex.indexOf(value));
-                } else if (value instanceof WASMEvent) {
+                } else if (value instanceof WasmEvent) {
                     exportWriter.writeByte(ExternalKind.EXTERNAL_KIND_EXCEPTION);
-                    exportWriter.writeUnsignedLeb128(eventIndex.indexOf((WASMEvent) value));
+                    exportWriter.writeUnsignedLeb128(eventIndex.indexOf((WasmEvent) value));
                 } else {
                     throw new IllegalStateException("Not Implemented yet for " + value);
                 }

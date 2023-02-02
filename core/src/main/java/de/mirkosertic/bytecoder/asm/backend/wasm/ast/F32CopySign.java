@@ -15,11 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 public class F32CopySign extends BinaryExpression {
 
-    F32CopySign(final WASMValue left, final WASMValue right, final Expression expression) {
-        super(left, right, "f32.copysign", (byte) 0x98, expression);
+    F32CopySign(final WasmValue left, final WasmValue right) {
+        super(left, right, "f32.copysign", (byte) 0x98);
     }
 }

@@ -15,16 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
+public class CurrentMemory implements WasmValue {
 
-import java.io.IOException;
-
-public class CurrentMemory implements WASMValue {
-
-    private final Expression expression;
-
-    CurrentMemory(final Expression expression) {
-        this.expression = expression;
+    CurrentMemory() {
     }
 
     @Override
@@ -35,8 +28,7 @@ public class CurrentMemory implements WASMValue {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        codeWriter.registerDebugInformationFor(expression);
+    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) {
         codeWriter.writeByte((byte) 0x3f);
         codeWriter.writeByte((byte) 0);
     }

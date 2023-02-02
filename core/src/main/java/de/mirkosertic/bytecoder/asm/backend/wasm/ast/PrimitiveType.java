@@ -15,9 +15,7 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import java.io.IOException;
-
-public enum PrimitiveType {
+public enum PrimitiveType implements WasmType {
     i32("i32", (byte) 0x7f),
     f32("f32", (byte) 0x7d),
     i64("i64", (byte) 0x7e),
@@ -40,9 +38,21 @@ public enum PrimitiveType {
         textWriter.write(text);
     }
 
-    public void writeTo(final BinaryWriter.Writer binaryWriter) throws IOException {
-        binaryWriter.writeByte(binaryType);
+    @Override
+    public void writeRefTo(final TextWriter writer) {
+        writer.write(text);
     }
+
+    @Override
+    public void writeTo(final BinaryWriter.Writer sectionWriter) {
+        sectionWriter.writeByte(binaryType);
+    }
+
+    @Override
+    public int index() {
+        throw new IllegalStateException("Not implemented!");
+    }
+
 
     public byte getBinaryType() {
         return binaryType;

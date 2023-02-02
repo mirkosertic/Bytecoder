@@ -17,13 +17,13 @@ package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class WASMEvent implements Exportable {
+public class WasmEvent implements Exportable {
 
-    private final WASMType type;
+    private final WasmType type;
     private final String label;
     private final TypesSection typesSection;
 
-    protected WASMEvent(final TypesSection typesSection, final String label, final WASMType type) {
+    protected WasmEvent(final TypesSection typesSection, final String label, final WasmType type) {
         this.label = label;
         this.type = type;
         this.typesSection = typesSection;

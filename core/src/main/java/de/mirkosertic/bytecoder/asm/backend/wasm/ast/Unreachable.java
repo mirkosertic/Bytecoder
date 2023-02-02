@@ -15,28 +15,20 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
+public class Unreachable implements WasmExpression {
 
-import java.io.IOException;
-
-public class Unreachable implements WASMExpression {
-
-    private final Expression expression;
-
-    Unreachable(final Expression expression) {
-        this.expression = expression;
+    Unreachable() {
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
+    public void writeTo(final TextWriter textWriter, final ExportContext context) {
         textWriter.opening();
         textWriter.write("unreachable");
         textWriter.closing();
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        codeWriter.registerDebugInformationFor(expression);
+    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) {
         codeWriter.writeByte((byte) 0x00);
     }
 }

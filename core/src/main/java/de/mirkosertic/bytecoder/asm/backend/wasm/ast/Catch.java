@@ -23,19 +23,19 @@ public class Catch extends Container {
         super(parent);
     }
 
-    public void writeTo(final BinaryWriter.Writer codeWriter, final WASMValue.ExportContext context) throws IOException {
+    public void writeTo(final BinaryWriter.Writer codeWriter, final WasmValue.ExportContext context) throws IOException {
         codeWriter.writeByte((byte) 0x07);
-        for (final WASMExpression e : getChildren()) {
+        for (final WasmExpression e : getChildren()) {
             e.writeTo(codeWriter, context.subWith(this));
         }
     }
 
-    public void writeTo(final TextWriter textWriter, final WASMValue.ExportContext context) throws IOException {
+    public void writeTo(final TextWriter textWriter, final WasmValue.ExportContext context) throws IOException {
         textWriter.opening();
         textWriter.write("catch");
         textWriter.newLine();
 
-        for (final WASMExpression e : getChildren()) {
+        for (final WasmExpression e : getChildren()) {
             e.writeTo(textWriter, context.subWith(this));
         }
 

@@ -15,11 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 public class I32LeU extends BinaryExpression {
 
-    I32LeU(final WASMValue leftValue, final WASMValue rightValue, final Expression expression) {
-        super(leftValue, rightValue, "i32.le_u", (byte) 0x4d, expression);
+    I32LeU(final WasmValue leftValue, final WasmValue rightValue) {
+        super(leftValue, rightValue, "i32.le_u", (byte) 0x4d);
     }
 }

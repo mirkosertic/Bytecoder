@@ -15,20 +15,16 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 import java.io.IOException;
 
-public class BranchOnException implements WASMExpression {
+public class BranchOnException implements WasmExpression {
 
     private final LabeledContainer targetContainer;
-    private final WASMEvent exceptionType;
-    private final Expression expression;
+    private final WasmEvent exceptionType;
 
-    BranchOnException(final LabeledContainer targetContainer, final WASMEvent exceptionType, final Expression expression) {
+    BranchOnException(final LabeledContainer targetContainer, final WasmEvent exceptionType) {
         this.targetContainer = targetContainer;
         this.exceptionType = exceptionType;
-        this.expression = expression;
     }
 
     @Override
@@ -46,7 +42,6 @@ public class BranchOnException implements WASMExpression {
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         final int relativeDepth = context.owningContainer().relativeDepthTo(targetContainer);
-        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x0a);
         codeWriter.writeUnsignedLeb128(relativeDepth);
         codeWriter.writeUnsignedLeb128(context.eventIndex().indexOf(exceptionType));

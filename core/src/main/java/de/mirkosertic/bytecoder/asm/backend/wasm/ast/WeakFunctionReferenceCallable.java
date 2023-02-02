@@ -15,16 +15,12 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 public class WeakFunctionReferenceCallable implements Callable {
 
     private final String label;
-    private final Expression expression;
 
-    WeakFunctionReferenceCallable(final String label, final Expression expression) {
+    WeakFunctionReferenceCallable(final String label) {
         this.label = label;
-        this.expression = expression;
     }
 
     @Override
@@ -33,13 +29,13 @@ public class WeakFunctionReferenceCallable implements Callable {
     }
 
     @Override
-    public PrimitiveType resolveResultType(final WASMValue.ExportContext context) {
+    public PrimitiveType resolveResultType(final WasmValue.ExportContext context) {
         final Function f = context.functionIndex().firstByLabel(label);
         return f.getResultType();
     }
 
     @Override
-    public int resolveIndex(final WASMValue.ExportContext context) {
+    public int resolveIndex(final WasmValue.ExportContext context) {
         final Function f = context.functionIndex().firstByLabel(label);
         return context.functionIndex().indexOf(f);
     }

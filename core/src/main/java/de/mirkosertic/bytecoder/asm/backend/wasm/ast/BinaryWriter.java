@@ -16,18 +16,11 @@
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
 import de.mirkosertic.bytecoder.backend.SourceMapWriter;
-import de.mirkosertic.bytecoder.core.BytecodeOpcodeAddress;
-import de.mirkosertic.bytecoder.ssa.DebugInformation;
-import de.mirkosertic.bytecoder.ssa.DebugPosition;
-import de.mirkosertic.bytecoder.ssa.Expression;
-import de.mirkosertic.bytecoder.ssa.Program;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 
 public class BinaryWriter implements AutoCloseable {
 
@@ -72,11 +65,9 @@ public class BinaryWriter implements AutoCloseable {
 
         protected class DebugInfo {
             protected final int binaryPosition;
-            protected final Expression expression;
 
-            DebugInfo(final int binaryPosition, final Expression expression) {
+            DebugInfo(final int binaryPosition) {
                 this.binaryPosition = binaryPosition;
-                this.expression = expression;
             }
         }
 
@@ -122,12 +113,6 @@ public class BinaryWriter implements AutoCloseable {
             writeByte((byte) (value >> 16));
             writeByte((byte) (value >> 24));
         }
-
-        public void registerDebugInformationFor(final Expression aExpression) {
-            if (aExpression != null) {
-                debugInfos.add(new DebugInfo(offset + bos.size(), aExpression));
-            }
-        }
     }
 
     public class BlockWriter extends Writer {
@@ -171,34 +156,15 @@ public class BinaryWriter implements AutoCloseable {
 
             theDelta += BinaryWriter.writeUnsignedLeb128(data.length, flushTarget);
             flushTarget.write(data);
-
-            for (final DebugInfo theInfo : debugInfos) {
-                final Program theProgram = theInfo.expression.getProgram();
-                if (theProgram != null) {
-                    final DebugInformation theDebugInformation = theProgram.getDebugInformation();
-                    if (theDebugInformation != null) {
-                        final BytecodeOpcodeAddress theAddress = theInfo.expression.getAddress();
-                        if (theAddress != null) {
-                            final DebugPosition thePos = theDebugInformation.debugPositionFor(theAddress);
-                            if (thePos != null) {
-                                final int theRealPositionInFile = theDelta + theInfo.binaryPosition;
-                                sourceMapWriter.assignDebugPosition(0, theRealPositionInFile, thePos);
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 
     private final ByteArrayOutputStream os;
     private final SourceMapWriter sourceMapWriter;
-    private final List<Writer.DebugInfo> debugInfos;
 
     public BinaryWriter(final SourceMapWriter sourceMapWriter) {
         this.os = new ByteArrayOutputStream();
         this.sourceMapWriter = sourceMapWriter;
-        this.debugInfos = new ArrayList<>();
     }
 
     public byte[] toByteArray() throws IOException {

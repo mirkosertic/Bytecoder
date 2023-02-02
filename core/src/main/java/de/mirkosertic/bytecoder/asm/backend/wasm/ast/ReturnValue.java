@@ -15,14 +15,12 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 import java.io.IOException;
 
 public class ReturnValue extends UnaryExpression {
 
-    ReturnValue(final WASMValue value, final Expression expression) {
-        super(value, "return", (byte) 0x0f, expression);
+    ReturnValue(final WasmValue value) {
+        super(value, "return", (byte) 0x0f);
     }
 
     @Override

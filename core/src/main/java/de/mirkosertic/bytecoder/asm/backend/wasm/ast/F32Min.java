@@ -15,11 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 public class F32Min extends BinaryExpression {
 
-    F32Min(final WASMValue left, final WASMValue right, final Expression expression) {
-        super(left, right, "f32.min", (byte) 0x96, expression);
+    F32Min(final WasmValue left, final WasmValue right) {
+        super(left, right, "f32.min", (byte) 0x96);
     }
 }

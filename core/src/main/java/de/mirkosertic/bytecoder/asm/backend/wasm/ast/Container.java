@@ -23,7 +23,7 @@ public abstract class Container {
     public final Expressions flow;
 
     private final Container parent;
-    private final List<WASMExpression> children;
+    private final List<WasmExpression> children;
 
     protected Container(final Container parent) {
         this.parent = parent;
@@ -41,11 +41,11 @@ public abstract class Container {
         return !children.isEmpty();
     }
 
-    public List<WASMExpression> getChildren() {
+    public List<WasmExpression> getChildren() {
         return children;
     }
 
-    public void addChild(final WASMExpression e) {
+    public void addChild(final WasmExpression e) {
         children.add(e);
     }
 

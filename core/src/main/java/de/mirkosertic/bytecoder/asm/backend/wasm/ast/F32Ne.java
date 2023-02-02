@@ -15,11 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 public class F32Ne extends BinaryExpression {
 
-    F32Ne(final WASMValue leftValue, final WASMValue rightValue, final Expression expression) {
-        super(leftValue, rightValue, "f32.ne", (byte) 0x5c, expression);
+    F32Ne(final WasmValue leftValue, final WasmValue rightValue) {
+        super(leftValue, rightValue, "f32.ne", (byte) 0x5c);
     }
 }

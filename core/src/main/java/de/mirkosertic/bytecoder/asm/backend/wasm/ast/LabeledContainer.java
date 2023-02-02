@@ -15,17 +15,13 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 public class LabeledContainer extends Container {
 
     private final String label;
-    protected final Expression expression;
 
-    public LabeledContainer(final Container parent, final String label, final Expression expression) {
+    public LabeledContainer(final Container parent, final String label) {
         super(parent);
         this.label = label;
-        this.expression = expression;
     }
 
     public String getLabel() {

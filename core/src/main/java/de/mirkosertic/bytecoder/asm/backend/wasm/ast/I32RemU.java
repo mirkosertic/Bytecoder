@@ -15,11 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 public class I32RemU extends BinaryExpression {
 
-    I32RemU(final WASMValue left, final WASMValue right, final Expression expression) {
-        super(left, right,"i32.rem_u", (byte) 0x70, expression);
+    I32RemU(final WasmValue left, final WasmValue right) {
+        super(left, right,"i32.rem_u", (byte) 0x70);
     }
 }

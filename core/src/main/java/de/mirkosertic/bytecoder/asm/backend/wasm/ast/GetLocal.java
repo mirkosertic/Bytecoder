@@ -15,18 +15,14 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 import java.io.IOException;
 
-public class GetLocal implements WASMExpression {
+public class GetLocal implements WasmExpression {
 
     private final Local local;
-    private final Expression expression;
 
-    GetLocal(final Local local, final Expression expression) {
+    GetLocal(final Local local) {
         this.local = local;
-        this.expression = expression;
     }
 
     @Override
@@ -40,7 +36,6 @@ public class GetLocal implements WASMExpression {
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        codeWriter.registerDebugInformationFor(expression);
         codeWriter.writeByte((byte) 0x20);
         codeWriter.writeUnsignedLeb128(context.localIndex().indexOf(local));
     }

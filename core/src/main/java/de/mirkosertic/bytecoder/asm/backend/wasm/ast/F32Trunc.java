@@ -15,11 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 public class F32Trunc extends UnaryExpression {
 
-    F32Trunc(final WASMValue value, final Expression expression) {
-        super(value, "f32.trunc", (byte) 0x8f, expression);
+    F32Trunc(final WasmValue value) {
+        super(value, "f32.trunc", (byte) 0x8f);
     }
 }

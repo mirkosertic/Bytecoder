@@ -21,12 +21,12 @@ import java.util.List;
 public class Function extends Container implements Importable, Callable {
 
     private final Module module;
-    private final WASMType functionType;
+    private final WasmType functionType;
     private final String label;
     private final List<Param> params;
     private final PrimitiveType resultType;
 
-    Function(final Module aModule, final WASMType functionType, final String label, final List<Param> params, final PrimitiveType result) {
+    Function(final Module aModule, final WasmType functionType, final String label, final List<Param> params, final PrimitiveType result) {
         this.module = aModule;
         this.functionType = functionType;
         this.label = label;
@@ -34,7 +34,7 @@ public class Function extends Container implements Importable, Callable {
         this.resultType = result;
     }
 
-    Function(final Module aModule, final WASMType functionType, final String label, final List<Param> params) {
+    Function(final Module aModule, final WasmType functionType, final String label, final List<Param> params) {
         this.module = aModule;
         this.functionType = functionType;
         this.label = label;
@@ -42,7 +42,7 @@ public class Function extends Container implements Importable, Callable {
         this.resultType = null;
     }
 
-    Function(final Module aModule, final WASMType functionType, final String label, final PrimitiveType result) {
+    Function(final Module aModule, final WasmType functionType, final String label, final PrimitiveType result) {
         this.module = aModule;
         this.functionType = functionType;
         this.label = label;
@@ -65,7 +65,7 @@ public class Function extends Container implements Importable, Callable {
         return module;
     }
 
-    public WASMType getFunctionType() {
+    public WasmType getFunctionType() {
         return functionType;
     }
 
@@ -87,12 +87,12 @@ public class Function extends Container implements Importable, Callable {
     }
 
     @Override
-    public PrimitiveType resolveResultType(final WASMValue.ExportContext context) {
+    public PrimitiveType resolveResultType(final WasmValue.ExportContext context) {
         return resultType;
     }
 
     @Override
-    public int resolveIndex(final WASMValue.ExportContext context) {
+    public int resolveIndex(final WasmValue.ExportContext context) {
         return context.functionIndex().indexOf(this);
     }
 }

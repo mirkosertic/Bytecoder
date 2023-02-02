@@ -15,11 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.ssa.Expression;
-
 public class I32GtU extends BinaryExpression {
 
-    I32GtU(final WASMValue leftValue, final WASMValue rightValue, final Expression expression) {
-        super(leftValue, rightValue, "i32.gt_u", (byte) 0x4b, expression);
+    I32GtU(final WasmValue leftValue, final WasmValue rightValue) {
+        super(leftValue, rightValue, "i32.gt_u", (byte) 0x4b);
     }
 }
