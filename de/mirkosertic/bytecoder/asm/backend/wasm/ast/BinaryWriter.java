@@ -15,8 +15,6 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.backend.SourceMapWriter;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -160,11 +158,9 @@ public class BinaryWriter implements AutoCloseable {
     }
 
     private final ByteArrayOutputStream os;
-    private final SourceMapWriter sourceMapWriter;
 
-    public BinaryWriter(final SourceMapWriter sourceMapWriter) {
+    public BinaryWriter() {
         this.os = new ByteArrayOutputStream();
-        this.sourceMapWriter = sourceMapWriter;
     }
 
     public byte[] toByteArray() throws IOException {

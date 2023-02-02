@@ -17,21 +17,16 @@ package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
 
 import de.mirkosertic.bytecoder.asm.backend.CompileOptions;
-import de.mirkosertic.bytecoder.backend.SourceMapWriter;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-import java.io.Writer;
 
 public class Exporter {
 
     private final CompileOptions compileOptions;
 
-    private final SourceMapWriter sourceMapWriter;
-
     public Exporter(final CompileOptions options) {
-        this.sourceMapWriter = new SourceMapWriter();
         this.compileOptions = options;
     }
 
@@ -42,12 +37,11 @@ public class Exporter {
         pw.flush();
     }
 
-    public void export(final Module module, final OutputStream binaryOutput, final Writer sourcemapOutput) throws IOException {
-        try (final BinaryWriter binaryWriter = new BinaryWriter(sourceMapWriter)) {
+    public void export(final Module module, final OutputStream binaryOutput) throws IOException {
+        try (final BinaryWriter binaryWriter = new BinaryWriter()) {
             module.writeTo(binaryWriter, compileOptions.isDebugOutput());
             final byte[] theData = binaryWriter.toByteArray();
             binaryOutput.write(theData);
         }
-        sourcemapOutput.write(sourceMapWriter.toSourceMap(compileOptions.getFilenamePrefix() + ".wasm"));
     }
 }
