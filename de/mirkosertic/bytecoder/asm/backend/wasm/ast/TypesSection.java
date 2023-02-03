@@ -48,6 +48,10 @@ public class TypesSection extends ModuleSection {
         return register(new StructSubtype(this, name, superType, fields));
     }
 
+    public ArrayType arrayType(final WasmType elementType) {
+        return register(new ArrayType(this, elementType));
+    }
+
     <T extends WasmType> T register(final T wasmType) {
         if (!types.contains(wasmType)) {
             types.add(wasmType);

@@ -341,7 +341,7 @@ public class ConstExpressions {
         return new WeakFunctionReferenceCallable(aFunctionName);
     }
 
-    public static RefType ref(final ReferencableType type) {
-        return new RefType(type);
+    public static RefType ref(final ReferencableType type, boolean nullable) {
+        return new RefType(type, nullable);
     }
 }

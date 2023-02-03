@@ -19,14 +19,20 @@ public class RefType implements WasmType {
 
     private final ReferencableType type;
 
-    RefType(final ReferencableType type) {
+    private boolean nullable;
+
+    RefType(final ReferencableType type, final boolean nullable) {
         this.type = type;
+        this.nullable = nullable;
     }
 
     @Override
     public void writeTo(final TextWriter writer) {
         writer.opening();
         writer.write("ref ");
+        if (nullable) {
+            writer.write("null ");
+        }
         type.writeRefTo(writer);
         writer.closing();
     }
@@ -36,10 +42,18 @@ public class RefType implements WasmType {
         writer.opening();
         if (type instanceof StructType) {
             final StructType s = (StructType) type;
-            writer.write("ref $");
+            if (nullable) {
+                writer.write("ref null $");
+            } else {
+                writer.write("ref $");
+            }
             writer.write(s.getName());
         } else {
-            writer.write("ref $t");
+            if (nullable) {
+                writer.write("ref null $t");
+            } else {
+                writer.write("ref $t");
+            }
             writer.write(Integer.toString(type.index()));
         }
         writer.closing();
