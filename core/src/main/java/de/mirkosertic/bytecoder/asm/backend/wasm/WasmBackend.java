@@ -54,7 +54,10 @@ public class WasmBackend {
 
         // Type for runtime types
         final List<StructType.Field> rtFields = new ArrayList<>();
-        rtFields.add(new StructType.Field("vt_resolver", ConstExpressions.ref(vtType)));
+        rtFields.add(new StructType.Field("typeId", PrimitiveType.i32));
+        rtFields.add(new StructType.Field("impTypes", ConstExpressions.ref(types.arrayType(PrimitiveType.i32), false)));
+        rtFields.add(new StructType.Field("lambdaMethod", PrimitiveType.i32));
+        rtFields.add(new StructType.Field("vt_resolver", ConstExpressions.ref(vtType, true)));
         final StructType rtType = types.structType("runtimetype", rtFields);
 
         final Map<ResolvedClass, StructType> objectTypeMappings = new HashMap<>();
@@ -67,12 +70,14 @@ public class WasmBackend {
 
             final List<StructType.Field> instanceFields = new ArrayList<>();
             if (cl.superClass == null) {
-                instanceFields.add(new StructType.Field("runtimetype", ConstExpressions.ref(rtType)));
+                instanceFields.add(new StructType.Field("runtimetype", ConstExpressions.ref(rtType, false)));
             }
 
             if (cl.isNativeReferenceHolder()) {
                 instanceFields.add(new StructType.Field("nativeObject", PrimitiveType.anyref));
             }
+
+            // TODO: Array types!
 
             final List<StructType.Field> classFields = new ArrayList<>();
 
@@ -105,10 +110,10 @@ public class WasmBackend {
                             field = new StructType.Field(fieldName, PrimitiveType.f64);
                             break;
                         case Type.OBJECT:
-                            field = new StructType.Field(fieldName, ConstExpressions.ref(objectTypeMappings.get(objectClass)));
+                            field = new StructType.Field(fieldName, ConstExpressions.ref(objectTypeMappings.get(objectClass), true));
                             break;
                         case Type.ARRAY:
-                            //TODO
+                            // TODO:
                             break;
                     }
 
@@ -131,7 +136,7 @@ public class WasmBackend {
                 }
             }
 
-            rtTypeMappings.put(cl, types.structSubtype(className + "_rt", rtType, classFields));
+            rtTypeMappings.put(cl, types.structSubtype(className + "_rtt", rtType, classFields));
         }
 
 
