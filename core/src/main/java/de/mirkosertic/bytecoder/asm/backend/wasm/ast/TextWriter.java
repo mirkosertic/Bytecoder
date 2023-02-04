@@ -58,6 +58,10 @@ public class TextWriter implements AutoCloseable {
         pw.print(value);
     }
 
+    public void writeLong(final long value) {
+        pw.print(value);
+    }
+
     public void writeAttribute(final String name, final int value) {
         pw.print(name);
         pw.print("=");
@@ -74,6 +78,10 @@ public class TextWriter implements AutoCloseable {
     }
 
     public void writeFloat(final float value) {
+        pw.print(value);
+    }
+
+    public void writeDouble(final double value) {
         pw.print(value);
     }
 

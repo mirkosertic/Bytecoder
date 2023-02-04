@@ -206,6 +206,12 @@ public class ConstExpressions {
 
     }
 
+    public static class i64 {
+
+        public static I64Const c(final Long aValue) {
+            return new I64Const(aValue);
+        }
+    }
     public static class f32 {
 
         public static F32Const c(final float aValue) {
@@ -309,6 +315,13 @@ public class ConstExpressions {
         }
     }
 
+    public static class f64 {
+
+        public static F64Const c(final double aValue) {
+            return new F64Const(aValue);
+        }
+    }
+
     public static GetLocal getLocal(final Local local) {
         return new GetLocal(local);
     }
@@ -341,7 +354,16 @@ public class ConstExpressions {
         return new WeakFunctionReferenceCallable(aFunctionName);
     }
 
-    public static RefType ref(final ReferencableType type, boolean nullable) {
-        return new RefType(type, nullable);
+    public static class ref {
+
+        public static RefType type(final ReferencableType type, boolean nullable) {
+            return new RefType(type, nullable);
+        }
+
+        public static WasmReference value(final ReferencableType type, boolean nullable) {
+            return new WasmReference(type, nullable);
+        }
+
     }
+
 }

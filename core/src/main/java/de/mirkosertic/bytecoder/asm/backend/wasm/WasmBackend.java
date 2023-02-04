@@ -24,6 +24,7 @@ import de.mirkosertic.bytecoder.asm.backend.wasm.ast.PrimitiveType;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.StructType;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.TypesSection;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.WasmType;
+import de.mirkosertic.bytecoder.asm.backend.wasm.ast.WasmValue;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedField;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
@@ -55,9 +56,10 @@ public class WasmBackend {
         // Type for runtime types
         final List<StructType.Field> rtFields = new ArrayList<>();
         rtFields.add(new StructType.Field("typeId", PrimitiveType.i32));
-        rtFields.add(new StructType.Field("impTypes", ConstExpressions.ref(types.arrayType(PrimitiveType.i32), false)));
+        rtFields.add(new StructType.Field("impTypes", ConstExpressions.ref.type(types.arrayType(PrimitiveType.i32), false)));
         rtFields.add(new StructType.Field("lambdaMethod", PrimitiveType.i32));
-        rtFields.add(new StructType.Field("vt_resolver", ConstExpressions.ref(vtType, true)));
+        rtFields.add(new StructType.Field("vt_resolver", ConstExpressions.ref.type(vtType, true)));
+        rtFields.add(new StructType.Field("initStatus", PrimitiveType.i32));
         final StructType rtType = types.structType("runtimetype", rtFields);
 
         final Map<ResolvedClass, StructType> objectTypeMappings = new HashMap<>();
@@ -70,7 +72,7 @@ public class WasmBackend {
 
             final List<StructType.Field> instanceFields = new ArrayList<>();
             if (cl.superClass == null) {
-                instanceFields.add(new StructType.Field("runtimetype", ConstExpressions.ref(rtType, false)));
+                instanceFields.add(new StructType.Field("runtimetype", ConstExpressions.ref.type(rtType, false)));
             }
 
             if (cl.isNativeReferenceHolder()) {
@@ -80,6 +82,7 @@ public class WasmBackend {
             // TODO: Array types!
 
             final List<StructType.Field> classFields = new ArrayList<>();
+            final List<WasmValue> classFieldDefaults = new ArrayList<>();
 
             for (final ResolvedField rf : cl.resolvedFields) {
                 if (rf.owner == cl) {
@@ -87,30 +90,39 @@ public class WasmBackend {
 
                     StructType.Field field = null;
 
+                    WasmValue defaultValue = null;
                     switch (rf.type.getSort()) {
                         case Type.BYTE:
                             field = new StructType.Field(fieldName, PrimitiveType.i32);
+                            defaultValue = ConstExpressions.i32.c(0);
                             break;
                         case Type.CHAR:
                             field = new StructType.Field(fieldName, PrimitiveType.i32);
+                            defaultValue = ConstExpressions.i32.c(0);
                             break;
                         case Type.SHORT:
                             field = new StructType.Field(fieldName, PrimitiveType.i32);
+                            defaultValue = ConstExpressions.i32.c(0);
                             break;
                         case Type.INT:
                             field = new StructType.Field(fieldName, PrimitiveType.i32);
+                            defaultValue = ConstExpressions.i32.c(0);
                             break;
                         case Type.LONG:
                             field = new StructType.Field(fieldName, PrimitiveType.i64);
+                            defaultValue = ConstExpressions.i64.c(0L);
                             break;
                         case Type.FLOAT:
                             field = new StructType.Field(fieldName, PrimitiveType.f32);
+                            defaultValue = ConstExpressions.f32.c(0.0f);
                             break;
                         case Type.DOUBLE:
                             field = new StructType.Field(fieldName, PrimitiveType.f64);
+                            defaultValue = ConstExpressions.f64.c(0.0d);
                             break;
                         case Type.OBJECT:
-                            field = new StructType.Field(fieldName, ConstExpressions.ref(objectTypeMappings.get(objectClass), true));
+                            field = new StructType.Field(fieldName, ConstExpressions.ref.type(objectTypeMappings.get(objectClass), true));
+                            defaultValue = ConstExpressions.ref.value(objectTypeMappings.get(objectClass), true);
                             break;
                         case Type.ARRAY:
                             // TODO:
@@ -120,6 +132,7 @@ public class WasmBackend {
                     if (field != null) {
                         if (Modifier.isStatic(rf.access)) {
                             classFields.add(field);
+                            classFieldDefaults.add(defaultValue);
                         } else {
                             instanceFields.add(field);
                         }
