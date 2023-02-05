@@ -29,7 +29,7 @@ public class WeakFunctionReferenceCallable implements Callable {
     }
 
     @Override
-    public PrimitiveType resolveResultType(final WasmValue.ExportContext context) {
+    public WasmType resolveResultType(final WasmValue.ExportContext context) {
         final Function f = context.functionIndex().firstByLabel(label);
         return f.getResultType();
     }

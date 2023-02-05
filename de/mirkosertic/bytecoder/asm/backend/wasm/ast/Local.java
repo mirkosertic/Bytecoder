@@ -18,9 +18,9 @@ package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 public class Local {
 
     private String label;
-    private final PrimitiveType type;
+    private final WasmType type;
 
-    Local(final String label, final PrimitiveType type) {
+    Local(final String label, final WasmType type) {
         this.label = label;
         this.type = type;
     }
@@ -33,7 +33,7 @@ public class Local {
         return label;
     }
 
-    public PrimitiveType getType() {
+    public WasmType getType() {
         return type;
     }
 

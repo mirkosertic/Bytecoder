@@ -19,7 +19,7 @@ import java.util.List;
 
 public class ConstExpressions {
 
-    public static Param param(final String label, final PrimitiveType type) {
+    public static Param param(final String label, final WasmType type) {
         return new Param(label, type);
     }
 
@@ -356,12 +356,16 @@ public class ConstExpressions {
 
     public static class ref {
 
-        public static RefType type(final ReferencableType type, boolean nullable) {
+        public static RefType type(final ReferencableType type, final boolean nullable) {
             return new RefType(type, nullable);
         }
 
-        public static WasmReference value(final ReferencableType type, boolean nullable) {
-            return new WasmReference(type, nullable);
+        public static WasmRef value(final ReferencableType type, final boolean nullable) {
+            return new WasmRef(type, nullable);
+        }
+
+        public static WasmNullRef value(final ReferencableType type) {
+            return new WasmNullRef(type);
         }
 
     }

@@ -24,9 +24,9 @@ public class Function extends Container implements Importable, Callable {
     private final WasmType functionType;
     private final String label;
     private final List<Param> params;
-    private final PrimitiveType resultType;
+    private final WasmType resultType;
 
-    Function(final Module aModule, final WasmType functionType, final String label, final List<Param> params, final PrimitiveType result) {
+    Function(final Module aModule, final WasmType functionType, final String label, final List<Param> params, final WasmType result) {
         this.module = aModule;
         this.functionType = functionType;
         this.label = label;
@@ -42,7 +42,7 @@ public class Function extends Container implements Importable, Callable {
         this.resultType = null;
     }
 
-    Function(final Module aModule, final WasmType functionType, final String label, final PrimitiveType result) {
+    Function(final Module aModule, final WasmType functionType, final String label, final WasmType result) {
         this.module = aModule;
         this.functionType = functionType;
         this.label = label;
@@ -77,7 +77,7 @@ public class Function extends Container implements Importable, Callable {
         return params;
     }
 
-    public PrimitiveType getResultType() {
+    public WasmType getResultType() {
         return resultType;
     }
 
@@ -87,7 +87,7 @@ public class Function extends Container implements Importable, Callable {
     }
 
     @Override
-    public PrimitiveType resolveResultType(final WasmValue.ExportContext context) {
+    public WasmType resolveResultType(final WasmValue.ExportContext context) {
         return resultType;
     }
 

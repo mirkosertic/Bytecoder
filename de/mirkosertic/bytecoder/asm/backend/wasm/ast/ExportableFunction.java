@@ -73,7 +73,7 @@ public class ExportableFunction extends Function implements Exportable {
 
     private final LocalIndex localIndex;
 
-    ExportableFunction(final Module aModule, final WasmType functionType, final String label, final List<Param> params, final PrimitiveType result) {
+    ExportableFunction(final Module aModule, final WasmType functionType, final String label, final List<Param> params, final WasmType result) {
         super(aModule, functionType, label, params, result);
         this.localIndex = new LocalIndex(params);
     }
@@ -83,7 +83,7 @@ public class ExportableFunction extends Function implements Exportable {
         this.localIndex = new LocalIndex(params);
     }
 
-    ExportableFunction(final Module aModule, final WasmType functionType, final String label, final PrimitiveType result) {
+    ExportableFunction(final Module aModule, final WasmType functionType, final String label, final WasmType result) {
         super(aModule, functionType, label, result);
         this.localIndex = new LocalIndex();
     }
