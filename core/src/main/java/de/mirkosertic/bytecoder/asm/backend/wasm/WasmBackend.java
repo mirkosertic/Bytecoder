@@ -17,9 +17,12 @@ package de.mirkosertic.bytecoder.asm.backend.wasm;
 
 import de.mirkosertic.bytecoder.asm.backend.CompileOptions;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.ConstExpressions;
+import de.mirkosertic.bytecoder.asm.backend.wasm.ast.ExportableFunction;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Exporter;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.FunctionType;
+import de.mirkosertic.bytecoder.asm.backend.wasm.ast.FunctionsSection;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Module;
+import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Param;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.PrimitiveType;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.StructType;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.TypesSection;
@@ -65,6 +68,8 @@ public class WasmBackend {
         final Map<ResolvedClass, StructType> objectTypeMappings = new HashMap<>();
         final Map<ResolvedClass, StructType> rtTypeMappings = new HashMap<>();
         ResolvedClass objectClass = null;
+
+        final FunctionsSection functionsSection = module.getFunctions();
 
         for (final ResolvedClass cl : compileUnit.computeClassDependencies()) {
             // Class objects for
@@ -150,6 +155,19 @@ public class WasmBackend {
             }
 
             rtTypeMappings.put(cl, types.structSubtype(className + "_rtt", rtType, classFields));
+
+            // TODO: Generate vtable
+            final List<Param> params = new ArrayList<>();
+            params.add(ConstExpressions.param("methodid", PrimitiveType.i32));
+            final ExportableFunction vtFunction = functionsSection.newFunction(className + "_vt", vtType, params, PrimitiveType.i32);
+            // TODO: either call supertype vtable or lambda method
+            vtFunction.flow.unreachable();
+
+            // TODO: generate runtime type global instance
+
+            // TODO: Generate init function
+
+            // TODO: generate impl functions
         }
 
 

@@ -17,18 +17,18 @@ package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class WasmReference implements WasmValue {
+public class WasmRef implements WasmValue {
 
     private final ReferencableType type;
     private final boolean nullable;
 
-    WasmReference(final ReferencableType type, final boolean nullable) {
+    WasmRef(final ReferencableType type, final boolean nullable) {
         this.type = type;
         this.nullable = nullable;
     }
 
     @Override
-    public void writeTo(TextWriter writer, ExportContext context) throws IOException {
+    public void writeTo(final TextWriter writer, final ExportContext context) throws IOException {
         writer.opening();
         writer.write("ref ");
         if (nullable) {
@@ -39,7 +39,7 @@ public class WasmReference implements WasmValue {
     }
 
     @Override
-    public void writeTo(BinaryWriter.Writer binaryWriter, ExportContext context) throws IOException {
+    public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) throws IOException {
         //TODO
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,26 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-public interface Callable {
-    String getLabel();
+import java.io.IOException;
 
-    WasmType resolveResultType(WasmValue.ExportContext context);
+public class WasmNullRef implements WasmValue {
 
-    int resolveIndex(WasmValue.ExportContext context);
+    private final ReferencableType type;
+
+    WasmNullRef(final ReferencableType type) {
+        this.type = type;
+    }
+
+    @Override
+    public void writeTo(final TextWriter writer, final ExportContext context) throws IOException {
+        writer.opening();
+        writer.write("ref.null ");
+        type.writeRefTo(writer);
+        writer.closing();
+    }
+
+    @Override
+    public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) throws IOException {
+        //TODO
+    }
 }
