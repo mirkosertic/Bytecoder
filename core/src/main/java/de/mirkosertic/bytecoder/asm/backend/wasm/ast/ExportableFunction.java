@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 public class ExportableFunction extends Function implements Exportable {
 
@@ -120,7 +121,10 @@ public class ExportableFunction extends Function implements Exportable {
         textWriter.space();
         textWriter.writeLabel(getLabel());
         textWriter.space();
+        textWriter.opening();
+        textWriter.write("type ");
         getFunctionType().writeRefTo(textWriter);
+        textWriter.closing();
         if (getParams() != null) {
             for (final Param param : getParams()) {
                 textWriter.space();

@@ -136,7 +136,7 @@ public class WasmBackend {
                             break;
                         case Type.OBJECT:
                             field = new StructType.Field(fieldName, ConstExpressions.ref.type(objectTypeMappings.get(objectClass), true));
-                            defaultValue = ConstExpressions.ref.value(objectTypeMappings.get(objectClass), true);
+                            defaultValue = ConstExpressions.ref.nullRef(objectTypeMappings.get(objectClass));
                             break;
                         case Type.ARRAY:
                             // TODO:
