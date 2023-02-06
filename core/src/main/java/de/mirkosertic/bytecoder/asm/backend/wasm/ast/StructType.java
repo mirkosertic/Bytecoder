@@ -74,8 +74,8 @@ public class StructType implements ReferencableType {
 
     @Override
     public void writeRefTo(final TextWriter writer) {
-        writer.write("$t");
-        writer.write(Integer.toString(index()));
+        writer.write("$");
+        writer.write(name);
     }
 
     @Override

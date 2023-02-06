@@ -90,12 +90,8 @@ public class FunctionType implements ReferencableType {
 
     @Override
     public void writeRefTo(final TextWriter writer) {
-        writer.opening();
-        writer.write("type");
-        writer.space();
         writer.write("$t");
         writer.write(Integer.toString(index()));
-        writer.closing();
     }
 
     @Override
