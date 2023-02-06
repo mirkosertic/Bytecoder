@@ -21,9 +21,12 @@ import de.mirkosertic.bytecoder.asm.backend.wasm.ast.ExportableFunction;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Exporter;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.FunctionType;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.FunctionsSection;
+import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Global;
+import de.mirkosertic.bytecoder.asm.backend.wasm.ast.GlobalsSection;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Module;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Param;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.PrimitiveType;
+import de.mirkosertic.bytecoder.asm.backend.wasm.ast.ReferencableType;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.StructType;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.TypesSection;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.WasmType;
@@ -48,6 +51,8 @@ public class WasmBackend {
 
     public WasmCompileResult generateCodeFor(final CompileUnit compileUnit, final CompileOptions compileOptions) {
 
+        final List<ResolvedClass> resolvedClasses = compileUnit.computeClassDependencies();
+
         final Module module = new Module("bytecoder", compileOptions.getFilenamePrefix() + ".wasm.map");
 
         final TypesSection types = module.getTypes();
@@ -56,10 +61,12 @@ public class WasmBackend {
         vtArgs.add(PrimitiveType.i32);
         final FunctionType vtType = types.functionType(vtArgs, PrimitiveType.i32);
 
+        final ReferencableType implTypesArray = types.arrayType(PrimitiveType.i32);
+
         // Type for runtime types
         final List<StructType.Field> rtFields = new ArrayList<>();
         rtFields.add(new StructType.Field("typeId", PrimitiveType.i32));
-        rtFields.add(new StructType.Field("impTypes", ConstExpressions.ref.type(types.arrayType(PrimitiveType.i32), false)));
+        rtFields.add(new StructType.Field("impTypes", ConstExpressions.ref.type(implTypesArray, true)));
         rtFields.add(new StructType.Field("lambdaMethod", PrimitiveType.i32));
         rtFields.add(new StructType.Field("vt_resolver", ConstExpressions.ref.type(vtType, true)));
         rtFields.add(new StructType.Field("initStatus", PrimitiveType.i32));
@@ -71,7 +78,9 @@ public class WasmBackend {
 
         final FunctionsSection functionsSection = module.getFunctions();
 
-        for (final ResolvedClass cl : compileUnit.computeClassDependencies()) {
+        final GlobalsSection globalsSection = module.getGlobals();
+
+        for (final ResolvedClass cl : resolvedClasses) {
             // Class objects for
             final String className = WasmHelpers.generateClassName(cl.type);
 
@@ -164,6 +173,21 @@ public class WasmBackend {
             vtFunction.flow.unreachable();
 
             // TODO: generate runtime type global instance
+            final ReferencableType rttType = rtTypeMappings.get(cl);
+            final List<WasmValue> initArgs = new ArrayList<>();
+            initArgs.add(ConstExpressions.i32.c(resolvedClasses.indexOf(cl))); // type id
+            initArgs.add(ConstExpressions.ref.nullRef(implTypesArray)); // impl types
+            initArgs.add(ConstExpressions.i32.c(-1)); // lambda method id
+            initArgs.add(ConstExpressions.ref.nullRef(vtType)); // vt_resolver
+            initArgs.add(ConstExpressions.i32.c(0)); // initstatus
+
+            initArgs.addAll(classFieldDefaults);
+            final Global g = globalsSection.newConstantGlobal(className + "_cls",
+                    ConstExpressions.ref.type(rttType, false),
+                    ConstExpressions.struct.newInstance(
+                            rttType, initArgs
+                    )
+            );
 
             // TODO: Generate init function
 

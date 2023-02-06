@@ -364,10 +364,17 @@ public class ConstExpressions {
             return new WasmRef(type, nullable);
         }
 
-        public static WasmNullRef value(final ReferencableType type) {
+        public static WasmNullRef nullRef(final ReferencableType type) {
             return new WasmNullRef(type);
         }
 
+    }
+
+    public static class struct {
+
+        public static WasmValue newInstance(final ReferencableType type, final List<WasmValue> arguments) {
+            return new NewStruct(type, arguments);
+        }
     }
 
 }

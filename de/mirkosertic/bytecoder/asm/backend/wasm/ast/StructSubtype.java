@@ -57,8 +57,8 @@ public class StructSubtype extends StructType {
 
     @Override
     public void writeRefTo(final TextWriter writer) {
-        writer.write("$t");
-        writer.write(Integer.toString(index()));
+        writer.write("$");
+        writer.write(name);
     }
 
     @Override
