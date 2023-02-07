@@ -360,8 +360,8 @@ public class ConstExpressions {
             return new RefType(type, nullable);
         }
 
-        public static WasmRef value(final ReferencableType type, final boolean nullable) {
-            return new WasmRef(type, nullable);
+        public static WasmFuncRef ref(final Function function) {
+            return new WasmFuncRef(function);
         }
 
         public static WasmNullRef nullRef(final ReferencableType type) {
@@ -374,6 +374,17 @@ public class ConstExpressions {
 
         public static WasmValue newInstance(final ReferencableType type, final List<WasmValue> arguments) {
             return new NewStruct(type, arguments);
+        }
+
+        public static WasmValue get(final StructType structType, final WasmValue source, final int index) {
+            return new GetStruct(structType, source, index);
+        }
+    }
+
+    public static class array {
+
+        public static WasmValue newInstance(final WasmType type, final WasmValue length, final List<WasmValue> arguments) {
+            return new NewArray(type, length, arguments);
         }
     }
 

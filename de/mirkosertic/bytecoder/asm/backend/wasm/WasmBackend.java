@@ -23,6 +23,7 @@ import de.mirkosertic.bytecoder.asm.backend.wasm.ast.FunctionType;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.FunctionsSection;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Global;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.GlobalsSection;
+import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Iff;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Module;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Param;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.PrimitiveType;
@@ -43,9 +44,11 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class WasmBackend {
 
@@ -65,12 +68,14 @@ public class WasmBackend {
 
         // Type for runtime types
         final List<StructType.Field> rtFields = new ArrayList<>();
-        rtFields.add(new StructType.Field("typeId", PrimitiveType.i32));
-        rtFields.add(new StructType.Field("impTypes", ConstExpressions.ref.type(implTypesArray, true)));
-        rtFields.add(new StructType.Field("lambdaMethod", PrimitiveType.i32));
-        rtFields.add(new StructType.Field("vt_resolver", ConstExpressions.ref.type(vtType, true)));
+        rtFields.add(new StructType.Field("typeId", PrimitiveType.i32, false));
+        rtFields.add(new StructType.Field("impTypes", ConstExpressions.ref.type(implTypesArray, true), false));
+        rtFields.add(new StructType.Field("lambdaMethod", PrimitiveType.i32, false));
+        rtFields.add(new StructType.Field("vt_resolver", ConstExpressions.ref.type(vtType, true), false));
         rtFields.add(new StructType.Field("initStatus", PrimitiveType.i32));
         final StructType rtType = types.structType("runtimetype", rtFields);
+
+        final FunctionType iType = types.functionType(Collections.emptyList(), ConstExpressions.ref.type(rtType, false));
 
         final Map<ResolvedClass, StructType> objectTypeMappings = new HashMap<>();
         final Map<ResolvedClass, StructType> rtTypeMappings = new HashMap<>();
@@ -172,13 +177,18 @@ public class WasmBackend {
             // TODO: either call supertype vtable or lambda method
             vtFunction.flow.unreachable();
 
-            // TODO: generate runtime type global instance
+            final List<WasmValue> typeIds = cl.allTypesOf().stream().map(t -> ConstExpressions.i32.c(resolvedClasses.indexOf(t))).collect(Collectors.toList());
+
             final ReferencableType rttType = rtTypeMappings.get(cl);
             final List<WasmValue> initArgs = new ArrayList<>();
             initArgs.add(ConstExpressions.i32.c(resolvedClasses.indexOf(cl))); // type id
-            initArgs.add(ConstExpressions.ref.nullRef(implTypesArray)); // impl types
+            initArgs.add(ConstExpressions.array.newInstance(
+                    implTypesArray,
+                    ConstExpressions.i32.c(typeIds.size()),
+                    typeIds
+            )); // impl types
             initArgs.add(ConstExpressions.i32.c(-1)); // lambda method id
-            initArgs.add(ConstExpressions.ref.nullRef(vtType)); // vt_resolver
+            initArgs.add(ConstExpressions.ref.ref(vtFunction)); // vt_resolver
             initArgs.add(ConstExpressions.i32.c(0)); // initstatus
 
             initArgs.addAll(classFieldDefaults);
@@ -189,7 +199,14 @@ public class WasmBackend {
                     )
             );
 
-            // TODO: Generate init function
+            final ExportableFunction initFunction = functionsSection.newFunction(className + "_i", iType, ConstExpressions.ref.type(rtType, false));
+            final Iff initCheck = initFunction.flow.iff("check", ConstExpressions.i32.eq(ConstExpressions.i32.c(0),
+                    ConstExpressions.struct.get(rtType, ConstExpressions.getGlobal(g), 4)));
+            initCheck.flow.setStruct(rtType, ConstExpressions.getGlobal(g), 4, ConstExpressions.i32.c(1));
+            // TODO: Call class init function here
+            initCheck.flow.branch(initCheck);
+            initFunction.flow.ret(ConstExpressions.getGlobal(g));
+
 
             // TODO: generate impl functions
         }

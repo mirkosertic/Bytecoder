@@ -23,9 +23,16 @@ public class StructType implements ReferencableType {
         private final String name;
         private final WasmType type;
 
+        private final boolean mutable;
+
         public Field(final String name, final WasmType type) {
+            this(name, type, true);
+        }
+
+        public Field(final String name, final WasmType type, final boolean mutable) {
             this.name = name;
             this.type = type;
+            this.mutable = true;
         }
 
         public void writeTo(final TextWriter writer) {
@@ -35,7 +42,14 @@ public class StructType implements ReferencableType {
             writer.write("$");
             writer.write(name);
             writer.space();
-            type.writeRefTo(writer);
+            if (mutable) {
+                writer.opening();
+                writer.write("mut ");
+                type.writeRefTo(writer);
+                writer.closing();
+            } else {
+                type.writeRefTo(writer);
+            }
             writer.closing();
         }
     }
