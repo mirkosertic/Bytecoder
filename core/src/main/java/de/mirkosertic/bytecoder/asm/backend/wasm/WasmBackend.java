@@ -211,6 +211,7 @@ public class WasmBackend {
             // TODO: generate impl functions
         }
 
+        // TODO: fill constant pool and generate JS binding class
 
         final StringWriter theStringWriter = new StringWriter();
         final ByteArrayOutputStream theBinaryOutput = new ByteArrayOutputStream();
