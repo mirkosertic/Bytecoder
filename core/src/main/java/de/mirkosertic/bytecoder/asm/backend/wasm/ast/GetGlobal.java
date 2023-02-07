@@ -28,7 +28,7 @@ public class GetGlobal implements WasmExpression {
     @Override
     public void writeTo(final TextWriter textWriter, final ExportContext context) {
         textWriter.opening();
-        textWriter.write("get_global");
+        textWriter.write("global.get");
         textWriter.space();
         textWriter.writeLabel(global.getLabel());
         textWriter.closing();

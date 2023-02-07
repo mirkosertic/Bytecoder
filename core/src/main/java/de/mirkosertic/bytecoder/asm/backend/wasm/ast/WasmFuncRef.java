@@ -15,31 +15,25 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import java.io.IOException;
+public class WasmFuncRef implements WasmValue {
 
-public class WasmRef implements WasmValue {
+    private final Function function;
 
-    private final ReferencableType type;
-    private final boolean nullable;
-
-    WasmRef(final ReferencableType type, final boolean nullable) {
-        this.type = type;
-        this.nullable = nullable;
+    WasmFuncRef(final Function function) {
+        this.function = function;
     }
 
     @Override
-    public void writeTo(final TextWriter writer, final ExportContext context) throws IOException {
+    public void writeTo(final TextWriter writer, final ExportContext context) {
         writer.opening();
-        writer.write("ref ");
-        if (nullable) {
-            writer.write("null ");
-        }
-        type.writeRefTo(writer);
+        writer.write("ref.func ");
+        writer.write("$");
+        writer.write(function.getLabel());
         writer.closing();
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) throws IOException {
+    public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) {
         //TODO
     }
 }

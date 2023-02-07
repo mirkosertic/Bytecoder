@@ -152,6 +152,11 @@ public class Expressions {
         parent.addChild(setGlobal);
     }
 
+    public void setStruct(final StructType structType, final WasmValue source, final int index, final WasmValue value) {
+        final SetStruct setStruct = new SetStruct(structType, source, index, value);
+        parent.addChild(setStruct);
+    }
+
     public Try Try(final String label) {
         final Try t = new Try(parent, null, label);
         parent.addChild(t);
