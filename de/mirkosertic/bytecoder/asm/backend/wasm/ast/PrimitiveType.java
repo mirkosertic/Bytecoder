@@ -24,6 +24,7 @@ public enum PrimitiveType implements WasmType {
     func("func", (byte) 0x60),
     empty_pseudo_block("pseudo", (byte) 0x40),
     anyref("anyref", (byte) 0x6f),
+    externref("anyref", (byte) 0x00), // TODO
     except_ref("except_ref", (byte) -0x18);
 
     private final String text;

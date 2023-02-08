@@ -28,20 +28,26 @@ public class FunctionsSection extends ModuleSection {
         this.functions = new ArrayList<>();
     }
 
-    public ExportableFunction newFunction(final String label, final WasmType type, final List<Param> parameter, final WasmType result) {
+    public ExportableFunction newFunction(final String label, final FunctionType type, final List<Param> parameter, final WasmType result) {
         final ExportableFunction function = new ExportableFunction(getModule(), type, label, parameter, result);
         functions.add(function);
         return function;
     }
 
-    public ExportableFunction newFunction(final String label, final WasmType type, final List<Param> parameter) {
+    public ExportableFunction newFunction(final String label, final FunctionType type, final List<Param> parameter) {
         final ExportableFunction function = new ExportableFunction(getModule(), type, label, parameter);
         functions.add(function);
         return function;
     }
 
-    public ExportableFunction newFunction(final String label, final WasmType type, final WasmType result) {
+    public ExportableFunction newFunction(final String label, final FunctionType type, final WasmType result) {
         final ExportableFunction function = new ExportableFunction(getModule(), type, label, result);
+        functions.add(function);
+        return function;
+    }
+
+    public ExportableFunction newFunction(final String label) {
+        final ExportableFunction function = new ExportableFunction(getModule(), label);
         functions.add(function);
         return function;
     }
@@ -58,7 +64,7 @@ public class FunctionsSection extends ModuleSection {
             final List<ExportableFunction> exportableFunction = functionIndex.exportableFunctions();
             sectionWriter.writeUnsignedLeb128(exportableFunction.size());
             for (final ExportableFunction function : exportableFunction) {
-                sectionWriter.writeUnsignedLeb128(function.getFunctionType().index());
+                //sectionWriter.writeUnsignedLeb128(function.getFunctionType().index());
             }
         }
     }

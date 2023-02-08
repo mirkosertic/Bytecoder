@@ -21,12 +21,12 @@ import java.util.List;
 public class Function extends Container implements Importable, Callable {
 
     private final Module module;
-    private final WasmType functionType;
+    private final FunctionType functionType;
     private final String label;
     private final List<Param> params;
     private final WasmType resultType;
 
-    Function(final Module aModule, final WasmType functionType, final String label, final List<Param> params, final WasmType result) {
+    Function(final Module aModule, final FunctionType functionType, final String label, final List<Param> params, final WasmType result) {
         this.module = aModule;
         this.functionType = functionType;
         this.label = label;
@@ -34,7 +34,7 @@ public class Function extends Container implements Importable, Callable {
         this.resultType = result;
     }
 
-    Function(final Module aModule, final WasmType functionType, final String label, final List<Param> params) {
+    Function(final Module aModule, final FunctionType functionType, final String label, final List<Param> params) {
         this.module = aModule;
         this.functionType = functionType;
         this.label = label;
@@ -42,7 +42,7 @@ public class Function extends Container implements Importable, Callable {
         this.resultType = null;
     }
 
-    Function(final Module aModule, final WasmType functionType, final String label, final WasmType result) {
+    Function(final Module aModule, final FunctionType functionType, final String label, final WasmType result) {
         this.module = aModule;
         this.functionType = functionType;
         this.label = label;
@@ -57,7 +57,10 @@ public class Function extends Container implements Importable, Callable {
         textWriter.space();
         textWriter.writeLabel(label);
         textWriter.space();
-        functionType.writeRefTo(textWriter);
+        textWriter.opening();
+        textWriter.write("type ");
+        getFunctionType().writeRefTo(textWriter);
+        textWriter.closing();
         textWriter.closing();
     }
 
@@ -93,6 +96,6 @@ public class Function extends Container implements Importable, Callable {
 
     @Override
     public int resolveIndex(final WasmValue.ExportContext context) {
-        return context.functionIndex().indexOf(this);
+        return module.functionIndex().indexOf(this);
     }
 }

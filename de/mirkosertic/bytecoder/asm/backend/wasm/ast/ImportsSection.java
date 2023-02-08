@@ -48,22 +48,19 @@ public class ImportsSection extends ModuleSection {
         this.imports = new ArrayList<>();
     }
 
-    public Function importFunction(final ImportReference importReference, final String label, final List<Param> parameter, final PrimitiveType result) {
-        final WasmType type = getModule().getTypes().functionType(parameter.stream().map(Param::getType).collect(Collectors.toList()), result);
+    public Function importFunction(final ImportReference importReference, final FunctionType type, final String label, final List<Param> parameter, final PrimitiveType result) {
         final Function function = new Function(getModule(), type, label, parameter, result);
         imports.add(new ImportEntry(importReference, function));
         return function;
     }
 
-    public Function importFunction(final ImportReference importReference, final String label, final List<Param> parameter) {
-        final WasmType type = getModule().getTypes().functionType(parameter.stream().map(Param::getType).collect(Collectors.toList()));
+    public Function importFunction(final ImportReference importReference, final FunctionType type, final String label, final List<Param> parameter) {
         final Function function = new Function(getModule(), type, label, parameter);
         imports.add(new ImportEntry(importReference, function));
         return function;
     }
 
-    public Function importFunction(final ImportReference importReference, final String label, final PrimitiveType result) {
-        final WasmType type = getModule().getTypes().functionType(result);
+    public Function importFunction(final ImportReference importReference, final FunctionType type, final String label, final PrimitiveType result) {
         final Function function = new Function(getModule(), type, label, result);
         imports.add(new ImportEntry(importReference, function));
         return function;
