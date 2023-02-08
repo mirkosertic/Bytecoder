@@ -17,7 +17,6 @@ package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 
 public class ExportableFunction extends Function implements Exportable {
 
@@ -74,18 +73,23 @@ public class ExportableFunction extends Function implements Exportable {
 
     private final LocalIndex localIndex;
 
-    ExportableFunction(final Module aModule, final WasmType functionType, final String label, final List<Param> params, final WasmType result) {
+    ExportableFunction(final Module aModule, final FunctionType functionType, final String label, final List<Param> params, final WasmType result) {
         super(aModule, functionType, label, params, result);
         this.localIndex = new LocalIndex(params);
     }
 
-    ExportableFunction(final Module aModule, final WasmType functionType, final String label, final List<Param> params) {
+    ExportableFunction(final Module aModule, final FunctionType functionType, final String label, final List<Param> params) {
         super(aModule, functionType, label, params);
         this.localIndex = new LocalIndex(params);
     }
 
-    ExportableFunction(final Module aModule, final WasmType functionType, final String label, final WasmType result) {
+    ExportableFunction(final Module aModule, final FunctionType functionType, final String label, final WasmType result) {
         super(aModule, functionType, label, result);
+        this.localIndex = new LocalIndex();
+    }
+
+    ExportableFunction(final Module aModule, final String label) {
+        super(aModule, (FunctionType) null, label, (WasmType) null);
         this.localIndex = new LocalIndex();
     }
 
@@ -121,10 +125,12 @@ public class ExportableFunction extends Function implements Exportable {
         textWriter.space();
         textWriter.writeLabel(getLabel());
         textWriter.space();
-        textWriter.opening();
-        textWriter.write("type ");
-        getFunctionType().writeRefTo(textWriter);
-        textWriter.closing();
+        if (getFunctionType() != null) {
+            textWriter.opening();
+            textWriter.write("type ");
+            getFunctionType().writeRefTo(textWriter);
+            textWriter.closing();
+        }
         if (getParams() != null) {
             for (final Param param : getParams()) {
                 textWriter.space();

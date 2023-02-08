@@ -30,7 +30,7 @@ public class SetGlobal implements WasmExpression {
     @Override
     public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
         textWriter.opening();
-        textWriter.write("set_global");
+        textWriter.write("global.set");
         textWriter.space();
         textWriter.writeLabel(global.getLabel());
         textWriter.space();
