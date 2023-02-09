@@ -29,14 +29,44 @@ public class TypesSection extends ModuleSection {
     }
 
     public FunctionType functionType(final List<WasmType> arguments, final WasmType returnType) {
+        // We search for the same type
+        for (final WasmType type : types) {
+            if (type instanceof FunctionType) {
+                final FunctionType otherType = (FunctionType) type;
+                if (otherType.matches(arguments, returnType)) {
+                    return otherType;
+                }
+            }
+        }
+        // Register a new one
         return register(new FunctionType(this, arguments, returnType));
     }
 
     public FunctionType functionType(final List<WasmType> arguments) {
+        // We search for the same type
+        for (final WasmType type : types) {
+            if (type instanceof FunctionType) {
+                final FunctionType otherType = (FunctionType) type;
+                if (otherType.matches(arguments)) {
+                    return otherType;
+                }
+            }
+        }
+        // Register a new one
         return register(new FunctionType(this, arguments));
     }
 
     public FunctionType functionType(final WasmType returnType) {
+        // We search for the same type
+        for (final WasmType type : types) {
+            if (type instanceof FunctionType) {
+                final FunctionType otherType = (FunctionType) type;
+                if (otherType.matches(returnType)) {
+                    return otherType;
+                }
+            }
+        }
+        // Register a new one
         return register(new FunctionType(this, returnType));
     }
 

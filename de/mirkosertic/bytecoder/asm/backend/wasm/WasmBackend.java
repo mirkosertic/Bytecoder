@@ -34,12 +34,17 @@ import de.mirkosertic.bytecoder.asm.backend.wasm.ast.StructType;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.TypesSection;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.WasmType;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.WasmValue;
+import de.mirkosertic.bytecoder.asm.ir.AnnotationUtils;
+import de.mirkosertic.bytecoder.asm.ir.Graph;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedField;
+import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
+import de.mirkosertic.bytecoder.asm.optimizer.Optimizer;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
 import de.mirkosertic.bytecoder.asm.parser.ConstantPool;
+import de.mirkosertic.bytecoder.asm.sequencer.DominatorTree;
+import de.mirkosertic.bytecoder.asm.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.backend.CompileResult;
-import de.mirkosertic.bytecoder.classlib.java.util.concurrent.TConcurrentHashMap;
 import org.objectweb.asm.Type;
 
 import java.io.ByteArrayOutputStream;
@@ -48,7 +53,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -79,8 +83,6 @@ public class WasmBackend {
         rtFields.add(new StructType.Field("initStatus", PrimitiveType.i32));
         final StructType rtType = types.structType("runtimetype", rtFields);
 
-        final FunctionType iType = types.functionType(Collections.emptyList(), ConstExpressions.ref.type(rtType, false));
-
         final Map<ResolvedClass, StructType> objectTypeMappings = new HashMap<>();
         final Map<ResolvedClass, StructType> rtTypeMappings = new HashMap<>();
         final Map<ResolvedClass, Function> initFunctions = new HashMap<>();
@@ -89,6 +91,30 @@ public class WasmBackend {
         final FunctionsSection functionsSection = module.getFunctions();
 
         final GlobalsSection globalsSection = module.getGlobals();
+
+        final java.util.function.Function<Type, WasmType> toWASMType = argument -> {
+            switch (argument.getSort()) {
+                case Type.BOOLEAN:
+                case Type.BYTE:
+                case Type.CHAR:
+                case Type.SHORT:
+                case Type.INT:
+                    return PrimitiveType.i32;
+                case Type.LONG:
+                    return PrimitiveType.i64;
+                case Type.FLOAT:
+                    return PrimitiveType.f32;
+                case Type.DOUBLE:
+                    return PrimitiveType.f64;
+                case Type.OBJECT:
+                    return ConstExpressions.ref.type(objectTypeMappings.get(compileUnit.findClass(Type.getType(Object.class))), true);
+                case Type.ARRAY:
+                    // TODO
+                    return ConstExpressions.ref.type(objectTypeMappings.get(compileUnit.findClass(Type.getType(Object.class))), true);
+                default:
+                    throw new IllegalStateException("Not supported " + argument);
+            }
+        };
 
         for (final ResolvedClass cl : resolvedClasses) {
             // Class objects for
@@ -116,18 +142,10 @@ public class WasmBackend {
 
                     WasmValue defaultValue = null;
                     switch (rf.type.getSort()) {
+                        case Type.BOOLEAN:
                         case Type.BYTE:
-                            field = new StructType.Field(fieldName, PrimitiveType.i32);
-                            defaultValue = ConstExpressions.i32.c(0);
-                            break;
                         case Type.CHAR:
-                            field = new StructType.Field(fieldName, PrimitiveType.i32);
-                            defaultValue = ConstExpressions.i32.c(0);
-                            break;
                         case Type.SHORT:
-                            field = new StructType.Field(fieldName, PrimitiveType.i32);
-                            defaultValue = ConstExpressions.i32.c(0);
-                            break;
                         case Type.INT:
                             field = new StructType.Field(fieldName, PrimitiveType.i32);
                             defaultValue = ConstExpressions.i32.c(0);
@@ -149,17 +167,19 @@ public class WasmBackend {
                             defaultValue = ConstExpressions.ref.nullRef(objectTypeMappings.get(objectClass));
                             break;
                         case Type.ARRAY:
-                            // TODO:
+                            // TODO
+                            field = new StructType.Field(fieldName, ConstExpressions.ref.type(objectTypeMappings.get(objectClass), true));
+                            defaultValue = ConstExpressions.ref.nullRef(objectTypeMappings.get(objectClass));
                             break;
+                        default:
+                            throw new IllegalStateException("Not supported " + rf.type);
                     }
 
-                    if (field != null) {
-                        if (Modifier.isStatic(rf.access)) {
-                            classFields.add(field);
-                            classFieldDefaults.add(defaultValue);
-                        } else {
-                            instanceFields.add(field);
-                        }
+                    if (Modifier.isStatic(rf.access)) {
+                        classFields.add(field);
+                        classFieldDefaults.add(defaultValue);
+                    } else {
+                        instanceFields.add(field);
                     }
                 }
             }
@@ -178,7 +198,7 @@ public class WasmBackend {
             // TODO: Generate vtable
             final List<Param> params = new ArrayList<>();
             params.add(ConstExpressions.param("methodid", PrimitiveType.i32));
-            final ExportableFunction vtFunction = functionsSection.newFunction(className + "_vt", vtType, params, PrimitiveType.i32);
+            final ExportableFunction vtFunction = functionsSection.newFunction(className + "_vt", params, PrimitiveType.i32);
             // TODO: either call supertype vtable or lambda method
             vtFunction.flow.unreachable();
 
@@ -204,7 +224,7 @@ public class WasmBackend {
                     )
             );
 
-            final ExportableFunction initFunction = functionsSection.newFunction(className + "_i", iType, ConstExpressions.ref.type(rtType, false));
+            final ExportableFunction initFunction = functionsSection.newFunction(className + "_i", ConstExpressions.ref.type(rtType, false));
             final Iff initCheck = initFunction.flow.iff("check", ConstExpressions.i32.eq(ConstExpressions.i32.c(0),
                     ConstExpressions.struct.get(rtType, ConstExpressions.getGlobal(runtimeClassGlobal), 4)));
             initCheck.flow.setStruct(rtType, ConstExpressions.getGlobal(runtimeClassGlobal), 4, ConstExpressions.i32.c(1));
@@ -214,19 +234,91 @@ public class WasmBackend {
 
             initFunctions.put(cl, initFunction);
 
-            // TODO: generate impl functions
-        }
+            for (final ResolvedMethod method : cl.resolvedMethods) {
+                if (method.owner == cl) {
+                    final List<Param> functionParams = new ArrayList<>();
 
-        final List<WasmType> resolveStringConstantArgs = new ArrayList<>();
-        resolveStringConstantArgs.add(PrimitiveType.i32);
-        final FunctionType resolveStringConstantType = types.functionType(resolveStringConstantArgs, PrimitiveType.externref);
+                    final WasmType thisRef = ConstExpressions.ref.type(objectTypeMappings.get(objectClass), true);
+                    if (Modifier.isStatic(method.methodNode.access)) {
+                        functionParams.add(ConstExpressions.param("unused", thisRef));
+                    } else {
+                        functionParams.add(ConstExpressions.param("thisref", thisRef));
+                    }
+
+                    for (int i = 0; i < method.methodType.getArgumentTypes().length; i++) {
+                        final Type argument = method.methodType.getArgumentTypes()[i];
+                        final WasmType argType = toWASMType.apply(argument);
+                        functionParams.add(ConstExpressions.param("arg" + i, argType));
+                    }
+
+                    final String methodName = WasmHelpers.generateMethodName(method.methodNode.name, method.methodType);
+
+                    final String implMethodName = className + "$" + methodName;
+
+                    if (Modifier.isNative(method.methodNode.access)) {
+                        // Imported function
+                        String moduleName = cl.type.getClassName();
+                        String functionName = methodName;
+
+                        if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/Import;", method.methodNode.visibleAnnotations)) {
+                            final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/Import;", method.methodNode.visibleAnnotations);
+                            moduleName = (String) values.get("module");
+                            functionName = (String) values.get("name");
+                        }
+
+                        if (Type.VOID == method.methodType.getReturnType().getSort()) {
+                            module.getImports().importFunction(new ImportReference(moduleName, functionName),
+                                    implMethodName,
+                                    functionParams);
+                        } else {
+                            module.getImports().importFunction(new ImportReference(moduleName, functionName),
+                                    implMethodName,
+                                    functionParams, toWASMType.apply(method.methodType.getReturnType()));
+                        }
+
+                    } else if (Modifier.isAbstract(method.methodNode.access)) {
+
+                        // Abstract method, nothing to to
+                        // TODO: Handle opaque reference types here
+
+                    } else {
+                        // Generate Wasm impl code
+                        final ExportableFunction implFunction;
+                        if (Type.VOID == method.methodType.getReturnType().getSort()) {
+                            implFunction = module.getFunctions().newFunction(implMethodName, functionParams);
+                        } else {
+                            implFunction = module.getFunctions().newFunction(implMethodName, functionParams, toWASMType.apply(method.methodType.getReturnType()));
+                        }
+
+                        final Graph g = method.methodBody;
+                        final Optimizer o = compileOptions.getOptimizer();
+                        while (o.optimize(method)) {
+                            //
+                        }
+
+                        final DominatorTree dt = new DominatorTree(g);
+
+                        // TODO: Generate code here
+                        new Sequencer(g, dt, new WasmStructuredControlflowCodeGenerator(implFunction, toWASMType));
+
+                        implFunction.flow.unreachable();
+
+                        // Brute force scan over all methods
+                        compileUnit.processExportedMethods((name, rm) -> {
+                            if (rm == method) {
+                                implFunction.exportAs(name);
+                            }
+                        });
+                    }
+                }
+            }
+        }
 
         final List<Param> resolveStringConstantParams = new ArrayList<>();
         resolveStringConstantParams.add(ConstExpressions.param("constantId", PrimitiveType.i32));
 
         final Function resolveStringConstantFunction = module.getImports().importFunction(
                     new ImportReference("bytecoder", "resolveStringConstant"),
-                    resolveStringConstantType,
                  "resolveStringConstant",
                     resolveStringConstantParams,
                     PrimitiveType.externref);
@@ -235,8 +327,6 @@ public class WasmBackend {
         final List<String> pooledStrings = cs.getPooledStrings();
         for (int i = 0; i < pooledStrings.size(); i++) {
             final StructType stringType = objectTypeMappings.get(compileUnit.findClass(Type.getType(String.class)));
-            final List<WasmValue> initArgs = new ArrayList<>();
-            initArgs.add(ConstExpressions.i32.c(i));
             globalsSection.newMutableGlobal("stringpool_" + i,
                     ConstExpressions.ref.type(stringType, true),
                     ConstExpressions.ref.nullRef(stringType)

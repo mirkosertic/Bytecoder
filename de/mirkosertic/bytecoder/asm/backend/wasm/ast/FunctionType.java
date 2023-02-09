@@ -48,6 +48,16 @@ public class FunctionType implements ReferencableType {
                 && Objects.equals(resultType, otherResultType);
     }
 
+    public boolean matches(final WasmType otherResultType) {
+        return Objects.equals(resultType, otherResultType)
+                && parameter == null;
+    }
+
+    public boolean matches(final List<WasmType> otherParameter) {
+        return Objects.equals(parameter, otherParameter)
+                && resultType == null;
+    }
+
     public boolean isVoid() {
         return resultType == null;
     }

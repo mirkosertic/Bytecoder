@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
 import java.util.List;
+import java.util.Objects;
 
 public class StructType implements ReferencableType {
 
@@ -104,5 +105,18 @@ public class StructType implements ReferencableType {
 
     public List<Field> getFields() {
         return fields;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        final StructType that = (StructType) o;
+        return Objects.equals(typesSection, that.typesSection) && Objects.equals(name, that.name) && Objects.equals(fields, that.fields);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(typesSection, name, fields);
     }
 }
