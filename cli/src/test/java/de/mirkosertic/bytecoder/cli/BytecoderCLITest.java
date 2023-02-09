@@ -26,22 +26,26 @@ public class BytecoderCLITest {
     @Rule
     public TemporaryFolder folder= new TemporaryFolder();
 
-    public static void main(final String[] args) {
-        final int i = args.length + 10;
+    public static class MainClass {
+
+        public static void main(final String[] args) {
+            final int i = args.length + 10;
+        }
+
     }
 
     @Test
     public void testCompileToJS() {
-        Assert.assertEquals(new CommandLine(new BytecoderCommand()).execute("compile", "js", "-builddirectory=./target", "-classpath=.", "-mainclass=de.mirkosertic.bytecoder.cli.BytecoderCLITest"), 0);
+        Assert.assertEquals(new CommandLine(new BytecoderCommand()).execute("compile", "js", "-builddirectory=./target", "-classpath=.", "-mainclass=de.mirkosertic.bytecoder.cli.BytecoderCLITest$MainClass"), 0);
     }
 
     @Test
     public void testCompileToWasm() {
-        Assert.assertEquals(new CommandLine(new BytecoderCommand()).execute("compile", "wasm", "-builddirectory=./target", "-classpath=.", "-mainclass=de.mirkosertic.bytecoder.cli.BytecoderCLITest"), 0);
+        Assert.assertEquals(new CommandLine(new BytecoderCommand()).execute("compile", "wasm", "-builddirectory=./target", "-classpath=.", "-mainclass=de.mirkosertic.bytecoder.cli.BytecoderCLITest$MainClass"), 0);
     }
 
     @Test
     public void testGenerateGraph() {
-        Assert.assertEquals(new CommandLine(new BytecoderCommand()).execute("graph", "generate", "-builddirectory=./target", "-classpath=.", "-mainclass=de.mirkosertic.bytecoder.cli.BytecoderCLITest"), 0);
+        Assert.assertEquals(new CommandLine(new BytecoderCommand()).execute("graph", "generate", "-builddirectory=./target", "-classpath=.", "-mainclass=de.mirkosertic.bytecoder.cli.BytecoderCLITest$MainClass"), 0);
     }
 }

@@ -38,7 +38,7 @@ public class WasmEvent implements Exportable {
         sectionWriter.writeUnsignedLeb128(typesSection.indexOf(type));
     }
 
-    public void writeTo(final TextWriter textWriter) throws IOException {
+    public void writeTo(final TextWriter textWriter) {
         textWriter.opening();
         textWriter.write("event");
         textWriter.space();
@@ -50,7 +50,7 @@ public class WasmEvent implements Exportable {
     }
 
     @Override
-    public void writeRefTo(final TextWriter textWriter) throws IOException {
+    public void writeRefTo(final TextWriter textWriter) {
         textWriter.opening();
         textWriter.write("event");
         textWriter.space();

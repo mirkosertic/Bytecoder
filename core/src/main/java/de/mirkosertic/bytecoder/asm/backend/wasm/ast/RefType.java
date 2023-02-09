@@ -15,11 +15,13 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
+import java.util.Objects;
+
 public class RefType implements WasmType {
 
     private final ReferencableType type;
 
-    private boolean nullable;
+    private final boolean nullable;
 
     RefType(final ReferencableType type, final boolean nullable) {
         this.type = type;
@@ -67,5 +69,18 @@ public class RefType implements WasmType {
     @Override
     public int index() {
         throw new IllegalArgumentException("Not implemented");
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        final RefType refType = (RefType) o;
+        return nullable == refType.nullable && type.equals(refType.type);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(type, nullable);
     }
 }

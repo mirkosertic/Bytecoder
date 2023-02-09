@@ -15,12 +15,10 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import java.io.IOException;
-
 public class ArrayType implements ReferencableType {
 
     private final TypesSection section;
-    private WasmType type;
+    private final WasmType type;
 
     ArrayType(final TypesSection section, final WasmType type) {
         this.section = section;
@@ -48,13 +46,13 @@ public class ArrayType implements ReferencableType {
     }
 
     @Override
-    public void writeRefTo(TextWriter writer) {
+    public void writeRefTo(final TextWriter writer) {
         writer.write("$t");
         writer.write(Integer.toString(index()));
     }
 
     @Override
-    public void writeTo(BinaryWriter.Writer writer) throws IOException {
+    public void writeTo(final BinaryWriter.Writer writer) {
         // TODO
     }
 

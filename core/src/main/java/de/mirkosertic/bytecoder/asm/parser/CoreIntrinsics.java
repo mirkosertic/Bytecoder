@@ -30,7 +30,6 @@ public class CoreIntrinsics implements Intrinsic {
 
     public CoreIntrinsics(final List<Intrinsic> in) {
         this.intrinsics = new ArrayList<>();
-        this.intrinsics.add(new JavaLangAccessIntrinsic());
         this.intrinsics.addAll(in);
     }
 

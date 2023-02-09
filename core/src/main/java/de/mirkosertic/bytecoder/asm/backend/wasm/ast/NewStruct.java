@@ -28,7 +28,7 @@ public class NewStruct implements WasmValue{
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) throws IOException {
+    public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) {
         //TODO
     }
 }

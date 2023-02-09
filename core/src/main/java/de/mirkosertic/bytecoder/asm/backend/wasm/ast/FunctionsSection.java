@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class FunctionsSection extends ModuleSection {
 
@@ -28,19 +29,22 @@ public class FunctionsSection extends ModuleSection {
         this.functions = new ArrayList<>();
     }
 
-    public ExportableFunction newFunction(final String label, final FunctionType type, final List<Param> parameter, final WasmType result) {
+    public ExportableFunction newFunction(final String label, final List<Param> parameter, final WasmType result) {
+        final FunctionType type = getModule().getTypes().functionType(parameter.stream().map(Local::getType).collect(Collectors.toList()), result);
         final ExportableFunction function = new ExportableFunction(getModule(), type, label, parameter, result);
         functions.add(function);
         return function;
     }
 
-    public ExportableFunction newFunction(final String label, final FunctionType type, final List<Param> parameter) {
+    public ExportableFunction newFunction(final String label, final List<Param> parameter) {
+        final FunctionType type = getModule().getTypes().functionType(parameter.stream().map(Local::getType).collect(Collectors.toList()));
         final ExportableFunction function = new ExportableFunction(getModule(), type, label, parameter);
         functions.add(function);
         return function;
     }
 
-    public ExportableFunction newFunction(final String label, final FunctionType type, final WasmType result) {
+    public ExportableFunction newFunction(final String label, final WasmType result) {
+        final FunctionType type = getModule().getTypes().functionType(result);
         final ExportableFunction function = new ExportableFunction(getModule(), type, label, result);
         functions.add(function);
         return function;
