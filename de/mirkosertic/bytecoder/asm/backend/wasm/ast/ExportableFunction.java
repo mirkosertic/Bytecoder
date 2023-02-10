@@ -89,7 +89,7 @@ public class ExportableFunction extends Function implements Exportable {
     }
 
     ExportableFunction(final Module aModule, final String label) {
-        super(aModule, (FunctionType) null, label, (WasmType) null);
+        super(aModule, null, label, (WasmType) null);
         this.localIndex = new LocalIndex();
     }
 
@@ -109,7 +109,7 @@ public class ExportableFunction extends Function implements Exportable {
         return localIndex;
     }
 
-    public Local newLocal(final String label, final PrimitiveType type) {
+    public Local newLocal(final String label, final WasmType type) {
         if (localIndex.localByLabel(label) != null) {
             throw new IllegalStateException("Local " + label + " already defined!");
         }

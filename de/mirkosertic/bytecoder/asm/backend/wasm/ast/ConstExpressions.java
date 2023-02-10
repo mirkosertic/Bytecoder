@@ -368,6 +368,9 @@ public class ConstExpressions {
             return new WasmNullRef(type);
         }
 
+        public static HostType host() {
+            return new HostType();
+        }
     }
 
     public static class struct {
@@ -376,8 +379,8 @@ public class ConstExpressions {
             return new NewStruct(type, arguments);
         }
 
-        public static WasmValue get(final StructType structType, final WasmValue source, final int index) {
-            return new GetStruct(structType, source, index);
+        public static WasmValue get(final StructType structType, final WasmValue source, final String fieldName) {
+            return new GetStruct(structType, source, fieldName);
         }
     }
 

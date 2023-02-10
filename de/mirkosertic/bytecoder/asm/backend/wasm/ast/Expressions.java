@@ -73,6 +73,10 @@ public class Expressions {
         this.f32 = new F32();
     }
 
+    public void comment(final String message) {
+        parent.addChild(new Comment(message));
+    }
+
     public void voidCall(final Callable function, final List<WasmValue> arguments) {
         final Call call = new Call(function, arguments);
         parent.addChild(call);
