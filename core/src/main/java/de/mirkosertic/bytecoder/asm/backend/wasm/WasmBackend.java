@@ -53,6 +53,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -116,6 +117,16 @@ public class WasmBackend {
             }
         };
 
+        final ConstantPool cs = compileUnit.getConstantPool();
+        final List<String> pooledStrings = cs.getPooledStrings();
+        for (int i = 0; i < pooledStrings.size(); i++) {
+            final StructType stringType = objectTypeMappings.get(compileUnit.findClass(Type.getType(String.class)));
+            globalsSection.newMutableGlobal("stringpool_" + i,
+                    ConstExpressions.ref.type(stringType, true),
+                    ConstExpressions.ref.nullRef(stringType)
+            );
+        }
+
         for (final ResolvedClass cl : resolvedClasses) {
             // Class objects for
             final String className = WasmHelpers.generateClassName(cl.type);
@@ -126,7 +137,7 @@ public class WasmBackend {
             }
 
             if (cl.isNativeReferenceHolder()) {
-                instanceFields.add(new StructType.Field("nativeObject", PrimitiveType.externref));
+                instanceFields.add(new StructType.Field("nativeObject", ConstExpressions.ref.host()));
             }
 
             // TODO: Array types!
@@ -226,13 +237,30 @@ public class WasmBackend {
 
             final ExportableFunction initFunction = functionsSection.newFunction(className + "_i", ConstExpressions.ref.type(rtType, false));
             final Iff initCheck = initFunction.flow.iff("check", ConstExpressions.i32.eq(ConstExpressions.i32.c(0),
-                    ConstExpressions.struct.get(rtType, ConstExpressions.getGlobal(runtimeClassGlobal), 4)));
+                    ConstExpressions.struct.get(rtType, ConstExpressions.getGlobal(runtimeClassGlobal), "initStatus")));
             initCheck.flow.setStruct(rtType, ConstExpressions.getGlobal(runtimeClassGlobal), 4, ConstExpressions.i32.c(1));
-            // TODO: Call class init function here
+
+            if (cl.superClass != null) {
+                final String superInit = WasmHelpers.generateClassName(cl.superClass.type) + "_i";
+                initCheck.flow.drop(ConstExpressions.call(ConstExpressions.weakFunctionReference(superInit), Collections.emptyList()));
+
+                if (cl.classInitializer != null) {
+                    final List<WasmValue> clInitArgs = new ArrayList<>();
+                    clInitArgs.add(ConstExpressions.ref.nullRef(objectTypeMappings.get(objectClass)));
+                    initCheck.flow.voidCall(ConstExpressions.weakFunctionReference(className + "$" + WasmHelpers.generateMethodName(cl.classInitializer.methodNode.name, cl.classInitializer.methodType)), clInitArgs);
+                }
+            }
             initCheck.flow.branch(initCheck);
             initFunction.flow.ret(ConstExpressions.getGlobal(runtimeClassGlobal));
 
             initFunctions.put(cl, initFunction);
+        }
+
+
+        for (final ResolvedClass cl : resolvedClasses) {
+            // Class objects for
+
+            final String className = WasmHelpers.generateClassName(cl.type);
 
             for (final ResolvedMethod method : cl.resolvedMethods) {
                 if (method.owner == cl) {
@@ -298,8 +326,7 @@ public class WasmBackend {
 
                         final DominatorTree dt = new DominatorTree(g);
 
-                        // TODO: Generate code here
-                        new Sequencer(g, dt, new WasmStructuredControlflowCodeGenerator(implFunction, toWASMType));
+                        new Sequencer(g, dt, new WasmStructuredControlflowCodeGenerator(compileUnit, module, objectTypeMappings, implFunction, toWASMType));
 
                         implFunction.flow.unreachable();
 
@@ -321,17 +348,8 @@ public class WasmBackend {
                     new ImportReference("bytecoder", "resolveStringConstant"),
                  "resolveStringConstant",
                     resolveStringConstantParams,
-                    PrimitiveType.externref);
+                    ConstExpressions.ref.host());
 
-        final ConstantPool cs = compileUnit.getConstantPool();
-        final List<String> pooledStrings = cs.getPooledStrings();
-        for (int i = 0; i < pooledStrings.size(); i++) {
-            final StructType stringType = objectTypeMappings.get(compileUnit.findClass(Type.getType(String.class)));
-            globalsSection.newMutableGlobal("stringpool_" + i,
-                    ConstExpressions.ref.type(stringType, true),
-                    ConstExpressions.ref.nullRef(stringType)
-            );
-        }
         final ExportableFunction bootstrap = functionsSection.newFunction("bootstrap");
         for (int i = 0; i < pooledStrings.size(); i++) {
             final ResolvedClass stringClass = compileUnit.findClass(Type.getType(String.class));

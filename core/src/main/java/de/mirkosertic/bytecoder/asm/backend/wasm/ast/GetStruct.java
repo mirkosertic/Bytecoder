@@ -8,13 +8,13 @@ public class GetStruct implements WasmValue{
 
     private final WasmValue source;
 
-    private final int index;
+    private final String fieldName;
 
 
-    GetStruct(final StructType structType, final WasmValue source, final int index) {
+    GetStruct(final StructType structType, final WasmValue source, final String fieldName) {
         this.structType = structType;
         this.source = source;
-        this.index = index;
+        this.fieldName = fieldName;
     }
 
     @Override
@@ -22,8 +22,8 @@ public class GetStruct implements WasmValue{
         writer.opening();
         writer.write("struct.get $");
         writer.write(structType.getName());
-        writer.write(" ");
-        writer.write(Integer.toString(index));
+        writer.write(" $");
+        writer.write(fieldName);
         writer.space();
         source.writeTo(writer, context);
         writer.closing();

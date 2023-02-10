@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.asm.ir;
+package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import org.objectweb.asm.Type;
+public class Comment implements WasmExpression {
 
-public class NullReference extends Value implements Constant {
+    private final String message;
 
-    public NullReference() {
-        super(Type.getType(Object.class));
+    Comment(final String message) {
+        this.message = message;
+    }
+
+    @Override
+    public void writeTo(final TextWriter textWriter, final ExportContext context) {
+        textWriter.write(";; ");
+        textWriter.write(message);
+        textWriter.newLine();
+    }
+
+    @Override
+    public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) {
     }
 }

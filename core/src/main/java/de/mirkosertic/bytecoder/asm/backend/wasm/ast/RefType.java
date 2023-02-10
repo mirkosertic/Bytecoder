@@ -28,6 +28,10 @@ public class RefType implements WasmType {
         this.nullable = nullable;
     }
 
+    public ReferencableType getType() {
+        return type;
+    }
+
     @Override
     public void writeTo(final TextWriter writer) {
         writer.opening();

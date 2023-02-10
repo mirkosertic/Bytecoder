@@ -36,6 +36,14 @@ public class StructType implements ReferencableType {
             this.mutable = true;
         }
 
+        public String getName() {
+            return name;
+        }
+
+        public WasmType getType() {
+            return type;
+        }
+
         public void writeTo(final TextWriter writer) {
             writer.opening();
             writer.write("field");
