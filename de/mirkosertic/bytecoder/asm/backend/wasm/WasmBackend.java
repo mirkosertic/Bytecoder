@@ -93,27 +93,39 @@ public class WasmBackend {
 
         final GlobalsSection globalsSection = module.getGlobals();
 
-        final java.util.function.Function<Type, WasmType> toWASMType = argument -> {
-            switch (argument.getSort()) {
-                case Type.BOOLEAN:
-                case Type.BYTE:
-                case Type.CHAR:
-                case Type.SHORT:
-                case Type.INT:
-                    return PrimitiveType.i32;
-                case Type.LONG:
-                    return PrimitiveType.i64;
-                case Type.FLOAT:
-                    return PrimitiveType.f32;
-                case Type.DOUBLE:
-                    return PrimitiveType.f64;
-                case Type.OBJECT:
-                    return ConstExpressions.ref.type(objectTypeMappings.get(compileUnit.findClass(Type.getType(Object.class))), true);
-                case Type.ARRAY:
-                    // TODO
-                    return ConstExpressions.ref.type(objectTypeMappings.get(compileUnit.findClass(Type.getType(Object.class))), true);
-                default:
-                    throw new IllegalStateException("Not supported " + argument);
+        final java.util.function.Function<Type, WasmType> toWASMType = new java.util.function.Function<Type, WasmType>() {
+            @Override
+            public WasmType apply(final Type argument) {
+                switch (argument.getSort()) {
+                    case Type.BOOLEAN:
+                    case Type.BYTE:
+                    case Type.CHAR:
+                    case Type.SHORT:
+                    case Type.INT:
+                        return PrimitiveType.i32;
+                    case Type.LONG:
+                        return PrimitiveType.i64;
+                    case Type.FLOAT:
+                        return PrimitiveType.f32;
+                    case Type.DOUBLE:
+                        return PrimitiveType.f64;
+                    case Type.OBJECT:
+                        return ConstExpressions.ref.type(objectTypeMappings.get(compileUnit.findClass(Type.getType(Object.class))), true);
+                    case Type.ARRAY:
+                        // TODO
+                        return ConstExpressions.ref.type(objectTypeMappings.get(compileUnit.findClass(Type.getType(Object.class))), true);
+                    case Type.METHOD:
+                        final List<WasmType> arguments = new ArrayList<>();
+                        for (final Type a : argument.getArgumentTypes()) {
+                            arguments.add(this.apply(a));
+                        }
+                        if (argument.getReturnType().getSort() == Type.VOID) {
+                            return module.getTypes().functionType(arguments);
+                        }
+                        return module.getTypes().functionType(arguments, this.apply(argument.getReturnType()));
+                    default:
+                        throw new IllegalStateException("Not supported " + argument);
+                }
             }
         };
 
@@ -127,6 +139,12 @@ public class WasmBackend {
             );
         }
 
+        // Store for last thrown exception
+        globalsSection.newMutableGlobal("lastthrownexception",
+                ConstExpressions.ref.type(objectTypeMappings.get(objectClass), true),
+                ConstExpressions.ref.nullRef(objectTypeMappings.get(objectClass))
+        );
+
         for (final ResolvedClass cl : resolvedClasses) {
             // Class objects for
             final String className = WasmHelpers.generateClassName(cl.type);
@@ -139,8 +157,6 @@ public class WasmBackend {
             if (cl.isNativeReferenceHolder()) {
                 instanceFields.add(new StructType.Field("nativeObject", ConstExpressions.ref.host()));
             }
-
-            // TODO: Array types!
 
             final List<StructType.Field> classFields = new ArrayList<>();
             final List<WasmValue> classFieldDefaults = new ArrayList<>();
@@ -256,6 +272,7 @@ public class WasmBackend {
             initFunctions.put(cl, initFunction);
         }
 
+        // TODO: Array types as subtypes of Array.class with a typed array member for primitive and object arrays
 
         for (final ResolvedClass cl : resolvedClasses) {
             // Class objects for
@@ -326,7 +343,7 @@ public class WasmBackend {
 
                         final DominatorTree dt = new DominatorTree(g);
 
-                        new Sequencer(g, dt, new WasmStructuredControlflowCodeGenerator(compileUnit, module, objectTypeMappings, implFunction, toWASMType));
+                        new Sequencer(g, dt, new WasmStructuredControlflowCodeGenerator(compileUnit, module, rtTypeMappings, objectTypeMappings, implFunction, toWASMType));
 
                         implFunction.flow.unreachable();
 

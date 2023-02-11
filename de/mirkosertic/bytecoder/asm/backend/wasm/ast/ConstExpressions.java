@@ -371,6 +371,10 @@ public class ConstExpressions {
         public static HostType host() {
             return new HostType();
         }
+
+        public static WasmValue callRef(final FunctionType type, final List<WasmValue> arguments) {
+            return new CallRef(type, arguments);
+        }
     }
 
     public static class struct {
