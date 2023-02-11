@@ -19,6 +19,7 @@ import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Callable;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.ConstExpressions;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Container;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.ExportableFunction;
+import de.mirkosertic.bytecoder.asm.backend.wasm.ast.FunctionType;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Global;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.HostType;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Local;
@@ -30,6 +31,7 @@ import de.mirkosertic.bytecoder.asm.backend.wasm.ast.WasmType;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.WasmValue;
 import de.mirkosertic.bytecoder.asm.ir.AbstractVar;
 import de.mirkosertic.bytecoder.asm.ir.ArrayStore;
+import de.mirkosertic.bytecoder.asm.ir.CaughtException;
 import de.mirkosertic.bytecoder.asm.ir.CheckCast;
 import de.mirkosertic.bytecoder.asm.ir.Copy;
 import de.mirkosertic.bytecoder.asm.ir.FrameDebugInfo;
@@ -48,11 +50,14 @@ import de.mirkosertic.bytecoder.asm.ir.NullReference;
 import de.mirkosertic.bytecoder.asm.ir.ObjectString;
 import de.mirkosertic.bytecoder.asm.ir.PHI;
 import de.mirkosertic.bytecoder.asm.ir.PrimitiveInt;
+import de.mirkosertic.bytecoder.asm.ir.ReadClassField;
 import de.mirkosertic.bytecoder.asm.ir.ReadInstanceField;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedClass;
+import de.mirkosertic.bytecoder.asm.ir.ResolvedField;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.asm.ir.Return;
 import de.mirkosertic.bytecoder.asm.ir.ReturnValue;
+import de.mirkosertic.bytecoder.asm.ir.RuntimeClass;
 import de.mirkosertic.bytecoder.asm.ir.SetClassField;
 import de.mirkosertic.bytecoder.asm.ir.SetInstanceField;
 import de.mirkosertic.bytecoder.asm.ir.StaticMethodInvocation;
@@ -63,6 +68,7 @@ import de.mirkosertic.bytecoder.asm.ir.TypeReference;
 import de.mirkosertic.bytecoder.asm.ir.Unwind;
 import de.mirkosertic.bytecoder.asm.ir.Value;
 import de.mirkosertic.bytecoder.asm.ir.VirtualMethodInvocation;
+import de.mirkosertic.bytecoder.asm.ir.VirtualMethodInvocationExpression;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
 import de.mirkosertic.bytecoder.asm.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.asm.sequencer.StructuredControlflowCodeGenerator;
@@ -83,6 +89,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private final Map<ResolvedClass, StructType> objectTypeMappings;
 
+    private final Map<ResolvedClass, StructType> rtMappings;
+
     private final ExportableFunction exportableFunction;
 
     private final Function<Type, WasmType> typeConverter;
@@ -91,10 +99,11 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private final Container targetContainer;
 
-    public WasmStructuredControlflowCodeGenerator(final CompileUnit compileUnit, final Module module, final Map<ResolvedClass, StructType> objectTypeMappings, final ExportableFunction exportableFunction, final Function<Type, WasmType> typeConverter) {
+    public WasmStructuredControlflowCodeGenerator(final CompileUnit compileUnit, final Module module, final Map<ResolvedClass, StructType> rtMappings, final Map<ResolvedClass, StructType> objectTypeMappings, final ExportableFunction exportableFunction, final Function<Type, WasmType> typeConverter) {
         this.compileUnit = compileUnit;
         this.module = module;
         this.exportableFunction = exportableFunction;
+        this.rtMappings = rtMappings;
         this.objectTypeMappings = objectTypeMappings;
         this.typeConverter = typeConverter;
         this.varLocalMap = new HashMap<>();
@@ -246,6 +255,37 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         return ConstExpressions.call(ConstExpressions.weakFunctionReference(functionName), callArgs);
     }
 
+    private WasmValue toWasmValue(final VirtualMethodInvocationExpression virtualMethodInvocationExpression) {
+        final ResolvedMethod rm = virtualMethodInvocationExpression.resolvedMethod;
+        final ResolvedClass cl = rm.owner;
+
+        final List<WasmValue> indirectCallArgs = new ArrayList<>();
+
+        final List<WasmType> vtArgs = new ArrayList<>();
+        vtArgs.add(PrimitiveType.i32);
+        final FunctionType vtType = module.getTypes().functionType(vtArgs, PrimitiveType.i32);
+
+        for (final Node arg : virtualMethodInvocationExpression.incomingDataFlows) {
+            indirectCallArgs.add(toWasmValue((Value) arg));
+        }
+
+        final List<WasmValue> resolverArgs = new ArrayList<>();
+        resolverArgs.add(ConstExpressions.i32.c(-1)); // TODO: Resolve function index
+
+        final StructType classType = rtMappings.get(cl);
+
+        resolverArgs.add(ConstExpressions.struct.get(
+                classType,
+                toWasmValue((Value) virtualMethodInvocationExpression.incomingDataFlows[0]),
+                "vt_resolver"
+        ));
+
+        final WasmValue resolver = ConstExpressions.ref.callRef(vtType, resolverArgs);
+        final FunctionType ft = (FunctionType) typeConverter.apply(virtualMethodInvocationExpression.resolvedMethod.methodType);
+
+        return ConstExpressions.call(ft, indirectCallArgs, resolver);
+    }
+
     private WasmValue toType(final Type type) {
         switch (type.getSort()) {
             case Type.BOOLEAN:
@@ -296,6 +336,30 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         return toType(typeReference.type);
     }
 
+    private WasmValue toWasmValue(final ReadClassField readClassField) {
+        final ResolvedField field = readClassField.resolvedField;
+        final ResolvedClass cl = field.owner;
+        final StructType type = objectTypeMappings.get(cl);
+        final String className = WasmHelpers.generateClassName(cl.type);
+        if (cl.requiresClassInitializer()) {
+            final Callable initFunction = ConstExpressions.weakFunctionReference(className + "_i");
+            return ConstExpressions.struct.get(type, ConstExpressions.call(initFunction, Collections.emptyList()),
+                    field.name);
+        }
+        final Global global = module.getGlobals().globalsIndex().globalByLabel(className  + "_cls");
+        return ConstExpressions.struct.get(type, ConstExpressions.getGlobal(global),
+                    field.name);
+    }
+
+    private WasmValue toWasmValue(final RuntimeClass runtimeClass) {
+        return toType(runtimeClass.type);
+    }
+
+    private WasmValue toWasmValue(final CaughtException caughtException) {
+        final Global g = module.getGlobals().globalsIndex().globalByLabel("lastthrownexception");
+        return ConstExpressions.getGlobal(g);
+    }
+
     private WasmValue toWasmValue(final Value value) {
         if (value instanceof This) {
             return toWasmValue((This) value);
@@ -315,8 +379,16 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             return toWasmValue((ReadInstanceField) value);
         } else if (value instanceof StaticMethodInvocationExpression) {
             return toWasmValue((StaticMethodInvocationExpression) value);
+        } else if (value instanceof VirtualMethodInvocationExpression) {
+            return toWasmValue((VirtualMethodInvocationExpression) value);
         } else if (value instanceof TypeReference) {
             return toWasmValue((TypeReference) value);
+        } else if (value instanceof ReadClassField) {
+            return toWasmValue((ReadClassField) value);
+        } else if (value instanceof RuntimeClass) {
+            return toWasmValue((RuntimeClass) value);
+        } else if (value instanceof CaughtException) {
+            return toWasmValue((CaughtException) value);
         }
         throw new IllegalArgumentException("Not implemented " + value.getClass());
     }
