@@ -18,11 +18,15 @@ package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 public class ArrayType implements ReferencableType {
 
     private final TypesSection section;
-    private final WasmType type;
+    private final WasmType elementType;
 
-    ArrayType(final TypesSection section, final WasmType type) {
+    ArrayType(final TypesSection section, final WasmType elementType) {
         this.section = section;
-        this.type = type;
+        this.elementType = elementType;
+    }
+
+    public WasmType getElementType() {
+        return elementType;
     }
 
     @Override
@@ -39,7 +43,7 @@ public class ArrayType implements ReferencableType {
         writer.opening();
         writer.write("mut");
         writer.space();
-        this.type.writeTo(writer);
+        this.elementType.writeTo(writer);
         writer.closing();
         writer.closing();
         writer.closing();
