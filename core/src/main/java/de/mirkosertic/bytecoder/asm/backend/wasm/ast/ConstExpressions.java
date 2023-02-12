@@ -391,7 +391,7 @@ public class ConstExpressions {
     public static class array {
 
         public static WasmValue newInstance(final WasmType type, final WasmValue length, final List<WasmValue> arguments) {
-            return new NewArray(type, length, arguments);
+            return new NewWasmArray(type, length, arguments);
         }
     }
 

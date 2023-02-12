@@ -79,6 +79,15 @@ public class TypesSection extends ModuleSection {
     }
 
     public ArrayType arrayType(final WasmType elementType) {
+        for (final WasmType type : types) {
+            if (type instanceof ArrayType) {
+                final ArrayType otherType = (ArrayType) type;
+                if (otherType.getElementType().equals(elementType)) {
+                    return otherType;
+                }
+            }
+        }
+        // Register a new one
         return register(new ArrayType(this, elementType));
     }
 
@@ -115,5 +124,17 @@ public class TypesSection extends ModuleSection {
             result.add(t);
         }
         return result;
+    }
+
+    public StructType structTypeByName(final String name) {
+        for (final WasmType t : types) {
+            if (t instanceof StructType) {
+                final StructType s = (StructType) t;
+                if (s.name.equals(name)) {
+                    return s;
+                }
+            }
+        }
+        throw new IllegalArgumentException("Unknown struct type : " + name);
     }
 }

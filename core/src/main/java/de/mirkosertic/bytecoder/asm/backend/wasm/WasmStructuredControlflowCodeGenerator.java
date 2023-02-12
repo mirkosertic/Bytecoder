@@ -45,11 +45,13 @@ import de.mirkosertic.bytecoder.asm.ir.MethodArgument;
 import de.mirkosertic.bytecoder.asm.ir.MonitorEnter;
 import de.mirkosertic.bytecoder.asm.ir.MonitorExit;
 import de.mirkosertic.bytecoder.asm.ir.New;
+import de.mirkosertic.bytecoder.asm.ir.NewArray;
 import de.mirkosertic.bytecoder.asm.ir.Node;
 import de.mirkosertic.bytecoder.asm.ir.NullReference;
 import de.mirkosertic.bytecoder.asm.ir.ObjectString;
 import de.mirkosertic.bytecoder.asm.ir.PHI;
 import de.mirkosertic.bytecoder.asm.ir.PrimitiveInt;
+import de.mirkosertic.bytecoder.asm.ir.PrimitiveLong;
 import de.mirkosertic.bytecoder.asm.ir.ReadClassField;
 import de.mirkosertic.bytecoder.asm.ir.ReadInstanceField;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedClass;
@@ -72,6 +74,7 @@ import de.mirkosertic.bytecoder.asm.ir.VirtualMethodInvocationExpression;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
 import de.mirkosertic.bytecoder.asm.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.asm.sequencer.StructuredControlflowCodeGenerator;
+import de.mirkosertic.bytecoder.classlib.Array;
 import org.objectweb.asm.Type;
 
 import java.util.ArrayList;
@@ -160,6 +163,10 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private WasmValue toWasmValue(final PrimitiveInt primitiveInt) {
         return ConstExpressions.i32.c(primitiveInt.value);
+    }
+
+    private WasmValue toWasmValue(final PrimitiveLong primitiveLong) {
+        return ConstExpressions.i64.c(primitiveLong.value);
     }
 
     private WasmValue toWasmValue(final MethodArgument methodArgument) {
@@ -360,6 +367,46 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         return ConstExpressions.getGlobal(g);
     }
 
+    private WasmValue toWasmValue(final NewArray newArray) {
+        final Type elementType = newArray.type;
+        final Value length = (Value) newArray.incomingDataFlows[0];
+
+        final String typeToInstantiate;
+        final WasmValue emptyArray;
+        switch (elementType.getSort()) {
+            case Type.BYTE:
+            case Type.CHAR:
+            case Type.SHORT:
+            case Type.BOOLEAN:
+            case Type.INT:
+                typeToInstantiate = "i32_array";
+                emptyArray = ConstExpressions.array.newInstance(PrimitiveType.i32, toWasmValue(length), Collections.emptyList());
+                break;
+            case Type.LONG:
+                typeToInstantiate = "i64_array";
+                emptyArray = ConstExpressions.array.newInstance(PrimitiveType.i64, toWasmValue(length), Collections.emptyList());
+                break;
+            case Type.FLOAT:
+                typeToInstantiate = "f32_array";
+                emptyArray = ConstExpressions.array.newInstance(PrimitiveType.f32, toWasmValue(length), Collections.emptyList());
+                break;
+            case Type.DOUBLE:
+                typeToInstantiate = "f64_array";
+                emptyArray = ConstExpressions.array.newInstance(PrimitiveType.f64, toWasmValue(length), Collections.emptyList());
+                break;
+            default:
+                throw new IllegalArgumentException("Not supported array type " + elementType);
+        }
+
+        final StructType structType = module.getTypes().structTypeByName(typeToInstantiate);
+        final List<WasmValue> initArguments = new ArrayList<>();
+        final Type arrayClass = Type.getType(Array.class);
+        final Global arrayGlobal = module.getGlobals().globalsIndex().globalByLabel(WasmHelpers.generateClassName(arrayClass) + "_cls");
+        initArguments.add(ConstExpressions.getGlobal(arrayGlobal));
+        initArguments.add(emptyArray);
+        return ConstExpressions.struct.newInstance(structType, initArguments);
+    }
+
     private WasmValue toWasmValue(final Value value) {
         if (value instanceof This) {
             return toWasmValue((This) value);
@@ -367,6 +414,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             return toWasmValue((ObjectString) value);
         } else if (value instanceof PrimitiveInt) {
             return toWasmValue((PrimitiveInt) value);
+        } else if (value instanceof PrimitiveLong) {
+            return toWasmValue((PrimitiveLong) value);
         } else if (value instanceof MethodArgument) {
             return toWasmValue((MethodArgument) value);
         } else if (value instanceof AbstractVar) {
@@ -389,6 +438,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             return toWasmValue((RuntimeClass) value);
         } else if (value instanceof CaughtException) {
             return toWasmValue((CaughtException) value);
+        } else if (value instanceof NewArray) {
+            return toWasmValue((NewArray) value);
         }
         throw new IllegalArgumentException("Not implemented " + value.getClass());
     }

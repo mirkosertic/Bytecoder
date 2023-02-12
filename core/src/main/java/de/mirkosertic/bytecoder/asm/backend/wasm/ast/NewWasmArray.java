@@ -3,14 +3,14 @@ package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 import java.io.IOException;
 import java.util.List;
 
-public class NewArray implements WasmValue {
+public class NewWasmArray implements WasmValue {
 
     private final WasmType type;
 
     private final WasmValue length;
     private final List<WasmValue> arguments;
 
-    NewArray(final WasmType type, final WasmValue length, final List<WasmValue> arguments) {
+    NewWasmArray(final WasmType type, final WasmValue length, final List<WasmValue> arguments) {
         this.type = type;
         this.length = length;
         this.arguments = arguments;

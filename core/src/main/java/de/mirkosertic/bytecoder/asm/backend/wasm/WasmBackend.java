@@ -45,6 +45,7 @@ import de.mirkosertic.bytecoder.asm.parser.ConstantPool;
 import de.mirkosertic.bytecoder.asm.sequencer.DominatorTree;
 import de.mirkosertic.bytecoder.asm.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.backend.CompileResult;
+import de.mirkosertic.bytecoder.classlib.Array;
 import org.objectweb.asm.Type;
 
 import java.io.ByteArrayOutputStream;
@@ -57,6 +58,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 public class WasmBackend {
@@ -272,7 +274,19 @@ public class WasmBackend {
             initFunctions.put(cl, initFunction);
         }
 
-        // TODO: Array types as subtypes of Array.class with a typed array member for primitive and object arrays
+        final BiConsumer<String, WasmType> arrayTypeFactory = (name, wasmType) -> {
+            final ResolvedClass arrayBaseClass = compileUnit.findClass(Type.getType(Array.class));
+            final StructType arrayBaseType = objectTypeMappings.get(arrayBaseClass);
+            final List<StructType.Field> instanceFields = new ArrayList<>();
+            instanceFields.add(new StructType.Field("data", module.getTypes().arrayType(wasmType)));
+            types.structSubtype(name, arrayBaseType, instanceFields);
+        };
+
+        arrayTypeFactory.accept("i32_array", PrimitiveType.i32);
+        arrayTypeFactory.accept("i64_array", PrimitiveType.i64);
+        arrayTypeFactory.accept("f32_array", PrimitiveType.f32);
+        arrayTypeFactory.accept("f64_array", PrimitiveType.f64);
+        arrayTypeFactory.accept("obj_array", ConstExpressions.ref.type(objectTypeMappings.get(objectClass), true));
 
         for (final ResolvedClass cl : resolvedClasses) {
             // Class objects for
