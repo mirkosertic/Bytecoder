@@ -20,7 +20,7 @@ import de.mirkosertic.bytecoder.asm.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.asm.optimizer.Optimizer;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
-import de.mirkosertic.bytecoder.asm.sequencer.DominatorTree;
+import de.mirkosertic.bytecoder.asm.backend.sequencer.DominatorTree;
 
 import java.io.File;
 import java.io.FileOutputStream;

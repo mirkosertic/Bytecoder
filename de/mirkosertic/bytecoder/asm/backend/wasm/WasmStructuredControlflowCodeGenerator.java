@@ -95,8 +95,8 @@ import de.mirkosertic.bytecoder.asm.ir.VirtualMethodInvocation;
 import de.mirkosertic.bytecoder.asm.ir.VirtualMethodInvocationExpression;
 import de.mirkosertic.bytecoder.asm.ir.XOr;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
-import de.mirkosertic.bytecoder.asm.sequencer.Sequencer;
-import de.mirkosertic.bytecoder.asm.sequencer.StructuredControlflowCodeGenerator;
+import de.mirkosertic.bytecoder.asm.backend.sequencer.Sequencer;
+import de.mirkosertic.bytecoder.asm.backend.sequencer.StructuredControlflowCodeGenerator;
 import de.mirkosertic.bytecoder.classlib.Array;
 import org.objectweb.asm.Type;
 
