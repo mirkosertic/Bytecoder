@@ -32,6 +32,7 @@ public class ConstExpressions {
     }
 
     public static class i32 {
+
         public static I32Const c(final int aValue) {
             return new I32Const(aValue);
         }
@@ -84,8 +85,12 @@ public class ConstExpressions {
             return new I32Popcount(value);
         }
 
-        public static I32ReinterpretF32 reinterpretF32(final WasmValue value) {
+        public static I32ReinterpretF32 reinterpretf32(final WasmValue value) {
             return new I32ReinterpretF32(value);
+        }
+
+        public static I32WrapI64 wrap_i64(final WasmValue value) {
+            return new I32WrapI64(value);
         }
 
         public static I32Add add(final WasmValue leftValue, final WasmValue rightValue) {
@@ -156,11 +161,11 @@ public class ConstExpressions {
             return new I32Ctz(value);
         }
 
-        public static I32TruncSF32 trunc_sF32(final WasmValue value) {
+        public static I32TruncSF32 trunc_sf32(final WasmValue value) {
             return new I32TruncSF32(value);
         }
 
-        public static I32TruncUF32 trunc_uF32(final WasmValue value) {
+        public static I32TruncUF32 trunc_uf32(final WasmValue value) {
             return new I32TruncUF32(value);
         }
 
@@ -204,6 +209,9 @@ public class ConstExpressions {
             return new I32Load16U(offset, ptr);
         }
 
+        public static I32TruncSF64 trunc_f64s(final WasmValue value) {
+            return new I32TruncSF64(value);
+        }
     }
 
     public static class i64 {
@@ -211,7 +219,67 @@ public class ConstExpressions {
         public static I64Const c(final Long aValue) {
             return new I64Const(aValue);
         }
+
+        public static I64Mul mul(final WasmValue leftValue, final WasmValue rightValue) {
+            return new I64Mul(leftValue, rightValue);
+        }
+
+        public static I64And and(final WasmValue leftValue, final WasmValue rightValue) {
+            return new I64And(leftValue, rightValue);
+        }
+        public static I64ShrS shr_s(final WasmValue leftValue, final WasmValue rightValue) {
+            return new I64ShrS(leftValue, rightValue);
+        }
+
+        public static I64ShrU shr_u(final WasmValue leftValue, final WasmValue rightValue) {
+            return new I64ShrU(leftValue, rightValue);
+        }
+
+        public static I64GtS gt_s(final WasmValue leftValue, final WasmValue rightValue) {
+            return new I64GtS(leftValue, rightValue);
+        }
+
+        public static I64LtS lt_s(final WasmValue leftValue, final WasmValue rightValue) {
+            return new I64LtS(leftValue, rightValue);
+        }
+
+        public static I64ExtendI32S extend_i32s(final WasmValue value) {
+            return new I64ExtendI32S(value);
+        }
+
+        public static I64TruncSF32 trunc_sf32(final WasmValue value) {
+            return new I64TruncSF32(value);
+        }
+
+        public static I64TruncSF64 trunc_sf64(final WasmValue value) {
+            return new I64TruncSF64(value);
+        }
+
+        public static I64Sub sub(final WasmValue leftValue, final WasmValue rightValue) {
+            return new I64Sub(leftValue, rightValue);
+        }
+
+        public static I64DivS div_s(final WasmValue leftValue, final WasmValue rightValue) {
+            return new I64DivS(leftValue, rightValue);
+        }
+
+        public static I64Shl shl(final WasmValue leftValue, final WasmValue rightValue) {
+            return new I64Shl(leftValue, rightValue);
+        }
+
+        public static I64Xor xor(final WasmValue leftValue, final WasmValue rightValue) {
+            return new I64Xor(leftValue, rightValue);
+        }
+
+        public static I64Add add(final WasmValue leftValue, final WasmValue rightValue) {
+            return new I64Add(leftValue, rightValue);
+        }
+
+        public static I64Or or(final WasmValue leftValue, final WasmValue rightValue) {
+            return new I64Or(leftValue, rightValue);
+        }
     }
+
     public static class f32 {
 
         public static F32Const c(final float aValue) {
@@ -298,11 +366,19 @@ public class ConstExpressions {
             return new F32Floor(value);
         }
 
-        public static F32ConvertSI32 convert_sI32(final WasmValue value) {
+        public static F32ConvertSI32 convert_si32(final WasmValue value) {
             return new F32ConvertSI32(value);
         }
 
-        public static F32ConvertUI32 convert_uI32(final WasmValue value) {
+        public static F32ConvertSI64 convert_si64(final WasmValue value) {
+            return new F32ConvertSI64(value);
+        }
+
+        public static F32TruncSF64 trunc_f64s(final WasmValue value) {
+            return new F32TruncSF64(value);
+        }
+
+        public static F32ConvertUI32 convert_ui32(final WasmValue value) {
             return new F32ConvertUI32(value);
         }
 
@@ -319,6 +395,42 @@ public class ConstExpressions {
 
         public static F64Const c(final double aValue) {
             return new F64Const(aValue);
+        }
+
+        public static F64Mul mul(final WasmValue leftValue, final WasmValue rightValue) {
+            return new F64Mul(leftValue, rightValue);
+        }
+
+        public static F64Gt gt(final WasmValue leftValue, final WasmValue rightValue) {
+            return new F64Gt(leftValue, rightValue);
+        }
+
+        public static F64Lt lt(final WasmValue leftValue, final WasmValue rightValue) {
+            return new F64Lt(leftValue, rightValue);
+        }
+
+        public static F64ConvertSI32 convert_si32(final WasmValue value) {
+            return new F64ConvertSI32(value);
+        }
+
+        public static F64ConvertSI64 convert_si64(final WasmValue value) {
+            return new F64ConvertSI64(value);
+        }
+
+        public static F64PromoteF32 promote_f32(final WasmValue value) {
+            return new F64PromoteF32(value);
+        }
+
+        public static F64Sub sub(final WasmValue leftValue, final WasmValue rightValue) {
+            return new F64Sub(leftValue, rightValue);
+        }
+
+        public static F64Div div(final WasmValue leftValue, final WasmValue rightValue) {
+            return new F64Div(leftValue, rightValue);
+        }
+
+        public static F64Add add(final WasmValue leftValue, final WasmValue rightValue) {
+            return new F64Add(leftValue, rightValue);
         }
     }
 
@@ -393,6 +505,15 @@ public class ConstExpressions {
         public static WasmValue newInstance(final WasmType type, final WasmValue length, final List<WasmValue> arguments) {
             return new NewWasmArray(type, length, arguments);
         }
+
+        public static WasmValue get(final WasmType type, final WasmValue array, final WasmValue index) {
+            return new GetWasmArray(type, array, index);
+        }
+
+        public static WasmValue len(final WasmType type, final WasmValue array) {
+            return new GetWasmArrayLength(type, array);
+        }
+
     }
 
 }

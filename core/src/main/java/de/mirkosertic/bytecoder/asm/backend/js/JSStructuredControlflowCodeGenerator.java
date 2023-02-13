@@ -929,7 +929,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
     private void writeExpression(final InterfaceMethodInvocationExpression node) {
 
-        final ResolvedMethod method = node.method;
+        final ResolvedMethod method = node.resolvedMethod;
         final ResolvedClass cl = method.owner;
 
         if (cl.isOpaqueReferenceType()) {
@@ -1021,7 +1021,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                 }
             } else {
 
-                final Type returnType = node.method.methodType.getReturnType();
+                final Type returnType = node.resolvedMethod.methodType.getReturnType();
                 switch (returnType.getSort()) {
                     case Type.OBJECT: {
                         if (String.class.getName().equals(returnType.getClassName())) {
@@ -1147,7 +1147,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
             writeExpression(node.incomingDataFlows[0]);
             pw.print(".");
-            pw.print(generateMethodName(node.insnNode.name, node.method.methodType));
+            pw.print(generateMethodName(node.insnNode.name, node.resolvedMethod.methodType));
             pw.print("(");
             for (int i = 1; i < node.incomingDataFlows.length; i++) {
                 if (i > 1) {

@@ -131,21 +131,61 @@ public class WasmBackend {
             }
         };
 
-        final ConstantPool cs = compileUnit.getConstantPool();
-        final List<String> pooledStrings = cs.getPooledStrings();
-        for (int i = 0; i < pooledStrings.size(); i++) {
-            final StructType stringType = objectTypeMappings.get(compileUnit.findClass(Type.getType(String.class)));
-            globalsSection.newMutableGlobal("stringpool_" + i,
-                    ConstExpressions.ref.type(stringType, true),
-                    ConstExpressions.ref.nullRef(stringType)
-            );
-        }
+        final List<Param> compareI32Params = new ArrayList<>();
+        compareI32Params.add(ConstExpressions.param("a", PrimitiveType.i32));
+        compareI32Params.add(ConstExpressions.param("b", PrimitiveType.i32));
+        final ExportableFunction compare_i32 = module.getFunctions().newFunction("compare_i32", compareI32Params, PrimitiveType.i32);
+        compare_i32.flow.iff("gt", ConstExpressions.i32.gt_s(
+                        ConstExpressions.getLocal(compare_i32.localByLabel("a")),
+                        ConstExpressions.getLocal(compare_i32.localByLabel("b"))))
+                        .flow.ret(ConstExpressions.i32.c(1));
+        compare_i32.flow.iff("gt", ConstExpressions.i32.lt_s(
+                        ConstExpressions.getLocal(compare_i32.localByLabel("a")),
+                        ConstExpressions.getLocal(compare_i32.localByLabel("b"))))
+                .flow.ret(ConstExpressions.i32.c(-1));
+        compare_i32.flow.ret(ConstExpressions.i32.c(0));
 
-        // Store for last thrown exception
-        globalsSection.newMutableGlobal("lastthrownexception",
-                ConstExpressions.ref.type(objectTypeMappings.get(objectClass), true),
-                ConstExpressions.ref.nullRef(objectTypeMappings.get(objectClass))
-        );
+        final List<Param> compareI64Params = new ArrayList<>();
+        compareI64Params.add(ConstExpressions.param("a", PrimitiveType.i64));
+        compareI64Params.add(ConstExpressions.param("b", PrimitiveType.i64));
+        final ExportableFunction compare_i64 = module.getFunctions().newFunction("compare_i64", compareI64Params, PrimitiveType.i32);
+        compare_i64.flow.iff("gt", ConstExpressions.i64.gt_s(
+                        ConstExpressions.getLocal(compare_i64.localByLabel("a")),
+                        ConstExpressions.getLocal(compare_i64.localByLabel("b"))))
+                .flow.ret(ConstExpressions.i32.c(1));
+        compare_i64.flow.iff("gt", ConstExpressions.i64.lt_s(
+                        ConstExpressions.getLocal(compare_i64.localByLabel("a")),
+                        ConstExpressions.getLocal(compare_i64.localByLabel("b"))))
+                .flow.ret(ConstExpressions.i32.c(-1));
+        compare_i64.flow.ret(ConstExpressions.i32.c(0));
+
+        final List<Param> compareF32Params = new ArrayList<>();
+        compareF32Params.add(ConstExpressions.param("a", PrimitiveType.f32));
+        compareF32Params.add(ConstExpressions.param("b", PrimitiveType.f32));
+        final ExportableFunction compare_f32 = module.getFunctions().newFunction("compare_f32", compareF32Params, PrimitiveType.i32);
+        compare_f32.flow.iff("gt", ConstExpressions.f32.gt(
+                        ConstExpressions.getLocal(compare_f32.localByLabel("a")),
+                        ConstExpressions.getLocal(compare_f32.localByLabel("b"))))
+                .flow.ret(ConstExpressions.i32.c(1));
+        compare_f32.flow.iff("gt", ConstExpressions.f32.lt(
+                        ConstExpressions.getLocal(compare_f32.localByLabel("a")),
+                        ConstExpressions.getLocal(compare_f32.localByLabel("b"))))
+                .flow.ret(ConstExpressions.i32.c(-1));
+        compare_f32.flow.ret(ConstExpressions.i32.c(0));
+
+        final List<Param> compareF64Params = new ArrayList<>();
+        compareF64Params.add(ConstExpressions.param("a", PrimitiveType.f64));
+        compareF64Params.add(ConstExpressions.param("b", PrimitiveType.f64));
+        final ExportableFunction compare_f64 = module.getFunctions().newFunction("compare_f64", compareF64Params, PrimitiveType.i32);
+        compare_f64.flow.iff("gt", ConstExpressions.f64.gt(
+                        ConstExpressions.getLocal(compare_f64.localByLabel("a")),
+                        ConstExpressions.getLocal(compare_f64.localByLabel("b"))))
+                .flow.ret(ConstExpressions.i32.c(1));
+        compare_f64.flow.iff("gt", ConstExpressions.f64.lt(
+                        ConstExpressions.getLocal(compare_f64.localByLabel("a")),
+                        ConstExpressions.getLocal(compare_f64.localByLabel("b"))))
+                .flow.ret(ConstExpressions.i32.c(-1));
+        compare_f64.flow.ret(ConstExpressions.i32.c(0));
 
         for (final ResolvedClass cl : resolvedClasses) {
             // Class objects for
@@ -274,6 +314,22 @@ public class WasmBackend {
             initFunctions.put(cl, initFunction);
         }
 
+        final ConstantPool cs = compileUnit.getConstantPool();
+        final List<String> pooledStrings = cs.getPooledStrings();
+        for (int i = 0; i < pooledStrings.size(); i++) {
+            final StructType stringType = objectTypeMappings.get(compileUnit.findClass(Type.getType(String.class)));
+            globalsSection.newMutableGlobal("stringpool_" + i,
+                    ConstExpressions.ref.type(stringType, true),
+                    ConstExpressions.ref.nullRef(stringType)
+            );
+        }
+
+        // Store for last thrown exception
+        globalsSection.newMutableGlobal("lastthrownexception",
+                ConstExpressions.ref.type(objectTypeMappings.get(objectClass), true),
+                ConstExpressions.ref.nullRef(objectTypeMappings.get(objectClass))
+        );
+
         final BiConsumer<String, WasmType> arrayTypeFactory = (name, wasmType) -> {
             final ResolvedClass arrayBaseClass = compileUnit.findClass(Type.getType(Array.class));
             final StructType arrayBaseType = objectTypeMappings.get(arrayBaseClass);
@@ -287,6 +343,15 @@ public class WasmBackend {
         arrayTypeFactory.accept("f32_array", PrimitiveType.f32);
         arrayTypeFactory.accept("f64_array", PrimitiveType.f64);
         arrayTypeFactory.accept("obj_array", ConstExpressions.ref.type(objectTypeMappings.get(objectClass), true));
+
+        // InstanceOf Check
+        final List<Param> instanceOfParams = new ArrayList<>();
+        instanceOfParams.add(ConstExpressions.param("obj", objectTypeMappings.get(objectClass)));
+        instanceOfParams.add(ConstExpressions.param("typeId", PrimitiveType.i32));
+        final ExportableFunction instanceOfCheck = module.getFunctions().newFunction("instanceOf", instanceOfParams, PrimitiveType.i32);
+        //TODO: implement instanceof
+        instanceOfCheck.flow.ret(ConstExpressions.i32.c(0));
+
 
         for (final ResolvedClass cl : resolvedClasses) {
             // Class objects for

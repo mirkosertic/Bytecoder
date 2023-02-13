@@ -30,47 +30,70 @@ import de.mirkosertic.bytecoder.asm.backend.wasm.ast.StructType;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.WasmType;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.WasmValue;
 import de.mirkosertic.bytecoder.asm.ir.AbstractVar;
+import de.mirkosertic.bytecoder.asm.ir.Add;
+import de.mirkosertic.bytecoder.asm.ir.And;
+import de.mirkosertic.bytecoder.asm.ir.ArrayLength;
+import de.mirkosertic.bytecoder.asm.ir.ArrayLoad;
 import de.mirkosertic.bytecoder.asm.ir.ArrayStore;
+import de.mirkosertic.bytecoder.asm.ir.CMP;
 import de.mirkosertic.bytecoder.asm.ir.CaughtException;
 import de.mirkosertic.bytecoder.asm.ir.CheckCast;
 import de.mirkosertic.bytecoder.asm.ir.Copy;
+import de.mirkosertic.bytecoder.asm.ir.Div;
 import de.mirkosertic.bytecoder.asm.ir.FrameDebugInfo;
 import de.mirkosertic.bytecoder.asm.ir.Goto;
 import de.mirkosertic.bytecoder.asm.ir.If;
 import de.mirkosertic.bytecoder.asm.ir.InstanceMethodInvocation;
+import de.mirkosertic.bytecoder.asm.ir.InstanceMethodInvocationExpression;
+import de.mirkosertic.bytecoder.asm.ir.InstanceOf;
 import de.mirkosertic.bytecoder.asm.ir.InterfaceMethodInvocation;
+import de.mirkosertic.bytecoder.asm.ir.InterfaceMethodInvocationExpression;
+import de.mirkosertic.bytecoder.asm.ir.InvokeDynamicExpression;
 import de.mirkosertic.bytecoder.asm.ir.LineNumberDebugInfo;
 import de.mirkosertic.bytecoder.asm.ir.LookupSwitch;
 import de.mirkosertic.bytecoder.asm.ir.MethodArgument;
 import de.mirkosertic.bytecoder.asm.ir.MonitorEnter;
 import de.mirkosertic.bytecoder.asm.ir.MonitorExit;
+import de.mirkosertic.bytecoder.asm.ir.Mul;
+import de.mirkosertic.bytecoder.asm.ir.Neg;
 import de.mirkosertic.bytecoder.asm.ir.New;
 import de.mirkosertic.bytecoder.asm.ir.NewArray;
 import de.mirkosertic.bytecoder.asm.ir.Node;
 import de.mirkosertic.bytecoder.asm.ir.NullReference;
 import de.mirkosertic.bytecoder.asm.ir.ObjectString;
+import de.mirkosertic.bytecoder.asm.ir.Or;
 import de.mirkosertic.bytecoder.asm.ir.PHI;
+import de.mirkosertic.bytecoder.asm.ir.PrimitiveDouble;
+import de.mirkosertic.bytecoder.asm.ir.PrimitiveFloat;
 import de.mirkosertic.bytecoder.asm.ir.PrimitiveInt;
 import de.mirkosertic.bytecoder.asm.ir.PrimitiveLong;
+import de.mirkosertic.bytecoder.asm.ir.PrimitiveShort;
 import de.mirkosertic.bytecoder.asm.ir.ReadClassField;
 import de.mirkosertic.bytecoder.asm.ir.ReadInstanceField;
+import de.mirkosertic.bytecoder.asm.ir.ResolveCallsite;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedField;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.asm.ir.Return;
 import de.mirkosertic.bytecoder.asm.ir.ReturnValue;
 import de.mirkosertic.bytecoder.asm.ir.RuntimeClass;
+import de.mirkosertic.bytecoder.asm.ir.SHL;
+import de.mirkosertic.bytecoder.asm.ir.SHR;
 import de.mirkosertic.bytecoder.asm.ir.SetClassField;
 import de.mirkosertic.bytecoder.asm.ir.SetInstanceField;
 import de.mirkosertic.bytecoder.asm.ir.StaticMethodInvocation;
 import de.mirkosertic.bytecoder.asm.ir.StaticMethodInvocationExpression;
+import de.mirkosertic.bytecoder.asm.ir.Sub;
 import de.mirkosertic.bytecoder.asm.ir.TableSwitch;
 import de.mirkosertic.bytecoder.asm.ir.This;
+import de.mirkosertic.bytecoder.asm.ir.TypeConversion;
 import de.mirkosertic.bytecoder.asm.ir.TypeReference;
+import de.mirkosertic.bytecoder.asm.ir.USHR;
 import de.mirkosertic.bytecoder.asm.ir.Unwind;
 import de.mirkosertic.bytecoder.asm.ir.Value;
 import de.mirkosertic.bytecoder.asm.ir.VirtualMethodInvocation;
 import de.mirkosertic.bytecoder.asm.ir.VirtualMethodInvocationExpression;
+import de.mirkosertic.bytecoder.asm.ir.XOr;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
 import de.mirkosertic.bytecoder.asm.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.asm.sequencer.StructuredControlflowCodeGenerator;
@@ -131,7 +154,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     }
 
     @Override
-    public void write(final InstanceMethodInvocation node) {
+    public void write(final InstanceMethodInvocation value) {
         targetContainer.flow.comment("InstanceMethodInvocation");
     }
 
@@ -150,47 +173,59 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         targetContainer.flow.comment("InterfaceMethodInvocation");
     }
 
-    private WasmValue toWasmValue(final This thisRef) {
+    private WasmValue toWasmValue(final This value) {
         final Local local = exportableFunction.localByLabel("thisref");
         return ConstExpressions.getLocal(local);
     }
 
-    private WasmValue toWasmValue(final ObjectString objectString) {
-        final int index = objectString.value.index;
+    private WasmValue toWasmValue(final ObjectString value) {
+        final int index = value.value.index;
         final Global global = module.getGlobals().globalsIndex().globalByLabel("stringpool_" + index);
         return ConstExpressions.getGlobal(global);
     }
 
-    private WasmValue toWasmValue(final PrimitiveInt primitiveInt) {
-        return ConstExpressions.i32.c(primitiveInt.value);
+    private WasmValue toWasmValue(final PrimitiveShort value) {
+        return ConstExpressions.i32.c(value.value);
     }
 
-    private WasmValue toWasmValue(final PrimitiveLong primitiveLong) {
-        return ConstExpressions.i64.c(primitiveLong.value);
+    private WasmValue toWasmValue(final PrimitiveInt value) {
+        return ConstExpressions.i32.c(value.value);
     }
 
-    private WasmValue toWasmValue(final MethodArgument methodArgument) {
-        final String localName = "arg" + methodArgument.index;
+    private WasmValue toWasmValue(final PrimitiveLong value) {
+        return ConstExpressions.i64.c(value.value);
+    }
+
+    private WasmValue toWasmValue(final PrimitiveFloat value) {
+        return ConstExpressions.f32.c(value.value);
+    }
+
+    private WasmValue toWasmValue(final PrimitiveDouble value) {
+        return ConstExpressions.f64.c(value.value);
+    }
+
+    private WasmValue toWasmValue(final MethodArgument value) {
+        final String localName = "arg" + value.index;
         final Local local = exportableFunction.localByLabel(localName);
         return ConstExpressions.getLocal(local);
     }
 
-    private WasmValue toWasmValue(final AbstractVar abstractVar) {
-        final Local local = varLocalMap.get(abstractVar);
+    private WasmValue toWasmValue(final AbstractVar value) {
+        final Local local = varLocalMap.get(value);
         if (local == null) {
-            throw new IllegalArgumentException("Cannot find Wasm local for variable " + abstractVar);
+            throw new IllegalArgumentException("Cannot find Wasm local for variable " + value);
         }
         return ConstExpressions.getLocal(local);
     }
 
-    private WasmValue toWasmValue(final NullReference methodArgument) {
-        final ResolvedClass cl = compileUnit.findClass(methodArgument.type);
+    private WasmValue toWasmValue(final NullReference value) {
+        final ResolvedClass cl = compileUnit.findClass(value.type);
         final StructType type = objectTypeMappings.get(cl);
         return ConstExpressions.ref.nullRef(type);
     }
 
-    private WasmValue toWasmValue(final New newInstruction) {
-        final ResolvedClass cl = compileUnit.findClass(newInstruction.type);
+    private WasmValue toWasmValue(final New value) {
+        final ResolvedClass cl = compileUnit.findClass(value.type);
         final StructType type = objectTypeMappings.get(cl);
         final List<WasmValue> initArgs = new ArrayList<>();
 
@@ -233,15 +268,15 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         return ConstExpressions.struct.newInstance(type, initArgs);
     }
 
-    private WasmValue toWasmValue(final ReadInstanceField readInstanceField) {
-        final ResolvedClass cl = compileUnit.findClass(readInstanceField.type);
+    private WasmValue toWasmValue(final ReadInstanceField value) {
+        final ResolvedClass cl = compileUnit.findClass(value.resolvedField.owner.type);
         final StructType type = objectTypeMappings.get(cl);
-        return ConstExpressions.struct.get(type, toWasmValue((Value) readInstanceField.incomingDataFlows[0]),
-                readInstanceField.resolvedField.name);
+        return ConstExpressions.struct.get(type, toWasmValue((Value) value.incomingDataFlows[0]),
+                value.resolvedField.name);
     }
 
-    private WasmValue toWasmValue(final StaticMethodInvocationExpression staticMethodInvocationExpression) {
-        final ResolvedMethod rm = staticMethodInvocationExpression.resolvedMethod;
+    private WasmValue toWasmValue(final StaticMethodInvocationExpression value) {
+        final ResolvedMethod rm = value.resolvedMethod;
         final ResolvedClass cl = rm.owner;
 
         final List<WasmValue> callArgs = new ArrayList<>();
@@ -256,14 +291,27 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         }
 
         final String functionName = WasmHelpers.generateClassName(cl.type) + "$" + WasmHelpers.generateMethodName(rm.methodNode.name, rm.methodType);
-        for (final Node arg : staticMethodInvocationExpression.incomingDataFlows) {
+        for (final Node arg : value.incomingDataFlows) {
             callArgs.add(toWasmValue((Value) arg));
         }
         return ConstExpressions.call(ConstExpressions.weakFunctionReference(functionName), callArgs);
     }
 
-    private WasmValue toWasmValue(final VirtualMethodInvocationExpression virtualMethodInvocationExpression) {
-        final ResolvedMethod rm = virtualMethodInvocationExpression.resolvedMethod;
+    private WasmValue toWasmValue(final InstanceMethodInvocationExpression value) {
+        final ResolvedMethod rm = value.resolvedMethod;
+        final ResolvedClass cl = rm.owner;
+
+        final List<WasmValue> callArgs = new ArrayList<>();
+
+        final String functionName = WasmHelpers.generateClassName(cl.type) + "$" + WasmHelpers.generateMethodName(rm.methodNode.name, rm.methodType);
+        for (final Node arg : value.incomingDataFlows) {
+            callArgs.add(toWasmValue((Value) arg));
+        }
+        return ConstExpressions.call(ConstExpressions.weakFunctionReference(functionName), callArgs);
+    }
+
+    private WasmValue toWasmValue(final VirtualMethodInvocationExpression value) {
+        final ResolvedMethod rm = value.resolvedMethod;
         final ResolvedClass cl = rm.owner;
 
         final List<WasmValue> indirectCallArgs = new ArrayList<>();
@@ -272,7 +320,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         vtArgs.add(PrimitiveType.i32);
         final FunctionType vtType = module.getTypes().functionType(vtArgs, PrimitiveType.i32);
 
-        for (final Node arg : virtualMethodInvocationExpression.incomingDataFlows) {
+        for (final Node arg : value.incomingDataFlows) {
             indirectCallArgs.add(toWasmValue((Value) arg));
         }
 
@@ -283,14 +331,55 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
         resolverArgs.add(ConstExpressions.struct.get(
                 classType,
-                toWasmValue((Value) virtualMethodInvocationExpression.incomingDataFlows[0]),
+                toWasmValue((Value) value.incomingDataFlows[0]),
                 "vt_resolver"
         ));
 
         final WasmValue resolver = ConstExpressions.ref.callRef(vtType, resolverArgs);
-        final FunctionType ft = (FunctionType) typeConverter.apply(virtualMethodInvocationExpression.resolvedMethod.methodType);
+        final FunctionType ft = (FunctionType) typeConverter.apply(value.resolvedMethod.methodType);
 
         return ConstExpressions.call(ft, indirectCallArgs, resolver);
+    }
+
+    private WasmValue toWasmValue(final InterfaceMethodInvocationExpression value) {
+        final ResolvedMethod rm = value.resolvedMethod;
+        final ResolvedClass cl = rm.owner;
+
+        final List<WasmValue> indirectCallArgs = new ArrayList<>();
+
+        final List<WasmType> vtArgs = new ArrayList<>();
+        vtArgs.add(PrimitiveType.i32);
+        final FunctionType vtType = module.getTypes().functionType(vtArgs, PrimitiveType.i32);
+
+        for (final Node arg : value.incomingDataFlows) {
+            indirectCallArgs.add(toWasmValue((Value) arg));
+        }
+
+        final List<WasmValue> resolverArgs = new ArrayList<>();
+        resolverArgs.add(ConstExpressions.i32.c(-1)); // TODO: Resolve function index
+
+        final StructType classType = rtMappings.get(cl);
+
+        resolverArgs.add(ConstExpressions.struct.get(
+                classType,
+                toWasmValue((Value) value.incomingDataFlows[0]),
+                "vt_resolver"
+        ));
+
+        final WasmValue resolver = ConstExpressions.ref.callRef(vtType, resolverArgs);
+        final FunctionType ft = (FunctionType) typeConverter.apply(value.resolvedMethod.methodType);
+
+        return ConstExpressions.call(ft, indirectCallArgs, resolver);
+    }
+
+    private WasmValue toWasmValue(final InvokeDynamicExpression value) {
+        // TODO: Implement this
+        return ConstExpressions.i32.c(-1000);
+    }
+
+    private WasmValue toWasmValue(final ResolveCallsite value) {
+        // TODO: implement this
+        return ConstExpressions.i32.c(-2000);
     }
 
     private WasmValue toType(final Type type) {
@@ -339,12 +428,12 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         }
     }
 
-    private WasmValue toWasmValue(final TypeReference typeReference) {
-        return toType(typeReference.type);
+    private WasmValue toWasmValue(final TypeReference value) {
+        return toType(value.type);
     }
 
-    private WasmValue toWasmValue(final ReadClassField readClassField) {
-        final ResolvedField field = readClassField.resolvedField;
+    private WasmValue toWasmValue(final ReadClassField value) {
+        final ResolvedField field = value.resolvedField;
         final ResolvedClass cl = field.owner;
         final StructType type = objectTypeMappings.get(cl);
         final String className = WasmHelpers.generateClassName(cl.type);
@@ -358,18 +447,153 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                     field.name);
     }
 
-    private WasmValue toWasmValue(final RuntimeClass runtimeClass) {
-        return toType(runtimeClass.type);
+    private WasmValue toWasmValue(final RuntimeClass value) {
+        return toType(value.type);
     }
 
-    private WasmValue toWasmValue(final CaughtException caughtException) {
+    private WasmValue toWasmValue(final CaughtException value) {
         final Global g = module.getGlobals().globalsIndex().globalByLabel("lastthrownexception");
         return ConstExpressions.getGlobal(g);
     }
 
-    private WasmValue toWasmValue(final NewArray newArray) {
-        final Type elementType = newArray.type;
-        final Value length = (Value) newArray.incomingDataFlows[0];
+    private WasmValue toWasmValue(final CMP value) {
+        final Value left = (Value) value.incomingDataFlows[0];
+        final Value right = (Value) value.incomingDataFlows[1];
+        final List<WasmValue> arguments = new ArrayList<>();
+        arguments.add(toWasmValue(left));
+        arguments.add(toWasmValue(right));
+        switch (left.type.getSort()) {
+            case Type.BYTE:
+            case Type.CHAR:
+            case Type.SHORT:
+            case Type.INT:
+                return ConstExpressions.call(ConstExpressions.weakFunctionReference("compare_i32"), arguments);
+            case Type.FLOAT:
+                return ConstExpressions.call(ConstExpressions.weakFunctionReference("compare_f32"), arguments);
+            case Type.LONG:
+                return ConstExpressions.call(ConstExpressions.weakFunctionReference("compare_i64"), arguments);
+            case Type.DOUBLE:
+                return ConstExpressions.call(ConstExpressions.weakFunctionReference("compare_f64"), arguments);
+            default:
+                throw new IllegalStateException("Not implemented compare for " + left.type);
+        }
+    }
+
+    private WasmValue toWasmValue(final Mul value) {
+        final Value left = (Value) value.incomingDataFlows[0];
+        final Value right = (Value) value.incomingDataFlows[1];
+        switch (value.type.getSort()) {
+            case Type.BYTE:
+            case Type.CHAR:
+            case Type.SHORT:
+            case Type.INT:
+                return ConstExpressions.i32.mul(toWasmValue(left), toWasmValue(right));
+            case Type.FLOAT:
+                return ConstExpressions.f32.mul(toWasmValue(left), toWasmValue(right));
+            case Type.LONG:
+                return ConstExpressions.i64.mul(toWasmValue(left), toWasmValue(right));
+            case Type.DOUBLE:
+                return ConstExpressions.f64.mul(toWasmValue(left), toWasmValue(right));
+            default:
+                throw new IllegalStateException("Not implemented mul for " + left.type);
+        }
+    }
+
+    private WasmValue toWasmValue(final SHR value) {
+        final Value left = (Value) value.incomingDataFlows[0];
+        final Value right = (Value) value.incomingDataFlows[1];
+        switch (value.type.getSort()) {
+            case Type.BYTE:
+            case Type.CHAR:
+            case Type.SHORT:
+            case Type.INT:
+                return ConstExpressions.i32.shr_s(toWasmValue(left), toWasmValue(right));
+            case Type.LONG:
+                return ConstExpressions.i64.shr_s(toWasmValue(left), toWasmValue(right));
+            default:
+                throw new IllegalStateException("Not implemented SHR for " + left.type);
+        }
+    }
+
+    private WasmValue toWasmValue(final TypeConversion value) {
+        final Value incoming = (Value) value.incomingDataFlows[0];
+        switch (incoming.type.getSort()) {
+            case Type.BYTE:
+            case Type.CHAR:
+            case Type.SHORT:
+            case Type.INT:
+                switch (value.type.getSort()) {
+                    case Type.BYTE:
+                    case Type.CHAR:
+                    case Type.SHORT:
+                    case Type.INT:
+                        // Nothing to do
+                        return toWasmValue(incoming);
+                    case Type.FLOAT:
+                        return ConstExpressions.f32.convert_si32(toWasmValue(incoming));
+                    case Type.LONG:
+                        return ConstExpressions.i64.extend_i32s(toWasmValue(incoming));
+                    case Type.DOUBLE:
+                        return ConstExpressions.f64.convert_si32(toWasmValue(incoming));
+                    default:
+                        throw new IllegalArgumentException("Not implemented!");
+                }
+            case Type.LONG:
+                switch (value.type.getSort()) {
+                    case Type.BYTE:
+                    case Type.CHAR:
+                    case Type.SHORT:
+                    case Type.INT:
+                        return ConstExpressions.i32.wrap_i64(toWasmValue(incoming));
+                    case Type.LONG:
+                        return toWasmValue(incoming);
+                    case Type.FLOAT:
+                        return ConstExpressions.f32.convert_si64(toWasmValue(incoming));
+                    case Type.DOUBLE:
+                        return ConstExpressions.f64.convert_si64(toWasmValue(incoming));
+                    default:
+                        throw new IllegalArgumentException("Not implemented!");
+                }
+            case Type.FLOAT:
+                switch (value.type.getSort()) {
+                    case Type.BYTE:
+                    case Type.CHAR:
+                    case Type.SHORT:
+                    case Type.INT:
+                        return ConstExpressions.i32.trunc_sf32(toWasmValue(incoming));
+                    case Type.FLOAT:
+                        return toWasmValue(incoming);
+                    case Type.LONG:
+                        return ConstExpressions.i64.trunc_sf32(toWasmValue(incoming));
+                    case Type.DOUBLE:
+                        return ConstExpressions.f64.promote_f32(toWasmValue(incoming));
+                    default:
+                        throw new IllegalArgumentException("Not implemented!");
+                }
+            case Type.DOUBLE:
+                switch (value.type.getSort()) {
+                    case Type.BYTE:
+                    case Type.CHAR:
+                    case Type.SHORT:
+                    case Type.INT:
+                        return ConstExpressions.i32.trunc_f64s(toWasmValue(incoming));
+                    case Type.FLOAT:
+                        return ConstExpressions.f32.trunc_f64s(toWasmValue(incoming));
+                    case Type.LONG:
+                        return ConstExpressions.i64.trunc_sf64(toWasmValue(incoming));
+                    case Type.DOUBLE:
+                        return toWasmValue(incoming);
+                    default:
+                        throw new IllegalArgumentException("Not implemented!");
+                }
+            default:
+                throw new IllegalStateException("Not implemented type conversion for " + incoming.type);
+        }
+    }
+
+    private WasmValue toWasmValue(final NewArray value) {
+        final Type elementType = value.type;
+        final Value length = (Value) value.incomingDataFlows[0];
 
         final String typeToInstantiate;
         final WasmValue emptyArray;
@@ -394,6 +618,10 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 typeToInstantiate = "f64_array";
                 emptyArray = ConstExpressions.array.newInstance(PrimitiveType.f64, toWasmValue(length), Collections.emptyList());
                 break;
+            case Type.OBJECT:
+                typeToInstantiate = "obj_array";
+                emptyArray = ConstExpressions.array.newInstance(PrimitiveType.f64, toWasmValue(length), Collections.emptyList());
+                break;
             default:
                 throw new IllegalArgumentException("Not supported array type " + elementType);
         }
@@ -407,15 +635,268 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         return ConstExpressions.struct.newInstance(structType, initArguments);
     }
 
+    private WasmValue toWasmValue(final And value) {
+        final Value left = (Value) value.incomingDataFlows[0];
+        final Value right = (Value) value.incomingDataFlows[1];
+        switch (value.type.getSort()) {
+            case Type.BYTE:
+            case Type.CHAR:
+            case Type.SHORT:
+            case Type.INT:
+                return ConstExpressions.i32.and(toWasmValue(left), toWasmValue(right));
+            case Type.LONG:
+                return ConstExpressions.i64.and(toWasmValue(left), toWasmValue(right));
+            default:
+                throw new IllegalStateException("Not implemented and for " + value.type);
+        }
+    }
+
+    private WasmValue toWasmValue(final Or value) {
+        final Value left = (Value) value.incomingDataFlows[0];
+        final Value right = (Value) value.incomingDataFlows[1];
+        switch (value.type.getSort()) {
+            case Type.BYTE:
+            case Type.CHAR:
+            case Type.SHORT:
+            case Type.INT:
+                return ConstExpressions.i32.or(toWasmValue(left), toWasmValue(right));
+            case Type.LONG:
+                return ConstExpressions.i64.or(toWasmValue(left), toWasmValue(right));
+            default:
+                throw new IllegalStateException("Not implemented and for " + value.type);
+        }
+    }
+
+    private WasmValue toWasmValue(final InstanceOf value) {
+        final Value left = (Value) value.incomingDataFlows[0];
+        final Value right = (Value) value.incomingDataFlows[1];
+        final List<WasmValue> params = new ArrayList<>();
+        params.add(toWasmValue(left));
+        params.add(toWasmValue(right));
+        return ConstExpressions.call(ConstExpressions.weakFunctionReference("instanceOf"), params);
+    }
+
+    private WasmValue toWasmValue(final Sub value) {
+        final Value left = (Value) value.incomingDataFlows[0];
+        final Value right = (Value) value.incomingDataFlows[1];
+        switch (value.type.getSort()) {
+            case Type.BYTE:
+            case Type.CHAR:
+            case Type.SHORT:
+            case Type.INT:
+                return ConstExpressions.i32.sub(toWasmValue(left), toWasmValue(right));
+            case Type.FLOAT:
+                return ConstExpressions.f32.sub(toWasmValue(left), toWasmValue(right));
+            case Type.LONG:
+                return ConstExpressions.i64.sub(toWasmValue(left), toWasmValue(right));
+            case Type.DOUBLE:
+                return ConstExpressions.f64.sub(toWasmValue(left), toWasmValue(right));
+            default:
+                throw new IllegalStateException("Not implemented sub for " + value.type);
+        }
+    }
+
+    private WasmValue toWasmValue(final Div value) {
+        final Value left = (Value) value.incomingDataFlows[0];
+        final Value right = (Value) value.incomingDataFlows[1];
+        switch (value.type.getSort()) {
+            case Type.BYTE:
+            case Type.CHAR:
+            case Type.SHORT:
+            case Type.INT:
+                return ConstExpressions.i32.div_s(toWasmValue(left), toWasmValue(right));
+            case Type.FLOAT:
+                return ConstExpressions.f32.div(toWasmValue(left), toWasmValue(right));
+            case Type.LONG:
+                return ConstExpressions.i64.div_s(toWasmValue(left), toWasmValue(right));
+            case Type.DOUBLE:
+                return ConstExpressions.f64.div(toWasmValue(left), toWasmValue(right));
+            default:
+                throw new IllegalStateException("Not implemented div for " + value.type);
+        }
+    }
+
+    private WasmValue toWasmValue(final Add value) {
+        final Value left = (Value) value.incomingDataFlows[0];
+        final Value right = (Value) value.incomingDataFlows[1];
+        switch (value.type.getSort()) {
+            case Type.BYTE:
+            case Type.CHAR:
+            case Type.SHORT:
+            case Type.INT:
+                return ConstExpressions.i32.add(toWasmValue(left), toWasmValue(right));
+            case Type.FLOAT:
+                return ConstExpressions.f32.add(toWasmValue(left), toWasmValue(right));
+            case Type.LONG:
+                return ConstExpressions.i64.add(toWasmValue(left), toWasmValue(right));
+            case Type.DOUBLE:
+                return ConstExpressions.f64.add(toWasmValue(left), toWasmValue(right));
+            default:
+                throw new IllegalStateException("Not implemented add for " + value.type);
+        }
+    }
+
+    private WasmValue toWasmValue(final ArrayLength value) {
+        final Value array = (Value) value.incomingDataFlows[0];
+        switch (value.type.getSort()) {
+            case Type.BYTE:
+            case Type.CHAR:
+            case Type.SHORT:
+            case Type.INT:
+                return ConstExpressions.array.len(
+                        module.getTypes().arrayType(PrimitiveType.i32),
+                        ConstExpressions.struct.get(module.getTypes().structTypeByName("i32_array"), toWasmValue(array), "data")
+                );
+            case Type.FLOAT:
+                return ConstExpressions.array.len(
+                        module.getTypes().arrayType(PrimitiveType.f32),
+                        ConstExpressions.struct.get(module.getTypes().structTypeByName("f32_array"), toWasmValue(array), "data")
+                );
+            case Type.LONG:
+                return ConstExpressions.array.len(
+                        module.getTypes().arrayType(PrimitiveType.i64),
+                        ConstExpressions.struct.get(module.getTypes().structTypeByName("i64_array"), toWasmValue(array), "data")
+                );
+            case Type.DOUBLE:
+                return ConstExpressions.array.len(
+                        module.getTypes().arrayType(PrimitiveType.f64),
+                        ConstExpressions.struct.get(module.getTypes().structTypeByName("f64_array"), toWasmValue(array), "data")
+                );
+            case Type.ARRAY:
+                return ConstExpressions.array.len(
+                        module.getTypes().arrayType(typeConverter.apply(Type.getType(Object.class))),
+                        ConstExpressions.struct.get(module.getTypes().structTypeByName("obj_array"), toWasmValue(array), "data")
+                );
+            default:
+                throw new IllegalStateException("Not implemented arraylength for " + value.type + " sort " + value.type.getSort());
+        }
+    }
+
+    private WasmValue toWasmValue(final SHL value) {
+        final Value left = (Value) value.incomingDataFlows[0];
+        final Value right = (Value) value.incomingDataFlows[1];
+        switch (value.type.getSort()) {
+            case Type.BYTE:
+            case Type.CHAR:
+            case Type.SHORT:
+            case Type.INT:
+                return ConstExpressions.i32.shl(toWasmValue(left), toWasmValue(right));
+            case Type.LONG:
+                return ConstExpressions.i64.shl(toWasmValue(left), toWasmValue(right));
+            default:
+                throw new IllegalStateException("Not implemented shl for " + value.type);
+        }
+    }
+
+    private WasmValue toWasmValue(final USHR value) {
+        final Value left = (Value) value.incomingDataFlows[0];
+        final Value right = (Value) value.incomingDataFlows[1];
+        switch (value.type.getSort()) {
+            case Type.BYTE:
+            case Type.CHAR:
+            case Type.SHORT:
+            case Type.INT:
+                return ConstExpressions.i32.shr_u(toWasmValue(left), toWasmValue(right));
+            case Type.LONG:
+                return ConstExpressions.i64.shr_u(toWasmValue(left), toWasmValue(right));
+            default:
+                throw new IllegalStateException("Not implemented ushr for " + value.type);
+        }
+    }
+
+    private WasmValue toWasmValue(final Neg value) {
+        final Value left = (Value) value.incomingDataFlows[0];
+        switch (value.type.getSort()) {
+            case Type.BYTE:
+            case Type.CHAR:
+            case Type.SHORT:
+            case Type.INT:
+                return ConstExpressions.i32.mul(toWasmValue(left), ConstExpressions.i32.c(-1));
+            case Type.LONG:
+                return ConstExpressions.i64.mul(toWasmValue(left), ConstExpressions.i64.c(-1L));
+            case Type.FLOAT:
+                return ConstExpressions.f32.mul(toWasmValue(left), ConstExpressions.f32.c(-1f));
+            case Type.DOUBLE:
+                return ConstExpressions.f64.mul(toWasmValue(left), ConstExpressions.f64.c(-1d));
+            default:
+                throw new IllegalStateException("Not implemented neg for " + value.type);
+        }
+    }
+
+    private WasmValue toWasmValue(final XOr value) {
+        final Value left = (Value) value.incomingDataFlows[0];
+        final Value right = (Value) value.incomingDataFlows[1];
+        switch (value.type.getSort()) {
+            case Type.BYTE:
+            case Type.CHAR:
+            case Type.SHORT:
+            case Type.INT:
+                return ConstExpressions.i32.xor(toWasmValue(left), toWasmValue(right));
+            case Type.LONG:
+                return ConstExpressions.i64.xor(toWasmValue(left), toWasmValue(right));
+            default:
+                throw new IllegalStateException("Not implemented shl for " + value.type);
+        }
+    }
+
+    private WasmValue toWasmValue(final ArrayLoad value) {
+        final Value array = (Value) value.incomingDataFlows[0];
+        final Value index = (Value) value.incomingDataFlows[1];
+        switch (value.type.getSort()) {
+            case Type.BYTE:
+            case Type.CHAR:
+            case Type.SHORT:
+            case Type.INT:
+                return ConstExpressions.array.get(
+                        module.getTypes().arrayType(PrimitiveType.i32),
+                        ConstExpressions.struct.get(module.getTypes().structTypeByName("i32_array"), toWasmValue(array), "data"),
+                        toWasmValue(index)
+                );
+            case Type.FLOAT:
+                return ConstExpressions.array.get(
+                        module.getTypes().arrayType(PrimitiveType.f32),
+                        ConstExpressions.struct.get(module.getTypes().structTypeByName("f32_array"), toWasmValue(array), "data"),
+                        toWasmValue(index)
+                );
+            case Type.LONG:
+                return ConstExpressions.array.get(
+                        module.getTypes().arrayType(PrimitiveType.i64),
+                        ConstExpressions.struct.get(module.getTypes().structTypeByName("i64_array"), toWasmValue(array), "data"),
+                        toWasmValue(index)
+                );
+            case Type.DOUBLE:
+                return ConstExpressions.array.get(
+                        module.getTypes().arrayType(PrimitiveType.f64),
+                        ConstExpressions.struct.get(module.getTypes().structTypeByName("f64_array"), toWasmValue(array), "data"),
+                        toWasmValue(index)
+                );
+            case Type.OBJECT:
+            case Type.ARRAY:
+                return ConstExpressions.array.get(
+                        module.getTypes().arrayType(typeConverter.apply(Type.getType(Object.class))),
+                        ConstExpressions.struct.get(module.getTypes().structTypeByName("obj_array"), toWasmValue(array), "data"),
+                        toWasmValue(index)
+                );
+            default:
+                throw new IllegalStateException("Not implemented arrayload for " + value.type + " sort " + value.type.getSort());
+        }
+    }
+
     private WasmValue toWasmValue(final Value value) {
         if (value instanceof This) {
             return toWasmValue((This) value);
         } else if (value instanceof ObjectString) {
             return toWasmValue((ObjectString) value);
+        } else if (value instanceof PrimitiveShort) {
+            return toWasmValue((PrimitiveShort) value);
         } else if (value instanceof PrimitiveInt) {
             return toWasmValue((PrimitiveInt) value);
         } else if (value instanceof PrimitiveLong) {
             return toWasmValue((PrimitiveLong) value);
+        } else if (value instanceof PrimitiveFloat) {
+            return toWasmValue((PrimitiveFloat) value);
+        } else if (value instanceof PrimitiveDouble) {
+            return toWasmValue((PrimitiveDouble) value);
         } else if (value instanceof MethodArgument) {
             return toWasmValue((MethodArgument) value);
         } else if (value instanceof AbstractVar) {
@@ -430,6 +911,12 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             return toWasmValue((StaticMethodInvocationExpression) value);
         } else if (value instanceof VirtualMethodInvocationExpression) {
             return toWasmValue((VirtualMethodInvocationExpression) value);
+        } else if (value instanceof InterfaceMethodInvocationExpression) {
+            return toWasmValue((InterfaceMethodInvocationExpression) value);
+        } else if (value instanceof InstanceMethodInvocationExpression) {
+            return toWasmValue((InstanceMethodInvocationExpression) value);
+        } else if (value instanceof InvokeDynamicExpression) {
+            return toWasmValue((InvokeDynamicExpression) value);
         } else if (value instanceof TypeReference) {
             return toWasmValue((TypeReference) value);
         } else if (value instanceof ReadClassField) {
@@ -440,6 +927,40 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             return toWasmValue((CaughtException) value);
         } else if (value instanceof NewArray) {
             return toWasmValue((NewArray) value);
+        } else if (value instanceof CMP) {
+            return toWasmValue((CMP) value);
+        } else if (value instanceof Mul) {
+            return toWasmValue((Mul) value);
+        } else if (value instanceof SHR) {
+            return toWasmValue((SHR) value);
+        } else if (value instanceof TypeConversion) {
+            return toWasmValue((TypeConversion) value);
+        } else if (value instanceof And) {
+            return toWasmValue((And) value);
+        } else if (value instanceof ResolveCallsite) {
+            return toWasmValue((ResolveCallsite) value);
+        } else if (value instanceof Sub) {
+            return toWasmValue((Sub) value);
+        } else if (value instanceof ArrayLoad) {
+            return toWasmValue((ArrayLoad) value);
+        } else if (value instanceof Div) {
+            return toWasmValue((Div) value);
+        } else if (value instanceof SHL) {
+            return toWasmValue((SHL) value);
+        } else if (value instanceof XOr) {
+            return toWasmValue((XOr) value);
+        } else if (value instanceof Add) {
+            return toWasmValue((Add) value);
+        } else if (value instanceof ArrayLength) {
+            return toWasmValue((ArrayLength) value);
+        } else if (value instanceof Or) {
+            return toWasmValue((Or) value);
+        } else if (value instanceof InstanceOf) {
+            return toWasmValue((InstanceOf) value);
+        } else if (value instanceof USHR) {
+            return toWasmValue((USHR) value);
+        } else if (value instanceof Neg) {
+            return toWasmValue((Neg) value);
         }
         throw new IllegalArgumentException("Not implemented " + value.getClass());
     }

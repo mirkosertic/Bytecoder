@@ -96,6 +96,8 @@ import org.objectweb.asm.tree.TryCatchBlockNode;
 import org.objectweb.asm.tree.TypeInsnNode;
 import org.objectweb.asm.tree.VarInsnNode;
 
+import java.lang.invoke.CallSite;
+import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -2297,6 +2299,11 @@ public class GraphParser {
     }
 
     private List<ControlFlow> parseInvokeDynamicInsnNode(final ControlFlow currentFlow) {
+
+        // In any case, we need the Callsite and MethodHandle classes
+        compileUnit.resolveClass(Type.getType(CallSite.class), analysisStack);
+        compileUnit.resolveClass(Type.getType(MethodHandle.class), analysisStack);
+
         final InvokeDynamicInsnNode node = (InvokeDynamicInsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
 

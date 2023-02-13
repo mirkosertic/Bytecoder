@@ -2,7 +2,7 @@ package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class GetStruct implements WasmValue{
+public class GetStruct implements WasmValue {
 
     private final StructType structType;
 
