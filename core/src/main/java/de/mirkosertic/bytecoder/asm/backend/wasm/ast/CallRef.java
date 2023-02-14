@@ -35,7 +35,6 @@ public class CallRef implements WasmValue  {
         textWriter.write("call_ref");
         textWriter.space();
         type.writeRefTo(textWriter);
-        textWriter.space();
         for (final WasmValue argument : arguments) {
             textWriter.space();
             argument.writeTo(textWriter, context);

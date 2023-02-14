@@ -15,16 +15,28 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-public class WasmNullRef implements WasmValue {
+import java.io.IOException;
 
-    WasmNullRef() {
+public class NewWasmArrayDefault implements WasmValue {
+
+    private final WasmType type;
+
+    private final WasmValue length;
+
+    NewWasmArrayDefault(final WasmType type, final WasmValue length) {
+        this.type = type;
+        this.length = length;
     }
 
     @Override
-    public void writeTo(final TextWriter writer, final ExportContext context) {
+    public void writeTo(final TextWriter writer, final ExportContext context) throws IOException {
         writer.opening();
-        writer.write("ref.null any");
+        writer.write("array.new_default ");
+        type.writeRefTo(writer);
+        writer.space();
+        length.writeTo(writer, context);
         writer.closing();
+
     }
 
     @Override

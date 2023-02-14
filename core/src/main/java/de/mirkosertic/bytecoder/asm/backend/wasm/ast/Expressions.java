@@ -156,8 +156,8 @@ public class Expressions {
         parent.addChild(setGlobal);
     }
 
-    public void setStruct(final StructType structType, final WasmValue source, final int index, final WasmValue value) {
-        final SetStruct setStruct = new SetStruct(structType, source, index, value);
+    public void setStruct(final StructType structType, final WasmValue source, final String fieldName, final WasmValue value) {
+        final SetStruct setStruct = new SetStruct(structType, source, fieldName, value);
         parent.addChild(setStruct);
     }
 

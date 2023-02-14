@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 public class I64TruncSF64 extends UnaryExpression {
 
     I64TruncSF64(final WasmValue value) {
-        super(value, "i64.trunc_s/f64", (byte) 0xa8);
+        super(value, "i64.trunc_f64_s", (byte) 0xa8);
     }
 }

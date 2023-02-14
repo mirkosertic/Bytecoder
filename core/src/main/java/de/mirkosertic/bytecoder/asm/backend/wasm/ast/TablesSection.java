@@ -53,7 +53,7 @@ public class TablesSection extends ModuleSection {
             textWriter.space();
             textWriter.writeInteger(functions.size());
             textWriter.space();
-            textWriter.write("anyfunc");
+            textWriter.write("funcref");
             textWriter.closing();
             textWriter.newLine();
         }

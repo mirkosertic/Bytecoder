@@ -82,7 +82,7 @@ public class FunctionType implements ReferencableType {
                 writer.opening();
                 writer.write("param");
                 writer.space();
-                param.writeTo(writer);
+                param.writeRefTo(writer);
                 writer.closing();
             }
         }
@@ -91,7 +91,7 @@ public class FunctionType implements ReferencableType {
             writer.opening();
             writer.write("result");
             writer.space();
-            resultType.writeTo(writer);
+            resultType.writeRefTo(writer);
             writer.closing();
         }
         writer.closing();

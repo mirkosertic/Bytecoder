@@ -15,16 +15,28 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-public class WasmNullRef implements WasmValue {
+import java.io.IOException;
 
-    WasmNullRef() {
+public class Cast implements WasmValue {
+
+    private final StructType structType;
+
+    private final WasmValue source;
+
+    Cast(final StructType structType, final WasmValue source) {
+        this.structType = structType;
+        this.source = source;
     }
 
     @Override
-    public void writeTo(final TextWriter writer, final ExportContext context) {
+    public void writeTo(final TextWriter writer, final ExportContext context) throws IOException {
         writer.opening();
-        writer.write("ref.null any");
+        writer.write("ref.cast_static $");
+        writer.write(structType.getName());
+        writer.space();
+        source.writeTo(writer, context);
         writer.closing();
+
     }
 
     @Override

@@ -7,7 +7,7 @@
 
   (type $lava$lang$Object_s (struct (field $runtimetype (ref $runtimetype_s))))
 
-  (type $java$lang$String_s (struct_subtype (field $runtimetype (ref $runtimetype_s)) (field mut $value i32) $lava$lang$Object_s))
+  (type $java$lang$String_s (struct_subtype (field $runtimetype (ref $runtimetype_s)) (field $value i32) $lava$lang$Object_s))
 
   (global $$lava$lang$Object_rt (ref $runtimetype_s)
     (struct.new $runtimetype_s (ref.func $lava$lang$Object_vt))
@@ -47,10 +47,24 @@
             (call_ref $vt_resolver
                 (i32.const 42)
                 (struct.get $runtimetype_s $vt_resolver
-                    (struct.get $lava$lang$Object_s $runtimetype (local.get $obj))
+                    (ref.cast_static $runtimetype_s
+                        (struct.get $lava$lang$Object_s $runtimetype (local.get $obj))
+                    )
                 )
             )
             (i32.const 100)
+        )
+    )
+  )
+
+  ;; Test mit downcast https://github.com/WebAssembly/reference-types/blob/master/proposals/reference-types/Overview.md
+  (type $int32array (array (mut i32)))
+
+  (func $extractstring (param $str (ref $lava$lang$Object_s)) (result i32)
+    (drop (array.new_default $int32array (i32.const 10)))
+    (struct.get $java$lang$String_s $value
+        (ref.cast_static $java$lang$String_s
+            (local.get $str)
         )
     )
   )

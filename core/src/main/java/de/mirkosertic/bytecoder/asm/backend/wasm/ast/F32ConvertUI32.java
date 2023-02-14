@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 public class F32ConvertUI32 extends UnaryExpression {
 
     F32ConvertUI32(final WasmValue value) {
-        super(value, "f32.convert_u/i32", (byte) 0xb3);
+        super(value, "f32.convert_i32_u", (byte) 0xb3);
     }
 }

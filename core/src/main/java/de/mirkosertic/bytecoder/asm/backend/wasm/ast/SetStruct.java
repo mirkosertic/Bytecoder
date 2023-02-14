@@ -8,14 +8,14 @@ public class SetStruct implements WasmExpression {
 
     private final WasmValue source;
 
-    private final int index;
+    private final String fieldName;
 
     private final WasmValue value;
 
-    SetStruct(final StructType structType, final WasmValue source, final int index, final WasmValue value) {
+    SetStruct(final StructType structType, final WasmValue source, final String fieldName, final WasmValue value) {
         this.structType = structType;
         this.source = source;
-        this.index = index;
+        this.fieldName = fieldName;
         this.value = value;
     }
 
@@ -24,8 +24,8 @@ public class SetStruct implements WasmExpression {
         writer.opening();
         writer.write("struct.set $");
         writer.write(structType.getName());
-        writer.write(" ");
-        writer.write(Integer.toString(index));
+        writer.write(" $");
+        writer.write(fieldName);
         writer.space();
         source.writeTo(writer, context);
         writer.space();
