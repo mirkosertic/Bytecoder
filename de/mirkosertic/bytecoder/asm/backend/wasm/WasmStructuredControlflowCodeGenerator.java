@@ -219,9 +219,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     }
 
     private WasmValue toWasmValue(final NullReference value) {
-        final ResolvedClass cl = compileUnit.findClass(value.type);
-        final StructType type = objectTypeMappings.get(cl);
-        return ConstExpressions.ref.nullRef(type);
+        return ConstExpressions.ref.nullRef();
     }
 
     private WasmValue toWasmValue(final New value) {
@@ -257,9 +255,9 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                         throw new IllegalArgumentException("Field type " + f.getType() + " not supported!");
                 }
             } else if (f.getType() instanceof HostType) {
-                initArgs.add(ConstExpressions.ref.nullRef((HostType) f.getType()));
+                initArgs.add(ConstExpressions.ref.nullRef());
             } else if (f.getType() instanceof RefType) {
-                initArgs.add(ConstExpressions.ref.nullRef(((RefType) f.getType()).getType()));
+                initArgs.add(ConstExpressions.ref.nullRef());
             } else {
                 throw new IllegalArgumentException("Field type " + f.getType() + " not supported!");
             }
@@ -271,7 +269,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     private WasmValue toWasmValue(final ReadInstanceField value) {
         final ResolvedClass cl = compileUnit.findClass(value.resolvedField.owner.type);
         final StructType type = objectTypeMappings.get(cl);
-        return ConstExpressions.struct.get(type, toWasmValue((Value) value.incomingDataFlows[0]),
+        return ConstExpressions.struct.get(type,
+                ConstExpressions.ref.cast(type, toWasmValue((Value) value.incomingDataFlows[0])),
                 value.resolvedField.name);
     }
 
@@ -331,7 +330,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
         resolverArgs.add(ConstExpressions.struct.get(
                 classType,
-                toWasmValue((Value) value.incomingDataFlows[0]),
+                ConstExpressions.ref.cast(classType, toWasmValue((Value) value.incomingDataFlows[0])),
                 "vt_resolver"
         ));
 
@@ -362,7 +361,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
         resolverArgs.add(ConstExpressions.struct.get(
                 classType,
-                toWasmValue((Value) value.incomingDataFlows[0]),
+                ConstExpressions.ref.cast(classType, toWasmValue((Value) value.incomingDataFlows[0])),
                 "vt_resolver"
         ));
 
@@ -374,7 +373,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private WasmValue toWasmValue(final InvokeDynamicExpression value) {
         // TODO: Implement this
-        return ConstExpressions.i32.c(-1000);
+        return ConstExpressions.ref.nullRef();
+        //return ConstExpressions.i32.c(-1000);
     }
 
     private WasmValue toWasmValue(final ResolveCallsite value) {
@@ -435,11 +435,12 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     private WasmValue toWasmValue(final ReadClassField value) {
         final ResolvedField field = value.resolvedField;
         final ResolvedClass cl = field.owner;
-        final StructType type = objectTypeMappings.get(cl);
+        final StructType type = rtMappings.get(cl);
         final String className = WasmHelpers.generateClassName(cl.type);
         if (cl.requiresClassInitializer()) {
             final Callable initFunction = ConstExpressions.weakFunctionReference(className + "_i");
-            return ConstExpressions.struct.get(type, ConstExpressions.call(initFunction, Collections.emptyList()),
+            return ConstExpressions.struct.get(type,
+                    ConstExpressions.ref.cast(type, ConstExpressions.call(initFunction, Collections.emptyList())),
                     field.name);
         }
         final Global global = module.getGlobals().globalsIndex().globalByLabel(className  + "_cls");
@@ -604,23 +605,24 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             case Type.BOOLEAN:
             case Type.INT:
                 typeToInstantiate = "i32_array";
-                emptyArray = ConstExpressions.array.newInstance(PrimitiveType.i32, toWasmValue(length), Collections.emptyList());
+                emptyArray = ConstExpressions.array.newInstanceDefault(module.getTypes().arrayType(PrimitiveType.i32), toWasmValue(length));
                 break;
             case Type.LONG:
                 typeToInstantiate = "i64_array";
-                emptyArray = ConstExpressions.array.newInstance(PrimitiveType.i64, toWasmValue(length), Collections.emptyList());
+                emptyArray = ConstExpressions.array.newInstanceDefault(module.getTypes().arrayType(PrimitiveType.i64), toWasmValue(length));
                 break;
             case Type.FLOAT:
                 typeToInstantiate = "f32_array";
-                emptyArray = ConstExpressions.array.newInstance(PrimitiveType.f32, toWasmValue(length), Collections.emptyList());
+                emptyArray = ConstExpressions.array.newInstanceDefault(module.getTypes().arrayType(PrimitiveType.f32), toWasmValue(length));
                 break;
             case Type.DOUBLE:
                 typeToInstantiate = "f64_array";
-                emptyArray = ConstExpressions.array.newInstance(PrimitiveType.f64, toWasmValue(length), Collections.emptyList());
+                emptyArray = ConstExpressions.array.newInstanceDefault(module.getTypes().arrayType(PrimitiveType.f64), toWasmValue(length));
                 break;
             case Type.OBJECT:
                 typeToInstantiate = "obj_array";
-                emptyArray = ConstExpressions.array.newInstance(PrimitiveType.f64, toWasmValue(length), Collections.emptyList());
+                final ResolvedClass rc = compileUnit.findClass(Type.getType(Object.class));
+                emptyArray = ConstExpressions.array.newInstanceDefault(module.getTypes().arrayType(ConstExpressions.ref.type(objectTypeMappings.get(rc), true)), toWasmValue(length));
                 break;
             default:
                 throw new IllegalArgumentException("Not supported array type " + elementType);
@@ -742,31 +744,41 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             case Type.BYTE:
             case Type.CHAR:
             case Type.SHORT:
-            case Type.INT:
+            case Type.INT: {
+                final StructType type = module.getTypes().structTypeByName("i32_array");
                 return ConstExpressions.array.len(
                         module.getTypes().arrayType(PrimitiveType.i32),
-                        ConstExpressions.struct.get(module.getTypes().structTypeByName("i32_array"), toWasmValue(array), "data")
+                        ConstExpressions.struct.get(type, ConstExpressions.ref.cast(type, toWasmValue(array)), "data")
                 );
-            case Type.FLOAT:
+            }
+            case Type.FLOAT: {
+                final StructType type = module.getTypes().structTypeByName("f32_array");
                 return ConstExpressions.array.len(
                         module.getTypes().arrayType(PrimitiveType.f32),
-                        ConstExpressions.struct.get(module.getTypes().structTypeByName("f32_array"), toWasmValue(array), "data")
+                        ConstExpressions.struct.get(type, ConstExpressions.ref.cast(type, toWasmValue(array)), "data")
                 );
-            case Type.LONG:
+            }
+            case Type.LONG: {
+                final StructType type = module.getTypes().structTypeByName("i64_array");
                 return ConstExpressions.array.len(
                         module.getTypes().arrayType(PrimitiveType.i64),
-                        ConstExpressions.struct.get(module.getTypes().structTypeByName("i64_array"), toWasmValue(array), "data")
+                        ConstExpressions.struct.get(type, ConstExpressions.ref.cast(type, toWasmValue(array)), "data")
                 );
-            case Type.DOUBLE:
+            }
+            case Type.DOUBLE: {
+                final StructType type = module.getTypes().structTypeByName("f64_array");
                 return ConstExpressions.array.len(
                         module.getTypes().arrayType(PrimitiveType.f64),
-                        ConstExpressions.struct.get(module.getTypes().structTypeByName("f64_array"), toWasmValue(array), "data")
+                        ConstExpressions.struct.get(type, ConstExpressions.ref.cast(type, toWasmValue(array)), "data")
                 );
-            case Type.ARRAY:
+            }
+            case Type.ARRAY: {
+                final StructType type = module.getTypes().structTypeByName("obj_array");
                 return ConstExpressions.array.len(
                         module.getTypes().arrayType(typeConverter.apply(Type.getType(Object.class))),
-                        ConstExpressions.struct.get(module.getTypes().structTypeByName("obj_array"), toWasmValue(array), "data")
+                        ConstExpressions.struct.get(type, ConstExpressions.ref.cast(type, toWasmValue(array)), "data")
                 );
+            }
             default:
                 throw new IllegalStateException("Not implemented arraylength for " + value.type + " sort " + value.type.getSort());
         }
@@ -846,37 +858,47 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             case Type.BYTE:
             case Type.CHAR:
             case Type.SHORT:
-            case Type.INT:
+            case Type.INT: {
+                final StructType arrayType = module.getTypes().structTypeByName("i32_array");
                 return ConstExpressions.array.get(
                         module.getTypes().arrayType(PrimitiveType.i32),
-                        ConstExpressions.struct.get(module.getTypes().structTypeByName("i32_array"), toWasmValue(array), "data"),
+                        ConstExpressions.struct.get(arrayType, ConstExpressions.ref.cast(arrayType, toWasmValue(array)), "data"),
                         toWasmValue(index)
                 );
-            case Type.FLOAT:
+            }
+            case Type.FLOAT: {
+                final StructType arrayType = module.getTypes().structTypeByName("f32_array");
                 return ConstExpressions.array.get(
                         module.getTypes().arrayType(PrimitiveType.f32),
-                        ConstExpressions.struct.get(module.getTypes().structTypeByName("f32_array"), toWasmValue(array), "data"),
+                        ConstExpressions.struct.get(arrayType, ConstExpressions.ref.cast(arrayType, toWasmValue(array)), "data"),
                         toWasmValue(index)
                 );
-            case Type.LONG:
+            }
+            case Type.LONG: {
+                final StructType arrayType = module.getTypes().structTypeByName("i64_array");
                 return ConstExpressions.array.get(
                         module.getTypes().arrayType(PrimitiveType.i64),
-                        ConstExpressions.struct.get(module.getTypes().structTypeByName("i64_array"), toWasmValue(array), "data"),
+                        ConstExpressions.struct.get(arrayType, ConstExpressions.ref.cast(arrayType, toWasmValue(array)), "data"),
                         toWasmValue(index)
                 );
-            case Type.DOUBLE:
+            }
+            case Type.DOUBLE: {
+                final StructType arrayType = module.getTypes().structTypeByName("f64_array");
                 return ConstExpressions.array.get(
                         module.getTypes().arrayType(PrimitiveType.f64),
-                        ConstExpressions.struct.get(module.getTypes().structTypeByName("f64_array"), toWasmValue(array), "data"),
+                        ConstExpressions.struct.get(arrayType, ConstExpressions.ref.cast(arrayType, toWasmValue(array)), "data"),
                         toWasmValue(index)
                 );
+            }
             case Type.OBJECT:
-            case Type.ARRAY:
+            case Type.ARRAY: {
+                final StructType arrayType = module.getTypes().structTypeByName("obj_array");
                 return ConstExpressions.array.get(
                         module.getTypes().arrayType(typeConverter.apply(Type.getType(Object.class))),
-                        ConstExpressions.struct.get(module.getTypes().structTypeByName("obj_array"), toWasmValue(array), "data"),
+                        ConstExpressions.struct.get(arrayType, ConstExpressions.ref.cast(arrayType, toWasmValue(array)), "data"),
                         toWasmValue(index)
                 );
+            }
             default:
                 throw new IllegalStateException("Not implemented arrayload for " + value.type + " sort " + value.type.getSort());
         }

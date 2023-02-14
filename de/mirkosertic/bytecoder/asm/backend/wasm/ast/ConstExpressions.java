@@ -476,8 +476,8 @@ public class ConstExpressions {
             return new WasmFuncRef(function);
         }
 
-        public static WasmNullRef nullRef(final ReferencableType type) {
-            return new WasmNullRef(type);
+        public static WasmNullRef nullRef() {
+            return new WasmNullRef();
         }
 
         public static HostType host() {
@@ -486,6 +486,10 @@ public class ConstExpressions {
 
         public static WasmValue callRef(final FunctionType type, final List<WasmValue> arguments) {
             return new CallRef(type, arguments);
+        }
+
+        public static Cast cast(final StructType type, final WasmValue value) {
+            return new Cast(type, value);
         }
     }
 
@@ -504,6 +508,10 @@ public class ConstExpressions {
 
         public static WasmValue newInstance(final WasmType type, final WasmValue length, final List<WasmValue> arguments) {
             return new NewWasmArray(type, length, arguments);
+        }
+
+        public static WasmValue newInstanceDefault(final WasmType type, final WasmValue length) {
+            return new NewWasmArrayDefault(type, length);
         }
 
         public static WasmValue get(final WasmType type, final WasmValue array, final WasmValue index) {

@@ -42,6 +42,7 @@ public class StructSubtype extends StructType {
         writer.write("$");
         writer.write(name);
         writer.space();
+
         writer.opening();
         writer.write("struct_subtype");
         for (final Field field : fields) {
@@ -52,6 +53,7 @@ public class StructSubtype extends StructType {
         writer.write("$");
         writer.write(supertype.name);
         writer.closing();
+
         writer.closing();
     }
 

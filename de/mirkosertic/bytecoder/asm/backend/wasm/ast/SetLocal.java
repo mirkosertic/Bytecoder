@@ -30,7 +30,7 @@ public class SetLocal implements WasmExpression {
     @Override
     public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
         textWriter.opening();
-        textWriter.write("set_local");
+        textWriter.write("local.set");
         textWriter.space();
         textWriter.writeLabel(local.getLabel());
         if (value != null) {

@@ -233,12 +233,12 @@ public class WasmBackend {
                             break;
                         case Type.OBJECT:
                             field = new StructType.Field(fieldName, ConstExpressions.ref.type(objectTypeMappings.get(objectClass), true));
-                            defaultValue = ConstExpressions.ref.nullRef(objectTypeMappings.get(objectClass));
+                            defaultValue = ConstExpressions.ref.nullRef();
                             break;
                         case Type.ARRAY:
                             // TODO
                             field = new StructType.Field(fieldName, ConstExpressions.ref.type(objectTypeMappings.get(objectClass), true));
-                            defaultValue = ConstExpressions.ref.nullRef(objectTypeMappings.get(objectClass));
+                            defaultValue = ConstExpressions.ref.nullRef();
                             break;
                         default:
                             throw new IllegalStateException("Not supported " + rf.type);
@@ -296,7 +296,7 @@ public class WasmBackend {
             final ExportableFunction initFunction = functionsSection.newFunction(className + "_i", ConstExpressions.ref.type(rtType, false));
             final Iff initCheck = initFunction.flow.iff("check", ConstExpressions.i32.eq(ConstExpressions.i32.c(0),
                     ConstExpressions.struct.get(rtType, ConstExpressions.getGlobal(runtimeClassGlobal), "initStatus")));
-            initCheck.flow.setStruct(rtType, ConstExpressions.getGlobal(runtimeClassGlobal), 4, ConstExpressions.i32.c(1));
+            initCheck.flow.setStruct(rtType, ConstExpressions.getGlobal(runtimeClassGlobal), "initStatus", ConstExpressions.i32.c(1));
 
             if (cl.superClass != null) {
                 final String superInit = WasmHelpers.generateClassName(cl.superClass.type) + "_i";
@@ -304,7 +304,7 @@ public class WasmBackend {
 
                 if (cl.classInitializer != null) {
                     final List<WasmValue> clInitArgs = new ArrayList<>();
-                    clInitArgs.add(ConstExpressions.ref.nullRef(objectTypeMappings.get(objectClass)));
+                    clInitArgs.add(ConstExpressions.ref.nullRef());
                     initCheck.flow.voidCall(ConstExpressions.weakFunctionReference(className + "$" + WasmHelpers.generateMethodName(cl.classInitializer.methodNode.name, cl.classInitializer.methodType)), clInitArgs);
                 }
             }
@@ -320,21 +320,21 @@ public class WasmBackend {
             final StructType stringType = objectTypeMappings.get(compileUnit.findClass(Type.getType(String.class)));
             globalsSection.newMutableGlobal("stringpool_" + i,
                     ConstExpressions.ref.type(stringType, true),
-                    ConstExpressions.ref.nullRef(stringType)
+                    ConstExpressions.ref.nullRef()
             );
         }
 
         // Store for last thrown exception
         globalsSection.newMutableGlobal("lastthrownexception",
                 ConstExpressions.ref.type(objectTypeMappings.get(objectClass), true),
-                ConstExpressions.ref.nullRef(objectTypeMappings.get(objectClass))
+                ConstExpressions.ref.nullRef()
         );
 
         final BiConsumer<String, WasmType> arrayTypeFactory = (name, wasmType) -> {
             final ResolvedClass arrayBaseClass = compileUnit.findClass(Type.getType(Array.class));
             final StructType arrayBaseType = objectTypeMappings.get(arrayBaseClass);
             final List<StructType.Field> instanceFields = new ArrayList<>();
-            instanceFields.add(new StructType.Field("data", module.getTypes().arrayType(wasmType)));
+            instanceFields.add(new StructType.Field("data", ConstExpressions.ref.type(module.getTypes().arrayType(wasmType), false)));
             types.structSubtype(name, arrayBaseType, instanceFields);
         };
 
@@ -346,7 +346,7 @@ public class WasmBackend {
 
         // InstanceOf Check
         final List<Param> instanceOfParams = new ArrayList<>();
-        instanceOfParams.add(ConstExpressions.param("obj", objectTypeMappings.get(objectClass)));
+        instanceOfParams.add(ConstExpressions.param("obj", ConstExpressions.ref.type(objectTypeMappings.get(objectClass), true)));
         instanceOfParams.add(ConstExpressions.param("typeId", PrimitiveType.i32));
         final ExportableFunction instanceOfCheck = module.getFunctions().newFunction("instanceOf", instanceOfParams, PrimitiveType.i32);
         //TODO: implement instanceof
@@ -390,14 +390,19 @@ public class WasmBackend {
                             functionName = (String) values.get("name");
                         }
 
+                        final Function function;
                         if (Type.VOID == method.methodType.getReturnType().getSort()) {
-                            module.getImports().importFunction(new ImportReference(moduleName, functionName),
+                            function = module.getImports().importFunction(new ImportReference(moduleName, functionName),
                                     implMethodName,
                                     functionParams);
                         } else {
-                            module.getImports().importFunction(new ImportReference(moduleName, functionName),
+                            function = module.getImports().importFunction(new ImportReference(moduleName, functionName),
                                     implMethodName,
                                     functionParams, toWASMType.apply(method.methodType.getReturnType()));
+                        }
+
+                        if (!Modifier.isStatic(method.methodNode.access)) {
+                            function.toTable();
                         }
 
                     } else if (Modifier.isAbstract(method.methodNode.access)) {
@@ -406,6 +411,7 @@ public class WasmBackend {
                         // TODO: Handle opaque reference types here
 
                     } else {
+
                         // Generate Wasm impl code
                         final ExportableFunction implFunction;
                         if (Type.VOID == method.methodType.getReturnType().getSort()) {
@@ -432,6 +438,10 @@ public class WasmBackend {
                                 implFunction.exportAs(name);
                             }
                         });
+
+                        if (!Modifier.isStatic(method.methodNode.access)) {
+                            implFunction.toTable();
+                        }
                     }
                 }
             }

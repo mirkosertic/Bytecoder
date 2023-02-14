@@ -28,7 +28,7 @@ public class GetLocal implements WasmExpression {
     @Override
     public void writeTo(final TextWriter textWriter, final ExportContext context) {
         textWriter.opening();
-        textWriter.write("get_local");
+        textWriter.write("local.get");
         textWriter.space();
         textWriter.writeLabel(local.getLabel());
         textWriter.closing();

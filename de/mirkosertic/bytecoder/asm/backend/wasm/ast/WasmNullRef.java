@@ -17,17 +17,13 @@ package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
 public class WasmNullRef implements WasmValue {
 
-    private final ReferencableType type;
-
-    WasmNullRef(final ReferencableType type) {
-        this.type = type;
+    WasmNullRef() {
     }
 
     @Override
     public void writeTo(final TextWriter writer, final ExportContext context) {
         writer.opening();
-        writer.write("ref.null ");
-        type.writeRefTo(writer);
+        writer.write("ref.null any");
         writer.closing();
     }
 

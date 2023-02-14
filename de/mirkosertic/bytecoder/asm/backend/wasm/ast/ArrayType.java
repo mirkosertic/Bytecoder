@@ -43,7 +43,7 @@ public class ArrayType implements ReferencableType {
         writer.opening();
         writer.write("mut");
         writer.space();
-        this.elementType.writeTo(writer);
+        this.elementType.writeRefTo(writer);
         writer.closing();
         writer.closing();
         writer.closing();

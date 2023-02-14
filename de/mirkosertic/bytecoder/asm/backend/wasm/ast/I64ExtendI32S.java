@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 public class I64ExtendI32S extends UnaryExpression {
 
     I64ExtendI32S(final WasmValue value) {
-        super(value, "i64.extend_i32/s", (byte) 0x75);
+        super(value, "i64.extend_i32_s", (byte) 0x75);
     }
 }
