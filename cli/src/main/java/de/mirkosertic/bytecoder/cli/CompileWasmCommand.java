@@ -20,6 +20,7 @@ import de.mirkosertic.bytecoder.asm.backend.CompileOptions;
 import de.mirkosertic.bytecoder.asm.backend.js.JSIntrinsics;
 import de.mirkosertic.bytecoder.asm.backend.wasm.WasmBackend;
 import de.mirkosertic.bytecoder.asm.backend.wasm.WasmCompileResult;
+import de.mirkosertic.bytecoder.asm.ir.AnalysisException;
 import de.mirkosertic.bytecoder.asm.ir.AnalysisStack;
 import de.mirkosertic.bytecoder.asm.loader.BytecoderLoader;
 import de.mirkosertic.bytecoder.asm.optimizer.Optimizations;
@@ -72,41 +73,46 @@ public class CompileWasmCommand implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
 
-        final ClassLoader rootClassLoader = BytecoderCLI.class.getClassLoader();
-        final URLClassLoader classLoader = new URLClassLoader(new URL[] {new File(classpath).toURI().toURL()}, rootClassLoader);
+        try {
+            final ClassLoader rootClassLoader = BytecoderCLI.class.getClassLoader();
+            final URLClassLoader classLoader = new URLClassLoader(new URL[]{new File(classpath).toURI().toURL()}, rootClassLoader);
 
-        final Loader loader = new BytecoderLoader(classLoader);
+            final Loader loader = new BytecoderLoader(classLoader);
 
-        final Logger logger = new Slf4JLogger();
+            final Logger logger = new Slf4JLogger();
 
-        logger.info("Compiling main class {} to directory {}", mainClass, buildDirectory);
+            logger.info("Compiling main class {} to directory {}", mainClass, buildDirectory);
 
-        final CompileUnit compileUnit = new CompileUnit(loader, logger, new JSIntrinsics());
-        final Type invokedType = Type.getObjectType(mainClass.replace('.','/'));
+            final CompileUnit compileUnit = new CompileUnit(loader, logger, new JSIntrinsics());
+            final Type invokedType = Type.getObjectType(mainClass.replace('.', '/'));
 
-        compileUnit.resolveMainMethod(invokedType, "main", Type.getMethodType(Type.VOID_TYPE, Type.getType("[Ljava/lang/String;")));
+            compileUnit.resolveMainMethod(invokedType, "main", Type.getMethodType(Type.VOID_TYPE, Type.getType("[Ljava/lang/String;")));
 
-        for (final String className : additionalClassesToLink) {
-            compileUnit.resolveClass(Type.getObjectType(className.replace('.', '/')), new AnalysisStack());
-        }
-
-        compileUnit.finalizeLinkingHierarchy();
-
-        compileUnit.logStatistics();
-
-        final CompileOptions compileOptions =
-                new CompileOptions(logger, Optimizations.valueOf(optimizationLevel), additionalResources, filenamePrefix, debugoutput);
-
-        final WasmBackend backend = new WasmBackend();
-        final WasmCompileResult result = backend.generateCodeFor(compileUnit, compileOptions);
-
-        for (final CompileResult.Content content : result.getContent()) {
-            final File outputFile = new File(buildDirectory, content.getFileName());
-            try (final FileOutputStream theFos = new FileOutputStream(outputFile)) {
-                content.writeTo(theFos);
+            for (final String className : additionalClassesToLink) {
+                compileUnit.resolveClass(Type.getObjectType(className.replace('.', '/')), new AnalysisStack());
             }
-        }
 
-        return 0;
+            compileUnit.finalizeLinkingHierarchy();
+
+            compileUnit.logStatistics();
+
+            final CompileOptions compileOptions =
+                    new CompileOptions(logger, Optimizations.valueOf(optimizationLevel), additionalResources, filenamePrefix, debugoutput);
+
+            final WasmBackend backend = new WasmBackend();
+            final WasmCompileResult result = backend.generateCodeFor(compileUnit, compileOptions);
+
+            for (final CompileResult.Content content : result.getContent()) {
+                final File outputFile = new File(buildDirectory, content.getFileName());
+                try (final FileOutputStream theFos = new FileOutputStream(outputFile)) {
+                    content.writeTo(theFos);
+                }
+            }
+
+            return 0;
+        } catch (final AnalysisException e) {
+            e.getAnalysisStack().dumpAnalysisStack(System.out);
+            throw e;
+        }
     }
 }

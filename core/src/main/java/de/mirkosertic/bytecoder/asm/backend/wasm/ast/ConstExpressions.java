@@ -480,6 +480,10 @@ public class ConstExpressions {
             return new WasmNullRef();
         }
 
+        public static WasmExternNullRef externNullRef() {
+            return new WasmExternNullRef();
+        }
+
         public static HostType host() {
             return new HostType();
         }

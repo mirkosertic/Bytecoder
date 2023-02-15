@@ -132,7 +132,7 @@ public class ArrayTest {
     }
 
     @Test
-    public void testCObjectArray() {
+    public void testObjectArray() {
         final String theA = "AB";
         final String theC = "ABC";
         final String[] theStrings = new String[3];

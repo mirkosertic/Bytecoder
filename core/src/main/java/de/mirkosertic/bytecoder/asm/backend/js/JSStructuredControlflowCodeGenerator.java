@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.js;
 
+import de.mirkosertic.bytecoder.asm.backend.sequencer.Sequencer;
+import de.mirkosertic.bytecoder.asm.backend.sequencer.StructuredControlflowCodeGenerator;
 import de.mirkosertic.bytecoder.asm.ir.AbstractVar;
 import de.mirkosertic.bytecoder.asm.ir.Add;
 import de.mirkosertic.bytecoder.asm.ir.And;
@@ -23,8 +25,8 @@ import de.mirkosertic.bytecoder.asm.ir.ArrayLength;
 import de.mirkosertic.bytecoder.asm.ir.ArrayLoad;
 import de.mirkosertic.bytecoder.asm.ir.ArrayStore;
 import de.mirkosertic.bytecoder.asm.ir.CMP;
+import de.mirkosertic.bytecoder.asm.ir.Cast;
 import de.mirkosertic.bytecoder.asm.ir.CaughtException;
-import de.mirkosertic.bytecoder.asm.ir.CheckCast;
 import de.mirkosertic.bytecoder.asm.ir.Copy;
 import de.mirkosertic.bytecoder.asm.ir.Div;
 import de.mirkosertic.bytecoder.asm.ir.FrameDebugInfo;
@@ -87,8 +89,6 @@ import de.mirkosertic.bytecoder.asm.ir.VirtualMethodInvocation;
 import de.mirkosertic.bytecoder.asm.ir.VirtualMethodInvocationExpression;
 import de.mirkosertic.bytecoder.asm.ir.XOr;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
-import de.mirkosertic.bytecoder.asm.backend.sequencer.Sequencer;
-import de.mirkosertic.bytecoder.asm.backend.sequencer.StructuredControlflowCodeGenerator;
 import de.mirkosertic.bytecoder.classlib.Array;
 import org.objectweb.asm.Type;
 
@@ -150,6 +150,9 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                     case Type.OBJECT:
                         pw.print(" = null");
                         break;
+                    case Type.ARRAY:
+                        pw.print(" = null");
+                        break;
                     default:
                         pw.print(" = 0");
                         break;
@@ -195,16 +198,6 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     public void write(final MonitorExit node) {
         writeIndent();
         pw.print("// Monitor exit on ");
-        writeExpression(node.incomingDataFlows[0]);
-        pw.println();
-    }
-
-    @Override
-    public void write(final CheckCast node) {
-        writeIndent();
-        pw.print("// Check cast on ");
-        writeExpression(node.incomingDataFlows[1]);
-        pw.print(" for ");
         writeExpression(node.incomingDataFlows[0]);
         pw.println();
     }
@@ -328,7 +321,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         pw.print("bytecoder.newarray((");
         writeExpression(node.incomingDataFlows[0]);
         pw.print("),");
-        switch (node.type.getSort()) {
+        switch (node.type.getElementType().getSort()) {
             case Type.OBJECT:
                 pw.print("null");
                 break;
@@ -586,6 +579,10 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                 pw.print(".$rt");
                 break;
         }
+    }
+
+    private void writeExpression(final Cast node) {
+        writeExpression(node.incomingDataFlows[0]);
     }
 
     private void writeExpression(final PrimitiveLong node) {
@@ -1317,6 +1314,8 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             writeExpression((NewMultiArray) node);
         } else if (node instanceof RuntimeClass) {
             writeExpression((RuntimeClass) node);
+        } else if (node instanceof Cast) {
+            writeExpression((Cast) node);
         } else {
             throw new IllegalArgumentException("Not implemented : " + node);
         }

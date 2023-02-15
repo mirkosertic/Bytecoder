@@ -17,7 +17,6 @@ package de.mirkosertic.bytecoder.asm.backend.sequencer;
 
 import de.mirkosertic.bytecoder.asm.ir.AbstractVar;
 import de.mirkosertic.bytecoder.asm.ir.ArrayStore;
-import de.mirkosertic.bytecoder.asm.ir.CheckCast;
 import de.mirkosertic.bytecoder.asm.ir.Copy;
 import de.mirkosertic.bytecoder.asm.ir.FrameDebugInfo;
 import de.mirkosertic.bytecoder.asm.ir.Goto;
@@ -83,8 +82,6 @@ public interface StructuredControlflowCodeGenerator {
     void write(SetClassField node);
 
     void write(ArrayStore node);
-
-    void write(CheckCast node);
 
     void writeBreakTo(String label);
 

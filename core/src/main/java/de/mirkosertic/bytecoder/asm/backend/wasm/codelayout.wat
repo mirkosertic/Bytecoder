@@ -9,6 +9,25 @@
 
   (type $java$lang$String_s (struct_subtype (field $runtimetype (ref $runtimetype_s)) (field $value i32) $lava$lang$Object_s))
 
+  (type $x
+    (ref null $lava$lang$Object_s)
+  )
+
+  (type $dummyextern
+    (struct
+        (field $nativeObject (mut externref))
+    )
+  )
+
+  (func $textnull
+    (local $lala (type $x))
+    (drop
+        (struct.new $dummyextern
+            (ref.null extern)
+        )
+    )
+  )
+
   (global $$lava$lang$Object_rt (ref $runtimetype_s)
     (struct.new $runtimetype_s (ref.func $lava$lang$Object_vt))
   )

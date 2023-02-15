@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.cli;
 import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.asm.backend.js.GraphExporter;
 import de.mirkosertic.bytecoder.asm.backend.js.JSIntrinsics;
+import de.mirkosertic.bytecoder.asm.ir.AnalysisException;
 import de.mirkosertic.bytecoder.asm.loader.BytecoderLoader;
 import de.mirkosertic.bytecoder.asm.optimizer.Optimizations;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
@@ -59,39 +60,45 @@ public class GraphGenerateCommand implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
 
-        final ClassLoader rootClassLoader = BytecoderCLI.class.getClassLoader();
-        final URLClassLoader classLoader = new URLClassLoader(new URL[] {new File(classpath).toURI().toURL()}, rootClassLoader);
+        try {
+            final ClassLoader rootClassLoader = BytecoderCLI.class.getClassLoader();
+            final URLClassLoader classLoader = new URLClassLoader(new URL[] {new File(classpath).toURI().toURL()}, rootClassLoader);
 
-        final Loader loader = new BytecoderLoader(classLoader);
+            final Loader loader = new BytecoderLoader(classLoader);
 
-        final Logger logger = new Slf4JLogger();
+            final Logger logger = new Slf4JLogger();
 
-        logger.info("Compiling main class {} to directory {}", mainClass, buildDirectory);
+            logger.info("Compiling main class {} to directory {}", mainClass, buildDirectory);
 
-        final CompileUnit compileUnit = new CompileUnit(loader, logger, new JSIntrinsics());
-        final Type invokedType = Type.getObjectType(mainClass.replace('.','/'));
+            final CompileUnit compileUnit = new CompileUnit(loader, logger, new JSIntrinsics());
+            final Type invokedType = Type.getObjectType(mainClass.replace('.','/'));
 
-        compileUnit.resolveMainMethod(invokedType, "main", Type.getMethodType(Type.VOID_TYPE, Type.getType("[Ljava/lang/String;")));
+            compileUnit.resolveMainMethod(invokedType, "main", Type.getMethodType(Type.VOID_TYPE, Type.getType("[Ljava/lang/String;")));
 
-        compileUnit.finalizeLinkingHierarchy();
+            compileUnit.finalizeLinkingHierarchy();
 
-        compileUnit.logStatistics();
+            compileUnit.logStatistics();
 
-        final Pattern p;
-        if (matchPattern != null) {
-            p = Pattern.compile(matchPattern);
-        } else {
-            p = Pattern.compile(mainClass + ".*");
+            final Pattern p;
+            if (matchPattern != null) {
+                p = Pattern.compile(matchPattern);
+            } else {
+                p = Pattern.compile(mainClass + ".*");
+            }
+
+            final GraphExporter.Filter filter = (resolvedClass, resolvedMethod) -> {
+                final String fq = resolvedClass.type.getClassName() + "." + resolvedMethod.methodNode.name;
+                return p.matcher(fq).matches();
+            };
+
+            final GraphExporter exporter = new GraphExporter();
+            exporter.export(compileUnit, logger, Optimizations.valueOf(optimizationLevel), filter, new File(buildDirectory));
+
+            return 0;
+
+        } catch (final AnalysisException e) {
+            e.getAnalysisStack().dumpAnalysisStack(System.out);
+            throw e;
         }
-
-        final GraphExporter.Filter filter = (resolvedClass, resolvedMethod) -> {
-            final String fq = resolvedClass.type.getClassName() + "." + resolvedMethod.methodNode.name;
-            return p.matcher(fq).matches();
-        };
-
-        final GraphExporter exporter = new GraphExporter();
-        exporter.export(compileUnit, logger, Optimizations.valueOf(optimizationLevel), filter, new File(buildDirectory));
-
-        return 0;
     }
 }

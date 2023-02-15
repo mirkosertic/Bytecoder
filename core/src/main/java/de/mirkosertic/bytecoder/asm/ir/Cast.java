@@ -15,8 +15,11 @@
  */
 package de.mirkosertic.bytecoder.asm.ir;
 
-public class CheckCast extends ControlTokenConsumer {
+import org.objectweb.asm.Type;
 
-    public CheckCast() {
+public class Cast extends Value {
+
+    public Cast(final Type type) {
+        super(type);
     }
 }

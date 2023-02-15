@@ -20,7 +20,7 @@ import de.mirkosertic.bytecoder.asm.ir.AnalysisStack;
 import de.mirkosertic.bytecoder.asm.ir.ArrayLoad;
 import de.mirkosertic.bytecoder.asm.ir.ArrayStore;
 import de.mirkosertic.bytecoder.asm.ir.CMP;
-import de.mirkosertic.bytecoder.asm.ir.CheckCast;
+import de.mirkosertic.bytecoder.asm.ir.Cast;
 import de.mirkosertic.bytecoder.asm.ir.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.asm.ir.Copy;
 import de.mirkosertic.bytecoder.asm.ir.EdgeType;
@@ -383,6 +383,21 @@ public class GraphParser {
                 final String opcode = opcodeToName.get(flow.currentNode.getOpcode());
                 if (opcode != null) {
                     analysisStack.addDebugMessage("Visiting #" + methodNode.instructions.indexOf(flow.currentNode) + " " + opcode + " Stack size is " + flow.graphParserState.frame.incomingStack.length + " Source line " + flow.graphParserState.lineNumber);
+
+                    final Frame fr = flow.graphParserState.frame;
+                    for (int i = 0; i < fr.incomingLocals.length; i++) {
+                        final Value v = fr.incomingLocals[i];
+                        if (v != null) {
+                            analysisStack.addDebugMessage("Local " + i + " of type " + v.type);
+                        }
+                    }
+
+                    for (int i = 0; i < fr.incomingStack.length; i++) {
+                        final Value v = fr.incomingStack[i];
+                        if (v != null) {
+                            analysisStack.addDebugMessage("Stack " + i + " of type " + v.type);
+                        }
+                    }
                 }
                 for (final ControlFlow nextOutCome : parse(flow, incomingEdgesPerInstruction)) {
                     if (!alreadyVisited.contains(nextOutCome.currentNode)) {
@@ -395,53 +410,6 @@ public class GraphParser {
         // Step 4: Fix the initial control flow
         start.addControlFlowTo(StandardProjections.DEFAULT,
                 graph.translationFor(methodNode.instructions.getFirst()).main);
-
-
-/*        try (final PrintWriter pw = new PrintWriter(Files.newOutputStream(new File("flow.dot").toPath()))) {
-            pw.println("digraph debugoutput {");
-            final List<AbstractInsnNode> known = new ArrayList<>();
-            for (final Map.Entry<AbstractInsnNode, Map<AbstractInsnNode, EdgeType>> entry : incomingEdgesPerInstruction.entrySet()) {
-                if (!known.contains(entry.getKey())) {
-                    known.add(entry.getKey());
-                }
-                for (final Map.Entry<AbstractInsnNode, EdgeType> x : entry.getValue().entrySet()) {
-                    if (!known.contains(x.getKey())) {
-                        known.add(x.getKey());
-                    }
-                    switch (x.getValue()) {
-                        case FORWARD:
-                            pw.print(" node");
-                            pw.print(known.indexOf(x.getKey()));
-                            pw.print(" -> node");
-                            pw.print(known.indexOf(entry.getKey()));
-                            pw.println("[dir=\"forward\" color=\"red\" penwidth=\"2\"];");
-                            break;
-                        case BACK:
-                            pw.print(" node");
-                            pw.print(known.indexOf(x.getKey()));
-                            pw.print(" -> node");
-                            pw.print(known.indexOf(entry.getKey()));
-                            pw.println("[dir=\"forward\" color=\"red\" style=\"dashed\" penwidth=\"2\"];");
-                            break;
-                    }
-                }
-            }
-            for (final AbstractInsnNode node : known) {
-                pw.print(" node");
-                pw.print(known.indexOf(node));
-                pw.print("[shape=\"box\" label=\"");
-                pw.print(node);
-                final String op = opcodeToString(node.getOpcode());
-                if (op != null) {
-                    pw.print(" ");
-                    pw.print(op);
-                }
-                pw.println("\"];");
-            }
-            pw.println("}");
-        } catch (final IOException e) {
-            throw new RuntimeException(e);
-        }*/
 
         // Step 5: Fixup stuff not possible during analysis
         graph.applyFixups(incomingEdgesPerInstruction);
@@ -935,36 +903,36 @@ public class GraphParser {
 
         final Frame.PopResult popresult = currentState.frame.popFromStack();
 
-        final Type elementType;
+        final Type arrayType;
         switch (node.operand) {
             case 4:
-                elementType = Type.BOOLEAN_TYPE;
+                arrayType = Type.getType(boolean[].class);
                 break;
             case 5:
-                elementType = Type.CHAR_TYPE;
+                arrayType = Type.getType(char[].class);
                 break;
             case 6:
-                elementType = Type.FLOAT_TYPE;
+                arrayType = Type.getType(float[].class);
                 break;
             case 7:
-                elementType = Type.DOUBLE_TYPE;
+                arrayType = Type.getType(double[].class);
                 break;
             case 8:
-                elementType = Type.BYTE_TYPE;
+                arrayType = Type.getType(byte[].class);
                 break;
             case 9:
-                elementType = Type.SHORT_TYPE;
+                arrayType = Type.getType(short[].class);
                 break;
             case 10:
-                elementType = Type.INT_TYPE;
+                arrayType = Type.getType(int[].class);
                 break;
             case 11:
-                elementType = Type.LONG_TYPE;
+                arrayType = Type.getType(long[].class);
                 break;
             default:
                 throw new IllegalStateException("Not implemented array type : " + node.operand);
         }
-        final NewArray value = graph.newNewArray(elementType);
+        final NewArray value = graph.newNewArray(arrayType);
         value.addIncomingData(popresult.value);
 
         final Variable variable = graph.newVariable(value.type);
@@ -1473,17 +1441,34 @@ public class GraphParser {
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
-    private List<ControlFlow> parse_XALOAD(final ControlFlow currentFlow, final Type type) {
+    private List<ControlFlow> parse_XALOAD(final ControlFlow currentFlow) {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
 
         final Frame.PopResult indexPop = currentState.frame.popFromStack();
         final Frame.PopResult arrayPop = indexPop.newFrame.popFromStack();
 
-        final ArrayLoad load = graph.newArrayLoad(arrayPop.value.type);
+        if (arrayPop.value.type.getSort() != Type.ARRAY) {
+            throw new IllegalArgumentException("Expected array, got " + arrayPop.value.type);
+        }
+
+        final Type arrType = arrayPop.value.type;
+        final Type targetType;
+        if (arrType.getDimensions() == 1) {
+            targetType = arrType.getElementType();
+        } else {
+            StringBuilder b = new StringBuilder();
+            for (int i = 1; i < arrType.getDimensions(); i++) {
+                b = b.append("[");
+            }
+            b = b.append(arrType.getElementType().getDescriptor());
+            targetType = Type.getType(b.toString());
+        }
+
+        final ArrayLoad load = graph.newArrayLoad(targetType);
         load.addIncomingData(arrayPop.value, indexPop.value);
 
-        final Variable var = graph.newVariable(type);
+        final Variable var = graph.newVariable(targetType);
         final Copy c = graph.newCopy();
         c.addIncomingData(load);
         var.addIncomingData(c);
@@ -1576,21 +1561,21 @@ public class GraphParser {
             case Opcodes.DASTORE:
                 return parse_XASTORE(currentFlow);
             case Opcodes.IALOAD:
-                return parse_XALOAD(currentFlow, Type.INT_TYPE);
+                return parse_XALOAD(currentFlow);
             case Opcodes.BALOAD:
-                return parse_XALOAD(currentFlow, Type.BYTE_TYPE);
+                return parse_XALOAD(currentFlow);
             case Opcodes.CALOAD:
-                return parse_XALOAD(currentFlow, Type.CHAR_TYPE);
+                return parse_XALOAD(currentFlow);
             case Opcodes.AALOAD:
-                return parse_XALOAD(currentFlow, Type.getType(Object.class));
+                return parse_XALOAD(currentFlow);
             case Opcodes.LALOAD:
-                return parse_XALOAD(currentFlow, Type.LONG_TYPE);
+                return parse_XALOAD(currentFlow);
             case Opcodes.DALOAD:
-                return parse_XALOAD(currentFlow, Type.DOUBLE_TYPE);
+                return parse_XALOAD(currentFlow);
             case Opcodes.SALOAD:
-                return parse_XALOAD(currentFlow, Type.SHORT_TYPE);
+                return parse_XALOAD(currentFlow);
             case Opcodes.FALOAD:
-                return parse_XALOAD(currentFlow, Type.FLOAT_TYPE);
+                return parse_XALOAD(currentFlow);
             case Opcodes.LUSHR:
                 return parse_NARYINS(currentFlow, () -> graph.newUSHR(Type.LONG_TYPE), 2);
             case Opcodes.IUSHR:
@@ -1999,14 +1984,21 @@ public class GraphParser {
             compileUnit.resolveClass(type, analysisStack);
         }
 
-        final TypeReference typeReference = graph.newTypeReference(type);
-        final CheckCast n = graph.newCheckCast();
-        n.addIncomingData(typeReference);
-        n.addIncomingData(pop1.value);
+        final Variable v = graph.newVariable(type);
 
-        graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+        final Cast cast = graph.newCast(type);
+        cast.addIncomingData(pop1.value);
 
-        final GraphParserState newState = currentState.controlFlowsTo(n).withFrame(currentState.frame);
+        final Copy c = graph.newCopy();
+        c.addIncomingData(cast);
+
+        v.addIncomingData(c);
+
+        final Frame newFrame = pop1.newFrame.pushToStack(v);
+
+        graph.registerTranslation(node, new InstructionTranslation(c, currentState.frame));
+
+        final GraphParserState newState = currentState.controlFlowsTo(c).withFrame(newFrame);
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
@@ -2052,7 +2044,7 @@ public class GraphParser {
             case Opcodes.NEW:
                 return parse_NEW(currentFlow);
             case Opcodes.ANEWARRAY:
-                return parse_NARYINS(currentFlow, () -> graph.newNewArray(Type.getObjectType(node.desc)), 1);
+                return parse_NARYINS(currentFlow, () -> graph.newNewArray(Type.getType("[L" + node.desc + ";")), 1);
             case Opcodes.INSTANCEOF:
                 return parse_INSTANCEOF(currentFlow);
             case Opcodes.CHECKCAST:
@@ -2394,7 +2386,7 @@ public class GraphParser {
 
     private List<ControlFlow> parseMultiANewArrayInsnNode(final ControlFlow currentFlow) {
         final MultiANewArrayInsnNode node = (MultiANewArrayInsnNode) currentFlow.currentNode;
-        return parse_NARYINS(currentFlow, () -> graph.neNewMultiArray(Type.getObjectType(node.desc)), node.dims);
+        return parse_NARYINS(currentFlow, () -> graph.newNewMultiArray(Type.getObjectType(node.desc)), node.dims);
     }
 
     private boolean isStartOfTryCatch(final LabelNode labelNode) {
@@ -2413,7 +2405,7 @@ public class GraphParser {
             final Map<AbstractInsnNode, EdgeType> incomingEdges = incomingEdgesPerInstruction.get(labelNode);
             if (incomingEdges != null) {
                 if (incomingEdges.size() > 1 || isStartOfTryCatch(labelNode)) {
-                    // We do have multiple incoming edges or we are the start of a try catch block.
+                    // We do have multiple incoming edges, or we are the start of a try catch block.
                     // Now we have to make sure that every entry on the stack or on local variables
                     // is a PHI. Data copy is handled during the graph fixup phase
                     // We just have to make sure that there are phi variables there to handle everything
