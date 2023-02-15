@@ -35,7 +35,11 @@ public class CallIndirect implements WasmExpression {
         textWriter.opening();
         textWriter.write("call_indirect");
         textWriter.space();
+        textWriter.opening();
+        textWriter.write("type");
+        textWriter.space();
         functionType.writeRefTo(textWriter);
+        textWriter.closing();
         for (final WasmValue argument : arguments) {
             textWriter.space();
             argument.writeTo(textWriter, context);

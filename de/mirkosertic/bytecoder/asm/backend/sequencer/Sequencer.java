@@ -17,7 +17,6 @@ package de.mirkosertic.bytecoder.asm.backend.sequencer;
 
 import de.mirkosertic.bytecoder.asm.ir.AbstractVar;
 import de.mirkosertic.bytecoder.asm.ir.ArrayStore;
-import de.mirkosertic.bytecoder.asm.ir.CheckCast;
 import de.mirkosertic.bytecoder.asm.ir.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.asm.ir.Copy;
 import de.mirkosertic.bytecoder.asm.ir.FrameDebugInfo;
@@ -181,9 +180,6 @@ public class Sequencer {
                     // We are finished here
                     codegenerator.write((Unwind) current);
                     current = null;
-                } else if (current instanceof CheckCast) {
-                    codegenerator.write((CheckCast) current);
-                    current = followUpProcessor.apply(current);
                 } else if (current instanceof Nop) {
                     current = followUpProcessor.apply(current);
                 } else {

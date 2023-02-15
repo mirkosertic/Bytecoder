@@ -105,12 +105,12 @@ public class Graph {
         return (PrimitiveShort) register(new PrimitiveShort(value));
     }
 
-    public NewArray newNewArray(final Type elementType) {
-        return (NewArray) register(new NewArray(elementType));
+    public NewArray newNewArray(final Type arrayType) {
+        return (NewArray) register(new NewArray(arrayType));
     }
 
-    public NewMultiArray neNewMultiArray(final Type elementType) {
-        return (NewMultiArray) register(new NewMultiArray(elementType));
+    public NewMultiArray newNewMultiArray(final Type arrayType) {
+        return (NewMultiArray) register(new NewMultiArray(arrayType));
     }
 
     public If newIf() {
@@ -276,6 +276,10 @@ public class Graph {
         return (Copy) register(new Copy());
     }
 
+    public Cast newCast(final Type type) {
+        return (Cast) register(new Cast(type));
+    }
+
     public Nop newNop() {
         return (Nop) register(new Nop());
     }
@@ -337,10 +341,6 @@ public class Graph {
 
     public InstanceOf newInstanceOf() {
         return (InstanceOf) register(new InstanceOf());
-    }
-
-    public CheckCast newCheckCast() {
-        return (CheckCast) register(new CheckCast());
     }
 
     public TableSwitch newTableSwitch(final int min, final int max) {
