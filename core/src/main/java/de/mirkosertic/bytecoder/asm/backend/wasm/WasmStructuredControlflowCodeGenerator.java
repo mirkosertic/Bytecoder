@@ -21,6 +21,7 @@ import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Callable;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.ConstExpressions;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Container;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.ExportableFunction;
+import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Expressions;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.FunctionType;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Global;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.HostType;
@@ -125,7 +126,9 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private final Map<AbstractVar, Local> varLocalMap;
 
-    private Container targetContainer;
+    private Container activeContainer;
+
+    private Expressions activeFlow;
 
     public WasmStructuredControlflowCodeGenerator(final CompileUnit compileUnit, final Module module,
                                                   final Map<ResolvedClass, StructType> rtMappings,
@@ -141,7 +144,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         this.typeConverter = typeConverter;
         this.functionTypeConverter = functionTypeConverter;
         this.varLocalMap = new HashMap<>();
-        this.targetContainer = exportableFunction;
+        this.activeContainer = exportableFunction;
+        this.activeFlow = this.activeContainer.flow;
     }
 
     @Override
@@ -173,7 +177,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             final Value arg = (Value) node.incomingDataFlows[i];
             callArgs.add(toWasmValue(arg));
         }
-        targetContainer.flow.voidCall(ConstExpressions.weakFunctionReference(functionName), callArgs);
+        activeFlow.voidCall(ConstExpressions.weakFunctionReference(functionName), callArgs);
     }
 
     @Override
@@ -205,7 +209,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         final WasmValue resolver = ConstExpressions.ref.callRef(vtType, resolverArgs);
         final FunctionType ft = functionTypeConverter.apply(node.resolvedMethod);
 
-        targetContainer.flow.voidCallIndirect(ft, indirectCallArgs, resolver);
+        activeFlow.voidCallIndirect(ft, indirectCallArgs, resolver);
     }
 
     @Override
@@ -228,7 +232,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             callArgs.add(toWasmValue((Value) node.incomingDataFlows[i]));
         }
-        targetContainer.flow.voidCall(ConstExpressions.weakFunctionReference(functionName), callArgs);
+        activeFlow.voidCall(ConstExpressions.weakFunctionReference(functionName), callArgs);
     }
 
     @Override
@@ -260,7 +264,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         final WasmValue resolver = ConstExpressions.ref.callRef(vtType, resolverArgs);
         final FunctionType ft = functionTypeConverter.apply(node.method);
 
-        targetContainer.flow.voidCallIndirect(ft, indirectCallArgs, resolver);
+        activeFlow.voidCallIndirect(ft, indirectCallArgs, resolver);
     }
 
     private WasmValue toWasmValue(final This value) {
@@ -1100,40 +1104,42 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 throw new IllegalArgumentException("Cannot find Wasm local for variable " + target);
             }
             if (!targetrVar.type.equals(value.type) && targetrVar.type.getSort() != Type.OBJECT) {
-                targetContainer.flow.setLocal(local, convertToType(value, targetrVar.type));
+                activeFlow.setLocal(local, convertToType(value, targetrVar.type));
             } else {
-                targetContainer.flow.setLocal(local, toWasmValue(value));
+                activeFlow.setLocal(local, toWasmValue(value));
             }
 
         } else {
-            targetContainer.flow.comment("Copy from " + value.getClass() + " to " + target.getClass());
+            activeFlow.comment("Copy from " + value.getClass() + " to " + target.getClass());
         }
     }
 
     @Override
     public void writeIfAndStartTrueBlock(final If node) {
-        targetContainer.flow.comment("if");
+        activeFlow.comment("if");
     }
 
     @Override
     public void startIfElseBlock(final If node) {
-        targetContainer.flow.comment("Else");
+        activeFlow.comment("Else");
     }
 
     @Override
     public void finishBlock() {
-        targetContainer.flow.comment("finishBlock");
+        activeFlow.comment("finishBlock");
     }
 
     @Override
     public void startBlock(final Sequencer.Block node) {
         switch (node.type) {
             case LOOP: {
-                targetContainer = targetContainer.flow.loop(node.label);
+                activeContainer = activeFlow.loop(node.label);
+                activeFlow = activeContainer.flow;
                 break;
             }
             case NORMAL: {
-                targetContainer = targetContainer.flow.block(node.label);
+                activeContainer = activeFlow.block(node.label);
+                activeFlow = activeContainer.flow;
                 break;
             }
             default: {
@@ -1144,7 +1150,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     @Override
     public void write(final LineNumberDebugInfo node) {
-        targetContainer.flow.comment("Line number " + node.lineNumber);
+        activeFlow.comment("Line number " + node.lineNumber);
     }
 
     @Override
@@ -1153,32 +1159,32 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     @Override
     public void write(final Goto node) {
-        targetContainer.flow.comment("Here was a goto statement");
+        activeFlow.comment("Here was a goto statement");
     }
 
     @Override
     public void write(final MonitorEnter node) {
-        targetContainer.flow.comment("Monitor enter on " + node.incomingDataFlows[0]);
+        activeFlow.comment("Monitor enter on " + node.incomingDataFlows[0]);
     }
 
     @Override
     public void write(final MonitorExit node) {
-        targetContainer.flow.comment("Monitor exit on " + node.incomingDataFlows[0]);
+        activeFlow.comment("Monitor exit on " + node.incomingDataFlows[0]);
     }
 
     @Override
     public void write(final Unwind node) {
-        targetContainer.flow.comment("Unwind");
+        activeFlow.comment("Unwind");
     }
 
     @Override
     public void write(final Return node) {
-        targetContainer.flow.ret();
+        activeFlow.ret();
     }
 
     @Override
     public void write(final ReturnValue node) {
-        targetContainer.flow.ret(toWasmValue((Value) node.incomingDataFlows[0]));
+        activeFlow.ret(toWasmValue((Value) node.incomingDataFlows[0]));
     }
 
     @Override
@@ -1189,7 +1195,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             case Type.OBJECT:
             case Type.ARRAY: {
                 final StructType objectType = module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class)));
-                targetContainer.flow.setStruct(
+                activeFlow.setStruct(
                         structType,
                         ConstExpressions.ref.cast(structType, toWasmValue((Value) node.outgoingFlows[0])),
                         WasmHelpers.generateFieldName(field.name),
@@ -1198,7 +1204,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 break;
             }
             default: {
-                targetContainer.flow.setStruct(
+                activeFlow.setStruct(
                         structType,
                         ConstExpressions.ref.cast(structType, toWasmValue((Value) node.outgoingFlows[0])),
                         WasmHelpers.generateFieldName(field.name),
@@ -1220,7 +1226,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             case Type.ARRAY:
             case Type.OBJECT: {
                 final StructType objectType = module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class)));
-                targetContainer.flow.setStruct(
+                activeFlow.setStruct(
                         structType,
                         ConstExpressions.ref.cast(structType, toWasmValue((Value) node.outgoingFlows[0])),
                         WasmHelpers.generateFieldName(field.name),
@@ -1229,7 +1235,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 break;
             }
             default: {
-                targetContainer.flow.setStruct(
+                activeFlow.setStruct(
                         structType,
                         ConstExpressions.ref.cast(structType, toWasmValue((Value) node.outgoingFlows[0])),
                         WasmHelpers.generateFieldName(field.name),
@@ -1253,7 +1259,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             case Type.SHORT:
             case Type.INT: {
                 final StructType arrayType = module.getTypes().structTypeByName("i32_array");
-                targetContainer.flow.array.set(
+                activeFlow.array.set(
                         module.getTypes().arrayType(PrimitiveType.i32),
                         ConstExpressions.struct.get(arrayType, ConstExpressions.ref.cast(arrayType, toWasmValue(array)), "data"),
                         toWasmValue(index),
@@ -1263,7 +1269,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             }
             case Type.FLOAT: {
                 final StructType arrayType = module.getTypes().structTypeByName("f32_array");
-                targetContainer.flow.array.set(
+                activeFlow.array.set(
                         module.getTypes().arrayType(PrimitiveType.f32),
                         ConstExpressions.struct.get(arrayType, ConstExpressions.ref.cast(arrayType, toWasmValue(array)), "data"),
                         toWasmValue(index),
@@ -1273,7 +1279,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             }
             case Type.LONG: {
                 final StructType arrayType = module.getTypes().structTypeByName("i64_array");
-                targetContainer.flow.array.set(
+                activeFlow.array.set(
                         module.getTypes().arrayType(PrimitiveType.i64),
                         ConstExpressions.struct.get(arrayType, ConstExpressions.ref.cast(arrayType, toWasmValue(array)), "data"),
                         toWasmValue(index),
@@ -1283,7 +1289,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             }
             case Type.DOUBLE: {
                 final StructType arrayType = module.getTypes().structTypeByName("f64_array");
-                targetContainer.flow.array.set(
+                activeFlow.array.set(
                         module.getTypes().arrayType(PrimitiveType.f64),
                         ConstExpressions.struct.get(arrayType, ConstExpressions.ref.cast(arrayType, toWasmValue(array)), "data"),
                         toWasmValue(index),
@@ -1293,7 +1299,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             }
             case Type.OBJECT: {
                 final StructType arrayType = module.getTypes().structTypeByName("obj_array");
-                targetContainer.flow.array.set(
+                activeFlow.array.set(
                         module.getTypes().arrayType(typeConverter.apply(Type.getType(Object.class))),
                         ConstExpressions.struct.get(arrayType, ConstExpressions.ref.cast(arrayType, toWasmValue(array)), "data"),
                         toWasmValue(index),
@@ -1308,78 +1314,78 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     @Override
     public void writeBreakTo(final String label) {
-        targetContainer.flow.comment("writeBreakTo " + label);
-        targetContainer.flow.branch(targetContainer.findByLabelInHierarchy(label));
+        activeFlow.comment("writeBreakTo " + label);
+        activeFlow.branch(activeContainer.findByLabelInHierarchy(label));
     }
 
     @Override
     public void writeContinueTo(final String label) {
-        targetContainer.flow.comment("writeContinueTo " + label);
-        targetContainer.flow.branch(targetContainer.findByLabelInHierarchy(label));
+        activeFlow.comment("writeContinueTo " + label);
+        activeFlow.branch(activeContainer.findByLabelInHierarchy(label));
     }
 
     @Override
     public void startTryCatch(final String label) {
-        targetContainer.flow.comment("startTryCatch " + label);
+        activeFlow.comment("startTryCatch " + label);
     }
 
     @Override
     public void startCatchBlock() {
-        targetContainer.flow.comment("startCatchBlock");
+        activeFlow.comment("startCatchBlock");
     }
 
     @Override
     public void startCatchHandler(final Type type) {
-        targetContainer.flow.comment("startCatchHandler");
+        activeFlow.comment("startCatchHandler");
     }
 
     @Override
     public void endCatchHandler() {
-        targetContainer.flow.comment("endCatchHandler");
+        activeFlow.comment("endCatchHandler");
     }
 
     @Override
     public void writeRethrowException() {
-        targetContainer.flow.comment("writeRethrowException");
+        activeFlow.comment("writeRethrowException");
     }
 
     @Override
     public void startFinallyBlock() {
-        targetContainer.flow.comment("startFinallyBlock");
+        activeFlow.comment("startFinallyBlock");
     }
 
     @Override
     public void writeSwitch(final TableSwitch node) {
-        targetContainer.flow.comment("TableSwitch");
+        activeFlow.comment("TableSwitch");
     }
 
     @Override
     public void startTableSwitchDefaultBlock() {
-        targetContainer.flow.comment("startTableSwitchDefaultBlock");
+        activeFlow.comment("startTableSwitchDefaultBlock");
     }
 
     @Override
     public void writeSwitch(final LookupSwitch node) {
-        targetContainer.flow.comment("writeSwitch");
+        activeFlow.comment("writeSwitch");
     }
 
     @Override
     public void writeSwitchCase(final int index) {
-        targetContainer.flow.comment("writeSwitchCase");
+        activeFlow.comment("writeSwitchCase");
     }
 
     @Override
     public void writeSwitchDefaultCase() {
-        targetContainer.flow.comment("writeSwitchDefaultCase");
+        activeFlow.comment("writeSwitchDefaultCase");
     }
 
     @Override
     public void finishSwitchCase() {
-        targetContainer.flow.comment("finishSwitchCase");
+        activeFlow.comment("finishSwitchCase");
     }
 
     @Override
     public void writeDebugNote(final String message) {
-        targetContainer.flow.comment(message);
+        activeFlow.comment(message);
     }
 }
