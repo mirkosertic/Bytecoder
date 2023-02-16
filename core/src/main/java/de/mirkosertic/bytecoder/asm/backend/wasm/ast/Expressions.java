@@ -19,58 +19,20 @@ import java.util.List;
 
 public class Expressions {
 
-    public class I32 {
-        public void store(final Alignment alignment, final int offset, final WasmValue ptr, final WasmValue value) {
-            final I32Store store = new I32Store(alignment, offset, ptr, value);
-            parent.addChild(store);
-        }
+    public class Array {
 
-        public void store(final int offset, final WasmValue ptr, final WasmValue value) {
-            final I32Store store = new I32Store(offset, ptr, value);
-            parent.addChild(store);
-        }
-
-        public void store8(final Alignment alignment, final int offset, final WasmValue ptr, final WasmValue value) {
-            final I32Store8 store = new I32Store8(alignment, offset, ptr, value);
-            parent.addChild(store);
-        }
-
-        public void store8(final int offset, final WasmValue ptr, final WasmValue value) {
-            final I32Store8 store = new I32Store8(offset, ptr, value);
-            parent.addChild(store);
-        }
-
-        public void store16(final Alignment alignment, final int offset, final WasmValue ptr, final WasmValue value) {
-            final I32Store16 store = new I32Store16(alignment, offset, ptr, value);
-            parent.addChild(store);
-        }
-
-        public void store16(final int offset, final WasmValue ptr, final WasmValue value) {
-            final I32Store16 store = new I32Store16(offset, ptr, value);
-            parent.addChild(store);
-        }
-    }
-
-    public class F32 {
-        public void store(final Alignment alignment, final int offset, final WasmValue ptr, final WasmValue value) {
-            final F32Store store = new F32Store(alignment, offset, ptr, value);
-            parent.addChild(store);
-        }
-
-        public void store(final int offset, final WasmValue ptr, final WasmValue value) {
-            final F32Store store = new F32Store(offset, ptr, value);
-            parent.addChild(store);
+        public void set(final WasmType type, final WasmValue array, final WasmValue index, final WasmValue value) {
+            final SetWasmArray set = new SetWasmArray(type, array, index, value);
+            parent.addChild(set);
         }
     }
 
     private final Container parent;
-    public final I32 i32;
-    public final F32 f32;
+    public final Array array;
 
     Expressions(final Container parent) {
         this.parent = parent;
-        this.i32 = new I32();
-        this.f32 = new F32();
+        this.array = new Array();
     }
 
     public void comment(final String message) {
@@ -129,10 +91,6 @@ public class Expressions {
         parent.addChild(new Return());
     }
 
-    public void nop() {
-        parent.addChild(new Nop());
-    }
-
     public void drop(final WasmValue value) {
         parent.addChild(new Drop(value));
     }
@@ -156,8 +114,8 @@ public class Expressions {
         parent.addChild(setGlobal);
     }
 
-    public void setStruct(final StructType structType, final WasmValue source, final String fieldName, final WasmValue value) {
-        final SetStruct setStruct = new SetStruct(structType, source, fieldName, value);
+    public void setStruct(final StructType structType, final WasmValue target, final String fieldName, final WasmValue value) {
+        final SetStruct setStruct = new SetStruct(structType, target, fieldName, value);
         parent.addChild(setStruct);
     }
 

@@ -17,32 +17,32 @@ package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class SetStruct implements WasmExpression {
+public class SetWasmArray implements WasmExpression {
 
-    private final StructType structType;
+    private final WasmType type;
 
-    private final WasmValue target;
+    private final WasmValue array;
 
-    private final String fieldName;
+    private final WasmValue index;
 
     private final WasmValue value;
 
-    SetStruct(final StructType structType, final WasmValue target, final String fieldName, final WasmValue value) {
-        this.structType = structType;
-        this.target = target;
-        this.fieldName = fieldName;
+    SetWasmArray(final WasmType type, final WasmValue array, final WasmValue index, final WasmValue value) {
+        this.type = type;
+        this.array = array;
+        this.index = index;
         this.value = value;
     }
 
     @Override
     public void writeTo(final TextWriter writer, final ExportContext context) throws IOException {
         writer.opening();
-        writer.write("struct.set $");
-        writer.write(structType.getName());
-        writer.write(" $");
-        writer.write(fieldName);
+        writer.write("array.set ");
+        type.writeRefTo(writer);
         writer.space();
-        target.writeTo(writer, context);
+        array.writeTo(writer, context);
+        writer.space();
+        index.writeTo(writer, context);
         writer.space();
         value.writeTo(writer, context);
         writer.closing();

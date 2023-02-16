@@ -15,21 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-public class Nop implements WasmExpression {
+public class F64Neg extends UnaryExpression {
 
-    Nop() {
-    }
-
-    @Override
-    public void writeTo(final TextWriter textWriter, final ExportContext context) {
-        textWriter.opening();
-        textWriter.write("nop");
-        textWriter.closing();
-        textWriter.newLine();
-    }
-
-    @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) {
-        codeWriter.writeByte((byte) 0x01);
+    F64Neg(final WasmValue value) {
+        super(value, "f64.neg", (byte) 0x8c);
     }
 }
