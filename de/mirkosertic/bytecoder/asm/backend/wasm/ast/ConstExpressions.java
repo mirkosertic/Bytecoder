@@ -169,46 +169,6 @@ public class ConstExpressions {
             return new I32TruncUF32(value);
         }
 
-        public static I32Load load(final Alignment alignment, final int offset, final WasmValue ptr) {
-            return new I32Load(alignment, offset, ptr);
-        }
-
-        public static I32Load load(final int offset, final WasmValue ptr) {
-            return new I32Load(offset, ptr);
-        }
-
-        public static I32Load8S load8_s(final Alignment alignment, final int offset, final WasmValue ptr) {
-            return new I32Load8S(alignment, offset, ptr);
-        }
-
-        public static I32Load8S load8_s(final int offset, final WasmValue ptr) {
-            return new I32Load8S(offset, ptr);
-        }
-
-        public static I32Load16S load16_s(final Alignment alignment, final int offset, final WasmValue ptr) {
-            return new I32Load16S(alignment, offset, ptr);
-        }
-
-        public static I32Load16S load16_s(final int offset, final WasmValue ptr) {
-            return new I32Load16S(offset, ptr);
-        }
-
-        public static I32Load8U load8_u(final Alignment alignment, final int offset, final WasmValue ptr) {
-            return new I32Load8U(alignment, offset, ptr);
-        }
-
-        public static I32Load8U load8_u(final int offset, final WasmValue ptr) {
-            return new I32Load8U(offset, ptr);
-        }
-
-        public static I32Load16U load16_u(final Alignment alignment, final int offset, final WasmValue ptr) {
-            return new I32Load16U(alignment, offset, ptr);
-        }
-
-        public static I32Load16U load16_u(final int offset, final WasmValue ptr) {
-            return new I32Load16U(offset, ptr);
-        }
-
         public static I32TruncSF64 trunc_f64s(final WasmValue value) {
             return new I32TruncSF64(value);
         }
@@ -381,14 +341,6 @@ public class ConstExpressions {
         public static F32ConvertUI32 convert_ui32(final WasmValue value) {
             return new F32ConvertUI32(value);
         }
-
-        public static F32Load load(final Alignment alignment, final int offset, final WasmValue ptr) {
-            return new F32Load(alignment, offset, ptr);
-        }
-
-        public static F32Load load(final int offset, final WasmValue ptr) {
-            return new F32Load(offset, ptr);
-        }
     }
 
     public static class f64 {
@@ -431,6 +383,10 @@ public class ConstExpressions {
 
         public static F64Add add(final WasmValue leftValue, final WasmValue rightValue) {
             return new F64Add(leftValue, rightValue);
+        }
+
+        public static F64Neg neg(final WasmValue value) {
+            return new F64Neg(value);
         }
     }
 

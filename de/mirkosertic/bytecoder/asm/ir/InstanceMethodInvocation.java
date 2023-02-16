@@ -21,11 +21,11 @@ public class InstanceMethodInvocation extends ControlTokenConsumer implements Po
 
     public final MethodInsnNode insnNode;
 
-    public final ResolvedMethod resolvedMethod;
+    public final ResolvedMethod method;
 
-    public InstanceMethodInvocation(final MethodInsnNode insnNode, final ResolvedMethod rm) {
+    public InstanceMethodInvocation(final MethodInsnNode insnNode, final ResolvedMethod method) {
         this.insnNode = insnNode;
-        this.resolvedMethod = rm;
+        this.method = method;
     }
 
     @Override

@@ -424,7 +424,7 @@ public class WasmBackend {
                                     functionParams, toWASMType.apply(method.methodType.getReturnType()));
                         }
 
-                        if (!Modifier.isStatic(method.methodNode.access)) {
+                        if (!Modifier.isStatic(method.methodNode.access) && !"<init>".equals(method.methodNode.name)) {
                             function.toTable();
                         }
 
@@ -519,7 +519,7 @@ public class WasmBackend {
         }
 
         final WasmCompileResult result = new WasmCompileResult();
-        result.add(new CompileResult.BinaryContent(compileOptions.getFilenamePrefix() + "wasmclasses.wasm", theBinaryOutput.toByteArray()));
+        //result.add(new CompileResult.BinaryContent(compileOptions.getFilenamePrefix() + "wasmclasses.wasm", theBinaryOutput.toByteArray()));
         result.add(new CompileResult.StringContent(compileOptions.getFilenamePrefix() + "wasmclasses.wat", theStringWriter.toString()));
 
         return result;

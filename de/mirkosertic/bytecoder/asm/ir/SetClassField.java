@@ -17,14 +17,14 @@ package de.mirkosertic.bytecoder.asm.ir;
 
 public class SetClassField extends ControlTokenConsumer implements PotentialSideeffect {
 
-    public final ResolvedField resolvedField;
+    public final ResolvedField field;
 
-    public SetClassField(final ResolvedField resolvedField) {
-        this.resolvedField = resolvedField;
+    public SetClassField(final ResolvedField field) {
+        this.field = field;
     }
 
     @Override
     public String additionalDebugInfo() {
-        return ": " + resolvedField.name;
+        return ": " + field.name;
     }
 }

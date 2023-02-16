@@ -221,7 +221,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
             pw.print(".");
 
-            pw.print(generateMethodName(node.insnNode.name, node.resolvedMethod.methodType));
+            pw.print(generateMethodName(node.insnNode.name, node.method.methodType));
             pw.print("(");
             for (int i = 1; i < node.incomingDataFlows.length; i++) {
                 if (i > 1) {
@@ -234,7 +234,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             pw.print(generateClassName(invocationTarget));
             pw.print(".prototype.");
 
-            pw.print(generateMethodName(node.insnNode.name, node.resolvedMethod.methodType));
+            pw.print(generateMethodName(node.insnNode.name, node.method.methodType));
             pw.print(".call(");
             writeExpression(node.incomingDataFlows[0]);
             for (int i = 1; i < node.incomingDataFlows.length; i++) {
@@ -664,7 +664,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         writeIndent();
         writeExpression(node.outgoingFlows[0]);
         pw.print(".");
-        pw.print(generateFieldName(node.resolvedField.name));
+        pw.print(generateFieldName(node.field.name));
         pw.print(" = ");
         writeExpression(node.incomingDataFlows[0]);
         pw.println(";");
@@ -676,7 +676,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         writeIndent();
         writeExpression(node.outgoingFlows[0]);
         pw.print(".");
-        pw.print(generateFieldName(node.resolvedField.name));
+        pw.print(generateFieldName(node.field.name));
         pw.print(" = ");
         writeExpression(node.incomingDataFlows[0]);
         pw.println(";");
@@ -1162,7 +1162,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
         writeIndent();
 
-        final ResolvedClass resolvedClass = node.resolvedMethod.owner;
+        final ResolvedClass resolvedClass = node.method.owner;
 
         pw.print(generateClassName(resolvedClass.type));
         if (resolvedClass.requiresClassInitializer()) {
@@ -1170,7 +1170,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         }
 
         pw.print(".");
-        pw.print(generateMethodName(node.resolvedMethod.methodNode.name, node.resolvedMethod.methodType));
+        pw.print(generateMethodName(node.method.methodNode.name, node.method.methodType));
         pw.print("(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {

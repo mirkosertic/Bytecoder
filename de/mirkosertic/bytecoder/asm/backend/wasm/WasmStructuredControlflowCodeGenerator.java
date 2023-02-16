@@ -125,7 +125,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private final Map<AbstractVar, Local> varLocalMap;
 
-    private final Container targetContainer;
+    private Container targetContainer;
 
     public WasmStructuredControlflowCodeGenerator(final CompileUnit compileUnit, final Module module,
                                                   final Map<ResolvedClass, StructType> rtMappings,
@@ -162,23 +162,105 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     }
 
     @Override
-    public void write(final InstanceMethodInvocation value) {
-        targetContainer.flow.comment("InstanceMethodInvocation");
+    public void write(final InstanceMethodInvocation node) {
+        final ResolvedMethod rm = node.method;
+        final ResolvedClass cl = rm.owner;
+
+        final List<WasmValue> callArgs = new ArrayList<>();
+
+        final String functionName = WasmHelpers.generateClassName(cl.type) + "$" + WasmHelpers.generateMethodName(rm.methodNode.name, rm.methodType);
+        for (int i = 0; i < node.incomingDataFlows.length; i++) {
+            final Value arg = (Value) node.incomingDataFlows[i];
+            callArgs.add(toWasmValue(arg));
+        }
+        targetContainer.flow.voidCall(ConstExpressions.weakFunctionReference(functionName), callArgs);
     }
 
     @Override
     public void write(final VirtualMethodInvocation node) {
-        targetContainer.flow.comment("VirtualMethodInvocation");
+        final ResolvedMethod rm = node.resolvedMethod;
+        final ResolvedClass cl = rm.owner;
+
+        final List<WasmValue> indirectCallArgs = new ArrayList<>();
+
+        final List<WasmType> vtArgs = new ArrayList<>();
+        vtArgs.add(PrimitiveType.i32);
+        final FunctionType vtType = module.getTypes().functionType(vtArgs, PrimitiveType.i32);
+
+        for (final Node arg : node.incomingDataFlows) {
+            indirectCallArgs.add(toWasmValue((Value) arg));
+        }
+
+        final List<WasmValue> resolverArgs = new ArrayList<>();
+        resolverArgs.add(ConstExpressions.i32.c(-1)); // TODO: Resolve function index
+
+        final StructType classType = rtMappings.get(cl);
+
+        resolverArgs.add(ConstExpressions.struct.get(
+                classType,
+                ConstExpressions.ref.cast(classType, toWasmValue((Value) node.incomingDataFlows[0])),
+                "vt_resolver"
+        ));
+
+        final WasmValue resolver = ConstExpressions.ref.callRef(vtType, resolverArgs);
+        final FunctionType ft = functionTypeConverter.apply(node.resolvedMethod);
+
+        targetContainer.flow.voidCallIndirect(ft, indirectCallArgs, resolver);
     }
 
     @Override
     public void write(final StaticMethodInvocation node) {
-        targetContainer.flow.comment("StaticMethodInvocation");
+        final ResolvedMethod rm = node.method;
+        final ResolvedClass cl = rm.owner;
+
+        final List<WasmValue> callArgs = new ArrayList<>();
+
+        final String className = WasmHelpers.generateClassName(cl.type);
+        if (cl.requiresClassInitializer()) {
+            final Callable initFunction = ConstExpressions.weakFunctionReference(className + "_i");
+            callArgs.add(ConstExpressions.call(initFunction, Collections.emptyList()));
+        } else {
+            final Global global = module.getGlobals().globalsIndex().globalByLabel(className  + "_cls");
+            callArgs.add(ConstExpressions.getGlobal(global));
+        }
+
+        final String functionName = WasmHelpers.generateClassName(cl.type) + "$" + WasmHelpers.generateMethodName(rm.methodNode.name, rm.methodType);
+        for (int i = 1; i < node.incomingDataFlows.length; i++) {
+            callArgs.add(toWasmValue((Value) node.incomingDataFlows[i]));
+        }
+        targetContainer.flow.voidCall(ConstExpressions.weakFunctionReference(functionName), callArgs);
     }
 
     @Override
     public void write(final InterfaceMethodInvocation node) {
-        targetContainer.flow.comment("InterfaceMethodInvocation");
+        final ResolvedMethod rm = node.method;
+        final ResolvedClass cl = rm.owner;
+
+        final List<WasmValue> indirectCallArgs = new ArrayList<>();
+
+        final List<WasmType> vtArgs = new ArrayList<>();
+        vtArgs.add(PrimitiveType.i32);
+        final FunctionType vtType = module.getTypes().functionType(vtArgs, PrimitiveType.i32);
+
+        for (final Node arg : node.incomingDataFlows) {
+            indirectCallArgs.add(toWasmValue((Value) arg));
+        }
+
+        final List<WasmValue> resolverArgs = new ArrayList<>();
+        resolverArgs.add(ConstExpressions.i32.c(-1)); // TODO: Resolve function index
+
+        final StructType classType = rtMappings.get(cl);
+
+        resolverArgs.add(ConstExpressions.struct.get(
+                classType,
+                ConstExpressions.ref.cast(classType, toWasmValue((Value) node.incomingDataFlows[0])),
+                "vt_resolver"
+        ));
+
+        final WasmValue resolver = ConstExpressions.ref.callRef(vtType, resolverArgs);
+        final FunctionType ft = functionTypeConverter.apply(node.method);
+
+        targetContainer.flow.voidCallIndirect(ft, indirectCallArgs, resolver);
     }
 
     private WasmValue toWasmValue(final This value) {
@@ -841,9 +923,9 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             case Type.LONG:
                 return ConstExpressions.i64.mul(toWasmValue(left), ConstExpressions.i64.c(-1L));
             case Type.FLOAT:
-                return ConstExpressions.f32.mul(toWasmValue(left), ConstExpressions.f32.c(-1f));
+                return ConstExpressions.f32.neg(toWasmValue(left));
             case Type.DOUBLE:
-                return ConstExpressions.f64.mul(toWasmValue(left), ConstExpressions.f64.c(-1d));
+                return ConstExpressions.f64.neg(toWasmValue(left));
             default:
                 throw new IllegalStateException("Not implemented neg for " + value.type);
         }
@@ -1045,32 +1127,43 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     @Override
     public void startBlock(final Sequencer.Block node) {
-        targetContainer.flow.comment("Start " + node.label + ", " + node.type);
+        switch (node.type) {
+            case LOOP: {
+                targetContainer = targetContainer.flow.loop(node.label);
+                break;
+            }
+            case NORMAL: {
+                targetContainer = targetContainer.flow.block(node.label);
+                break;
+            }
+            default: {
+                throw new IllegalArgumentException("Not supported block type " + node.type);
+            }
+        }
     }
 
     @Override
     public void write(final LineNumberDebugInfo node) {
-        targetContainer.flow.comment("Line number #" + node.lineNumber);
+        targetContainer.flow.comment("Line number " + node.lineNumber);
     }
 
     @Override
     public void write(final FrameDebugInfo node) {
-        targetContainer.flow.comment("FrameDebugInfo");
     }
 
     @Override
     public void write(final Goto node) {
-        targetContainer.flow.comment("Goto");
+        targetContainer.flow.comment("Here was a goto statement");
     }
 
     @Override
     public void write(final MonitorEnter node) {
-        targetContainer.flow.comment("MonitorEnter");
+        targetContainer.flow.comment("Monitor enter on " + node.incomingDataFlows[0]);
     }
 
     @Override
     public void write(final MonitorExit node) {
-        targetContainer.flow.comment("MonitorExit");
+        targetContainer.flow.comment("Monitor exit on " + node.incomingDataFlows[0]);
     }
 
     @Override
@@ -1080,37 +1173,149 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     @Override
     public void write(final Return node) {
-        targetContainer.flow.comment("Return");
+        targetContainer.flow.ret();
     }
 
     @Override
     public void write(final ReturnValue node) {
-        targetContainer.flow.comment("ReturnValue");
+        targetContainer.flow.ret(toWasmValue((Value) node.incomingDataFlows[0]));
     }
 
     @Override
     public void write(final SetInstanceField node) {
-        targetContainer.flow.comment("SetInstanceField");
+        final ResolvedField field = node.field;
+        final StructType structType = module.getTypes().structTypeByName(WasmHelpers.generateClassName(field.owner.type));
+        switch (field.type.getSort()) {
+            case Type.OBJECT:
+            case Type.ARRAY: {
+                final StructType objectType = module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class)));
+                targetContainer.flow.setStruct(
+                        structType,
+                        ConstExpressions.ref.cast(structType, toWasmValue((Value) node.outgoingFlows[0])),
+                        WasmHelpers.generateFieldName(field.name),
+                        ConstExpressions.ref.cast(objectType, toWasmValue((Value) node.incomingDataFlows[0]))
+                );
+                break;
+            }
+            default: {
+                targetContainer.flow.setStruct(
+                        structType,
+                        ConstExpressions.ref.cast(structType, toWasmValue((Value) node.outgoingFlows[0])),
+                        WasmHelpers.generateFieldName(field.name),
+                        toWasmValue((Value) node.incomingDataFlows[0])
+                );
+                break;
+            }
+        }
     }
 
     @Override
     public void write(final SetClassField node) {
-        targetContainer.flow.comment("SetClassField");
+
+        final ResolvedField field = node.field;
+        final ResolvedClass cl = field.owner;
+        final StructType structType = rtMappings.get(cl);
+
+        switch (field.type.getSort()) {
+            case Type.ARRAY:
+            case Type.OBJECT: {
+                final StructType objectType = module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class)));
+                targetContainer.flow.setStruct(
+                        structType,
+                        ConstExpressions.ref.cast(structType, toWasmValue((Value) node.outgoingFlows[0])),
+                        WasmHelpers.generateFieldName(field.name),
+                        ConstExpressions.ref.cast(objectType, toWasmValue((Value) node.incomingDataFlows[0]))
+                );
+                break;
+            }
+            default: {
+                targetContainer.flow.setStruct(
+                        structType,
+                        ConstExpressions.ref.cast(structType, toWasmValue((Value) node.outgoingFlows[0])),
+                        WasmHelpers.generateFieldName(field.name),
+                        toWasmValue((Value) node.incomingDataFlows[0])
+                );
+                break;
+            }
+        }
     }
 
     @Override
     public void write(final ArrayStore node) {
-        targetContainer.flow.comment("ArrayStore");
+
+        final Value array = (Value) node.incomingDataFlows[0];
+        final Value index = (Value) node.incomingDataFlows[1];
+        final Value value = (Value) node.incomingDataFlows[2];
+
+        switch (value.type.getSort()) {
+            case Type.BYTE:
+            case Type.CHAR:
+            case Type.SHORT:
+            case Type.INT: {
+                final StructType arrayType = module.getTypes().structTypeByName("i32_array");
+                targetContainer.flow.array.set(
+                        module.getTypes().arrayType(PrimitiveType.i32),
+                        ConstExpressions.struct.get(arrayType, ConstExpressions.ref.cast(arrayType, toWasmValue(array)), "data"),
+                        toWasmValue(index),
+                        toWasmValue(value)
+                );
+                break;
+            }
+            case Type.FLOAT: {
+                final StructType arrayType = module.getTypes().structTypeByName("f32_array");
+                targetContainer.flow.array.set(
+                        module.getTypes().arrayType(PrimitiveType.f32),
+                        ConstExpressions.struct.get(arrayType, ConstExpressions.ref.cast(arrayType, toWasmValue(array)), "data"),
+                        toWasmValue(index),
+                        toWasmValue(value)
+                );
+                break;
+            }
+            case Type.LONG: {
+                final StructType arrayType = module.getTypes().structTypeByName("i64_array");
+                targetContainer.flow.array.set(
+                        module.getTypes().arrayType(PrimitiveType.i64),
+                        ConstExpressions.struct.get(arrayType, ConstExpressions.ref.cast(arrayType, toWasmValue(array)), "data"),
+                        toWasmValue(index),
+                        toWasmValue(value)
+                );
+                break;
+            }
+            case Type.DOUBLE: {
+                final StructType arrayType = module.getTypes().structTypeByName("f64_array");
+                targetContainer.flow.array.set(
+                        module.getTypes().arrayType(PrimitiveType.f64),
+                        ConstExpressions.struct.get(arrayType, ConstExpressions.ref.cast(arrayType, toWasmValue(array)), "data"),
+                        toWasmValue(index),
+                        toWasmValue(value)
+                );
+                break;
+            }
+            case Type.OBJECT: {
+                final StructType arrayType = module.getTypes().structTypeByName("obj_array");
+                targetContainer.flow.array.set(
+                        module.getTypes().arrayType(typeConverter.apply(Type.getType(Object.class))),
+                        ConstExpressions.struct.get(arrayType, ConstExpressions.ref.cast(arrayType, toWasmValue(array)), "data"),
+                        toWasmValue(index),
+                        toWasmValue(value)
+                );
+                break;
+            }
+            default:
+                throw new IllegalStateException("Not implemented arraystore for " + value.type + " sort " + value.type.getSort());
+        }
     }
 
     @Override
     public void writeBreakTo(final String label) {
         targetContainer.flow.comment("writeBreakTo " + label);
+        targetContainer.flow.branch(targetContainer.findByLabelInHierarchy(label));
     }
 
     @Override
     public void writeContinueTo(final String label) {
         targetContainer.flow.comment("writeContinueTo " + label);
+        targetContainer.flow.branch(targetContainer.findByLabelInHierarchy(label));
     }
 
     @Override
