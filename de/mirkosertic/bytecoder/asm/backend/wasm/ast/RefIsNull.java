@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,24 +15,10 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-public class LabeledContainer extends Container {
 
-    private final String label;
+public class RefIsNull extends UnaryExpression {
 
-    public LabeledContainer(final Container parent, final String label) {
-        super(parent);
-        this.label = label;
-    }
-
-    public String getLabel() {
-        return label;
-    }
-
-    @Override
-    public LabeledContainer findByLabelInHierarchy(final String aLabel) {
-        if (aLabel.equalsIgnoreCase(label)) {
-            return this;
-        }
-        return super.findByLabelInHierarchy(aLabel);
+    RefIsNull(final WasmValue left) {
+        super(left,"ref.is_null", (byte) 0x95);
     }
 }

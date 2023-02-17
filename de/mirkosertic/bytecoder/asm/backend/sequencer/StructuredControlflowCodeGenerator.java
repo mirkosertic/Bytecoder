@@ -53,9 +53,11 @@ public interface StructuredControlflowCodeGenerator {
 
     void write(Copy node);
 
-    void writeIfAndStartTrueBlock(If node);
+    void startIfWithTrueBlock(If node);
 
     void startIfElseBlock(If node);
+
+    void finishIfBlock();
 
     void finishBlock();
 
@@ -93,24 +95,27 @@ public interface StructuredControlflowCodeGenerator {
 
     void startCatchHandler(Type type);
 
-    void endCatchHandler();
+    void finishCatchHandler();
 
     void writeRethrowException();
 
-    void startFinallyBlock();
+    void startTableSwitch(final TableSwitch node);
 
-    void writeSwitch(final TableSwitch node);
+    void finishLookupSwitch();
+
+    void finishTableSwitch();
 
     void startTableSwitchDefaultBlock();
 
-    void writeSwitch(final LookupSwitch node);
+    void finishTableSwitchDefaultBlock();
+
+    void startLookupSwitch(final LookupSwitch node);
 
     void writeSwitchCase(int index);
 
     void writeSwitchDefaultCase();
 
+    void finishSwitchDefault();
+
     void finishSwitchCase();
-
-    void writeDebugNote(String message);
-
 }

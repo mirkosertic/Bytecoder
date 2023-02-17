@@ -15,24 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-public class LabeledContainer extends Container {
+public class I64LeS extends BinaryExpression {
 
-    private final String label;
-
-    public LabeledContainer(final Container parent, final String label) {
-        super(parent);
-        this.label = label;
-    }
-
-    public String getLabel() {
-        return label;
-    }
-
-    @Override
-    public LabeledContainer findByLabelInHierarchy(final String aLabel) {
-        if (aLabel.equalsIgnoreCase(label)) {
-            return this;
-        }
-        return super.findByLabelInHierarchy(aLabel);
+    I64LeS(final WasmValue leftValue, final WasmValue rightValue) {
+        super(leftValue, rightValue, "i64.le_s", (byte) 0x4c);
     }
 }

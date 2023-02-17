@@ -1393,7 +1393,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     @Override
-    public void writeIfAndStartTrueBlock(final If node) {
+    public void startIfWithTrueBlock(final If node) {
         writeIndent();
         pw.print("if (");
 
@@ -1409,6 +1409,13 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         writeIndent();
         pw.println("} else {");
         level++;
+    }
+
+    @Override
+    public void finishIfBlock() {
+        level--;
+        writeIndent();
+        pw.println("}");
     }
 
     @Override
@@ -1459,7 +1466,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     @Override
-    public void endCatchHandler() {
+    public void finishCatchHandler() {
         level--;
         writeIndent();
         pw.println("}");
@@ -1469,14 +1476,6 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     public void writeRethrowException() {
         writeIndent();
         pw.println("throw __ex;");
-    }
-
-    @Override
-    public void startFinallyBlock() {
-        level--;
-        writeIndent();
-        pw.println("} finally {");
-        level++;
     }
 
     @Override
@@ -1510,7 +1509,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     @Override
-    public void writeSwitch(final TableSwitch node) {
+    public void startTableSwitch(final TableSwitch node) {
         writeIndent();
         pw.print("if ((");
         writeExpression(node.incomingDataFlows[0]);
@@ -1537,7 +1536,14 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     @Override
-    public void writeSwitch(final LookupSwitch node) {
+    public void finishTableSwitchDefaultBlock() {
+        level--;
+        writeIndent();
+        pw.println("}");
+    }
+
+    @Override
+    public void startLookupSwitch(final LookupSwitch node) {
         writeIndent();
         pw.print("switch (");
         writeExpression(node.incomingDataFlows[0]);
@@ -1562,6 +1568,13 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     @Override
+    public void finishSwitchDefault() {
+        level--;
+        writeIndent();
+        pw.println("}");
+    }
+
+    @Override
     public void finishSwitchCase() {
         level--;
         writeIndent();
@@ -1569,9 +1582,13 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     @Override
-    public void writeDebugNote(final String message) {
+    public void finishLookupSwitch() {
+        level--;
         writeIndent();
-        pw.print("// ");
-        pw.println(message);
+        pw.println("}");
+    }
+
+    @Override
+    public void finishTableSwitch() {
     }
 }

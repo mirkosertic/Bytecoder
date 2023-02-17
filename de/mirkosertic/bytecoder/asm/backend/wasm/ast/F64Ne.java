@@ -15,24 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-public class LabeledContainer extends Container {
+public class F64Ne extends BinaryExpression {
 
-    private final String label;
-
-    public LabeledContainer(final Container parent, final String label) {
-        super(parent);
-        this.label = label;
-    }
-
-    public String getLabel() {
-        return label;
-    }
-
-    @Override
-    public LabeledContainer findByLabelInHierarchy(final String aLabel) {
-        if (aLabel.equalsIgnoreCase(label)) {
-            return this;
-        }
-        return super.findByLabelInHierarchy(aLabel);
+    F64Ne(final WasmValue leftValue, final WasmValue rightValue) {
+        super(leftValue, rightValue, "f64.ne", (byte) 0x5c);
     }
 }
