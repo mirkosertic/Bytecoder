@@ -205,9 +205,7 @@ public class Sequencer {
                 return;
             }
         }
-        codegenerator.writeDebugNote("GOTO " + graph.nodes().indexOf(target) + " from " + graph.nodes().indexOf(currentToken) + " to " + target.getClass().getSimpleName() + " " + target.additionalDebugInfo());
-        // TODO: We have to insert a goto here!
-        System.out.println("GOTO " + graph.nodes().indexOf(target) + " from " + graph.nodes().indexOf(currentToken) + " to " + target.getClass().getSimpleName() + " " + target.additionalDebugInfo());
+        throw new IllegalStateException("GOTO " + graph.nodes().indexOf(target) + " from " + graph.nodes().indexOf(currentToken) + " to " + target.getClass().getSimpleName() + " " + target.additionalDebugInfo());
     }
 
     private void visitBranchingNodeTemplate(final ControlTokenConsumer node, final Stack<Block> activeStack, final Consumer<Stack<Block>> nodeCallback) {
@@ -268,7 +266,7 @@ public class Sequencer {
 
     private void visit(final If node, final Stack<Block> activeStack) {
         visitBranchingNodeTemplate(node, activeStack, blocks -> {
-            codegenerator.writeIfAndStartTrueBlock(node);
+            codegenerator.startIfWithTrueBlock(node);
 
             for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
                 if (entry.getKey() instanceof Projection.TrueProjection) {
@@ -294,14 +292,14 @@ public class Sequencer {
                 }
             }
 
-            codegenerator.finishBlock();
+            codegenerator.finishIfBlock();
         });
     }
 
     private void visit(final TableSwitch node, final Stack<Block> as) {
 
         visitBranchingNodeTemplate(node, as, blocks -> {
-            codegenerator.writeSwitch(node);
+            codegenerator.startTableSwitch(node);
 
             final List<Map.Entry<Projection, ControlTokenConsumer>> sortedProjections =
                     node.controlFlowsTo.entrySet().stream()
@@ -338,43 +336,50 @@ public class Sequencer {
                 }
             }
 
-            codegenerator.finishBlock();
+            codegenerator.finishTableSwitchDefaultBlock();
+
+            codegenerator.finishTableSwitch();
         });
     }
 
     private void visit(final LookupSwitch node, final Stack<Block> as) {
 
         visitBranchingNodeTemplate(node, as, blocks -> {
-            codegenerator.writeSwitch(node);
+            codegenerator.startLookupSwitch(node);
 
             for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
                 if (entry.getKey() instanceof Projection.KeyedProjection) {
                     final Projection.KeyedProjection indexedProjection = (Projection.KeyedProjection) entry.getKey();
                     codegenerator.writeSwitchCase(indexedProjection.key);
+
                     if (entry.getValue().controlComingFrom.size() > 1) {
                         // Merge nodes are handled in block form
                         generateGOTO(node, entry.getValue(), blocks);
                     } else {
                         visitDominationTreeOf(entry.getValue(), blocks);
                     }
+
                     codegenerator.finishSwitchCase();
                 }
             }
 
             for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {
                 if (entry.getKey() instanceof Projection.DefaultProjection) {
+
                     codegenerator.writeSwitchDefaultCase();
+
                     if (entry.getValue().controlComingFrom.size() > 1) {
                         // Merge nodes are handled in block form
                         generateGOTO(node, entry.getValue(), blocks);
                     } else {
                         visitDominationTreeOf(entry.getValue(), blocks);
                     }
-                    codegenerator.finishSwitchCase();
+
+                    codegenerator.finishSwitchDefault();
                 }
             }
 
-            codegenerator.finishBlock();
+            codegenerator.finishLookupSwitch();
         });
     }
 
@@ -416,7 +421,7 @@ public class Sequencer {
 
                     visitDominationTreeOf(handler.getValue(), blocks);
 
-                    codegenerator.endCatchHandler();
+                    codegenerator.finishCatchHandler();
                 }
 
                 codegenerator.writeRethrowException();

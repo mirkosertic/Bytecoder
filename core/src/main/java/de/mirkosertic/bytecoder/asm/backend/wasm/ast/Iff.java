@@ -61,6 +61,11 @@ public class Iff extends LabeledContainer implements WasmExpression {
             public LabeledContainer findByLabelInHierarchy(final String aLabel) {
                 return Iff.super.findByLabelInHierarchy(aLabel);
             }
+
+            @Override
+            public Container end() {
+                return Iff.super.end();
+            }
         });
     }
 

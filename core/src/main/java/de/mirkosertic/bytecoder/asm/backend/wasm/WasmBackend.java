@@ -451,6 +451,10 @@ public class WasmBackend {
 
                         final DominatorTree dt = new DominatorTree(g);
 
+                        if (cl.classNode.sourceFile != null) {
+                            implFunction.flow.comment("source file is " + cl.classNode.sourceFile);
+                        }
+
                         new Sequencer(g, dt, new WasmStructuredControlflowCodeGenerator(compileUnit, module, rtTypeMappings, objectTypeMappings, implFunction, toWASMType, toFunctionType));
 
                         implFunction.flow.unreachable();

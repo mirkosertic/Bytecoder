@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.asm.backend.wasm;
 
 import de.mirkosertic.bytecoder.asm.backend.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.asm.backend.sequencer.StructuredControlflowCodeGenerator;
+import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Block;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Callable;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.ConstExpressions;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Container;
@@ -25,11 +26,15 @@ import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Expressions;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.FunctionType;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Global;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.HostType;
+import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Iff;
+import de.mirkosertic.bytecoder.asm.backend.wasm.ast.LabeledContainer;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Local;
+import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Loop;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Module;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.PrimitiveType;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.RefType;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.StructType;
+import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Try;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.WasmType;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.WasmValue;
 import de.mirkosertic.bytecoder.asm.ir.AbstractVar;
@@ -63,6 +68,8 @@ import de.mirkosertic.bytecoder.asm.ir.New;
 import de.mirkosertic.bytecoder.asm.ir.NewArray;
 import de.mirkosertic.bytecoder.asm.ir.Node;
 import de.mirkosertic.bytecoder.asm.ir.NullReference;
+import de.mirkosertic.bytecoder.asm.ir.NullTest;
+import de.mirkosertic.bytecoder.asm.ir.NumericalTest;
 import de.mirkosertic.bytecoder.asm.ir.ObjectString;
 import de.mirkosertic.bytecoder.asm.ir.Or;
 import de.mirkosertic.bytecoder.asm.ir.PHI;
@@ -73,6 +80,7 @@ import de.mirkosertic.bytecoder.asm.ir.PrimitiveLong;
 import de.mirkosertic.bytecoder.asm.ir.PrimitiveShort;
 import de.mirkosertic.bytecoder.asm.ir.ReadClassField;
 import de.mirkosertic.bytecoder.asm.ir.ReadInstanceField;
+import de.mirkosertic.bytecoder.asm.ir.ReferenceTest;
 import de.mirkosertic.bytecoder.asm.ir.ResolveCallsite;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedField;
@@ -110,6 +118,92 @@ import java.util.function.Function;
 
 public class WasmStructuredControlflowCodeGenerator implements StructuredControlflowCodeGenerator {
 
+    static class NestingLevel<T extends Container> {
+
+        final NestingLevel parent;
+
+        Expressions activeFlow;
+
+        final T activeContainer;
+
+        public NestingLevel(final NestingLevel parent, final Expressions activeFlow, final T activeContainer) {
+            this.parent = parent;
+            this.activeFlow = activeFlow;
+            this.activeContainer = activeContainer;
+        }
+
+        public LabeledContainer findByLabelInHierarchy(final String label) {
+            return activeContainer.findByLabelInHierarchy(label);
+        }
+
+        int depth() {
+            int count = 0;
+            NestingLevel t = this;
+            while (t != null) {
+                count = count + 1;
+                t = t.parent;
+            }
+            return count;
+        }
+
+        void writeDebug(final String message) {
+            /*
+            for (int i = 0; i < depth(); i++) {
+                System.out.print(" ");
+            }
+            System.out.print(message);
+            System.out.print(" : active stack is");
+            NestingLevel t = this;
+            while (t != null) {
+                System.out.print(" ");
+                System.out.print(t.getClass().getSimpleName());
+                System.out.print(":");
+                System.out.print(t.activeContainer.getClass().getSimpleName());
+                t = t.parent;
+            }
+            System.out.println();*/
+            activeFlow.comment(message);
+        }
+    }
+
+    static class NestingLevelIff extends NestingLevel<Iff> {
+
+        public NestingLevelIff(final NestingLevel parent, final Expressions activeFlow, final Iff activeContainer) {
+            super(parent, activeFlow, activeContainer);
+        }
+    }
+
+    static class NestingLevelBlock extends NestingLevel<Block> {
+
+        public NestingLevelBlock(final NestingLevel parent, final Expressions activeFlow, final Block activeContainer) {
+            super(parent, activeFlow, activeContainer);
+        }
+    }
+
+    static class NestingLevelLoop extends NestingLevel<Loop> {
+
+        public NestingLevelLoop(final NestingLevel parent, final Expressions activeFlow, final Loop activeContainer) {
+            super(parent, activeFlow, activeContainer);
+        }
+    }
+
+    static class NestingLevelSwitch extends NestingLevel<LabeledContainer> {
+
+        final WasmValue valueToCheck;
+
+        public NestingLevelSwitch(final NestingLevel parent, final Expressions activeFlow, final LabeledContainer activeContainer, final WasmValue valueToCheck) {
+            super(parent, activeFlow, activeContainer);
+            this.valueToCheck = valueToCheck;
+        }
+    }
+
+    static class NestingLevelTry extends NestingLevel<Try> {
+
+        public NestingLevelTry(final NestingLevel parent, final Expressions activeFlow, final Try activeContainer) {
+            super(parent, activeFlow, activeContainer);
+        }
+    }
+
     private final CompileUnit compileUnit;
 
     private final Module module;
@@ -126,9 +220,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private final Map<AbstractVar, Local> varLocalMap;
 
-    private Container activeContainer;
-
-    private Expressions activeFlow;
+    private NestingLevel activeLevel;
 
     public WasmStructuredControlflowCodeGenerator(final CompileUnit compileUnit, final Module module,
                                                   final Map<ResolvedClass, StructType> rtMappings,
@@ -144,12 +236,12 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         this.typeConverter = typeConverter;
         this.functionTypeConverter = functionTypeConverter;
         this.varLocalMap = new HashMap<>();
-        this.activeContainer = exportableFunction;
-        this.activeFlow = this.activeContainer.flow;
+        this.activeLevel = new NestingLevel(null, exportableFunction.flow, exportableFunction);
     }
 
     @Override
     public void registerVariables(final List<AbstractVar> variables) {
+
         for (int i = 0; i < variables.size(); i++) {
             final AbstractVar v = variables.get(i);
             final String varName;
@@ -177,7 +269,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             final Value arg = (Value) node.incomingDataFlows[i];
             callArgs.add(toWasmValue(arg));
         }
-        activeFlow.voidCall(ConstExpressions.weakFunctionReference(functionName), callArgs);
+        activeLevel.activeFlow.voidCall(ConstExpressions.weakFunctionReference(functionName), callArgs);
     }
 
     @Override
@@ -209,7 +301,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         final WasmValue resolver = ConstExpressions.ref.callRef(vtType, resolverArgs);
         final FunctionType ft = functionTypeConverter.apply(node.resolvedMethod);
 
-        activeFlow.voidCallIndirect(ft, indirectCallArgs, resolver);
+        activeLevel.activeFlow.voidCallIndirect(ft, indirectCallArgs, resolver);
     }
 
     @Override
@@ -232,7 +324,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             callArgs.add(toWasmValue((Value) node.incomingDataFlows[i]));
         }
-        activeFlow.voidCall(ConstExpressions.weakFunctionReference(functionName), callArgs);
+        activeLevel.activeFlow.voidCall(ConstExpressions.weakFunctionReference(functionName), callArgs);
     }
 
     @Override
@@ -264,7 +356,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         final WasmValue resolver = ConstExpressions.ref.callRef(vtType, resolverArgs);
         final FunctionType ft = functionTypeConverter.apply(node.method);
 
-        activeFlow.voidCallIndirect(ft, indirectCallArgs, resolver);
+        activeLevel.activeFlow.voidCallIndirect(ft, indirectCallArgs, resolver);
     }
 
     private WasmValue toWasmValue(final This value) {
@@ -940,6 +1032,113 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         return ConstExpressions.ref.cast((StructType) refType.getType(), toWasmValue((Value) value.incomingDataFlows[0]));
     }
 
+    private WasmValue toWasmValue(final ReferenceTest value) {
+        switch (value.operation) {
+            case NE:
+                return ConstExpressions.select(ConstExpressions.i32.c(1), ConstExpressions.i32.c(0), ConstExpressions.ref.eq(toWasmValue((Value) value.incomingDataFlows[0]), toWasmValue((Value) value.incomingDataFlows[1])));
+            case EQ:
+                return ConstExpressions.ref.eq(toWasmValue((Value) value.incomingDataFlows[0]), toWasmValue((Value) value.incomingDataFlows[1]));
+            default:
+                throw new IllegalArgumentException("Unsupported operation : " + value.operation);
+        }
+    }
+
+    private WasmValue toWasmValue(final NullTest value) {
+        switch (value.operation) {
+            case NOTNULL:
+                return ConstExpressions.select(ConstExpressions.i32.c(1), ConstExpressions.i32.c(0), ConstExpressions.ref.isnull(toWasmValue((Value) value.incomingDataFlows[0])));
+            case NULL:
+                return ConstExpressions.ref.isnull(toWasmValue((Value) value.incomingDataFlows[0]));
+            default:
+                throw new IllegalArgumentException("Unsupported operation : " + value.operation);
+        }
+    }
+
+    private WasmValue toWasmValue(final NumericalTest value) {
+        final Value left = (Value) value.incomingDataFlows[0];
+        final Value right = (Value) value.incomingDataFlows[1];
+
+        final WasmValue leftWasm = toWasmValue(left);
+        final WasmValue rightWasm = toWasmValue(right);
+
+        switch (value.operation) {
+            case EQ: {
+                switch (left.type.getSort()) {
+                    case Type.FLOAT:
+                        return ConstExpressions.f32.eq(leftWasm, rightWasm);
+                    case Type.LONG:
+                        return ConstExpressions.i64.eq(leftWasm, rightWasm);
+                    case Type.DOUBLE:
+                        return ConstExpressions.f64.eq(leftWasm, rightWasm);
+                    default:
+                        return ConstExpressions.i32.eq(leftWasm, rightWasm);
+                }
+            }
+            case GE: {
+                switch (left.type.getSort()) {
+                    case Type.FLOAT:
+                        return ConstExpressions.f32.ge(leftWasm, rightWasm);
+                    case Type.LONG:
+                        return ConstExpressions.i64.ge_s(leftWasm, rightWasm);
+                    case Type.DOUBLE:
+                        return ConstExpressions.f64.ge(leftWasm, rightWasm);
+                    default:
+                        return ConstExpressions.i32.ge_s(leftWasm, rightWasm);
+                }
+            }
+            case NE: {
+                switch (left.type.getSort()) {
+                    case Type.FLOAT:
+                        return ConstExpressions.f32.ne(leftWasm, rightWasm);
+                    case Type.LONG:
+                        return ConstExpressions.i64.ne(leftWasm, rightWasm);
+                    case Type.DOUBLE:
+                        return ConstExpressions.f64.ne(leftWasm, rightWasm);
+                    default:
+                        return ConstExpressions.i32.ne(leftWasm, rightWasm);
+                }
+            }
+            case GT: {
+                switch (left.type.getSort()) {
+                    case Type.FLOAT:
+                        return ConstExpressions.f32.gt(leftWasm, rightWasm);
+                    case Type.LONG:
+                        return ConstExpressions.i64.gt_s(leftWasm, rightWasm);
+                    case Type.DOUBLE:
+                        return ConstExpressions.f64.gt(leftWasm, rightWasm);
+                    default:
+                        return ConstExpressions.i32.gt_s(leftWasm, rightWasm);
+                }
+            }
+            case LE: {
+                switch (left.type.getSort()) {
+                    case Type.FLOAT:
+                        return ConstExpressions.f32.le(leftWasm, rightWasm);
+                    case Type.LONG:
+                        return ConstExpressions.i64.le_s(leftWasm, rightWasm);
+                    case Type.DOUBLE:
+                        return ConstExpressions.f64.le(leftWasm, rightWasm);
+                    default:
+                        return ConstExpressions.i32.le_s(leftWasm, rightWasm);
+                }
+            }
+            case LT: {
+                switch (left.type.getSort()) {
+                    case Type.FLOAT:
+                        return ConstExpressions.f32.lt(leftWasm, rightWasm);
+                    case Type.LONG:
+                        return ConstExpressions.i64.lt_s(leftWasm, rightWasm);
+                    case Type.DOUBLE:
+                        return ConstExpressions.f64.lt(leftWasm, rightWasm);
+                    default:
+                        return ConstExpressions.i32.lt_s(leftWasm, rightWasm);
+                }
+            }
+            default:
+                throw new IllegalArgumentException("Not supported operation : " + value.operation);
+        }
+    }
+
     private WasmValue toWasmValue(final XOr value) {
         final Value left = (Value) value.incomingDataFlows[0];
         final Value right = (Value) value.incomingDataFlows[1];
@@ -1089,6 +1288,12 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             return toWasmValue((Neg) value);
         } else if (value instanceof Cast) {
             return toWasmValue((Cast) value);
+        } else if (value instanceof ReferenceTest) {
+            return toWasmValue((ReferenceTest) value);
+        } else if (value instanceof NullTest) {
+            return toWasmValue((NullTest) value);
+        } else if (value instanceof NumericalTest) {
+            return toWasmValue((NumericalTest) value);
         }
         throw new IllegalArgumentException("Not implemented " + value.getClass());
     }
@@ -1104,42 +1309,71 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 throw new IllegalArgumentException("Cannot find Wasm local for variable " + target);
             }
             if (!targetrVar.type.equals(value.type) && targetrVar.type.getSort() != Type.OBJECT) {
-                activeFlow.setLocal(local, convertToType(value, targetrVar.type));
+                activeLevel.activeFlow.setLocal(local, convertToType(value, targetrVar.type));
             } else {
-                activeFlow.setLocal(local, toWasmValue(value));
+                activeLevel.activeFlow.setLocal(local, toWasmValue(value));
             }
 
         } else {
-            activeFlow.comment("Copy from " + value.getClass() + " to " + target.getClass());
+            activeLevel.activeFlow.comment("Copy from " + value.getClass() + " to " + target.getClass());
         }
     }
 
+    int ifcounter;
+
     @Override
-    public void writeIfAndStartTrueBlock(final If node) {
-        activeFlow.comment("if");
+    public void startIfWithTrueBlock(final If node) {
+
+        activeLevel.writeDebug("writeIfAndStartTrueBlock");
+
+        final Iff iff = activeLevel.activeFlow.iff("if" + ifcounter ++, toWasmValue((Value) node.incomingDataFlows[0]));
+
+        activeLevel = new NestingLevelIff(activeLevel, iff.flow, iff);
     }
 
     @Override
     public void startIfElseBlock(final If node) {
-        activeFlow.comment("Else");
+
+        activeLevel.writeDebug("Start else");
+
+        if (!(activeLevel instanceof NestingLevelIff)) {
+            throw new IllegalArgumentException("Active container is not an If, got " + activeLevel);
+        }
+
+        final NestingLevelIff nestingLevelIff = (NestingLevelIff) activeLevel;
+        nestingLevelIff.activeFlow = nestingLevelIff.activeContainer.falseFlow;
+    }
+
+    @Override
+    public void finishIfBlock() {
+
+        activeLevel = activeLevel.parent;
+
+        activeLevel.writeDebug("finishIfBlock");
     }
 
     @Override
     public void finishBlock() {
-        activeFlow.comment("finishBlock");
+
+        activeLevel = activeLevel.parent;
+
+        activeLevel.writeDebug("finishBlock");
     }
 
     @Override
     public void startBlock(final Sequencer.Block node) {
+
+        activeLevel.writeDebug("startBlock type=" + node.type + ", label = " + node.label);
+
         switch (node.type) {
             case LOOP: {
-                activeContainer = activeFlow.loop(node.label);
-                activeFlow = activeContainer.flow;
+                final Loop l = activeLevel.activeFlow.loop(node.label);
+                activeLevel = new NestingLevelLoop(activeLevel, l.flow, l);
                 break;
             }
             case NORMAL: {
-                activeContainer = activeFlow.block(node.label);
-                activeFlow = activeContainer.flow;
+                final Block b = activeLevel.activeFlow.block(node.label);
+                activeLevel = new NestingLevelBlock(activeLevel, b.flow, b);
                 break;
             }
             default: {
@@ -1150,7 +1384,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     @Override
     public void write(final LineNumberDebugInfo node) {
-        activeFlow.comment("Line number " + node.lineNumber);
+        activeLevel.activeFlow.comment("Line number " + node.lineNumber);
     }
 
     @Override
@@ -1159,32 +1393,32 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     @Override
     public void write(final Goto node) {
-        activeFlow.comment("Here was a goto statement");
+        activeLevel.activeFlow.comment("Here was a goto statement");
     }
 
     @Override
     public void write(final MonitorEnter node) {
-        activeFlow.comment("Monitor enter on " + node.incomingDataFlows[0]);
+        activeLevel.activeFlow.comment("Monitor enter on " + node.incomingDataFlows[0]);
     }
 
     @Override
     public void write(final MonitorExit node) {
-        activeFlow.comment("Monitor exit on " + node.incomingDataFlows[0]);
+        activeLevel.activeFlow.comment("Monitor exit on " + node.incomingDataFlows[0]);
     }
 
     @Override
     public void write(final Unwind node) {
-        activeFlow.comment("Unwind");
+        activeLevel.activeFlow.comment("Unwind");
     }
 
     @Override
     public void write(final Return node) {
-        activeFlow.ret();
+        activeLevel.activeFlow.ret();
     }
 
     @Override
     public void write(final ReturnValue node) {
-        activeFlow.ret(toWasmValue((Value) node.incomingDataFlows[0]));
+        activeLevel.activeFlow.ret(toWasmValue((Value) node.incomingDataFlows[0]));
     }
 
     @Override
@@ -1195,7 +1429,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             case Type.OBJECT:
             case Type.ARRAY: {
                 final StructType objectType = module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class)));
-                activeFlow.setStruct(
+                activeLevel.activeFlow.setStruct(
                         structType,
                         ConstExpressions.ref.cast(structType, toWasmValue((Value) node.outgoingFlows[0])),
                         WasmHelpers.generateFieldName(field.name),
@@ -1204,7 +1438,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 break;
             }
             default: {
-                activeFlow.setStruct(
+                activeLevel.activeFlow.setStruct(
                         structType,
                         ConstExpressions.ref.cast(structType, toWasmValue((Value) node.outgoingFlows[0])),
                         WasmHelpers.generateFieldName(field.name),
@@ -1226,7 +1460,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             case Type.ARRAY:
             case Type.OBJECT: {
                 final StructType objectType = module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class)));
-                activeFlow.setStruct(
+                activeLevel.activeFlow.setStruct(
                         structType,
                         ConstExpressions.ref.cast(structType, toWasmValue((Value) node.outgoingFlows[0])),
                         WasmHelpers.generateFieldName(field.name),
@@ -1235,7 +1469,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 break;
             }
             default: {
-                activeFlow.setStruct(
+                activeLevel.activeFlow.setStruct(
                         structType,
                         ConstExpressions.ref.cast(structType, toWasmValue((Value) node.outgoingFlows[0])),
                         WasmHelpers.generateFieldName(field.name),
@@ -1259,7 +1493,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             case Type.SHORT:
             case Type.INT: {
                 final StructType arrayType = module.getTypes().structTypeByName("i32_array");
-                activeFlow.array.set(
+                activeLevel.activeFlow.array.set(
                         module.getTypes().arrayType(PrimitiveType.i32),
                         ConstExpressions.struct.get(arrayType, ConstExpressions.ref.cast(arrayType, toWasmValue(array)), "data"),
                         toWasmValue(index),
@@ -1269,7 +1503,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             }
             case Type.FLOAT: {
                 final StructType arrayType = module.getTypes().structTypeByName("f32_array");
-                activeFlow.array.set(
+                activeLevel.activeFlow.array.set(
                         module.getTypes().arrayType(PrimitiveType.f32),
                         ConstExpressions.struct.get(arrayType, ConstExpressions.ref.cast(arrayType, toWasmValue(array)), "data"),
                         toWasmValue(index),
@@ -1279,7 +1513,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             }
             case Type.LONG: {
                 final StructType arrayType = module.getTypes().structTypeByName("i64_array");
-                activeFlow.array.set(
+                activeLevel.activeFlow.array.set(
                         module.getTypes().arrayType(PrimitiveType.i64),
                         ConstExpressions.struct.get(arrayType, ConstExpressions.ref.cast(arrayType, toWasmValue(array)), "data"),
                         toWasmValue(index),
@@ -1289,7 +1523,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             }
             case Type.DOUBLE: {
                 final StructType arrayType = module.getTypes().structTypeByName("f64_array");
-                activeFlow.array.set(
+                activeLevel.activeFlow.array.set(
                         module.getTypes().arrayType(PrimitiveType.f64),
                         ConstExpressions.struct.get(arrayType, ConstExpressions.ref.cast(arrayType, toWasmValue(array)), "data"),
                         toWasmValue(index),
@@ -1299,7 +1533,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             }
             case Type.OBJECT: {
                 final StructType arrayType = module.getTypes().structTypeByName("obj_array");
-                activeFlow.array.set(
+                activeLevel.activeFlow.array.set(
                         module.getTypes().arrayType(typeConverter.apply(Type.getType(Object.class))),
                         ConstExpressions.struct.get(arrayType, ConstExpressions.ref.cast(arrayType, toWasmValue(array)), "data"),
                         toWasmValue(index),
@@ -1314,78 +1548,182 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     @Override
     public void writeBreakTo(final String label) {
-        activeFlow.comment("writeBreakTo " + label);
-        activeFlow.branch(activeContainer.findByLabelInHierarchy(label));
+        activeLevel.activeFlow.comment("writeBreakTo " + label);
+        activeLevel.activeFlow.branch(activeLevel.findByLabelInHierarchy(label));
     }
 
     @Override
     public void writeContinueTo(final String label) {
-        activeFlow.comment("writeContinueTo " + label);
-        activeFlow.branch(activeContainer.findByLabelInHierarchy(label));
+        activeLevel.activeFlow.comment("writeContinueTo " + label);
+        activeLevel.activeFlow.branch(activeLevel.findByLabelInHierarchy(label));
     }
 
     @Override
     public void startTryCatch(final String label) {
-        activeFlow.comment("startTryCatch " + label);
+
+        activeLevel.writeDebug("startTryCatch " + label);
+
+        final Try t = activeLevel.activeFlow.Try(label);
+        activeLevel = new NestingLevelTry(activeLevel, t.flow, t);
     }
 
     @Override
     public void startCatchBlock() {
-        activeFlow.comment("startCatchBlock");
+
+        activeLevel.writeDebug("startCatchBlock");
+
+        if (!(activeLevel instanceof NestingLevelTry)) {
+            throw new IllegalArgumentException("Active container is not a try, got " + activeLevel);
+        }
+
+        final NestingLevelTry t = (NestingLevelTry) activeLevel;
+        t.activeFlow = t.activeContainer.catchBlock.flow;
     }
 
     @Override
     public void startCatchHandler(final Type type) {
-        activeFlow.comment("startCatchHandler");
+
+        activeLevel.writeDebug("startCatchHandler " + type);
     }
 
     @Override
-    public void endCatchHandler() {
-        activeFlow.comment("endCatchHandler");
+    public void finishCatchHandler() {
+
+        activeLevel.writeDebug("endCatchHandler");
     }
 
     @Override
     public void writeRethrowException() {
-        activeFlow.comment("writeRethrowException");
+        activeLevel.activeFlow.comment("writeRethrowException");
+    }
+
+    int tableSwitchCount = 0;
+
+    @Override
+    public void startTableSwitch(final TableSwitch node) {
+
+        activeLevel.writeDebug("writeTableSwitch");
+
+        final WasmValue valueToCheck = toWasmValue((Value) node.incomingDataFlows[0]);
+        final WasmValue minCheck = ConstExpressions.i32.ge_s(valueToCheck, ConstExpressions.i32.c(node.min));
+        final WasmValue maxCheck = ConstExpressions.i32.le_s(valueToCheck, ConstExpressions.i32.c(node.max));
+
+        final Iff min = activeLevel.activeFlow.iff("tableswitch_min" + tableSwitchCount++, minCheck);
+        final Iff max = min.flow.iff("tableswitch_max" + tableSwitchCount++, maxCheck);
+
+        activeLevel = new NestingLevelSwitch(activeLevel, max.flow, min, ConstExpressions.i32.sub(valueToCheck, ConstExpressions.i32.c(node.min)));
     }
 
     @Override
-    public void startFinallyBlock() {
-        activeFlow.comment("startFinallyBlock");
-    }
+    public void finishTableSwitch() {
 
-    @Override
-    public void writeSwitch(final TableSwitch node) {
-        activeFlow.comment("TableSwitch");
+        if (!(activeLevel instanceof NestingLevelSwitch)) {
+            throw new IllegalArgumentException("Active container is not a Switch, got " + activeLevel);
+        }
+
+        activeLevel = activeLevel.parent;
+
+        activeLevel.writeDebug("finishTableSwitch");
     }
 
     @Override
     public void startTableSwitchDefaultBlock() {
-        activeFlow.comment("startTableSwitchDefaultBlock");
+
+        activeLevel.writeDebug("startTableSwitchDefaultBlock");
+
+        if (!(activeLevel instanceof NestingLevelSwitch)) {
+            throw new IllegalArgumentException("Active container is not a Switch, got " + activeLevel);
+        }
+
+        final NestingLevelSwitch level = (NestingLevelSwitch) activeLevel;
+        level.activeFlow = ((Iff ) level.activeContainer).falseFlow;
     }
 
     @Override
-    public void writeSwitch(final LookupSwitch node) {
-        activeFlow.comment("writeSwitch");
+    public void finishTableSwitchDefaultBlock() {
+
+        if (!(activeLevel instanceof NestingLevelSwitch)) {
+            throw new IllegalArgumentException("Active container is not a Switch, got " + activeLevel);
+        }
+
+        activeLevel.writeDebug("finishTableSwitchDefaultBlock");
     }
+
+    int lookupSwitchCount = 0;
+
+    @Override
+    public void startLookupSwitch(final LookupSwitch node) {
+
+        activeLevel.writeDebug("writeLookupSwitch");
+
+        final WasmValue valueToCheck = toWasmValue((Value) node.incomingDataFlows[0]);
+
+        final Block bouter = activeLevel.activeFlow.block("lookupswitchb_" + lookupSwitchCount++);
+        final Block binner = bouter.flow.block("lookupswitchbi_" + lookupSwitchCount++);
+
+        activeLevel = new NestingLevelSwitch(activeLevel, binner.flow, bouter, valueToCheck);
+    }
+
+    @Override
+    public void finishLookupSwitch() {
+
+        if (!(activeLevel instanceof NestingLevelSwitch)) {
+            throw new IllegalArgumentException("Active container is not a Switch, got " + activeLevel);
+        }
+
+        activeLevel = activeLevel.parent;
+
+        activeLevel.writeDebug("finishLookupSwitch");
+    }
+
+
+    int checkcounter = 0;
 
     @Override
     public void writeSwitchCase(final int index) {
-        activeFlow.comment("writeSwitchCase");
+
+        activeLevel.writeDebug("writeSwitchCase " + index);
+
+        if (!(activeLevel instanceof NestingLevelSwitch)) {
+            throw new IllegalArgumentException("Active container is not a Switch, got " + activeLevel);
+        }
+
+        final NestingLevelSwitch level = (NestingLevelSwitch) activeLevel;
+
+        final Iff check = activeLevel.activeFlow.iff("casecheck" + checkcounter++, ConstExpressions.i32.eq(level.valueToCheck, ConstExpressions.i32.c(index)));
+
+        activeLevel = new NestingLevelIff(activeLevel, check.flow, check);
     }
 
     @Override
     public void writeSwitchDefaultCase() {
-        activeFlow.comment("writeSwitchDefaultCase");
+
+        if (!(activeLevel instanceof NestingLevelSwitch)) {
+            throw new IllegalArgumentException("Active container is not a Switch, got " + activeLevel);
+        }
+
+        activeLevel.writeDebug("writeSwitchDefaultCase");
+
+        // TODO: Branch from inner to outer
+
+        activeLevel.activeFlow = activeLevel.activeContainer.flow;
+    }
+
+    @Override
+    public void finishSwitchDefault() {
+
+        if (!(activeLevel instanceof NestingLevelSwitch)) {
+            throw new IllegalArgumentException("Active container is not a Switch, got " + activeLevel);
+        }
+
+        activeLevel.writeDebug("finishSwitchDefault");
     }
 
     @Override
     public void finishSwitchCase() {
-        activeFlow.comment("finishSwitchCase");
-    }
 
-    @Override
-    public void writeDebugNote(final String message) {
-        activeFlow.comment(message);
+        activeLevel = activeLevel.parent;
+
+        activeLevel.writeDebug("finishSwitchCase");
     }
 }

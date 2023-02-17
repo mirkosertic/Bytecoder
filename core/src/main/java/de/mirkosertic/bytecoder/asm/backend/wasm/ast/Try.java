@@ -34,19 +34,16 @@ public class Try extends LabeledContainer implements WasmExpression {
         textWriter.write("try");
         textWriter.space();
         textWriter.writeLabel(getLabel());
-        if (blockType != null) {
-            textWriter.space();
-            textWriter.opening();
-            textWriter.write("result");
-            textWriter.space();
-            blockType.writeTo(textWriter);
-            textWriter.closing();
-        }
-        textWriter.newLine();
+        textWriter.space();
+        textWriter.opening();
+        textWriter.write("do");
 
         for (final WasmExpression e : getChildren()) {
             e.writeTo(textWriter, context.subWith(this));
         }
+
+        textWriter.closing();
+        textWriter.newLine();
 
         catchBlock.writeTo(textWriter, context);
         textWriter.closing();

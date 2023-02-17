@@ -195,12 +195,24 @@ public class ConstExpressions {
             return new I64ShrU(leftValue, rightValue);
         }
 
+        public static I64LeS le_s(final WasmValue leftValue, final WasmValue rightValue) {
+            return new I64LeS(leftValue, rightValue);
+        }
+
+        public static I64GeS ge_s(final WasmValue leftValue, final WasmValue rightValue) {
+            return new I64GeS(leftValue, rightValue);
+        }
+
         public static I64GtS gt_s(final WasmValue leftValue, final WasmValue rightValue) {
             return new I64GtS(leftValue, rightValue);
         }
 
         public static I64LtS lt_s(final WasmValue leftValue, final WasmValue rightValue) {
             return new I64LtS(leftValue, rightValue);
+        }
+
+        public static I64Ne ne(final WasmValue leftValue, final WasmValue rightValue) {
+            return new I64Ne(leftValue, rightValue);
         }
 
         public static I64ExtendI32S extend_i32s(final WasmValue value) {
@@ -238,6 +250,11 @@ public class ConstExpressions {
         public static I64Or or(final WasmValue leftValue, final WasmValue rightValue) {
             return new I64Or(leftValue, rightValue);
         }
+
+        public static I64Eq eq(final WasmValue leftValue, final WasmValue rightValue) {
+            return new I64Eq(leftValue, rightValue);
+        }
+
     }
 
     public static class f32 {
@@ -357,6 +374,22 @@ public class ConstExpressions {
             return new F64Gt(leftValue, rightValue);
         }
 
+        public static F64Le le(final WasmValue leftValue, final WasmValue rightValue) {
+            return new F64Le(leftValue, rightValue);
+        }
+
+        public static F64Ge ge(final WasmValue leftValue, final WasmValue rightValue) {
+            return new F64Ge(leftValue, rightValue);
+        }
+
+        public static F64Ne ne(final WasmValue leftValue, final WasmValue rightValue) {
+            return new F64Ne(leftValue, rightValue);
+        }
+
+        public static F64Eq eq(final WasmValue leftValue, final WasmValue rightValue) {
+            return new F64Eq(leftValue, rightValue);
+        }
+
         public static F64Lt lt(final WasmValue leftValue, final WasmValue rightValue) {
             return new F64Lt(leftValue, rightValue);
         }
@@ -451,6 +484,15 @@ public class ConstExpressions {
         public static Cast cast(final StructType type, final WasmValue value) {
             return new Cast(type, value);
         }
+
+        public static WasmValue eq(final WasmValue left, final WasmValue right) {
+            return new RefEq(left, right);
+        }
+
+        public static WasmValue isnull(final WasmValue left) {
+            return new RefIsNull(left);
+        }
+
     }
 
     public static class struct {
