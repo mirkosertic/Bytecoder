@@ -20,9 +20,9 @@ import java.io.IOException;
 public class BranchOnException implements WasmExpression {
 
     private final LabeledContainer targetContainer;
-    private final WasmEvent exceptionType;
+    private final Tag exceptionType;
 
-    BranchOnException(final LabeledContainer targetContainer, final WasmEvent exceptionType) {
+    BranchOnException(final LabeledContainer targetContainer, final Tag exceptionType) {
         this.targetContainer = targetContainer;
         this.exceptionType = exceptionType;
     }
@@ -44,6 +44,6 @@ public class BranchOnException implements WasmExpression {
         final int relativeDepth = context.owningContainer().relativeDepthTo(targetContainer);
         codeWriter.writeByte((byte) 0x0a);
         codeWriter.writeUnsignedLeb128(relativeDepth);
-        codeWriter.writeUnsignedLeb128(context.eventIndex().indexOf(exceptionType));
+        codeWriter.writeUnsignedLeb128(context.tagIndex().indexOf(exceptionType));
     }
 }

@@ -336,6 +336,8 @@ public class WasmBackend {
             initFunctions.put(cl, initFunction);
         }
 
+        module.getTags().tagIndex().add(ConstExpressions.tag("javaexception", ConstExpressions.ref.type(objectTypeMappings.get(objectClass), false)));
+
         final ConstantPool cs = compileUnit.getConstantPool();
         final List<String> pooledStrings = cs.getPooledStrings();
         for (int i = 0; i < pooledStrings.size(); i++) {
@@ -347,7 +349,7 @@ public class WasmBackend {
         }
 
         // Store for last thrown exception
-        globalsSection.newMutableGlobal("lastthrownexception",
+        globalsSection.newMutableGlobal("lastcaughtexception",
                 ConstExpressions.ref.type(objectTypeMappings.get(objectClass), true),
                 ConstExpressions.ref.nullRef()
         );

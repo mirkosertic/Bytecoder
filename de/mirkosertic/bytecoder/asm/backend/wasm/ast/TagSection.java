@@ -17,35 +17,35 @@ package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class EventSection extends ModuleSection {
+public class TagSection extends ModuleSection {
 
-    private final EventIndex eventIndex;
+    private final TagIndex tagIndex;
 
-    public EventSection(final Module module) {
+    public TagSection(final Module module) {
         super(module);
-        eventIndex = new EventIndex();
+        tagIndex = new TagIndex();
     }
 
-    public EventIndex eventIndex() {
-        return eventIndex;
+    public TagIndex tagIndex() {
+        return tagIndex;
     }
 
     public void writeCodeTo(final BinaryWriter writer) throws IOException {
-        if (!eventIndex.isEmpty()) {
+        if (!tagIndex.isEmpty()) {
             try (final BinaryWriter.SectionWriter sectionWriter = writer.eventSection()) {
                 sectionWriter.writeUTF8("event");
-                sectionWriter.writeUnsignedLeb128(eventIndex.size());
-                for (int i = 0; i< eventIndex.size(); i++) {
-                    final WasmEvent event = eventIndex.get(i);
+                sectionWriter.writeUnsignedLeb128(tagIndex.size());
+                for (int i = 0; i< tagIndex.size(); i++) {
+                    final Tag event = tagIndex.get(i);
                     event.writeTo(sectionWriter);
                 }
             }
         }
     }
 
-    public void writeCodeTo(final TextWriter writer) throws IOException {
-        for (int i = 0; i< eventIndex.size(); i++) {
-            final WasmEvent event = eventIndex.get(i);
+    public void writeCodeTo(final TextWriter writer) {
+        for (int i = 0; i< tagIndex.size(); i++) {
+            final Tag event = tagIndex.get(i);
             event.writeTo(writer);
         }
     }

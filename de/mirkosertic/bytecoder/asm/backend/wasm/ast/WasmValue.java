@@ -31,7 +31,7 @@ public interface WasmValue {
 
         LocalIndex localIndex();
 
-        EventIndex eventIndex();
+        TagIndex tagIndex();
 
         ExportContext subWith(Container container);
 

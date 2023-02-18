@@ -31,7 +31,7 @@ public class Module {
     private final ImportsSection imports;
     private final ExportsSection exports;
     private final NameSection names;
-    private final EventSection events;
+    private final TagSection tags;
     private final SourceMapSection sourceMapSection;
 
     public Module(final String label, final String sourcemapFileName) {
@@ -47,7 +47,7 @@ public class Module {
         final StartSection start = new StartSection(this);
         this.imports = new ImportsSection(this);
         this.names = new NameSection(this);
-        this.events = new EventSection(this);
+        this.tags = new TagSection(this);
         this.sourceMapSection = new SourceMapSection(this, sourcemapFileName);
     }
 
@@ -62,7 +62,7 @@ public class Module {
         imports.writeTo(writer);
         mems.writeTo(writer);
         globals.writeTo(writer);
-        events.writeCodeTo(writer);
+        tags.writeCodeTo(writer);
         tables.writeTo(writer);
         elements.writeTo(writer);
         functions.writeTo(writer);
@@ -78,8 +78,8 @@ public class Module {
         return globals.globalsIndex();
     }
 
-    public EventIndex eventIndex() {
-        return events.eventIndex();
+    public TagIndex tagIndex() {
+        return tags.tagIndex();
     }
 
     public FunctionIndex functionIndex() {
@@ -103,7 +103,7 @@ public class Module {
         tables.writeTo(writer);
         mems.writeTo(writer);
         globals.writeTo(writer);
-        events.writeCodeTo(writer);
+        tags.writeCodeTo(writer);
         exports.writeTo(writer, memoryIndex);
         elements.writeTo(writer, functionIndex);
         functions.writeCodeTo(writer, functionIndex);
@@ -141,7 +141,7 @@ public class Module {
         return tables;
     }
 
-    public EventSection getEvents() {
-        return events;
+    public TagSection getTags() {
+        return tags;
     }
 }

@@ -119,19 +119,19 @@ public class Expressions {
         parent.addChild(setStruct);
     }
 
-    public Try Try(final String label) {
-        final Try t = new Try(parent, null, label);
+    public Try Try(final Tag catchTag) {
+        final Try t = new Try(parent, null, catchTag);
         parent.addChild(t);
         return t;
     }
 
-    public Try Try(final String label, final PrimitiveType blockType) {
-        final Try t = new Try(parent, blockType, label);
+    public Try Try(final PrimitiveType blockType, final Tag catchTag) {
+        final Try t = new Try(parent, blockType, catchTag);
         parent.addChild(t);
         return t;
     }
 
-    public void throwException(final WasmEvent exception, final List<WasmValue> arguments) {
+    public void throwException(final Tag exception, final List<WasmValue> arguments) {
         final ThrowException t = new ThrowException(exception, arguments);
         parent.addChild(t);
     }
@@ -146,7 +146,7 @@ public class Expressions {
         parent.addChild(r);
     }
 
-    public void branchOnException(final LabeledContainer branchContainer, final WasmEvent exceptionType) {
+    public void branchOnException(final LabeledContainer branchContainer, final Tag exceptionType) {
         final BranchOnException b = new BranchOnException(branchContainer, exceptionType);
         parent.addChild(b);
     }

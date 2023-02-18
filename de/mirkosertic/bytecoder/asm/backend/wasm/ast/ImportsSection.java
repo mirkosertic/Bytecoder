@@ -97,7 +97,7 @@ public class ImportsSection extends ModuleSection {
 
     public void writeTo(final BinaryWriter binaryWriter,
             final List<Memory> memoryIndex) throws IOException {
-        final EventIndex exceptionIndex = getModule().eventIndex();
+        final TagIndex exceptionIndex = getModule().tagIndex();
         try (final BinaryWriter.SectionWriter sectionWriter = binaryWriter.importsSection()) {
             sectionWriter.writeUnsignedLeb128(imports.size());
             for (final ImportEntry entry : imports) {
@@ -114,9 +114,9 @@ public class ImportsSection extends ModuleSection {
                 } else if (value instanceof Memory) {
                     sectionWriter.writeByte(ExternalKind.EXTERNAL_KIND_MEMORY);
                     sectionWriter.writeUnsignedLeb128(memoryIndex.indexOf((Memory) value));
-                } else if (value instanceof WasmEvent) {
+                } else if (value instanceof Tag) {
                     sectionWriter.writeByte(ExternalKind.EXTERNAL_KIND_EXCEPTION);
-                    sectionWriter.writeUnsignedLeb128(exceptionIndex.indexOf((WasmEvent) value));
+                    sectionWriter.writeUnsignedLeb128(exceptionIndex.indexOf((Tag) value));
                 } else {
                     throw new IllegalStateException("Not Implemented yet for " + value);
                 }

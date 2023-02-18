@@ -15,46 +15,45 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import java.io.IOException;
+public class Tag implements Exportable {
 
-public class WasmEvent implements Exportable {
-
-    private final WasmType type;
     private final String label;
-    private final TypesSection typesSection;
+    private final WasmType[] params;
 
-    protected WasmEvent(final TypesSection typesSection, final String label, final WasmType type) {
+    protected Tag(final String label, final WasmType... params) {
         this.label = label;
-        this.type = type;
-        this.typesSection = typesSection;
+        this.params = params;
     }
 
     public String getLabel() {
         return label;
     }
 
-    public void writeTo(final BinaryWriter.SectionWriter sectionWriter) throws IOException {
-        sectionWriter.writeUnsignedLeb128(0);
-        sectionWriter.writeUnsignedLeb128(typesSection.indexOf(type));
+    public void writeTo(final BinaryWriter.SectionWriter sectionWriter) {
+        //sectionWriter.writeUnsignedLeb128(0);
+        //sectionWriter.writeUnsignedLeb128(typesSection.indexOf(type));
     }
 
     public void writeTo(final TextWriter textWriter) {
         textWriter.opening();
-        textWriter.write("event");
+        textWriter.write("tag");
         textWriter.space();
         textWriter.writeLabel(label);
-        textWriter.space();
-        type.writeRefTo(textWriter);
+
+        for (final WasmType param : params) {
+            textWriter.space();
+            textWriter.opening();
+            textWriter.write("param");
+            textWriter.space();
+            param.writeRefTo(textWriter);
+            textWriter.closing();
+        }
         textWriter.closing();
         textWriter.newLine();
     }
 
     @Override
     public void writeRefTo(final TextWriter textWriter) {
-        textWriter.opening();
-        textWriter.write("event");
-        textWriter.space();
         textWriter.writeLabel(label);
-        textWriter.closing();
     }
 }

@@ -19,40 +19,40 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class EventIndex {
+public class TagIndex {
 
-    private final List<WasmEvent> events;
+    private final List<Tag> tags;
 
-    EventIndex() {
-        events = new ArrayList<>();
+    TagIndex() {
+        tags = new ArrayList<>();
     }
 
-    public void add(final WasmEvent event) {
-        events.add(event);
+    public void add(final Tag event) {
+        tags.add(event);
     }
 
-    public WasmEvent byLabel(final String eventName) {
-        for (final WasmEvent g : events) {
+    public Tag byLabel(final String eventName) {
+        for (final Tag g : tags) {
             if (Objects.equals(eventName, g.getLabel())) {
                 return g;
             }
         }
-        throw new IllegalArgumentException("No such exception : " + eventName);
+        throw new IllegalArgumentException("No such tag : " + eventName);
     }
 
     public int size() {
-        return events.size();
+        return tags.size();
     }
 
-    public WasmEvent get(final int i) {
-        return events.get(i);
+    public Tag get(final int i) {
+        return tags.get(i);
     }
 
-    public int indexOf(final WasmEvent event) {
-        return events.indexOf(event);
+    public int indexOf(final Tag event) {
+        return tags.indexOf(event);
     }
 
     public boolean isEmpty() {
-        return events.isEmpty();
+        return tags.isEmpty();
     }
 }

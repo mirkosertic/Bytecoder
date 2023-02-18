@@ -17,23 +17,21 @@ package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class Try extends LabeledContainer implements WasmExpression {
+public class Try extends Container implements WasmExpression {
 
     private final PrimitiveType blockType;
     public final Catch catchBlock;
 
-    Try(final Container parent, final PrimitiveType blockType, final String label) {
-        super(parent, label);
+    Try(final Container parent, final PrimitiveType blockType, final Tag catchTag) {
+        super(parent);
         this.blockType = blockType;
-        catchBlock = new Catch(this);
+        catchBlock = new Catch(this, catchTag);
     }
 
     @Override
     public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
         textWriter.opening();
         textWriter.write("try");
-        textWriter.space();
-        textWriter.writeLabel(getLabel());
         textWriter.space();
         textWriter.opening();
         textWriter.write("do");

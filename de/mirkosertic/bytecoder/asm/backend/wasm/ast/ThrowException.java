@@ -20,10 +20,10 @@ import java.util.List;
 
 public class ThrowException implements WasmExpression {
 
-    private final WasmEvent exception;
+    private final Tag exception;
     private final List<WasmValue> arguments;
 
-    public ThrowException(final WasmEvent exception, final List<WasmValue> arguments) {
+    public ThrowException(final Tag exception, final List<WasmValue> arguments) {
         this.exception = exception;
         this.arguments = arguments;
     }
@@ -48,6 +48,6 @@ public class ThrowException implements WasmExpression {
             value.writeTo(codeWriter, context);
         }
         codeWriter.writeByte((byte) 0x08);
-        codeWriter.writeSignedLeb128(context.eventIndex().indexOf(exception));
+        codeWriter.writeSignedLeb128(context.tagIndex().indexOf(exception));
     }
 }

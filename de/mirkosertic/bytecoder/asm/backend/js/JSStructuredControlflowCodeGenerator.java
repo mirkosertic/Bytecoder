@@ -1438,12 +1438,8 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     @Override
-    public void startTryCatch(final String label) {
+    public void startTryCatch() {
         writeIndent();
-        if (label != null) {
-            pw.print(label);
-            pw.print(": ");
-        }
         pw.println("try {");
         level++;
     }
