@@ -66,12 +66,12 @@ public class NameSection extends ModuleSection {
                     }
                 }
             }
-            final EventIndex eventIndex = getModule().eventIndex();
-            if (!eventIndex.isEmpty()) {
+            final TagIndex tagIndex = getModule().tagIndex();
+            if (!tagIndex.isEmpty()) {
                 try (final BinaryWriter.SectionWriter functionSection = sectionWriter.subSection((byte) 3)) {
-                    functionSection.writeUnsignedLeb128(eventIndex.size());
-                    for (int i = 0; i < eventIndex.size(); i++) {
-                        final WasmEvent f = eventIndex.get(i);
+                    functionSection.writeUnsignedLeb128(tagIndex.size());
+                    for (int i = 0; i < tagIndex.size(); i++) {
+                        final Tag f = tagIndex.get(i);
                         functionSection.writeUnsignedLeb128(i);
                         functionSection.writeUTF8(f.getLabel());
                     }

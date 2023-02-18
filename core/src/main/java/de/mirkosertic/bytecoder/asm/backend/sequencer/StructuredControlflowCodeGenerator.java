@@ -59,9 +59,9 @@ public interface StructuredControlflowCodeGenerator {
 
     void finishIfBlock();
 
-    void finishBlock();
-
     void startBlock(Sequencer.Block node);
+
+    void finishBlock();
 
     void write(LineNumberDebugInfo node);
 
@@ -89,7 +89,7 @@ public interface StructuredControlflowCodeGenerator {
 
     void writeContinueTo(String label);
 
-    void startTryCatch(String label);
+    void startTryCatch();
 
     void startCatchBlock();
 

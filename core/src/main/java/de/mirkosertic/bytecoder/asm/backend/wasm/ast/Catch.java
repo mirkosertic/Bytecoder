@@ -19,8 +19,11 @@ import java.io.IOException;
 
 public class Catch extends Container {
 
-    Catch(final Container parent) {
+    private final Tag catchTag;
+
+    Catch(final Container parent, final Tag catchTag) {
         super(parent);
+        this.catchTag = catchTag;
     }
 
     public void writeTo(final BinaryWriter.Writer codeWriter, final WasmValue.ExportContext context) throws IOException {
@@ -33,6 +36,8 @@ public class Catch extends Container {
     public void writeTo(final TextWriter textWriter, final WasmValue.ExportContext context) throws IOException {
         textWriter.opening();
         textWriter.write("catch");
+        textWriter.space();
+        catchTag.writeRefTo(textWriter);
         textWriter.newLine();
 
         for (final WasmExpression e : getChildren()) {

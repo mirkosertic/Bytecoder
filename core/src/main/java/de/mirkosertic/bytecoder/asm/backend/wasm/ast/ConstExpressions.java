@@ -19,6 +19,10 @@ import java.util.List;
 
 public class ConstExpressions {
 
+    public static Tag tag(final String label, final WasmType... params) {
+        return new Tag(label, params);
+    }
+
     public static Param param(final String label, final WasmType type) {
         return new Param(label, type);
     }

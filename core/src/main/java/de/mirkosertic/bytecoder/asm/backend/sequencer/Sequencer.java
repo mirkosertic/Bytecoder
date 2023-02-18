@@ -389,7 +389,7 @@ public class Sequencer {
 
             final boolean hasExceptionHandler = node.controlFlowsTo.keySet().stream().anyMatch(t -> t instanceof Projection.ExceptionHandler);
             if (hasExceptionHandler) {
-                codegenerator.startTryCatch(null);
+                codegenerator.startTryCatch();
             }
 
             for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {

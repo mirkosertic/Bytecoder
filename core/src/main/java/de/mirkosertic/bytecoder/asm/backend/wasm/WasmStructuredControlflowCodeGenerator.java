@@ -640,7 +640,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     }
 
     private WasmValue toWasmValue(final CaughtException value) {
-        final Global g = module.getGlobals().globalsIndex().globalByLabel("lastthrownexception");
+        final Global g = module.getGlobals().globalsIndex().globalByLabel("lastcaughtexception");
         return ConstExpressions.getGlobal(g);
     }
 
@@ -1559,11 +1559,11 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     }
 
     @Override
-    public void startTryCatch(final String label) {
+    public void startTryCatch() {
 
-        activeLevel.writeDebug("startTryCatch " + label);
+        activeLevel.writeDebug("startTryCatch");
 
-        final Try t = activeLevel.activeFlow.Try(label);
+        final Try t = activeLevel.activeFlow.Try(module.tagIndex().byLabel("javaexception"));
         activeLevel = new NestingLevelTry(activeLevel, t.flow, t);
     }
 

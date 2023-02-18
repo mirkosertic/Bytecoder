@@ -16,6 +16,10 @@
 package de.mirkosertic.bytecoder.asm.test;
 
 import com.sun.net.httpserver.HttpServer;
+import de.mirkosertic.bytecoder.asm.backend.js.JSHelpers;
+import de.mirkosertic.bytecoder.asm.backend.wasm.WasmBackend;
+import de.mirkosertic.bytecoder.asm.backend.wasm.WasmCompileResult;
+import de.mirkosertic.bytecoder.asm.backend.wasm.WasmHelpers;
 import de.mirkosertic.bytecoder.asm.ir.AnalysisException;
 import de.mirkosertic.bytecoder.asm.ir.AnalysisStack;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
@@ -68,10 +72,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
-import static de.mirkosertic.bytecoder.asm.backend.js.JSHelpers.generateClassName;
-import static de.mirkosertic.bytecoder.asm.backend.js.JSHelpers.generateMethodName;
-
-
 public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> {
 
     private static final Slf4JLogger LOGGER = new Slf4JLogger();
@@ -95,6 +95,7 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
             }
             if (declaredOptions.value().length == 0 && declaredOptions.includeTestPermutations()) {
                 testOptions.add(new TestOption("js", false));
+                testOptions.add(new TestOption("wasm", false));
             } else {
                 for (final BytecoderTestOption o : declaredOptions.value()) {
                     testOptions.add(new TestOption(o.backend().name(), o.minify()));
@@ -105,6 +106,7 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
         } else {
             testOptions.add(new TestOption(null, false));
             testOptions.add(new TestOption("js", false));
+            testOptions.add(new TestOption("wasm", false));
 
             additionalClassesToLink = new String[0];
             additionalResources = new String[0];
@@ -290,8 +292,8 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                     }
                 }
 
-                final String className = generateClassName(invokedType);
-                final String methodName = generateMethodName(method.methodNode.name, Type.getMethodType(method.methodNode.desc));
+                final String className = JSHelpers.generateClassName(invokedType);
+                final String methodName = JSHelpers.generateMethodName(method.methodNode.name, Type.getMethodType(method.methodNode.desc));
 
                 final String filename = className + "." + methodName + "_" + aTestOption.toFilePrefix() + ".html";
 
@@ -367,6 +369,121 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
         }
     }
 
+    private void testWasmBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier, final TestOption aTestOption) {
+        if ("".equals(System.getProperty("BYTECODER_DISABLE_JSTESTS", ""))) {
+            final TestClass testClass = getTestClass();
+            final Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " " + aTestOption.toDescription());
+            aRunNotifier.fireTestStarted(theDescription);
+
+            try {
+
+                final ClassLoader cl = testClass.getJavaClass().getClassLoader();
+                final Loader loader = new BytecoderLoader(cl);
+
+                final CompileUnit compileUnit = new CompileUnit(loader, LOGGER, new JSIntrinsics());
+                final Type invokedType = Type.getType(testClass.getJavaClass());
+
+                final ResolvedMethod method = compileUnit.resolveMainMethod(invokedType, aFrameworkMethod.getName(), Type.getMethodType(Type.VOID_TYPE));
+
+                for (final String className : additionalClassesToLink) {
+                    compileUnit.resolveClass(Type.getObjectType(className.replace('.', '/')), new AnalysisStack());
+                }
+
+                compileUnit.finalizeLinkingHierarchy();
+
+                compileUnit.logStatistics();
+
+                final StringWriter strWriter = new StringWriter();
+                final PrintWriter codeWriter = new PrintWriter(strWriter);
+
+                final CompileOptions compileOptions = new CompileOptions(LOGGER, Optimizations.DISABLED, additionalResources, "", false);
+
+                final WasmBackend backend = new WasmBackend();
+                final WasmCompileResult result = backend.generateCodeFor(compileUnit, compileOptions);
+
+                for (final CompileResult.Content c : result.getContent()) {
+                    if (c instanceof CompileResult.StringContent) {
+                        codeWriter.println(c.asString());
+                    }
+                }
+
+                final String className = WasmHelpers.generateClassName(invokedType);
+                final String methodName = WasmHelpers.generateMethodName(method.methodNode.name, Type.getMethodType(method.methodNode.desc));
+
+                final String filename = className + "." + methodName + "_" + aTestOption.toFilePrefix() + ".html";
+
+                codeWriter.println("console.log(\"Starting test\");");
+                codeWriter.println("var theTestInstance = new " + className + "();");
+                codeWriter.println("try {");
+                codeWriter.println("     theTestInstance." + methodName + "();");
+                codeWriter.println("     console.log(\"Test finished OK\");");
+                codeWriter.println("} catch (e) {");
+                codeWriter.println("     if (e instanceof java$lang$Throwable) {");
+                codeWriter.println("         console.log(\"Test finished with exception \" + e.constructor.name + \". Message = \" + bytecoder.toJSString(e.message));");
+                codeWriter.println("     } else {");
+                codeWriter.println("         console.log(\"Test finished with exception.\");");
+                codeWriter.println("     }");
+                codeWriter.println("     console.log(e.stack);");
+                codeWriter.println("}");
+
+                codeWriter.flush();
+
+                final File workingDirectory = new File(".");
+
+                final File mavenTargetDir = new File(workingDirectory, "target");
+                final File generatedFilesDir = new File(mavenTargetDir, "bytecoder_wasm_new");
+                generatedFilesDir.mkdirs();
+
+                for (final CompileResult.Content c : result.getContent()) {
+                    if (!(c instanceof CompileResult.StringContent)) {
+                        final File output = new File(generatedFilesDir, c.getFileName());
+                        try (final FileOutputStream fos = new FileOutputStream(output)) {
+                            c.writeTo(fos);
+                        }
+                    }
+                }
+
+                final File generatedFile = new File(generatedFilesDir, filename);
+                final PrintWriter writer = new PrintWriter(generatedFile);
+                writer.println("<html><body><script>");
+                writer.println(strWriter);
+                writer.println("</script></body></html>");
+                writer.flush();
+                writer.close();
+
+                initializeTestWebServer();
+
+                final BrowserWebDriverContainer browserContainer = initializeSeleniumContainer();
+
+                initializeWebRoot(generatedFile.getParentFile());
+
+                final URL testURL = getTestFileUrl(generatedFile);
+                /*final WebDriver driver = browserContainer.getWebDriver();
+                driver.get(testURL.toString());
+
+                final List<LogEntry> logs = driver.manage().logs().get(LogType.BROWSER).getAll();
+                if (1 > logs.size()) {
+                    aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("No console output from browser")));
+                }
+                for (final LogEntry entry : logs) {
+                    LOGGER.info(entry.getMessage());
+                }
+                final LogEntry lastLogEntry = logs.get(logs.size() - 1);
+
+                if (!lastLogEntry.getMessage().contains("Test finished OK")) {
+                    aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed! Got : " + lastLogEntry.getMessage())));
+                }*/
+            } catch (final AnalysisException e) {
+                e.getAnalysisStack().dumpAnalysisStack(System.out);
+                aRunNotifier.fireTestFailure(new Failure(theDescription, e));
+            } catch (final Exception e) {
+                aRunNotifier.fireTestFailure(new Failure(theDescription, e));
+            } finally {
+                aRunNotifier.fireTestFinished(theDescription);
+            }
+        }
+    }
+
     @Override
     protected void runChild(final FrameworkMethodWithTestOption aFrameworkMethod, final RunNotifier aRunNotifier) {
         // do not execute ignored tests, only report them
@@ -387,6 +504,9 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
             switch (o.getBackendType()) {
                 case "js":
                     testJSBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, o);
+                    break;
+                case "wasm":
+                    testWasmBackendFrameworkMethod(aFrameworkMethod, aRunNotifier, o);
                     break;
                 default:
                     throw new IllegalStateException("Unsupported backend :" + o.getBackendType());
