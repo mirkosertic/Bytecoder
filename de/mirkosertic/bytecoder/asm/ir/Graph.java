@@ -224,7 +224,7 @@ public class Graph {
                 pw.print("shape=\"box\" fillcolor=\"orangered\" style=\"filled\"");
             } else {
                 if (n instanceof Constant) {
-                    pw.print("shape=\"diamong\" fillcolor=\"darkgoldenrod1\" style=\"filled\"");
+                    pw.print("shape=\"diamond\" fillcolor=\"darkgoldenrod1\" style=\"filled\"");
                 } else if (n instanceof Variable) {
                     pw.print("shape=\"oval\" fillcolor=\"cyan2\" style=\"filled\"");
                 } else {
@@ -237,7 +237,7 @@ public class Graph {
             pw.println("];");
             for (int inidx = 0; inidx < n.incomingDataFlows.length; inidx++) {
                 final Node incoming = n.incomingDataFlows[inidx];
-                pw.print(" node_" + nodes.indexOf(incoming) + " -> node_" + i + "[dir=\"forward\" color=\"cyan2\" label=\"arg " + inidx + "\"];");
+                pw.println(" node_" + nodes.indexOf(incoming) + " -> node_" + i + "[dir=\"forward\" color=\"cyan2\" label=\"arg " + inidx + "\"];");
             }
             if (n instanceof ControlTokenConsumer) {
                 final ControlTokenConsumer c = (ControlTokenConsumer) n;

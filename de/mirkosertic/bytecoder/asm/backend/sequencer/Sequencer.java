@@ -85,8 +85,8 @@ public class Sequencer {
         this.codegenerator = codegenerator;
         final ControlTokenConsumer startNode = g.regionByLabel(Graph.START_REGION_NAME);
 
-        final List<AbstractVar> phis = g.nodes().stream().filter(t -> t instanceof AbstractVar).map(t -> (AbstractVar) t).collect(Collectors.toList());
-        codegenerator.registerVariables(phis);
+        final List<AbstractVar> variables = g.nodes().stream().filter(t -> t instanceof AbstractVar).map(t -> (AbstractVar) t).collect(Collectors.toList());
+        codegenerator.registerVariables(variables);
 
         visitDominationTreeOf(startNode, new Stack<>());
     }

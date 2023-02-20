@@ -50,6 +50,7 @@ import de.mirkosertic.bytecoder.asm.ir.Copy;
 import de.mirkosertic.bytecoder.asm.ir.Div;
 import de.mirkosertic.bytecoder.asm.ir.FrameDebugInfo;
 import de.mirkosertic.bytecoder.asm.ir.Goto;
+import de.mirkosertic.bytecoder.asm.ir.Graph;
 import de.mirkosertic.bytecoder.asm.ir.If;
 import de.mirkosertic.bytecoder.asm.ir.InstanceMethodInvocation;
 import de.mirkosertic.bytecoder.asm.ir.InstanceMethodInvocationExpression;
@@ -81,6 +82,7 @@ import de.mirkosertic.bytecoder.asm.ir.PrimitiveShort;
 import de.mirkosertic.bytecoder.asm.ir.ReadClassField;
 import de.mirkosertic.bytecoder.asm.ir.ReadInstanceField;
 import de.mirkosertic.bytecoder.asm.ir.ReferenceTest;
+import de.mirkosertic.bytecoder.asm.ir.Rem;
 import de.mirkosertic.bytecoder.asm.ir.ResolveCallsite;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedField;
@@ -222,12 +224,15 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private NestingLevel activeLevel;
 
+    private final Graph graph;
+
     public WasmStructuredControlflowCodeGenerator(final CompileUnit compileUnit, final Module module,
                                                   final Map<ResolvedClass, StructType> rtMappings,
                                                   final Map<ResolvedClass, StructType> objectTypeMappings,
                                                   final ExportableFunction exportableFunction,
                                                   final Function<Type, WasmType> typeConverter,
-                                                  final Function<ResolvedMethod, FunctionType> functionTypeConverter) {
+                                                  final Function<ResolvedMethod, FunctionType> functionTypeConverter,
+                                                  final Graph graph) {
         this.compileUnit = compileUnit;
         this.module = module;
         this.exportableFunction = exportableFunction;
@@ -237,6 +242,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         this.functionTypeConverter = functionTypeConverter;
         this.varLocalMap = new HashMap<>();
         this.activeLevel = new NestingLevel(null, exportableFunction.flow, exportableFunction);
+        this.graph = graph;
     }
 
     @Override
@@ -705,6 +711,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private WasmValue convertToType(final Value incoming, final Type targetType) {
         switch (incoming.type.getSort()) {
+            case Type.BOOLEAN:
             case Type.BYTE:
             case Type.CHAR:
             case Type.SHORT:
@@ -723,7 +730,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                     case Type.DOUBLE:
                         return ConstExpressions.f64.convert_si32(toWasmValue(incoming));
                     default:
-                        throw new IllegalArgumentException("Not implemented!");
+                        throw new IllegalStateException("Not implemented type conversion for " + incoming.type + " to " + targetType + " for node #" + graph.nodes().indexOf(incoming));
                 }
             case Type.LONG:
                 switch (targetType.getSort()) {
@@ -739,7 +746,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                     case Type.DOUBLE:
                         return ConstExpressions.f64.convert_si64(toWasmValue(incoming));
                     default:
-                        throw new IllegalArgumentException("Not implemented!");
+                        throw new IllegalStateException("Not implemented type conversion for " + incoming.type + " to " + targetType + " for node #" + graph.nodes().indexOf(incoming));
                 }
             case Type.FLOAT:
                 switch (targetType.getSort()) {
@@ -755,7 +762,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                     case Type.DOUBLE:
                         return ConstExpressions.f64.promote_f32(toWasmValue(incoming));
                     default:
-                        throw new IllegalArgumentException("Not implemented!");
+                        throw new IllegalStateException("Not implemented type conversion for " + incoming.type + " to " + targetType + " for node #" + graph.nodes().indexOf(incoming));
                 }
             case Type.DOUBLE:
                 switch (targetType.getSort()) {
@@ -771,10 +778,10 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                     case Type.DOUBLE:
                         return toWasmValue(incoming);
                     default:
-                        throw new IllegalArgumentException("Not implemented!");
+                        throw new IllegalStateException("Not implemented type conversion for " + incoming.type + " to " + targetType + " for node #" + graph.nodes().indexOf(incoming));
                 }
             default:
-                throw new IllegalStateException("Not implemented type conversion for " + incoming.type);
+                throw new IllegalStateException("Not implemented type conversion for " + incoming.type + " to " + targetType + " for node #" + graph.nodes().indexOf(incoming));
         }
     }
 
@@ -1015,15 +1022,41 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             case Type.CHAR:
             case Type.SHORT:
             case Type.INT:
-                return ConstExpressions.i32.mul(toWasmValue(left), ConstExpressions.i32.c(-1));
+                return ConstExpressions.i32.sub(ConstExpressions.i32.c(0), toWasmValue(left));
             case Type.LONG:
-                return ConstExpressions.i64.mul(toWasmValue(left), ConstExpressions.i64.c(-1L));
+                return ConstExpressions.i64.sub(ConstExpressions.i64.c(0L), toWasmValue(left));
             case Type.FLOAT:
                 return ConstExpressions.f32.neg(toWasmValue(left));
             case Type.DOUBLE:
                 return ConstExpressions.f64.neg(toWasmValue(left));
             default:
                 throw new IllegalStateException("Not implemented neg for " + value.type);
+        }
+    }
+
+    private WasmValue toWasmValue(final Rem value) {
+        final Value left = (Value) value.incomingDataFlows[0];
+        final Value right = (Value) value.incomingDataFlows[0];
+        switch (left.type.getSort()) {
+            case Type.BYTE:
+            case Type.CHAR:
+            case Type.SHORT:
+            case Type.INT:
+                return ConstExpressions.i32.rem_s(toWasmValue(left), toWasmValue(right));
+            case Type.LONG:
+                return ConstExpressions.i64.rem_s(toWasmValue(left), toWasmValue(right));
+            case Type.FLOAT: {
+                final WasmValue l = toWasmValue(left);
+                final WasmValue r = toWasmValue(right);
+                return ConstExpressions.f32.sub(l, ConstExpressions.f32.mul(r, ConstExpressions.f32.trunc(ConstExpressions.f32.div(l, r))));
+            }
+            case Type.DOUBLE: {
+                final WasmValue l = toWasmValue(left);
+                final WasmValue r = toWasmValue(right);
+                return ConstExpressions.f64.sub(l, ConstExpressions.f64.mul(r, ConstExpressions.f64.trunc(ConstExpressions.f32.div(l, r))));
+            }
+            default:
+                throw new IllegalStateException("Not implemented rem for " + left.type);
         }
     }
 
@@ -1159,6 +1192,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         final Value array = (Value) value.incomingDataFlows[0];
         final Value index = (Value) value.incomingDataFlows[1];
         switch (value.type.getSort()) {
+            case Type.BOOLEAN:
             case Type.BYTE:
             case Type.CHAR:
             case Type.SHORT:
@@ -1194,6 +1228,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                         toWasmValue(index)
                 );
             }
+            case Type.ARRAY:
             case Type.OBJECT: {
                 final StructType arrayType = module.getTypes().structTypeByName("obj_array");
                 return ConstExpressions.array.get(
@@ -1294,6 +1329,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             return toWasmValue((NullTest) value);
         } else if (value instanceof NumericalTest) {
             return toWasmValue((NumericalTest) value);
+        } else if (value instanceof Rem) {
+            return toWasmValue((Rem) value);
         }
         throw new IllegalArgumentException("Not implemented " + value.getClass());
     }
@@ -1308,7 +1345,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             if (local == null) {
                 throw new IllegalArgumentException("Cannot find Wasm local for variable " + target);
             }
-            if (!targetrVar.type.equals(value.type) && targetrVar.type.getSort() != Type.OBJECT) {
+            if (!targetrVar.type.equals(value.type) && targetrVar.type.getSort() != Type.OBJECT && targetrVar.type.getSort() != Type.ARRAY) {
                 activeLevel.activeFlow.setLocal(local, convertToType(value, targetrVar.type));
             } else {
                 activeLevel.activeFlow.setLocal(local, toWasmValue(value));
@@ -1488,6 +1525,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         final Value value = (Value) node.incomingDataFlows[2];
 
         switch (value.type.getSort()) {
+            case Type.BOOLEAN:
             case Type.BYTE:
             case Type.CHAR:
             case Type.SHORT:
@@ -1531,6 +1569,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 );
                 break;
             }
+            case Type.ARRAY:
             case Type.OBJECT: {
                 final StructType arrayType = module.getTypes().structTypeByName("obj_array");
                 activeLevel.activeFlow.array.set(
@@ -1570,14 +1609,17 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     @Override
     public void startCatchBlock() {
 
-        activeLevel.writeDebug("startCatchBlock");
-
         if (!(activeLevel instanceof NestingLevelTry)) {
             throw new IllegalArgumentException("Active container is not a try, got " + activeLevel);
         }
 
         final NestingLevelTry t = (NestingLevelTry) activeLevel;
         t.activeFlow = t.activeContainer.catchBlock.flow;
+
+        activeLevel.writeDebug("startCatchBlock");
+
+        final Global g = module.getGlobals().globalsIndex().globalByLabel("lastcaughtexception");
+        t.activeFlow.setGlobal(g, ConstExpressions.pop(g.getType()));
     }
 
     @Override

@@ -50,7 +50,7 @@ public class DeleteCopyToUnusedVariable implements Optimizer {
                 final Node outgoing = copy.outgoingFlows[0];
                 if ((incoming instanceof AbstractVar || incoming instanceof Constant) && outgoing instanceof AbstractVar) {
 
-                    if (outgoing.outgoingFlows.length == 0 && outgoing.incomingDataFlows.length == 1) {
+                    if (outgoing.outgoingFlows.length == 0) {
                         incoming.removeFromOutgoingData(copy);
                         outgoing.removeFromIncomingData(copy);
 

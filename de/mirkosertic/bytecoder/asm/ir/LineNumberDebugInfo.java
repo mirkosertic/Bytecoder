@@ -15,13 +15,16 @@
  */
 package de.mirkosertic.bytecoder.asm.ir;
 
-import de.mirkosertic.bytecoder.asm.ir.ControlTokenConsumer;
-
 public class LineNumberDebugInfo extends ControlTokenConsumer {
 
     public final int lineNumber;
 
     public LineNumberDebugInfo(final int lineNumber) {
         this.lineNumber = lineNumber;
+    }
+
+    @Override
+    public String additionalDebugInfo() {
+        return ": line #" + lineNumber;
     }
 }

@@ -2386,7 +2386,50 @@ public class GraphParser {
 
     private List<ControlFlow> parseMultiANewArrayInsnNode(final ControlFlow currentFlow) {
         final MultiANewArrayInsnNode node = (MultiANewArrayInsnNode) currentFlow.currentNode;
-        return parse_NARYINS(currentFlow, () -> graph.newNewMultiArray(Type.getObjectType(node.desc)), node.dims);
+        if (node.dims != 2) {
+            throw new IllegalStateException("Multiarray is only supported with 2 dimensions!");
+        }
+        return parse_NARYINS(currentFlow, () -> {
+            final ResolvedClass rc = compileUnit.resolveClass(Type.getType(Array.class), analysisStack);
+            final Type objectType = Type.getObjectType(node.desc);
+            final String methodName;
+            switch (objectType.getElementType().getSort()) {
+                case Type.BOOLEAN:
+                    methodName = "newBooleanArray2Dim";
+                    break;
+                case Type.BYTE:
+                    methodName = "newByteArray2Dim";
+                    break;
+                case Type.SHORT:
+                    methodName = "newShortArray2Dim";
+                    break;
+                case Type.CHAR:
+                    methodName = "newCharArray2Dim";
+                    break;
+                case Type.INT:
+                    methodName = "newIntArray2Dim";
+                    break;
+                case Type.LONG:
+                    methodName = "newLongArray2Dim";
+                    break;
+                case Type.FLOAT:
+                    methodName = "newFloatArray2Dim";
+                    break;
+                case Type.DOUBLE:
+                    methodName = "newDoubleArray2Dim";
+                    break;
+                case Type.OBJECT:
+                    methodName = "newObjectArray2Dim";
+                    break;
+                default:
+                    throw new IllegalArgumentException("Not supported multi array element type " + objectType);
+            }
+            final ResolvedMethod method = rc.resolveMethod(methodName, Type.getMethodType(Type.getType(Object.class), Type.INT_TYPE, Type.INT_TYPE), analysisStack);
+            final Cast cast = graph.newCast(objectType);
+            cast.addIncomingData(graph.newStaticMethodInvocationExpression(method));
+            return cast;
+        }, node.dims);
+        //return parse_NARYINS(currentFlow, () -> graph.newNewMultiArray(Type.getObjectType(node.desc)), node.dims);
     }
 
     private boolean isStartOfTryCatch(final LabelNode labelNode) {

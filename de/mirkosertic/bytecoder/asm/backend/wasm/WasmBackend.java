@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm;
 
+import de.mirkosertic.bytecoder.asm.backend.CodeGenerationFailure;
 import de.mirkosertic.bytecoder.asm.backend.CompileOptions;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.ConstExpressions;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.ExportableFunction;
@@ -457,8 +458,11 @@ public class WasmBackend {
                             implFunction.flow.comment("source file is " + cl.classNode.sourceFile);
                         }
 
-                        new Sequencer(g, dt, new WasmStructuredControlflowCodeGenerator(compileUnit, module, rtTypeMappings, objectTypeMappings, implFunction, toWASMType, toFunctionType));
-
+                        try {
+                            new Sequencer(g, dt, new WasmStructuredControlflowCodeGenerator(compileUnit, module, rtTypeMappings, objectTypeMappings, implFunction, toWASMType, toFunctionType, g));
+                        } catch (final RuntimeException e) {
+                            throw new CodeGenerationFailure(method, dt, e);
+                        }
                         implFunction.flow.unreachable();
 
                         // Brute force scan over all methods

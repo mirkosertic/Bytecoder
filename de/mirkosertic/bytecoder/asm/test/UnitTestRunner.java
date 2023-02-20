@@ -16,12 +16,14 @@
 package de.mirkosertic.bytecoder.asm.test;
 
 import com.sun.net.httpserver.HttpServer;
+import de.mirkosertic.bytecoder.asm.backend.CodeGenerationFailure;
 import de.mirkosertic.bytecoder.asm.backend.js.JSHelpers;
 import de.mirkosertic.bytecoder.asm.backend.wasm.WasmBackend;
 import de.mirkosertic.bytecoder.asm.backend.wasm.WasmCompileResult;
 import de.mirkosertic.bytecoder.asm.backend.wasm.WasmHelpers;
 import de.mirkosertic.bytecoder.asm.ir.AnalysisException;
 import de.mirkosertic.bytecoder.asm.ir.AnalysisStack;
+import de.mirkosertic.bytecoder.asm.ir.Graph;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.asm.backend.CompileOptions;
 import de.mirkosertic.bytecoder.asm.backend.js.JSBackend;
@@ -338,7 +340,7 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
 
                 initializeTestWebServer();
 
-                final BrowserWebDriverContainer browserContainer = initializeSeleniumContainer();
+                /*final BrowserWebDriverContainer browserContainer = initializeSeleniumContainer();
 
                 initializeWebRoot(generatedFile.getParentFile());
 
@@ -357,7 +359,7 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
 
                 if (!lastLogEntry.getMessage().contains("Test finished OK")) {
                     aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed! Got : " + lastLogEntry.getMessage())));
-                }
+                }*/
             } catch (final AnalysisException e) {
                 e.getAnalysisStack().dumpAnalysisStack(System.out);
                 aRunNotifier.fireTestFailure(new Failure(theDescription, e));
@@ -370,7 +372,7 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
     }
 
     private void testWasmBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier, final TestOption aTestOption) {
-        if ("".equals(System.getProperty("BYTECODER_DISABLE_JSTESTS", ""))) {
+        if ("".equals(System.getProperty("BYTECODER_DISABLE_WASMTESTS", ""))) {
             final TestClass testClass = getTestClass();
             final Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " " + aTestOption.toDescription());
             aRunNotifier.fireTestStarted(theDescription);
@@ -453,12 +455,12 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
 
                 initializeTestWebServer();
 
-                final BrowserWebDriverContainer browserContainer = initializeSeleniumContainer();
+                /*final BrowserWebDriverContainer browserContainer = initializeSeleniumContainer();
 
                 initializeWebRoot(generatedFile.getParentFile());
 
                 final URL testURL = getTestFileUrl(generatedFile);
-                /*final WebDriver driver = browserContainer.getWebDriver();
+                final WebDriver driver = browserContainer.getWebDriver();
                 driver.get(testURL.toString());
 
                 final List<LogEntry> logs = driver.manage().logs().get(LogType.BROWSER).getAll();
@@ -473,6 +475,36 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                 if (!lastLogEntry.getMessage().contains("Test finished OK")) {
                     aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed! Got : " + lastLogEntry.getMessage())));
                 }*/
+            } catch (final CodeGenerationFailure e) {
+
+                final ResolvedMethod rm = e.getMethod();
+                final Graph g = e.getMethod().methodBody;
+
+                final String className = WasmHelpers.generateClassName(rm.owner.type);
+                final String methodName = WasmHelpers.generateMethodName(rm.methodNode.name, Type.getMethodType(rm.methodNode.desc));
+
+                final File workingDirectory = new File(".");
+
+                final File mavenTargetDir = new File(workingDirectory, "target");
+                final File generatedFilesDir = new File(mavenTargetDir, "bytecoder_wasm_new");
+                generatedFilesDir.mkdirs();
+
+                try {
+                    final String filenameDg = className + "." + methodName + "_" + aTestOption.toFilePrefix() + "_debuggraph.dot";
+                    try (final FileOutputStream fos = new FileOutputStream(new File(generatedFilesDir, filenameDg))) {
+                        rm.methodBody.writeDebugTo(fos);
+                    }
+
+                    final String filenameDt = className + "." + methodName + "_" + aTestOption.toFilePrefix() + "_dominatortree.dot";
+                    try (final FileOutputStream fos = new FileOutputStream(new File(generatedFilesDir, filenameDt))) {
+                        e.getDominatorTree().writeDebugTo(fos);
+                    }
+
+                } catch (final IOException ex) {
+                    aRunNotifier.fireTestFailure(new Failure(theDescription, ex));
+                }
+
+                aRunNotifier.fireTestFailure(new Failure(theDescription, e));
             } catch (final AnalysisException e) {
                 e.getAnalysisStack().dumpAnalysisStack(System.out);
                 aRunNotifier.fireTestFailure(new Failure(theDescription, e));

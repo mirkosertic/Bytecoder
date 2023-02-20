@@ -78,11 +78,6 @@ public class Expressions {
         parent.addChild(branch);
     }
 
-    public void branchIff(final LabeledContainer block, final WasmValue condition) {
-        final BranchIff branch = new BranchIff(block, condition);
-        parent.addChild(branch);
-    }
-
     public void ret(final WasmValue value) {
         parent.addChild(new ReturnValue(value));
     }
@@ -97,11 +92,6 @@ public class Expressions {
 
     public void unreachable() {
         parent.addChild(new Unreachable());
-    }
-
-    public void setLocal(final Local local) {
-        final SetLocal setLocal = new SetLocal(local, null);
-        parent.addChild(setLocal);
     }
 
     public void setLocal(final Local local, final WasmValue value) {
@@ -125,12 +115,6 @@ public class Expressions {
         return t;
     }
 
-    public Try Try(final PrimitiveType blockType, final Tag catchTag) {
-        final Try t = new Try(parent, blockType, catchTag);
-        parent.addChild(t);
-        return t;
-    }
-
     public void throwException(final Tag exception, final List<WasmValue> arguments) {
         final ThrowException t = new ThrowException(exception, arguments);
         parent.addChild(t);
@@ -144,10 +128,5 @@ public class Expressions {
     public void rethrowException(final WasmValue value) {
         final RethrowException r  = new RethrowException(value);
         parent.addChild(r);
-    }
-
-    public void branchOnException(final LabeledContainer branchContainer, final Tag exceptionType) {
-        final BranchOnException b = new BranchOnException(branchContainer, exceptionType);
-        parent.addChild(b);
     }
 }
