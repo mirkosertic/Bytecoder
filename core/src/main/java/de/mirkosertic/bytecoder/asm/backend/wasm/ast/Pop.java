@@ -17,33 +17,26 @@ package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class BranchOnException implements WasmExpression {
+public class Pop implements WasmExpression {
 
-    private final LabeledContainer targetContainer;
-    private final Tag exceptionType;
+    private final WasmType type;
 
-    BranchOnException(final LabeledContainer targetContainer, final Tag exceptionType) {
-        this.targetContainer = targetContainer;
-        this.exceptionType = exceptionType;
+    Pop(final WasmType type) {
+        this.type = type;
     }
 
     @Override
     public void writeTo(final TextWriter textWriter, final ExportContext context) {
         textWriter.opening();
-        textWriter.write("br_on_exn");
+        textWriter.write("pop");
         textWriter.space();
-        textWriter.writeLabel(targetContainer.getLabel());
-        textWriter.space();
-        textWriter.writeLabel(exceptionType.getLabel());
+        type.writeRefTo(textWriter);
         textWriter.closing();
-        textWriter.newLine();
     }
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        final int relativeDepth = context.owningContainer().relativeDepthTo(targetContainer);
-        codeWriter.writeByte((byte) 0x0a);
-        codeWriter.writeUnsignedLeb128(relativeDepth);
-        codeWriter.writeUnsignedLeb128(context.tagIndex().indexOf(exceptionType));
+        // codeWriter.writeByte((byte) 0x20);
+        // codeWriter.writeUnsignedLeb128(context.localIndex().indexOf(local));
     }
 }

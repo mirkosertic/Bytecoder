@@ -438,7 +438,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     private void writeExpression(final Neg node) {
-        pw.print("(-");
+        pw.print("(0 - ");
         writeExpression(node.incomingDataFlows[0]);
         pw.print(")");
     }

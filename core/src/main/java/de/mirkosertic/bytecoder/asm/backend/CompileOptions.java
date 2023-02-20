@@ -28,7 +28,7 @@ public class CompileOptions {
 
     private final String filenamePrefix;
 
-    private boolean debugOutput;
+    private final boolean debugOutput;
 
     public CompileOptions(final Logger logger, final Optimizer optimizer, final String[] additionalResources, final String filenamePrefix, final boolean debugOutput) {
         this.logger = logger;

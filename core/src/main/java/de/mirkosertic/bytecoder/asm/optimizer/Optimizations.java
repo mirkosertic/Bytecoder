@@ -18,7 +18,9 @@ package de.mirkosertic.bytecoder.asm.optimizer;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 
 public enum Optimizations implements Optimizer {
-    DISABLED(new Optimizer[] {}),
+    DISABLED(new Optimizer[] {
+        //new DeleteCopyToUnusedVariable(),
+    }),
     DEFAULT(new Optimizer[] {
                 new DeleteUnusedConstants(),
                 new DeleteUnusedVariables(),
@@ -28,7 +30,9 @@ public enum Optimizations implements Optimizer {
                 //new DeleteRedundantVariableCopy(),
                 //new VariableShouldBePHI()
             }),
-    ALL(new Optimizer[] {}),
+    ALL(new Optimizer[] {
+        //new DeleteCopyToUnusedVariable(),
+    }),
     ;
 
     private final Optimizer[] optimizers;

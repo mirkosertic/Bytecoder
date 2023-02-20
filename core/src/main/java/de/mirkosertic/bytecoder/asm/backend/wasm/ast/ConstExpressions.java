@@ -35,6 +35,9 @@ public class ConstExpressions {
         return new CallIndirect(type, arguments, functionIndex);
     }
 
+    public static Pop pop(final WasmType type) {
+        return new Pop(type);
+    }
     public static class i32 {
 
         public static I32Const c(final int aValue) {
@@ -53,32 +56,16 @@ public class ConstExpressions {
             return new I32GeS(leftValue, rightValue);
         }
 
-        public static I32GeU ge_u(final WasmValue leftValue, final WasmValue rightValue) {
-            return new I32GeU(leftValue, rightValue);
-        }
-
         public static I32GtS gt_s(final WasmValue leftValue, final WasmValue rightValue) {
             return new I32GtS(leftValue, rightValue);
-        }
-
-        public static I32GtU gt_u(final WasmValue leftValue, final WasmValue rightValue) {
-            return new I32GtU(leftValue, rightValue);
         }
 
         public static I32LeS le_s(final WasmValue leftValue, final WasmValue rightValue) {
             return new I32LeS(leftValue, rightValue);
         }
 
-        public static I32LeU le_u(final WasmValue leftValue, final WasmValue rightValue) {
-            return new I32LeU(leftValue, rightValue);
-        }
-
         public static I32LtS lt_s(final WasmValue leftValue, final WasmValue rightValue) {
             return new I32LtS(leftValue, rightValue);
-        }
-
-        public static I32LtU lt_u(final WasmValue leftValue, final WasmValue rightValue) {
-            return new I32LtU(leftValue, rightValue);
         }
 
         public static I32Eqz eqz(final WasmValue value) {
@@ -121,24 +108,8 @@ public class ConstExpressions {
             return new I32DivS(leftValue, rightValue);
         }
 
-        public static I32DivU div_u(final WasmValue leftValue, final WasmValue rightValue) {
-            return new I32DivU(leftValue, rightValue);
-        }
-
         public static I32RemS rem_s(final WasmValue leftValue, final WasmValue rightValue) {
             return new I32RemS(leftValue, rightValue);
-        }
-
-        public static I32RemU rem_u(final WasmValue leftValue, final WasmValue rightValue) {
-            return new I32RemU(leftValue, rightValue);
-        }
-
-        public static I32Rotl rotl(final WasmValue leftValue, final WasmValue rightValue) {
-            return new I32Rotl(leftValue, rightValue);
-        }
-
-        public static I32Rotr rotr(final WasmValue leftValue, final WasmValue rightValue) {
-            return new I32Rotr(leftValue, rightValue);
         }
 
         public static I32Shl shl(final WasmValue leftValue, final WasmValue rightValue) {
@@ -169,10 +140,6 @@ public class ConstExpressions {
             return new I32TruncSF32(value);
         }
 
-        public static I32TruncUF32 trunc_uf32(final WasmValue value) {
-            return new I32TruncUF32(value);
-        }
-
         public static I32TruncSF64 trunc_f64s(final WasmValue value) {
             return new I32TruncSF64(value);
         }
@@ -186,6 +153,10 @@ public class ConstExpressions {
 
         public static I64Mul mul(final WasmValue leftValue, final WasmValue rightValue) {
             return new I64Mul(leftValue, rightValue);
+        }
+
+        public static I64RemS rem_s(final WasmValue leftValue, final WasmValue rightValue) {
+            return new I64RemS(leftValue, rightValue);
         }
 
         public static I64And and(final WasmValue leftValue, final WasmValue rightValue) {
@@ -291,10 +262,6 @@ public class ConstExpressions {
             return new F32Lt(leftValue, rightValue);
         }
 
-        public static F32Abs abs(final WasmValue value) {
-            return new F32Abs(value);
-        }
-
         public static F32Add add(final WasmValue leftValue, final WasmValue rightValue) {
             return new F32Add(leftValue, rightValue);
         }
@@ -358,10 +325,6 @@ public class ConstExpressions {
         public static F32TruncSF64 trunc_f64s(final WasmValue value) {
             return new F32TruncSF64(value);
         }
-
-        public static F32ConvertUI32 convert_ui32(final WasmValue value) {
-            return new F32ConvertUI32(value);
-        }
     }
 
     public static class f64 {
@@ -372,6 +335,10 @@ public class ConstExpressions {
 
         public static F64Mul mul(final WasmValue leftValue, final WasmValue rightValue) {
             return new F64Mul(leftValue, rightValue);
+        }
+
+        public static F64Trunc trunc(final WasmValue value) {
+            return new F64Trunc(value);
         }
 
         public static F64Gt gt(final WasmValue leftValue, final WasmValue rightValue) {
@@ -443,16 +410,8 @@ public class ConstExpressions {
         return new GetGlobal(global);
     }
 
-    public static CurrentMemory currentMemory() {
-        return new CurrentMemory();
-    }
-
     public static Select select(final WasmValue leftValue, final WasmValue rightValue, final WasmValue condition) {
         return new Select(leftValue, rightValue, condition);
-    }
-
-    public static WeakFunctionTableReference weakFunctionTableReference(final String aFunctionName) {
-        return new WeakFunctionTableReference(aFunctionName);
     }
 
     public static WeakFunctionReferenceCallable weakFunctionReference(final String aFunctionName) {

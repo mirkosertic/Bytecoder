@@ -79,4 +79,31 @@ public class PHITest {
         Assert.assertEquals(-20, theValue, 0);
     }
 
+    int intLen;
+    int[] value;
+    int offset;
+
+    void setValue(int[] value, int len) {
+
+    }
+
+    @Test
+    public void leftShift() {
+        if (intLen == 0)
+            return;
+
+        int newLen = intLen + 1;
+
+        if (value.length < newLen) {
+            // The array must grow
+            int[] result = new int[newLen];
+            for (int i=0; i < 10; i++)
+                result[i] = 0;
+        } else {
+            // Must use space on left
+            for (int i=0; i < 10; i++)
+                value[0] = 0;
+        }
+    }
+
 }

@@ -15,9 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-public class I32DivU extends BinaryExpression {
+public class F64Trunc extends UnaryExpression {
 
-    I32DivU(final WasmValue left, final WasmValue right) {
-        super(left, right,"i32.div_u", (byte) 0x6e);
+    F64Trunc(final WasmValue value) {
+        super(value, "f64.trunc", (byte) 0x8f);
     }
 }

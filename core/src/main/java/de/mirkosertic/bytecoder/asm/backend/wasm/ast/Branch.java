@@ -32,6 +32,7 @@ public class Branch implements WasmExpression {
         textWriter.space();
         textWriter.writeLabel(outerBlock.getLabel());
         textWriter.closing();
+        textWriter.newLine();
     }
 
     @Override

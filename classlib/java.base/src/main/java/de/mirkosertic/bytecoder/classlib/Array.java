@@ -21,4 +21,76 @@ public class Array {
     public Object clone() {
         return this;
     }
+
+    public static Object newObjectArray2Dim(final int dim1, final int dim2) {
+        final Object[] a = new Object[dim1];
+        for (int i = 0; i < dim1; i++) {
+            a[i] = new Object[dim2];
+        }
+        return a;
+    }
+
+    public static Object newBooleanArray2Dim(final int dim1, final int dim2) {
+        final Object[] a = new Object[dim1];
+        for (int i = 0; i < dim1; i++) {
+            a[i] = new boolean[dim2];
+        }
+        return a;
+    }
+
+    public static Object newShortArray2Dim(final int dim1, final int dim2) {
+        final Object[] a = new Object[dim1];
+        for (int i = 0; i < dim1; i++) {
+            a[i] = new short[dim2];
+        }
+        return a;
+    }
+
+    public static Object newByteArray2Dim(final int dim1, final int dim2) {
+        final Object[] a = new Object[dim1];
+        for (int i = 0; i < dim1; i++) {
+            a[i] = new byte[dim2];
+        }
+        return a;
+    }
+
+    public static Object newCharArray2Dim(final int dim1, final int dim2) {
+        final Object[] a = new Object[dim1];
+        for (int i = 0; i < dim1; i++) {
+            a[i] = new char[dim2];
+        }
+        return a;
+    }
+
+    public static Object newIntArray2Dim(final int dim1, final int dim2) {
+        final Object[] a = new Object[dim1];
+        for (int i = 0; i < dim1; i++) {
+            a[i] = new int[dim2];
+        }
+        return a;
+    }
+
+    public static Object newLongArray2Dim(final int dim1, final int dim2) {
+        final Object[] a = new Object[dim1];
+        for (int i = 0; i < dim1; i++) {
+            a[i] = new long[dim2];
+        }
+        return a;
+    }
+
+    public static Object newFloatArray2Dim(final int dim1, final int dim2) {
+        final Object[] a = new Object[dim1];
+        for (int i = 0; i < dim1; i++) {
+            a[i] = new float[dim2];
+        }
+        return a;
+    }
+
+    public static Object newDoubleArray2Dim(final int dim1, final int dim2) {
+        final Object[] a = new Object[dim1];
+        for (int i = 0; i < dim1; i++) {
+            a[i] = new double[dim2];
+        }
+        return a;
+    }
 }

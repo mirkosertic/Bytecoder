@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.asm.backend.js;
 
 import de.mirkosertic.bytecoder.api.ClassLibProvider;
+import de.mirkosertic.bytecoder.asm.backend.CodeGenerationFailure;
 import de.mirkosertic.bytecoder.asm.backend.CompileOptions;
 import de.mirkosertic.bytecoder.asm.ir.AnnotationUtils;
 import de.mirkosertic.bytecoder.asm.ir.Graph;
@@ -723,7 +724,11 @@ public class JSBackend {
             pw.println(cl.classNode.sourceFile);
         }
 
-        new Sequencer(g, dt, new JSStructuredControlflowCodeGenerator(compileUnit, cl, pw));
+        try {
+            new Sequencer(g, dt, new JSStructuredControlflowCodeGenerator(compileUnit, cl, pw));
+        } catch (final RuntimeException e) {
+            throw new CodeGenerationFailure(m, dt, e);
+        }
 
         pw.println("  }");
     }

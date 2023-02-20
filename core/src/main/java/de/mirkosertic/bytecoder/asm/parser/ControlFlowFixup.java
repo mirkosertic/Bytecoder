@@ -15,7 +15,6 @@
  */
 package de.mirkosertic.bytecoder.asm.parser;
 
-import de.mirkosertic.bytecoder.asm.ir.Constant;
 import de.mirkosertic.bytecoder.asm.ir.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.asm.ir.Copy;
 import de.mirkosertic.bytecoder.asm.ir.EdgeType;
@@ -26,6 +25,7 @@ import de.mirkosertic.bytecoder.asm.ir.InstructionTranslation;
 import de.mirkosertic.bytecoder.asm.ir.Projection;
 import de.mirkosertic.bytecoder.asm.ir.StandardProjections;
 import de.mirkosertic.bytecoder.asm.ir.Value;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.LabelNode;
 
@@ -46,6 +46,11 @@ public class ControlFlowFixup implements Fixup {
         this.frame = frame;
     }
 
+    private boolean assignableTypes(final Type a, final Type b) {
+        return a.getSort() == b.getSort();
+        //return true;
+    }
+
     @Override
     public void applyTo(final Graph g, final Map<AbstractInsnNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerInstruction) {
         final InstructionTranslation translation = g.translationFor(targetInstruction);
@@ -61,15 +66,13 @@ public class ControlFlowFixup implements Fixup {
                 final Value sourceValue = frame.incomingLocals[i];
                 final Value targetValue = targetFrame.incomingLocals[i];
                 if (sourceValue != null && sourceValue != targetValue && targetValue != null) {
-                    if (!(targetValue instanceof Constant)) {
+                    if (assignableTypes(sourceValue.type, targetValue.type)) {
                         final Copy c = g.newCopy();
                         c.addIncomingData(sourceValue);
                         targetValue.addIncomingData(c);
                         current.addControlFlowTo(p, c);
                         current = c;
                         p = StandardProjections.DEFAULT;
-                    } else {
-                        System.out.println("Copy to constant?");
                     }
                 }
             }
@@ -77,12 +80,14 @@ public class ControlFlowFixup implements Fixup {
                 final Value sourceValue = frame.incomingStack[i];
                 final Value targetValue = targetFrame.incomingStack[i];
                 if (sourceValue != null && sourceValue != targetValue) {
-                    final Copy c = g.newCopy();
-                    c.addIncomingData(sourceValue);
-                    targetValue.addIncomingData(c);
-                    current.addControlFlowTo(p, c);
-                    current = c;
-                    p = StandardProjections.DEFAULT;
+                    if (assignableTypes(sourceValue.type, targetValue.type)) {
+                        final Copy c = g.newCopy();
+                        c.addIncomingData(sourceValue);
+                        targetValue.addIncomingData(c);
+                        current.addControlFlowTo(p, c);
+                        current = c;
+                        p = StandardProjections.DEFAULT;
+                    }
                 }
             }
 
@@ -99,17 +104,16 @@ public class ControlFlowFixup implements Fixup {
                     }
                 } else {
                     if (sourceInstruction instanceof LabelNode) {
-                        System.out.println("No incoming edges found for " + ((LabelNode) sourceInstruction).getLabel() + " to jump to " + targetInstruction);
+                        throw new IllegalStateException("No incoming edges found for " + ((LabelNode) sourceInstruction).getLabel() + " to jump to " + targetInstruction);
                     } else {
-                        System.out.println("No incoming edges found for " + sourceInstruction + " to jump to " + targetInstruction);
+                        throw new IllegalStateException("No incoming edges found for " + sourceInstruction + " to jump to " + targetInstruction);
                     }
                 }
             } else {
-                System.out.println("Confused : no incoming edges for " + targetInstruction + " from " + sourceInstruction);
                 throw new IllegalStateException("Confused : no incoming edges for " + targetInstruction + " from " + sourceInstruction);
             }
         } else {
-            System.out.println("No translation found for " + translation + " opcode " + targetInstruction.getOpcode());
+            throw new IllegalStateException("No translation found for " + translation + " opcode " + targetInstruction.getOpcode());
         }
     }
 }
