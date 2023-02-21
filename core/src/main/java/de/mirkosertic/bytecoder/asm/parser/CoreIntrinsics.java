@@ -28,9 +28,12 @@ public class CoreIntrinsics implements Intrinsic {
 
     private final List<Intrinsic> intrinsics;
 
-    public CoreIntrinsics(final List<Intrinsic> in) {
+    public CoreIntrinsics(final Intrinsic... i) {
         this.intrinsics = new ArrayList<>();
-        this.intrinsics.addAll(in);
+        for (final Intrinsic in : i) {
+            this.intrinsics.add(in);
+        }
+        this.intrinsics.add(new VMIntrinsics());
     }
 
     @Override

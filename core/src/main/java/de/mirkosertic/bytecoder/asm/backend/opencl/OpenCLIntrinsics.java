@@ -17,11 +17,8 @@ package de.mirkosertic.bytecoder.asm.backend.opencl;
 
 import de.mirkosertic.bytecoder.asm.parser.CoreIntrinsics;
 
-import java.util.Collections;
-
 public class OpenCLIntrinsics extends CoreIntrinsics {
 
     public OpenCLIntrinsics() {
-        super(Collections.emptyList());
     }
 }

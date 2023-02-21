@@ -16,7 +16,6 @@
 package de.mirkosertic.bytecoder.classlib;
 
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
-import de.mirkosertic.bytecoder.api.Export;
 
 import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
@@ -141,23 +140,6 @@ public class VM {
 
     private static String newStringInternal(final byte[] aData) {
         return null;
-    }
-
-    @Export("newStringUTF8")
-    public static String newStringUTF8(final byte[] aData) {
-        // This method invocation will be replaced by an intrinsic
-        // calling the package private constructor (byte[],coder)
-        return newStringInternal(aData);
-    }
-
-    @Export("newByteArray")
-    public static byte[] newByteArray(final int length) {
-        return new byte[length];
-    }
-
-    @Export("setByteArrayEntry")
-    public static void setByteArrayEntry(final byte[] aArray, final int aIndex, final byte aValue) {
-        aArray[aIndex] = aValue;
     }
 
     public static Locale defaultLocale() {

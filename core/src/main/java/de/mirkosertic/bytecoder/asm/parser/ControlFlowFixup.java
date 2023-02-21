@@ -47,8 +47,13 @@ public class ControlFlowFixup implements Fixup {
     }
 
     private boolean assignableTypes(final Type a, final Type b) {
-        return a.getSort() == b.getSort();
-        //return true;
+        if (a.getSort() == Type.OBJECT) {
+            return b.getSort() == Type.OBJECT || b.getSort() == Type.ARRAY;
+        }
+        if (a.getSort() == Type.ARRAY) {
+            return b.getSort() == Type.ARRAY;
+        }
+        return true;
     }
 
     @Override

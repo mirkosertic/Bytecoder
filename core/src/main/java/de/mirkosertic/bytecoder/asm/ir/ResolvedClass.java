@@ -243,6 +243,22 @@ public class ResolvedClass {
         return result;
     }
 
+    public Set<ResolvedMethod> allResolvedMethods() {
+        final Set<ResolvedMethod> result = new HashSet<>();
+        for (final ResolvedMethod m : resolvedMethods) {
+            if (m.owner == this) {
+                result.add(m);
+            }
+        }
+        for (final ResolvedClass interf : interfaces) {
+            result.addAll(interf.allResolvedMethods());
+        }
+        if (superClass != null) {
+            result.addAll(superClass.allResolvedMethods());
+        }
+        return result;
+    }
+
     public void computeOpaqueReferenceTypeAndCallbackStatus(final AnalysisStack analysisStack) {
         if (isOpaqueReferenceType == null) {
             isOpaqueReferenceType = allTypesOf().stream().anyMatch(t -> t.type.getClassName().equals(OpaqueReferenceType.class.getName()));

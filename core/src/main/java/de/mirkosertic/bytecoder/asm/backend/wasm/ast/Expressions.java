@@ -61,12 +61,6 @@ public class Expressions {
         return block;
     }
 
-    public Block block(final String label, final PrimitiveType blockType) {
-        final Block block = new Block(label, parent, blockType);
-        parent.addChild(block);
-        return block;
-    }
-
     public Loop loop(final String label) {
         final Loop loop = new Loop(label, parent);
         parent.addChild(loop);
@@ -121,12 +115,7 @@ public class Expressions {
     }
 
     public void rethrowException() {
-        final RethrowException r  = new RethrowException(null);
-        parent.addChild(r);
-    }
-
-    public void rethrowException(final WasmValue value) {
-        final RethrowException r  = new RethrowException(value);
+        final RethrowException r  = new RethrowException();
         parent.addChild(r);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,27 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
+package de.mirkosertic.bytecoder.asm.ir;
 
-public class Alignment {
+import org.objectweb.asm.Type;
 
-    public static final Alignment ONE = new Alignment(1);
+public class PrimitiveClassReference extends Value {
 
-    public static final Alignment TWO = new Alignment(2);
-
-    public static final Alignment FOUR = new Alignment(4);
-
-    public final int value;
-
-    Alignment(final int value) {
-        this.value = value;
-    }
-
-    public int value() {
-        return value;
-    }
-
-    public int log2Value() {
-        return (int) (Math.log(value) / Math.log(2));
+    public PrimitiveClassReference(final Type type) {
+        super(type);
     }
 }

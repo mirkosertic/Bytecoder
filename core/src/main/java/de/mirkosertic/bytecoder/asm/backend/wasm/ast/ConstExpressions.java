@@ -418,6 +418,10 @@ public class ConstExpressions {
         return new WeakFunctionReferenceCallable(aFunctionName);
     }
 
+    public static WeakFunctionTableReference weakFunctionTableReference(final String aFunctionName) {
+        return new WeakFunctionTableReference(aFunctionName);
+    }
+
     public static class ref {
 
         public static RefType type(final ReferencableType type, final boolean nullable) {

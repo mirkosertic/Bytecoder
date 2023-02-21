@@ -15,33 +15,23 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import java.io.IOException;
-
 public class RethrowException implements WasmExpression {
 
-    private final WasmValue value;
-
-    RethrowException(final WasmValue value) {
-        this.value = value;
+    RethrowException() {
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
+    public void writeTo(final TextWriter textWriter, final ExportContext context) {
         textWriter.opening();
         textWriter.write("rethrow");
-        if (value != null) {
-            textWriter.space();
-            value.writeTo(textWriter, context);
-        }
+        textWriter.space();
+        textWriter.write("0");
         textWriter.closing();
         textWriter.newLine();
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        if (value != null) {
-            value.writeTo(codeWriter, context);
-        }
+    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) {
         codeWriter.writeByte((byte) 0x09);
     }
 }

@@ -109,10 +109,6 @@ public class Graph {
         return (NewArray) register(new NewArray(arrayType));
     }
 
-    public NewMultiArray newNewMultiArray(final Type arrayType) {
-        return (NewMultiArray) register(new NewMultiArray(arrayType));
-    }
-
     public If newIf() {
         return (If) register(new If());
     }
@@ -425,5 +421,9 @@ public class Graph {
 
     public RuntimeClass newRuntimeClass() {
         return (RuntimeClass) register(new RuntimeClass());
+    }
+
+    public PrimitiveClassReference newPrimitiveClassReference(final Type type) {
+        return (PrimitiveClassReference) register(new PrimitiveClassReference(type));
     }
 }

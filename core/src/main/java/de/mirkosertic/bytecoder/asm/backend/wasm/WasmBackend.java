@@ -47,6 +47,8 @@ import de.mirkosertic.bytecoder.asm.backend.sequencer.DominatorTree;
 import de.mirkosertic.bytecoder.asm.backend.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.classlib.Array;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.objectweb.asm.Type;
 
 import java.io.ByteArrayOutputStream;
@@ -54,6 +56,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -63,6 +66,12 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 public class WasmBackend {
+
+    private WasmValue initCodeForPrimitiveRuntimeClass(final StructType type, final WasmValue runtimeTypeInstance) {
+        final List<WasmValue> initArgs = new ArrayList<>();
+        initArgs.add(runtimeTypeInstance);
+        return ConstExpressions.struct.newInstance(type, initArgs);
+    }
 
     public WasmCompileResult generateCodeFor(final CompileUnit compileUnit, final CompileOptions compileOptions) {
 
@@ -210,6 +219,9 @@ public class WasmBackend {
                 .flow.ret(ConstExpressions.i32.c(-1));
         compare_f64.flow.ret(ConstExpressions.i32.c(0));
 
+        // Store to uniquely assign an identifier to a method
+        final MethodToIDMapper methodToIDMapper = new MethodToIDMapper();
+
         for (final ResolvedClass cl : resolvedClasses) {
             // Class objects for
             final String className = WasmHelpers.generateClassName(cl.type);
@@ -287,10 +299,31 @@ public class WasmBackend {
 
             rtTypeMappings.put(cl, types.structSubtype(className + "_rtt", rtType, classFields));
 
-            // TODO: Generate vtable
             final List<Param> params = new ArrayList<>();
             params.add(ConstExpressions.param("methodid", PrimitiveType.i32));
             final ExportableFunction vtFunction = functionsSection.newFunction(className + "_vt", params, PrimitiveType.i32);
+
+            for (final ResolvedMethod rm : cl.allResolvedMethods()) {
+                // TODO: Enhance in case of opaque reference types
+                if (!"<init>".equals(rm.methodNode.name) &&
+                    !"<clinit>".equals(rm.methodNode.name) &&
+                    !Modifier.isAbstract(rm.methodNode.access) &&
+                    !Modifier.isNative(rm.methodNode.access) &&
+                    !Modifier.isStatic(rm.methodNode.access)) {
+                    final int methodId = methodToIDMapper.resolveIdFor(rm);
+
+                    final String ownerClassName = WasmHelpers.generateClassName(rm.owner.type);
+                    final String methodName = WasmHelpers.generateMethodName(rm.methodNode.name, rm.methodType);
+
+                    final Iff iff = vtFunction.flow.iff("check_" + methodId, ConstExpressions.i32.eq(
+                            ConstExpressions.i32.c(methodId),
+                            ConstExpressions.getLocal(vtFunction.localByLabel("methodid"))
+                    ));
+                    iff.flow.ret(ConstExpressions.weakFunctionTableReference(ownerClassName + "$" + methodName));
+                    //iff.flow.comment(ownerClassName + "$" + methodName);
+                }
+            }
+
             // TODO: either call supertype vtable or lambda method
             vtFunction.flow.unreachable();
 
@@ -337,7 +370,48 @@ public class WasmBackend {
             initFunctions.put(cl, initFunction);
         }
 
-        module.getTags().tagIndex().add(ConstExpressions.tag("javaexception", ConstExpressions.ref.type(objectTypeMappings.get(objectClass), false)));
+        module.getTags().tagIndex().add(ConstExpressions.tag("javaexception", ConstExpressions.ref.type(runtimeObject, true)));
+
+        // Primitive types
+        final String objectClassName = WasmHelpers.generateClassName(Type.getType(Object.class));
+        final Global objectRuntimeClass = module.globalsIndex().globalByLabel(objectClassName + "_cls");
+        final StructType javaLangObjectType = objectTypeMappings.get(objectClass);
+        globalsSection.newConstantGlobal("primitive_boolean",
+                ConstExpressions.ref.type(javaLangObjectType, false),
+                initCodeForPrimitiveRuntimeClass(javaLangObjectType, ConstExpressions.getGlobal(objectRuntimeClass))
+        );
+        globalsSection.newConstantGlobal("primitive_byte",
+                ConstExpressions.ref.type(javaLangObjectType, false),
+                initCodeForPrimitiveRuntimeClass(javaLangObjectType, ConstExpressions.getGlobal(objectRuntimeClass))
+        );
+        globalsSection.newConstantGlobal("primitive_char",
+                ConstExpressions.ref.type(javaLangObjectType, false),
+                initCodeForPrimitiveRuntimeClass(javaLangObjectType, ConstExpressions.getGlobal(objectRuntimeClass))
+        );
+        globalsSection.newConstantGlobal("primitive_short",
+                ConstExpressions.ref.type(javaLangObjectType, false),
+                initCodeForPrimitiveRuntimeClass(javaLangObjectType, ConstExpressions.getGlobal(objectRuntimeClass))
+        );
+        globalsSection.newConstantGlobal("primitive_int",
+                ConstExpressions.ref.type(javaLangObjectType, false),
+                initCodeForPrimitiveRuntimeClass(javaLangObjectType, ConstExpressions.getGlobal(objectRuntimeClass))
+        );
+        globalsSection.newConstantGlobal("primitive_long",
+                ConstExpressions.ref.type(javaLangObjectType, false),
+                initCodeForPrimitiveRuntimeClass(javaLangObjectType, ConstExpressions.getGlobal(objectRuntimeClass))
+        );
+        globalsSection.newConstantGlobal("primitive_float",
+                ConstExpressions.ref.type(javaLangObjectType, false),
+                initCodeForPrimitiveRuntimeClass(javaLangObjectType, ConstExpressions.getGlobal(objectRuntimeClass))
+        );
+        globalsSection.newConstantGlobal("primitive_double",
+                ConstExpressions.ref.type(javaLangObjectType, false),
+                initCodeForPrimitiveRuntimeClass(javaLangObjectType, ConstExpressions.getGlobal(objectRuntimeClass))
+        );
+        globalsSection.newConstantGlobal("primitive_void",
+                ConstExpressions.ref.type(javaLangObjectType, false),
+                initCodeForPrimitiveRuntimeClass(javaLangObjectType, ConstExpressions.getGlobal(objectRuntimeClass))
+        );
 
         final ConstantPool cs = compileUnit.getConstantPool();
         final List<String> pooledStrings = cs.getPooledStrings();
@@ -351,7 +425,7 @@ public class WasmBackend {
 
         // Store for last thrown exception
         globalsSection.newMutableGlobal("lastcaughtexception",
-                ConstExpressions.ref.type(objectTypeMappings.get(objectClass), true),
+                ConstExpressions.ref.type(runtimeObject, true),
                 ConstExpressions.ref.nullRef()
         );
 
@@ -376,7 +450,6 @@ public class WasmBackend {
         final ExportableFunction instanceOfCheck = module.getFunctions().newFunction("instanceOf", instanceOfParams, PrimitiveType.i32);
         //TODO: implement instanceof
         instanceOfCheck.flow.ret(ConstExpressions.i32.c(0));
-
 
         for (final ResolvedClass cl : resolvedClasses) {
             // Class objects for
@@ -459,7 +532,7 @@ public class WasmBackend {
                         }
 
                         try {
-                            new Sequencer(g, dt, new WasmStructuredControlflowCodeGenerator(compileUnit, module, rtTypeMappings, objectTypeMappings, implFunction, toWASMType, toFunctionType, g));
+                            new Sequencer(g, dt, new WasmStructuredControlflowCodeGenerator(compileUnit, module, rtTypeMappings, objectTypeMappings, implFunction, toWASMType, toFunctionType, methodToIDMapper, g));
                         } catch (final RuntimeException e) {
                             throw new CodeGenerationFailure(method, dt, e);
                         }
@@ -512,7 +585,31 @@ public class WasmBackend {
             );
         }
         bootstrap.exportAs("bootstrap");
-        // TODO: fill constant pool and generate JS binding class
+
+        final StringWriter jsContentWriter = new StringWriter();
+        final PrintWriter jsContentPrintWriter = new PrintWriter(jsContentWriter);
+        try {
+            final String runtimeCode = IOUtils.resourceToString("/wasmruntime.js", StandardCharsets.UTF_8);
+            jsContentPrintWriter.println(runtimeCode);
+        } catch (final IOException e) {
+            throw new RuntimeException("Failed to load Wasm runtime js code", e);
+        }
+
+        // Generate string constant pool resolver
+        jsContentPrintWriter.println("bytecoder.imports[\"bytecoder\"].resolveStringConstant = function(index) {");
+        jsContentPrintWriter.println("  switch(index) {");
+        for (int i = 0; i < pooledStrings.size(); i++) {
+            jsContentPrintWriter.print("      case ");
+            jsContentPrintWriter.print(i);
+            jsContentPrintWriter.print(": return '");
+            jsContentPrintWriter.print(StringEscapeUtils.escapeEcmaScript(pooledStrings.get(i)));
+            jsContentPrintWriter.println("';");
+        }
+        jsContentPrintWriter.println("  }");
+        jsContentPrintWriter.println("  throw 'Unknown string index ' + index;");
+        jsContentPrintWriter.println("};");
+
+        // generate JS binding class
 
         final StringWriter theStringWriter = new StringWriter();
         final ByteArrayOutputStream theBinaryOutput = new ByteArrayOutputStream();
@@ -528,9 +625,14 @@ public class WasmBackend {
             throw new RuntimeException(e);
         }
 
+        // Flush stuff
+        jsContentWriter.flush();
+        jsContentPrintWriter.flush();
+
         final WasmCompileResult result = new WasmCompileResult();
         //result.add(new CompileResult.BinaryContent(compileOptions.getFilenamePrefix() + "wasmclasses.wasm", theBinaryOutput.toByteArray()));
         result.add(new CompileResult.StringContent(compileOptions.getFilenamePrefix() + "wasmclasses.wat", theStringWriter.toString()));
+        result.add(new CompileResult.StringContent(compileOptions.getFilenamePrefix() + "runtime.js", jsContentWriter.toString()));
 
         return result;
     }

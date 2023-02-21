@@ -35,6 +35,7 @@ public class Try extends Container implements WasmExpression {
         textWriter.space();
         textWriter.opening();
         textWriter.write("do");
+        textWriter.newLine();
 
         for (final WasmExpression e : getChildren()) {
             e.writeTo(textWriter, context.subWith(this));

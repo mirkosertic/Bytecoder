@@ -17,9 +17,9 @@ package de.mirkosertic.bytecoder.cli;
 
 import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.asm.backend.CompileOptions;
-import de.mirkosertic.bytecoder.asm.backend.js.JSIntrinsics;
 import de.mirkosertic.bytecoder.asm.backend.wasm.WasmBackend;
 import de.mirkosertic.bytecoder.asm.backend.wasm.WasmCompileResult;
+import de.mirkosertic.bytecoder.asm.backend.wasm.WasmIntrinsics;
 import de.mirkosertic.bytecoder.asm.ir.AnalysisException;
 import de.mirkosertic.bytecoder.asm.ir.AnalysisStack;
 import de.mirkosertic.bytecoder.asm.loader.BytecoderLoader;
@@ -83,7 +83,7 @@ public class CompileWasmCommand implements Callable<Integer> {
 
             logger.info("Compiling main class {} to directory {}", mainClass, buildDirectory);
 
-            final CompileUnit compileUnit = new CompileUnit(loader, logger, new JSIntrinsics());
+            final CompileUnit compileUnit = new CompileUnit(loader, logger, new WasmIntrinsics());
             final Type invokedType = Type.getObjectType(mainClass.replace('.', '/'));
 
             compileUnit.resolveMainMethod(invokedType, "main", Type.getMethodType(Type.VOID_TYPE, Type.getType("[Ljava/lang/String;")));
