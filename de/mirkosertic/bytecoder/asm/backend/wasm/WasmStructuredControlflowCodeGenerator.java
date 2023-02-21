@@ -74,6 +74,7 @@ import de.mirkosertic.bytecoder.asm.ir.NumericalTest;
 import de.mirkosertic.bytecoder.asm.ir.ObjectString;
 import de.mirkosertic.bytecoder.asm.ir.Or;
 import de.mirkosertic.bytecoder.asm.ir.PHI;
+import de.mirkosertic.bytecoder.asm.ir.PrimitiveClassReference;
 import de.mirkosertic.bytecoder.asm.ir.PrimitiveDouble;
 import de.mirkosertic.bytecoder.asm.ir.PrimitiveFloat;
 import de.mirkosertic.bytecoder.asm.ir.PrimitiveInt;
@@ -220,6 +221,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private final Function<ResolvedMethod, FunctionType> functionTypeConverter;
 
+    private final MethodToIDMapper methodToIDMapper;
+
     private final Map<AbstractVar, Local> varLocalMap;
 
     private NestingLevel activeLevel;
@@ -232,6 +235,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                                                   final ExportableFunction exportableFunction,
                                                   final Function<Type, WasmType> typeConverter,
                                                   final Function<ResolvedMethod, FunctionType> functionTypeConverter,
+                                                  final MethodToIDMapper methodToIDMapper,
                                                   final Graph graph) {
         this.compileUnit = compileUnit;
         this.module = module;
@@ -240,6 +244,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         this.objectTypeMappings = objectTypeMappings;
         this.typeConverter = typeConverter;
         this.functionTypeConverter = functionTypeConverter;
+        this.methodToIDMapper = methodToIDMapper;
         this.varLocalMap = new HashMap<>();
         this.activeLevel = new NestingLevel(null, exportableFunction.flow, exportableFunction);
         this.graph = graph;
@@ -294,7 +299,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         }
 
         final List<WasmValue> resolverArgs = new ArrayList<>();
-        resolverArgs.add(ConstExpressions.i32.c(-1)); // TODO: Resolve function index
+        resolverArgs.add(ConstExpressions.i32.c(methodToIDMapper.resolveIdFor(rm)));
 
         final StructType classType = rtMappings.get(cl);
 
@@ -349,7 +354,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         }
 
         final List<WasmValue> resolverArgs = new ArrayList<>();
-        resolverArgs.add(ConstExpressions.i32.c(-1)); // TODO: Resolve function index
+        resolverArgs.add(ConstExpressions.i32.c(methodToIDMapper.resolveIdFor(rm)));
 
         final StructType classType = rtMappings.get(cl);
 
@@ -517,7 +522,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         }
 
         final List<WasmValue> resolverArgs = new ArrayList<>();
-        resolverArgs.add(ConstExpressions.i32.c(-1)); // TODO: Resolve function index
+        resolverArgs.add(ConstExpressions.i32.c(methodToIDMapper.resolveIdFor(rm)));
 
         final StructType classType = rtMappings.get(cl);
 
@@ -548,7 +553,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         }
 
         final List<WasmValue> resolverArgs = new ArrayList<>();
-        resolverArgs.add(ConstExpressions.i32.c(-1)); // TODO: Resolve function index
+        resolverArgs.add(ConstExpressions.i32.c(methodToIDMapper.resolveIdFor(rm)));
 
         final StructType classType = rtMappings.get(cl);
 
@@ -717,6 +722,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             case Type.SHORT:
             case Type.INT:
                 switch (targetType.getSort()) {
+                    case Type.BOOLEAN:
                     case Type.BYTE:
                     case Type.CHAR:
                     case Type.SHORT:
@@ -734,6 +740,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 }
             case Type.LONG:
                 switch (targetType.getSort()) {
+                    case Type.BOOLEAN:
                     case Type.BYTE:
                     case Type.CHAR:
                     case Type.SHORT:
@@ -750,6 +757,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 }
             case Type.FLOAT:
                 switch (targetType.getSort()) {
+                    case Type.BOOLEAN:
                     case Type.BYTE:
                     case Type.CHAR:
                     case Type.SHORT:
@@ -766,6 +774,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 }
             case Type.DOUBLE:
                 switch (targetType.getSort()) {
+                    case Type.BOOLEAN:
                     case Type.BYTE:
                     case Type.CHAR:
                     case Type.SHORT:
@@ -1065,6 +1074,49 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         return ConstExpressions.ref.cast((StructType) refType.getType(), toWasmValue((Value) value.incomingDataFlows[0]));
     }
 
+    private WasmValue toWasmValue(final PrimitiveClassReference reference) {
+        switch (reference.type.getSort()) {
+            case Type.BOOLEAN:
+                return ConstExpressions.getGlobal(
+                    module.getGlobals().globalsIndex().globalByLabel("primitive_boolean")
+                );
+            case Type.BYTE:
+                return ConstExpressions.getGlobal(
+                        module.getGlobals().globalsIndex().globalByLabel("primitive_byte")
+                );
+            case Type.CHAR:
+                return ConstExpressions.getGlobal(
+                        module.getGlobals().globalsIndex().globalByLabel("primitive_char")
+                );
+            case Type.SHORT:
+                return ConstExpressions.getGlobal(
+                        module.getGlobals().globalsIndex().globalByLabel("primitive_short")
+                );
+            case Type.INT:
+                return ConstExpressions.getGlobal(
+                        module.getGlobals().globalsIndex().globalByLabel("primitive_int")
+                );
+            case Type.LONG:
+                return ConstExpressions.getGlobal(
+                        module.getGlobals().globalsIndex().globalByLabel("primitive_long")
+                );
+            case Type.FLOAT:
+                return ConstExpressions.getGlobal(
+                        module.getGlobals().globalsIndex().globalByLabel("primitive_float")
+                );
+            case Type.DOUBLE:
+                return ConstExpressions.getGlobal(
+                        module.getGlobals().globalsIndex().globalByLabel("primitive_double")
+                );
+            case Type.VOID:
+                return ConstExpressions.getGlobal(
+                        module.getGlobals().globalsIndex().globalByLabel("primitive_void")
+                );
+            default:
+                throw new IllegalArgumentException("Not supported primitive class for " + reference.type);
+        }
+    }
+
     private WasmValue toWasmValue(final ReferenceTest value) {
         switch (value.operation) {
             case NE:
@@ -1331,6 +1383,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             return toWasmValue((NumericalTest) value);
         } else if (value instanceof Rem) {
             return toWasmValue((Rem) value);
+        } else if (value instanceof PrimitiveClassReference) {
+            return toWasmValue((PrimitiveClassReference) value);
         }
         throw new IllegalArgumentException("Not implemented " + value.getClass());
     }
@@ -1445,7 +1499,14 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     @Override
     public void write(final Unwind node) {
-        activeLevel.activeFlow.comment("Unwind");
+
+        final List<WasmValue> throwArguments = new ArrayList<>();
+        throwArguments.add(toWasmValue((Value) node.incomingDataFlows[0]));
+
+        activeLevel.activeFlow.throwException(
+                module.getTags().tagIndex().byLabel("javaexception"),
+                throwArguments
+        );
     }
 
     @Override
@@ -1587,13 +1648,11 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     @Override
     public void writeBreakTo(final String label) {
-        activeLevel.activeFlow.comment("writeBreakTo " + label);
         activeLevel.activeFlow.branch(activeLevel.findByLabelInHierarchy(label));
     }
 
     @Override
     public void writeContinueTo(final String label) {
-        activeLevel.activeFlow.comment("writeContinueTo " + label);
         activeLevel.activeFlow.branch(activeLevel.findByLabelInHierarchy(label));
     }
 
@@ -1622,21 +1681,52 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         t.activeFlow.setGlobal(g, ConstExpressions.pop(g.getType()));
     }
 
+    int catchcheckcount = 0;
+
     @Override
     public void startCatchHandler(final Type type) {
 
-        activeLevel.writeDebug("startCatchHandler " + type);
+        if (!(activeLevel instanceof NestingLevelTry)) {
+            throw new IllegalArgumentException("Active container is not a try, got " + activeLevel);
+        }
+
+        final NestingLevelTry t = (NestingLevelTry) activeLevel;
+
+        final String className = WasmHelpers.generateClassName(type);
+
+        final Global g = module.getGlobals().globalsIndex().globalByLabel("lastcaughtexception");
+
+        final List<WasmValue> callArguments = new ArrayList<>();
+        callArguments.add(ConstExpressions.getGlobal(g));
+
+        final ResolvedClass cl = compileUnit.findClass(type);
+        if (!cl.requiresClassInitializer()) {
+            final Global cls = module.getGlobals().globalsIndex().globalByLabel(className + "_cls");
+            callArguments.add(ConstExpressions.getGlobal(cls));
+        } else {
+            final Callable initFunction = ConstExpressions.weakFunctionReference(className + "_i");
+            callArguments.add(ConstExpressions.call(initFunction, Collections.emptyList()));
+        }
+
+        final Iff check = t.activeContainer.catchBlock.flow.iff("catchcheck_" + catchcheckcount++,
+                ConstExpressions.call(ConstExpressions.weakFunctionReference("instanceOf"), callArguments));
+        t.activeFlow = check.flow;
     }
 
     @Override
     public void finishCatchHandler() {
 
-        activeLevel.writeDebug("endCatchHandler");
+        if (!(activeLevel instanceof NestingLevelTry)) {
+            throw new IllegalArgumentException("Active container is not a try, got " + activeLevel);
+        }
+
+        final NestingLevelTry t = (NestingLevelTry) activeLevel;
+        t.activeFlow = t.activeContainer.catchBlock.flow;
     }
 
     @Override
     public void writeRethrowException() {
-        activeLevel.activeFlow.comment("writeRethrowException");
+        activeLevel.activeFlow.rethrowException();
     }
 
     int tableSwitchCount = 0;

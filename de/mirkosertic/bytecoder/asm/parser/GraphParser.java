@@ -63,6 +63,7 @@ import de.mirkosertic.bytecoder.asm.ir.ReturnValue;
 import de.mirkosertic.bytecoder.asm.ir.SetClassField;
 import de.mirkosertic.bytecoder.asm.ir.SetInstanceField;
 import de.mirkosertic.bytecoder.asm.ir.StandardProjections;
+import de.mirkosertic.bytecoder.asm.ir.StaticMethodInvocationExpression;
 import de.mirkosertic.bytecoder.asm.ir.StringConstant;
 import de.mirkosertic.bytecoder.asm.ir.TableSwitch;
 import de.mirkosertic.bytecoder.asm.ir.Test;
@@ -2389,47 +2390,72 @@ public class GraphParser {
         if (node.dims != 2) {
             throw new IllegalStateException("Multiarray is only supported with 2 dimensions!");
         }
-        return parse_NARYINS(currentFlow, () -> {
-            final ResolvedClass rc = compileUnit.resolveClass(Type.getType(Array.class), analysisStack);
-            final Type objectType = Type.getObjectType(node.desc);
-            final String methodName;
-            switch (objectType.getElementType().getSort()) {
-                case Type.BOOLEAN:
-                    methodName = "newBooleanArray2Dim";
-                    break;
-                case Type.BYTE:
-                    methodName = "newByteArray2Dim";
-                    break;
-                case Type.SHORT:
-                    methodName = "newShortArray2Dim";
-                    break;
-                case Type.CHAR:
-                    methodName = "newCharArray2Dim";
-                    break;
-                case Type.INT:
-                    methodName = "newIntArray2Dim";
-                    break;
-                case Type.LONG:
-                    methodName = "newLongArray2Dim";
-                    break;
-                case Type.FLOAT:
-                    methodName = "newFloatArray2Dim";
-                    break;
-                case Type.DOUBLE:
-                    methodName = "newDoubleArray2Dim";
-                    break;
-                case Type.OBJECT:
-                    methodName = "newObjectArray2Dim";
-                    break;
-                default:
-                    throw new IllegalArgumentException("Not supported multi array element type " + objectType);
-            }
-            final ResolvedMethod method = rc.resolveMethod(methodName, Type.getMethodType(Type.getType(Object.class), Type.INT_TYPE, Type.INT_TYPE), analysisStack);
-            final Cast cast = graph.newCast(objectType);
-            cast.addIncomingData(graph.newStaticMethodInvocationExpression(method));
-            return cast;
-        }, node.dims);
-        //return parse_NARYINS(currentFlow, () -> graph.newNewMultiArray(Type.getObjectType(node.desc)), node.dims);
+        final ResolvedClass rc = compileUnit.resolveClass(Type.getType(Array.class), analysisStack);
+        final Type objectType = Type.getObjectType(node.desc);
+        final String methodName;
+        switch (objectType.getElementType().getSort()) {
+            case Type.BOOLEAN:
+                methodName = "newBooleanArray2Dim";
+                break;
+            case Type.BYTE:
+                methodName = "newByteArray2Dim";
+                break;
+            case Type.SHORT:
+                methodName = "newShortArray2Dim";
+                break;
+            case Type.CHAR:
+                methodName = "newCharArray2Dim";
+                break;
+            case Type.INT:
+                methodName = "newIntArray2Dim";
+                break;
+            case Type.LONG:
+                methodName = "newLongArray2Dim";
+                break;
+            case Type.FLOAT:
+                methodName = "newFloatArray2Dim";
+                break;
+            case Type.DOUBLE:
+                methodName = "newDoubleArray2Dim";
+                break;
+            case Type.OBJECT:
+                methodName = "newObjectArray2Dim";
+                break;
+            default:
+                throw new IllegalArgumentException("Not supported multi array element type " + objectType);
+        }
+
+        final ResolvedMethod method = rc.resolveMethod(methodName, Type.getMethodType(Type.getType(Object.class), Type.INT_TYPE, Type.INT_TYPE), analysisStack);
+
+        final StaticMethodInvocationExpression staticMethodInvocationExpression = graph.newStaticMethodInvocationExpression(method);
+
+        final Value[] incomingData = new Value[node.dims + 1];
+        final GraphParserState currentState = currentFlow.graphParserState;
+        Frame latest = currentState.frame;
+        incomingData[0] = graph.newTypeReference(rc.type);
+        for (int i = 0; i < node.dims; i++) {
+            final Frame.PopResult popresult = latest.popFromStack();
+            incomingData[incomingData.length - 1 - i] = popresult.value;
+            latest = popresult.newFrame;
+        }
+
+        staticMethodInvocationExpression.addIncomingData(incomingData);
+
+        final Cast cast = graph.newCast(objectType);
+        cast.addIncomingData(staticMethodInvocationExpression);
+
+        final Variable variable = graph.newVariable(cast.type);
+        final Copy copy = graph.newCopy();
+        copy.addIncomingData(cast);
+        variable.addIncomingData(copy);
+        graph.registerTranslation(node, new InstructionTranslation(copy, currentFlow.graphParserState.frame));
+
+        final Frame newFrame = latest.pushToStack(variable);
+
+        final GraphParserState newState = currentFlow.graphParserState.controlFlowsTo(copy).withFrame(newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
     }
 
     private boolean isStartOfTryCatch(final LabelNode labelNode) {

@@ -17,11 +17,8 @@ package de.mirkosertic.bytecoder.asm.backend.wasm;
 
 import de.mirkosertic.bytecoder.asm.parser.CoreIntrinsics;
 
-import java.util.Collections;
-
 public class WasmIntrinsics extends CoreIntrinsics {
 
     public WasmIntrinsics() {
-        super(Collections.emptyList());
     }
 }

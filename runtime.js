@@ -10,32 +10,6 @@ const bytecoder = {
                 return inst.constructor.$rt;
             },
         },
-        "de.mirkosertic.bytecoder.classlib.VM": {
-            Ljava$lang$Class$$bytePrimitiveClass$$: function () {
-                return bytecoder.primitives.byte;
-            },
-            Ljava$lang$Class$$charPrimitiveClass$$: function () {
-                return bytecoder.primitives.char;
-            },
-            Ljava$lang$Class$$shortPrimitiveClass$$: function () {
-                return bytecoder.primitives.short;
-            },
-            Ljava$lang$Class$$intPrimitiveClass$$: function () {
-                return bytecoder.primitives.int;
-            },
-            Ljava$lang$Class$$floatPrimitiveClass$$: function () {
-                return bytecoder.primitives.float;
-            },
-            Ljava$lang$Class$$doublePrimitiveClass$$: function () {
-                return bytecoder.primitives.double;
-            },
-            Ljava$lang$Class$$longPrimitiveClass$$: function () {
-                return bytecoder.primitives.long;
-            },
-            Ljava$lang$Class$$booleanPrimitiveClass$$: function () {
-                return bytecoder.primitives.boolean;
-            },
-        },
         "jdk.internal.misc.ScopedMemoryAccess": {
             V$registerNatives$$: function () {
             },
@@ -606,18 +580,6 @@ const bytecoder = {
         x.data = new Array(len);
         x.data.fill(defaultvalue);
         return x;
-    },
-    multiarray: function(aDimensions, aDefault) {
-        const theLength = aDimensions[0];
-        const theArray = bytecoder.newarray(theLength, aDefault);
-        if (aDimensions.length > 1) {
-            const theNewDimensions = aDimensions.slice(0);
-            theNewDimensions.shift();
-            for (let i = 0; i < theLength; i++) {
-                theArray.data[i] = bytecoder.multiarray(theNewDimensions,aDefault);
-            }
-        }
-        return theArray;
     },
     toBytecoderString: function(jsstring) {
         const x = new java$lang$String();

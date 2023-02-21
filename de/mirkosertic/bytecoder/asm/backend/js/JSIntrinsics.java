@@ -17,11 +17,8 @@ package de.mirkosertic.bytecoder.asm.backend.js;
 
 import de.mirkosertic.bytecoder.asm.parser.CoreIntrinsics;
 
-import java.util.Collections;
-
 public class JSIntrinsics extends CoreIntrinsics {
 
     public JSIntrinsics() {
-        super(Collections.emptyList());
     }
 }

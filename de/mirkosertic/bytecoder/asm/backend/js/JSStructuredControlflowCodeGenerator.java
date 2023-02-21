@@ -49,7 +49,6 @@ import de.mirkosertic.bytecoder.asm.ir.Mul;
 import de.mirkosertic.bytecoder.asm.ir.Neg;
 import de.mirkosertic.bytecoder.asm.ir.New;
 import de.mirkosertic.bytecoder.asm.ir.NewArray;
-import de.mirkosertic.bytecoder.asm.ir.NewMultiArray;
 import de.mirkosertic.bytecoder.asm.ir.Node;
 import de.mirkosertic.bytecoder.asm.ir.NullReference;
 import de.mirkosertic.bytecoder.asm.ir.NullTest;
@@ -57,6 +56,7 @@ import de.mirkosertic.bytecoder.asm.ir.NumericalTest;
 import de.mirkosertic.bytecoder.asm.ir.ObjectString;
 import de.mirkosertic.bytecoder.asm.ir.Or;
 import de.mirkosertic.bytecoder.asm.ir.PHI;
+import de.mirkosertic.bytecoder.asm.ir.PrimitiveClassReference;
 import de.mirkosertic.bytecoder.asm.ir.PrimitiveDouble;
 import de.mirkosertic.bytecoder.asm.ir.PrimitiveFloat;
 import de.mirkosertic.bytecoder.asm.ir.PrimitiveInt;
@@ -543,29 +543,6 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         pw.print(")");
     }
 
-    private void writeExpression(final NewMultiArray node) {
-        pw.print("bytecoder.multiarray([");
-        for (int i = 0; i < node.incomingDataFlows.length; i++) {
-            if (i > 0) {
-                pw.print(", ");
-            }
-            writeExpression(node.incomingDataFlows[i]);
-        }
-        pw.print("], ");
-        switch (node.type.getSort()) {
-            case Type.OBJECT:
-                pw.print("null");
-                break;
-            case Type.BOOLEAN:
-                pw.print("false");
-                break;
-            default:
-                pw.print("0");
-                break;
-        }
-        pw.print(")");
-    }
-
     private void writeExpression(final RuntimeClass node) {
         final TypeReference typeReference = (TypeReference) node.incomingDataFlows[0];
         final Type t = typeReference.type;
@@ -583,6 +560,40 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
     private void writeExpression(final Cast node) {
         writeExpression(node.incomingDataFlows[0]);
+    }
+
+    private void writeExpression(final PrimitiveClassReference reference) {
+        switch (reference.type.getSort()) {
+            case Type.BOOLEAN:
+                pw.print("bytecoder.primitives.boolean");
+                break;
+            case Type.BYTE:
+                pw.print("bytecoder.primitives.byte");
+                break;
+            case Type.CHAR:
+                pw.print("bytecoder.primitives.char");
+                break;
+            case Type.SHORT:
+                pw.print("bytecoder.primitives.short");
+                break;
+            case Type.INT:
+                pw.print("bytecoder.primitives.int");
+                break;
+            case Type.LONG:
+                pw.print("bytecoder.primitives.long");
+                break;
+            case Type.FLOAT:
+                pw.print("bytecoder.primitives.float");
+                break;
+            case Type.DOUBLE:
+                pw.print("bytecoder.primitives.double");
+                break;
+            case Type.VOID:
+                pw.print("bytecoder.primitives.void");
+                break;
+            default:
+                throw new IllegalArgumentException("Not supported primitive class for " + reference.type);
+        }
     }
 
     private void writeExpression(final PrimitiveLong node) {
@@ -1310,12 +1321,12 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             writeExpression((Rem) node);
         } else if (node instanceof InstanceOf) {
             writeExpression((InstanceOf) node);
-        } else if (node instanceof NewMultiArray) {
-            writeExpression((NewMultiArray) node);
         } else if (node instanceof RuntimeClass) {
             writeExpression((RuntimeClass) node);
         } else if (node instanceof Cast) {
             writeExpression((Cast) node);
+        } else if (node instanceof PrimitiveClassReference) {
+            writeExpression((PrimitiveClassReference) node);
         } else {
             throw new IllegalArgumentException("Not implemented : " + node);
         }
