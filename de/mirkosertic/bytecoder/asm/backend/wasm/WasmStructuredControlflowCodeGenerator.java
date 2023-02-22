@@ -286,7 +286,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     @Override
     public void write(final VirtualMethodInvocation node) {
         final ResolvedMethod rm = node.resolvedMethod;
-        final ResolvedClass cl = rm.owner;
+        //final ResolvedClass cl = rm.owner;
 
         final List<WasmValue> indirectCallArgs = new ArrayList<>();
 
@@ -301,11 +301,13 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         final List<WasmValue> resolverArgs = new ArrayList<>();
         resolverArgs.add(ConstExpressions.i32.c(methodToIDMapper.resolveIdFor(rm)));
 
-        final StructType classType = rtMappings.get(cl);
+        //final StructType classType = rtMappings.get(cl);
+        final StructType objectType = module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class)));
 
         resolverArgs.add(ConstExpressions.struct.get(
-                classType,
-                ConstExpressions.ref.cast(classType, toWasmValue((Value) node.incomingDataFlows[0])),
+                objectType,
+                //ConstExpressions.ref.cast(objectType, toWasmValue((Value) node.incomingDataFlows[0])),
+                toWasmValue((Value) node.incomingDataFlows[0]),
                 "vt_resolver"
         ));
 
@@ -341,7 +343,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     @Override
     public void write(final InterfaceMethodInvocation node) {
         final ResolvedMethod rm = node.method;
-        final ResolvedClass cl = rm.owner;
+        //final ResolvedClass cl = rm.owner;
 
         final List<WasmValue> indirectCallArgs = new ArrayList<>();
 
@@ -356,11 +358,12 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         final List<WasmValue> resolverArgs = new ArrayList<>();
         resolverArgs.add(ConstExpressions.i32.c(methodToIDMapper.resolveIdFor(rm)));
 
-        final StructType classType = rtMappings.get(cl);
+        final StructType objectType = module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class)));
 
         resolverArgs.add(ConstExpressions.struct.get(
-                classType,
-                ConstExpressions.ref.cast(classType, toWasmValue((Value) node.incomingDataFlows[0])),
+                objectType,
+                //ConstExpressions.ref.cast(objectType, toWasmValue((Value) node.incomingDataFlows[0])),
+                toWasmValue((Value) node.incomingDataFlows[0]),
                 "vt_resolver"
         ));
 
@@ -432,7 +435,10 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             final Global global = module.getGlobals().globalsIndex().globalByLabel(className  + "_cls");
             initArgs.add(ConstExpressions.getGlobal(global));
         }
-        for (int i = 1; i < type.getFields().size(); i++) {
+
+        initArgs.add(ConstExpressions.ref.ref(module.functionIndex().firstByLabel(WasmHelpers.generateClassName(cl.type) + "_vt")));
+
+        for (int i = 2; i < type.getFields().size(); i++) {
             final StructType.Field f = type.getFields().get(i);
             if (f.getType() instanceof PrimitiveType) {
                 switch ((PrimitiveType) f.getType()) {
@@ -509,7 +515,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private WasmValue toWasmValue(final VirtualMethodInvocationExpression value) {
         final ResolvedMethod rm = value.resolvedMethod;
-        final ResolvedClass cl = rm.owner;
+        //final ResolvedClass cl = rm.owner;
 
         final List<WasmValue> indirectCallArgs = new ArrayList<>();
 
@@ -524,11 +530,13 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         final List<WasmValue> resolverArgs = new ArrayList<>();
         resolverArgs.add(ConstExpressions.i32.c(methodToIDMapper.resolveIdFor(rm)));
 
-        final StructType classType = rtMappings.get(cl);
+        //final StructType classType = rtMappings.get(cl);
+        final StructType objectType = module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class)));
 
         resolverArgs.add(ConstExpressions.struct.get(
-                classType,
-                ConstExpressions.ref.cast(classType, toWasmValue((Value) value.incomingDataFlows[0])),
+                objectType,
+                //ConstExpressions.ref.cast(objectType, toWasmValue((Value) value.incomingDataFlows[0])),
+                toWasmValue((Value) value.incomingDataFlows[0]),
                 "vt_resolver"
         ));
 
@@ -540,7 +548,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private WasmValue toWasmValue(final InterfaceMethodInvocationExpression value) {
         final ResolvedMethod rm = value.resolvedMethod;
-        final ResolvedClass cl = rm.owner;
+        //final ResolvedClass cl = rm.owner;
 
         final List<WasmValue> indirectCallArgs = new ArrayList<>();
 
@@ -555,11 +563,11 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         final List<WasmValue> resolverArgs = new ArrayList<>();
         resolverArgs.add(ConstExpressions.i32.c(methodToIDMapper.resolveIdFor(rm)));
 
-        final StructType classType = rtMappings.get(cl);
+        final StructType objectType = module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class)));
 
         resolverArgs.add(ConstExpressions.struct.get(
-                classType,
-                ConstExpressions.ref.cast(classType, toWasmValue((Value) value.incomingDataFlows[0])),
+                objectType,
+                ConstExpressions.ref.cast(objectType, toWasmValue((Value) value.incomingDataFlows[0])),
                 "vt_resolver"
         ));
 
@@ -829,7 +837,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 break;
             case Type.OBJECT:
                 typeToInstantiate = "obj_array";
-                final StructType runtimeObject = module.getTypes().structTypeByName("runtimeObject");
+                final StructType runtimeObject = module.getTypes().structTypeByName("java$lang$Object");
                 emptyArray = ConstExpressions.array.newInstanceDefault(module.getTypes().arrayType(ConstExpressions.ref.type(runtimeObject, true)), toWasmValue(length));
                 break;
             default:
@@ -840,7 +848,9 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         final List<WasmValue> initArguments = new ArrayList<>();
         final Type arrayClass = Type.getType(Array.class);
         final Global arrayGlobal = module.getGlobals().globalsIndex().globalByLabel(WasmHelpers.generateClassName(arrayClass) + "_cls");
+
         initArguments.add(ConstExpressions.getGlobal(arrayGlobal));
+        initArguments.add(ConstExpressions.ref.ref(module.functionIndex().firstByLabel(WasmHelpers.generateClassName(arrayClass) + "_vt")));
         initArguments.add(emptyArray);
         return ConstExpressions.struct.newInstance(structType, initArguments);
     }
