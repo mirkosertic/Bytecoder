@@ -40,11 +40,12 @@ const bytecoder = {
             }
         },
         "java.lang.StringBuilder": {
-            V$initializeWith$I: function() {
+            V$initializeWith$I: function(instance) {
             },
-            Ljava$lang$StringBuilder$$append$Ljava$lang$String$: function() {
+            Ljava$lang$StringBuilder$$append$Ljava$lang$String$: function(instance, str) {
+                return instance;
             },
-            Ljava$lang$String$$toString$$: function() {
+            Ljava$lang$String$$toString$$: function(instance) {
             }
         },
         "java.lang.StringBuffer": {
@@ -60,7 +61,8 @@ const bytecoder = {
             },
             I$length$$: function() {
             },
-            Ljava$lang$String$$format$Ljava$lang$String$$$Ljava$lang$Object$: function() {
+            Ljava$lang$String$$format$Ljava$lang$String$$$Ljava$lang$Object$: function(pattern,values) {
+                return pattern;
             },
             C$charAt$I: function() {
             },
@@ -81,6 +83,9 @@ const bytecoder = {
         },
         "java.lang.Integer": {
             Ljava$lang$String$$toString$I$I: function() {
+            },
+            I$parseInt$Ljava$lang$String$$I: function(obj, radix) {
+                return 0;
             }
         },
         "java.lang.Float": {

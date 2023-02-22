@@ -17,9 +17,9 @@ package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
 public class WasmFuncRef implements WasmValue {
 
-    private final Function function;
+    private final Callable function;
 
-    WasmFuncRef(final Function function) {
+    WasmFuncRef(final Callable function) {
         this.function = function;
     }
 

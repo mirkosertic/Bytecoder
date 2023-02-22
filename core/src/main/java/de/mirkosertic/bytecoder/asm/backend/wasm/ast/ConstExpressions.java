@@ -428,7 +428,7 @@ public class ConstExpressions {
             return new RefType(type, nullable);
         }
 
-        public static WasmFuncRef ref(final Function function) {
+        public static WasmFuncRef ref(final Callable function) {
             return new WasmFuncRef(function);
         }
 
