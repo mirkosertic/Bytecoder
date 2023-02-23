@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,9 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-public class F32TruncSF64 extends UnaryExpression {
+public class F32DemoteF64 extends UnaryExpression {
 
-    F32TruncSF64(final WasmValue value) {
-        super(value, "f32.trunc_f64_s", (byte) 0xa8);
+    F32DemoteF64(final WasmValue value) {
+        super(value, "f32.demote_f64", (byte) 0xa8);
     }
 }

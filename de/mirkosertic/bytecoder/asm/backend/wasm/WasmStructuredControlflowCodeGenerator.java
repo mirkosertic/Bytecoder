@@ -789,7 +789,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                     case Type.INT:
                         return ConstExpressions.i32.trunc_f64s(toWasmValue(incoming));
                     case Type.FLOAT:
-                        return ConstExpressions.f32.trunc_f64s(toWasmValue(incoming));
+                        return ConstExpressions.f32.demote_f64(toWasmValue(incoming));
                     case Type.LONG:
                         return ConstExpressions.i64.trunc_sf64(toWasmValue(incoming));
                     case Type.DOUBLE:
@@ -1130,7 +1130,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     private WasmValue toWasmValue(final ReferenceTest value) {
         switch (value.operation) {
             case NE:
-                return ConstExpressions.select(ConstExpressions.i32.c(1), ConstExpressions.i32.c(0), ConstExpressions.ref.eq(toWasmValue((Value) value.incomingDataFlows[0]), toWasmValue((Value) value.incomingDataFlows[1])));
+                // We need to reverse the isnull condition here! Take care
+                return ConstExpressions.select(ConstExpressions.i32.c(0), ConstExpressions.i32.c(1), ConstExpressions.ref.eq(toWasmValue((Value) value.incomingDataFlows[0]), toWasmValue((Value) value.incomingDataFlows[1])));
             case EQ:
                 return ConstExpressions.ref.eq(toWasmValue((Value) value.incomingDataFlows[0]), toWasmValue((Value) value.incomingDataFlows[1]));
             default:
@@ -1141,7 +1142,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     private WasmValue toWasmValue(final NullTest value) {
         switch (value.operation) {
             case NOTNULL:
-                return ConstExpressions.select(ConstExpressions.i32.c(1), ConstExpressions.i32.c(0), ConstExpressions.ref.isnull(toWasmValue((Value) value.incomingDataFlows[0])));
+                // We need to reverse the isnull condition here! Take care
+                return ConstExpressions.select(ConstExpressions.i32.c(0), ConstExpressions.i32.c(1), ConstExpressions.ref.isnull(toWasmValue((Value) value.incomingDataFlows[0])));
             case NULL:
                 return ConstExpressions.ref.isnull(toWasmValue((Value) value.incomingDataFlows[0]));
             default:

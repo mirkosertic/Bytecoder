@@ -348,18 +348,31 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                 final WebDriver driver = browserContainer.getWebDriver();
                 driver.get(testURL.toString());
 
-                final List<LogEntry> logs = driver.manage().logs().get(LogType.BROWSER).getAll();
+                List<LogEntry> logs = driver.manage().logs().get(LogType.BROWSER).getAll();
                 if (1 > logs.size()) {
                     aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("No console output from browser")));
                 }
+                LogEntry lastLogEntry = logs.get(logs.size() - 1);
+
+                int waitCounter = 0;
+                while (!lastLogEntry.getMessage().contains("Test finished OK") && waitCounter < 10) {
+                    waitCounter++;
+                    Thread.sleep(100);
+
+                    logs = driver.manage().logs().get(LogType.BROWSER).getAll();
+                    if (logs.size() > 0) {
+                        lastLogEntry = logs.get(logs.size() - 1);
+                    }
+                }
+
                 for (final LogEntry entry : logs) {
                     LOGGER.info(entry.getMessage());
                 }
-                final LogEntry lastLogEntry = logs.get(logs.size() - 1);
 
                 if (!lastLogEntry.getMessage().contains("Test finished OK")) {
                     aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed! Got : " + lastLogEntry.getMessage())));
                 }
+
             } catch (final CodeGenerationFailure e) {
 
                 final ResolvedMethod rm = e.getMethod();
@@ -486,14 +499,26 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                 final WebDriver driver = browserContainer.getWebDriver();
                 driver.get(testURL.toString());
 
-                final List<LogEntry> logs = driver.manage().logs().get(LogType.BROWSER).getAll();
+                List<LogEntry> logs = driver.manage().logs().get(LogType.BROWSER).getAll();
                 if (1 > logs.size()) {
                     aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("No console output from browser")));
                 }
+                LogEntry lastLogEntry = logs.get(logs.size() - 1);
+
+                int waitCounter = 0;
+                while (!lastLogEntry.getMessage().contains("Test finished OK") && waitCounter < 10) {
+                    waitCounter++;
+                    Thread.sleep(100);
+
+                    logs = driver.manage().logs().get(LogType.BROWSER).getAll();
+                    if (logs.size() > 0) {
+                        lastLogEntry = logs.get(logs.size() - 1);
+                    }
+                }
+
                 for (final LogEntry entry : logs) {
                     LOGGER.info(entry.getMessage());
                 }
-                final LogEntry lastLogEntry = logs.get(logs.size() - 1);
 
                 if (!lastLogEntry.getMessage().contains("Test finished OK")) {
                     aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed! Got : " + lastLogEntry.getMessage())));

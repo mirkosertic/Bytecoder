@@ -322,8 +322,8 @@ public class ConstExpressions {
             return new F32ConvertSI64(value);
         }
 
-        public static F32TruncSF64 trunc_f64s(final WasmValue value) {
-            return new F32TruncSF64(value);
+        public static F32DemoteF64 demote_f64(final WasmValue value) {
+            return new F32DemoteF64(value);
         }
     }
 
