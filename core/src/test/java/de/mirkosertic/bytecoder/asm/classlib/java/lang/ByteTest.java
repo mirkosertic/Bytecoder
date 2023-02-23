@@ -36,7 +36,6 @@ public class ByteTest {
 
     @Test
     public void testHashCode() {
-        System.out.println(new Byte((byte) 10).hashCode());
         assertEquals(new Byte((byte) 10).hashCode(), 10, 0);
     }
 
@@ -72,14 +71,12 @@ public class ByteTest {
 
     @Test
     public void testToString() {
-        System.out.println(new Byte((byte) 123).toString());
         assertEquals("123", new Byte((byte) 123).toString());
     }
 
     @Test
     public void testToString2() {
         final String str = Byte.toString((byte) 123);
-        System.out.println(str);
         assertEquals("123", str);
     }
 

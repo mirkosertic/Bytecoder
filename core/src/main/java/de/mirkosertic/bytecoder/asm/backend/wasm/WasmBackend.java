@@ -590,6 +590,32 @@ public class WasmBackend {
             }
         }
 
+        final ResolvedClass stringClass = compileUnit.findClass(Type.getType(String.class));
+        final Function stringInitFunction = initFunctions.get(stringClass);
+        final StructType stringType = objectTypeMappings.get(stringClass);
+
+        {
+            final List<Param> newStringParam = new ArrayList<>();
+            newStringParam.add(ConstExpressions.param("str", ConstExpressions.ref.host()));
+
+            final ExportableFunction newStringFunction = module.getFunctions().newFunction("newStringFromJS",
+                    newStringParam,
+                    ConstExpressions.ref.type(objectTypeMappings.get(objectClass), false));
+
+            final List<WasmValue> initArgs = new ArrayList<>();
+            initArgs.add(ConstExpressions.call(stringInitFunction, new ArrayList<>()));
+            initArgs.add(ConstExpressions.ref.ref(module.functionIndex().firstByLabel(WasmHelpers.generateClassName(stringClass.type) + "_vt")));
+            initArgs.add(ConstExpressions.getLocal(newStringFunction.localByLabel("str")));
+
+            newStringFunction.flow.ret(
+                    ConstExpressions.struct.newInstance(
+                            stringType,
+                            initArgs
+                    )
+            );
+            newStringFunction.exportAs("newBytecoderString");
+        }
+
         final List<Param> resolveStringConstantParams = new ArrayList<>();
         resolveStringConstantParams.add(ConstExpressions.param("constantId", PrimitiveType.i32));
 
@@ -601,9 +627,6 @@ public class WasmBackend {
 
         final ExportableFunction bootstrap = functionsSection.newFunction("bootstrap");
         for (int i = 0; i < pooledStrings.size(); i++) {
-            final ResolvedClass stringClass = compileUnit.findClass(Type.getType(String.class));
-            final Function stringInitFunction = initFunctions.get(stringClass);
-            final StructType stringType = objectTypeMappings.get(stringClass);
             final Global stringpoolGlobal = module.globalsIndex().globalByLabel("stringpool_" + i);
 
             final List<WasmValue> initArgs = new ArrayList<>();

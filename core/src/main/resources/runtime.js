@@ -469,9 +469,6 @@ const bytecoder = {
             },
         },
         "java.lang.Byte": {
-            Ljava$lang$String$$toString$$: function (obj) {
-                return bytecoder.toBytecoderString(obj.value.toString());
-            },
             Ljava$lang$String$$toString$B$I: function (value, radix) {
                 return bytecoder.toBytecoderString(value.toString(radix));
             },

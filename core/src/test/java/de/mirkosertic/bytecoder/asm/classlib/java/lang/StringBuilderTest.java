@@ -78,7 +78,6 @@ public class StringBuilderTest {
     public void testAppendDouble() {
         final StringBuilder theBuilder = new StringBuilder();
         theBuilder.append(123.123d);
-        System.out.println(theBuilder.toString());
         assertEquals("123.123", theBuilder.toString());
     }
 
@@ -104,7 +103,6 @@ public class StringBuilderTest {
         theBuilder.append('ü');
         theBuilder.append("nster");
         final String theResult = theBuilder.toString();
-        System.out.println(theResult);
         Assert.assertEquals("Münster", theResult);
     }
 
