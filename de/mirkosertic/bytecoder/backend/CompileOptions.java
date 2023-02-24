@@ -33,7 +33,6 @@ public class CompileOptions {
     private final Allocator allocator;
     private final String[] additionalClassesToLink;
     private final String[] additionalResources;
-    private final LLVMOptimizationLevel llvmOptimizationLevel;
     private final boolean escapeAnalysisEnabled;
 
     public CompileOptions(final Logger aLogger, final boolean aDebugOutput, final Optimizer aOptimizer, final boolean aEnableExceptions,
@@ -43,7 +42,6 @@ public class CompileOptions {
                           final Allocator aAllocator,
                           final String[] aAdditionalClassesToLink,
                           final String[] aAdditionalResources,
-                          final LLVMOptimizationLevel aLlvmOptimizationLevel,
                           final boolean aEscapeAnalysisEnabled) {
         logger = aLogger;
         debugOutput = aDebugOutput;
@@ -57,7 +55,6 @@ public class CompileOptions {
         allocator = aAllocator;
         additionalClassesToLink = aAdditionalClassesToLink;
         additionalResources = aAdditionalResources;
-        llvmOptimizationLevel = aLlvmOptimizationLevel;
         escapeAnalysisEnabled = aEscapeAnalysisEnabled;
     }
 
@@ -107,13 +104,5 @@ public class CompileOptions {
 
     public String[] getAdditionalResources() {
         return additionalResources;
-    }
-
-    public LLVMOptimizationLevel getLlvmOptimizationLevel() {
-        return llvmOptimizationLevel;
-    }
-
-    public boolean isEscapeAnalysisEnabled() {
-        return escapeAnalysisEnabled;
     }
 }
