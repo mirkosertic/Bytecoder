@@ -203,19 +203,6 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>wasmllvm</id>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                        <configuration>
-                            <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
-                            <backend>wasm_llvm</backend>
-                            <enableExceptionHandling>false</enableExceptionHandling>
-                            <filenamePrefix>jbox2d_wasmllvm</filenamePrefix>
-                            <debugOutput>false</debugOutput>
-                        </configuration>
-                    </execution>
-                    <execution>
                         <id>wasm-kotlin</id>
                         <goals>
                             <goal>compile</goal>
@@ -241,19 +228,7 @@
                             <debugOutput>false</debugOutput>
                         </configuration>
                     </execution>
-                    <execution>
-                        <id>vue-wasmllvm</id>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                        <configuration>
-                            <mainClass>de.mirkosertic.bytecoder.integrationtest.VueDemo</mainClass>
-                            <backend>wasm_llvm</backend>
-                            <enableExceptionHandling>false</enableExceptionHandling>
-                            <filenamePrefix>vue_wasmllvm</filenamePrefix>
-                            <debugOutput>false</debugOutput>
-                        </configuration>
-                    </execution>-->
+                    -->
                     <execution>
                         <id>lua-js</id>
                         <goals>
@@ -278,19 +253,7 @@
                             <debugOutput>false</debugOutput>
                         </configuration>
                     </execution>
-                    <execution>
-                        <id>lua-wasmllvm</id>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                        <configuration>
-                            <mainClass>de.mirkosertic.bytecoder.integrationtest.LuaDemo</mainClass>
-                            <backend>wasm_llvm</backend>
-                            <enableExceptionHandling>false</enableExceptionHandling>
-                            <filenamePrefix>lua_wasmllvm</filenamePrefix>
-                            <debugOutput>false</debugOutput>
-                        </configuration>
-                    </execution>-->
+                    -->
                 </executions>
             </plugin>
 

@@ -80,7 +80,7 @@ public class CompilerTest {
     public void testSimpleKernel() throws IOException {
         final AnalysisStack analysisStack = new AnalysisStack();
         final OpenCLCompileBackend backend = new OpenCLCompileBackend();
-        final CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true, "opencl", 512, 512, false, false, Allocator.passthru, new String[0], new String[0], null, false);
+        final CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true, "opencl", 512, 512, false, false, Allocator.passthru, new String[0], new String[0], false);
 
         final Kernel theKernel = createKernel();
         final Class<? extends Kernel> theKernelClass = theKernel.getClass();
@@ -107,7 +107,7 @@ public class CompilerTest {
     public void testKernelWithComplexType() throws IOException {
         final AnalysisStack analysisStack = new AnalysisStack();
         final OpenCLCompileBackend backend = new OpenCLCompileBackend();
-        final CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true, "opencl", 512, 512, false, false, Allocator.passthru, new String[0], new String[0], null, false);
+        final CompileOptions compileOptions = new CompileOptions(new Slf4JLogger(), false, KnownOptimizer.ALL, true, "opencl", 512, 512, false, false, Allocator.passthru, new String[0], new String[0], false);
 
         final Float2[] theIn = new Float2[10];
         final Float2[] theOut = new Float2[10];

@@ -27,7 +27,6 @@ import de.mirkosertic.bytecoder.asm.parser.Loader;
 import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.backend.CompileTarget;
-import de.mirkosertic.bytecoder.backend.LLVMOptimizationLevel;
 import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
 import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
 import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
@@ -151,12 +150,6 @@ public class BytecoderMavenMojo extends AbstractMojo {
     protected String[] additionalResources = new String[0];
 
     /**
-     * Optimization level for the LLVM backend. Generate code at different optimization levels. These correspond to the -O0, -O1, -O2, and -O3 optimization levels used by clang.
-     */
-    @Parameter(required = false, defaultValue = "O2")
-    protected String llvmOptimizationLevel = LLVMOptimizationLevel.defaultValue().name();
-
-    /**
      * Shall the escape analysis be enabled? Defaults to 'false'.
      */
     @Parameter(required = false, defaultValue = "false")
@@ -208,7 +201,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
                 final BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
                         new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1)});
 
-                final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.valueOf(optimizationLevel), enableExceptionHandling, filenamePrefix, wasmInitialPages, wasmMaximumPages, minifyCompileResult, preferStackifier, Allocator.valueOf(registerAllocator), additionalClassesToLink, additionalResources, LLVMOptimizationLevel.valueOf(llvmOptimizationLevel), escapeAnalysisEnabled);
+                final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.valueOf(optimizationLevel), enableExceptionHandling, filenamePrefix, wasmInitialPages, wasmMaximumPages, minifyCompileResult, preferStackifier, Allocator.valueOf(registerAllocator), additionalClassesToLink, additionalResources, escapeAnalysisEnabled);
                 final CompileResult theCode = theCompileTarget.compile(theOptions, theTargetClass, "main", theSignature);
                 for (final CompileResult.Content content : theCode.getContent()) {
                     final File theBytecoderFileName = new File(bytecoderDirectory, content.getFileName());
