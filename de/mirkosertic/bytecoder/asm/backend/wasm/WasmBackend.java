@@ -213,6 +213,7 @@ public class WasmBackend {
 
         // Store to uniquely assign an identifier to a method
         final MethodToIDMapper methodToIDMapper = new MethodToIDMapper();
+        final VTableResolver vTableResolver = new VTableResolver(methodToIDMapper);
 
         for (final ResolvedClass cl : resolvedClasses) {
             // Class objects for
@@ -241,9 +242,9 @@ public class WasmBackend {
                 if (rf.owner == cl) {
                     final String fieldName = WasmHelpers.generateFieldName(rf.name);
 
-                    StructType.Field field = null;
+                    final StructType.Field field;
 
-                    WasmValue defaultValue = null;
+                    final WasmValue defaultValue;
                     switch (rf.type.getSort()) {
                         case Type.BOOLEAN:
                         case Type.BYTE:
@@ -340,23 +341,20 @@ public class WasmBackend {
             params.add(ConstExpressions.param("methodid", PrimitiveType.i32));
             final ExportableFunction vtFunction = functionsSection.newFunction(className + "_vt", params, PrimitiveType.i32);
 
-            for (final ResolvedMethod rm : cl.allResolvedMethods()) {
-                // TODO: Enhance in case of opaque reference types
-                if (!"<init>".equals(rm.methodNode.name) &&
-                    !"<clinit>".equals(rm.methodNode.name) &&
-                    !Modifier.isAbstract(rm.methodNode.access) &&
-                    !Modifier.isStatic(rm.methodNode.access)) {
-                    final int methodId = methodToIDMapper.resolveIdFor(rm);
+            // TODO: Enhance in case of opaque reference types
+            final VTable vTable = vTableResolver.resolveFor(cl);
+            for (final Map.Entry<Integer, ResolvedMethod> entry : vTable.getMethods().entrySet()) {
+                final ResolvedMethod rm = entry.getValue();
+                final int methodId = entry.getKey();
 
-                    final String ownerClassName = WasmHelpers.generateClassName(rm.owner.type);
-                    final String methodName = WasmHelpers.generateMethodName(rm.methodNode.name, rm.methodType);
+                final String ownerClassName = WasmHelpers.generateClassName(rm.owner.type);
+                final String methodName = WasmHelpers.generateMethodName(rm.methodNode.name, rm.methodType);
 
-                    final Iff iff = vtFunction.flow.iff("check_" + methodId, ConstExpressions.i32.eq(
-                            ConstExpressions.i32.c(methodId),
-                            ConstExpressions.getLocal(vtFunction.localByLabel("methodid"))
-                    ));
-                    iff.flow.ret(ConstExpressions.weakFunctionTableReference(ownerClassName + "$" + methodName));
-                }
+                final Iff iff = vtFunction.flow.iff("check_" + methodId, ConstExpressions.i32.eq(
+                        ConstExpressions.i32.c(methodId),
+                        ConstExpressions.getLocal(vtFunction.localByLabel("methodid"))
+                ));
+                iff.flow.ret(ConstExpressions.weakFunctionTableReference(ownerClassName + "$" + methodName));
             }
 
             // TODO: either call supertype vtable or lambda method
