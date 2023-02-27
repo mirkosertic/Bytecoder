@@ -83,14 +83,12 @@ public class LongTest {
     @Test
     public void testValueOfString() {
         final Long theValue = Long.valueOf("123");
-        System.out.println(theValue.intValue());
         assertEquals(123, theValue.intValue(), 0);
     }
 
     @Test
     public void testValueOfNegativeString() {
         final Long theValue = Long.valueOf("-123");
-        System.out.println(theValue.intValue());
         assertEquals(-123, theValue.intValue(), 0);
     }
 
@@ -102,15 +100,12 @@ public class LongTest {
     @Test
     public void testToHexString() {
         final String theHexString = Long.toHexString(12345L);
-        System.out.println(theHexString);
         assertEquals("3039", theHexString);
     }
 
     @Test
     public void testPrintLong() {
         final long l = 1000L;
-        System.out.println("Long value");
-        System.out.println(l);
     }
 
     @Test
@@ -135,14 +130,12 @@ public class LongTest {
     @Test
     public void testToStringHex() {
         final String result = Long.toString(32, 16);
-        System.out.println(result);
         assertEquals("20", result);
     }
 
     @Test
     public void testToStringNegativeHex() {
         final String result = Long.toString(-32, 16);
-        System.out.println(result);
         assertEquals("-20", result);
     }
 }

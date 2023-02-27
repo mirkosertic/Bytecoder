@@ -298,9 +298,7 @@ public class JSBackend {
 
     private void generateFieldsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
 
-        if (cl.isNativeReferenceHolder()) {
-            pw.println("  nativeObject = null;");
-        }
+        pw.println("  nativeObject = null;");
 
         if (!cl.resolvedFields.isEmpty()) {
             pw.println();
@@ -507,7 +505,7 @@ public class JSBackend {
             if (arguments.length > 0) {
                 if (arguments[0].getSort() == Type.OBJECT) {
                     final ResolvedClass targetType = compileUnit.findClass(arguments[0]);
-                    if (targetType.isNativeReferenceHolder()) {
+                    if (targetType.isOpaqueReferenceType()) {
                         pw.print(" = arg0.nativeObject");
                     } else {
                         throw new IllegalStateException("Type " + arguments[0] + " is not supported as an opaque property type.");
@@ -666,7 +664,7 @@ public class JSBackend {
                         pw.print("}.bind(arg");
                         pw.print(i);
                         pw.print(")");
-                    } else if (typeClass.isNativeReferenceHolder()) {
+                    } else if (typeClass.isOpaqueReferenceType()) {
                         pw.print("arg");
                         pw.print(i);
                         pw.print(".nativeObject");

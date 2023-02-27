@@ -15,11 +15,10 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.api.NativeReferenceHolder;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
-public class TStringBuffer implements NativeReferenceHolder {
+public class TStringBuffer {
 
     public TStringBuffer() {
         this(10);

@@ -426,4 +426,8 @@ public class Graph {
     public PrimitiveClassReference newPrimitiveClassReference(final Type type) {
         return (PrimitiveClassReference) register(new PrimitiveClassReference(type));
     }
+
+    public RuntimeClassOf newRuntimeTypeOf() {
+        return (RuntimeClassOf) register(new RuntimeClassOf());
+    }
 }

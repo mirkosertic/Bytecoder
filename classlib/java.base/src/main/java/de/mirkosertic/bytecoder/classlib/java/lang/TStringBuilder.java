@@ -1,10 +1,9 @@
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
-import de.mirkosertic.bytecoder.api.NativeReferenceHolder;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
-public class TStringBuilder implements CharSequence, NativeReferenceHolder {
+public class TStringBuilder implements CharSequence {
 
     public TStringBuilder() {
         this(10);

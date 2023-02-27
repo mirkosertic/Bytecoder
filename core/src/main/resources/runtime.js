@@ -249,8 +249,8 @@ const bytecoder = {
             },
         },
         "de.mirkosertic.bytecoder.classlib.BytecoderCharsetDecoder": {
-            $C$decodeFromBytes$Ljava$nio$charset$Charset$$$B: function (decoder, cs, data) {
-                let targetCharacterSet = cs.canonicalName.nativeObject;
+            $C$decodeFromBytes$Ljava$nio$charset$Charset$$$B: function (decoder, charsetName, data) {
+                let targetCharacterSet = charsetName.nativeObject;
                 let byteData = new Uint8Array(data.data);
                 let dec = new TextDecoder(targetCharacterSet);
 
@@ -264,14 +264,14 @@ const bytecoder = {
             },
         },
         "de.mirkosertic.bytecoder.classlib.BytecoderCharsetEncoder": {
-            $B$encodeToBytes$Ljava$nio$charset$Charset$$$C: function (encoder, cs, data) {
+            $B$encodeToBytes$Ljava$nio$charset$Charset$$$C: function (encoder, charsetName, data) {
 
                 let str = '';
                 for (var i = 0; i < data.data.length; i++) {
                     str += String.fromCodePoint(data.data[i]);
                 }
 
-                let targetCharacterSet = cs.canonicalName.nativeObject;
+                let targetCharacterSet = charsetName.nativeObject;
                 if (targetCharacterSet !== 'UTF-8') {
                     throw 'Not supported character set!';
                 }
@@ -382,6 +382,9 @@ const bytecoder = {
                 }
                 return arr;
             },
+            V$initializeWith$Ljava$lang$String$: function (str, otherstr) {
+                str.nativeObject = otherstr.nativeObject;
+            }
         },
         "java.lang.Character": {
             Z$isDigit$C: function (char) {

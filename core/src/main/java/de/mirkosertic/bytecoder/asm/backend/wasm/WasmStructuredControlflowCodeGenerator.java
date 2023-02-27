@@ -91,6 +91,7 @@ import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.asm.ir.Return;
 import de.mirkosertic.bytecoder.asm.ir.ReturnValue;
 import de.mirkosertic.bytecoder.asm.ir.RuntimeClass;
+import de.mirkosertic.bytecoder.asm.ir.RuntimeClassOf;
 import de.mirkosertic.bytecoder.asm.ir.SHL;
 import de.mirkosertic.bytecoder.asm.ir.SHR;
 import de.mirkosertic.bytecoder.asm.ir.SetClassField;
@@ -229,6 +230,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private final Graph graph;
 
+    private final List<ResolvedClass> resolvedClasses;
+
     public WasmStructuredControlflowCodeGenerator(final CompileUnit compileUnit, final Module module,
                                                   final Map<ResolvedClass, StructType> rtMappings,
                                                   final Map<ResolvedClass, StructType> objectTypeMappings,
@@ -236,7 +239,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                                                   final Function<Type, WasmType> typeConverter,
                                                   final Function<ResolvedMethod, FunctionType> functionTypeConverter,
                                                   final MethodToIDMapper methodToIDMapper,
-                                                  final Graph graph) {
+                                                  final Graph graph,
+                                                  final List<ResolvedClass> resolvedClasses) {
         this.compileUnit = compileUnit;
         this.module = module;
         this.exportableFunction = exportableFunction;
@@ -248,6 +252,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         this.varLocalMap = new HashMap<>();
         this.activeLevel = new NestingLevel(null, exportableFunction.flow, exportableFunction);
         this.graph = graph;
+        this.resolvedClasses = resolvedClasses;
     }
 
     @Override
@@ -428,17 +433,38 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         final List<WasmValue> initArgs = new ArrayList<>();
 
         final String className = WasmHelpers.generateClassName(cl.type);
+        final WasmValue rttype;
+
+        final Global global = module.getGlobals().globalsIndex().globalByLabel(className  + "_cls");
+
         if (cl.requiresClassInitializer()) {
             final Callable initFunction = ConstExpressions.weakFunctionReference(className + "_i");
-            initArgs.add(ConstExpressions.call(initFunction, Collections.emptyList()));
+            rttype = ConstExpressions.call(initFunction, Collections.emptyList());
         } else {
-            final Global global = module.getGlobals().globalsIndex().globalByLabel(className  + "_cls");
-            initArgs.add(ConstExpressions.getGlobal(global));
+            rttype = ConstExpressions.getGlobal(global);
         }
+
+        initArgs.add(
+                ConstExpressions.struct.get(
+                        rtMappings.get(cl),
+                        rttype,
+                        "factoryFor"
+                )
+        );
 
         initArgs.add(ConstExpressions.ref.ref(module.functionIndex().firstByLabel(WasmHelpers.generateClassName(cl.type) + "_vt")));
 
-        for (int i = 2; i < type.getFields().size(); i++) {
+        initArgs.add(ConstExpressions.ref.externNullRef());
+
+        initArgs.add(
+                ConstExpressions.struct.get(
+                        rtMappings.get(cl),
+                        ConstExpressions.getGlobal(global),
+                        "classImplTypes"
+                )
+        );
+
+        for (int i = 4; i < type.getFields().size(); i++) {
             final StructType.Field f = type.getFields().get(i);
             if (f.getType() instanceof PrimitiveType) {
                 switch ((PrimitiveType) f.getType()) {
@@ -847,10 +873,20 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         final StructType structType = module.getTypes().structTypeByName(typeToInstantiate);
         final List<WasmValue> initArguments = new ArrayList<>();
         final Type arrayClass = Type.getType(Array.class);
-        final Global arrayGlobal = module.getGlobals().globalsIndex().globalByLabel(WasmHelpers.generateClassName(arrayClass) + "_cls");
 
-        initArguments.add(ConstExpressions.getGlobal(arrayGlobal));
+        final ResolvedClass arrayCls = compileUnit.findClass(arrayClass);
+        final String arrayClsName = WasmHelpers.generateClassName(arrayCls.type);
+        final Global global = module.getGlobals().globalsIndex().globalByLabel(arrayClsName  + "_cls");
+
+        initArguments.add(ConstExpressions.i32.c(resolvedClasses.indexOf(arrayCls)));
         initArguments.add(ConstExpressions.ref.ref(module.functionIndex().firstByLabel(WasmHelpers.generateClassName(arrayClass) + "_vt")));
+        initArguments.add(ConstExpressions.ref.externNullRef());
+        initArguments.add(ConstExpressions.struct.get(
+                rtMappings.get(arrayCls),
+                ConstExpressions.getGlobal(global),
+                "implTypes"
+        ));
+
         initArguments.add(emptyArray);
         return ConstExpressions.struct.newInstance(structType, initArguments);
     }
@@ -889,10 +925,11 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private WasmValue toWasmValue(final InstanceOf value) {
         final Value left = (Value) value.incomingDataFlows[0];
-        final Value right = (Value) value.incomingDataFlows[1];
+        final TypeReference right = (TypeReference) value.incomingDataFlows[1];
         final List<WasmValue> params = new ArrayList<>();
         params.add(toWasmValue(left));
-        params.add(toWasmValue(right));
+        final ResolvedClass questionType = compileUnit.findClass(right.type);
+        params.add(ConstExpressions.i32.c(resolvedClasses.indexOf(questionType)));
         return ConstExpressions.call(ConstExpressions.weakFunctionReference("instanceOf"), params);
     }
 
@@ -1082,6 +1119,12 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     private WasmValue toWasmValue(final Cast value) {
         final RefType refType = (RefType) typeConverter.apply(value.type);
         return ConstExpressions.ref.cast((StructType) refType.getType(), toWasmValue((Value) value.incomingDataFlows[0]));
+    }
+
+    private WasmValue toWasmValue(final RuntimeClassOf value) {
+        final List<WasmValue> arguments = new ArrayList<>();
+        arguments.add(toWasmValue((Value) value.incomingDataFlows[0]));
+        return ConstExpressions.call(ConstExpressions.weakFunctionReference("runtimetypeof"), arguments);
     }
 
     private WasmValue toWasmValue(final PrimitiveClassReference reference) {
@@ -1397,6 +1440,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             return toWasmValue((Rem) value);
         } else if (value instanceof PrimitiveClassReference) {
             return toWasmValue((PrimitiveClassReference) value);
+        } else if (value instanceof RuntimeClassOf) {
+            return toWasmValue((RuntimeClassOf) value);
         }
         throw new IllegalArgumentException("Not implemented " + value.getClass());
     }
@@ -1712,13 +1757,22 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         callArguments.add(ConstExpressions.getGlobal(g));
 
         final ResolvedClass cl = compileUnit.findClass(type);
+        final WasmValue typeToCheck;
         if (!cl.requiresClassInitializer()) {
             final Global cls = module.getGlobals().globalsIndex().globalByLabel(className + "_cls");
-            callArguments.add(ConstExpressions.getGlobal(cls));
+            typeToCheck = ConstExpressions.getGlobal(cls);
         } else {
             final Callable initFunction = ConstExpressions.weakFunctionReference(className + "_i");
-            callArguments.add(ConstExpressions.call(initFunction, Collections.emptyList()));
+            typeToCheck = ConstExpressions.call(initFunction, Collections.emptyList());
         }
+
+        callArguments.add(
+                ConstExpressions.struct.get(
+                        rtMappings.get(cl),
+                        typeToCheck,
+                        "typeId"
+                )
+        );
 
         final Iff check = t.activeContainer.catchBlock.flow.iff("catchcheck_" + catchcheckcount++,
                 ConstExpressions.call(ConstExpressions.weakFunctionReference("instanceOf"), callArguments));

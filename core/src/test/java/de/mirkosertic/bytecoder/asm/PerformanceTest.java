@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.asm;
 
 import de.mirkosertic.bytecoder.api.Import;
 import de.mirkosertic.bytecoder.asm.test.UnitTestRunner;
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 

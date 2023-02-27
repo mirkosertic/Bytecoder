@@ -72,6 +72,7 @@ import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.asm.ir.Return;
 import de.mirkosertic.bytecoder.asm.ir.ReturnValue;
 import de.mirkosertic.bytecoder.asm.ir.RuntimeClass;
+import de.mirkosertic.bytecoder.asm.ir.RuntimeClassOf;
 import de.mirkosertic.bytecoder.asm.ir.SHL;
 import de.mirkosertic.bytecoder.asm.ir.SHR;
 import de.mirkosertic.bytecoder.asm.ir.SetClassField;
@@ -476,6 +477,12 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         pw.print(")");
     }
 
+    private void writeExpression(final RuntimeClassOf runtimeClassOf) {
+        pw.print("((");
+        writeExpression(runtimeClassOf.incomingDataFlows[0]);
+        pw.print(").constructor)");
+    }
+
     private void writeType(final Type type) {
         switch (type.getSort()) {
             case Type.OBJECT:
@@ -786,7 +793,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                         }
                         case Type.OBJECT: {
                             final ResolvedClass targetType = compileUnit.findClass(arguments[0]);
-                            if (targetType.isNativeReferenceHolder()) {
+                            if (targetType.isOpaqueReferenceType()) {
                                 writeExpression(node.incomingDataFlows[1]);
                                 pw.print(".nativeObject");
                                 break;
@@ -902,7 +909,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                                 pw.print("}.bind(");
                                 writeExpression(node.incomingDataFlows[i + 1]);
                                 pw.print(")");
-                            } else if (typeClass.isNativeReferenceHolder()) {
+                            } else if (typeClass.isOpaqueReferenceType()) {
                                 writeExpression(node.incomingDataFlows[i + 1]);
                                 pw.print(".nativeObject");
                             } else {
@@ -995,7 +1002,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                         case Type.OBJECT: {
                             final ResolvedClass targetType = compileUnit.findClass(arguments[0]);
                             writeExpression(node.incomingDataFlows[1]);
-                            if (targetType.isNativeReferenceHolder()) {
+                            if (targetType.isOpaqueReferenceType()) {
                                 pw.print(".nativeObject");
                             } else {
                                 throw new IllegalStateException("Type " + arguments[0] + " is not supported as an opaque property type.");
@@ -1132,7 +1139,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                                 pw.print("}.bind(");
                                 writeExpression(node.incomingDataFlows[i + 1]);
                                 pw.print(")");
-                            } else if (typeClass.isNativeReferenceHolder()) {
+                            } else if (typeClass.isOpaqueReferenceType()) {
                                 writeExpression(node.incomingDataFlows[i + 1]);
                                 pw.print(".nativeObject");
                             } else {
@@ -1327,6 +1334,8 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             writeExpression((Cast) node);
         } else if (node instanceof PrimitiveClassReference) {
             writeExpression((PrimitiveClassReference) node);
+        } else if (node instanceof RuntimeClassOf) {
+            writeExpression((RuntimeClassOf) node);
         } else {
             throw new IllegalArgumentException("Not implemented : " + node);
         }

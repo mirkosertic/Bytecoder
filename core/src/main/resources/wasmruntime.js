@@ -5,27 +5,19 @@ const bytecoder = {
     module: null,
 
     bytecoderStringToJS: function(obj) {
-        return bytecoder.instance.exports.java$lang$String$getNativeObject(obj);
+        return bytecoder.instance.exports.java$lang$Object$getNativeObject(obj);
     },
 
     toBytecoderString: function(str) {
         return bytecoder.instance.exports.newBytecoderString(str);
     },
 
-    setStringBuilderNativeObject: function(obj, value) {
-        bytecoder.instance.exports.java$lang$StringBuilder$setNativeObject(obj, value);
+    setNativeObject: function(obj, value) {
+        bytecoder.instance.exports.java$lang$Object$setNativeObject(obj, value);
     },
 
-    getStringBuilderNativeObject: function(obj) {
-        return bytecoder.instance.exports.java$lang$StringBuilder$getNativeObject(obj);
-    },
-
-    setStringBufferNativeObject: function(obj, value) {
-        bytecoder.instance.exports.java$lang$StringBuffer$setNativeObject(obj, value);
-    },
-
-    getStringBufferNativeObject: function(obj) {
-        return bytecoder.instance.exports.java$lang$StringBuffer$getNativeObject(obj);
+    getNativeObject: function(obj) {
+        return bytecoder.instance.exports.java$lang$Object$getNativeObject(obj);
     },
 
     imports: {
@@ -249,35 +241,35 @@ const bytecoder = {
         },
         "java.lang.StringBuffer": {
             V$initializeWith$I: function (buffer, size) {
-                bytecoder.setStringBufferNativeObject(buffer, "");
+                bytecoder.setNativeObject(buffer, "");
             },
             Ljava$lang$StringBuffer$$append$Ljava$lang$String$: function (buffer, str) {
-                let x = bytecoder.getStringBufferNativeObject(buffer);
+                let x = bytecoder.getNativeObject(buffer);
                 x+= bytecoder.bytecoderStringToJS(str);
-                bytecoder.setStringBufferNativeObject(buffer, x);
+                bytecoder.setNativeObject(buffer, x);
                 return buffer;
             },
             Ljava$lang$String$$toString$$: function (buffer) {
-                let x = bytecoder.getStringBufferNativeObject(buffer);
+                let x = bytecoder.getNativeObject(buffer);
                 return bytecoder.toBytecoderString(x);
             },
         },
         "java.lang.StringBuilder": {
             V$initializeWith$I: function (builder, size) {
-                bytecoder.setStringBuilderNativeObject(builder, "");
+                bytecoder.setNativeObject(builder, "");
             },
             Ljava$lang$StringBuilder$$append$Ljava$lang$String$: function (builder, str) {
-                let x = bytecoder.getStringBuilderNativeObject(builder);
+                let x = bytecoder.getNativeObject(builder);
                 x+= bytecoder.bytecoderStringToJS(str);
-                bytecoder.setStringBuilderNativeObject(builder, x);
+                bytecoder.setNativeObject(builder, x);
                 return builder;
             },
             Ljava$lang$String$$toString$$: function (builder) {
-                let x = bytecoder.getStringBuilderNativeObject(builder);
+                let x = bytecoder.getNativeObject(builder);
                 return bytecoder.toBytecoderString(x);
             },
             I$length$$: function (builder) {
-                let x = bytecoder.getStringBuilderNativeObject(builder);
+                let x = bytecoder.getNativeObject(builder);
                 return x.length;
             },
             V$setLength$I: function (builder, size) {
@@ -362,6 +354,9 @@ const bytecoder = {
                 }
                 return arr;
             },
+            V$initializeWith$Ljava$lang$String$: function(str, otherstr) {
+                bytecoder.setNativeObject(str, bytecoder.getNativeObject(otherstr));
+            }
         },
         "java.lang.Character": {
             Z$isDigit$C: function (unused, char) {
@@ -481,7 +476,7 @@ const bytecoder = {
                 return bytecoder.toBytecoderString(value.toString(radix));
             },
             J$parseLong$Ljava$lang$String$$I: function (unused, value, radix) {
-                return parseInt(bytecoder.bytecoderStringToJS(value), radix);
+                return BigInt(parseInt(bytecoder.bytecoderStringToJS(value), radix));
             },
         },
         "java.lang.Double": {

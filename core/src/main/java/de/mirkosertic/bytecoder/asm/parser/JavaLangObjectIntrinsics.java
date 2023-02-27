@@ -18,44 +18,24 @@ package de.mirkosertic.bytecoder.asm.parser;
 import de.mirkosertic.bytecoder.asm.ir.AnalysisStack;
 import de.mirkosertic.bytecoder.asm.ir.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.asm.ir.Graph;
+import de.mirkosertic.bytecoder.asm.ir.RuntimeClassOf;
 import de.mirkosertic.bytecoder.asm.ir.Value;
 import org.objectweb.asm.tree.MethodInsnNode;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class CoreIntrinsics implements Intrinsic {
-
-    private final List<Intrinsic> intrinsics;
-
-    public CoreIntrinsics(final Intrinsic... i) {
-        this.intrinsics = new ArrayList<>();
-        for (final Intrinsic in : i) {
-            this.intrinsics.add(in);
-        }
-        this.intrinsics.add(new VMIntrinsics());
-        this.intrinsics.add(new JavaLangObjectIntrinsics());
-    }
+public class JavaLangObjectIntrinsics implements Intrinsic {
 
     @Override
     public Value intrinsifyMethodInvocationWithReturnValue(final CompileUnit compileUnit, final AnalysisStack analysisStack, final MethodInsnNode node, final Value[] incomingData, final Graph graph, final GraphParser graphParser) {
-        for (final Intrinsic i : intrinsics) {
-            final Value result = i.intrinsifyMethodInvocationWithReturnValue(compileUnit, analysisStack, node, incomingData, graph, graphParser);
-            if (result != null) {
-                return result;
-            }
+        if ("getClass".equals(node.name)) {
+            final RuntimeClassOf runtimeClassOf = graph.newRuntimeTypeOf();
+            runtimeClassOf.addIncomingData(incomingData);
+            return runtimeClassOf;
         }
         return null;
     }
 
     @Override
     public ControlTokenConsumer intrinsifyMethodInvocation(final CompileUnit compileUnit, final AnalysisStack analysisStack, final MethodInsnNode node, final Value[] incomingData, final Graph graph, final GraphParser graphParser) {
-        for (final Intrinsic i : intrinsics) {
-            final ControlTokenConsumer result = i.intrinsifyMethodInvocation(compileUnit, analysisStack, node, incomingData, graph, graphParser);
-            if (result != null) {
-                return result;
-            }
-        }
         return null;
     }
 }

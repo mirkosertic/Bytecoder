@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util;
 
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner;
+import de.mirkosertic.bytecoder.asm.test.UnitTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,7 +23,7 @@ import org.junit.runner.RunWith;
 import java.util.Formattable;
 import java.util.Formatter;
 
-@RunWith(BytecoderUnitTestRunner.class)
+@RunWith(UnitTestRunner.class)
 public class FormatterTest {
 
     @Test

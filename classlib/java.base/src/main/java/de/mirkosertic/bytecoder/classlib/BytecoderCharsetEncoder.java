@@ -36,11 +36,11 @@ public class BytecoderCharsetEncoder extends CharsetEncoder {
 
             in.get(chardata, 0, size);
 
-            final byte[] converted = encodeToBytes(cs, chardata);
+            final byte[] converted = encodeToBytes(cs.name(), chardata);
             out.put(converted);
         }
         return CoderResult.UNDERFLOW;
     }
 
-    native byte[] encodeToBytes(final Charset cs, char[] characters);
+    native byte[] encodeToBytes(final String charsetName, char[] characters);
 }
