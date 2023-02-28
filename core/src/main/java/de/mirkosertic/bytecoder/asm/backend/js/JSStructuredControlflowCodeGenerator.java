@@ -480,7 +480,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     private void writeExpression(final RuntimeClassOf runtimeClassOf) {
         pw.print("((");
         writeExpression(runtimeClassOf.incomingDataFlows[0]);
-        pw.print(").constructor)");
+        pw.print(").constructor.$rt)");
     }
 
     private void writeType(final Type type) {

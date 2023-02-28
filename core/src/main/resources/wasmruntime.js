@@ -4,6 +4,8 @@ const bytecoder = {
 
     module: null,
 
+    filehandles: [],
+
     bytecoderStringToJS: function(obj) {
         return bytecoder.instance.exports.java$lang$Object$getNativeObject(obj);
     },
@@ -64,12 +66,15 @@ const bytecoder = {
         },
         "java.lang.Math": {
             I$min$I$I: function (unused, a, b) {
-                return Math.min(unused, a, b);
+                return Math.min(a, b);
             },
             F$min$F$F: function (unused, a, b) {
                 return Math.min(a, b);
             },
             I$max$I$I: function (unused, a, b) {
+                return Math.max(a, b);
+            },
+            J$max$J$J: function (unused, a, b) {
                 return Math.max(a, b);
             },
             D$floor$D: function (unused, a) {
@@ -185,13 +190,13 @@ const bytecoder = {
             },
         },
         "java.io.FileOutputStream": {
-            V$writeBytes$$B$I$I: function (fis, b, off, len) {
-                let fd = fis.fd.fd;
+            V$writeBytes$Ljava$io$FileDescriptor$$$B$I$I: function (fis, fdd, b, off, len) {
+                let fd = bytecoder.instance.exports.getFileDescriptorHandle(fdd);
                 let x = bytecoder.filehandles[fd];
                 x.V$writeBytes$$B$I$I(fd, b, off, len);
             },
-            V$writeInt$I: function (fis, cp) {
-                let fd = fis.fd.fd;
+            V$writeInt$Ljava$io$FileDescriptor$$I: function (fis, fdd, cp) {
+                let fd = bytecoder.instance.exports.getFileDescriptorHandle(fdd);
                 let x = bytecoder.filehandles[fd];
                 x.V$writeInt$I(fd, cp);
             },
@@ -201,29 +206,34 @@ const bytecoder = {
             }
         },
         "de.mirkosertic.bytecoder.classlib.BytecoderCharsetDecoder": {
-            $C$decodeFromBytes$Ljava$nio$charset$Charset$$$B: function (decoder, cs, data) {
-                let targetCharacterSet = cs.canonicalName.nativeObject;
-                let byteData = new Uint8Array(data.data);
+            $C$decodeFromBytes$Ljava$lang$String$$$B: function (decoder, charsetName, data) {
+                let targetCharacterSet = bytecoder.bytecoderStringToJS(charsetName);
+
+                let length = bytecoder.instance.exports.byteArrayLength(null, data);
+                let byteData = new Uint8Array(length);
+                for (let i = 0; i < length; i++) {
+                    byteData[i] = bytecoder.instance.exports.getByteArrayEntry(null, data, i);
+                }
+
                 let dec = new TextDecoder(targetCharacterSet);
 
                 let str = dec.decode(byteData);
 
-                let charArray = bytecoder.newarray(str.length, 0);
+                let charArray = bytecoder.instance.exports.newCharArray(null, str.length);
                 for (let i = 0; i < str.length; i++) {
-                    charArray.data[i] = str.codePointAt(i);
+                    bytecoder.instance.exports.setCharArrayEntry(null, charArray, i, str.codePointAt(i));
                 }
                 return charArray;
             },
         },
         "de.mirkosertic.bytecoder.classlib.BytecoderCharsetEncoder": {
-            $B$encodeToBytes$Ljava$nio$charset$Charset$$$C: function (encoder, cs, data) {
-
+            $B$encodeToBytes$Ljava$lang$String$$$C: function (encoder, charsetName, data) {
+                var length = bytecoder.instance.exports.charArrayLength(null, data);
                 let str = '';
-                for (var i = 0; i < data.data.length; i++) {
-                    str += String.fromCodePoint(data.data[i]);
+                for (var i = 0; i < length; i++) {
+                    str += String.fromCodePoint(bytecoder.instance.exports.getCharArrayEntry(null, data, i));
                 }
-
-                let targetCharacterSet = cs.canonicalName.nativeObject;
+                let targetCharacterSet = bytecoder.bytecoderStringToJS(charsetName);
                 if (targetCharacterSet !== 'UTF-8') {
                     throw 'Not supported character set!';
                 }
@@ -231,9 +241,9 @@ const bytecoder = {
                 let enc = new TextEncoder();
                 let byteData = enc.encode(str);
 
-                let bytes = bytecoder.newarray(byteData.length, 0);
+                let bytes = bytecoder.instance.exports.newByteArray(null, byteData.length);
                 for (var i = 0; i < byteData.length; i++) {
-                    bytes.data[i] = byteData[i];
+                    bytecoder.instance.exports.setByteArrayEntry(null, bytes, i, byteData[i]);
                 }
 
                 return bytes;
@@ -261,6 +271,12 @@ const bytecoder = {
             Ljava$lang$StringBuilder$$append$Ljava$lang$String$: function (builder, str) {
                 let x = bytecoder.getNativeObject(builder);
                 x+= bytecoder.bytecoderStringToJS(str);
+                bytecoder.setNativeObject(builder, x);
+                return builder;
+            },
+            Ljava$lang$StringBuilder$$append$Ljava$lang$CharSequence$$I$I: function (builder, str, start, end) {
+                let x = bytecoder.getNativeObject(builder);
+                x+= bytecoder.bytecoderStringToJS(str).substring(start, end);
                 bytecoder.setNativeObject(builder, x);
                 return builder;
             },
@@ -297,8 +313,7 @@ const bytecoder = {
                 const s = bytecoder.bytecoderStringToJS(str);
                 let dstOffset = dstBegin;
                 for (let i = srcBegin; i < srcEnd; i++) {
-                    dst.data[dstOffset] = s.codePointAt(i);
-                    dstOffset++;
+                    bytecoder.instance.exports.setCharArrayEntry(null, dst, dstOffset++, s.codePointAt(i));
                 }
             },
             I$indexOf$I: function (str, cp) {
@@ -314,6 +329,9 @@ const bytecoder = {
             },
             Ljava$lang$String$$trim$$: function (str) {
                 return bytecoder.toBytecoderString(bytecoder.bytecoderStringToJS(str).trim());
+            },
+            Ljava$lang$String$$substring$I: function(str, i) {
+                return bytecoder.toBytecoderString(bytecoder.bytecoderStringToJS(str).substring(i));
             },
             Ljava$lang$String$$repeat$I: function (str, amount) {
                 return bytecoder.toBytecoderString(bytecoder.bytecoderStringToJS(str).repeat(amount));
@@ -490,7 +508,7 @@ const bytecoder = {
             D$parseDouble$Ljava$lang$String$: function (unused, str) {
                 return parseFloat(bytecoder.bytecoderStringToJS(str));
             },
-            Z$isNaN$D: function (d) {
+            Z$isNaN$D: function (unused, d) {
                 return isNaN(d) ? 1 : 0;
             }
         },
@@ -522,3 +540,27 @@ const bytecoder = {
         });
     }
 };
+
+bytecoder.filehandles[1] = {
+    V$writeBytes$$B$I$I: function(fd, b, off, len) {
+        let decoder = new TextDecoder();
+        let d = [];
+        for (let i = off; i < off + len; i++) {
+            d.push(bytecoder.instance.exports.getByteArrayEntry(null, b, i));
+        }
+        let arr = new Uint8Array(d);
+        let str = decoder.decode(arr).replace('\n', '').replace('\f', '');
+        if (str.length > 0) {
+            console.log(str);
+        }
+    },
+    V$writeInt$I: function(fd, cp) {
+        let decoder = new TextDecoder();
+        let arr = new Uint8Array([cp]);
+        let str = decoder.decode(arr).replace('\n', '').replace('\f', '');
+        if (str.length > 0) {
+            console.log(str);
+        }
+    },
+};
+

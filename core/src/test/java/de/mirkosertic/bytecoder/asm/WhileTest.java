@@ -22,11 +22,14 @@ import org.junit.runner.RunWith;
 @RunWith(UnitTestRunner.class)
 public class WhileTest {
 
-    private boolean shutdownSignal;
+    static class Trigger {
+        private boolean shutdownSignal;
+    }
 
     @Test
     public void testWhileLoop() {
-        while(shutdownSignal) {
+        final Trigger t = new Trigger();
+        while(t.shutdownSignal) {
             doSomething();
         }
     }

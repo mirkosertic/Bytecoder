@@ -28,6 +28,7 @@ import de.mirkosertic.bytecoder.asm.backend.wasm.ast.GlobalsSection;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Iff;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.ImportReference;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Local;
+import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Loop;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Module;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Param;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.PrimitiveType;
@@ -495,12 +496,50 @@ public class WasmBackend {
             instanceOfParams.add(ConstExpressions.param("runtimeTypeId", PrimitiveType.i32));
             final ExportableFunction instanceOfCheck = module.getFunctions().newFunction("instanceOf", instanceOfParams, PrimitiveType.i32);
             final Local obj = instanceOfCheck.localByLabel("obj");
+            final Local idx = instanceOfCheck.newLocal("idx", PrimitiveType.i32);
+            final Local len = instanceOfCheck.newLocal("len", PrimitiveType.i32);
+
+            final ReferencableType implTypesArray = types.arrayType(PrimitiveType.i32);
+            final WasmType arrayType = ConstExpressions.ref.type(implTypesArray, true);
+            final Local arr = instanceOfCheck.newLocal("arr", arrayType);
 
             // Null values are not equal
             final Iff nullCheck = instanceOfCheck.flow.iff("nullcheck", ConstExpressions.ref.eq(ConstExpressions.getLocal(obj), ConstExpressions.ref.nullRef()));
             nullCheck.flow.ret(ConstExpressions.i32.c(0));
 
-            //TODO: implement instanceof
+            nullCheck.falseFlow.setLocal(
+                    arr,
+                    ConstExpressions.struct.get(
+                            objectType,
+                            ConstExpressions.getLocal(obj),
+                            "implTypes"
+                    )
+            );
+            nullCheck.falseFlow.setLocal(
+                    len,
+                    ConstExpressions.array.len(implTypesArray, ConstExpressions.getLocal(arr))
+            );
+            nullCheck.falseFlow.setLocal(
+                    idx,
+                    ConstExpressions.i32.c(0)
+            );
+            final Loop l = nullCheck.falseFlow.loop("iter");
+
+            final Iff idxcheck = l.flow.iff("idxcheck", ConstExpressions.i32.eq(
+                    ConstExpressions.getLocal(idx),
+                    ConstExpressions.getLocal(len)
+            ));
+            idxcheck.flow.ret(ConstExpressions.i32.c(0));
+
+            final Iff ischeck = idxcheck.falseFlow.iff("ischeck", ConstExpressions.i32.eq(
+                    ConstExpressions.getLocal(instanceOfCheck.localByLabel("runtimeTypeId")),
+                    ConstExpressions.array.get(implTypesArray, ConstExpressions.getLocal(arr), ConstExpressions.getLocal(idx))
+            ));
+            ischeck.flow.ret(ConstExpressions.i32.c(1));
+
+            ischeck.falseFlow.setLocal(idx, ConstExpressions.i32.add(ConstExpressions.getLocal(idx), ConstExpressions.i32.c(1)));
+            ischeck.falseFlow.branch(l);
+
             nullCheck.falseFlow.ret(ConstExpressions.i32.c(0));
         }
 
@@ -667,7 +706,7 @@ public class WasmBackend {
               ConstExpressions.struct.get(
                       rtTypeMappings.get(stringClass),
                       ConstExpressions.getGlobal(stringGlobal),
-                      "implTypes"
+                      "classImplTypes"
               )
             );
 
@@ -711,7 +750,7 @@ public class WasmBackend {
                     ConstExpressions.struct.get(
                             rtTypeMappings.get(stringClass),
                             ConstExpressions.getGlobal(stringGlobal),
-                            "implTypes"
+                            "classImplTypes"
                     )
             );
 

@@ -995,7 +995,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private WasmValue toWasmValue(final ArrayLength value) {
         final Value array = (Value) value.incomingDataFlows[0];
-        switch (value.type.getSort()) {
+        switch (array.type.getElementType().getSort()) {
+            case Type.BOOLEAN:
             case Type.BYTE:
             case Type.CHAR:
             case Type.SHORT:
@@ -1027,6 +1028,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                         ConstExpressions.struct.get(type, ConstExpressions.ref.cast(type, toWasmValue(array)), "data")
                 );
             }
+            case Type.OBJECT:
             case Type.ARRAY: {
                 final StructType type = module.getTypes().structTypeByName("obj_array");
                 return ConstExpressions.array.len(
@@ -1035,7 +1037,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 );
             }
             default:
-                throw new IllegalStateException("Not implemented arraylength for " + value.type + " sort " + value.type.getSort());
+                throw new IllegalStateException("Not implemented arraylength for " + array.type + " sort " + array.type.getElementType().getSort());
         }
     }
 
@@ -1451,15 +1453,18 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         final Value value = (Value) node.incomingDataFlows[0];
         final Node target = node.outgoingFlows[0];
         if (target instanceof AbstractVar) {
-            final AbstractVar targetrVar = (AbstractVar) target;
-            final Local local = varLocalMap.get(targetrVar);
+            final AbstractVar targetVar = (AbstractVar) target;
+            final Local local = varLocalMap.get(targetVar);
             if (local == null) {
                 throw new IllegalArgumentException("Cannot find Wasm local for variable " + target);
             }
-            if (!targetrVar.type.equals(value.type) && targetrVar.type.getSort() != Type.OBJECT && targetrVar.type.getSort() != Type.ARRAY) {
-                activeLevel.activeFlow.setLocal(local, convertToType(value, targetrVar.type));
+            if (!targetVar.type.equals(value.type) && targetVar.type.getSort() != Type.OBJECT && targetVar.type.getSort() != Type.ARRAY) {
+                activeLevel.activeFlow.setLocal(local, convertToType(value, targetVar.type));
             } else {
-                activeLevel.activeFlow.setLocal(local, toWasmValue(value));
+                if (value.type.equals(targetVar.type)) {
+                    activeLevel.activeFlow.comment("Assign " + value.type + " to " + targetVar.type);
+                    activeLevel.activeFlow.setLocal(local, toWasmValue(value));
+                }
             }
 
         } else {
@@ -1770,7 +1775,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 ConstExpressions.struct.get(
                         rtMappings.get(cl),
                         typeToCheck,
-                        "typeId"
+                        "factoryFor"
                 )
         );
 
@@ -1827,14 +1832,14 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     @Override
     public void startTableSwitchDefaultBlock() {
 
-        activeLevel.writeDebug("startTableSwitchDefaultBlock");
-
         if (!(activeLevel instanceof NestingLevelSwitch)) {
             throw new IllegalArgumentException("Active container is not a Switch, got " + activeLevel);
         }
 
         final NestingLevelSwitch level = (NestingLevelSwitch) activeLevel;
-        level.activeFlow = ((Iff ) level.activeContainer).falseFlow;
+        level.activeFlow = ((Iff) level.activeFlow.parent().parent()).falseFlow;
+
+        activeLevel.writeDebug("startTableSwitchDefaultBlock");
     }
 
     @Override

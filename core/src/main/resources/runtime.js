@@ -51,6 +51,9 @@ const bytecoder = {
             I$max$I$I: function (a, b) {
                 return Math.max(a, b);
             },
+            J$max$J$J: function (a, b) {
+                return Math.max(a, b);
+            },
             D$floor$D: function (a) {
                 return Math.floor(a);
             },
@@ -161,13 +164,13 @@ const bytecoder = {
             },
         },
         "java.io.FileOutputStream": {
-            V$writeBytes$$B$I$I: function (fis, b, off, len) {
-                let fd = fis.fd.fd;
+            V$writeBytes$Ljava$io$FileDescriptor$$$B$I$I: function (fis, fdd, b, off, len) {
+                let fd = bytecoder.exports["getFileDescriptorHandle"].call(fdd);
                 let x = bytecoder.filehandles[fd];
                 x.V$writeBytes$$B$I$I(fd, b, off, len);
             },
-            V$writeInt$I: function (fis, cp) {
-                let fd = fis.fd.fd;
+            V$writeInt$Ljava$io$FileDescriptor$$I: function (fis, fdd, cp) {
+                let fd = bytecoder.exports["getFileDescriptorHandle"].call(fdd);
                 let x = bytecoder.filehandles[fd];
                 x.V$writeInt$I(fd, cp);
             },
@@ -249,7 +252,7 @@ const bytecoder = {
             },
         },
         "de.mirkosertic.bytecoder.classlib.BytecoderCharsetDecoder": {
-            $C$decodeFromBytes$Ljava$nio$charset$Charset$$$B: function (decoder, charsetName, data) {
+            $C$decodeFromBytes$Ljava$lang$String$$$B: function (decoder, charsetName, data) {
                 let targetCharacterSet = charsetName.nativeObject;
                 let byteData = new Uint8Array(data.data);
                 let dec = new TextDecoder(targetCharacterSet);
@@ -264,8 +267,7 @@ const bytecoder = {
             },
         },
         "de.mirkosertic.bytecoder.classlib.BytecoderCharsetEncoder": {
-            $B$encodeToBytes$Ljava$nio$charset$Charset$$$C: function (encoder, charsetName, data) {
-
+            $B$encodeToBytes$Ljava$lang$String$$$C: function (encoder, charsetName, data) {
                 let str = '';
                 for (var i = 0; i < data.data.length; i++) {
                     str += String.fromCodePoint(data.data[i]);
@@ -304,6 +306,10 @@ const bytecoder = {
             },
             Ljava$lang$StringBuilder$$append$Ljava$lang$String$: function (builder, str) {
                 builder.nativeObject += str.nativeObject;
+                return builder;
+            },
+            Ljava$lang$StringBuilder$$append$Ljava$lang$CharSequence$$I$I: function (builder, str, start, end) {
+                builder.nativeObject += str.nativeObject.substring(start, end);
                 return builder;
             },
             Ljava$lang$String$$toString$$: function (builder) {
@@ -347,6 +353,9 @@ const bytecoder = {
             },
             Ljava$lang$String$$trim$$: function (str) {
                 return bytecoder.toBytecoderString(str.nativeObject.trim());
+            },
+            Ljava$lang$String$$substring$I: function(str, i) {
+                return bytecoder.toBytecoderString(str.nativeObject.substring(i));
             },
             Ljava$lang$String$$repeat$I: function (str, amount) {
                 return bytecoder.toBytecoderString(str.nativeObject.repeat(amount));

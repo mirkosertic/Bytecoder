@@ -46,6 +46,54 @@ public class TSystem {
 
     public static native long currentTimeMillis();
 
+    public static void arraycopy(final char[] aSource, final int aSourcePos, final char[] aTarget, final int aTargetPos, final int aLength) {
+        for (int i=0;i<aLength;i++) {
+            aTarget[aTargetPos + i] = aSource[aSourcePos + i];
+        }
+    }
+
+    public static void arraycopy(final byte[] aSource, final int aSourcePos, final byte[] aTarget, final int aTargetPos, final int aLength) {
+        for (int i=0;i<aLength;i++) {
+            aTarget[aTargetPos + i] = aSource[aSourcePos + i];
+        }
+    }
+
+    public static void arraycopy(final double[] aSource, final int aSourcePos, final double[] aTarget, final int aTargetPos, final int aLength) {
+        for (int i=0;i<aLength;i++) {
+            aTarget[aTargetPos + i] = aSource[aSourcePos + i];
+        }
+    }
+
+    public static void arraycopy(final float[] aSource, final int aSourcePos, final float[] aTarget, final int aTargetPos, final int aLength) {
+        for (int i=0;i<aLength;i++) {
+            aTarget[aTargetPos + i] = aSource[aSourcePos + i];
+        }
+    }
+
+    public static void arraycopy(final int[] aSource, final int aSourcePos, final int[] aTarget, final int aTargetPos, final int aLength) {
+        for (int i=0;i<aLength;i++) {
+            aTarget[aTargetPos + i] = aSource[aSourcePos + i];
+        }
+    }
+
+    public static void arraycopy(final long[] aSource, final int aSourcePos, final long[] aTarget, final int aTargetPos, final int aLength) {
+        for (int i=0;i<aLength;i++) {
+            aTarget[aTargetPos + i] = aSource[aSourcePos + i];
+        }
+    }
+
+    public static void arraycopy(final short[] aSource, final int aSourcePos, final short[] aTarget, final int aTargetPos, final int aLength) {
+        for (int i=0;i<aLength;i++) {
+            aTarget[aTargetPos + i] = aSource[aSourcePos + i];
+        }
+    }
+
+    public static void arraycopy(final boolean[] aSource, final int aSourcePos, final boolean[] aTarget, final int aTargetPos, final int aLength) {
+        for (int i=0;i<aLength;i++) {
+            aTarget[aTargetPos + i] = aSource[aSourcePos + i];
+        }
+    }
+
     public static void arraycopy(final Object aSource, final int aSourcePos, final Object aTarget, final int aTargetPos, final int aLength) {
         final Object[] theSource = (Object[]) aSource;
         final Object[] theTarget = (Object[]) aTarget;

@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.classlib;
 
+import de.mirkosertic.bytecoder.api.Export;
+
 public class Array {
 
     @Override
@@ -92,5 +94,45 @@ public class Array {
             a[i] = new double[dim2];
         }
         return a;
+    }
+
+    @Export("newCharArray")
+    public static char[] newCharArray(final int len) {
+        return new char[len];
+    }
+
+    @Export("charArrayLength")
+    public static int charArrayLength(final char[] arr) {
+        return arr.length;
+    }
+
+    @Export("getCharArrayEntry")
+    public static char getCharArrayEntry(final char[] arr, final int index) {
+        return arr[index];
+    }
+
+    @Export("setCharArrayEntry")
+    public static void setCharArrayEntry(final char[] arr, final int index, final char value) {
+        arr[index] = value;
+    }
+
+    @Export("newByteArray")
+    public static byte[] newByteArray(final int len) {
+        return new byte[len];
+    }
+
+    @Export("byteArrayLength")
+    public static int byteArrayLength(final byte[] arr) {
+        return arr.length;
+    }
+
+    @Export("getByteArrayEntry")
+    public static byte getByteArrayEntry(final byte[] arr, final int index) {
+        return arr[index];
+    }
+
+    @Export("setByteArrayEntry")
+    public static void setByteArrayEntry(final byte[] arr, final int index, final byte value) {
+        arr[index] = value;
     }
 }

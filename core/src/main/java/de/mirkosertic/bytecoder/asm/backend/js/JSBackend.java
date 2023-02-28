@@ -201,6 +201,9 @@ public class JSBackend {
             pw.print("'] = ");
             pw.print(generateClassName(method.owner.type));
             pw.print(".");
+            if (!Modifier.isStatic(method.methodNode.access)) {
+                pw.print("prototype.");
+            }
             pw.print(generateMethodName(method.methodNode.name, method.methodType));
             pw.println(";");
         });
@@ -664,12 +667,10 @@ public class JSBackend {
                         pw.print("}.bind(arg");
                         pw.print(i);
                         pw.print(")");
-                    } else if (typeClass.isOpaqueReferenceType()) {
+                    } else {
                         pw.print("arg");
                         pw.print(i);
                         pw.print(".nativeObject");
-                    } else {
-                        throw new IllegalStateException("Type " + argType + " not supported in opaque reference method of " + typeClass.type + "." + methodName);
                     }
                 }
             }

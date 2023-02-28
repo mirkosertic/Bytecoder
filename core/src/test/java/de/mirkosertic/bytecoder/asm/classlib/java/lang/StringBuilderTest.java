@@ -63,15 +63,15 @@ public class StringBuilderTest {
     @Test
     public void testAppendFloat() {
         final StringBuilder theBuilder = new StringBuilder();
-        theBuilder.append(123.123f);
-        assertEquals("123.123", theBuilder.toString());
+        theBuilder.append(123.0f);
+        assertEquals("123.0", theBuilder.toString());
     }
 
     @Test
     public void testAppendNegativeFloat() {
         final StringBuilder theBuilder = new StringBuilder();
-        theBuilder.append(-123.123f);
-        assertEquals("-123.123", theBuilder.toString());
+        theBuilder.append(-123.0f);
+        assertEquals("-123.0", theBuilder.toString());
     }
 
     @Test

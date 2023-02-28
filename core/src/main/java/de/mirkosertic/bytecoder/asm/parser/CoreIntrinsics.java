@@ -35,6 +35,7 @@ public class CoreIntrinsics implements Intrinsic {
         }
         this.intrinsics.add(new VMIntrinsics());
         this.intrinsics.add(new JavaLangObjectIntrinsics());
+        this.intrinsics.add(new JavaLangSystemIntrinsics());
     }
 
     @Override
