@@ -60,12 +60,12 @@ public class EnumTest {
     @Test
     public void testValueOf() {
         Value theEnum = Value.valueOf("THREE");
-        //Assert.assertEquals("THREE", theEnum.name());
-        //Assert.assertSame(theEnum, Value.THREE);
-        //Assert.assertSame(Value.THREE, Value.THREE);
-        //Value theValue = Value.TWO;
-        //Assert.assertNotSame(Value.THREE, theValue);
-        //Assert.assertSame(Value.TWO, theValue);
+        Assert.assertEquals("THREE", theEnum.name());
+        Assert.assertSame(theEnum, Value.THREE);
+        Assert.assertSame(Value.THREE, Value.THREE);
+        Value theValue = Value.TWO;
+        Assert.assertNotSame(Value.THREE, theValue);
+        Assert.assertSame(Value.TWO, theValue);
     }
 
     @Test

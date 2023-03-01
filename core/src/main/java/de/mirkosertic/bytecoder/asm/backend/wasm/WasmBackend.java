@@ -308,7 +308,7 @@ public class WasmBackend {
                     rttypeFields.add(new StructType.Field("lambdaMethod", PrimitiveType.i32, false));
                     rttypeFields.add(new StructType.Field("initStatus", PrimitiveType.i32));
                     rttypeFields.add(new StructType.Field("factoryFor", PrimitiveType.i32));
-                    rttypeFields.add(new StructType.Field("$VALUES", PrimitiveType.anyref));
+                    rttypeFields.add(new StructType.Field("$VALUES", ConstExpressions.ref.type(objectType, true)));
 
                     runtimeClassType = module.getTypes().structSubtype(
                             runtimeTypeName,

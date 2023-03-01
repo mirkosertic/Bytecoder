@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.classlib;
 
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
+import de.mirkosertic.bytecoder.api.Export;
 
 import java.lang.invoke.ConstantCallSite;
 import java.lang.invoke.MethodHandle;
@@ -229,4 +230,9 @@ public class VM {
 
     @EmulatedByRuntime
     public static native Class<?> booleanPrimitiveClass();
+
+    @Export("exceptionMessage")
+    public static String exceptionMessage(final Exception e) {
+        return e.getMessage();
+    }
 }
