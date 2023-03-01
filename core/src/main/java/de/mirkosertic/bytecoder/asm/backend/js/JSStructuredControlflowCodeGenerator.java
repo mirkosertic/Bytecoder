@@ -29,6 +29,7 @@ import de.mirkosertic.bytecoder.asm.ir.Cast;
 import de.mirkosertic.bytecoder.asm.ir.CaughtException;
 import de.mirkosertic.bytecoder.asm.ir.Copy;
 import de.mirkosertic.bytecoder.asm.ir.Div;
+import de.mirkosertic.bytecoder.asm.ir.EnumValuesOf;
 import de.mirkosertic.bytecoder.asm.ir.FrameDebugInfo;
 import de.mirkosertic.bytecoder.asm.ir.Goto;
 import de.mirkosertic.bytecoder.asm.ir.If;
@@ -481,6 +482,12 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         pw.print("((");
         writeExpression(runtimeClassOf.incomingDataFlows[0]);
         pw.print(").constructor.$rt)");
+    }
+
+    private void writeExpression(final EnumValuesOf enumValuesOf) {
+        pw.print("((");
+        writeExpression(enumValuesOf.incomingDataFlows[0]);
+        pw.print(").$Ljava$lang$Object$$getEnumConstants$$())");
     }
 
     private void writeType(final Type type) {
@@ -1336,6 +1343,8 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             writeExpression((PrimitiveClassReference) node);
         } else if (node instanceof RuntimeClassOf) {
             writeExpression((RuntimeClassOf) node);
+        } else if (node instanceof EnumValuesOf) {
+            writeExpression((EnumValuesOf) node);
         } else {
             throw new IllegalArgumentException("Not implemented : " + node);
         }

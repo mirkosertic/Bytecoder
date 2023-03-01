@@ -30,7 +30,7 @@ public class SimpleStringTest {
         }
     }
 
-    public int getInt(A a) {
+    public static int getInt(A a) {
         return a.getInt();
     }
 

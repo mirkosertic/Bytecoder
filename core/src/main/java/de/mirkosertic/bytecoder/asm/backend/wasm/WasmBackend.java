@@ -98,6 +98,7 @@ public class WasmBackend {
         final Map<ResolvedClass, StructType> rtTypeMappings = new HashMap<>();
         final Map<ResolvedClass, Function> initFunctions = new HashMap<>();
         ResolvedClass objectClass = null;
+        StructType runtimeClassType = null;
 
         final FunctionsSection functionsSection = module.getFunctions();
 
@@ -237,11 +238,6 @@ public class WasmBackend {
             }
 
             final List<StructType.Field> classFields = new ArrayList<>();
-            classFields.add(new StructType.Field("typeId", PrimitiveType.i32, false));
-            classFields.add(new StructType.Field("classImplTypes", ConstExpressions.ref.type(implTypesArray, true), false));
-            classFields.add(new StructType.Field("lambdaMethod", PrimitiveType.i32, false));
-            classFields.add(new StructType.Field("initStatus", PrimitiveType.i32));
-            classFields.add(new StructType.Field("factoryFor", PrimitiveType.i32));
 
             final List<WasmValue> classFieldDefaults = new ArrayList<>();
 
@@ -287,8 +283,10 @@ public class WasmBackend {
                     }
 
                     if (Modifier.isStatic(rf.access)) {
-                        classFields.add(field);
-                        classFieldDefaults.add(defaultValue);
+                        if (!"$VALUES".equals(fieldName)) {
+                            classFields.add(field);
+                            classFieldDefaults.add(defaultValue);
+                        }
                     } else {
                         instanceFields.add(field);
                     }
@@ -298,14 +296,36 @@ public class WasmBackend {
             if (!Modifier.isInterface(cl.classNode.access)) {
                 if (cl.superClass == null) {
                     objectClass = cl;
-                    objectTypeMappings.put(cl, types.structSubtype(className, rtType, instanceFields));
+                    final StructType objectType = types.structSubtype(className, rtType, instanceFields);
+
+                    objectTypeMappings.put(cl, objectType);
+
+                    final String runtimeTypeName = WasmHelpers.generateClassName(Type.getType(Class.class)) + "_rtt";
+
+                    final List<StructType.Field> rttypeFields = new ArrayList<>();
+                    rttypeFields.add(new StructType.Field("typeId", PrimitiveType.i32, false));
+                    rttypeFields.add(new StructType.Field("classImplTypes", ConstExpressions.ref.type(implTypesArray, true), false));
+                    rttypeFields.add(new StructType.Field("lambdaMethod", PrimitiveType.i32, false));
+                    rttypeFields.add(new StructType.Field("initStatus", PrimitiveType.i32));
+                    rttypeFields.add(new StructType.Field("factoryFor", PrimitiveType.i32));
+                    rttypeFields.add(new StructType.Field("$VALUES", PrimitiveType.anyref));
+
+                    runtimeClassType = module.getTypes().structSubtype(
+                            runtimeTypeName,
+                            objectType,
+                            rttypeFields
+                    );
+
+                    rtTypeMappings.put(compileUnit.findClass(Type.getType(Class.class)), runtimeClassType);
+
                 } else {
                     objectTypeMappings.put(cl, types.structSubtype(className, objectTypeMappings.get(cl.superClass), instanceFields));
                 }
             }
 
-            final StructType objectType = objectTypeMappings.get(objectClass);
-            rtTypeMappings.put(cl, types.structSubtype(className + "_rtt", objectType, classFields));
+            if (!Class.class.getName().equals(cl.type.getClassName())) {
+                rtTypeMappings.put(cl, types.structSubtype(className + "_rtt", runtimeClassType, classFields));
+            }
 
             final List<Param> params = new ArrayList<>();
             params.add(ConstExpressions.param("methodid", PrimitiveType.i32));
@@ -346,6 +366,7 @@ public class WasmBackend {
             initArgs.add(ConstExpressions.i32.c(-1)); // lambda method id
             initArgs.add(ConstExpressions.i32.c(0)); // initstatus
             initArgs.add(ConstExpressions.i32.c(resolvedClasses.indexOf(cl))); // Factory for
+            initArgs.add(ConstExpressions.ref.nullRef()); // $VALUES
 
             initArgs.addAll(classFieldDefaults);
             final Global runtimeClassGlobal = globalsSection.newConstantGlobal(className + "_cls",

@@ -17,34 +17,26 @@ package de.mirkosertic.bytecoder.asm.parser;
 
 import de.mirkosertic.bytecoder.asm.ir.AnalysisStack;
 import de.mirkosertic.bytecoder.asm.ir.ControlTokenConsumer;
+import de.mirkosertic.bytecoder.asm.ir.EnumValuesOf;
 import de.mirkosertic.bytecoder.asm.ir.Graph;
 import de.mirkosertic.bytecoder.asm.ir.Value;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class CoreIntrinsics implements Intrinsic {
-
-    private final List<Intrinsic> intrinsics;
-
-    public CoreIntrinsics(final Intrinsic... i) {
-        this.intrinsics = new ArrayList<>();
-        for (final Intrinsic in : i) {
-            this.intrinsics.add(in);
-        }
-        this.intrinsics.add(new VMIntrinsics());
-        this.intrinsics.add(new JavaLangClassIntrinsics());
-        this.intrinsics.add(new JavaLangObjectIntrinsics());
-        this.intrinsics.add(new JavaLangSystemIntrinsics());
-    }
+public class JavaLangClassIntrinsics implements Intrinsic {
 
     @Override
     public Value intrinsifyMethodInvocationWithReturnValue(final CompileUnit compileUnit, final AnalysisStack analysisStack, final MethodInsnNode node, final Value[] incomingData, final Graph graph, final GraphParser graphParser) {
-        for (final Intrinsic i : intrinsics) {
-            final Value result = i.intrinsifyMethodInvocationWithReturnValue(compileUnit, analysisStack, node, incomingData, graph, graphParser);
-            if (result != null) {
-                return result;
+        if (node.getOpcode() != Opcodes.INVOKESTATIC) {
+            final Type targetClass = Type.getObjectType(node.owner);
+            if (Class.class.getName().equals(targetClass.getClassName())) {
+                if ("getEnumConstants".equals(node.name)) {
+                    final Type methodType = Type.getMethodType(node.desc);
+                    final EnumValuesOf exp = graph.newEnumValuesOf(methodType.getReturnType());
+                    exp.addIncomingData(incomingData[0]);
+                    return exp;
+                }
             }
         }
         return null;
@@ -52,12 +44,6 @@ public class CoreIntrinsics implements Intrinsic {
 
     @Override
     public ControlTokenConsumer intrinsifyMethodInvocation(final CompileUnit compileUnit, final AnalysisStack analysisStack, final MethodInsnNode node, final Value[] incomingData, final Graph graph, final GraphParser graphParser) {
-        for (final Intrinsic i : intrinsics) {
-            final ControlTokenConsumer result = i.intrinsifyMethodInvocation(compileUnit, analysisStack, node, incomingData, graph, graphParser);
-            if (result != null) {
-                return result;
-            }
-        }
         return null;
     }
 }

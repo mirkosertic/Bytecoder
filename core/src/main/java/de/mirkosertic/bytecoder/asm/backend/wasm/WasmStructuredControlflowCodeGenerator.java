@@ -48,6 +48,7 @@ import de.mirkosertic.bytecoder.asm.ir.Cast;
 import de.mirkosertic.bytecoder.asm.ir.CaughtException;
 import de.mirkosertic.bytecoder.asm.ir.Copy;
 import de.mirkosertic.bytecoder.asm.ir.Div;
+import de.mirkosertic.bytecoder.asm.ir.EnumValuesOf;
 import de.mirkosertic.bytecoder.asm.ir.FrameDebugInfo;
 import de.mirkosertic.bytecoder.asm.ir.Goto;
 import de.mirkosertic.bytecoder.asm.ir.Graph;
@@ -329,17 +330,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
         final List<WasmValue> callArgs = new ArrayList<>();
 
-        final String className = WasmHelpers.generateClassName(cl.type);
-        if (cl.requiresClassInitializer()) {
-            final Callable initFunction = ConstExpressions.weakFunctionReference(className + "_i");
-            callArgs.add(ConstExpressions.call(initFunction, Collections.emptyList()));
-        } else {
-            final Global global = module.getGlobals().globalsIndex().globalByLabel(className  + "_cls");
-            callArgs.add(ConstExpressions.getGlobal(global));
-        }
-
         final String functionName = WasmHelpers.generateClassName(cl.type) + "$" + WasmHelpers.generateMethodName(rm.methodNode.name, rm.methodType);
-        for (int i = 1; i < node.incomingDataFlows.length; i++) {
+        for (int i = 0; i < node.incomingDataFlows.length; i++) {
             callArgs.add(toWasmValue((Value) node.incomingDataFlows[i]));
         }
         activeLevel.activeFlow.voidCall(ConstExpressions.weakFunctionReference(functionName), callArgs);
@@ -509,17 +501,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
         final List<WasmValue> callArgs = new ArrayList<>();
 
-        final String className = WasmHelpers.generateClassName(cl.type);
-        if (cl.requiresClassInitializer()) {
-            final Callable initFunction = ConstExpressions.weakFunctionReference(className + "_i");
-            callArgs.add(ConstExpressions.call(initFunction, Collections.emptyList()));
-        } else {
-            final Global global = module.getGlobals().globalsIndex().globalByLabel(className  + "_cls");
-            callArgs.add(ConstExpressions.getGlobal(global));
-        }
-
         final String functionName = WasmHelpers.generateClassName(cl.type) + "$" + WasmHelpers.generateMethodName(rm.methodNode.name, rm.methodType);
-        for (int i = 1; i < value.incomingDataFlows.length; i++) {
+        for (int i = 0; i < value.incomingDataFlows.length; i++) {
             callArgs.add(toWasmValue((Value) value.incomingDataFlows[i]));
         }
         return ConstExpressions.call(ConstExpressions.weakFunctionReference(functionName), callArgs);
@@ -681,7 +664,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     }
 
     private WasmValue toWasmValue(final RuntimeClass value) {
-        return toType(value.type);
+        final TypeReference typeReference = (TypeReference) value.incomingDataFlows[0];
+        return toType(typeReference.type);
     }
 
     private WasmValue toWasmValue(final CaughtException value) {
@@ -1094,7 +1078,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private WasmValue toWasmValue(final Rem value) {
         final Value left = (Value) value.incomingDataFlows[0];
-        final Value right = (Value) value.incomingDataFlows[0];
+        final Value right = (Value) value.incomingDataFlows[1];
         switch (left.type.getSort()) {
             case Type.BYTE:
             case Type.CHAR:
@@ -1127,6 +1111,17 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         final List<WasmValue> arguments = new ArrayList<>();
         arguments.add(toWasmValue((Value) value.incomingDataFlows[0]));
         return ConstExpressions.call(ConstExpressions.weakFunctionReference("runtimetypeof"), arguments);
+    }
+
+    private WasmValue toWasmValue(final EnumValuesOf value) {
+        final StructType t = module.getTypes().structTypeByName(WasmHelpers
+                .generateClassName(Type.getType(Class.class)) + "_rtt");
+        final StructType objectArray = module.getTypes().structTypeByName("obj_array");
+        return ConstExpressions.ref.cast(objectArray,ConstExpressions.struct.get(
+                t,
+                ConstExpressions.ref.cast(t, toWasmValue((Value) value.incomingDataFlows[0])),
+                "$VALUES"
+        ));
     }
 
     private WasmValue toWasmValue(final PrimitiveClassReference reference) {
@@ -1444,6 +1439,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             return toWasmValue((PrimitiveClassReference) value);
         } else if (value instanceof RuntimeClassOf) {
             return toWasmValue((RuntimeClassOf) value);
+        } else if (value instanceof EnumValuesOf) {
+            return toWasmValue((EnumValuesOf) value);
         }
         throw new IllegalArgumentException("Not implemented " + value.getClass());
     }
@@ -1811,10 +1808,18 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         final WasmValue minCheck = ConstExpressions.i32.ge_s(valueToCheck, ConstExpressions.i32.c(node.min));
         final WasmValue maxCheck = ConstExpressions.i32.le_s(valueToCheck, ConstExpressions.i32.c(node.max));
 
-        final Iff min = activeLevel.activeFlow.iff("tableswitch_min" + tableSwitchCount++, minCheck);
-        final Iff max = min.flow.iff("tableswitch_max" + tableSwitchCount++, maxCheck);
+        final int switchNum = tableSwitchCount++;
 
-        activeLevel = new NestingLevelSwitch(activeLevel, max.flow, min, ConstExpressions.i32.sub(valueToCheck, ConstExpressions.i32.c(node.min)));
+        final Block outer = activeLevel.activeFlow.block("tableswitch_outer" +  switchNum);
+        final Local calc = exportableFunction.newLocal("tableswitch_idx" + switchNum, PrimitiveType.i32);
+        outer.flow.setLocal(calc, ConstExpressions.i32.sub(valueToCheck, ConstExpressions.i32.c(node.min)));
+        final Block inner = outer.flow.block("tableswitch_inner" + switchNum);
+        final Iff min = inner.flow.iff("tableswitch_min" + switchNum, minCheck);
+        min.falseFlow.branch(inner);
+        final Iff max = min.flow.iff("tableswitch_max" + switchNum, maxCheck);
+        max.falseFlow.branch(inner);
+
+        activeLevel = new NestingLevelSwitch(activeLevel, max.flow, min, ConstExpressions.getLocal(calc));
     }
 
     @Override
@@ -1837,7 +1842,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         }
 
         final NestingLevelSwitch level = (NestingLevelSwitch) activeLevel;
-        level.activeFlow = ((Iff) level.activeFlow.parent().parent()).falseFlow;
+        level.activeFlow = level.activeFlow.parent().parent().parent().parent().flow;
 
         activeLevel.writeDebug("startTableSwitchDefaultBlock");
     }

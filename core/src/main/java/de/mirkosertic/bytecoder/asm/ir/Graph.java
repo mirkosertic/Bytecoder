@@ -430,4 +430,8 @@ public class Graph {
     public RuntimeClassOf newRuntimeTypeOf() {
         return (RuntimeClassOf) register(new RuntimeClassOf());
     }
+
+    public EnumValuesOf newEnumValuesOf(final Type type) {
+        return (EnumValuesOf) register(new EnumValuesOf(type));
+    }
 }
