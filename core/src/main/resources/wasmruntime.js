@@ -6,7 +6,7 @@ const bytecoder = {
 
     filehandles: [],
 
-    bytecoderStringToJS: function(obj) {
+    toJSString: function(obj) {
         return bytecoder.instance.exports.java$lang$Object$getNativeObject(obj);
     },
 
@@ -25,13 +25,18 @@ const bytecoder = {
     imports: {
         "java.lang.System": {
             J$currentTimeMillis$$: function () {
-                return Date.now();
+                return BigInt(Date.now());
             },
         },
         "java.lang.Object": {
             Ljava$lang$Class$$getClass$$: function (inst) {
                 return inst.constructor.$rt;
             },
+        },
+        "java.lang.NullPointerException": {
+            Ljava$lang$String$$getExtendedNPEMessage$$: function(inst) {
+                return null;
+            }
         },
         "jdk.internal.misc.ScopedMemoryAccess": {
             V$registerNatives$$: function () {
@@ -61,20 +66,32 @@ const bytecoder = {
                 return bytecoder.toBytecoderString(str);
             },
             F$parseFloat$Ljava$lang$String$: function (unused, value) {
-                return parseFloat(bytecoder.bytecoderStringToJS(value));
+                return parseFloat(bytecoder.toJSString(value));
             },
         },
         "java.lang.Math": {
             I$min$I$I: function (unused, a, b) {
                 return Math.min(a, b);
             },
+            J$min$J$J: function (unused, a, b) {
+                return Math.min(a, b);
+            },
             F$min$F$F: function (unused, a, b) {
+                return Math.min(a, b);
+            },
+            D$min$D$D: function (unused, a, b) {
                 return Math.min(a, b);
             },
             I$max$I$I: function (unused, a, b) {
                 return Math.max(a, b);
             },
             J$max$J$J: function (unused, a, b) {
+                return Math.max(a, b);
+            },
+            D$max$D$D: function (unused, a, b) {
+                return Math.max(a, b);
+            },
+            F$max$F$F: function (unused, a, b) {
                 return Math.max(a, b);
             },
             D$floor$D: function (unused, a) {
@@ -92,11 +109,17 @@ const bytecoder = {
             D$toRadians$D: function (unused, a) {
                 return a * (Math.PI / 180.0);
             },
+            D$toDegrees$D: function (unused, a) {
+                return a * (180. / Math.PI);
+            },
             D$cos$D: function (unused, a) {
                 return Math.cos(a);
             },
             D$sin$D: function (unused, a) {
                 return Math.sin(a);
+            },
+            D$tan$D: function (unused, a) {
+                return Math.tan(a);
             },
             D$sqrt$D: function (unused, a) {
                 return Math.sqrt(a);
@@ -115,6 +138,15 @@ const bytecoder = {
             D$sqrt$D: function (unused, a) {
                 return Math.sqrt(a);
             },
+            I$round$F: function(unused, a) {
+                return Math.round(a);
+            },
+            D$sin$D: function(unused, a) {
+                return Math.sin(a);
+            },
+            D$cos$D: function(unused, a) {
+                return Math.cos(a);
+            }
         },
         "java.lang.reflect.Array": {
             Ljava$lang$Object$$newArray$Ljava$lang$Class$$I: function (unused, t, l) {
@@ -163,28 +195,30 @@ const bytecoder = {
             },
         },
         "java.io.FileInputStream": {
-            I$open0$Ljava$lang$String$: function (fis, name) {
+            I$open0$Ljava$io$FileDescriptor$$Ljava$lang$String$: function (fis, fdd, name) {
                 let fd = bytecoder.openForRead(bytecoder.toJSString(name));
-                if (fd >= 0) fis.fd.fd = fd;
+                if (fd >= 0) {
+                    bytecoder.instance.exports.setFileDescriptorHandle(fdd, fd);
+                }
                 return fd;
             },
-            J$skip0$I: function (fis, amount) {
-                let fd = fis.fd.fd;
+            J$skip0$Ljava$io$FileDescriptor$$I: function (fis, fdd, amount) {
+                let fd = bytecoder.instance.exports.getFileDescriptorHandle(fdd);
                 let x = bytecoder.filehandles[fd];
-                return x.J$skip0$I(fd, amount);
+                return BigInt(x.J$skip0$I(fd, amount));
             },
-            I$available0$$: function (fis) {
-                let fd = fis.fd.fd;
+            I$available0$Ljava$io$FileDescriptor$: function (fis, fdd) {
+                let fd = bytecoder.instance.exports.getFileDescriptorHandle(fdd);
                 let x = bytecoder.filehandles[fd];
                 return x.I$available0$$(fd);
             },
-            I$read0$$: function (fis) {
-                let fd = fis.fd.fd;
+            I$read0$Ljava$io$FileDescriptor$: function (fis, fdd) {
+                let fd = bytecoder.instance.exports.getFileDescriptorHandle(fdd);
                 let x = bytecoder.filehandles[fd];
                 return x.I$read0$$(fd);
             },
-            I$readBytes$$B$I$I: function (fis, b, off, len) {
-                let fd = fis.fd.fd;
+            I$readBytes$Ljava$io$FileDescriptor$$$B$I$I: function (fis, fdd, b, off, len) {
+                let fd = bytecoder.instance.exports.getFileDescriptorHandle(fdd);
                 let x = bytecoder.filehandles[fd];
                 return x.I$readBytes$$B$I$I(fd, b, off, len);
             },
@@ -200,6 +234,9 @@ const bytecoder = {
                 let x = bytecoder.filehandles[fd];
                 x.V$writeInt$I(fd, cp);
             },
+            V$close0$Ljava$io$FileDescriptor$: function(fis, fdd) {
+                bytecoder.filehandles[fd] = null;
+            }
         },
         "java.lang.invoke.LambdaMetafactory": {
             Ljava$lang$invoke$CallSite$$metafactory$Ljava$lang$invoke$MethodHandles$Lookup$$Ljava$lang$String$$Ljava$lang$invoke$MethodType$$Ljava$lang$invoke$MethodType$$Ljava$lang$invoke$MethodHandle$$Ljava$lang$invoke$MethodType$: function (unused, lookups, methodName, invokedType, samMethodType, implMethod, aInstantiatedMethodType) {
@@ -207,7 +244,7 @@ const bytecoder = {
         },
         "de.mirkosertic.bytecoder.classlib.BytecoderCharsetDecoder": {
             $C$decodeFromBytes$Ljava$lang$String$$$B: function (decoder, charsetName, data) {
-                let targetCharacterSet = bytecoder.bytecoderStringToJS(charsetName);
+                let targetCharacterSet = bytecoder.toJSString(charsetName);
 
                 let length = bytecoder.instance.exports.byteArrayLength(null, data);
                 let byteData = new Uint8Array(length);
@@ -233,7 +270,7 @@ const bytecoder = {
                 for (var i = 0; i < length; i++) {
                     str += String.fromCodePoint(bytecoder.instance.exports.getCharArrayEntry(null, data, i));
                 }
-                let targetCharacterSet = bytecoder.bytecoderStringToJS(charsetName);
+                let targetCharacterSet = bytecoder.toJSString(charsetName);
                 if (targetCharacterSet !== 'UTF-8') {
                     throw 'Not supported character set!';
                 }
@@ -255,7 +292,7 @@ const bytecoder = {
             },
             Ljava$lang$StringBuffer$$append$Ljava$lang$String$: function (buffer, str) {
                 let x = bytecoder.getNativeObject(buffer);
-                x+= bytecoder.bytecoderStringToJS(str);
+                x+= bytecoder.toJSString(str);
                 bytecoder.setNativeObject(buffer, x);
                 return buffer;
             },
@@ -270,13 +307,13 @@ const bytecoder = {
             },
             Ljava$lang$StringBuilder$$append$Ljava$lang$String$: function (builder, str) {
                 let x = bytecoder.getNativeObject(builder);
-                x+= bytecoder.bytecoderStringToJS(str);
+                x+= bytecoder.toJSString(str);
                 bytecoder.setNativeObject(builder, x);
                 return builder;
             },
             Ljava$lang$StringBuilder$$append$Ljava$lang$CharSequence$$I$I: function (builder, str, start, end) {
                 let x = bytecoder.getNativeObject(builder);
-                x+= bytecoder.bytecoderStringToJS(str).substring(start, end);
+                x+= bytecoder.toJSString(str).substring(start, end);
                 bytecoder.setNativeObject(builder, x);
                 return builder;
             },
@@ -299,18 +336,18 @@ const bytecoder = {
         },
         "java.lang.String": {
             C$charAt$I: function (str, index) {
-                const a = bytecoder.bytecoderStringToJS(str);
+                const a = bytecoder.toJSString(str);
                 return a.codePointAt(index);
             },
             I$length$$: function (str) {
-                const a = bytecoder.bytecoderStringToJS(str);
+                const a = bytecoder.toJSString(str);
                 return a.length;
             },
             Ljava$lang$String$$format$Ljava$lang$String$$$Ljava$lang$Object$: function(pattern,values) {
                 return pattern;
             },
             V$getChars$I$I$$C$I: function (str, srcBegin, srcEnd, dst, dstBegin) {
-                const s = bytecoder.bytecoderStringToJS(str);
+                const s = bytecoder.toJSString(str);
                 let dstOffset = dstBegin;
                 for (let i = srcBegin; i < srcEnd; i++) {
                     bytecoder.instance.exports.setCharArrayEntry(null, dst, dstOffset++, s.codePointAt(i));
@@ -318,27 +355,45 @@ const bytecoder = {
             },
             I$indexOf$I: function (str, cp) {
                 if (cp >= 0) {
-                    const a = bytecoder.bytecoderStringToJS(str);
+                    const a = bytecoder.toJSString(str);
                     return a.indexOf(String.fromCodePoint(cp));
                 }
                 return -1;
             },
+            I$lastIndexOf$I: function (str, cp) {
+                if (cp >= 0) {
+                    const a = bytecoder.toJSString(str);
+                    return a.lastIndexOf(String.fromCodePoint(cp));
+                }
+                return -1;
+            },
+            Z$startsWith$Ljava$lang$String$: function (str, otherstr) {
+                const a = bytecoder.toJSString(str);
+                const b = bytecoder.toJSString(otherstr);
+                if (a.startsWith(b)) {
+                    return 1;
+                }
+                return 0;
+            },
             I$lastIndexOf$Ljava$lang$String$: function (str, s) {
-                const a = bytecoder.bytecoderStringToJS(str);
-                return a.lastIndexOf(bytecoder.bytecoderStringToJS(s));
+                const a = bytecoder.toJSString(str);
+                return a.lastIndexOf(bytecoder.toJSString(s));
             },
             Ljava$lang$String$$trim$$: function (str) {
-                return bytecoder.toBytecoderString(bytecoder.bytecoderStringToJS(str).trim());
+                return bytecoder.toBytecoderString(bytecoder.toJSString(str).trim());
             },
             Ljava$lang$String$$substring$I: function(str, i) {
-                return bytecoder.toBytecoderString(bytecoder.bytecoderStringToJS(str).substring(i));
+                return bytecoder.toBytecoderString(bytecoder.toJSString(str).substring(i));
+            },
+            Ljava$lang$String$$substring$I$I: function(str, i, b) {
+                return bytecoder.toBytecoderString(bytecoder.toJSString(str).substring(i, b));
             },
             Ljava$lang$String$$repeat$I: function (str, amount) {
-                return bytecoder.toBytecoderString(bytecoder.bytecoderStringToJS(str).repeat(amount));
+                return bytecoder.toBytecoderString(bytecoder.toJSString(str).repeat(amount));
             },
             Z$equals0$Ljava$lang$String$: function (str, otherstr) {
-                const a = bytecoder.bytecoderStringToJS(str);
-                const b = bytecoder.bytecoderStringToJS(otherstr);
+                const a = bytecoder.toJSString(str);
+                const b = bytecoder.toJSString(otherstr);
                 if (a === b) {
                     return 1;
                 }
@@ -351,8 +406,8 @@ const bytecoder = {
                 if (otherstr == null) {
                     return 0;
                 }
-                const a = bytecoder.bytecoderStringToJS(str);
-                const b = bytecoder.bytecoderStringToJS(otherstr);
+                const a = bytecoder.toJSString(str);
+                const b = bytecoder.toJSString(otherstr);
 
                 if (a.toUpperCase() === b.toUpperCase()) {
                     return 1;
@@ -360,15 +415,20 @@ const bytecoder = {
                 return 0;
             },
             V$initializeWith$$C$I$I: function (str, chars, offset, count) {
-                str.nativeObject = '';
+                let x = '';
                 for (let i = offset; i < offset + count; i++) {
-                    str.nativeObject += String.fromCodePoint(chars.data[i]);
+                    x += String.fromCodePoint(bytecoder.instance.exports.getByteArrayEntry(null, chars, i));
                 }
+                bytecoder.setNativeObject(str, x);
+            },
+            V$initializeWith$$B$I$I$B: function (str, bytes, offset, count) {
+                // TODO
             },
             $C$toCharArray$$: function (str) {
-                let arr = bytecoder.newarray(str.nativeObject.length, 0);
-                for (let i = 0; i < str.nativeObject.length; i++) {
-                    arr.data[i] = str.nativeObject.codePointAt(i);
+                let no = bytecoder.getNativeObject(str);
+                let arr = bytecoder.instance.exports.newCharArray(null, no.length);
+                for (let i = 0; i < no.length; i++) {
+                    bytecoder.instance.exports.setByteArrayEntry(null, arr, i, no.codePointAt(i));
                 }
                 return arr;
             },
@@ -466,7 +526,7 @@ const bytecoder = {
                 return bytecoder.toBytecoderString(value.toString(radix));
             },
             B$parseByte$Ljava$lang$String$: function (unused, str) {
-                return parseInt(bytecoder.bytecoderStringToJS(str));
+                return parseInt(bytecoder.toJSString(str));
             },
         },
         "java.lang.Short": {
@@ -474,7 +534,7 @@ const bytecoder = {
                 return bytecoder.toBytecoderString(value.toString(radix));
             },
             S$parseShort$Ljava$lang$String$$I: function (unused, value, radix) {
-                const str = bytecoder.bytecoderStringToJS(value);
+                const str = bytecoder.toJSString(value);
                 return parseInt(str, radix);
             },
         },
@@ -486,7 +546,7 @@ const bytecoder = {
                 return bytecoder.toBytecoderString(value.toString(16));
             },
             I$parseInt$Ljava$lang$String$$I: function (unused, value, radix) {
-                return parseInt(bytecoder.bytecoderStringToJS(value), radix);
+                return parseInt(bytecoder.toJSString(value), radix);
             },
         },
         "java.lang.Long": {
@@ -494,7 +554,7 @@ const bytecoder = {
                 return bytecoder.toBytecoderString(value.toString(radix));
             },
             J$parseLong$Ljava$lang$String$$I: function (unused, value, radix) {
-                return BigInt(parseInt(bytecoder.bytecoderStringToJS(value), radix));
+                return BigInt(parseInt(bytecoder.toJSString(value), radix));
             },
         },
         "java.lang.Double": {
@@ -506,13 +566,68 @@ const bytecoder = {
                 return bytecoder.toBytecoderString(str);
             },
             D$parseDouble$Ljava$lang$String$: function (unused, str) {
-                return parseFloat(bytecoder.bytecoderStringToJS(str));
+                return parseFloat(bytecoder.toJSString(str));
             },
             Z$isNaN$D: function (unused, d) {
                 return isNaN(d) ? 1 : 0;
+            },
+            Z$isInfinite$D: function (unused, d) {
+                return isFinite(d) ? 1 : 0;
             }
         },
         "bytecoder": {
+        }
+    },
+
+    openForRead :  function(path) {
+        try {
+            let request = new XMLHttpRequest();
+            request.open('GET',path,false);
+            request.overrideMimeType('text/plain; charset=x-user-defined');
+            request.send(null);
+            if (request.status === 200) {
+                let length = request.getResponseHeader('content-length');
+                let responsetext = request.response;
+                let buf = new ArrayBuffer(responsetext.length);
+                let bufView = new Uint8Array(buf);
+                let i = 0;
+                const strLen = responsetext.length;
+                for (; i < strLen; i++) {
+                    bufView[i] = responsetext.charCodeAt(i) & 0xff;
+                }
+                let handle = bytecoder.filehandles.length;
+                bytecoder.filehandles[handle] = {
+                    currentpos: 0,
+                    data: bufView,
+                    size: length,
+                    J$skip0$I: function(fd, amount) {
+                        let remaining = this.size - this.currentpos;
+                        let possible = Math.min(remaining, amount);
+                        this.currentpos += possible;
+                        return possible;
+                    },
+                    I$available0$$: function(fd) {
+                        return this.size - this.currentpos;
+                    },
+                    I$read0$$: function(fd) {
+                        return this.data[this.currentpos++];
+                    },
+                    I$readBytes$$B$I$I: function(fd, target, offset, length) {
+                        if (length === 0) {return 0;}
+                        let remaining = this.size - this.currentpos;
+                        let possible = Math.min(remaining, length);
+                        if (possible === 0) {return -1;}
+                        for (let j=0; j<possible; j++) {
+                            bytecoder.instance.exports.setByteArrayEntry(null, target, offset++, this.data[this.currentpos++]);
+                        }
+                        return possible;
+                    }
+                };
+                return handle;
+            }
+            return -1;
+        } catch(e) {
+            return -1;
         }
     },
 

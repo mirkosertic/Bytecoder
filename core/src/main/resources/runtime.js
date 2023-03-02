@@ -10,6 +10,11 @@ const bytecoder = {
                 return inst.constructor.$rt;
             },
         },
+        "java.lang.NullPointerException": {
+            Ljava$lang$String$$getExtendedNPEMessage$$: function(inst) {
+                return null;
+            }
+        },
         "jdk.internal.misc.ScopedMemoryAccess": {
             V$registerNatives$$: function () {
             },
@@ -45,8 +50,17 @@ const bytecoder = {
             I$min$I$I: function (a, b) {
                 return Math.min(a, b);
             },
+            J$min$J$J: function (a, b) {
+                return Math.min(a, b);
+            },
+            D$min$D$D: function (a, b) {
+                return Math.min(a, b);
+            },
             F$min$F$F: function (a, b) {
                 return Math.min(a, b);
+            },
+            D$max$D$D: function (a, b) {
+                return Math.max(a, b);
             },
             I$max$I$I: function (a, b) {
                 return Math.max(a, b);
@@ -69,11 +83,17 @@ const bytecoder = {
             D$toRadians$D: function (a) {
                 return a * (Math.PI / 180.0);
             },
+            D$toDegrees$D: function (a) {
+                return a * (180. / Math.PI);
+            },
             D$cos$D: function (a) {
                 return Math.cos(a);
             },
             D$sin$D: function (a) {
                 return Math.sin(a);
+            },
+            D$tan$D: function (a) {
+                return Math.tan(a);
             },
             D$sqrt$D: function (a) {
                 return Math.sqrt(a);
@@ -92,6 +112,15 @@ const bytecoder = {
             D$sqrt$D: function (a) {
                 return Math.sqrt(a);
             },
+            I$round$F: function(a) {
+                return Math.round(a);
+            },
+            D$sin$D: function(a) {
+                return Math.sin(a);
+            },
+            D$cos$D: function(a) {
+                return Math.sin(a);
+            }
         },
         "java.lang.reflect.Array": {
             Ljava$lang$Object$$newArray$Ljava$lang$Class$$I: function (t, l) {
@@ -137,28 +166,30 @@ const bytecoder = {
             },
         },
         "java.io.FileInputStream": {
-            I$open0$Ljava$lang$String$: function (fis, name) {
+            I$open0$Ljava$io$FileDescriptor$$Ljava$lang$String$: function (fis, fdd, name) {
                 let fd = bytecoder.openForRead(bytecoder.toJSString(name));
-                if (fd >= 0) fis.fd.fd = fd;
+                if (fd >= 0) {
+                    bytecoder.exports["setFileDescriptorHandle"].call(fdd, fd);
+                }
                 return fd;
             },
-            J$skip0$I: function (fis, amount) {
-                let fd = fis.fd.fd;
+            J$skip0$Ljava$io$FileDescriptor$$I: function (fis, fdd, amount) {
+                let fd = bytecoder.exports["getFileDescriptorHandle"].call(fdd);
                 let x = bytecoder.filehandles[fd];
                 return x.J$skip0$I(fd, amount);
             },
-            I$available0$$: function (fis) {
-                let fd = fis.fd.fd;
+            I$available0$Ljava$io$FileDescriptor$: function (fis, fdd) {
+                let fd = bytecoder.exports["getFileDescriptorHandle"].call(fdd);
                 let x = bytecoder.filehandles[fd];
                 return x.I$available0$$(fd);
             },
-            I$read0$$: function (fis) {
-                let fd = fis.fd.fd;
+            I$read0$Ljava$io$FileDescriptor$: function (fis, fdd) {
+                let fd = bytecoder.exports["getFileDescriptorHandle"].call(fdd);
                 let x = bytecoder.filehandles[fd];
                 return x.I$read0$$(fd);
             },
-            I$readBytes$$B$I$I: function (fis, b, off, len) {
-                let fd = fis.fd.fd;
+            I$readBytes$Ljava$io$FileDescriptor$$$B$I$I: function (fis, fdd, b, off, len) {
+                let fd = bytecoder.exports["getFileDescriptorHandle"].call(fdd);
                 let x = bytecoder.filehandles[fd];
                 return x.I$readBytes$$B$I$I(fd, b, off, len);
             },
@@ -174,6 +205,10 @@ const bytecoder = {
                 let x = bytecoder.filehandles[fd];
                 x.V$writeInt$I(fd, cp);
             },
+            V$close0$Ljava$io$FileDescriptor$: function(fis, fdd) {
+                let fd = bytecoder.exports["getFileDescriptorHandle"].call(fdd);
+                bytecoder.filehandles[fd] = null;
+            }
         },
         "java.lang.invoke.LambdaMetafactory": {
             Ljava$lang$invoke$CallSite$$metafactory$Ljava$lang$invoke$MethodHandles$Lookup$$Ljava$lang$String$$Ljava$lang$invoke$MethodType$$Ljava$lang$invoke$MethodType$$Ljava$lang$invoke$MethodHandle$$Ljava$lang$invoke$MethodType$: function (lookups, methodName, invokedType, samMethodType, implMethod, aInstantiatedMethodType) {
@@ -348,6 +383,21 @@ const bytecoder = {
                 }
                 return -1;
             },
+            I$lastIndexOf$I: function (str, cp) {
+                if (cp >= 0) {
+                    const a = bytecoder.toJSString(str);
+                    return a.lastIndexOf(String.fromCodePoint(cp));
+                }
+                return -1;
+            },
+            Z$startsWith$Ljava$lang$String$: function (str, otherstr) {
+                const a = bytecoder.toJSString(str);
+                const b = bytecoder.toJSString(otherstr);
+                if (a.startsWith(b)) {
+                    return 1;
+                }
+                return 0;
+            },
             I$lastIndexOf$Ljava$lang$String$: function (str, s) {
                 return str.nativeObject.lastIndexOf(s.nativeObject);
             },
@@ -356,6 +406,9 @@ const bytecoder = {
             },
             Ljava$lang$String$$substring$I: function(str, i) {
                 return bytecoder.toBytecoderString(str.nativeObject.substring(i));
+            },
+            Ljava$lang$String$$substring$I$I: function(str, i, b) {
+                return bytecoder.toBytecoderString(str.nativeObject.substring(i, b));
             },
             Ljava$lang$String$$repeat$I: function (str, amount) {
                 return bytecoder.toBytecoderString(str.nativeObject.repeat(amount));
@@ -528,6 +581,9 @@ const bytecoder = {
             },
             Z$isNaN$D: function (d) {
                 return isNaN(d) ? 1 : 0;
+            },
+            Z$isInfinite$D: function (d) {
+                return isFinite(d) ? 1 : 0;
             }
         },
         "runtime": {

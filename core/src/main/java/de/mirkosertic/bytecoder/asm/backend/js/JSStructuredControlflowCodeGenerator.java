@@ -577,7 +577,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     private void writeExpression(final PrimitiveClassReference reference) {
-        switch (reference.type.getSort()) {
+        switch (reference.referenceType.getSort()) {
             case Type.BOOLEAN:
                 pw.print("bytecoder.primitives.boolean");
                 break;

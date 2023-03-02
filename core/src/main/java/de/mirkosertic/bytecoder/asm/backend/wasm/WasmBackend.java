@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm;
 
+import de.mirkosertic.bytecoder.api.ClassLibProvider;
 import de.mirkosertic.bytecoder.asm.backend.CodeGenerationFailure;
 import de.mirkosertic.bytecoder.asm.backend.CompileOptions;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.ConstExpressions;
@@ -59,6 +60,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Modifier;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -836,6 +838,21 @@ public class WasmBackend {
         } else{
             result.add(new CompileResult.StringContent("wasmclasses.wat", theStringWriter.toString()));
             result.add(new CompileResult.StringContent("runtime.js", jsContentWriter.toString()));
+        }
+
+        final List<String> resourcesToInclude = new ArrayList<>();
+        for (final ClassLibProvider provider : ClassLibProvider.availableProviders()) {
+            Collections.addAll(resourcesToInclude, provider.additionalResources());
+        }
+        Collections.addAll(resourcesToInclude, compileOptions.getAdditionalResources());
+
+        for (final String theResource : resourcesToInclude) {
+            final URL theUrl = compileUnit.getLoader().getResource(theResource);
+            if (theUrl != null) {
+                result.add(new CompileResult.URLContent(theResource, theUrl));
+            } else {
+                compileOptions.getLogger().warn("Cannot find resource {}", theResource);
+            }
         }
 
         return result;

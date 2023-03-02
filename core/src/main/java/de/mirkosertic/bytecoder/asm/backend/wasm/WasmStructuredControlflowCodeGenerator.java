@@ -979,6 +979,13 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private WasmValue toWasmValue(final ArrayLength value) {
         final Value array = (Value) value.incomingDataFlows[0];
+        if (array.type.getDimensions() > 1) {
+            final StructType type = module.getTypes().structTypeByName("obj_array");
+            return ConstExpressions.array.len(
+                    module.getTypes().arrayType(typeConverter.apply(Type.getType(Object.class))),
+                    ConstExpressions.struct.get(type, ConstExpressions.ref.cast(type, toWasmValue(array)), "data")
+            );
+        }
         switch (array.type.getElementType().getSort()) {
             case Type.BOOLEAN:
             case Type.BYTE:
@@ -1125,7 +1132,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     }
 
     private WasmValue toWasmValue(final PrimitiveClassReference reference) {
-        switch (reference.type.getSort()) {
+        switch (reference.referenceType.getSort()) {
             case Type.BOOLEAN:
                 return ConstExpressions.getGlobal(
                     module.getGlobals().globalsIndex().globalByLabel("primitive_boolean")
@@ -1455,12 +1462,13 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             if (local == null) {
                 throw new IllegalArgumentException("Cannot find Wasm local for variable " + target);
             }
-            if (!targetVar.type.equals(value.type) && targetVar.type.getSort() != Type.OBJECT && targetVar.type.getSort() != Type.ARRAY) {
+            if (targetVar.type.getSort() != value.type.getSort() && targetVar.type.getSort() != Type.OBJECT && targetVar.type.getSort() != Type.ARRAY) {
                 activeLevel.activeFlow.setLocal(local, convertToType(value, targetVar.type));
             } else {
-                if (value.type.equals(targetVar.type)) {
-                    activeLevel.activeFlow.comment("Assign " + value.type + " to " + targetVar.type);
+                if (value.type.getSort() == targetVar.type.getSort()) {
                     activeLevel.activeFlow.setLocal(local, toWasmValue(value));
+                } else {
+                    activeLevel.activeFlow.comment("Unable to assign " + value.type + " to " + targetVar.type + " for " + targetVar +" from " + value);
                 }
             }
 

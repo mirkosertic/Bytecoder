@@ -229,7 +229,7 @@ public class JSBackend {
             if (theUrl != null) {
                 result.add(new CompileResult.URLContent(theResource, theUrl));
             } else {
-                //aOptions.getLogger().warn("Cannot find resource {}", theResource);
+                compileOptions.getLogger().warn("Cannot find resource {}", theResource);
             }
         }
 

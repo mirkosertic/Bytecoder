@@ -151,6 +151,7 @@ public class LuaTest {
             theGlobals.set("ABC", Integer.toString(i));
         }
         theGlobals.presize(1000);
+        System.out.println(theGlobals.get("ABC").toint());
         Assert.assertEquals(100, theGlobals.get("ABC").toint(),0);
     }
 }

@@ -20,8 +20,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.io.OutputStream;
-
 @RunWith(UnitTestRunner.class)
 public class ExceptionTest {
 
@@ -55,7 +53,7 @@ public class ExceptionTest {
         Assert.assertEquals(70, i, 0);
     }
 
-    public void complexWithArgument(final String aMessage) {
+    public static void complexWithArgument(final String aMessage) {
         final int i;
         try {
             i = 1;
@@ -86,9 +84,6 @@ public class ExceptionTest {
         Assert.assertEquals(20, x, 0);
     }
 
-    private boolean value1;
-    private boolean value2;
-
     @Test
     public void testExceptionWithCondition() {
         boolean value1 = false;
@@ -97,6 +92,7 @@ public class ExceptionTest {
         } catch (final Exception e) {
 
         }
+        boolean value2 = false;
         try {
             value2 = null != System.getProperty("LALA");
         } catch (final Exception e) {
@@ -123,17 +119,14 @@ public class ExceptionTest {
         return;
     }
 
-    public void writeExceptionTestMethod(final int b) {
+    public static void writeExceptionTestMethod(final int b) {
         try {
-            synchronized (this) {
+            synchronized (ExceptionTest.class) {
             }
         }
         catch (final RuntimeException x) {
         }
     }
-
-    private boolean autoFlush;
-    private OutputStream out;
 
     @Test
     public void testExceptionWithNestedSynchronized() {

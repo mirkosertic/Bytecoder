@@ -130,7 +130,10 @@ public class JBox2DTest {
                 shape.set(new Vec2[] { new Vec2((float) x1, (float) y1), new Vec2((float) x2, (float) y2),
                         new Vec2((float) (x2 - x), (float) (y2 - y)), new Vec2((float) (x1 - x), (float) (y1 - y)) }, 4);
                 fixture.shape = shape;
+                long start = System.currentTimeMillis();
                 reel.createFixture(fixture);
+                long duration = System.currentTimeMillis() - start;
+                System.out.println("Took " + duration);
             }
         }
 
@@ -147,8 +150,8 @@ public class JBox2DTest {
             shape.m_radius = ballRadius;
             fixtureDef.shape = shape;
 
-            for (int i = 0; i < 5; ++i) {
-                for (int j = 0; j < 5; ++j) {
+            for (int i = 0; i < 10; ++i) {
+                for (int j = 0; j < 10; ++j) {
                     float x = (j + 0.5f) * (ballRadius * 2 + 0.01f);
                     float y = (i + 0.5f) * (ballRadius * 2 + 0.01f);
                     ballDef.position.x = 3 + x;
@@ -503,6 +506,11 @@ public class JBox2DTest {
 
         private void setAsBox(float v, float v1) {
         }
+    }
+
+    @Test
+    public void testNewInstance() {
+        new Scene();
     }
 
     @Test
