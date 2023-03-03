@@ -800,13 +800,9 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                         }
                         case Type.OBJECT: {
                             final ResolvedClass targetType = compileUnit.findClass(arguments[0]);
-                            if (targetType.isOpaqueReferenceType()) {
-                                writeExpression(node.incomingDataFlows[1]);
-                                pw.print(".nativeObject");
-                                break;
-                            } else {
-                                throw new IllegalStateException("Type " + arguments[0] + " is not supported as an opaque property type.");
-                            }
+                            writeExpression(node.incomingDataFlows[1]);
+                            pw.print(".nativeObject");
+                            break;
                         }
                         default: {
                             writeExpression(node.incomingDataFlows[1]);

@@ -124,7 +124,7 @@ public class GraphParser {
 
     public GraphParser(final CompileUnit compileUnit, final Type ownerType, final MethodNode methodNode, final AnalysisStack analysisStack) {
         this.methodNode = methodNode;
-        this.graph = new Graph();
+        this.graph = new Graph(compileUnit.getLogger());
         this.compileUnit = compileUnit;
         this.analysisStack = analysisStack;
         this.opcodeToName = new HashMap<>();
@@ -368,7 +368,7 @@ public class GraphParser {
                         jumps.put(flow.currentNode, EdgeType.FORWARD);
                         controlFlowsToCheck.push(flow.addInstructionAndContinueWith(flow.currentNode, next));
                     } else {
-                        System.out.println("no more next!");
+                        throw new IllegalStateException("no more next!");
                     }
                 }
             }

@@ -1,0 +1,57 @@
+/*
+ * Copyright 2023 Mirko Sertic
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package de.mirkosertic.bytecoder.asm.backend.wasm;
+
+import de.mirkosertic.bytecoder.asm.ir.AnalysisStack;
+import de.mirkosertic.bytecoder.asm.ir.Graph;
+import de.mirkosertic.bytecoder.asm.ir.Reinterpret;
+import de.mirkosertic.bytecoder.asm.ir.Value;
+import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
+import de.mirkosertic.bytecoder.asm.parser.GraphParser;
+import de.mirkosertic.bytecoder.asm.parser.Intrinsic;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
+import org.objectweb.asm.tree.MethodInsnNode;
+
+public class JavaLangDoubleIntrinsic implements Intrinsic {
+
+    @Override
+    public Value intrinsifyMethodInvocationWithReturnValue(final CompileUnit compileUnit, final AnalysisStack analysisStack, final MethodInsnNode node, final Value[] incomingData, final Graph graph, final GraphParser graphParser) {
+        if (node.getOpcode() == Opcodes.INVOKESTATIC) {
+            final Type targetClass = Type.getObjectType(node.owner);
+            if (Double.class.getName().equals(targetClass.getClassName())) {
+                if ("doubleToLongBits".equals(node.name)) {
+                    final Reinterpret reinterpret = graph.newReinterpret(Type.LONG_TYPE);
+                    reinterpret.addIncomingData(incomingData[1]);
+                    return reinterpret;
+                }
+
+                if ("doubleToRawLongBits".equals(node.name)) {
+                    final Reinterpret reinterpret = graph.newReinterpret(Type.LONG_TYPE);
+                    reinterpret.addIncomingData(incomingData[1]);
+                    return reinterpret;
+                }
+
+                if ("longBitsToDouble".equals(node.name)) {
+                    final Reinterpret reinterpret = graph.newReinterpret(Type.DOUBLE_TYPE);
+                    reinterpret.addIncomingData(incomingData[1]);
+                    return reinterpret;
+                }
+            }
+        }
+        return null;
+    }
+}

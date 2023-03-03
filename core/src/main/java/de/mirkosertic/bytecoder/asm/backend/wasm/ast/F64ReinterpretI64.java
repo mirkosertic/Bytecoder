@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Mirko Sertic
+ * Copyright 2018 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.asm.backend.wasm;
+package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
-import de.mirkosertic.bytecoder.asm.parser.CoreIntrinsics;
+public class F64ReinterpretI64 extends UnaryExpression {
 
-public class WasmIntrinsics extends CoreIntrinsics {
-
-    public WasmIntrinsics() {
-        super(new JavaLangFloatIntrinsic(),
-              new JavaLangDoubleIntrinsic());
+    F64ReinterpretI64(final WasmValue value) {
+        super(value, "f64.reinterpret_i64", (byte) 0xbc);
     }
 }

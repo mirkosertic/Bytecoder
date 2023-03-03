@@ -84,6 +84,7 @@ import de.mirkosertic.bytecoder.asm.ir.PrimitiveShort;
 import de.mirkosertic.bytecoder.asm.ir.ReadClassField;
 import de.mirkosertic.bytecoder.asm.ir.ReadInstanceField;
 import de.mirkosertic.bytecoder.asm.ir.ReferenceTest;
+import de.mirkosertic.bytecoder.asm.ir.Reinterpret;
 import de.mirkosertic.bytecoder.asm.ir.Rem;
 import de.mirkosertic.bytecoder.asm.ir.ResolveCallsite;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedClass;
@@ -152,21 +153,6 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         }
 
         void writeDebug(final String message) {
-            /*
-            for (int i = 0; i < depth(); i++) {
-                System.out.print(" ");
-            }
-            System.out.print(message);
-            System.out.print(" : active stack is");
-            NestingLevel t = this;
-            while (t != null) {
-                System.out.print(" ");
-                System.out.print(t.getClass().getSimpleName());
-                System.out.print(":");
-                System.out.print(t.activeContainer.getClass().getSimpleName());
-                t = t.parent;
-            }
-            System.out.println();*/
             activeFlow.comment(message);
         }
     }
@@ -419,8 +405,13 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         return ConstExpressions.ref.nullRef();
     }
 
-    private WasmValue toWasmValue(final New value) {
-        final ResolvedClass cl = compileUnit.findClass(value.type);
+    public static WasmValue createNewInstanceOf(final Type instanceType,
+                                                final Module module,
+                                                final CompileUnit compileUnit,
+                                                final Map<ResolvedClass, StructType> objectTypeMappings,
+                                                final Map<ResolvedClass, StructType> rtMappings,
+                                                final WasmValue externRef) {
+        final ResolvedClass cl = compileUnit.findClass(instanceType);
         final StructType type = objectTypeMappings.get(cl);
         final List<WasmValue> initArgs = new ArrayList<>();
 
@@ -446,7 +437,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
         initArgs.add(ConstExpressions.ref.ref(module.functionIndex().firstByLabel(WasmHelpers.generateClassName(cl.type) + "_vt")));
 
-        initArgs.add(ConstExpressions.ref.externNullRef());
+        initArgs.add(externRef);
 
         initArgs.add(
                 ConstExpressions.struct.get(
@@ -485,6 +476,11 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         }
 
         return ConstExpressions.struct.newInstance(type, initArgs);
+    }
+
+    private WasmValue toWasmValue(final New value) {
+        return createNewInstanceOf(value.type,
+                module, compileUnit, objectTypeMappings, rtMappings, ConstExpressions.ref.externNullRef());
     }
 
     private WasmValue toWasmValue(final ReadInstanceField value) {
@@ -1131,6 +1127,55 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         ));
     }
 
+    private WasmValue toWasmValue(final Reinterpret value) {
+        final Value v = (Value) value.incomingDataFlows[0];
+        switch (value.type.getSort()) {
+            case Type.INT: {
+                switch (v.type.getSort()) {
+                    case Type.FLOAT: {
+                        return ConstExpressions.i32.reinterpretf32(toWasmValue(v));
+                    }
+                    default: {
+                        throw new IllegalArgumentException("Cannot reinterpret to int : " + v.type);
+                    }
+                }
+            }
+            case Type.LONG: {
+                switch (v.type.getSort()) {
+                    case Type.DOUBLE: {
+                        return ConstExpressions.i64.reinterpretf64(toWasmValue(v));
+                    }
+                    default: {
+                        throw new IllegalArgumentException("Cannot reinterpret to int : " + v.type);
+                    }
+                }
+            }
+            case Type.FLOAT: {
+                switch (v.type.getSort()) {
+                    case Type.INT: {
+                        return ConstExpressions.f32.reinterpreti32(toWasmValue(v));
+                    }
+                    default: {
+                        throw new IllegalArgumentException("Cannot reinterpret to int : " + v.type);
+                    }
+                }
+            }
+            case Type.DOUBLE: {
+                switch (v.type.getSort()) {
+                    case Type.LONG: {
+                        return ConstExpressions.f64.reinterpreti64(toWasmValue(v));
+                    }
+                    default: {
+                        throw new IllegalArgumentException("Cannot reinterpret to int : " + v.type);
+                    }
+                }
+            }
+            default: {
+                throw new IllegalArgumentException("Cannot reinterpret to " + value.type);
+            }
+        }
+    }
+
     private WasmValue toWasmValue(final PrimitiveClassReference reference) {
         switch (reference.referenceType.getSort()) {
             case Type.BOOLEAN:
@@ -1448,6 +1493,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             return toWasmValue((RuntimeClassOf) value);
         } else if (value instanceof EnumValuesOf) {
             return toWasmValue((EnumValuesOf) value);
+        } else if (value instanceof Reinterpret) {
+            return toWasmValue((Reinterpret) value);
         }
         throw new IllegalArgumentException("Not implemented " + value.getClass());
     }

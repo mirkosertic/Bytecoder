@@ -28,11 +28,6 @@ import org.objectweb.asm.tree.MethodInsnNode;
 public class JavaLangSystemIntrinsics implements Intrinsic {
 
     @Override
-    public Value intrinsifyMethodInvocationWithReturnValue(final CompileUnit compileUnit, final AnalysisStack analysisStack, final MethodInsnNode node, final Value[] incomingData, final Graph graph, final GraphParser graphParser) {
-        return null;
-    }
-
-    @Override
     public ControlTokenConsumer intrinsifyMethodInvocation(final CompileUnit compileUnit, final AnalysisStack analysisStack, final MethodInsnNode node, final Value[] incomingData, final Graph graph, final GraphParser graphParser) {
         if (node.getOpcode() == Opcodes.INVOKESTATIC) {
             final Type targetClass = Type.getObjectType(node.owner);

@@ -575,6 +575,23 @@ const bytecoder = {
                 return isFinite(d) ? 1 : 0;
             }
         },
+        "runtime": {
+            nativeconsole: function() {
+                return console;
+            },
+            nativewindow: function() {
+                return window;
+            },
+            nativedocument: function() {
+                return document;
+            }
+        },
+        "de.mirkosertic.bytecoder.api.web.Console": {
+            V$log$Ljava$lang$String$: function(thisref, str) {
+                const no = bytecoder.getNativeObject(thisref);
+                no.log(bytecoder.toJSString(str));
+            }
+        },
         "bytecoder": {
         }
     },

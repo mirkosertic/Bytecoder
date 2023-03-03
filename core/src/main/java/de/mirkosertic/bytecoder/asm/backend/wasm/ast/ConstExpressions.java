@@ -230,6 +230,9 @@ public class ConstExpressions {
             return new I64Eq(leftValue, rightValue);
         }
 
+        public static I64ReinterpretF64 reinterpretf64(final WasmValue value) {
+            return new I64ReinterpretF64(value);
+        }
     }
 
     public static class f32 {
@@ -325,6 +328,10 @@ public class ConstExpressions {
         public static F32DemoteF64 demote_f64(final WasmValue value) {
             return new F32DemoteF64(value);
         }
+
+        public static F32ReinterpretI32 reinterpreti32(final WasmValue value) {
+            return new F32ReinterpretI32(value);
+        }
     }
 
     public static class f64 {
@@ -391,6 +398,10 @@ public class ConstExpressions {
 
         public static F64Neg neg(final WasmValue value) {
             return new F64Neg(value);
+        }
+
+        public static F64ReinterpretI64 reinterpreti64(final WasmValue value) {
+            return new F64ReinterpretI64(value);
         }
     }
 

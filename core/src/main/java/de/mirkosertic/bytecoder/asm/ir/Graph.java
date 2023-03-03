@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.asm.ir;
 
+import de.mirkosertic.bytecoder.api.Logger;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
@@ -38,11 +39,14 @@ public class Graph {
 
     private final Map<String, Region> labeledRegions;
 
-    public Graph() {
-        nodes = new ArrayList<>();
-        translations = new HashMap<>();
-        fixups = new ArrayList<>();
-        labeledRegions = new HashMap<>();
+    private final Logger logger;
+
+    public Graph(final Logger logger) {
+        this.nodes = new ArrayList<>();
+        this.translations = new HashMap<>();
+        this.fixups = new ArrayList<>();
+        this.labeledRegions = new HashMap<>();
+        this.logger = logger;
     }
 
     public void addFixup(final Fixup fixup) {
@@ -60,7 +64,7 @@ public class Graph {
         if (!translations.containsKey(instruction)) {
             translations.put(instruction, translation);
         } else {
-            System.out.println("Already mapped translation for " + instruction);
+            logger.warn("Already mapped translation for {}", instruction);
         }
     }
 
@@ -433,5 +437,9 @@ public class Graph {
 
     public EnumValuesOf newEnumValuesOf(final Type type) {
         return (EnumValuesOf) register(new EnumValuesOf(type));
+    }
+
+    public Reinterpret newReinterpret(final Type type) {
+        return (Reinterpret) register(new Reinterpret(type));
     }
 }

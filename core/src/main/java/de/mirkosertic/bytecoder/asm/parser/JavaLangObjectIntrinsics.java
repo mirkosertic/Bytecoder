@@ -16,7 +16,6 @@
 package de.mirkosertic.bytecoder.asm.parser;
 
 import de.mirkosertic.bytecoder.asm.ir.AnalysisStack;
-import de.mirkosertic.bytecoder.asm.ir.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.asm.ir.Graph;
 import de.mirkosertic.bytecoder.asm.ir.RuntimeClassOf;
 import de.mirkosertic.bytecoder.asm.ir.Value;
@@ -31,11 +30,6 @@ public class JavaLangObjectIntrinsics implements Intrinsic {
             runtimeClassOf.addIncomingData(incomingData);
             return runtimeClassOf;
         }
-        return null;
-    }
-
-    @Override
-    public ControlTokenConsumer intrinsifyMethodInvocation(final CompileUnit compileUnit, final AnalysisStack analysisStack, final MethodInsnNode node, final Value[] incomingData, final Graph graph, final GraphParser graphParser) {
         return null;
     }
 }

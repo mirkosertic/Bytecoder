@@ -78,6 +78,10 @@ public class CompileUnit {
         }
     }
 
+    public Logger getLogger() {
+        return logger;
+    }
+
     protected Intrinsic getIntrinsic() {
         return intrinsic;
     }

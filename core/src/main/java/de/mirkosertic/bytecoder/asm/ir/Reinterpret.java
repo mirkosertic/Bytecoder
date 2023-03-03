@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.asm.backend.wasm;
+package de.mirkosertic.bytecoder.asm.ir;
 
-import de.mirkosertic.bytecoder.asm.parser.CoreIntrinsics;
+import org.objectweb.asm.Type;
 
-public class WasmIntrinsics extends CoreIntrinsics {
+public class Reinterpret extends Value {
 
-    public WasmIntrinsics() {
-        super(new JavaLangFloatIntrinsic(),
-              new JavaLangDoubleIntrinsic());
+    public Reinterpret(final Type type) {
+        super(type);
     }
 }

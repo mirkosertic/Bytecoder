@@ -295,34 +295,32 @@ public class WasmBackend {
                 }
             }
 
-            if (!Modifier.isInterface(cl.classNode.access)) {
-                if (cl.superClass == null) {
-                    objectClass = cl;
-                    final StructType objectType = types.structSubtype(className, rtType, instanceFields);
+            if (cl.superClass == null) {
+                objectClass = cl;
+                final StructType objectType = types.structSubtype(className, rtType, instanceFields);
 
-                    objectTypeMappings.put(cl, objectType);
+                objectTypeMappings.put(cl, objectType);
 
-                    final String runtimeTypeName = WasmHelpers.generateClassName(Type.getType(Class.class)) + "_rtt";
+                final String runtimeTypeName = WasmHelpers.generateClassName(Type.getType(Class.class)) + "_rtt";
 
-                    final List<StructType.Field> rttypeFields = new ArrayList<>();
-                    rttypeFields.add(new StructType.Field("typeId", PrimitiveType.i32, false));
-                    rttypeFields.add(new StructType.Field("classImplTypes", ConstExpressions.ref.type(implTypesArray, true), false));
-                    rttypeFields.add(new StructType.Field("lambdaMethod", PrimitiveType.i32, false));
-                    rttypeFields.add(new StructType.Field("initStatus", PrimitiveType.i32));
-                    rttypeFields.add(new StructType.Field("factoryFor", PrimitiveType.i32));
-                    rttypeFields.add(new StructType.Field("$VALUES", ConstExpressions.ref.type(objectType, true)));
+                final List<StructType.Field> rttypeFields = new ArrayList<>();
+                rttypeFields.add(new StructType.Field("typeId", PrimitiveType.i32, false));
+                rttypeFields.add(new StructType.Field("classImplTypes", ConstExpressions.ref.type(implTypesArray, true), false));
+                rttypeFields.add(new StructType.Field("lambdaMethod", PrimitiveType.i32, false));
+                rttypeFields.add(new StructType.Field("initStatus", PrimitiveType.i32));
+                rttypeFields.add(new StructType.Field("factoryFor", PrimitiveType.i32));
+                rttypeFields.add(new StructType.Field("$VALUES", ConstExpressions.ref.type(objectType, true)));
 
-                    runtimeClassType = module.getTypes().structSubtype(
-                            runtimeTypeName,
-                            objectType,
-                            rttypeFields
-                    );
+                runtimeClassType = module.getTypes().structSubtype(
+                        runtimeTypeName,
+                        objectType,
+                        rttypeFields
+                );
 
-                    rtTypeMappings.put(compileUnit.findClass(Type.getType(Class.class)), runtimeClassType);
+                rtTypeMappings.put(compileUnit.findClass(Type.getType(Class.class)), runtimeClassType);
 
-                } else {
-                    objectTypeMappings.put(cl, types.structSubtype(className, objectTypeMappings.get(cl.superClass), instanceFields));
-                }
+            } else {
+                objectTypeMappings.put(cl, types.structSubtype(className, objectTypeMappings.get(cl.superClass), instanceFields));
             }
 
             if (!Class.class.getName().equals(cl.type.getClassName())) {
@@ -333,7 +331,6 @@ public class WasmBackend {
             params.add(ConstExpressions.param("methodid", PrimitiveType.i32));
             final ExportableFunction vtFunction = functionsSection.newFunction(className + "_vt", params, PrimitiveType.i32);
 
-            // TODO: Enhance in case of opaque reference types
             final VTable vTable = vTableResolver.resolveFor(cl);
             for (final Map.Entry<Integer, ResolvedMethod> entry : vTable.getMethods().entrySet()) {
                 final ResolvedMethod rm = entry.getValue();
@@ -441,7 +438,6 @@ public class WasmBackend {
         module.getTags().tagIndex().add(ConstExpressions.tag("javaexception", ConstExpressions.ref.type(module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class))), true)));
 
         // Primitive types
-        final String objectClassName = WasmHelpers.generateClassName(Type.getType(Object.class));
         final StructType javaLangObjectType = objectTypeMappings.get(objectClass);
         globalsSection.newConstantGlobal("primitive_boolean",
                 ConstExpressions.ref.type(javaLangObjectType, false),
@@ -636,15 +632,49 @@ public class WasmBackend {
                             functionName = (String) values.get("name");
                         }
 
+                        // Ok, do we need to create an opaque reference wrapper function
                         final Function function;
-                        if (Type.VOID == method.methodType.getReturnType().getSort()) {
-                            function = module.getImports().importFunction(new ImportReference(moduleName, functionName),
-                                    implMethodName,
-                                    functionParams);
+                        if (cl.isOpaqueReferenceType()) {
+                            if (!Modifier.isStatic(method.methodNode.access)) {
+                                throw new IllegalStateException("Native Methods must be static for opaque reference types : " + cl.type + "." + methodName);
+                            }
+                            if (Type.VOID == method.methodType.getReturnType().getSort()) {
+                                throw new IllegalStateException("Native Methods must not be void for opaque reference types : " + cl.type + "." + methodName);
+                            }
+
+                            final Function delegateFunction = module.getImports().importFunction(new ImportReference(moduleName, functionName),
+                                    implMethodName + "_delegate",
+                                    functionParams.subList(1, functionParams.size()), ConstExpressions.ref.host());
+
+                            final ExportableFunction impl = module.getFunctions().newFunction(implMethodName, functionParams, toWASMType.apply(method.methodType.getReturnType()));
+                            final List<WasmValue> callArgs = new ArrayList<>();
+                            for (int i = 0; i < method.methodType.getArgumentTypes().length; i++) {
+                                final Type argument = method.methodType.getArgumentTypes()[i];
+                                // TODO: Maybe convert opaque reference types here?
+                                callArgs.add(ConstExpressions.getLocal(impl.localByLabel("arg" + i)));
+                            }
+
+                            impl.flow.ret(WasmStructuredControlflowCodeGenerator.createNewInstanceOf(
+                                            cl.type,
+                                            module,
+                                            compileUnit,
+                                            objectTypeMappings,
+                                            rtTypeMappings,
+                                            ConstExpressions.call(delegateFunction, callArgs)
+                                    ));
+
+                            function = impl;
+
                         } else {
-                            function = module.getImports().importFunction(new ImportReference(moduleName, functionName),
-                                    implMethodName,
-                                    functionParams, toWASMType.apply(method.methodType.getReturnType()));
+                            if (Type.VOID == method.methodType.getReturnType().getSort()) {
+                                function = module.getImports().importFunction(new ImportReference(moduleName, functionName),
+                                        implMethodName,
+                                        functionParams);
+                            } else {
+                                function = module.getImports().importFunction(new ImportReference(moduleName, functionName),
+                                        implMethodName,
+                                        functionParams, toWASMType.apply(method.methodType.getReturnType()));
+                            }
                         }
 
                         if (!Modifier.isStatic(method.methodNode.access) && !"<init>".equals(method.methodNode.name)) {
@@ -653,8 +683,49 @@ public class WasmBackend {
 
                     } else if (Modifier.isAbstract(method.methodNode.access)) {
 
-                        // Abstract method, nothing to to
-                        // TODO: Handle opaque reference types here
+                        if (cl.isOpaqueReferenceType()) {
+
+                            // TODO: Handle opaque reference types here
+
+                            final ExportableFunction implFunction;
+                            if (Type.VOID == method.methodType.getReturnType().getSort()) {
+                                implFunction = module.getFunctions().newFunction(implMethodName, functionParams);
+                            } else {
+                                implFunction = module.getFunctions().newFunction(implMethodName, functionParams, toWASMType.apply(method.methodType.getReturnType()));
+                            }
+
+                            String moduleName = cl.type.getClassName();
+                            String functionName = methodName;
+
+                            if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/Import;", method.methodNode.visibleAnnotations)) {
+                                final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/Import;", method.methodNode.visibleAnnotations);
+                                moduleName = (String) values.get("module");
+                                functionName = (String) values.get("name");
+                            }
+
+                            final Function delegateFunction = module.getImports().importFunction(new ImportReference(moduleName, functionName),
+                                    implMethodName + "_delegate",
+                                    functionParams, ConstExpressions.ref.host());
+
+                            final List<WasmValue> callArgs = new ArrayList<>();
+                            callArgs.add(ConstExpressions.getLocal(implFunction.localByLabel("thisref")));
+                            for (int i = 0; i < method.methodType.getArgumentTypes().length; i++) {
+                                final Type argument = method.methodType.getArgumentTypes()[i];
+                                callArgs.add(ConstExpressions.getLocal(implFunction.localByLabel("arg" + i)));
+                            }
+
+                            // TODO: Call imported adapter function
+                            if (Type.VOID == method.methodType.getReturnType().getSort()) {
+                                implFunction.flow.drop(ConstExpressions.call(delegateFunction, callArgs));
+                            } else {
+                                implFunction.flow.ret(ConstExpressions.call(delegateFunction, callArgs));
+                            }
+
+                            implFunction.toTable();
+
+                        } else {
+                            // Abstract method, nothing to be generated
+                        }
 
                     } else {
 
