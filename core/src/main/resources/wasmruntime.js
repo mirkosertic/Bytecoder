@@ -588,8 +588,7 @@ const bytecoder = {
         },
         "de.mirkosertic.bytecoder.api.web.Console": {
             V$log$Ljava$lang$String$: function(thisref, str) {
-                const no = bytecoder.getNativeObject(thisref);
-                no.log(bytecoder.toJSString(str));
+                thisref.log(str);
             }
         },
         "bytecoder": {

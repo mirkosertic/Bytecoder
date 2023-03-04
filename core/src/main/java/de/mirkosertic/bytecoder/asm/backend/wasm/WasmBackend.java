@@ -594,6 +594,8 @@ public class WasmBackend {
             runtimetypeof.flow.unreachable();
         }
 
+        final OpaqueTypesAdapterMethods adapterMethods = new OpaqueTypesAdapterMethods();
+
         for (final ResolvedClass cl : resolvedClasses) {
             // Class objects for
 
@@ -685,7 +687,7 @@ public class WasmBackend {
 
                         if (cl.isOpaqueReferenceType()) {
 
-                            // TODO: Handle opaque reference types here
+                            adapterMethods.register(cl, method);
 
                             final ExportableFunction implFunction;
                             if (Type.VOID == method.methodType.getReturnType().getSort()) {
@@ -694,31 +696,75 @@ public class WasmBackend {
                                 implFunction = module.getFunctions().newFunction(implMethodName, functionParams, toWASMType.apply(method.methodType.getReturnType()));
                             }
 
-                            String moduleName = cl.type.getClassName();
-                            String functionName = methodName;
+                            final String moduleName = cl.type.getClassName();
 
-                            if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/Import;", method.methodNode.visibleAnnotations)) {
-                                final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/Import;", method.methodNode.visibleAnnotations);
-                                moduleName = (String) values.get("module");
-                                functionName = (String) values.get("name");
+                            final WasmType returnType;
+                            switch (method.methodType.getReturnType().getSort()) {
+                                case Type.OBJECT: {
+                                    returnType = ConstExpressions.ref.host();
+                                    break;
+                                }
+                                default: {
+                                    returnType = toWASMType.apply(method.methodType.getReturnType());
+                                    break;
+                                }
                             }
 
-                            final Function delegateFunction = module.getImports().importFunction(new ImportReference(moduleName, functionName),
+                            final Function delegateFunction = module.getImports().importFunction(new ImportReference(moduleName, methodName),
                                     implMethodName + "_delegate",
-                                    functionParams, ConstExpressions.ref.host());
+                                    functionParams, returnType);
 
                             final List<WasmValue> callArgs = new ArrayList<>();
                             callArgs.add(ConstExpressions.getLocal(implFunction.localByLabel("thisref")));
                             for (int i = 0; i < method.methodType.getArgumentTypes().length; i++) {
                                 final Type argument = method.methodType.getArgumentTypes()[i];
-                                callArgs.add(ConstExpressions.getLocal(implFunction.localByLabel("arg" + i)));
+                                switch (argument.getSort()) {
+                                    case Type.ARRAY: {
+                                        throw new IllegalArgumentException("Arrays are not supported as an argument for " + method.methodNode.name +" in type " + cl.type);
+                                    }
+                                    case Type.OBJECT: {
+                                        final ResolvedClass argClass = compileUnit.findClass(argument);
+                                        if (argClass.isCallback()) {
+                                            callArgs.add(ConstExpressions.getLocal(implFunction.localByLabel("arg" + i)));
+                                        } else {
+                                            callArgs.add(
+                                                ConstExpressions.struct.get(
+                                                        objectTypeMappings.get(objectClass),
+                                                        ConstExpressions.getLocal(implFunction.localByLabel("arg" + i)),
+                                                        "nativeObject"
+                                                )
+                                            );
+                                        }
+                                    }
+                                    default: {
+                                        callArgs.add(ConstExpressions.getLocal(implFunction.localByLabel("arg" + i)));
+                                        break;
+                                    }
+                                }
                             }
 
-                            // TODO: Call imported adapter function
                             if (Type.VOID == method.methodType.getReturnType().getSort()) {
-                                implFunction.flow.drop(ConstExpressions.call(delegateFunction, callArgs));
+                                implFunction.flow.voidCall(delegateFunction, callArgs);
                             } else {
-                                implFunction.flow.ret(ConstExpressions.call(delegateFunction, callArgs));
+                                switch (method.methodType.getReturnType().getSort()) {
+                                    case Type.ARRAY: {
+                                        throw new IllegalArgumentException("Arrays are not supported as a return type for " + method.methodNode.name +" in type " + cl.type);
+                                    }
+                                    case Type.OBJECT: {
+                                        implFunction.flow.ret(
+                                            WasmStructuredControlflowCodeGenerator.createNewInstanceOf(method.methodType.getReturnType(),
+                                                    module,
+                                                    compileUnit,
+                                                    objectTypeMappings,
+                                                    rtTypeMappings,
+                                                    ConstExpressions.call(delegateFunction, callArgs)));
+                                        break;
+                                    }
+                                    default: {
+                                        implFunction.flow.ret(ConstExpressions.call(delegateFunction, callArgs));
+                                        break;
+                                    }
+                                }
                             }
 
                             implFunction.toTable();
@@ -881,7 +927,8 @@ public class WasmBackend {
         jsContentPrintWriter.println("  throw 'Unknown string index ' + index;");
         jsContentPrintWriter.println("};");
 
-        // generate JS binding class
+        // TODO: generate JS binding classes for adapter methods
+
 
         final StringWriter theStringWriter = new StringWriter();
         final ByteArrayOutputStream theBinaryOutput = new ByteArrayOutputStream();
