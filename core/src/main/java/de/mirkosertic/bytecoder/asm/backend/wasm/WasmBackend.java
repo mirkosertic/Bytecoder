@@ -691,8 +691,6 @@ public class WasmBackend {
 
                         if (cl.isOpaqueReferenceType()) {
 
-                            System.out.println("Opaque code for " + implMethodName);
-
                             adapterMethods.register(cl, method);
 
                             final ExportableFunction implFunction;
@@ -708,19 +706,19 @@ public class WasmBackend {
                             switch (method.methodType.getReturnType().getSort()) {
                                 case Type.VOID: {
                                     delegateFunction = module.getImports().importFunction(new ImportReference(moduleName, methodName),
-                                            implMethodName,
+                                            implMethodName + "_delegate",
                                             functionParams);
                                     break;
                                 }
                                 case Type.OBJECT: {
                                     delegateFunction = module.getImports().importFunction(new ImportReference(moduleName, methodName),
-                                            implMethodName,
+                                            implMethodName + "_delegate",
                                             functionParams, ConstExpressions.ref.host());
                                     break;
                                 }
                                 default: {
                                     delegateFunction = module.getImports().importFunction(new ImportReference(moduleName, methodName),
-                                            implMethodName,
+                                            implMethodName + "_delegate",
                                             functionParams, toWASMType.apply(method.methodType.getReturnType()));
                                     break;
                                 }
@@ -779,7 +777,6 @@ public class WasmBackend {
                                 }
                             }
 
-                            System.out.println(implFunction.getLabel());
                             implFunction.toTable();
 
                         } else {
@@ -941,7 +938,7 @@ public class WasmBackend {
         jsContentPrintWriter.println("};");
 
         adapterMethods.getKnownMethods().forEach((cl, value) -> {
-            final String moduleName = WasmHelpers.generateClassName(cl.type) + "_generated";
+            final String moduleName = cl.type.getClassName() + "_generated";
 
             jsContentPrintWriter.print("bytecoder.imports[\"");
             jsContentPrintWriter.print(moduleName);
@@ -967,27 +964,11 @@ public class WasmBackend {
                     final Type methodType = rm.methodType;
                     switch (methodType.getReturnType().getSort()) {
                         case Type.BOOLEAN: {
-                            jsContentPrintWriter.print("bytecoder.toBytecoderBoolean(");
-                            break;
-                        }
-                        case Type.OBJECT: {
-                            if (String.class.getName().equals(methodType.getReturnType().getClassName())) {
-                                jsContentPrintWriter.print("bytecoder.toBytecoderString(");
-                                break;
-                            } else {
-                                final ResolvedClass targetType = compileUnit.findClass(methodType.getReturnType());
-                                if (targetType.isOpaqueReferenceType()) {
-                                    jsContentPrintWriter.print("bytecoder.wrapNativeIntoTypeInstance(");
-                                    jsContentPrintWriter.print(generateClassName(methodType.getReturnType()));
-                                    jsContentPrintWriter.print(",");
-                                } else {
-                                    throw new IllegalStateException("Type " + methodType.getReturnType() + " not supported as return type");
-                                }
-                            }
+                            jsContentPrintWriter.print("        bytecoder.toBytecoderBoolean(");
                             break;
                         }
                         default: {
-                            jsContentPrintWriter.print("(");
+                            jsContentPrintWriter.print("        (");
                             break;
                         }
                     }
@@ -1005,11 +986,6 @@ public class WasmBackend {
                                 jsContentPrintWriter.print(" = (arg0 === 1 ? true : false)");
                                 break;
                             }
-                            case Type.OBJECT: {
-                                final ResolvedClass targetType = compileUnit.findClass(arguments[0]);
-                                jsContentPrintWriter.print("arg0");
-                                break;
-                            }
                             default: {
                                 jsContentPrintWriter.print(" = arg0");
                                 break;
@@ -1021,7 +997,7 @@ public class WasmBackend {
 
                 } else if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueIndexed;", rm.methodNode.visibleAnnotations)) {
 
-                    jsContentPrintWriter.print("thisref[arg0] = ");
+                    jsContentPrintWriter.print("        thisref[arg0] = ");
 
                     if (arguments.length > 1) {
                         jsContentPrintWriter.print(" = arg1");
@@ -1031,22 +1007,12 @@ public class WasmBackend {
 
                     final Type returnType = rm.methodType.getReturnType();
                     switch (returnType.getSort()) {
-                        case Type.OBJECT: {
-                            if (String.class.getName().equals(returnType.getClassName())) {
-                                jsContentPrintWriter.print("bytecoder.toBytecoderString(");
-                            } else {
-                                jsContentPrintWriter.print("bytecoder.wrapNativeIntoTypeInstance(");
-                                jsContentPrintWriter.print(generateClassName(returnType));
-                                jsContentPrintWriter.print(",");
-                            }
-                            break;
-                        }
                         case Type.BOOLEAN: {
-                            jsContentPrintWriter.print("bytecoder.toBytecoderBoolean(");
+                            jsContentPrintWriter.print("        bytecoder.toBytecoderBoolean(");
                             break;
                         }
                         default: {
-                            jsContentPrintWriter.print("(");
+                            jsContentPrintWriter.print("        (");
                             break;
                         }
                     }
@@ -1145,7 +1111,7 @@ public class WasmBackend {
                         }
                     }
 
-                    jsContentPrintWriter.print("))");
+                    jsContentPrintWriter.println("));");
 
                     jsContentPrintWriter.println("    },");
                 }
