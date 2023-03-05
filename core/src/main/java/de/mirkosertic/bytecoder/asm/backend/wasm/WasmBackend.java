@@ -18,6 +18,9 @@ package de.mirkosertic.bytecoder.asm.backend.wasm;
 import de.mirkosertic.bytecoder.api.ClassLibProvider;
 import de.mirkosertic.bytecoder.asm.backend.CodeGenerationFailure;
 import de.mirkosertic.bytecoder.asm.backend.CompileOptions;
+import de.mirkosertic.bytecoder.asm.backend.OpaqueReferenceTypeHelpers;
+import de.mirkosertic.bytecoder.asm.backend.sequencer.DominatorTree;
+import de.mirkosertic.bytecoder.asm.backend.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.ConstExpressions;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.ExportableFunction;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Exporter;
@@ -46,8 +49,6 @@ import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.asm.optimizer.Optimizer;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
 import de.mirkosertic.bytecoder.asm.parser.ConstantPool;
-import de.mirkosertic.bytecoder.asm.backend.sequencer.DominatorTree;
-import de.mirkosertic.bytecoder.asm.backend.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.classlib.Array;
 import org.apache.commons.io.IOUtils;
@@ -69,6 +70,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
+
+import static de.mirkosertic.bytecoder.asm.backend.js.JSHelpers.generateClassName;
+import static de.mirkosertic.bytecoder.asm.backend.js.JSHelpers.generateMethodName;
 
 public class WasmBackend {
 
@@ -687,6 +691,8 @@ public class WasmBackend {
 
                         if (cl.isOpaqueReferenceType()) {
 
+                            System.out.println("Opaque code for " + implMethodName);
+
                             adapterMethods.register(cl, method);
 
                             final ExportableFunction implFunction;
@@ -696,23 +702,29 @@ public class WasmBackend {
                                 implFunction = module.getFunctions().newFunction(implMethodName, functionParams, toWASMType.apply(method.methodType.getReturnType()));
                             }
 
-                            final String moduleName = cl.type.getClassName();
+                            final String moduleName = cl.type.getClassName() + "_generated";
 
-                            final WasmType returnType;
+                            final Function delegateFunction;
                             switch (method.methodType.getReturnType().getSort()) {
+                                case Type.VOID: {
+                                    delegateFunction = module.getImports().importFunction(new ImportReference(moduleName, methodName),
+                                            implMethodName,
+                                            functionParams);
+                                    break;
+                                }
                                 case Type.OBJECT: {
-                                    returnType = ConstExpressions.ref.host();
+                                    delegateFunction = module.getImports().importFunction(new ImportReference(moduleName, methodName),
+                                            implMethodName,
+                                            functionParams, ConstExpressions.ref.host());
                                     break;
                                 }
                                 default: {
-                                    returnType = toWASMType.apply(method.methodType.getReturnType());
+                                    delegateFunction = module.getImports().importFunction(new ImportReference(moduleName, methodName),
+                                            implMethodName,
+                                            functionParams, toWASMType.apply(method.methodType.getReturnType()));
                                     break;
                                 }
                             }
-
-                            final Function delegateFunction = module.getImports().importFunction(new ImportReference(moduleName, methodName),
-                                    implMethodName + "_delegate",
-                                    functionParams, returnType);
 
                             final List<WasmValue> callArgs = new ArrayList<>();
                             callArgs.add(ConstExpressions.getLocal(implFunction.localByLabel("thisref")));
@@ -767,6 +779,7 @@ public class WasmBackend {
                                 }
                             }
 
+                            System.out.println(implFunction.getLabel());
                             implFunction.toTable();
 
                         } else {
@@ -927,8 +940,219 @@ public class WasmBackend {
         jsContentPrintWriter.println("  throw 'Unknown string index ' + index;");
         jsContentPrintWriter.println("};");
 
-        // TODO: generate JS binding classes for adapter methods
+        adapterMethods.getKnownMethods().forEach((cl, value) -> {
+            final String moduleName = WasmHelpers.generateClassName(cl.type) + "_generated";
 
+            jsContentPrintWriter.print("bytecoder.imports[\"");
+            jsContentPrintWriter.print(moduleName);
+            jsContentPrintWriter.println("\"] = {");
+
+            for (final ResolvedMethod rm : value) {
+                final String methodName = WasmHelpers.generateMethodName(rm.methodNode.name, rm.methodType);
+                jsContentPrintWriter.print("    ");
+                jsContentPrintWriter.print(methodName);
+                jsContentPrintWriter.print(" : function(thisref");
+                for (int i = 0; i < rm.methodType.getArgumentTypes().length; i++) {
+                    jsContentPrintWriter.print(", arg");
+                    jsContentPrintWriter.print(i);
+                }
+                jsContentPrintWriter.println(") {");
+
+                final Type[] arguments = rm.methodType.getArgumentTypes();
+
+                if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueProperty;", rm.methodNode.visibleAnnotations)) {
+                    final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueProperty;", rm.methodNode.visibleAnnotations);
+                    final String propertyName = (String) values.get("value");
+
+                    final Type methodType = rm.methodType;
+                    switch (methodType.getReturnType().getSort()) {
+                        case Type.BOOLEAN: {
+                            jsContentPrintWriter.print("bytecoder.toBytecoderBoolean(");
+                            break;
+                        }
+                        case Type.OBJECT: {
+                            if (String.class.getName().equals(methodType.getReturnType().getClassName())) {
+                                jsContentPrintWriter.print("bytecoder.toBytecoderString(");
+                                break;
+                            } else {
+                                final ResolvedClass targetType = compileUnit.findClass(methodType.getReturnType());
+                                if (targetType.isOpaqueReferenceType()) {
+                                    jsContentPrintWriter.print("bytecoder.wrapNativeIntoTypeInstance(");
+                                    jsContentPrintWriter.print(generateClassName(methodType.getReturnType()));
+                                    jsContentPrintWriter.print(",");
+                                } else {
+                                    throw new IllegalStateException("Type " + methodType.getReturnType() + " not supported as return type");
+                                }
+                            }
+                            break;
+                        }
+                        default: {
+                            jsContentPrintWriter.print("(");
+                            break;
+                        }
+                    }
+
+                    jsContentPrintWriter.println("thisref");
+                    if (propertyName != null) {
+                        jsContentPrintWriter.print(propertyName);
+                    } else {
+                        jsContentPrintWriter.print(OpaqueReferenceTypeHelpers.derivePropertyNameFromMethodName(rm.methodNode.name));
+                    }
+                    if (arguments.length > 0) {
+                        jsContentPrintWriter.print(" = ");
+                        switch (arguments[0].getSort()) {
+                            case Type.BOOLEAN: {
+                                jsContentPrintWriter.print(" = (arg0 === 1 ? true : false)");
+                                break;
+                            }
+                            case Type.OBJECT: {
+                                final ResolvedClass targetType = compileUnit.findClass(arguments[0]);
+                                jsContentPrintWriter.print("arg0");
+                                break;
+                            }
+                            default: {
+                                jsContentPrintWriter.print(" = arg0");
+                                break;
+                            }
+                        }
+                    }
+
+                    jsContentPrintWriter.print(")");
+
+                } else if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueIndexed;", rm.methodNode.visibleAnnotations)) {
+
+                    jsContentPrintWriter.print("thisref[arg0] = ");
+
+                    if (arguments.length > 1) {
+                        jsContentPrintWriter.print(" = arg1");
+                    }
+
+                } else {
+
+                    final Type returnType = rm.methodType.getReturnType();
+                    switch (returnType.getSort()) {
+                        case Type.OBJECT: {
+                            if (String.class.getName().equals(returnType.getClassName())) {
+                                jsContentPrintWriter.print("bytecoder.toBytecoderString(");
+                            } else {
+                                jsContentPrintWriter.print("bytecoder.wrapNativeIntoTypeInstance(");
+                                jsContentPrintWriter.print(generateClassName(returnType));
+                                jsContentPrintWriter.print(",");
+                            }
+                            break;
+                        }
+                        case Type.BOOLEAN: {
+                            jsContentPrintWriter.print("bytecoder.toBytecoderBoolean(");
+                            break;
+                        }
+                        default: {
+                            jsContentPrintWriter.print("(");
+                            break;
+                        }
+                    }
+
+                    jsContentPrintWriter.print("thisref.");
+                    jsContentPrintWriter.print(rm.methodNode.name);
+                    jsContentPrintWriter.print("(");
+
+                    for (int i = 0; i < arguments.length; i++) {
+                        if (i > 0) {
+                            jsContentPrintWriter.print(", ");
+                        }
+                        final Type argType = arguments[i];
+                        switch (argType.getSort()) {
+                            case Type.BOOLEAN: {
+                                jsContentPrintWriter.print("(arg");
+                                jsContentPrintWriter.print(i);
+                                jsContentPrintWriter.print(" === 1 ? true : false)");
+                                break;
+                            }
+                            case Type.OBJECT: {
+                                final ResolvedClass typeClass = compileUnit.findClass(argType);
+                                if (typeClass == null) {
+                                    throw new IllegalStateException("Cannot find linked class for type " + argType);
+                                }
+                                if (typeClass.isCallback()) {
+                                    if (!Modifier.isInterface(typeClass.classNode.access)) {
+                                        throw new IllegalStateException("Only callback interfaces are allowed in method signatures!");
+                                    }
+
+                                    final List<ResolvedMethod> callbackMethods = typeClass.resolvedMethods.stream().filter(t -> !t.methodNode.name.equals("init")).collect(Collectors.toList());
+                                    if (callbackMethods.size() != 1) {
+                                        throw new IllegalStateException("Unexpected number of callback methods, expected 1, got " + callbackMethods.size() + " for type " + typeClass.type);
+                                    }
+                                    final ResolvedMethod callbackMethod = callbackMethods.get(0);
+                                    final Type methodType = callbackMethod.methodType;
+
+                                    jsContentPrintWriter.print("function(");
+                                    for (int j = 0; j < methodType.getArgumentTypes().length; j++) {
+                                        if (j > 0) {
+                                            jsContentPrintWriter.print(", ");
+                                        }
+                                        jsContentPrintWriter.print("arg");
+                                        jsContentPrintWriter.print(j);
+                                    }
+                                    jsContentPrintWriter.print(") {this.");
+                                    jsContentPrintWriter.print(generateMethodName(callbackMethod.methodNode.name, methodType));
+                                    jsContentPrintWriter.print("(");
+                                    for (int j = 0; j < methodType.getArgumentTypes().length; j++) {
+                                        if (j > 0) {
+                                            jsContentPrintWriter.print(", ");
+                                        }
+                                        switch (methodType.getArgumentTypes()[j].getSort()) {
+                                            case Type.BOOLEAN: {
+                                                jsContentPrintWriter.print("bytecoder.toBytecoderBoolean(arg");
+                                                jsContentPrintWriter.print(j);
+                                                jsContentPrintWriter.print(")");
+                                                break;
+                                            }
+                                            case Type.OBJECT: {
+                                                if (methodType.getArgumentTypes()[j].getClassName().equals(String.class.getName())) {
+                                                    jsContentPrintWriter.print("bytecoder.toBytecoderString(arg");
+                                                    jsContentPrintWriter.print(j);
+                                                    jsContentPrintWriter.print(")");
+                                                } else {
+                                                    jsContentPrintWriter.print("bytecoder.wrapNativeIntoTypeInstance(");
+                                                    jsContentPrintWriter.print(generateClassName(methodType.getArgumentTypes()[j]));
+                                                    jsContentPrintWriter.print(", arg");
+                                                    jsContentPrintWriter.print(j);
+                                                    jsContentPrintWriter.print(")");
+                                                }
+                                                break;
+                                            }
+                                            default: {
+                                                jsContentPrintWriter.print("arg");
+                                                jsContentPrintWriter.print(j);
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    jsContentPrintWriter.print(")");
+                                    jsContentPrintWriter.print("}.bind(arg");
+                                    jsContentPrintWriter.print(i);
+                                    jsContentPrintWriter.print(")");
+                                } else {
+                                    jsContentPrintWriter.print("arg");
+                                    jsContentPrintWriter.print(i);
+                                }
+                                break;
+                            }
+                            default: {
+                                jsContentPrintWriter.print("arg");
+                                jsContentPrintWriter.print(i);
+                                break;
+                            }
+                        }
+                    }
+
+                    jsContentPrintWriter.print("))");
+
+                    jsContentPrintWriter.println("    },");
+                }
+
+            }
+            jsContentPrintWriter.println("};");
+        });
 
         final StringWriter theStringWriter = new StringWriter();
         final ByteArrayOutputStream theBinaryOutput = new ByteArrayOutputStream();

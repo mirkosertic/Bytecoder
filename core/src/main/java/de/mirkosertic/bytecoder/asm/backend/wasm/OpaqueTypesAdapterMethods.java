@@ -34,6 +34,9 @@ public class OpaqueTypesAdapterMethods {
     public void register(final ResolvedClass resolvedClass, final ResolvedMethod method) {
         final List<ResolvedMethod> knownForClass = knownMethods.computeIfAbsent(resolvedClass, key -> new ArrayList<>());
         knownForClass.add(method);
+    }
 
+    public Map<ResolvedClass, List<ResolvedMethod>> getKnownMethods() {
+        return knownMethods;
     }
 }

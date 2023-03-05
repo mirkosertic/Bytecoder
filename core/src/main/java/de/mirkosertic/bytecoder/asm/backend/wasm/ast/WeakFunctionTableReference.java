@@ -30,7 +30,7 @@ public class WeakFunctionTableReference implements WasmValue {
         final Function f = context.functionIndex().firstByLabel(functionName);
         final int theIndex = context.anyFuncTable().indexOf(f);
         if (theIndex < 0) {
-            throw new IllegalStateException("Cannot call function that is not part of the table : " + functionName);
+            throw new IllegalStateException("Cannot call function that is not part of the table : " + functionName + " : " + f);
         }
         textWriter.opening();
         textWriter.write("i32.const");
@@ -44,7 +44,7 @@ public class WeakFunctionTableReference implements WasmValue {
         final Function f = context.functionIndex().firstByLabel(functionName);
         final int theIndex = context.anyFuncTable().indexOf(f);
         if (theIndex < 0) {
-            throw new IllegalStateException("Cannot call function that is not part of the table : " + functionName);
+             throw new IllegalStateException("Cannot call function that is not part of the table : " + functionName);
         }
         final I32Const c = new I32Const(theIndex);
         c.writeTo(codeWriter, context);

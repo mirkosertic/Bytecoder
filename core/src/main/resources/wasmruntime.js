@@ -586,11 +586,6 @@ const bytecoder = {
                 return document;
             }
         },
-        "de.mirkosertic.bytecoder.api.web.Console": {
-            V$log$Ljava$lang$String$: function(thisref, str) {
-                thisref.log(str);
-            }
-        },
         "bytecoder": {
         }
     },

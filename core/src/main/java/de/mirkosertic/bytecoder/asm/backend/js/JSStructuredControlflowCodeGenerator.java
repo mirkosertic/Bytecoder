@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.js;
 
+import de.mirkosertic.bytecoder.asm.backend.OpaqueReferenceTypeHelpers;
 import de.mirkosertic.bytecoder.asm.backend.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.asm.backend.sequencer.StructuredControlflowCodeGenerator;
 import de.mirkosertic.bytecoder.asm.ir.AbstractVar;
@@ -753,21 +754,6 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         pw.print("))");
     }
 
-    private String derivePropertyNameFromMethodName(String methodName) {
-        if (methodName.startsWith("get")) {
-            methodName = methodName.substring(3);
-            methodName = Character.toLowerCase(methodName.charAt(0)) + methodName.substring(1);
-        } else if (methodName.startsWith("is")) {
-            methodName = methodName.substring(2);
-            methodName = Character.toLowerCase(methodName.charAt(0)) + methodName.substring(1);
-        } else if (methodName.startsWith("set")) {
-            methodName = methodName.substring(3);
-            methodName = Character.toLowerCase(methodName.charAt(0)) + methodName.substring(1);
-        }
-
-        return methodName;
-    }
-
     @Override
     public void write(final InterfaceMethodInvocation node) {
 
@@ -776,7 +762,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         if (cl.isOpaqueReferenceType()) {
 
             final ResolvedMethod method = node.method;
-            final Type[] arguments = Type.getArgumentTypes(method.methodNode.desc);
+            final Type[] arguments = method.methodType.getArgumentTypes();
 
             if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueProperty;", method.methodNode.visibleAnnotations)) {
                 final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueProperty;", method.methodNode.visibleAnnotations);
@@ -787,7 +773,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                 if (propertyName != null) {
                     pw.print(propertyName);
                 } else {
-                    pw.print(derivePropertyNameFromMethodName(method.methodNode.name));
+                    pw.print(OpaqueReferenceTypeHelpers.derivePropertyNameFromMethodName(method.methodNode.name));
                 }
                 if (arguments.length > 0) {
                     pw.print(" = ");
@@ -952,7 +938,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
         if (cl.isOpaqueReferenceType()) {
 
-            final Type[] arguments = Type.getArgumentTypes(method.methodNode.desc);
+            final Type[] arguments = method.methodType.getArgumentTypes();
 
             if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueProperty;", method.methodNode.visibleAnnotations)) {
                 final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueProperty;", method.methodNode.visibleAnnotations);
@@ -991,7 +977,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                 if (propertyName != null) {
                     pw.print(propertyName);
                 } else {
-                    pw.print(derivePropertyNameFromMethodName(method.methodNode.name));
+                    pw.print(OpaqueReferenceTypeHelpers.derivePropertyNameFromMethodName(method.methodNode.name));
                 }
                 if (arguments.length > 0) {
                     pw.print(" = ");
