@@ -19,6 +19,18 @@ import org.objectweb.asm.Type;
 
 public class WasmHelpers {
 
+    public final static int TYPE_ID_RUNTIMECLASS = -1;
+
+    public final static int TYPE_ID_BOOLEAN = -10;
+    public static final int TYPE_ID_BYTE = -20;
+    public static final int TYPE_ID_CHAR = -21;
+    public static final int TYPE_ID_SHORT = -22;
+    public static final int TYPE_ID_INT = -23;
+    public static final int TYPE_ID_LONG = -24;
+    public static final int TYPE_ID_FLOAT = -25;
+    public static final int TYPE_ID_DOUBLE = -26;
+    public static final int TYPE_ID_VOID = -27;
+
     public static String generateClassName(final Type type) {
         return type.getClassName().replace('.', '$');
     }

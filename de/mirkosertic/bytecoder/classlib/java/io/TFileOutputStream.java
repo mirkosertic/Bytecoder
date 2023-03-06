@@ -52,7 +52,7 @@ public class TFileOutputStream extends OutputStream {
         this.fd = new FileDescriptor();
         this.path = name;
 
-        open(name, append);
+        open(this.fd, name, append);
     }
 
     public TFileOutputStream(final FileDescriptor fdObj) {
@@ -60,35 +60,35 @@ public class TFileOutputStream extends OutputStream {
         this.path = null;
     }
 
-    private native int open0(String name, boolean append) throws FileNotFoundException;
+    private native int open0(FileDescriptor fd, String name, boolean append) throws FileNotFoundException;
 
-    private native void close0();
+    private native void close0(FileDescriptor fd);
 
-    private void open(final String name, final boolean append) throws FileNotFoundException {
-        open0(name, append);
+    private void open(final FileDescriptor fd, final String name, final boolean append) throws FileNotFoundException {
+        open0(fd, name, append);
     }
 
     public void write(final int b) throws IOException {
-        writeInt(b);
+        writeInt(fd, b);
     }
 
-    public native void writeInt(int b) throws IOException;
+    public native void writeInt(FileDescriptor fd, int b) throws IOException;
 
-    private native void writeBytes(byte[] b, int off, int len);
+    private native void writeBytes(FileDescriptor fd, byte[] b, int off, int len);
 
     public void write(final byte[] b) {
-        writeBytes(b, 0, b.length);
+        writeBytes(fd, b, 0, b.length);
     }
 
     public void write(final byte[] b, final int off, final int len) {
-        writeBytes(b, off, len);
+        writeBytes(fd, b, off, len);
     }
 
     public void close() {
         if (closed) {
             return;
         }
-        close0();
+        close0(fd);
         closed = true;
     }
 

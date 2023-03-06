@@ -49,9 +49,11 @@ public class VTableResolver {
         }
 
         for (final ResolvedMethod m : rc.resolvedMethods) {
-            if ((m.owner == rc) && !Modifier.isStatic(m.methodNode.access) && !Modifier.isAbstract(m.methodNode.access) && !("<init>".equals(m.methodNode.name))) {
-                final int methodId = methodToIDMapper.resolveIdFor(m);
-                resolved.register(methodId, m);
+            if ((m.owner == rc) && !Modifier.isStatic(m.methodNode.access) && !("<init>".equals(m.methodNode.name))) {
+                if (!Modifier.isAbstract(m.methodNode.access) || rc.isOpaqueReferenceType()) {
+                    final int methodId = methodToIDMapper.resolveIdFor(m);
+                    resolved.register(methodId, m);
+                }
             }
         }
 

@@ -201,6 +201,9 @@ public class JSBackend {
             pw.print("'] = ");
             pw.print(generateClassName(method.owner.type));
             pw.print(".");
+            if (!Modifier.isStatic(method.methodNode.access)) {
+                pw.print("prototype.");
+            }
             pw.print(generateMethodName(method.methodNode.name, method.methodType));
             pw.println(";");
         });
@@ -226,7 +229,7 @@ public class JSBackend {
             if (theUrl != null) {
                 result.add(new CompileResult.URLContent(theResource, theUrl));
             } else {
-                //aOptions.getLogger().warn("Cannot find resource {}", theResource);
+                compileOptions.getLogger().warn("Cannot find resource {}", theResource);
             }
         }
 
@@ -298,9 +301,7 @@ public class JSBackend {
 
     private void generateFieldsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
 
-        if (cl.isNativeReferenceHolder()) {
-            pw.println("  nativeObject = null;");
-        }
+        pw.println("  nativeObject = null;");
 
         if (!cl.resolvedFields.isEmpty()) {
             pw.println();
@@ -506,12 +507,7 @@ public class JSBackend {
             }
             if (arguments.length > 0) {
                 if (arguments[0].getSort() == Type.OBJECT) {
-                    final ResolvedClass targetType = compileUnit.findClass(arguments[0]);
-                    if (targetType.isNativeReferenceHolder()) {
-                        pw.print(" = arg0.nativeObject");
-                    } else {
-                        throw new IllegalStateException("Type " + arguments[0] + " is not supported as an opaque property type.");
-                    }
+                    pw.print(" = arg0.nativeObject");
                 } else {
                     if (arguments[0].getSort() == Type.BOOLEAN) {
                         pw.print(" = (arg0 == 1 ? true : false)");
@@ -666,12 +662,10 @@ public class JSBackend {
                         pw.print("}.bind(arg");
                         pw.print(i);
                         pw.print(")");
-                    } else if (typeClass.isNativeReferenceHolder()) {
+                    } else {
                         pw.print("arg");
                         pw.print(i);
                         pw.print(".nativeObject");
-                    } else {
-                        throw new IllegalStateException("Type " + argType + " not supported in opaque reference method of " + typeClass.type + "." + methodName);
                     }
                 }
             }

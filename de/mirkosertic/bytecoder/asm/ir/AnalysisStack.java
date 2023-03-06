@@ -55,7 +55,7 @@ public class AnalysisStack {
     }
 
     public void dumpAnalysisStack(final PrintStream out) {
-        System.out.println("Current Analysis Stack is : ");
+        out.println("Current Analysis Stack is : ");
         for (int i = 0; i < actions.size(); i++) {
             for (int j = 0; j < i; j++) {
                 out.print(" ");

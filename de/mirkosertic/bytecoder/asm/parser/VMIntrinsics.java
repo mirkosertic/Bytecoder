@@ -16,7 +16,6 @@
 package de.mirkosertic.bytecoder.asm.parser;
 
 import de.mirkosertic.bytecoder.asm.ir.AnalysisStack;
-import de.mirkosertic.bytecoder.asm.ir.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.asm.ir.Graph;
 import de.mirkosertic.bytecoder.asm.ir.Value;
 import de.mirkosertic.bytecoder.classlib.VM;
@@ -57,11 +56,6 @@ public class VMIntrinsics implements Intrinsic {
                 }
             }
         }
-        return null;
-    }
-
-    @Override
-    public ControlTokenConsumer intrinsifyMethodInvocation(final CompileUnit compileUnit, final AnalysisStack analysisStack, final MethodInsnNode node, final Value[] incomingData, final Graph graph, final GraphParser graphParser) {
         return null;
     }
 }

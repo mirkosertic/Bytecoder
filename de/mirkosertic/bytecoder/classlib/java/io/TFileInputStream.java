@@ -63,7 +63,7 @@ public class TFileInputStream extends InputStream {
      * Opens the specified file for reading.
      * @param name the name of the file
      */
-    private native int open0(String name) throws FileNotFoundException;
+    private native int open0(FileDescriptor fd, String name) throws FileNotFoundException;
 
     // wrap native call to allow instrumentation
     /**
@@ -71,40 +71,39 @@ public class TFileInputStream extends InputStream {
      * @param name the name of the file
      */
     private void open(final String name) throws FileNotFoundException {
-        final long handle = open0(name);
+        final long handle = open0(fd, name);
         if (handle < 0) {
             throw new FileNotFoundException(name);
         }
-        //((TFileDescriptor) (Object) fd).setHandle(handle);
     }
 
     public int read() throws IOException {
-        return read0();
+        return read0(fd);
     }
 
-    private native int read0() throws IOException;
+    private native int read0(FileDescriptor fd) throws IOException;
 
-    private native int readBytes(byte[] b, int off, int len) throws IOException;
+    private native int readBytes(FileDescriptor df, byte[] b, int off, int len) throws IOException;
 
     public int read(final byte[] b) throws IOException {
-        return readBytes(b, 0, b.length);
+        return readBytes(fd, b, 0, b.length);
     }
 
     public int read(final byte[] b, final int off, final int len) throws IOException {
-        return readBytes(b, off, len);
+        return readBytes(fd, b, off, len);
     }
 
     public long skip(final long n) throws IOException {
-        return skip0((int) n);
+        return skip0(fd, (int) n);
     }
 
-    private native long skip0(int n) throws IOException;
+    private native long skip0(FileDescriptor fd, int n) throws IOException;
 
     public int available() throws IOException {
-        return available0();
+        return available0(fd);
     }
 
-    private native int available0() throws IOException;
+    private native int available0(FileDescriptor fd) throws IOException;
 
     public void close() {
         if (closed) {

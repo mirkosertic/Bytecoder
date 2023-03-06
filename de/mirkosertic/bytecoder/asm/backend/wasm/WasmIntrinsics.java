@@ -20,5 +20,7 @@ import de.mirkosertic.bytecoder.asm.parser.CoreIntrinsics;
 public class WasmIntrinsics extends CoreIntrinsics {
 
     public WasmIntrinsics() {
+        super(new JavaLangFloatIntrinsic(),
+              new JavaLangDoubleIntrinsic());
     }
 }

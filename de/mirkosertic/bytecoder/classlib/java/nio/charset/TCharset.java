@@ -47,6 +47,10 @@ public abstract class TCharset implements Comparable<java.nio.charset.Charset> {
         this.aliases = aliases;
     }
 
+    public String name() {
+        return this.canonicalName;
+    }
+
     public abstract CharsetEncoder newEncoder();
 
     public abstract CharsetDecoder newDecoder();

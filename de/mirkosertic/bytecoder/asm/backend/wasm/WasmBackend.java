@@ -15,8 +15,13 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm;
 
+import de.mirkosertic.bytecoder.api.Callback;
+import de.mirkosertic.bytecoder.api.ClassLibProvider;
 import de.mirkosertic.bytecoder.asm.backend.CodeGenerationFailure;
 import de.mirkosertic.bytecoder.asm.backend.CompileOptions;
+import de.mirkosertic.bytecoder.asm.backend.OpaqueReferenceTypeHelpers;
+import de.mirkosertic.bytecoder.asm.backend.sequencer.DominatorTree;
+import de.mirkosertic.bytecoder.asm.backend.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.ConstExpressions;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.ExportableFunction;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Exporter;
@@ -27,6 +32,8 @@ import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Global;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.GlobalsSection;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Iff;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.ImportReference;
+import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Local;
+import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Loop;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Module;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.Param;
 import de.mirkosertic.bytecoder.asm.backend.wasm.ast.PrimitiveType;
@@ -43,8 +50,6 @@ import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.asm.optimizer.Optimizer;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
 import de.mirkosertic.bytecoder.asm.parser.ConstantPool;
-import de.mirkosertic.bytecoder.asm.backend.sequencer.DominatorTree;
-import de.mirkosertic.bytecoder.asm.backend.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.backend.CompileResult;
 import de.mirkosertic.bytecoder.classlib.Array;
 import org.apache.commons.io.IOUtils;
@@ -57,6 +62,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.Modifier;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -68,10 +74,12 @@ import java.util.stream.Collectors;
 
 public class WasmBackend {
 
-    private WasmValue initCodeForPrimitiveRuntimeClass(final StructType type, final WasmValue runtimeTypeInstance) {
+    private WasmValue initCodeForPrimitiveRuntimeClass(final StructType type, final int typeId) {
         final List<WasmValue> initArgs = new ArrayList<>();
-        initArgs.add(runtimeTypeInstance);
+        initArgs.add(ConstExpressions.i32.c(typeId));
         initArgs.add(ConstExpressions.ref.ref(ConstExpressions.weakFunctionReference(WasmHelpers.generateClassName(Type.getType(Class.class)) + "_vt")));
+        initArgs.add(ConstExpressions.ref.externNullRef());
+        initArgs.add(ConstExpressions.ref.nullRef()); // TODO: Impltypes definieren
         return ConstExpressions.struct.newInstance(type, initArgs);
     }
 
@@ -94,6 +102,7 @@ public class WasmBackend {
         final Map<ResolvedClass, StructType> rtTypeMappings = new HashMap<>();
         final Map<ResolvedClass, Function> initFunctions = new HashMap<>();
         ResolvedClass objectClass = null;
+        StructType runtimeClassType = null;
 
         final FunctionsSection functionsSection = module.getFunctions();
 
@@ -215,26 +224,24 @@ public class WasmBackend {
         final MethodToIDMapper methodToIDMapper = new MethodToIDMapper();
         final VTableResolver vTableResolver = new VTableResolver(methodToIDMapper);
 
+        // Here goes all the init logic
+        final ExportableFunction bootstrap = functionsSection.newFunction("bootstrap");
+
         for (final ResolvedClass cl : resolvedClasses) {
             // Class objects for
             final String className = WasmHelpers.generateClassName(cl.type);
 
+            final ReferencableType implTypesArray = types.arrayType(PrimitiveType.i32);
+
             final List<StructType.Field> instanceFields = new ArrayList<>();
             if (cl.superClass == null) {
-                instanceFields.add(new StructType.Field("runtimetype", ConstExpressions.ref.type(rtType, true)));
+                instanceFields.add(new StructType.Field("typeId", PrimitiveType.i32));
                 instanceFields.add(new StructType.Field("vt_resolver", ConstExpressions.ref.type(vtType, true), false));
-            }
-
-            if (cl.isNativeReferenceHolder()) {
                 instanceFields.add(new StructType.Field("nativeObject", ConstExpressions.ref.host()));
+                instanceFields.add(new StructType.Field("implTypes", ConstExpressions.ref.type(implTypesArray, true), false));
             }
 
             final List<StructType.Field> classFields = new ArrayList<>();
-            final ReferencableType implTypesArray = types.arrayType(PrimitiveType.i32);
-            classFields.add(new StructType.Field("typeId", PrimitiveType.i32, false));
-            classFields.add(new StructType.Field("impTypes", ConstExpressions.ref.type(implTypesArray, true), false));
-            classFields.add(new StructType.Field("lambdaMethod", PrimitiveType.i32, false));
-            classFields.add(new StructType.Field("initStatus", PrimitiveType.i32));
 
             final List<WasmValue> classFieldDefaults = new ArrayList<>();
 
@@ -280,68 +287,52 @@ public class WasmBackend {
                     }
 
                     if (Modifier.isStatic(rf.access)) {
-                        classFields.add(field);
-                        classFieldDefaults.add(defaultValue);
+                        if (!"$VALUES".equals(fieldName)) {
+                            classFields.add(field);
+                            classFieldDefaults.add(defaultValue);
+                        }
                     } else {
                         instanceFields.add(field);
                     }
                 }
             }
 
-            if (!Modifier.isInterface(cl.classNode.access)) {
-                if (cl.superClass == null) {
-                    objectClass = cl;
-                    objectTypeMappings.put(cl, types.structSubtype(className, rtType, instanceFields));
-                } else {
-                    objectTypeMappings.put(cl, types.structSubtype(className, objectTypeMappings.get(cl.superClass), instanceFields));
-                }
+            if (cl.superClass == null) {
+                objectClass = cl;
+                final StructType objectType = types.structSubtype(className, rtType, instanceFields);
 
-                if (cl.isNativeReferenceHolder()) {
-                    // Create import and export functions
-                    final List<Param> getValueParams = new ArrayList<>();
-                    getValueParams.add(ConstExpressions.param("instance", ConstExpressions.ref.type(objectTypeMappings.get(cl), false)));
-                    final ExportableFunction getValue = module.getFunctions().newFunction(
-                            cl.type.getClassName()+"_getNativeObject",
-                            getValueParams,
-                            ConstExpressions.ref.host()
-                    );
-                    getValue.flow.ret(
-                            ConstExpressions.struct.get(
-                                    objectTypeMappings.get(cl),
-                                    ConstExpressions.getLocal(getValue.localByLabel("instance")),
-                                    "nativeObject"
-                            )
-                    );
+                objectTypeMappings.put(cl, objectType);
 
-                    getValue.exportAs(className + "$getNativeObject");
+                final String runtimeTypeName = WasmHelpers.generateClassName(Type.getType(Class.class)) + "_rtt";
 
-                    final List<Param> setValueParams = new ArrayList<>();
-                    setValueParams.add(ConstExpressions.param("instance", ConstExpressions.ref.type(objectTypeMappings.get(cl), false)));
-                    setValueParams.add(ConstExpressions.param("value", ConstExpressions.ref.host()));
-                    final ExportableFunction setValue = module.getFunctions().newFunction(
-                            cl.type.getClassName()+"_setNativeObject",
-                            setValueParams
-                    );
-                    setValue.flow.setStruct(
-                            objectTypeMappings.get(cl),
-                            ConstExpressions.getLocal(setValue.localByLabel("instance")),
-                            "nativeObject",
-                            ConstExpressions.getLocal(setValue.localByLabel("value"))
-                    );
-                    setValue.flow.ret();
+                final List<StructType.Field> rttypeFields = new ArrayList<>();
+                rttypeFields.add(new StructType.Field("typeId", PrimitiveType.i32, false));
+                rttypeFields.add(new StructType.Field("classImplTypes", ConstExpressions.ref.type(implTypesArray, true), false));
+                rttypeFields.add(new StructType.Field("lambdaMethod", PrimitiveType.i32, false));
+                rttypeFields.add(new StructType.Field("initStatus", PrimitiveType.i32));
+                rttypeFields.add(new StructType.Field("factoryFor", PrimitiveType.i32));
+                rttypeFields.add(new StructType.Field("$VALUES", ConstExpressions.ref.type(objectType, true)));
 
-                    setValue.exportAs(className + "$setNativeObject");
-                }
+                runtimeClassType = module.getTypes().structSubtype(
+                        runtimeTypeName,
+                        objectType,
+                        rttypeFields
+                );
+
+                rtTypeMappings.put(compileUnit.findClass(Type.getType(Class.class)), runtimeClassType);
+
+            } else {
+                objectTypeMappings.put(cl, types.structSubtype(className, objectTypeMappings.get(cl.superClass), instanceFields));
             }
 
-            final StructType objectType = objectTypeMappings.get(objectClass);
-            rtTypeMappings.put(cl, types.structSubtype(className + "_rtt", objectType, classFields));
+            if (!Class.class.getName().equals(cl.type.getClassName())) {
+                rtTypeMappings.put(cl, types.structSubtype(className + "_rtt", runtimeClassType, classFields));
+            }
 
             final List<Param> params = new ArrayList<>();
             params.add(ConstExpressions.param("methodid", PrimitiveType.i32));
             final ExportableFunction vtFunction = functionsSection.newFunction(className + "_vt", params, PrimitiveType.i32);
 
-            // TODO: Enhance in case of opaque reference types
             final VTable vTable = vTableResolver.resolveFor(cl);
             for (final Map.Entry<Integer, ResolvedMethod> entry : vTable.getMethods().entrySet()) {
                 final ResolvedMethod rm = entry.getValue();
@@ -364,16 +355,19 @@ public class WasmBackend {
 
             final ReferencableType rttType = rtTypeMappings.get(cl);
             final List<WasmValue> initArgs = new ArrayList<>();
-            initArgs.add(ConstExpressions.ref.nullRef());
+            initArgs.add(ConstExpressions.i32.c(WasmHelpers.TYPE_ID_RUNTIMECLASS));
             initArgs.add(ConstExpressions.ref.ref(ConstExpressions.weakFunctionReference(WasmHelpers.generateClassName(Type.getType(Class.class)) + "_vt")));
+            initArgs.add(ConstExpressions.ref.externNullRef());
+            initArgs.add(ConstExpressions.ref.nullRef());
             initArgs.add(ConstExpressions.i32.c(resolvedClasses.indexOf(cl))); // type id
             initArgs.add(ConstExpressions.array.newInstance(
                     implTypesArray,
-                    ConstExpressions.i32.c(typeIds.size()),
                     typeIds
-            )); // impl types
+            )); // class impl types
             initArgs.add(ConstExpressions.i32.c(-1)); // lambda method id
             initArgs.add(ConstExpressions.i32.c(0)); // initstatus
+            initArgs.add(ConstExpressions.i32.c(resolvedClasses.indexOf(cl))); // Factory for
+            initArgs.add(ConstExpressions.ref.nullRef()); // $VALUES
 
             initArgs.addAll(classFieldDefaults);
             final Global runtimeClassGlobal = globalsSection.newConstantGlobal(className + "_cls",
@@ -405,47 +399,83 @@ public class WasmBackend {
             initFunctions.put(cl, initFunction);
         }
 
+        {
+            // Create import and export functions for all java objects
+            final String className = WasmHelpers.generateClassName(objectClass.type);
+            final List<Param> getValueParams = new ArrayList<>();
+            getValueParams.add(ConstExpressions.param("instance", ConstExpressions.ref.type(objectTypeMappings.get(objectClass), false)));
+            final ExportableFunction getValue = module.getFunctions().newFunction(
+                    objectClass.type.getClassName()+"_getNativeObject",
+                    getValueParams,
+                    ConstExpressions.ref.host()
+            );
+            getValue.flow.ret(
+                    ConstExpressions.struct.get(
+                            objectTypeMappings.get(objectClass),
+                            ConstExpressions.getLocal(getValue.localByLabel("instance")),
+                            "nativeObject"
+                    )
+            );
+
+            getValue.exportAs(className + "$getNativeObject");
+
+            final List<Param> setValueParams = new ArrayList<>();
+            setValueParams.add(ConstExpressions.param("instance", ConstExpressions.ref.type(objectTypeMappings.get(objectClass), false)));
+            setValueParams.add(ConstExpressions.param("value", ConstExpressions.ref.host()));
+            final ExportableFunction setValue = module.getFunctions().newFunction(
+                    objectClass.type.getClassName()+"_setNativeObject",
+                    setValueParams
+            );
+            setValue.flow.setStruct(
+                    objectTypeMappings.get(objectClass),
+                    ConstExpressions.getLocal(setValue.localByLabel("instance")),
+                    "nativeObject",
+                    ConstExpressions.getLocal(setValue.localByLabel("value"))
+            );
+            setValue.flow.ret();
+
+            setValue.exportAs(className + "$setNativeObject");
+        }
+
         module.getTags().tagIndex().add(ConstExpressions.tag("javaexception", ConstExpressions.ref.type(module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class))), true)));
 
         // Primitive types
-        final String objectClassName = WasmHelpers.generateClassName(Type.getType(Object.class));
-        final Global objectRuntimeClass = module.globalsIndex().globalByLabel(objectClassName + "_cls");
         final StructType javaLangObjectType = objectTypeMappings.get(objectClass);
         globalsSection.newConstantGlobal("primitive_boolean",
                 ConstExpressions.ref.type(javaLangObjectType, false),
-                initCodeForPrimitiveRuntimeClass(javaLangObjectType, ConstExpressions.getGlobal(objectRuntimeClass))
+                initCodeForPrimitiveRuntimeClass(javaLangObjectType, WasmHelpers.TYPE_ID_BOOLEAN)
         );
         globalsSection.newConstantGlobal("primitive_byte",
                 ConstExpressions.ref.type(javaLangObjectType, false),
-                initCodeForPrimitiveRuntimeClass(javaLangObjectType, ConstExpressions.getGlobal(objectRuntimeClass))
+                initCodeForPrimitiveRuntimeClass(javaLangObjectType, WasmHelpers.TYPE_ID_BYTE)
         );
         globalsSection.newConstantGlobal("primitive_char",
                 ConstExpressions.ref.type(javaLangObjectType, false),
-                initCodeForPrimitiveRuntimeClass(javaLangObjectType, ConstExpressions.getGlobal(objectRuntimeClass))
+                initCodeForPrimitiveRuntimeClass(javaLangObjectType, WasmHelpers.TYPE_ID_CHAR)
         );
         globalsSection.newConstantGlobal("primitive_short",
                 ConstExpressions.ref.type(javaLangObjectType, false),
-                initCodeForPrimitiveRuntimeClass(javaLangObjectType, ConstExpressions.getGlobal(objectRuntimeClass))
+                initCodeForPrimitiveRuntimeClass(javaLangObjectType, WasmHelpers.TYPE_ID_SHORT)
         );
         globalsSection.newConstantGlobal("primitive_int",
                 ConstExpressions.ref.type(javaLangObjectType, false),
-                initCodeForPrimitiveRuntimeClass(javaLangObjectType, ConstExpressions.getGlobal(objectRuntimeClass))
+                initCodeForPrimitiveRuntimeClass(javaLangObjectType, WasmHelpers.TYPE_ID_INT)
         );
         globalsSection.newConstantGlobal("primitive_long",
                 ConstExpressions.ref.type(javaLangObjectType, false),
-                initCodeForPrimitiveRuntimeClass(javaLangObjectType, ConstExpressions.getGlobal(objectRuntimeClass))
+                initCodeForPrimitiveRuntimeClass(javaLangObjectType, WasmHelpers.TYPE_ID_LONG)
         );
         globalsSection.newConstantGlobal("primitive_float",
                 ConstExpressions.ref.type(javaLangObjectType, false),
-                initCodeForPrimitiveRuntimeClass(javaLangObjectType, ConstExpressions.getGlobal(objectRuntimeClass))
+                initCodeForPrimitiveRuntimeClass(javaLangObjectType, WasmHelpers.TYPE_ID_FLOAT)
         );
         globalsSection.newConstantGlobal("primitive_double",
                 ConstExpressions.ref.type(javaLangObjectType, false),
-                initCodeForPrimitiveRuntimeClass(javaLangObjectType, ConstExpressions.getGlobal(objectRuntimeClass))
+                initCodeForPrimitiveRuntimeClass(javaLangObjectType, WasmHelpers.TYPE_ID_DOUBLE)
         );
         globalsSection.newConstantGlobal("primitive_void",
                 ConstExpressions.ref.type(javaLangObjectType, false),
-                initCodeForPrimitiveRuntimeClass(javaLangObjectType, ConstExpressions.getGlobal(objectRuntimeClass))
+                initCodeForPrimitiveRuntimeClass(javaLangObjectType, WasmHelpers.TYPE_ID_VOID)
         );
 
         final ConstantPool cs = compileUnit.getConstantPool();
@@ -478,13 +508,95 @@ public class WasmBackend {
         arrayTypeFactory.accept("f64_array", PrimitiveType.f64);
         arrayTypeFactory.accept("obj_array", ConstExpressions.ref.type(module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class))), true));
 
-        // InstanceOf Check
-        final List<Param> instanceOfParams = new ArrayList<>();
-        instanceOfParams.add(ConstExpressions.param("obj", ConstExpressions.ref.type(module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class))), true)));
-        instanceOfParams.add(ConstExpressions.param("runtimeType", ConstExpressions.ref.type(rtType, false)));
-        final ExportableFunction instanceOfCheck = module.getFunctions().newFunction("instanceOf", instanceOfParams, PrimitiveType.i32);
-        //TODO: implement instanceof
-        instanceOfCheck.flow.ret(ConstExpressions.i32.c(0));
+        {
+            // InstanceOf Check
+            final StructType objectType = module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class)));
+
+            final List<Param> instanceOfParams = new ArrayList<>();
+            instanceOfParams.add(ConstExpressions.param("obj", ConstExpressions.ref.type(objectType, true)));
+            instanceOfParams.add(ConstExpressions.param("runtimeTypeId", PrimitiveType.i32));
+            final ExportableFunction instanceOfCheck = module.getFunctions().newFunction("instanceOf", instanceOfParams, PrimitiveType.i32);
+            final Local obj = instanceOfCheck.localByLabel("obj");
+            final Local idx = instanceOfCheck.newLocal("idx", PrimitiveType.i32);
+            final Local len = instanceOfCheck.newLocal("len", PrimitiveType.i32);
+
+            final ReferencableType implTypesArray = types.arrayType(PrimitiveType.i32);
+            final WasmType arrayType = ConstExpressions.ref.type(implTypesArray, true);
+            final Local arr = instanceOfCheck.newLocal("arr", arrayType);
+
+            // Null values are not equal
+            final Iff nullCheck = instanceOfCheck.flow.iff("nullcheck", ConstExpressions.ref.eq(ConstExpressions.getLocal(obj), ConstExpressions.ref.nullRef()));
+            nullCheck.flow.ret(ConstExpressions.i32.c(0));
+
+            nullCheck.falseFlow.setLocal(
+                    arr,
+                    ConstExpressions.struct.get(
+                            objectType,
+                            ConstExpressions.getLocal(obj),
+                            "implTypes"
+                    )
+            );
+            nullCheck.falseFlow.setLocal(
+                    len,
+                    ConstExpressions.array.len(implTypesArray, ConstExpressions.getLocal(arr))
+            );
+            nullCheck.falseFlow.setLocal(
+                    idx,
+                    ConstExpressions.i32.c(0)
+            );
+            final Loop l = nullCheck.falseFlow.loop("iter");
+
+            final Iff idxcheck = l.flow.iff("idxcheck", ConstExpressions.i32.eq(
+                    ConstExpressions.getLocal(idx),
+                    ConstExpressions.getLocal(len)
+            ));
+            idxcheck.flow.ret(ConstExpressions.i32.c(0));
+
+            final Iff ischeck = idxcheck.falseFlow.iff("ischeck", ConstExpressions.i32.eq(
+                    ConstExpressions.getLocal(instanceOfCheck.localByLabel("runtimeTypeId")),
+                    ConstExpressions.array.get(implTypesArray, ConstExpressions.getLocal(arr), ConstExpressions.getLocal(idx))
+            ));
+            ischeck.flow.ret(ConstExpressions.i32.c(1));
+
+            ischeck.falseFlow.setLocal(idx, ConstExpressions.i32.add(ConstExpressions.getLocal(idx), ConstExpressions.i32.c(1)));
+            ischeck.falseFlow.branch(l);
+
+            nullCheck.falseFlow.ret(ConstExpressions.i32.c(0));
+        }
+
+        {
+            // Runtimetypeof Check
+            final StructType objectType = module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class)));
+
+            final List<Param> params = new ArrayList<>();
+            params.add(ConstExpressions.param("obj", ConstExpressions.ref.type(objectType, true)));
+            final ExportableFunction runtimetypeof = module.getFunctions().newFunction("runtimetypeof", params, ConstExpressions.ref.type(objectType, false));
+            final Local obj = runtimetypeof.localByLabel("obj");
+            final Local id = runtimetypeof.newLocal("id", PrimitiveType.i32);
+
+            runtimetypeof.flow.setLocal(
+                    id,
+                    ConstExpressions.struct.get(
+                            objectType,
+                            ConstExpressions.getLocal(obj),
+                            "typeId"
+                    )
+            );
+
+            for (final ResolvedClass rl : resolvedClasses) {
+                final int typeId = resolvedClasses.indexOf(rl);
+                final Iff i = runtimetypeof.flow.iff("check_" + typeId, ConstExpressions.i32.eq(
+                        ConstExpressions.i32.c(typeId), ConstExpressions.getLocal(id)
+                ));
+
+                final Global rttTypeGlobal = module.getGlobals().globalsIndex().globalByLabel(WasmHelpers.generateClassName(rl.type)  + "_cls");
+                i.flow.ret(ConstExpressions.getGlobal(rttTypeGlobal));
+            }
+
+            runtimetypeof.flow.unreachable();
+        }
+
+        final OpaqueTypesAdapterMethods adapterMethods = new OpaqueTypesAdapterMethods();
 
         for (final ResolvedClass cl : resolvedClasses) {
             // Class objects for
@@ -524,15 +636,64 @@ public class WasmBackend {
                             functionName = (String) values.get("name");
                         }
 
+                        // Ok, do we need to create an opaque reference wrapper function
                         final Function function;
-                        if (Type.VOID == method.methodType.getReturnType().getSort()) {
-                            function = module.getImports().importFunction(new ImportReference(moduleName, functionName),
-                                    implMethodName,
-                                    functionParams);
+                        if (cl.isOpaqueReferenceType()) {
+                            if (!Modifier.isStatic(method.methodNode.access)) {
+                                throw new IllegalStateException("Native Methods must be static for opaque reference types : " + cl.type + "." + methodName);
+                            }
+                            if (Type.VOID == method.methodType.getReturnType().getSort()) {
+                                throw new IllegalStateException("Native Methods must not be void for opaque reference types : " + cl.type + "." + methodName);
+                            }
+
+                            final Function delegateFunction = module.getImports().importFunction(new ImportReference(moduleName, functionName),
+                                    implMethodName + "_delegate",
+                                    functionParams.subList(1, functionParams.size()), ConstExpressions.ref.host());
+
+                            final ExportableFunction impl = module.getFunctions().newFunction(implMethodName, functionParams, toWASMType.apply(method.methodType.getReturnType()));
+                            final List<WasmValue> callArgs = new ArrayList<>();
+                            for (int i = 0; i < method.methodType.getArgumentTypes().length; i++) {
+                                final Type argument = method.methodType.getArgumentTypes()[i];
+                                // TODO: Maybe convert opaque reference types here?
+                                callArgs.add(ConstExpressions.getLocal(impl.localByLabel("arg" + i)));
+                            }
+
+                            switch (method.methodType.getReturnType().getSort()) {
+                                case Type.VOID: {
+                                    impl.flow.voidCall(delegateFunction, callArgs);
+                                    break;
+                                }
+                                case Type.OBJECT: {
+                                    impl.flow.ret(WasmStructuredControlflowCodeGenerator.createNewInstanceOf(
+                                            method.methodType.getReturnType(),
+                                            module,
+                                            compileUnit,
+                                            objectTypeMappings,
+                                            rtTypeMappings,
+                                            ConstExpressions.call(delegateFunction, callArgs)
+                                    ));
+                                    break;
+                                }
+                                default: {
+                                    impl.flow.ret(
+                                            ConstExpressions.call(delegateFunction, callArgs)
+                                    );
+                                    break;
+                                }
+                            }
+
+                            function = impl;
+
                         } else {
-                            function = module.getImports().importFunction(new ImportReference(moduleName, functionName),
-                                    implMethodName,
-                                    functionParams, toWASMType.apply(method.methodType.getReturnType()));
+                            if (Type.VOID == method.methodType.getReturnType().getSort()) {
+                                function = module.getImports().importFunction(new ImportReference(moduleName, functionName),
+                                        implMethodName,
+                                        functionParams);
+                            } else {
+                                function = module.getImports().importFunction(new ImportReference(moduleName, functionName),
+                                        implMethodName,
+                                        functionParams, toWASMType.apply(method.methodType.getReturnType()));
+                            }
                         }
 
                         if (!Modifier.isStatic(method.methodNode.access) && !"<init>".equals(method.methodNode.name)) {
@@ -541,8 +702,128 @@ public class WasmBackend {
 
                     } else if (Modifier.isAbstract(method.methodNode.access)) {
 
-                        // Abstract method, nothing to to
-                        // TODO: Handle opaque reference types here
+                        if (cl.isOpaqueReferenceType()) {
+
+                            adapterMethods.register(cl, method);
+
+                            final ExportableFunction implFunction;
+                            if (Type.VOID == method.methodType.getReturnType().getSort()) {
+                                implFunction = module.getFunctions().newFunction(implMethodName, functionParams);
+                            } else {
+                                implFunction = module.getFunctions().newFunction(implMethodName, functionParams, toWASMType.apply(method.methodType.getReturnType()));
+                            }
+
+                            final String moduleName = cl.type.getClassName() + "_generated";
+
+                            final List<Param> delegateParams = new ArrayList<>();
+                            delegateParams.add(ConstExpressions.param("thisref", ConstExpressions.ref.host()));
+                            for (int i = 0; i < method.methodType.getArgumentTypes().length; i++) {
+                                switch (method.methodType.getArgumentTypes()[i].getSort()) {
+                                    case Type.OBJECT: {
+                                        final Type t = method.methodType.getArgumentTypes()[i];
+                                        final ResolvedClass rc = compileUnit.findClass(t);
+                                        if (rc.isCallback()) {
+                                            delegateParams.add(ConstExpressions.param("arg" + i, toWASMType.apply(t)));
+                                        } else {
+                                            delegateParams.add(ConstExpressions.param("arg" + i, ConstExpressions.ref.host()));
+                                        }
+                                        break;
+                                    }
+                                    default: {
+                                        delegateParams.add(ConstExpressions.param("arg" + i, toWASMType.apply(method.methodType.getArgumentTypes()[i])));
+                                        break;
+                                    }
+                                }
+                            }
+
+                            final Function delegateFunction;
+                            switch (method.methodType.getReturnType().getSort()) {
+                                case Type.VOID: {
+                                    delegateFunction = module.getImports().importFunction(new ImportReference(moduleName, methodName),
+                                            implMethodName + "_delegate",
+                                            delegateParams);
+                                    break;
+                                }
+                                case Type.OBJECT: {
+                                    delegateFunction = module.getImports().importFunction(new ImportReference(moduleName, methodName),
+                                            implMethodName + "_delegate",
+                                            delegateParams, ConstExpressions.ref.host());
+                                    break;
+                                }
+                                default: {
+                                    delegateFunction = module.getImports().importFunction(new ImportReference(moduleName, methodName),
+                                            implMethodName + "_delegate",
+                                            delegateParams, toWASMType.apply(method.methodType.getReturnType()));
+                                    break;
+                                }
+                            }
+
+                            final List<WasmValue> callArgs = new ArrayList<>();
+                            callArgs.add(
+                                    ConstExpressions.struct.get(
+                                            objectTypeMappings.get(objectClass),
+                                            ConstExpressions.getLocal(implFunction.localByLabel("thisref")),
+                                            "nativeObject"
+                                    )
+                            );
+
+                            for (int i = 0; i < method.methodType.getArgumentTypes().length; i++) {
+                                final Type argument = method.methodType.getArgumentTypes()[i];
+                                switch (argument.getSort()) {
+                                    case Type.ARRAY: {
+                                        throw new IllegalArgumentException("Arrays are not supported as an argument for " + method.methodNode.name +" in type " + cl.type);
+                                    }
+                                    case Type.OBJECT: {
+                                        final ResolvedClass argClass = compileUnit.findClass(argument);
+                                        if (argClass.isCallback()) {
+                                            callArgs.add(ConstExpressions.getLocal(implFunction.localByLabel("arg" + i)));
+                                        } else {
+                                            callArgs.add(
+                                                ConstExpressions.struct.get(
+                                                        objectTypeMappings.get(objectClass),
+                                                        ConstExpressions.getLocal(implFunction.localByLabel("arg" + i)),
+                                                        "nativeObject"
+                                                )
+                                            );
+                                        }
+                                        break;
+                                    }
+                                    default: {
+                                        callArgs.add(ConstExpressions.getLocal(implFunction.localByLabel("arg" + i)));
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (Type.VOID == method.methodType.getReturnType().getSort()) {
+                                implFunction.flow.voidCall(delegateFunction, callArgs);
+                            } else {
+                                switch (method.methodType.getReturnType().getSort()) {
+                                    case Type.ARRAY: {
+                                        throw new IllegalArgumentException("Arrays are not supported as a return type for " + method.methodNode.name +" in type " + cl.type);
+                                    }
+                                    case Type.OBJECT: {
+                                        implFunction.flow.ret(
+                                            WasmStructuredControlflowCodeGenerator.createNewInstanceOf(method.methodType.getReturnType(),
+                                                    module,
+                                                    compileUnit,
+                                                    objectTypeMappings,
+                                                    rtTypeMappings,
+                                                    ConstExpressions.call(delegateFunction, callArgs)));
+                                        break;
+                                    }
+                                    default: {
+                                        implFunction.flow.ret(ConstExpressions.call(delegateFunction, callArgs));
+                                        break;
+                                    }
+                                }
+                            }
+
+                            implFunction.toTable();
+
+                        } else {
+                            // Abstract method, nothing to be generated
+                        }
 
                     } else {
 
@@ -567,7 +848,7 @@ public class WasmBackend {
                         }
 
                         try {
-                            new Sequencer(g, dt, new WasmStructuredControlflowCodeGenerator(compileUnit, module, rtTypeMappings, objectTypeMappings, implFunction, toWASMType, toFunctionType, methodToIDMapper, g));
+                            new Sequencer(g, dt, new WasmStructuredControlflowCodeGenerator(compileUnit, module, rtTypeMappings, objectTypeMappings, implFunction, toWASMType, toFunctionType, methodToIDMapper, g, resolvedClasses));
                         } catch (final RuntimeException e) {
                             throw new CodeGenerationFailure(method, dt, e);
                         }
@@ -601,9 +882,25 @@ public class WasmBackend {
                     ConstExpressions.ref.type(objectTypeMappings.get(objectClass), false));
 
             final List<WasmValue> initArgs = new ArrayList<>();
-            initArgs.add(ConstExpressions.call(stringInitFunction, new ArrayList<>()));
+            initArgs.add(
+                    ConstExpressions.struct.get(
+                            rtTypeMappings.get(stringClass),
+                            ConstExpressions.call(stringInitFunction, new ArrayList<>()),
+                            "typeId"
+                    )
+            );
             initArgs.add(ConstExpressions.ref.ref(module.functionIndex().firstByLabel(WasmHelpers.generateClassName(stringClass.type) + "_vt")));
             initArgs.add(ConstExpressions.getLocal(newStringFunction.localByLabel("str")));
+
+            final Global stringGlobal = module.getGlobals().globalsIndex().globalByLabel(WasmHelpers.generateClassName(stringClass.type)  + "_cls");
+
+            initArgs.add(
+              ConstExpressions.struct.get(
+                      rtTypeMappings.get(stringClass),
+                      ConstExpressions.getGlobal(stringGlobal),
+                      "classImplTypes"
+              )
+            );
 
             newStringFunction.flow.ret(
                     ConstExpressions.struct.newInstance(
@@ -623,17 +920,31 @@ public class WasmBackend {
                     resolveStringConstantParams,
                     ConstExpressions.ref.host());
 
-        final ExportableFunction bootstrap = functionsSection.newFunction("bootstrap");
         for (int i = 0; i < pooledStrings.size(); i++) {
             final Global stringpoolGlobal = module.globalsIndex().globalByLabel("stringpool_" + i);
 
             final List<WasmValue> initArgs = new ArrayList<>();
-            initArgs.add(ConstExpressions.call(stringInitFunction, new ArrayList<>()));
+            initArgs.add(
+                    ConstExpressions.struct.get(
+                            rtTypeMappings.get(stringClass),
+                            ConstExpressions.call(stringInitFunction, new ArrayList<>()),
+                            "factoryFor"
+                        ));
             initArgs.add(ConstExpressions.ref.ref(module.functionIndex().firstByLabel(WasmHelpers.generateClassName(stringClass.type) + "_vt")));
+
+            final Global stringGlobal = module.getGlobals().globalsIndex().globalByLabel(WasmHelpers.generateClassName(stringClass.type)  + "_cls");
 
             final List<WasmValue> resolveArgs = new ArrayList<>();
             resolveArgs.add(ConstExpressions.i32.c(i));
             initArgs.add(ConstExpressions.call(resolveStringConstantFunction, resolveArgs));
+
+            initArgs.add(
+                    ConstExpressions.struct.get(
+                            rtTypeMappings.get(stringClass),
+                            ConstExpressions.getGlobal(stringGlobal),
+                            "classImplTypes"
+                    )
+            );
 
             bootstrap.flow.setGlobal(
                     stringpoolGlobal,
@@ -668,7 +979,225 @@ public class WasmBackend {
         jsContentPrintWriter.println("  throw 'Unknown string index ' + index;");
         jsContentPrintWriter.println("};");
 
-        // generate JS binding class
+        // We need to create adapter methods for callback types
+        for (final ResolvedClass cl : resolvedClasses) {
+            if (cl.isCallback() && Modifier.isAbstract(cl.classNode.access) && !Callback.class.getName().equals(cl.type.getClassName())) {
+                final List<ResolvedMethod> callbackMethods = cl.resolvedMethods.stream().filter(t -> !t.methodNode.name.equals("init")).collect(Collectors.toList());
+                if (callbackMethods.size() != 1) {
+                    throw new IllegalStateException("Unexpected number of callback methods, expected 1, got " + callbackMethods.size() + " for type " + cl.type);
+                }
+
+                final ResolvedMethod rm = callbackMethods.get(0);
+
+                final List<Param> callbackParams = new ArrayList<>();
+                callbackParams.add(ConstExpressions.param("receiver", ConstExpressions.ref.type(objectTypeMappings.get(objectClass), true)));
+
+                boolean isObjectArgument = false;
+                final Type argType = rm.methodType.getArgumentTypes()[0];
+                switch (argType.getSort()) {
+                    case Type.OBJECT: {
+                        callbackParams.add(ConstExpressions.param("event", ConstExpressions.ref.host()));
+                        isObjectArgument = true;
+                        break;
+                    }
+                    default: {
+                        callbackParams.add(ConstExpressions.param("event", toWASMType.apply(argType)));
+                        break;
+                    }
+                }
+
+                final ExportableFunction callback = module.getFunctions().newFunction(cl.type.getClassName() + "_callback", callbackParams);
+                if (isObjectArgument) {
+                    final Local eventInstance = callback.newLocal("eventInstance", ConstExpressions.ref.type(objectTypeMappings.get(objectClass), true));
+                    callback.flow.setLocal(eventInstance, WasmStructuredControlflowCodeGenerator.createNewInstanceOf(
+                            argType,
+                            module,
+                            compileUnit,
+                            objectTypeMappings,
+                            rtTypeMappings,
+                            ConstExpressions.getLocal(callback.localByLabel("event"))
+                    ));
+                }
+
+                // Virtual call
+                final List<WasmValue> indirectCallArgs = new ArrayList<>();
+
+                final List<WasmType> vlResolveArgs = new ArrayList<>();
+                vlResolveArgs.add(PrimitiveType.i32);
+                final FunctionType vtResolveType = module.getTypes().functionType(vlResolveArgs, PrimitiveType.i32);
+                indirectCallArgs.add(ConstExpressions.getLocal(callback.localByLabel("receiver")));
+                if (isObjectArgument) {
+                    indirectCallArgs.add(ConstExpressions.getLocal(callback.localByLabel("eventInstance")));
+                } else {
+                    indirectCallArgs.add(ConstExpressions.getLocal(callback.localByLabel("event")));
+                }
+
+                final List<WasmValue> resolverArgs = new ArrayList<>();
+                resolverArgs.add(ConstExpressions.i32.c(methodToIDMapper.resolveIdFor(rm)));
+
+                final StructType objectType = module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class)));
+
+                resolverArgs.add(ConstExpressions.struct.get(
+                        objectType,
+                        ConstExpressions.getLocal(callback.localByLabel("receiver")),
+                        "vt_resolver"
+                ));
+
+                final WasmValue resolver = ConstExpressions.ref.callRef(vtResolveType, resolverArgs);
+                final FunctionType ft = toFunctionType.apply(rm);
+
+                callback.flow.voidCallIndirect(ft, indirectCallArgs, resolver);
+
+                callback.exportAs(cl.type.getClassName() + "_callback");
+            }
+        }
+
+        adapterMethods.getKnownMethods().forEach((cl, value) -> {
+            final String moduleName = cl.type.getClassName() + "_generated";
+
+            jsContentPrintWriter.print("bytecoder.imports[\"");
+            jsContentPrintWriter.print(moduleName);
+            jsContentPrintWriter.println("\"] = {");
+
+            for (final ResolvedMethod rm : value) {
+                final String methodName = WasmHelpers.generateMethodName(rm.methodNode.name, rm.methodType);
+                jsContentPrintWriter.print("    ");
+                jsContentPrintWriter.print(methodName);
+                jsContentPrintWriter.print(" : function(thisref");
+                for (int i = 0; i < rm.methodType.getArgumentTypes().length; i++) {
+                    jsContentPrintWriter.print(", arg");
+                    jsContentPrintWriter.print(i);
+                }
+                jsContentPrintWriter.println(") {");
+
+                final Type[] arguments = rm.methodType.getArgumentTypes();
+
+                if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueProperty;", rm.methodNode.visibleAnnotations)) {
+                    final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueProperty;", rm.methodNode.visibleAnnotations);
+                    final String propertyName = (String) values.get("value");
+
+                    final Type methodType = rm.methodType;
+                    switch (methodType.getReturnType().getSort()) {
+                        case Type.BOOLEAN: {
+                            jsContentPrintWriter.print("        return bytecoder.toBytecoderBoolean(");
+                            break;
+                        }
+                        case Type.VOID: {
+                            jsContentPrintWriter.print("        (");
+                            break;
+                        }
+                        default: {
+                            jsContentPrintWriter.print("        return (");
+                            break;
+                        }
+                    }
+
+                    jsContentPrintWriter.print("thisref.");
+                    if (propertyName != null) {
+                        jsContentPrintWriter.print(propertyName);
+                    } else {
+                        jsContentPrintWriter.print(OpaqueReferenceTypeHelpers.derivePropertyNameFromMethodName(rm.methodNode.name));
+                    }
+                    if (arguments.length > 0) {
+                        jsContentPrintWriter.print(" = ");
+                        switch (arguments[0].getSort()) {
+                            case Type.BOOLEAN: {
+                                jsContentPrintWriter.print("(arg0 === 1 ? true : false)");
+                                break;
+                            }
+                            default: {
+                                jsContentPrintWriter.print("arg0");
+                                break;
+                            }
+                        }
+                    }
+
+                    jsContentPrintWriter.println(");");
+
+                } else if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueIndexed;", rm.methodNode.visibleAnnotations)) {
+
+                    if (arguments.length > 1) {
+                        jsContentPrintWriter.println("        thisref[arg0] = arg1;");
+                    } else {
+                        jsContentPrintWriter.println("        return thisref[arg0];");
+                    }
+
+                } else {
+
+                    final Type returnType = rm.methodType.getReturnType();
+                    switch (returnType.getSort()) {
+                        case Type.BOOLEAN: {
+                            jsContentPrintWriter.print("        return bytecoder.toBytecoderBoolean(");
+                            break;
+                        }
+                        case Type.VOID: {
+                            jsContentPrintWriter.print("        return (");
+                            break;
+                        }
+                        default: {
+                            jsContentPrintWriter.print("        (");
+                            break;
+                        }
+                    }
+
+                    jsContentPrintWriter.print("thisref.");
+                    jsContentPrintWriter.print(rm.methodNode.name);
+                    jsContentPrintWriter.print("(");
+
+                    for (int i = 0; i < arguments.length; i++) {
+                        if (i > 0) {
+                            jsContentPrintWriter.print(", ");
+                        }
+                        final Type argType = arguments[i];
+                        switch (argType.getSort()) {
+                            case Type.BOOLEAN: {
+                                jsContentPrintWriter.print("(arg");
+                                jsContentPrintWriter.print(i);
+                                jsContentPrintWriter.print(" === 1 ? true : false)");
+                                break;
+                            }
+                            case Type.OBJECT: {
+                                final ResolvedClass typeClass = compileUnit.findClass(argType);
+                                if (typeClass == null) {
+                                    throw new IllegalStateException("Cannot find linked class for type " + argType);
+                                }
+                                if (typeClass.isCallback()) {
+                                    if (!Modifier.isInterface(typeClass.classNode.access)) {
+                                        throw new IllegalStateException("Only callback interfaces are allowed in method signatures!");
+                                    }
+
+                                    final List<ResolvedMethod> callbackMethods = typeClass.resolvedMethods.stream().filter(t -> !t.methodNode.name.equals("init")).collect(Collectors.toList());
+                                    if (callbackMethods.size() != 1) {
+                                        throw new IllegalStateException("Unexpected number of callback methods, expected 1, got " + callbackMethods.size() + " for type " + typeClass.type);
+                                    }
+                                    final ResolvedMethod callbackMethod = callbackMethods.get(0);
+                                    final Type methodType = callbackMethod.methodType;
+
+                                    jsContentPrintWriter.print("function(evt) {bytecoder.instance.exports['");
+                                    jsContentPrintWriter.print(typeClass.type.getClassName());
+                                    jsContentPrintWriter.print("_callback'](arg");
+                                    jsContentPrintWriter.print(i);
+                                    jsContentPrintWriter.print(",evt);}");
+                                } else {
+                                    jsContentPrintWriter.print("arg");
+                                    jsContentPrintWriter.print(i);
+                                }
+                                break;
+                            }
+                            default: {
+                                jsContentPrintWriter.print("arg");
+                                jsContentPrintWriter.print(i);
+                                break;
+                            }
+                        }
+                    }
+
+                    jsContentPrintWriter.println("));");
+                }
+                jsContentPrintWriter.println("    },");
+            }
+            jsContentPrintWriter.println("};");
+        });
 
         final StringWriter theStringWriter = new StringWriter();
         final ByteArrayOutputStream theBinaryOutput = new ByteArrayOutputStream();
@@ -696,6 +1225,21 @@ public class WasmBackend {
         } else{
             result.add(new CompileResult.StringContent("wasmclasses.wat", theStringWriter.toString()));
             result.add(new CompileResult.StringContent("runtime.js", jsContentWriter.toString()));
+        }
+
+        final List<String> resourcesToInclude = new ArrayList<>();
+        for (final ClassLibProvider provider : ClassLibProvider.availableProviders()) {
+            Collections.addAll(resourcesToInclude, provider.additionalResources());
+        }
+        Collections.addAll(resourcesToInclude, compileOptions.getAdditionalResources());
+
+        for (final String theResource : resourcesToInclude) {
+            final URL theUrl = compileUnit.getLoader().getResource(theResource);
+            if (theUrl != null) {
+                result.add(new CompileResult.URLContent(theResource, theUrl));
+            } else {
+                compileOptions.getLogger().warn("Cannot find resource {}", theResource);
+            }
         }
 
         return result;

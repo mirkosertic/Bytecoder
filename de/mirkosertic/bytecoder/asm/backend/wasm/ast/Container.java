@@ -37,6 +37,10 @@ public abstract class Container {
         this.flow = new Expressions(this);
     }
 
+    public Container parent() {
+        return parent;
+    }
+
     public boolean hasChildren() {
         return !children.isEmpty();
     }

@@ -16,7 +16,6 @@
 package de.mirkosertic.bytecoder.asm.ir;
 
 import de.mirkosertic.bytecoder.api.Callback;
-import de.mirkosertic.bytecoder.api.NativeReferenceHolder;
 import de.mirkosertic.bytecoder.api.OpaqueReferenceType;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
 import org.objectweb.asm.Type;
@@ -57,8 +56,6 @@ public class ResolvedClass {
 
     private Boolean isCallback;
 
-    private Boolean isNativeReferenceHolder;
-
     public ResolvedClass(final CompileUnit compileUnit, final Type type, final ClassNode classNode, final ResolvedClass superClass, final ResolvedClass[] interfaces) {
         this.compileUnit = compileUnit;
         this.type = type;
@@ -84,10 +81,6 @@ public class ResolvedClass {
 
     public boolean isCallback() {
         return isCallback;
-    }
-
-    public boolean isNativeReferenceHolder() {
-        return isNativeReferenceHolder;
     }
 
     public ResolvedClass requestInitialization(final AnalysisStack analysisStack) {
@@ -246,9 +239,6 @@ public class ResolvedClass {
     public void computeOpaqueReferenceTypeAndCallbackStatus(final AnalysisStack analysisStack) {
         if (isOpaqueReferenceType == null) {
             isOpaqueReferenceType = allTypesOf().stream().anyMatch(t -> t.type.getClassName().equals(OpaqueReferenceType.class.getName()));
-        }
-        if (isNativeReferenceHolder == null) {
-            isNativeReferenceHolder = allTypesOf().stream().anyMatch(t -> t.type.getClassName().equals(NativeReferenceHolder.class.getName()));
         }
         if (isCallback == null) {
             isCallback = allTypesOf().stream().anyMatch(t -> t.type.getClassName().equals(Callback.class.getName()));

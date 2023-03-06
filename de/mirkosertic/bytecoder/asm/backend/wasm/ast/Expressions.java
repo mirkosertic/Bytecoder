@@ -35,6 +35,10 @@ public class Expressions {
         this.array = new Array();
     }
 
+    public Container parent() {
+        return parent;
+    }
+
     public void comment(final String message) {
         parent.addChild(new Comment(message));
     }

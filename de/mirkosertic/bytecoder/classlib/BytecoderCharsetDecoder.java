@@ -35,11 +35,11 @@ public class BytecoderCharsetDecoder extends CharsetDecoder {
             final byte[] data = new byte[size];
             in.get(data, 0, size);
 
-            final char[] decoded = decodeFromBytes(cs, data);
+            final char[] decoded = decodeFromBytes(cs.name(), data);
             out.put(decoded);
         }
         return CoderResult.UNDERFLOW;
     }
 
-    native char[] decodeFromBytes(final Charset cs, byte[] data);
+    native char[] decodeFromBytes(final String charsetName, byte[] data);
 }

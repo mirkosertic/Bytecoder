@@ -19,19 +19,12 @@ import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 
 public enum Optimizations implements Optimizer {
     DISABLED(new Optimizer[] {
-        //new DeleteCopyToUnusedVariable(),
     }),
     DEFAULT(new Optimizer[] {
                 new DeleteUnusedConstants(),
                 new DeleteUnusedVariables(),
-                //new DeleteRedundantControlTokenWithoutDataFlow(),
-                //new PromoteVariableToConstant(),
-                //new DeleteCopyToUnusedVariable(),
-                //new DeleteRedundantVariableCopy(),
-                //new VariableShouldBePHI()
             }),
     ALL(new Optimizer[] {
-        //new DeleteCopyToUnusedVariable(),
     }),
     ;
 

@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.js;
 
+import de.mirkosertic.bytecoder.asm.backend.OpaqueReferenceTypeHelpers;
 import de.mirkosertic.bytecoder.asm.backend.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.asm.backend.sequencer.StructuredControlflowCodeGenerator;
 import de.mirkosertic.bytecoder.asm.ir.AbstractVar;
@@ -29,6 +30,7 @@ import de.mirkosertic.bytecoder.asm.ir.Cast;
 import de.mirkosertic.bytecoder.asm.ir.CaughtException;
 import de.mirkosertic.bytecoder.asm.ir.Copy;
 import de.mirkosertic.bytecoder.asm.ir.Div;
+import de.mirkosertic.bytecoder.asm.ir.EnumValuesOf;
 import de.mirkosertic.bytecoder.asm.ir.FrameDebugInfo;
 import de.mirkosertic.bytecoder.asm.ir.Goto;
 import de.mirkosertic.bytecoder.asm.ir.If;
@@ -72,6 +74,7 @@ import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.asm.ir.Return;
 import de.mirkosertic.bytecoder.asm.ir.ReturnValue;
 import de.mirkosertic.bytecoder.asm.ir.RuntimeClass;
+import de.mirkosertic.bytecoder.asm.ir.RuntimeClassOf;
 import de.mirkosertic.bytecoder.asm.ir.SHL;
 import de.mirkosertic.bytecoder.asm.ir.SHR;
 import de.mirkosertic.bytecoder.asm.ir.SetClassField;
@@ -476,6 +479,18 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         pw.print(")");
     }
 
+    private void writeExpression(final RuntimeClassOf runtimeClassOf) {
+        pw.print("((");
+        writeExpression(runtimeClassOf.incomingDataFlows[0]);
+        pw.print(").constructor.$rt)");
+    }
+
+    private void writeExpression(final EnumValuesOf enumValuesOf) {
+        pw.print("((");
+        writeExpression(enumValuesOf.incomingDataFlows[0]);
+        pw.print(").$Ljava$lang$Object$$getEnumConstants$$())");
+    }
+
     private void writeType(final Type type) {
         switch (type.getSort()) {
             case Type.OBJECT:
@@ -563,7 +578,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     private void writeExpression(final PrimitiveClassReference reference) {
-        switch (reference.type.getSort()) {
+        switch (reference.referenceType.getSort()) {
             case Type.BOOLEAN:
                 pw.print("bytecoder.primitives.boolean");
                 break;
@@ -739,21 +754,6 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         pw.print("))");
     }
 
-    private String derivePropertyNameFromMethodName(String methodName) {
-        if (methodName.startsWith("get")) {
-            methodName = methodName.substring(3);
-            methodName = Character.toLowerCase(methodName.charAt(0)) + methodName.substring(1);
-        } else if (methodName.startsWith("is")) {
-            methodName = methodName.substring(2);
-            methodName = Character.toLowerCase(methodName.charAt(0)) + methodName.substring(1);
-        } else if (methodName.startsWith("set")) {
-            methodName = methodName.substring(3);
-            methodName = Character.toLowerCase(methodName.charAt(0)) + methodName.substring(1);
-        }
-
-        return methodName;
-    }
-
     @Override
     public void write(final InterfaceMethodInvocation node) {
 
@@ -762,7 +762,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         if (cl.isOpaqueReferenceType()) {
 
             final ResolvedMethod method = node.method;
-            final Type[] arguments = Type.getArgumentTypes(method.methodNode.desc);
+            final Type[] arguments = method.methodType.getArgumentTypes();
 
             if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueProperty;", method.methodNode.visibleAnnotations)) {
                 final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueProperty;", method.methodNode.visibleAnnotations);
@@ -773,7 +773,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                 if (propertyName != null) {
                     pw.print(propertyName);
                 } else {
-                    pw.print(derivePropertyNameFromMethodName(method.methodNode.name));
+                    pw.print(OpaqueReferenceTypeHelpers.derivePropertyNameFromMethodName(method.methodNode.name));
                 }
                 if (arguments.length > 0) {
                     pw.print(" = ");
@@ -786,13 +786,9 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                         }
                         case Type.OBJECT: {
                             final ResolvedClass targetType = compileUnit.findClass(arguments[0]);
-                            if (targetType.isNativeReferenceHolder()) {
-                                writeExpression(node.incomingDataFlows[1]);
-                                pw.print(".nativeObject");
-                                break;
-                            } else {
-                                throw new IllegalStateException("Type " + arguments[0] + " is not supported as an opaque property type.");
-                            }
+                            writeExpression(node.incomingDataFlows[1]);
+                            pw.print(".nativeObject");
+                            break;
                         }
                         default: {
                             writeExpression(node.incomingDataFlows[1]);
@@ -902,11 +898,9 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                                 pw.print("}.bind(");
                                 writeExpression(node.incomingDataFlows[i + 1]);
                                 pw.print(")");
-                            } else if (typeClass.isNativeReferenceHolder()) {
+                            } else  {
                                 writeExpression(node.incomingDataFlows[i + 1]);
                                 pw.print(".nativeObject");
-                            } else {
-                                throw new IllegalStateException("Type " + argType + " not supported in opaque reference method of " + typeClass.type + "." + method.methodNode.name);
                             }
                             break;
                         }
@@ -942,7 +936,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
         if (cl.isOpaqueReferenceType()) {
 
-            final Type[] arguments = Type.getArgumentTypes(method.methodNode.desc);
+            final Type[] arguments = method.methodType.getArgumentTypes();
 
             if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueProperty;", method.methodNode.visibleAnnotations)) {
                 final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueProperty;", method.methodNode.visibleAnnotations);
@@ -981,7 +975,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                 if (propertyName != null) {
                     pw.print(propertyName);
                 } else {
-                    pw.print(derivePropertyNameFromMethodName(method.methodNode.name));
+                    pw.print(OpaqueReferenceTypeHelpers.derivePropertyNameFromMethodName(method.methodNode.name));
                 }
                 if (arguments.length > 0) {
                     pw.print(" = ");
@@ -995,7 +989,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                         case Type.OBJECT: {
                             final ResolvedClass targetType = compileUnit.findClass(arguments[0]);
                             writeExpression(node.incomingDataFlows[1]);
-                            if (targetType.isNativeReferenceHolder()) {
+                            if (targetType.isOpaqueReferenceType()) {
                                 pw.print(".nativeObject");
                             } else {
                                 throw new IllegalStateException("Type " + arguments[0] + " is not supported as an opaque property type.");
@@ -1132,11 +1126,9 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                                 pw.print("}.bind(");
                                 writeExpression(node.incomingDataFlows[i + 1]);
                                 pw.print(")");
-                            } else if (typeClass.isNativeReferenceHolder()) {
+                            } else {
                                 writeExpression(node.incomingDataFlows[i + 1]);
                                 pw.print(".nativeObject");
-                            } else {
-                                throw new IllegalStateException("Type " + argType + " not supported in opaque reference method of " + typeClass.type + "." + method.methodNode.name);
                             }
                             break;
                         }
@@ -1327,6 +1319,10 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             writeExpression((Cast) node);
         } else if (node instanceof PrimitiveClassReference) {
             writeExpression((PrimitiveClassReference) node);
+        } else if (node instanceof RuntimeClassOf) {
+            writeExpression((RuntimeClassOf) node);
+        } else if (node instanceof EnumValuesOf) {
+            writeExpression((EnumValuesOf) node);
         } else {
             throw new IllegalArgumentException("Not implemented : " + node);
         }

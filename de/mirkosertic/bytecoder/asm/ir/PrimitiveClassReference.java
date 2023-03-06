@@ -19,7 +19,10 @@ import org.objectweb.asm.Type;
 
 public class PrimitiveClassReference extends Value {
 
+    public final Type referenceType;
+
     public PrimitiveClassReference(final Type type) {
-        super(type);
+        super(Type.getType(Class.class));
+        this.referenceType = type;
     }
 }

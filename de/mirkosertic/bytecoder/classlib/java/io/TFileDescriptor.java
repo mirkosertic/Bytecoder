@@ -31,7 +31,7 @@ public class TFileDescriptor {
 
     public static final FileDescriptor err = (FileDescriptor) (Object) new TFileDescriptor(2);
 
-    private final int fd;
+    private int fd;
 
     public TFileDescriptor() {
         this.fd = -1;
@@ -57,10 +57,13 @@ public class TFileDescriptor {
         return true;
     }
 
-    @Export("initDefaultFileHandles")
-    public static void initDefaultFileHandles(final int stdIn, final int stdOut, final int stdErr) {
-        //((TFileDescriptor) (Object) FileDescriptor.in).setHandle(stdIn);
-        //((TFileDescriptor) (Object) FileDescriptor.out).setHandle(stdOut);
-        //((TFileDescriptor) (Object) FileDescriptor.err).setHandle(stdErr);
+    @Export("getFileDescriptorHandle")
+    public int getFileDescriptorHandle() {
+        return fd;
+    }
+
+    @Export("setFileDescriptorHandle")
+    public void setFileDescriptorHandle(final int handle) {
+        this.fd = handle;
     }
 }
