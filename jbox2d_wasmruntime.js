@@ -780,121 +780,99 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 67: return '2d';
       case 68: return 'button';
       case 69: return 'click';
-      case 70: return 'versioninfo.txt';
-      case 71: return 'handleObject';
-      case 72: return 'handleString';
-      case 73: return 'versioninfo';
-      case 74: return 'Non-positive averageBytesPerChar';
-      case 75: return 'Non-positive maxBytesPerChar';
-      case 76: return 'averageBytesPerChar exceeds maxBytesPerChar';
-      case 77: return 'Null replacement';
-      case 78: return 'Empty replacement';
-      case 79: return 'Replacement too long';
-      case 80: return 'UNDERFLOW';
-      case 81: return 'OVERFLOW';
-      case 82: return 'MALFORMED';
-      case 83: return 'UNMAPPABLE';
-      case 84: return 'Current state = ';
-      case 85: return ', new state = ';
-      case 86: return 'Non-positive length';
-      case 87: return 'apply';
-      case 88: return 'checkFromIndexSize';
-      case 89: return '-XX:DumpLoadedClassList=';
-      case 90: return '-XX:+DumpSharedSpaces';
-      case 91: return '-XX:+DynamicDumpSharedSpaces';
-      case 92: return '-XX:+RecordDynamicDumpInfo';
-      case 93: return '-Xshare:';
-      case 94: return '-XX:SharedClassListFile=';
-      case 95: return '-XX:SharedArchiveFile=';
-      case 96: return '-XX:ArchiveClassesAtExit=';
-      case 97: return '-XX:+UseSharedSpaces';
-      case 98: return '-XX:+RequireSharedSpaces';
-      case 99: return 'duplicate element: ';
-      case 100: return 'length is odd';
-      case 101: return 'duplicate key: ';
-      case 102: return 'Range check failed';
-      case 103: return 'Range check failed: %s';
-      case 104: return 'Range [%s, %<s + %s) out of bounds for length %s';
-      case 105: return 'Range [%s, %s) out of bounds for length %s';
-      case 106: return 'Index %s out of bounds for length %s';
-      case 107: return 'Range check failed: %s %s';
-      case 108: return 'checkFromToIndex';
-      case 109: return 'checkIndex';
-      case 110: return '[';
-      case 111: return ']';
-      case 112: return 'Illegal replacement';
-      case 113: return '\uFFFD';
-      case 114: return 'Non-positive averageCharsPerByte';
-      case 115: return 'Non-positive maxCharsPerByte';
-      case 116: return 'averageCharsPerByte exceeds maxCharsPerByte';
-      case 117: return 'CIRCLES';
-      case 118: return 'FACE_A';
-      case 119: return 'FACE_B';
-      case 120: return 'FAILED';
-      case 121: return 'OVERLAPPED';
-      case 122: return 'TOUCHING';
-      case 123: return 'SEPARATED';
-      case 124: return 'POINTS';
-      case 125: return 'white';
-      case 126: return 'black';
-      case 127: return 'Index: ';
-      case 128: return ' Size: ';
-      case 129: return 'Vertices of chain shape are too close together';
-      case 130: return 'End of stack reached, there is probably a leak somewhere';
-      case 131: return 'Beginning of stack reached, push\/pops are unmatched';
-      case 132: return 'data type scale not a power of two';
-      case 133: return 'Attempt to access an already released memory resource';
-      case 134: return 'This segment is already closed';
-      case 135: return 'No java.util.Objects instances for you!';
-      case 136: return 'AABB[';
-      case 137: return ' . ';
-      case 138: return '(';
-      case 139: return ',';
+      case 70: return 'Non-positive averageBytesPerChar';
+      case 71: return 'Non-positive maxBytesPerChar';
+      case 72: return 'averageBytesPerChar exceeds maxBytesPerChar';
+      case 73: return 'Null replacement';
+      case 74: return 'Empty replacement';
+      case 75: return 'Replacement too long';
+      case 76: return 'UNDERFLOW';
+      case 77: return 'OVERFLOW';
+      case 78: return 'MALFORMED';
+      case 79: return 'UNMAPPABLE';
+      case 80: return 'Current state = ';
+      case 81: return ', new state = ';
+      case 82: return 'Non-positive length';
+      case 83: return 'apply';
+      case 84: return 'checkFromIndexSize';
+      case 85: return '-XX:DumpLoadedClassList=';
+      case 86: return '-XX:+DumpSharedSpaces';
+      case 87: return '-XX:+DynamicDumpSharedSpaces';
+      case 88: return '-XX:+RecordDynamicDumpInfo';
+      case 89: return '-Xshare:';
+      case 90: return '-XX:SharedClassListFile=';
+      case 91: return '-XX:SharedArchiveFile=';
+      case 92: return '-XX:ArchiveClassesAtExit=';
+      case 93: return '-XX:+UseSharedSpaces';
+      case 94: return '-XX:+RequireSharedSpaces';
+      case 95: return 'duplicate element: ';
+      case 96: return 'length is odd';
+      case 97: return 'duplicate key: ';
+      case 98: return 'Range check failed';
+      case 99: return 'Range check failed: %s';
+      case 100: return 'Range [%s, %<s + %s) out of bounds for length %s';
+      case 101: return 'Range [%s, %s) out of bounds for length %s';
+      case 102: return 'Index %s out of bounds for length %s';
+      case 103: return 'Range check failed: %s %s';
+      case 104: return 'checkFromToIndex';
+      case 105: return 'checkIndex';
+      case 106: return '[';
+      case 107: return ']';
+      case 108: return 'Illegal replacement';
+      case 109: return '\uFFFD';
+      case 110: return 'Non-positive averageCharsPerByte';
+      case 111: return 'Non-positive maxCharsPerByte';
+      case 112: return 'averageCharsPerByte exceeds maxCharsPerByte';
+      case 113: return 'CIRCLES';
+      case 114: return 'FACE_A';
+      case 115: return 'FACE_B';
+      case 116: return 'FAILED';
+      case 117: return 'OVERLAPPED';
+      case 118: return 'TOUCHING';
+      case 119: return 'SEPARATED';
+      case 120: return 'POINTS';
+      case 121: return 'white';
+      case 122: return 'black';
+      case 123: return 'Index: ';
+      case 124: return ' Size: ';
+      case 125: return 'Vertices of chain shape are too close together';
+      case 126: return 'End of stack reached, there is probably a leak somewhere';
+      case 127: return 'Beginning of stack reached, push\/pops are unmatched';
+      case 128: return 'data type scale not a power of two';
+      case 129: return 'Attempt to access an already released memory resource';
+      case 130: return 'This segment is already closed';
+      case 131: return 'Sweep:\nlocalCenter: ';
+      case 132: return '\n';
+      case 133: return 'c0: ';
+      case 134: return ', c: ';
+      case 135: return 'a0: ';
+      case 136: return ', a: ';
+      case 137: return 'XForm:\n';
+      case 138: return 'Position: ';
+      case 139: return 'R: \n';
       case 140: return '[pos=';
       case 141: return ' lim=';
       case 142: return ' cap=';
-      case 143: return '=';
-      case 144: return 'Sweep:\nlocalCenter: ';
-      case 145: return '\n';
-      case 146: return 'c0: ';
-      case 147: return ', c: ';
-      case 148: return 'a0: ';
-      case 149: return ', a: ';
-      case 150: return 'XForm:\n';
-      case 151: return 'Position: ';
-      case 152: return 'R: \n';
-      case 153: return ']\n';
-      case 154: return 'Rot(s:';
-      case 155: return ', c:';
-      case 156: return 'VERTEX';
-      case 157: return 'FACE';
-      case 158: return 'EDGE_A';
-      case 159: return 'EDGE_B';
-      case 160: return 'Array not built with correct length';
+      case 143: return 'Rot(s:';
+      case 144: return ', c:';
+      case 145: return 'No java.util.Objects instances for you!';
+      case 146: return ',';
+      case 147: return ']\n';
+      case 148: return '=';
+      case 149: return 'AABB[';
+      case 150: return ' . ';
+      case 151: return '(';
+      case 152: return 'VERTEX';
+      case 153: return 'FACE';
+      case 154: return 'EDGE_A';
+      case 155: return 'EDGE_B';
+      case 156: return 'Array not built with correct length';
   }
   throw 'Unknown string index ' + index;
 };
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.StringPromise_generated"] = {
-    V$then$Lde$mirkosertic$bytecoder$api$web$StringPromise$Handler$ : function(thisref, arg0) {
-        return (thisref.then(function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.StringPromise$Handler_callback'](arg0,evt);}));
-    },
-};
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.WindowOrWorkerGlobalScope_generated"] = {
-    Lde$mirkosertic$bytecoder$api$web$Promise$$fetch$Ljava$lang$String$ : function(thisref, arg0) {
-        (thisref.fetch(arg0));
-    },
-};
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.Body_generated"] = {
-    Lde$mirkosertic$bytecoder$api$web$StringPromise$$text$$ : function(thisref) {
-        (thisref.text());
-    },
-};
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.Window_generated"] = {
-    Lde$mirkosertic$bytecoder$api$web$HTMLDocument$$document$$ : function(thisref) {
-        return (thisref.document);
-    },
-    V$requestAnimationFrame$Lde$mirkosertic$bytecoder$api$web$AnimationFrameCallback$ : function(thisref, arg0) {
-        return (thisref.requestAnimationFrame(function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.AnimationFrameCallback_callback'](arg0,evt);}));
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLCanvasElement_generated"] = {
+    Lde$mirkosertic$bytecoder$api$web$CanvasRenderingContext2D$$getContext$Ljava$lang$String$ : function(thisref, arg0) {
+        return (thisref.getContext(arg0));
     },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLButton_generated"] = {
@@ -902,29 +880,22 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLButton_generated"] = {
         (thisref.disabled = (arg0 === 1 ? true : false));
     },
 };
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLCanvasElement_generated"] = {
-    Lde$mirkosertic$bytecoder$api$web$CanvasRenderingContext2D$$getContext$Ljava$lang$String$ : function(thisref, arg0) {
-        (thisref.getContext(arg0));
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.Window_generated"] = {
+    Lde$mirkosertic$bytecoder$api$web$HTMLDocument$$document$$ : function(thisref) {
+        return (thisref.document);
     },
-};
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.Element_generated"] = {
-    V$innerHTML$Ljava$lang$String$ : function(thisref, arg0) {
-        (thisref.innerHTML = arg0);
+    V$requestAnimationFrame$Lde$mirkosertic$bytecoder$api$web$AnimationFrameCallback$ : function(thisref, arg0) {
+        (thisref.requestAnimationFrame(function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.AnimationFrameCallback_callback'](arg0,evt);}));
     },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.EventTarget_generated"] = {
     V$addEventListener$Ljava$lang$String$$Lde$mirkosertic$bytecoder$api$web$EventListener$ : function(thisref, arg0, arg1) {
-        return (thisref.addEventListener(arg0, function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.EventListener_callback'](arg1,evt);}));
-    },
-};
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.Promise_generated"] = {
-    V$then$Lde$mirkosertic$bytecoder$api$web$Promise$Handler$ : function(thisref, arg0) {
-        return (thisref.then(function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.Promise$Handler_callback'](arg0,evt);}));
+        (thisref.addEventListener(arg0, function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.EventListener_callback'](arg1,evt);}));
     },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.ParentNode_generated"] = {
     Lde$mirkosertic$bytecoder$api$web$Element$$getElementById$Ljava$lang$String$ : function(thisref, arg0) {
-        (thisref.getElementById(arg0));
+        return (thisref.getElementById(arg0));
     },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.CanvasRenderingContext2D_generated"] = {
@@ -935,42 +906,42 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.web.CanvasRenderingContext2D_gen
         (thisref.strokeStyle = arg0);
     },
     V$fillRect$F$F$F$F : function(thisref, arg0, arg1, arg2, arg3) {
-        return (thisref.fillRect(arg0, arg1, arg2, arg3));
+        (thisref.fillRect(arg0, arg1, arg2, arg3));
     },
     V$save$$ : function(thisref) {
-        return (thisref.save());
+        (thisref.save());
     },
     V$translate$F$F : function(thisref, arg0, arg1) {
-        return (thisref.translate(arg0, arg1));
+        (thisref.translate(arg0, arg1));
     },
     V$scale$F$F : function(thisref, arg0, arg1) {
-        return (thisref.scale(arg0, arg1));
+        (thisref.scale(arg0, arg1));
     },
     V$setLineWidth$F : function(thisref, arg0) {
         (thisref.lineWidth = arg0);
     },
     V$rotate$F : function(thisref, arg0) {
-        return (thisref.rotate(arg0));
+        (thisref.rotate(arg0));
     },
     V$beginPath$$ : function(thisref) {
-        return (thisref.beginPath());
+        (thisref.beginPath());
     },
     V$arc$D$D$D$D$D$Z : function(thisref, arg0, arg1, arg2, arg3, arg4, arg5) {
-        return (thisref.arc(arg0, arg1, arg2, arg3, arg4, (arg5 === 1 ? true : false)));
+        (thisref.arc(arg0, arg1, arg2, arg3, arg4, (arg5 === 1 ? true : false)));
     },
     V$closePath$$ : function(thisref) {
-        return (thisref.closePath());
+        (thisref.closePath());
     },
     V$stroke$$ : function(thisref) {
-        return (thisref.stroke());
+        (thisref.stroke());
     },
     V$moveTo$F$F : function(thisref, arg0, arg1) {
-        return (thisref.moveTo(arg0, arg1));
+        (thisref.moveTo(arg0, arg1));
     },
     V$lineTo$F$F : function(thisref, arg0, arg1) {
-        return (thisref.lineTo(arg0, arg1));
+        (thisref.lineTo(arg0, arg1));
     },
     V$restore$$ : function(thisref) {
-        return (thisref.restore());
+        (thisref.restore());
     },
 };

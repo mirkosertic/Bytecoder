@@ -188,11 +188,11 @@ object JBox2DSimulationKotlin {
             window!!.requestAnimationFrame(animationCallback)
         }
 
-        val button = document.getElementById<HTMLButton>("button")
-        button.addEventListener("click", EventListener<MouseEvent> {
-            button.disabled(true)
-            window!!.requestAnimationFrame(animationCallback)
-        })
+        //val button = document.getElementById<HTMLButton>("button")
+        //button.addEventListener("click", EventListener<MouseEvent> {
+        //    button.disabled(true)
+        //    window!!.requestAnimationFrame(animationCallback)
+        //})
     }
 
     @Import(module = "debug", name = "logRuntime")

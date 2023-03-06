@@ -813,21 +813,21 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.vue.VueData_generated"] = {
     V$setProperty$Ljava$lang$String$$Ljava$lang$String$ : function(thisref, arg0, arg1) {
-        return (thisref.setProperty(arg0, arg1));
+        (thisref.setProperty(arg0, arg1));
     },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.vue.VueBuilder_generated"] = {
     V$bindToTemplateSelector$Ljava$lang$String$ : function(thisref, arg0) {
-        return (thisref.bindToTemplateSelector(arg0));
+        (thisref.bindToTemplateSelector(arg0));
     },
     Lde$mirkosertic$bytecoder$api$vue$VueData$$data$$ : function(thisref) {
-        (thisref.data());
+        return (thisref.data());
     },
     V$addEventListener$Ljava$lang$String$$Lde$mirkosertic$bytecoder$api$vue$VueEventListener$ : function(thisref, arg0, arg1) {
-        return (thisref.addEventListener(arg0, function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.vue.VueEventListener_callback'](arg1,evt);}));
+        (thisref.addEventListener(arg0, function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.vue.VueEventListener_callback'](arg1,evt);}));
     },
     Lde$mirkosertic$bytecoder$api$vue$VueInstance$$build$$ : function(thisref) {
-        (thisref.build());
+        return (thisref.build());
     },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.integrationtest.VueDemo$MyVueInstance_generated"] = {
