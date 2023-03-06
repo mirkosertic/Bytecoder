@@ -1131,11 +1131,11 @@ public class WasmBackend {
                             break;
                         }
                         case Type.VOID: {
-                            jsContentPrintWriter.print("        return (");
+                            jsContentPrintWriter.print("        (");
                             break;
                         }
                         default: {
-                            jsContentPrintWriter.print("        (");
+                            jsContentPrintWriter.print("        return (");
                             break;
                         }
                     }
