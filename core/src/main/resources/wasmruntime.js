@@ -586,6 +586,23 @@ const bytecoder = {
                 return document;
             }
         },
+        "de.mirkosertic.bytecoder.api.web.OpaqueArrays": {
+            Lde$mirkosertic$bytecoder$api$web$FloatArray$$createFloatArray$I: function(length) {
+                return new Float32Array(length);
+            },
+            'Lde$mirkosertic$bytecoder$api$web$IntArray$$createIntArray$I': function(length) {
+                return new Int32Array(length);
+            },
+            'Lde$mirkosertic$bytecoder$api$web$Int16Array$$createInt16Array$I': function(length) {
+                return new Int16Array(length);
+            },
+            'Lde$mirkosertic$bytecoder$api$web$Int8Array$$createInt8Array$I': function(length) {
+                return new Int8Array(length);
+            },
+            'Lde$mirkosertic$bytecoder$api$web$OpaqueReferenceArray$$createObjectArray$$': function() {
+                return [];
+            }
+        },
         "bytecoder": {
         }
     },

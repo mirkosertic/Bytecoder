@@ -507,12 +507,7 @@ public class JSBackend {
             }
             if (arguments.length > 0) {
                 if (arguments[0].getSort() == Type.OBJECT) {
-                    final ResolvedClass targetType = compileUnit.findClass(arguments[0]);
-                    if (targetType.isOpaqueReferenceType()) {
-                        pw.print(" = arg0.nativeObject");
-                    } else {
-                        throw new IllegalStateException("Type " + arguments[0] + " is not supported as an opaque property type.");
-                    }
+                    pw.print(" = arg0.nativeObject");
                 } else {
                     if (arguments[0].getSort() == Type.BOOLEAN) {
                         pw.print(" = (arg0 == 1 ? true : false)");

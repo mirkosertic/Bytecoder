@@ -15,24 +15,18 @@
  */
 package de.mirkosertic.bytecoder.maven;
 
-import de.mirkosertic.bytecoder.allocator.Allocator;
 import de.mirkosertic.bytecoder.asm.backend.js.JSBackend;
 import de.mirkosertic.bytecoder.asm.backend.js.JSCompileResult;
 import de.mirkosertic.bytecoder.asm.backend.js.JSIntrinsics;
+import de.mirkosertic.bytecoder.asm.backend.wasm.WasmBackend;
+import de.mirkosertic.bytecoder.asm.backend.wasm.WasmCompileResult;
+import de.mirkosertic.bytecoder.asm.backend.wasm.WasmIntrinsics;
 import de.mirkosertic.bytecoder.asm.ir.AnalysisStack;
 import de.mirkosertic.bytecoder.asm.loader.BytecoderLoader;
 import de.mirkosertic.bytecoder.asm.optimizer.Optimizations;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
 import de.mirkosertic.bytecoder.asm.parser.Loader;
-import de.mirkosertic.bytecoder.backend.CompileOptions;
 import de.mirkosertic.bytecoder.backend.CompileResult;
-import de.mirkosertic.bytecoder.backend.CompileTarget;
-import de.mirkosertic.bytecoder.core.BytecodeArrayTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.core.BytecodeObjectTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodePrimitiveTypeRef;
-import de.mirkosertic.bytecoder.core.BytecodeTypeRef;
-import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
 import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
@@ -90,12 +84,6 @@ public class BytecoderMavenMojo extends AbstractMojo {
     protected boolean debugOutput;
 
     /**
-     * Shall Exception-Handling be activated?
-     */
-    @Parameter(required = false, defaultValue = "false")
-    protected boolean enableExceptionHandling;
-
-    /**
      * Which kind of optimization should be applied? Can be NONE, ALL or EXPERIMENTAL.
      */
     @Parameter(required = false, defaultValue = "ALL")
@@ -106,36 +94,6 @@ public class BytecoderMavenMojo extends AbstractMojo {
      */
     @Parameter(required = false, defaultValue = "bytecoder")
     protected String filenamePrefix;
-
-    /**
-     * Minimum number of pages for WASM memory.
-     */
-    @Parameter(required = false, defaultValue = "512")
-    protected int wasmInitialPages;
-
-    /**
-     * Maximum number of pages for WASM memory.
-     */
-    @Parameter(required = false, defaultValue = "1024")
-    protected int wasmMaximumPages;
-
-    /**
-     * Shall the compile result be minified?
-     */
-    @Parameter(required = false, defaultValue = "true")
-    protected boolean minifyCompileResult;
-
-    /**
-     * Shall the Stackifier be used and the Relooper as fallback?
-     */
-    @Parameter(required = false, defaultValue = "false")
-    protected boolean preferStackifier;
-
-    /**
-     * Which register allocator should be used? Can be linear or passthru.
-     */
-    @Parameter(required = false, defaultValue = "linear")
-    protected String registerAllocator;
 
     /**
      * List of full qualified class names to be linked beside the statically referenced ones.
@@ -149,12 +107,6 @@ public class BytecoderMavenMojo extends AbstractMojo {
     @Parameter(required = false)
     protected String[] additionalResources = new String[0];
 
-    /**
-     * Shall the escape analysis be enabled? Defaults to 'false'.
-     */
-    @Parameter(required = false, defaultValue = "false")
-    protected boolean escapeAnalysisEnabled = false;
-
     @Override
     public void execute() throws MojoExecutionException {
         final File baseDirectory = new File(buildDirectory);
@@ -163,9 +115,9 @@ public class BytecoderMavenMojo extends AbstractMojo {
 
         try {
             final ClassLoader classLoader = prepareClassLoader();
+            final Loader loader = new BytecoderLoader(classLoader);
 
             if ("js".equals(backend)) {
-                final Loader loader = new BytecoderLoader(classLoader);
 
                 final CompileUnit compileUnit = new CompileUnit(loader, new Slf4JLogger(), new JSIntrinsics());
                 final Type invokedType = Type.getObjectType(mainClass.replace('.','/'));
@@ -194,16 +146,26 @@ public class BytecoderMavenMojo extends AbstractMojo {
                 }
 
             } else {
-                final Class<?> theTargetClass = classLoader.loadClass(mainClass);
+                final CompileUnit compileUnit = new CompileUnit(loader, new Slf4JLogger(), new WasmIntrinsics());
+                final Type invokedType = Type.getObjectType(mainClass.replace('.','/'));
 
-                final CompileTarget theCompileTarget = new CompileTarget(classLoader, CompileTarget.BackendType.valueOf(backend));
+                compileUnit.resolveMainMethod(invokedType, "main", Type.getMethodType(Type.VOID_TYPE, Type.getType("[Ljava/lang/String;")));
 
-                final BytecodeMethodSignature theSignature = new BytecodeMethodSignature(BytecodePrimitiveTypeRef.VOID,
-                        new BytecodeTypeRef[]{new BytecodeArrayTypeRef(BytecodeObjectTypeRef.fromRuntimeClass(String.class), 1)});
+                for (final String className : additionalClassesToLink) {
+                    compileUnit.resolveClass(Type.getObjectType(className.replace('.', '/')), new AnalysisStack());
+                }
 
-                final CompileOptions theOptions = new CompileOptions(new Slf4JLogger(), debugOutput, KnownOptimizer.valueOf(optimizationLevel), enableExceptionHandling, filenamePrefix, wasmInitialPages, wasmMaximumPages, minifyCompileResult, preferStackifier, Allocator.valueOf(registerAllocator), additionalClassesToLink, additionalResources, escapeAnalysisEnabled);
-                final CompileResult theCode = theCompileTarget.compile(theOptions, theTargetClass, "main", theSignature);
-                for (final CompileResult.Content content : theCode.getContent()) {
+                compileUnit.finalizeLinkingHierarchy();
+
+                compileUnit.logStatistics();
+
+                final de.mirkosertic.bytecoder.asm.backend.CompileOptions compileOptions =
+                        new de.mirkosertic.bytecoder.asm.backend.CompileOptions(new Slf4JLogger(), Optimizations.valueOf(optimizationLevel), additionalResources, filenamePrefix, debugOutput);
+
+                final WasmBackend backend = new WasmBackend();
+                final WasmCompileResult result = backend.generateCodeFor(compileUnit, compileOptions);
+
+                for (final CompileResult.Content content : result.getContent()) {
                     final File theBytecoderFileName = new File(bytecoderDirectory, content.getFileName());
                     try (final FileOutputStream theFos = new FileOutputStream(theBytecoderFileName)) {
                         content.writeTo(theFos);

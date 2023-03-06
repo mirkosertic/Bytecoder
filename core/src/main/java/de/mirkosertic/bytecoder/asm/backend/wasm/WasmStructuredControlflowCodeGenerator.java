@@ -412,6 +412,9 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                                                 final Map<ResolvedClass, StructType> rtMappings,
                                                 final WasmValue externRef) {
         final ResolvedClass cl = compileUnit.findClass(instanceType);
+        if (cl == null) {
+            throw new IllegalArgumentException("Cannot find resolved class for " + instanceType);
+        }
         final StructType type = objectTypeMappings.get(cl);
         final List<WasmValue> initArgs = new ArrayList<>();
 
@@ -520,7 +523,6 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private WasmValue toWasmValue(final VirtualMethodInvocationExpression value) {
         final ResolvedMethod rm = value.resolvedMethod;
-        //final ResolvedClass cl = rm.owner;
 
         final List<WasmValue> indirectCallArgs = new ArrayList<>();
 
@@ -535,12 +537,10 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         final List<WasmValue> resolverArgs = new ArrayList<>();
         resolverArgs.add(ConstExpressions.i32.c(methodToIDMapper.resolveIdFor(rm)));
 
-        //final StructType classType = rtMappings.get(cl);
         final StructType objectType = module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class)));
 
         resolverArgs.add(ConstExpressions.struct.get(
                 objectType,
-                //ConstExpressions.ref.cast(objectType, toWasmValue((Value) value.incomingDataFlows[0])),
                 toWasmValue((Value) value.incomingDataFlows[0]),
                 "vt_resolver"
         ));
@@ -1106,6 +1106,25 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     }
 
     private WasmValue toWasmValue(final Cast value) {
+        final Type targetType = value.type;
+        if (targetType.getSort() == Type.OBJECT) {
+            final ResolvedClass targetClass = compileUnit.findClass(targetType);
+            if (targetClass.isOpaqueReferenceType()) {
+                // We need to create a new instance
+                return createNewInstanceOf(
+                        targetType,
+                        module,
+                        compileUnit,
+                        objectTypeMappings,
+                        rtMappings,
+                        ConstExpressions.struct.get(
+                                objectTypeMappings.get(compileUnit.findClass(Type.getType(Object.class))),
+                                toWasmValue((Value) value.incomingDataFlows[0]),
+                                "nativeObject"
+                        )
+                );
+            }
+        }
         final RefType refType = (RefType) typeConverter.apply(value.type);
         return ConstExpressions.ref.cast((StructType) refType.getType(), toWasmValue((Value) value.incomingDataFlows[0]));
     }

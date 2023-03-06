@@ -96,6 +96,11 @@ public class Array {
         return a;
     }
 
+    @Export("newObjectArray")
+    public static Object[] newObjectArray(final int len) {
+        return new Object[len];
+    }
+
     @Export("newCharArray")
     public static char[] newCharArray(final int len) {
         return new char[len];

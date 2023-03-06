@@ -898,11 +898,9 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                                 pw.print("}.bind(");
                                 writeExpression(node.incomingDataFlows[i + 1]);
                                 pw.print(")");
-                            } else if (typeClass.isOpaqueReferenceType()) {
+                            } else  {
                                 writeExpression(node.incomingDataFlows[i + 1]);
                                 pw.print(".nativeObject");
-                            } else {
-                                throw new IllegalStateException("Type " + argType + " not supported in opaque reference method of " + typeClass.type + "." + method.methodNode.name);
                             }
                             break;
                         }
@@ -1128,11 +1126,9 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                                 pw.print("}.bind(");
                                 writeExpression(node.incomingDataFlows[i + 1]);
                                 pw.print(")");
-                            } else if (typeClass.isOpaqueReferenceType()) {
+                            } else {
                                 writeExpression(node.incomingDataFlows[i + 1]);
                                 pw.print(".nativeObject");
-                            } else {
-                                throw new IllegalStateException("Type " + argType + " not supported in opaque reference method of " + typeClass.type + "." + method.methodNode.name);
                             }
                             break;
                         }

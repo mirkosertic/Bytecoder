@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm;
 
+import de.mirkosertic.bytecoder.api.Callback;
 import de.mirkosertic.bytecoder.api.ClassLibProvider;
 import de.mirkosertic.bytecoder.asm.backend.CodeGenerationFailure;
 import de.mirkosertic.bytecoder.asm.backend.CompileOptions;
@@ -70,9 +71,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
-
-import static de.mirkosertic.bytecoder.asm.backend.js.JSHelpers.generateClassName;
-import static de.mirkosertic.bytecoder.asm.backend.js.JSHelpers.generateMethodName;
 
 public class WasmBackend {
 
@@ -660,14 +658,29 @@ public class WasmBackend {
                                 callArgs.add(ConstExpressions.getLocal(impl.localByLabel("arg" + i)));
                             }
 
-                            impl.flow.ret(WasmStructuredControlflowCodeGenerator.createNewInstanceOf(
-                                            cl.type,
+                            switch (method.methodType.getReturnType().getSort()) {
+                                case Type.VOID: {
+                                    impl.flow.voidCall(delegateFunction, callArgs);
+                                    break;
+                                }
+                                case Type.OBJECT: {
+                                    impl.flow.ret(WasmStructuredControlflowCodeGenerator.createNewInstanceOf(
+                                            method.methodType.getReturnType(),
                                             module,
                                             compileUnit,
                                             objectTypeMappings,
                                             rtTypeMappings,
                                             ConstExpressions.call(delegateFunction, callArgs)
                                     ));
+                                    break;
+                                }
+                                default: {
+                                    impl.flow.ret(
+                                            ConstExpressions.call(delegateFunction, callArgs)
+                                    );
+                                    break;
+                                }
+                            }
 
                             function = impl;
 
@@ -702,30 +715,58 @@ public class WasmBackend {
 
                             final String moduleName = cl.type.getClassName() + "_generated";
 
+                            final List<Param> delegateParams = new ArrayList<>();
+                            delegateParams.add(ConstExpressions.param("thisref", ConstExpressions.ref.host()));
+                            for (int i = 0; i < method.methodType.getArgumentTypes().length; i++) {
+                                switch (method.methodType.getArgumentTypes()[i].getSort()) {
+                                    case Type.OBJECT: {
+                                        final Type t = method.methodType.getArgumentTypes()[i];
+                                        final ResolvedClass rc = compileUnit.findClass(t);
+                                        if (rc.isCallback()) {
+                                            delegateParams.add(ConstExpressions.param("arg" + i, toWASMType.apply(t)));
+                                        } else {
+                                            delegateParams.add(ConstExpressions.param("arg" + i, ConstExpressions.ref.host()));
+                                        }
+                                        break;
+                                    }
+                                    default: {
+                                        delegateParams.add(ConstExpressions.param("arg" + i, toWASMType.apply(method.methodType.getArgumentTypes()[i])));
+                                        break;
+                                    }
+                                }
+                            }
+
                             final Function delegateFunction;
                             switch (method.methodType.getReturnType().getSort()) {
                                 case Type.VOID: {
                                     delegateFunction = module.getImports().importFunction(new ImportReference(moduleName, methodName),
                                             implMethodName + "_delegate",
-                                            functionParams);
+                                            delegateParams);
                                     break;
                                 }
                                 case Type.OBJECT: {
                                     delegateFunction = module.getImports().importFunction(new ImportReference(moduleName, methodName),
                                             implMethodName + "_delegate",
-                                            functionParams, ConstExpressions.ref.host());
+                                            delegateParams, ConstExpressions.ref.host());
                                     break;
                                 }
                                 default: {
                                     delegateFunction = module.getImports().importFunction(new ImportReference(moduleName, methodName),
                                             implMethodName + "_delegate",
-                                            functionParams, toWASMType.apply(method.methodType.getReturnType()));
+                                            delegateParams, toWASMType.apply(method.methodType.getReturnType()));
                                     break;
                                 }
                             }
 
                             final List<WasmValue> callArgs = new ArrayList<>();
-                            callArgs.add(ConstExpressions.getLocal(implFunction.localByLabel("thisref")));
+                            callArgs.add(
+                                    ConstExpressions.struct.get(
+                                            objectTypeMappings.get(objectClass),
+                                            ConstExpressions.getLocal(implFunction.localByLabel("thisref")),
+                                            "nativeObject"
+                                    )
+                            );
+
                             for (int i = 0; i < method.methodType.getArgumentTypes().length; i++) {
                                 final Type argument = method.methodType.getArgumentTypes()[i];
                                 switch (argument.getSort()) {
@@ -745,6 +786,7 @@ public class WasmBackend {
                                                 )
                                             );
                                         }
+                                        break;
                                     }
                                     default: {
                                         callArgs.add(ConstExpressions.getLocal(implFunction.localByLabel("arg" + i)));
@@ -937,6 +979,79 @@ public class WasmBackend {
         jsContentPrintWriter.println("  throw 'Unknown string index ' + index;");
         jsContentPrintWriter.println("};");
 
+        // We need to create adapter methods for callback types
+        for (final ResolvedClass cl : resolvedClasses) {
+            if (cl.isCallback() && Modifier.isAbstract(cl.classNode.access) && !Callback.class.getName().equals(cl.type.getClassName())) {
+                final List<ResolvedMethod> callbackMethods = cl.resolvedMethods.stream().filter(t -> !t.methodNode.name.equals("init")).collect(Collectors.toList());
+                if (callbackMethods.size() != 1) {
+                    throw new IllegalStateException("Unexpected number of callback methods, expected 1, got " + callbackMethods.size() + " for type " + cl.type);
+                }
+
+                final ResolvedMethod rm = callbackMethods.get(0);
+
+                final List<Param> callbackParams = new ArrayList<>();
+                callbackParams.add(ConstExpressions.param("receiver", ConstExpressions.ref.type(objectTypeMappings.get(objectClass), true)));
+
+                boolean isObjectArgument = false;
+                final Type argType = rm.methodType.getArgumentTypes()[0];
+                switch (argType.getSort()) {
+                    case Type.OBJECT: {
+                        callbackParams.add(ConstExpressions.param("event", ConstExpressions.ref.host()));
+                        isObjectArgument = true;
+                        break;
+                    }
+                    default: {
+                        callbackParams.add(ConstExpressions.param("event", toWASMType.apply(argType)));
+                        break;
+                    }
+                }
+
+                final ExportableFunction callback = module.getFunctions().newFunction(cl.type.getClassName() + "_callback", callbackParams);
+                if (isObjectArgument) {
+                    final Local eventInstance = callback.newLocal("eventInstance", ConstExpressions.ref.type(objectTypeMappings.get(objectClass), true));
+                    callback.flow.setLocal(eventInstance, WasmStructuredControlflowCodeGenerator.createNewInstanceOf(
+                            argType,
+                            module,
+                            compileUnit,
+                            objectTypeMappings,
+                            rtTypeMappings,
+                            ConstExpressions.getLocal(callback.localByLabel("event"))
+                    ));
+                }
+
+                // Virtual call
+                final List<WasmValue> indirectCallArgs = new ArrayList<>();
+
+                final List<WasmType> vlResolveArgs = new ArrayList<>();
+                vlResolveArgs.add(PrimitiveType.i32);
+                final FunctionType vtResolveType = module.getTypes().functionType(vlResolveArgs, PrimitiveType.i32);
+                indirectCallArgs.add(ConstExpressions.getLocal(callback.localByLabel("receiver")));
+                if (isObjectArgument) {
+                    indirectCallArgs.add(ConstExpressions.getLocal(callback.localByLabel("eventInstance")));
+                } else {
+                    indirectCallArgs.add(ConstExpressions.getLocal(callback.localByLabel("event")));
+                }
+
+                final List<WasmValue> resolverArgs = new ArrayList<>();
+                resolverArgs.add(ConstExpressions.i32.c(methodToIDMapper.resolveIdFor(rm)));
+
+                final StructType objectType = module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class)));
+
+                resolverArgs.add(ConstExpressions.struct.get(
+                        objectType,
+                        ConstExpressions.getLocal(callback.localByLabel("receiver")),
+                        "vt_resolver"
+                ));
+
+                final WasmValue resolver = ConstExpressions.ref.callRef(vtResolveType, resolverArgs);
+                final FunctionType ft = toFunctionType.apply(rm);
+
+                callback.flow.voidCallIndirect(ft, indirectCallArgs, resolver);
+
+                callback.exportAs(cl.type.getClassName() + "_callback");
+            }
+        }
+
         adapterMethods.getKnownMethods().forEach((cl, value) -> {
             final String moduleName = cl.type.getClassName() + "_generated";
 
@@ -964,16 +1079,20 @@ public class WasmBackend {
                     final Type methodType = rm.methodType;
                     switch (methodType.getReturnType().getSort()) {
                         case Type.BOOLEAN: {
-                            jsContentPrintWriter.print("        bytecoder.toBytecoderBoolean(");
+                            jsContentPrintWriter.print("        return bytecoder.toBytecoderBoolean(");
+                            break;
+                        }
+                        case Type.VOID: {
+                            jsContentPrintWriter.print("        (");
                             break;
                         }
                         default: {
-                            jsContentPrintWriter.print("        (");
+                            jsContentPrintWriter.print("        return (");
                             break;
                         }
                     }
 
-                    jsContentPrintWriter.println("thisref");
+                    jsContentPrintWriter.print("thisref.");
                     if (propertyName != null) {
                         jsContentPrintWriter.print(propertyName);
                     } else {
@@ -983,24 +1102,24 @@ public class WasmBackend {
                         jsContentPrintWriter.print(" = ");
                         switch (arguments[0].getSort()) {
                             case Type.BOOLEAN: {
-                                jsContentPrintWriter.print(" = (arg0 === 1 ? true : false)");
+                                jsContentPrintWriter.print("(arg0 === 1 ? true : false)");
                                 break;
                             }
                             default: {
-                                jsContentPrintWriter.print(" = arg0");
+                                jsContentPrintWriter.print("arg0");
                                 break;
                             }
                         }
                     }
 
-                    jsContentPrintWriter.print(")");
+                    jsContentPrintWriter.println(");");
 
                 } else if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueIndexed;", rm.methodNode.visibleAnnotations)) {
 
-                    jsContentPrintWriter.print("        thisref[arg0] = ");
-
                     if (arguments.length > 1) {
-                        jsContentPrintWriter.print(" = arg1");
+                        jsContentPrintWriter.println("        thisref[arg0] = arg1;");
+                    } else {
+                        jsContentPrintWriter.println("        return thisref[arg0];");
                     }
 
                 } else {
@@ -1008,7 +1127,11 @@ public class WasmBackend {
                     final Type returnType = rm.methodType.getReturnType();
                     switch (returnType.getSort()) {
                         case Type.BOOLEAN: {
-                            jsContentPrintWriter.print("        bytecoder.toBytecoderBoolean(");
+                            jsContentPrintWriter.print("        return bytecoder.toBytecoderBoolean(");
+                            break;
+                        }
+                        case Type.VOID: {
+                            jsContentPrintWriter.print("        return (");
                             break;
                         }
                         default: {
@@ -1050,53 +1173,11 @@ public class WasmBackend {
                                     final ResolvedMethod callbackMethod = callbackMethods.get(0);
                                     final Type methodType = callbackMethod.methodType;
 
-                                    jsContentPrintWriter.print("function(");
-                                    for (int j = 0; j < methodType.getArgumentTypes().length; j++) {
-                                        if (j > 0) {
-                                            jsContentPrintWriter.print(", ");
-                                        }
-                                        jsContentPrintWriter.print("arg");
-                                        jsContentPrintWriter.print(j);
-                                    }
-                                    jsContentPrintWriter.print(") {this.");
-                                    jsContentPrintWriter.print(generateMethodName(callbackMethod.methodNode.name, methodType));
-                                    jsContentPrintWriter.print("(");
-                                    for (int j = 0; j < methodType.getArgumentTypes().length; j++) {
-                                        if (j > 0) {
-                                            jsContentPrintWriter.print(", ");
-                                        }
-                                        switch (methodType.getArgumentTypes()[j].getSort()) {
-                                            case Type.BOOLEAN: {
-                                                jsContentPrintWriter.print("bytecoder.toBytecoderBoolean(arg");
-                                                jsContentPrintWriter.print(j);
-                                                jsContentPrintWriter.print(")");
-                                                break;
-                                            }
-                                            case Type.OBJECT: {
-                                                if (methodType.getArgumentTypes()[j].getClassName().equals(String.class.getName())) {
-                                                    jsContentPrintWriter.print("bytecoder.toBytecoderString(arg");
-                                                    jsContentPrintWriter.print(j);
-                                                    jsContentPrintWriter.print(")");
-                                                } else {
-                                                    jsContentPrintWriter.print("bytecoder.wrapNativeIntoTypeInstance(");
-                                                    jsContentPrintWriter.print(generateClassName(methodType.getArgumentTypes()[j]));
-                                                    jsContentPrintWriter.print(", arg");
-                                                    jsContentPrintWriter.print(j);
-                                                    jsContentPrintWriter.print(")");
-                                                }
-                                                break;
-                                            }
-                                            default: {
-                                                jsContentPrintWriter.print("arg");
-                                                jsContentPrintWriter.print(j);
-                                                break;
-                                            }
-                                        }
-                                    }
-                                    jsContentPrintWriter.print(")");
-                                    jsContentPrintWriter.print("}.bind(arg");
+                                    jsContentPrintWriter.print("function(evt) {bytecoder.instance.exports['");
+                                    jsContentPrintWriter.print(typeClass.type.getClassName());
+                                    jsContentPrintWriter.print("_callback'](arg");
                                     jsContentPrintWriter.print(i);
-                                    jsContentPrintWriter.print(")");
+                                    jsContentPrintWriter.print(",evt);}");
                                 } else {
                                     jsContentPrintWriter.print("arg");
                                     jsContentPrintWriter.print(i);
@@ -1112,10 +1193,8 @@ public class WasmBackend {
                     }
 
                     jsContentPrintWriter.println("));");
-
-                    jsContentPrintWriter.println("    },");
                 }
-
+                jsContentPrintWriter.println("    },");
             }
             jsContentPrintWriter.println("};");
         });

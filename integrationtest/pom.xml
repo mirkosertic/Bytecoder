@@ -175,7 +175,7 @@
                             <filenamePrefix>jbox2d_kotlin_js</filenamePrefix>
                         </configuration>
                     </execution>
-<!--                    <execution>
+                    <execution>
                         <id>wasm</id>
                         <goals>
                             <goal>compile</goal>
@@ -183,22 +183,7 @@
                         <configuration>
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
                             <backend>wasm</backend>
-                            <enableExceptionHandling>false</enableExceptionHandling>
                             <filenamePrefix>jbox2d_wasm</filenamePrefix>
-                            <debugOutput>false</debugOutput>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>wasm-stackified</id>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                        <configuration>
-                            <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulation</mainClass>
-                            <backend>wasm</backend>
-                            <enableExceptionHandling>false</enableExceptionHandling>
-                            <preferStackifier>true</preferStackifier>
-                            <filenamePrefix>jbox2d_wasm_stackified</filenamePrefix>
                             <debugOutput>false</debugOutput>
                         </configuration>
                     </execution>
@@ -210,7 +195,6 @@
                         <configuration>
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.JBox2DSimulationKotlin</mainClass>
                             <backend>wasm</backend>
-                            <enableExceptionHandling>false</enableExceptionHandling>
                             <filenamePrefix>jbox2d_wasm_kotlin</filenamePrefix>
                             <debugOutput>false</debugOutput>
                         </configuration>
@@ -223,12 +207,10 @@
                         <configuration>
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.VueDemo</mainClass>
                             <backend>wasm</backend>
-                            <enableExceptionHandling>false</enableExceptionHandling>
                             <filenamePrefix>vue_wasm</filenamePrefix>
                             <debugOutput>false</debugOutput>
                         </configuration>
                     </execution>
-                    -->
                     <execution>
                         <id>lua-js</id>
                         <goals>
@@ -240,7 +222,7 @@
                             <filenamePrefix>lua_js</filenamePrefix>
                         </configuration>
                     </execution>
-<!--                    <execution>
+                    <execution>
                         <id>lua-wasm</id>
                         <goals>
                             <goal>compile</goal>
@@ -248,12 +230,10 @@
                         <configuration>
                             <mainClass>de.mirkosertic.bytecoder.integrationtest.LuaDemo</mainClass>
                             <backend>wasm</backend>
-                            <enableExceptionHandling>false</enableExceptionHandling>
                             <filenamePrefix>lua_wasm</filenamePrefix>
                             <debugOutput>false</debugOutput>
                         </configuration>
                     </execution>
-                    -->
                 </executions>
             </plugin>
 
