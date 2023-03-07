@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.js;
 
-import de.mirkosertic.bytecoder.backend.CompileResult;
+import de.mirkosertic.bytecoder.asm.backend.CompileResult;
 
 public class JSCompileResult extends CompileResult {
 }

@@ -816,6 +816,11 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.vue.VueData_generated"] = {
         (thisref.setProperty(arg0, arg1));
     },
 };
+bytecoder.imports["de.mirkosertic.bytecoder.integrationtest.VueDemo$MyVueInstance_generated"] = {
+    V$welcomemessage$Ljava$lang$String$ : function(thisref, arg0) {
+        (thisref.welcomemessage = arg0);
+    },
+};
 bytecoder.imports["de.mirkosertic.bytecoder.api.vue.VueBuilder_generated"] = {
     V$bindToTemplateSelector$Ljava$lang$String$ : function(thisref, arg0) {
         (thisref.bindToTemplateSelector(arg0));
@@ -828,10 +833,5 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.vue.VueBuilder_generated"] = {
     },
     Lde$mirkosertic$bytecoder$api$vue$VueInstance$$build$$ : function(thisref) {
         return (thisref.build());
-    },
-};
-bytecoder.imports["de.mirkosertic.bytecoder.integrationtest.VueDemo$MyVueInstance_generated"] = {
-    V$welcomemessage$Ljava$lang$String$ : function(thisref, arg0) {
-        (thisref.welcomemessage = arg0);
     },
 };

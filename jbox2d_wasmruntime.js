@@ -843,25 +843,25 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 130: return 'This segment is already closed';
       case 131: return ',';
       case 132: return ']\n';
-      case 133: return 'Rot(s:';
-      case 134: return ', c:';
-      case 135: return '(';
-      case 136: return '[pos=';
-      case 137: return ' lim=';
-      case 138: return ' cap=';
-      case 139: return '=';
-      case 140: return 'Sweep:\nlocalCenter: ';
-      case 141: return '\n';
-      case 142: return 'c0: ';
-      case 143: return ', c: ';
-      case 144: return 'a0: ';
-      case 145: return ', a: ';
-      case 146: return 'AABB[';
-      case 147: return ' . ';
-      case 148: return 'XForm:\n';
-      case 149: return 'Position: ';
-      case 150: return 'R: \n';
-      case 151: return 'No java.util.Objects instances for you!';
+      case 133: return '(';
+      case 134: return 'Sweep:\nlocalCenter: ';
+      case 135: return '\n';
+      case 136: return 'c0: ';
+      case 137: return ', c: ';
+      case 138: return 'a0: ';
+      case 139: return ', a: ';
+      case 140: return 'AABB[';
+      case 141: return ' . ';
+      case 142: return 'No java.util.Objects instances for you!';
+      case 143: return 'Rot(s:';
+      case 144: return ', c:';
+      case 145: return '=';
+      case 146: return '[pos=';
+      case 147: return ' lim=';
+      case 148: return ' cap=';
+      case 149: return 'XForm:\n';
+      case 150: return 'Position: ';
+      case 151: return 'R: \n';
       case 152: return 'EDGE_A';
       case 153: return 'EDGE_B';
       case 154: return 'VERTEX';
@@ -870,9 +870,9 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
   }
   throw 'Unknown string index ' + index;
 };
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.EventTarget_generated"] = {
-    V$addEventListener$Ljava$lang$String$$Lde$mirkosertic$bytecoder$api$web$EventListener$ : function(thisref, arg0, arg1) {
-        (thisref.addEventListener(arg0, function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.EventListener_callback'](arg1,evt);}));
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.ParentNode_generated"] = {
+    Lde$mirkosertic$bytecoder$api$web$Element$$getElementById$Ljava$lang$String$ : function(thisref, arg0) {
+        return (thisref.getElementById(arg0));
     },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLCanvasElement_generated"] = {
@@ -888,14 +888,14 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.web.Window_generated"] = {
         (thisref.requestAnimationFrame(function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.AnimationFrameCallback_callback'](arg0,evt);}));
     },
 };
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.ParentNode_generated"] = {
-    Lde$mirkosertic$bytecoder$api$web$Element$$getElementById$Ljava$lang$String$ : function(thisref, arg0) {
-        return (thisref.getElementById(arg0));
-    },
-};
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLButton_generated"] = {
     V$disabled$Z : function(thisref, arg0) {
         (thisref.disabled = (arg0 === 1 ? true : false));
+    },
+};
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.EventTarget_generated"] = {
+    V$addEventListener$Ljava$lang$String$$Lde$mirkosertic$bytecoder$api$web$EventListener$ : function(thisref, arg0, arg1) {
+        (thisref.addEventListener(arg0, function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.EventListener_callback'](arg1,evt);}));
     },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.CanvasRenderingContext2D_generated"] = {

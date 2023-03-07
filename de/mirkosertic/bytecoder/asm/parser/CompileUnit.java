@@ -22,7 +22,7 @@ import de.mirkosertic.bytecoder.asm.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.BytecoderCharsetEncoder;
-import de.mirkosertic.bytecoder.core.ReflectionConfiguration;
+import de.mirkosertic.bytecoder.ReflectionConfiguration;
 import org.apache.commons.lang3.StringUtils;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
