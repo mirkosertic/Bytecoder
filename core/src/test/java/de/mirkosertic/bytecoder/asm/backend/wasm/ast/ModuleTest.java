@@ -2,7 +2,7 @@ package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
 import de.mirkosertic.bytecoder.asm.backend.CompileOptions;
 import de.mirkosertic.bytecoder.asm.optimizer.Optimizations;
-import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
+import de.mirkosertic.bytecoder.Slf4JLogger;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;

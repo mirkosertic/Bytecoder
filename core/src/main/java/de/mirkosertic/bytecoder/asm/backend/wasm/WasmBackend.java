@@ -50,7 +50,7 @@ import de.mirkosertic.bytecoder.asm.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.asm.optimizer.Optimizer;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
 import de.mirkosertic.bytecoder.asm.parser.ConstantPool;
-import de.mirkosertic.bytecoder.backend.CompileResult;
+import de.mirkosertic.bytecoder.asm.backend.CompileResult;
 import de.mirkosertic.bytecoder.classlib.Array;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;

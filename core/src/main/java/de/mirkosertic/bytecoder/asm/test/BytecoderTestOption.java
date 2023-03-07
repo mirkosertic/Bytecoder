@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Mirko Sertic
+ * Copyright 2019 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.asm.api.web;
+package de.mirkosertic.bytecoder.asm.test;
 
-import de.mirkosertic.bytecoder.api.web.Console;
-import de.mirkosertic.bytecoder.asm.test.UnitTestRunner;
-import de.mirkosertic.bytecoder.asm.test.BytecoderTestOptions;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-@RunWith(UnitTestRunner.class)
-@BytecoderTestOptions(includeJVM = false)
-public class ConsoleTest {
+@Target(ElementType.ANNOTATION_TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface BytecoderTestOption {
 
-    @Test
-    public void testConsoleLog() {
-        final Console console = Console.console();
-        console.log("Hello world!");
-    }
+    String backend();
+
+    boolean minify() default false;
 }

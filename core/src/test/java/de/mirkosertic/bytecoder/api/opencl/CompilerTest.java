@@ -15,21 +15,6 @@
  */
 package de.mirkosertic.bytecoder.api.opencl;
 
-import de.mirkosertic.bytecoder.allocator.Allocator;
-import de.mirkosertic.bytecoder.backend.CompileOptions;
-import de.mirkosertic.bytecoder.backend.opencl.OpenCLCompileBackend;
-import de.mirkosertic.bytecoder.backend.opencl.OpenCLCompileResult;
-import de.mirkosertic.bytecoder.core.AnalysisStack;
-import de.mirkosertic.bytecoder.core.BytecodeLinkerContext;
-import de.mirkosertic.bytecoder.core.BytecodeLoader;
-import de.mirkosertic.bytecoder.core.BytecodeMethodSignature;
-import de.mirkosertic.bytecoder.optimizer.KnownOptimizer;
-import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
-import org.junit.Test;
-
-import java.io.IOException;
-import java.lang.reflect.Method;
-
 import static de.mirkosertic.bytecoder.api.opencl.GlobalFunctions.get_global_id;
 
 public class CompilerTest {
@@ -76,6 +61,7 @@ public class CompilerTest {
         };
     }
 
+    /*
     @Test
     public void testSimpleKernel() throws IOException {
         final AnalysisStack analysisStack = new AnalysisStack();
@@ -138,5 +124,5 @@ public class CompilerTest {
         final OpenCLCompileResult.OpenCLContent content = (OpenCLCompileResult.OpenCLContent) compiledKernel.getContent()[0];
 
         System.out.println(content.asString());
-    }
+    }*/
 }

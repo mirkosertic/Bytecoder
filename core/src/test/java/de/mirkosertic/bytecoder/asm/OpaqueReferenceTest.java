@@ -30,7 +30,7 @@ import de.mirkosertic.bytecoder.api.web.Response;
 import de.mirkosertic.bytecoder.api.web.StringPromise;
 import de.mirkosertic.bytecoder.api.web.Window;
 import de.mirkosertic.bytecoder.asm.test.UnitTestRunner;
-import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
+import de.mirkosertic.bytecoder.asm.test.BytecoderTestOptions;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;

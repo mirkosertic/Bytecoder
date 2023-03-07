@@ -16,7 +16,7 @@
 package de.mirkosertic.bytecoder.asm.classlib.java.io;
 
 import de.mirkosertic.bytecoder.asm.test.UnitTestRunner;
-import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
+import de.mirkosertic.bytecoder.asm.test.BytecoderTestOptions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;

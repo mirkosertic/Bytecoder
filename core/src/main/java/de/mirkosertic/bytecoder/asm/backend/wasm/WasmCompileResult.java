@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm;
 
-import de.mirkosertic.bytecoder.backend.CompileResult;
+import de.mirkosertic.bytecoder.asm.backend.CompileResult;
 
 public class WasmCompileResult extends CompileResult {
 

@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.opencl;
 
-import de.mirkosertic.bytecoder.backend.CompileResult;
+import de.mirkosertic.bytecoder.asm.backend.CompileResult;
 
 import java.io.OutputStream;
 import java.io.PrintStream;

@@ -33,10 +33,8 @@ import de.mirkosertic.bytecoder.asm.loader.BytecoderLoader;
 import de.mirkosertic.bytecoder.asm.optimizer.Optimizations;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
 import de.mirkosertic.bytecoder.asm.parser.Loader;
-import de.mirkosertic.bytecoder.backend.CompileResult;
-import de.mirkosertic.bytecoder.unittest.BytecoderTestOption;
-import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions;
-import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
+import de.mirkosertic.bytecoder.asm.backend.CompileResult;
+import de.mirkosertic.bytecoder.Slf4JLogger;
 import org.apache.commons.io.FileUtils;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -100,7 +98,7 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                 testOptions.add(new TestOption("wasm", false));
             } else {
                 for (final BytecoderTestOption o : declaredOptions.value()) {
-                    testOptions.add(new TestOption(o.backend().name(), o.minify()));
+                    testOptions.add(new TestOption(o.backend(), o.minify()));
                 }
             }
             additionalClassesToLink = declaredOptions.additionalClassesToLink();

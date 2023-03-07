@@ -19,12 +19,12 @@ import de.mirkosertic.bytecoder.api.web.MouseEvent
 import de.mirkosertic.bytecoder.api.web.EventListener
 import de.mirkosertic.bytecoder.api.web.HTMLDocument
 import de.mirkosertic.bytecoder.api.web.Window
-import de.mirkosertic.bytecoder.unittest.BytecoderTestOptions
-import de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner
+import de.mirkosertic.bytecoder.asm.test.BytecoderTestOptions
+import de.mirkosertic.bytecoder.asm.test.UnitTestRunner
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@RunWith(BytecoderUnitTestRunner::class)
+@RunWith(UnitTestRunner::class)
 @BytecoderTestOptions(includeJVM = false)
 class OpaqueReferenceKotlinTest {
 

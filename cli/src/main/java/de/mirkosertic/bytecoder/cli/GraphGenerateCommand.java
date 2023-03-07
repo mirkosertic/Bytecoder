@@ -23,7 +23,7 @@ import de.mirkosertic.bytecoder.asm.loader.BytecoderLoader;
 import de.mirkosertic.bytecoder.asm.optimizer.Optimizations;
 import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
 import de.mirkosertic.bytecoder.asm.parser.Loader;
-import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
+import de.mirkosertic.bytecoder.Slf4JLogger;
 import org.objectweb.asm.Type;
 
 import java.io.File;

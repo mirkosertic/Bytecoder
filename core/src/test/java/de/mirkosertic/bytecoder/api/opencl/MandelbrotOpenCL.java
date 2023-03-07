@@ -15,8 +15,7 @@
  */
 package de.mirkosertic.bytecoder.api.opencl;
 
-import de.mirkosertic.bytecoder.backend.opencl.CPUPlatform;
-import de.mirkosertic.bytecoder.unittest.Slf4JLogger;
+import de.mirkosertic.bytecoder.Slf4JLogger;
 
 import java.io.IOException;
 
