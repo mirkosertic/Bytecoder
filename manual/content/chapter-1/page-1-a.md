@@ -72,11 +72,7 @@ java -jar bytecoder-cli-{{% siteparam "bytecoderversion" %}}-executable.jar -cla
 ```
 
 {{% notice note %}}
-Bytecoder has two backends for WebAssembly generation. The older one
-is called `wasm` and is a handcrafted one. The newer one is called `wasm_llvm`, is based on `LLVM`
-and uses the whole LLVM toolchain for compilation, optimization and code generation.
-The LLVM backend is based on LLVM Release 10. Please make sure to have
-the `lld-11` and `wasm-ld-11` binaries in the current `PATH`.
+Bytecoder's WebAssembly backend can generate Wasm binaries without further third party software like wabt or binaryen.
 {{% /notice %}}
 
 However, you need a different style of
@@ -87,53 +83,17 @@ HTML embedding, which is shown here:
     <meta charset="UTF-8">
     <script src="bytecoder.js"></script>
     <script>
-        var bytecoderWasmFile = 'bytecoder.wasm';
-        var instantiated = function(result) {
-            bytecoder.init(result.instance);
-            bytecoder.exports.initMemory(0);
-            bytecoder.exports.bootstrap(0);
-            bytecoder.initializeFileIO();
+        bytecoder.instantiate('lua_wasmwasmclasses.wasm').then(function() {
 
-            // We have to activate the garbage collector!
-            var gcInterval = 200; // How often will the GC be triggered (in ms)
-            var gcMaxObjectsPerRun = 30; // How many objects will be collected during one run
-            var gcRunning = false; 
-            var runcounter = 0; // Used for debugging
-            setInterval(function() {
-                if (!gcRunning) {
-                    gcRunning = true;
-                    var freed = bytecoder.exports.IncrementalGC(0, gcMaxObjectsPerRun);
-                    if (runcounter++ % 10 === 0) {
-                        var freemem = bytecoder.exports.freeMem(0);
-                        var epoch = bytecoder.exports.GCEpoch(0);
-                        console.log(freemem + " bytes free memory after GC, epoch = " + epoch);
-                    }
-                    gcRunning = false;
-                }
-            }, gcInterval);
-
-            bytecoder.exports.main(0);
-
-        };
-        WebAssembly.instantiateStreaming(fetch(bytecoderWasmFile), bytecoder.imports).then(instantiated).catch(function(error) {
-            var request = new XMLHttpRequest();
-            request.open('GET', bytecoderWasmFile);
-            request.responseType = 'arraybuffer';
-            request.send();
-            request.onload = function() {
-                var bytes = request.response;
-                WebAssembly.instantiate(bytes, bytecoder.imports).then(instantiated);
-            };
+            console.log("Bootstrapped");
+            bytecoder.instance.exports.main(null, bytecoder.instance.exports.newObjectArray(null, 0));
+            console.log("Ready for action!");
         });
     </script>
 </html>
 ```
 
 {{% notice warning %}}
-The WebAssembly backends include a very simple incremental mark and sweep garbage collector.
-When GC runs, the application halts ( stop the world ) and memory is scanned and
-freed. However, this is a **very** expensive process, so you maybe want to configure
-the garbage collector intervals and parameters by hand depending an your use case.
-The Bytecoder GC will be removed as soon as there is a Wasm built-in garbage collector
-available.
+The WebAssembly backend generates Wasm bytecoded based on the Exception-Handling and GC proposal. These features
+must be manually enabled in Chrome or Firefox as long as they have not been fully standardized.
 {{% /notice %}}

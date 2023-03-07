@@ -86,13 +86,12 @@ The conversion functions are part of the global `bytecoder` object as
 {{% /notice %}}
 
 {{% notice warning %}}
-The JVM long and double datatypes are currently only available in a limited form in Bytecoder. There is currently 
-no native 64-bit integer datatype available in JavaScript. Bytecoder is limited
+The JVM long and double datatypes are currently only available in a limited form in Bytecoder. Bytecoder is limited
 to a 53-bit range due to JavaScript's IEEE 754 double precision number type. However, once JavaScript BigInt 
 will be supported by all major browsers, Bytecoder will use BigInt as a substitute for the 
-JVM long datatype. For now, there is no full emulation of long datatype planned. 64-bit Datatypes such as
-long or double are only supported without precision loss by the WebAssembly `wasm_llvm` backend. Please note 
-there is a loss in precisison when passing a long from WebAssembly to JS (calling an imported function).
+JVM long datatype. 64-bit Datatypes such as
+long or double are only supported without precision loss by the WebAssembly `wasm` backend. Please note 
+there is a loss in precisison when passing a double from WebAssembly to JS (calling an imported function).
 {{% /notice %}}
 
 #### Importing functionality from the host environment

@@ -11,5 +11,3 @@ weight: 4
 
 
 [vue.js integration Demo compiled to WebAssembly](/Bytecoder/vuewasm.html)
-
-[vue.js integration Demo compiled to WebAssembly with LLVM](/Bytecoder/vuewasmllvm.html)

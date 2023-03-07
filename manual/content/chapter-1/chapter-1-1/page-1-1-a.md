@@ -12,6 +12,4 @@ weight: 1
 
 JBox2D Demo compiled from Java to JavaScript [JS Backend](/Bytecoder/index-js.html)
 
-JBox2D Demo compiled from Java to WebAssembly [Relooper Codegen](/Bytecoder/indexwasm.html) vs. [Stackifier Codegen](/Bytecoder/indexwasm-stackified.html)
-
-JBox2D Demo compiled from Java to WebAssembly with [LLVM Codegen](/Bytecoder/indexwasmllvm.html)
+JBox2D Demo compiled from Java to WebAssembly [Wasm Codegen](/Bytecoder/indexwasm.html) 

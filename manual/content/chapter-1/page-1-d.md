@@ -7,6 +7,10 @@ weight: 4
 
 ## Overview
 
+{{% notice note %}}
+Reflection support is currently reengineered. This chapter might be outdated and will be rewritten when work is complete.
+{{% /notice %}}
+
 Bytecoder is an **AOT (Ahead-of-time) compiler**. As this, it has to determine the set
 of classes at compile time. It does this by running a statical dependency analysis which
 starts at a class implementing a `public static void main(String[] args)` method and
@@ -39,9 +43,9 @@ Object instance = runtimeClass.newInstance(); // Method 1 to instantiate a class
 cl.getConstructor(new Class[0]).newInstance(); // Method 2 to instantiate a class
 ```
 
-### Additional support for JavaScript and Wasm-LLVM backend
+### Additional support for JavaScript and Wasm backend
 
-The JavaScript and Wasm-LLVM backends provide support for reflective field access:
+The JavaScript and Wasm backends provide support for reflective field access:
 
 ```
 Field fields[] = ReflectionTarget.class.getDeclaredFields();
