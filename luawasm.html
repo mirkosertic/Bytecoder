@@ -20,14 +20,14 @@
         <div class="codingarea">
             <h2>Lua Code</h2>
             <textarea id="luainput" rows="10" cols="10">function add(a,b)
-    return a+b
+            return a+b
 end
 
 return add(1,2)</textarea>
             <h2>Response</h2>
             <pre id="luaoutput">
 Run Lua to see the output!
-            </pre>
+</pre>
         </div>
         <style>
             .codingarea {
@@ -38,58 +38,17 @@ Run Lua to see the output!
             }
         </style>
         <button id="runlua" value="Run Lua!" style="display: none">Run Lua!</button>
-        <script type="text/javascript" src="lua_wasm.js"></script>
+        <script type="text/javascript" src="lua_wasmruntime.js"></script>
         <script type="text/javascript">
             // dynamic linking
+            bytecoder.instantiate('lua_wasmwasmclasses.wasm').then(function() {
 
-            var instantiated = function(result) {
-                bytecoder.init(result.instance);
-
-                bytecoder.exports.initMemory(0);
-                console.log("Memory initialized");
-                bytecoder.exports.bootstrap(0);
-                bytecoder.initializeFileIO();
                 console.log("Bootstrapped");
-                bytecoder.exports.main(0);
+                bytecoder.instance.exports.main(null, bytecoder.instance.exports.newObjectArray(null, 0));
                 console.log("Ready for action!");
 
-                // We have to activate the garbage collector!
-                var gcInterval = 200;
-                var gcMaxObjectsPerRun = 30;
-                var gcRunning = false;
-                var runcounter = 0;
-                setInterval(function() {
-                    if (!gcRunning) {
-                        gcRunning = true;
-                        var freed = bytecoder.exports.IncrementalGC(0, gcMaxObjectsPerRun);
-                        if (runcounter++ % 10 === 0) {
-                            var freemem = bytecoder.exports.freeMem(0);
-                            var epoch = bytecoder.exports.GCEpoch(0);
-                            console.log(freemem + " bytes free memory after GC, epoch = " + epoch);
-                        }
-                        gcRunning = false;
-                    }
-                }, gcInterval);
-
                 document.getElementById("runlua").style.display = "block";
-            };
-
-            // Try to load the WASM file
-            WebAssembly.instantiateStreaming(fetch('lua_wasm.wasm'), bytecoder.imports)
-                .then(instantiated)
-                .catch(function(error) {
-                    console.log("Using fallback method to load WebAssembly! Check if mime types for WebAssembly are configured correctly!");
-                    var request = new XMLHttpRequest();
-                    request.open('GET', 'lua_wasm.wasm');
-                    request.responseType = 'arraybuffer';
-                    request.send();
-
-                    request.onload = function() {
-                        var bytes = request.response;
-                        WebAssembly.instantiate(bytes, bytecoder.imports).then(instantiated);
-                    };
-                });
-
+            });
         </script>
         <a href="https://github.com/mirkosertic/Bytecoder">Go to Bytecoder @ Github</a>
     </body>

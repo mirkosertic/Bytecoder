@@ -12,20 +12,20 @@
     <title>Reflection API :: Bytecoder - JVM to JavaScript, OpenCL and WebAssembly Transpiler</title>
 
     
-    <link href="/Bytecoder/css/nucleus.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/fontawesome-all.min.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/hybrid.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/featherlight.min.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/perfect-scrollbar.min.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/auto-complete.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/atom-one-dark-reasonable.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/theme.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/tabs.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/hugo-theme.css?1678133511" rel="stylesheet">
+    <link href="/Bytecoder/css/nucleus.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/fontawesome-all.min.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/hybrid.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/featherlight.min.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/perfect-scrollbar.min.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/auto-complete.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/atom-one-dark-reasonable.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/theme.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/tabs.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/hugo-theme.css?1678202788" rel="stylesheet">
     
     
 
-    <script src="/Bytecoder/js/jquery-3.3.1.min.js?1678133511"></script>
+    <script src="/Bytecoder/js/jquery-3.3.1.min.js?1678202788"></script>
 
     <style>
       :root #header + #content > #left > #rlblock_left{
@@ -66,14 +66,14 @@ if (!doNotTrack) {
     <span data-search-clear=""><i class="fas fa-times"></i></span>
 </div>
 
-<script type="text/javascript" src="/Bytecoder/js/lunr.min.js?1678133511"></script>
-<script type="text/javascript" src="/Bytecoder/js/auto-complete.js?1678133511"></script>
+<script type="text/javascript" src="/Bytecoder/js/lunr.min.js?1678202788"></script>
+<script type="text/javascript" src="/Bytecoder/js/auto-complete.js?1678202788"></script>
 <script type="text/javascript">
     
         var baseurl = "https:\/\/mirkosertic.github.io\/Bytecoder";
     
 </script>
-<script type="text/javascript" src="/Bytecoder/js/search.js?1678133511"></script>
+<script type="text/javascript" src="/Bytecoder/js/search.js?1678202788"></script>
 
     
   </div>
@@ -577,48 +577,6 @@ if (!doNotTrack) {
 
             
           
-            
-            
-
-
-
-
- 
-  
-    
-      <li data-nav-id="/Bytecoder/chapter-3/page-3-b/" title="WebAssembly Memory Management" class="dd-item ">
-        <a href="/Bytecoder/chapter-3/page-3-b/">
-        WebAssembly Memory Management
-        
-        </a>
-    </li>
-     
-  
- 
-
-            
-          
-            
-            
-
-
-
-
- 
-  
-    
-      <li data-nav-id="/Bytecoder/chapter-3/page-3-c/" title="Optimizer effectiveness" class="dd-item ">
-        <a href="/Bytecoder/chapter-3/page-3-c/">
-        Optimizer effectiveness
-        
-        </a>
-    </li>
-     
-  
- 
-
-            
-          
         
         </ul>
       
@@ -718,7 +676,7 @@ if (!doNotTrack) {
 <li><a href="#support-for-the-java-reflection-api">Support for the Java Reflection API</a>
 <ul>
 <li><a href="#supported-by-all-backends">Supported by all backends</a></li>
-<li><a href="#additional-support-for-javascript-and-wasm-llvm-backend">Additional support for JavaScript and Wasm-LLVM backend</a></li>
+<li><a href="#additional-support-for-javascript-and-wasm-backend">Additional support for JavaScript and Wasm backend</a></li>
 <li><a href="#reflection-aot-configuration-for-all-compiler-backends">Reflection/AOT configuration for all compiler backends</a></li>
 </ul></li>
 </ul></li>
@@ -749,6 +707,11 @@ if (!doNotTrack) {
 
 
 <h2 id="overview">Overview</h2>
+
+
+<div class="notices note" ><p>Reflection support is currently reengineered. This chapter might be outdated and will be rewritten when work is complete.</p>
+</div>
+
 
 <p>Bytecoder is an <strong>AOT (Ahead-of-time) compiler</strong>. As this, it has to determine the set
 of classes at compile time. It does this by running a statical dependency analysis which
@@ -782,9 +745,9 @@ Object instance = runtimeClass.newInstance(); // Method 1 to instantiate a class
 cl.getConstructor(new Class[0]).newInstance(); // Method 2 to instantiate a class
 </code></pre>
 
-<h3 id="additional-support-for-javascript-and-wasm-llvm-backend">Additional support for JavaScript and Wasm-LLVM backend</h3>
+<h3 id="additional-support-for-javascript-and-wasm-backend">Additional support for JavaScript and Wasm backend</h3>
 
-<p>The JavaScript and Wasm-LLVM backends provide support for reflective field access:</p>
+<p>The JavaScript and Wasm backends provide support for reflective field access:</p>
 
 <pre><code>Field fields[] = ReflectionTarget.class.getDeclaredFields();
 Field f = BaseClass.class.getField(&quot;staticField&quot;); // Get field by name
@@ -1897,38 +1860,6 @@ root of the classpath. The syntax of the configuration file is shown in the foll
             
         
                     
-                        
-            
-            
-                
-                    
-                
-                
-
-                    
-                    
-                    
-
-                    
-            
-        
-                    
-                        
-            
-            
-                
-                    
-                
-                
-
-                    
-                    
-                    
-
-                    
-            
-        
-                    
             
         
                     
@@ -1954,19 +1885,19 @@ root of the classpath. The syntax of the configuration file is shown in the foll
     <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
       <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
     </div>
-    <script src="/Bytecoder/js/clipboard.min.js?1678133511"></script>
-    <script src="/Bytecoder/js/perfect-scrollbar.min.js?1678133511"></script>
-    <script src="/Bytecoder/js/perfect-scrollbar.jquery.min.js?1678133511"></script>
-    <script src="/Bytecoder/js/jquery.sticky.js?1678133511"></script>
-    <script src="/Bytecoder/js/featherlight.min.js?1678133511"></script>
-    <script src="/Bytecoder/js/highlight.pack.js?1678133511"></script>
+    <script src="/Bytecoder/js/clipboard.min.js?1678202788"></script>
+    <script src="/Bytecoder/js/perfect-scrollbar.min.js?1678202788"></script>
+    <script src="/Bytecoder/js/perfect-scrollbar.jquery.min.js?1678202788"></script>
+    <script src="/Bytecoder/js/jquery.sticky.js?1678202788"></script>
+    <script src="/Bytecoder/js/featherlight.min.js?1678202788"></script>
+    <script src="/Bytecoder/js/highlight.pack.js?1678202788"></script>
     <script>hljs.initHighlightingOnLoad();</script>
-    <script src="/Bytecoder/js/modernizr.custom-3.6.0.js?1678133511"></script>
-    <script src="/Bytecoder/js/learn.js?1678133511"></script>
-    <script src="/Bytecoder/js/hugo-learn.js?1678133511"></script>
+    <script src="/Bytecoder/js/modernizr.custom-3.6.0.js?1678202788"></script>
+    <script src="/Bytecoder/js/learn.js?1678202788"></script>
+    <script src="/Bytecoder/js/hugo-learn.js?1678202788"></script>
     
         
-            <script src="/Bytecoder/mermaid/mermaid.js?1678133511"></script>
+            <script src="/Bytecoder/mermaid/mermaid.js?1678202788"></script>
         
         <script>
             mermaid.initialize({ startOnLoad: true });

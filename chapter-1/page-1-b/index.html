@@ -12,20 +12,20 @@
     <title>The Maven Plugin :: Bytecoder - JVM to JavaScript, OpenCL and WebAssembly Transpiler</title>
 
     
-    <link href="/Bytecoder/css/nucleus.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/fontawesome-all.min.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/hybrid.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/featherlight.min.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/perfect-scrollbar.min.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/auto-complete.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/atom-one-dark-reasonable.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/theme.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/tabs.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/hugo-theme.css?1678133511" rel="stylesheet">
+    <link href="/Bytecoder/css/nucleus.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/fontawesome-all.min.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/hybrid.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/featherlight.min.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/perfect-scrollbar.min.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/auto-complete.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/atom-one-dark-reasonable.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/theme.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/tabs.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/hugo-theme.css?1678202788" rel="stylesheet">
     
     
 
-    <script src="/Bytecoder/js/jquery-3.3.1.min.js?1678133511"></script>
+    <script src="/Bytecoder/js/jquery-3.3.1.min.js?1678202788"></script>
 
     <style>
       :root #header + #content > #left > #rlblock_left{
@@ -66,14 +66,14 @@ if (!doNotTrack) {
     <span data-search-clear=""><i class="fas fa-times"></i></span>
 </div>
 
-<script type="text/javascript" src="/Bytecoder/js/lunr.min.js?1678133511"></script>
-<script type="text/javascript" src="/Bytecoder/js/auto-complete.js?1678133511"></script>
+<script type="text/javascript" src="/Bytecoder/js/lunr.min.js?1678202788"></script>
+<script type="text/javascript" src="/Bytecoder/js/auto-complete.js?1678202788"></script>
 <script type="text/javascript">
     
         var baseurl = "https:\/\/mirkosertic.github.io\/Bytecoder";
     
 </script>
-<script type="text/javascript" src="/Bytecoder/js/search.js?1678133511"></script>
+<script type="text/javascript" src="/Bytecoder/js/search.js?1678202788"></script>
 
     
   </div>
@@ -577,48 +577,6 @@ if (!doNotTrack) {
 
             
           
-            
-            
-
-
-
-
- 
-  
-    
-      <li data-nav-id="/Bytecoder/chapter-3/page-3-b/" title="WebAssembly Memory Management" class="dd-item ">
-        <a href="/Bytecoder/chapter-3/page-3-b/">
-        WebAssembly Memory Management
-        
-        </a>
-    </li>
-     
-  
- 
-
-            
-          
-            
-            
-
-
-
-
- 
-  
-    
-      <li data-nav-id="/Bytecoder/chapter-3/page-3-c/" title="Optimizer effectiveness" class="dd-item ">
-        <a href="/Bytecoder/chapter-3/page-3-c/">
-        Optimizer effectiveness
-        
-        </a>
-    </li>
-     
-  
- 
-
-            
-          
         
         </ul>
       
@@ -762,29 +720,15 @@ tools.</p>
 
 <li><p><code>mainClass</code> The Classname with the main class to be compiled. Required.</p></li>
 
-<li><p><code>backend</code>: The Backend to be used. Can be <code>js</code>, <code>wasm</code>  or <code>wasm_llvm</code>. Defaults to <code>js</code>.</p></li>
+<li><p><code>backend</code>: The Backend to be used. Can be <code>js</code> or <code>wasm</code>. Defaults to <code>js</code>.</p></li>
 
 <li><p><code>debugOutput</code>: Shall debug output be generated? Defaults to <code>false</code>.</p></li>
 
-<li><p><code>enableExceptionHandling</code>: Shall Exception-Handling be activated? Defaults to <code>false</code>.</p></li>
-
-<li><p><code>optimizationLevel</code>: Which kind of optimization should be applied? Can be <code>NONE</code>, <code>ALL</code> or <code>EXPERIMENTAL</code>. Defaults to <code>ALL</code>.</p></li>
+<li><p><code>optimizationLevel</code>: Which kind of optimization should be applied? Can be <code>DISABLED</code>, <code>DEFAULT</code> or <code>ALL</code>. Defaults to <code>DEFAULT</code>.</p></li>
 
 <li><p><code>filenamePrefix</code>: Prefix of the generated files. Defaults to <code>bytecoder</code>.</p></li>
 
-<li><p><code>wasmInitialPages</code>: Minimum number of pages for WASM memory. Defaults to <code>512</code>.</p></li>
-
-<li><p><code>wasmMaximumPages</code>: Maximum number of pages for WASM memory. Defaults to <code>1024</code>.</p></li>
-
-<li><p><code>minifyCompileResult</code>: Shall the compile result be minified? Defaults to <code>true</code>.</p></li>
-
-<li><p><code>preferStackifier</code>: Shall the Stackifier be used and the Relooper as fallback? Defaults to <code>false</code>.</p></li>
-
-<li><p><code>registerAllocator</code>: Which register allocator should be used? Can be <code>linear</code> or <code>passthru</code>? Defaults to <code>linear</code>.</p></li>
-
 <li><p><code>additionalClassesToLink</code>: List of full qualified class names to be linked beside the statically referenced ones to make them available by reflection API. Optional</p></li>
-
-<li><p><code>llvmOptimizationLevel</code>: Optimization level for the LLVM backend. Generate code at different optimization levels. These correspond to the -O0, -O1, -O2, and -O3 optimization levels used by clang. Defaults to O2.</p></li>
 </ul>
 
 <h3 id="compiling-to-javascript">Compiling to JavaScript</h3>
@@ -827,7 +771,6 @@ JavaScript will be placed in the Maven <code>target/bytecoder</code> directory.<
             &lt;configuration&gt;
                 &lt;mainClass&gt;de.mirkosertic.bytecoder.integrationtest.SimpleMainClass&lt;/mainClass&gt;
                 &lt;backend&gt;wasm&lt;/backend&gt;
-                &lt;enableExceptionHandling&gt;false&lt;/enableExceptionHandling&gt;
                 &lt;optimizationLevel&gt;ALL&lt;/optimizationLevel&gt;
             &lt;/configuration&gt;
             &lt;executions&gt;
@@ -1926,38 +1869,6 @@ WebAssembly text file and compiled binaries will be placed in the Maven <code>ta
             
         
                     
-                        
-            
-            
-                
-                    
-                
-                
-
-                    
-                    
-                    
-
-                    
-            
-        
-                    
-                        
-            
-            
-                
-                    
-                
-                
-
-                    
-                    
-                    
-
-                    
-            
-        
-                    
             
         
                     
@@ -1983,19 +1894,19 @@ WebAssembly text file and compiled binaries will be placed in the Maven <code>ta
     <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
       <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
     </div>
-    <script src="/Bytecoder/js/clipboard.min.js?1678133511"></script>
-    <script src="/Bytecoder/js/perfect-scrollbar.min.js?1678133511"></script>
-    <script src="/Bytecoder/js/perfect-scrollbar.jquery.min.js?1678133511"></script>
-    <script src="/Bytecoder/js/jquery.sticky.js?1678133511"></script>
-    <script src="/Bytecoder/js/featherlight.min.js?1678133511"></script>
-    <script src="/Bytecoder/js/highlight.pack.js?1678133511"></script>
+    <script src="/Bytecoder/js/clipboard.min.js?1678202788"></script>
+    <script src="/Bytecoder/js/perfect-scrollbar.min.js?1678202788"></script>
+    <script src="/Bytecoder/js/perfect-scrollbar.jquery.min.js?1678202788"></script>
+    <script src="/Bytecoder/js/jquery.sticky.js?1678202788"></script>
+    <script src="/Bytecoder/js/featherlight.min.js?1678202788"></script>
+    <script src="/Bytecoder/js/highlight.pack.js?1678202788"></script>
     <script>hljs.initHighlightingOnLoad();</script>
-    <script src="/Bytecoder/js/modernizr.custom-3.6.0.js?1678133511"></script>
-    <script src="/Bytecoder/js/learn.js?1678133511"></script>
-    <script src="/Bytecoder/js/hugo-learn.js?1678133511"></script>
+    <script src="/Bytecoder/js/modernizr.custom-3.6.0.js?1678202788"></script>
+    <script src="/Bytecoder/js/learn.js?1678202788"></script>
+    <script src="/Bytecoder/js/hugo-learn.js?1678202788"></script>
     
         
-            <script src="/Bytecoder/mermaid/mermaid.js?1678133511"></script>
+            <script src="/Bytecoder/mermaid/mermaid.js?1678202788"></script>
         
         <script>
             mermaid.initialize({ startOnLoad: true });

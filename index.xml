@@ -53,8 +53,7 @@ This graph combines data flow analysis and control flow into one big graph. Usin
       
       <guid>https://mirkosertic.github.io/Bytecoder/chapter-1/chapter-1-1/page-1-1-a/</guid>
       <description>A JBox2D simulation transpiled to JavaScript and WebAssembly JBox2D Demo compiled from Java to JavaScript JS Backend
-JBox2D Demo compiled from Java to WebAssembly Relooper Codegen vs. Stackifier Codegen
-JBox2D Demo compiled from Java to WebAssembly with LLVM Codegen</description>
+JBox2D Demo compiled from Java to WebAssembly Wasm Codegen</description>
     </item>
     
     <item>
@@ -91,16 +90,6 @@ JBox2D Demo compiled from Kotlin to WebAssembly</description>
     </item>
     
     <item>
-      <title>WebAssembly Memory Management</title>
-      <link>https://mirkosertic.github.io/Bytecoder/chapter-3/page-3-b/</link>
-      <pubDate>Fri, 25 Oct 2019 14:49:24 +0200</pubDate>
-      
-      <guid>https://mirkosertic.github.io/Bytecoder/chapter-3/page-3-b/</guid>
-      <description>The WebAssembly backend emulates high level data types using WebAssembly primitives. At the moment only i32 and f32 types. All other data types are composed using data blocks in the linear memory and pointers, which are basically also i32. This Backend does not use Wasm64.
-Memory The memory is managed. It is dynamically allocated and automatically freed using a Mark-and-Sweep garbage collector. All memory is directly mapped to the Wasm linear memory.</description>
-    </item>
-    
-    <item>
       <title>JRE Emulation</title>
       <link>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-c/</link>
       <pubDate>Fri, 25 Oct 2019 14:49:24 +0200</pubDate>
@@ -117,17 +106,7 @@ Bytecoder comes with a set of JPMS modules like java.base etc. Please note that 
       
       <guid>https://mirkosertic.github.io/Bytecoder/chapter-1/chapter-1-1/page-1-1-c/</guid>
       <description>The Lua4J interpreter transpiled to JavaScript and WebAssembly Lua4J Demo compiled to JavaScript
-Lua4J Demo compiled to WebAssembly
-Lua4J Demo compiled to WebAssembly with LLVM</description>
-    </item>
-    
-    <item>
-      <title>Optimizer effectiveness</title>
-      <link>https://mirkosertic.github.io/Bytecoder/chapter-3/page-3-c/</link>
-      <pubDate>Fri, 25 Oct 2019 14:49:24 +0200</pubDate>
-      
-      <guid>https://mirkosertic.github.io/Bytecoder/chapter-3/page-3-c/</guid>
-      <description>Step JBox2D JS Demo JBox2D Wasm Demo     Unoptimized 2.051.489 bytes 1.226.186 bytes   Linear Register Allocation 1.582.659 bytes 1.081.372 bytes   Constant Inlining 1.487.327 bytes 1.010.403 bytes   Inefficient If-Conditions 1.473.286 bytes 1.001.294 bytes   Inefficient Field-Read 1.401.204 bytes 929.177 bytes   Inefficient Field-Write 1.370.353 bytes 909.742 bytes   Inefficient Invocations 1.261.180 bytes 857.123 bytes   Inefficient Array-Access 1.</description>
+Lua4J Demo compiled to WebAssembly</description>
     </item>
     
     <item>
@@ -136,8 +115,8 @@ Lua4J Demo compiled to WebAssembly with LLVM</description>
       <pubDate>Mon, 11 Jan 2021 00:00:00 +0200</pubDate>
       
       <guid>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-d/</guid>
-      <description>Overview Bytecoder is an AOT (Ahead-of-time) compiler. As this, it has to determine the set of classes at compile time. It does this by running a statical dependency analysis which starts at a class implementing a public static void main(String[] args) method and builds a dependency tree from there resulting in the final set of classes and methods that must be included to make the program valid.
-However, things start to get tricky once we use the Java Reflection API.</description>
+      <description>Overview Reflection support is currently reengineered. This chapter might be outdated and will be rewritten when work is complete.
+ Bytecoder is an AOT (Ahead-of-time) compiler. As this, it has to determine the set of classes at compile time. It does this by running a statical dependency analysis which starts at a class implementing a public static void main(String[] args) method and builds a dependency tree from there resulting in the final set of classes and methods that must be included to make the program valid.</description>
     </item>
     
     <item>
@@ -146,8 +125,7 @@ However, things start to get tricky once we use the Java Reflection API.</descri
       <pubDate>Fri, 25 Oct 2019 14:49:24 +0200</pubDate>
       
       <guid>https://mirkosertic.github.io/Bytecoder/chapter-1/chapter-1-1/page-1-1-d/</guid>
-      <description>An example showing vue.js and WebAssembly integration vue.js integration Demo compiled to WebAssembly
-vue.js integration Demo compiled to WebAssembly with LLVM</description>
+      <description>An example showing vue.js and WebAssembly integration vue.js integration Demo compiled to WebAssembly</description>
     </item>
     
     <item>

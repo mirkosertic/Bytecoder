@@ -12,20 +12,20 @@
     <title>The Command-Line Interface (CLI) :: Bytecoder - JVM to JavaScript, OpenCL and WebAssembly Transpiler</title>
 
     
-    <link href="/Bytecoder/css/nucleus.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/fontawesome-all.min.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/hybrid.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/featherlight.min.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/perfect-scrollbar.min.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/auto-complete.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/atom-one-dark-reasonable.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/theme.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/tabs.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/hugo-theme.css?1678133511" rel="stylesheet">
+    <link href="/Bytecoder/css/nucleus.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/fontawesome-all.min.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/hybrid.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/featherlight.min.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/perfect-scrollbar.min.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/auto-complete.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/atom-one-dark-reasonable.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/theme.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/tabs.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/hugo-theme.css?1678202788" rel="stylesheet">
     
     
 
-    <script src="/Bytecoder/js/jquery-3.3.1.min.js?1678133511"></script>
+    <script src="/Bytecoder/js/jquery-3.3.1.min.js?1678202788"></script>
 
     <style>
       :root #header + #content > #left > #rlblock_left{
@@ -66,14 +66,14 @@ if (!doNotTrack) {
     <span data-search-clear=""><i class="fas fa-times"></i></span>
 </div>
 
-<script type="text/javascript" src="/Bytecoder/js/lunr.min.js?1678133511"></script>
-<script type="text/javascript" src="/Bytecoder/js/auto-complete.js?1678133511"></script>
+<script type="text/javascript" src="/Bytecoder/js/lunr.min.js?1678202788"></script>
+<script type="text/javascript" src="/Bytecoder/js/auto-complete.js?1678202788"></script>
 <script type="text/javascript">
     
         var baseurl = "https:\/\/mirkosertic.github.io\/Bytecoder";
     
 </script>
-<script type="text/javascript" src="/Bytecoder/js/search.js?1678133511"></script>
+<script type="text/javascript" src="/Bytecoder/js/search.js?1678202788"></script>
 
     
   </div>
@@ -577,48 +577,6 @@ if (!doNotTrack) {
 
             
           
-            
-            
-
-
-
-
- 
-  
-    
-      <li data-nav-id="/Bytecoder/chapter-3/page-3-b/" title="WebAssembly Memory Management" class="dd-item ">
-        <a href="/Bytecoder/chapter-3/page-3-b/">
-        WebAssembly Memory Management
-        
-        </a>
-    </li>
-     
-  
- 
-
-            
-          
-            
-            
-
-
-
-
- 
-  
-    
-      <li data-nav-id="/Bytecoder/chapter-3/page-3-c/" title="Optimizer effectiveness" class="dd-item ">
-        <a href="/Bytecoder/chapter-3/page-3-c/">
-        Optimizer effectiveness
-        
-        </a>
-    </li>
-     
-  
- 
-
-            
-          
         
         </ul>
       
@@ -803,11 +761,7 @@ HTML file embedding the Bytecoder JavaScript and invoking it:</p>
 </code></pre>
 
 
-<div class="notices note" ><p>Bytecoder has two backends for WebAssembly generation. The older one
-is called <code>wasm</code> and is a handcrafted one. The newer one is called <code>wasm_llvm</code>, is based on <code>LLVM</code>
-and uses the whole LLVM toolchain for compilation, optimization and code generation.
-The LLVM backend is based on LLVM Release 10. Please make sure to have
-the <code>lld-11</code> and <code>wasm-ld-11</code> binaries in the current <code>PATH</code>.</p>
+<div class="notices note" ><p>Bytecoder&rsquo;s WebAssembly backend can generate Wasm binaries without further third party software like wabt or binaryen.</p>
 </div>
 
 
@@ -818,55 +772,19 @@ HTML embedding, which is shown here:</p>
     &lt;meta charset=&quot;UTF-8&quot;&gt;
     &lt;script src=&quot;bytecoder.js&quot;&gt;&lt;/script&gt;
     &lt;script&gt;
-        var bytecoderWasmFile = 'bytecoder.wasm';
-        var instantiated = function(result) {
-            bytecoder.init(result.instance);
-            bytecoder.exports.initMemory(0);
-            bytecoder.exports.bootstrap(0);
-            bytecoder.initializeFileIO();
+        bytecoder.instantiate('lua_wasmwasmclasses.wasm').then(function() {
 
-            // We have to activate the garbage collector!
-            var gcInterval = 200; // How often will the GC be triggered (in ms)
-            var gcMaxObjectsPerRun = 30; // How many objects will be collected during one run
-            var gcRunning = false; 
-            var runcounter = 0; // Used for debugging
-            setInterval(function() {
-                if (!gcRunning) {
-                    gcRunning = true;
-                    var freed = bytecoder.exports.IncrementalGC(0, gcMaxObjectsPerRun);
-                    if (runcounter++ % 10 === 0) {
-                        var freemem = bytecoder.exports.freeMem(0);
-                        var epoch = bytecoder.exports.GCEpoch(0);
-                        console.log(freemem + &quot; bytes free memory after GC, epoch = &quot; + epoch);
-                    }
-                    gcRunning = false;
-                }
-            }, gcInterval);
-
-            bytecoder.exports.main(0);
-
-        };
-        WebAssembly.instantiateStreaming(fetch(bytecoderWasmFile), bytecoder.imports).then(instantiated).catch(function(error) {
-            var request = new XMLHttpRequest();
-            request.open('GET', bytecoderWasmFile);
-            request.responseType = 'arraybuffer';
-            request.send();
-            request.onload = function() {
-                var bytes = request.response;
-                WebAssembly.instantiate(bytes, bytecoder.imports).then(instantiated);
-            };
+            console.log(&quot;Bootstrapped&quot;);
+            bytecoder.instance.exports.main(null, bytecoder.instance.exports.newObjectArray(null, 0));
+            console.log(&quot;Ready for action!&quot;);
         });
     &lt;/script&gt;
 &lt;/html&gt;
 </code></pre>
 
 
-<div class="notices warning" ><p>The WebAssembly backends include a very simple incremental mark and sweep garbage collector.
-When GC runs, the application halts ( stop the world ) and memory is scanned and
-freed. However, this is a <strong>very</strong> expensive process, so you maybe want to configure
-the garbage collector intervals and parameters by hand depending an your use case.
-The Bytecoder GC will be removed as soon as there is a Wasm built-in garbage collector
-available.</p>
+<div class="notices warning" ><p>The WebAssembly backend generates Wasm bytecoded based on the Exception-Handling and GC proposal. These features
+must be manually enabled in Chrome or Firefox as long as they have not been fully standardized.</p>
 </div>
 
 
@@ -1947,38 +1865,6 @@ available.</p>
             
         
                     
-                        
-            
-            
-                
-                    
-                
-                
-
-                    
-                    
-                    
-
-                    
-            
-        
-                    
-                        
-            
-            
-                
-                    
-                
-                
-
-                    
-                    
-                    
-
-                    
-            
-        
-                    
             
         
                     
@@ -2004,19 +1890,19 @@ available.</p>
     <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
       <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
     </div>
-    <script src="/Bytecoder/js/clipboard.min.js?1678133511"></script>
-    <script src="/Bytecoder/js/perfect-scrollbar.min.js?1678133511"></script>
-    <script src="/Bytecoder/js/perfect-scrollbar.jquery.min.js?1678133511"></script>
-    <script src="/Bytecoder/js/jquery.sticky.js?1678133511"></script>
-    <script src="/Bytecoder/js/featherlight.min.js?1678133511"></script>
-    <script src="/Bytecoder/js/highlight.pack.js?1678133511"></script>
+    <script src="/Bytecoder/js/clipboard.min.js?1678202788"></script>
+    <script src="/Bytecoder/js/perfect-scrollbar.min.js?1678202788"></script>
+    <script src="/Bytecoder/js/perfect-scrollbar.jquery.min.js?1678202788"></script>
+    <script src="/Bytecoder/js/jquery.sticky.js?1678202788"></script>
+    <script src="/Bytecoder/js/featherlight.min.js?1678202788"></script>
+    <script src="/Bytecoder/js/highlight.pack.js?1678202788"></script>
     <script>hljs.initHighlightingOnLoad();</script>
-    <script src="/Bytecoder/js/modernizr.custom-3.6.0.js?1678133511"></script>
-    <script src="/Bytecoder/js/learn.js?1678133511"></script>
-    <script src="/Bytecoder/js/hugo-learn.js?1678133511"></script>
+    <script src="/Bytecoder/js/modernizr.custom-3.6.0.js?1678202788"></script>
+    <script src="/Bytecoder/js/learn.js?1678202788"></script>
+    <script src="/Bytecoder/js/hugo-learn.js?1678202788"></script>
     
         
-            <script src="/Bytecoder/mermaid/mermaid.js?1678133511"></script>
+            <script src="/Bytecoder/mermaid/mermaid.js?1678202788"></script>
         
         <script>
             mermaid.initialize({ startOnLoad: true });

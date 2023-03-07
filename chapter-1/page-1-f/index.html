@@ -12,20 +12,20 @@
     <title>Interoperability :: Bytecoder - JVM to JavaScript, OpenCL and WebAssembly Transpiler</title>
 
     
-    <link href="/Bytecoder/css/nucleus.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/fontawesome-all.min.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/hybrid.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/featherlight.min.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/perfect-scrollbar.min.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/auto-complete.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/atom-one-dark-reasonable.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/theme.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/tabs.css?1678133511" rel="stylesheet">
-    <link href="/Bytecoder/css/hugo-theme.css?1678133511" rel="stylesheet">
+    <link href="/Bytecoder/css/nucleus.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/fontawesome-all.min.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/hybrid.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/featherlight.min.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/perfect-scrollbar.min.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/auto-complete.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/atom-one-dark-reasonable.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/theme.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/tabs.css?1678202788" rel="stylesheet">
+    <link href="/Bytecoder/css/hugo-theme.css?1678202788" rel="stylesheet">
     
     
 
-    <script src="/Bytecoder/js/jquery-3.3.1.min.js?1678133511"></script>
+    <script src="/Bytecoder/js/jquery-3.3.1.min.js?1678202788"></script>
 
     <style>
       :root #header + #content > #left > #rlblock_left{
@@ -66,14 +66,14 @@ if (!doNotTrack) {
     <span data-search-clear=""><i class="fas fa-times"></i></span>
 </div>
 
-<script type="text/javascript" src="/Bytecoder/js/lunr.min.js?1678133511"></script>
-<script type="text/javascript" src="/Bytecoder/js/auto-complete.js?1678133511"></script>
+<script type="text/javascript" src="/Bytecoder/js/lunr.min.js?1678202788"></script>
+<script type="text/javascript" src="/Bytecoder/js/auto-complete.js?1678202788"></script>
 <script type="text/javascript">
     
         var baseurl = "https:\/\/mirkosertic.github.io\/Bytecoder";
     
 </script>
-<script type="text/javascript" src="/Bytecoder/js/search.js?1678133511"></script>
+<script type="text/javascript" src="/Bytecoder/js/search.js?1678202788"></script>
 
     
   </div>
@@ -577,48 +577,6 @@ if (!doNotTrack) {
 
             
           
-            
-            
-
-
-
-
- 
-  
-    
-      <li data-nav-id="/Bytecoder/chapter-3/page-3-b/" title="WebAssembly Memory Management" class="dd-item ">
-        <a href="/Bytecoder/chapter-3/page-3-b/">
-        WebAssembly Memory Management
-        
-        </a>
-    </li>
-     
-  
- 
-
-            
-          
-            
-            
-
-
-
-
- 
-  
-    
-      <li data-nav-id="/Bytecoder/chapter-3/page-3-c/" title="Optimizer effectiveness" class="dd-item ">
-        <a href="/Bytecoder/chapter-3/page-3-c/">
-        Optimizer effectiveness
-        
-        </a>
-    </li>
-     
-  
- 
-
-            
-          
         
         </ul>
       
@@ -840,13 +798,12 @@ The conversion functions are part of the global <code>bytecoder</code> object as
 
 
 
-<div class="notices warning" ><p>The JVM long and double datatypes are currently only available in a limited form in Bytecoder. There is currently
-no native 64-bit integer datatype available in JavaScript. Bytecoder is limited
+<div class="notices warning" ><p>The JVM long and double datatypes are currently only available in a limited form in Bytecoder. Bytecoder is limited
 to a 53-bit range due to JavaScript&rsquo;s IEEE 754 double precision number type. However, once JavaScript BigInt
 will be supported by all major browsers, Bytecoder will use BigInt as a substitute for the
-JVM long datatype. For now, there is no full emulation of long datatype planned. 64-bit Datatypes such as
-long or double are only supported without precision loss by the WebAssembly <code>wasm_llvm</code> backend. Please note
-there is a loss in precisison when passing a long from WebAssembly to JS (calling an imported function).</p>
+JVM long datatype. 64-bit Datatypes such as
+long or double are only supported without precision loss by the WebAssembly <code>wasm</code> backend. Please note
+there is a loss in precisison when passing a double from WebAssembly to JS (calling an imported function).</p>
 </div>
 
 
@@ -2017,38 +1974,6 @@ methods available as exports.</p>
             
         
                     
-                        
-            
-            
-                
-                    
-                
-                
-
-                    
-                    
-                    
-
-                    
-            
-        
-                    
-                        
-            
-            
-                
-                    
-                
-                
-
-                    
-                    
-                    
-
-                    
-            
-        
-                    
             
         
                     
@@ -2074,19 +1999,19 @@ methods available as exports.</p>
     <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
       <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
     </div>
-    <script src="/Bytecoder/js/clipboard.min.js?1678133511"></script>
-    <script src="/Bytecoder/js/perfect-scrollbar.min.js?1678133511"></script>
-    <script src="/Bytecoder/js/perfect-scrollbar.jquery.min.js?1678133511"></script>
-    <script src="/Bytecoder/js/jquery.sticky.js?1678133511"></script>
-    <script src="/Bytecoder/js/featherlight.min.js?1678133511"></script>
-    <script src="/Bytecoder/js/highlight.pack.js?1678133511"></script>
+    <script src="/Bytecoder/js/clipboard.min.js?1678202788"></script>
+    <script src="/Bytecoder/js/perfect-scrollbar.min.js?1678202788"></script>
+    <script src="/Bytecoder/js/perfect-scrollbar.jquery.min.js?1678202788"></script>
+    <script src="/Bytecoder/js/jquery.sticky.js?1678202788"></script>
+    <script src="/Bytecoder/js/featherlight.min.js?1678202788"></script>
+    <script src="/Bytecoder/js/highlight.pack.js?1678202788"></script>
     <script>hljs.initHighlightingOnLoad();</script>
-    <script src="/Bytecoder/js/modernizr.custom-3.6.0.js?1678133511"></script>
-    <script src="/Bytecoder/js/learn.js?1678133511"></script>
-    <script src="/Bytecoder/js/hugo-learn.js?1678133511"></script>
+    <script src="/Bytecoder/js/modernizr.custom-3.6.0.js?1678202788"></script>
+    <script src="/Bytecoder/js/learn.js?1678202788"></script>
+    <script src="/Bytecoder/js/hugo-learn.js?1678202788"></script>
     
         
-            <script src="/Bytecoder/mermaid/mermaid.js?1678133511"></script>
+            <script src="/Bytecoder/mermaid/mermaid.js?1678202788"></script>
         
         <script>
             mermaid.initialize({ startOnLoad: true });

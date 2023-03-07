@@ -51,8 +51,8 @@ Bytecoder comes with a set of JPMS modules like java.base etc. Please note that 
       <pubDate>Mon, 11 Jan 2021 00:00:00 +0200</pubDate>
       
       <guid>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-d/</guid>
-      <description>Overview Bytecoder is an AOT (Ahead-of-time) compiler. As this, it has to determine the set of classes at compile time. It does this by running a statical dependency analysis which starts at a class implementing a public static void main(String[] args) method and builds a dependency tree from there resulting in the final set of classes and methods that must be included to make the program valid.
-However, things start to get tricky once we use the Java Reflection API.</description>
+      <description>Overview Reflection support is currently reengineered. This chapter might be outdated and will be rewritten when work is complete.
+ Bytecoder is an AOT (Ahead-of-time) compiler. As this, it has to determine the set of classes at compile time. It does this by running a statical dependency analysis which starts at a class implementing a public static void main(String[] args) method and builds a dependency tree from there resulting in the final set of classes and methods that must be included to make the program valid.</description>
     </item>
     
     <item>
