@@ -29,6 +29,8 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import java.io.IOException;
+import java.lang.invoke.CallSite;
+import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -187,6 +189,20 @@ public class CompileUnit {
             final ResolvedClass rc = resolveClass(Type.getObjectType(cl.getName().replace('.', '/')), analysisStack);
             if (cl.supportsClassForName()) {
                 rc.resolveMethod("<init>", Type.getMethodType(Type.VOID_TYPE), analysisStack);
+            }
+        }
+
+        // Link some runtime code
+        final ResolvedClass methodHandleCl = resolveClass(Type.getType(MethodHandle.class), analysisStack);
+        for (final MethodNode method : methodHandleCl.classNode.methods) {
+            if ("invokeExact".equals(method.name)) {
+                methodHandleCl.resolveMethod(method.name, Type.getMethodType(method.desc), analysisStack);
+            }
+        }
+        final ResolvedClass callsiteCl = resolveClass(Type.getType(CallSite.class), analysisStack);
+        for (final MethodNode method : callsiteCl.classNode.methods) {
+            if ("getTarget".equals(method.name)) {
+                callsiteCl.resolveMethod(method.name, Type.getMethodType(method.desc), analysisStack);
             }
         }
 

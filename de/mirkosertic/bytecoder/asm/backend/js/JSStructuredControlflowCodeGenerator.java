@@ -96,8 +96,9 @@ import de.mirkosertic.bytecoder.classlib.Array;
 import org.objectweb.asm.Type;
 
 import java.io.PrintWriter;
-import java.lang.invoke.MethodHandle;
+import java.lang.invoke.LambdaMetafactory;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -284,6 +285,195 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
     private void writeExpression(final InvokeDynamicExpression node) {
 
+        final ResolveCallsite resolveCallsite = (ResolveCallsite) node.incomingDataFlows[0];
+        final MethodReference methodReference = (MethodReference) resolveCallsite.incomingDataFlows[0];
+        final ResolvedMethod m = methodReference.resolvedMethod;
+        if (m.owner.type.getClassName().equals(LambdaMetafactory.class.getName())) {
+            if ("metafactory".equals(m.methodNode.name)) {
+                // Ok, we can create a lambda invocation here
+                final ObjectString argMethodName = (ObjectString) resolveCallsite.incomingDataFlows[1];
+                final MethodType argInvokedType = (MethodType) resolveCallsite.incomingDataFlows[2];
+                final MethodType argSamMethodType = (MethodType) resolveCallsite.incomingDataFlows[3];
+                final MethodReference argImplMethod = (MethodReference) resolveCallsite.incomingDataFlows[4];
+                final MethodType argInstanceMethodType = (MethodType) resolveCallsite.incomingDataFlows[5];
+
+                final ResolvedMethod impl = argImplMethod.resolvedMethod;
+
+                final List<Object> allArgs = new ArrayList<>();
+                for (int i = 1; i < node.incomingDataFlows.length; i++) {
+                    allArgs.add(node.incomingDataFlows[1]);
+                }
+
+                for (int i = 0; i < impl.methodType.getArgumentTypes().length; i++) {
+                    allArgs.add("arg" + i);
+                }
+
+                switch (argImplMethod.kind) {
+                    case INVOKESTATIC: {
+                        final Type returnType = argInvokedType.type.getReturnType();
+                        pw.print("bytecoder.instanceWithLambdaImpl(");
+                        pw.print(JSHelpers.generateClassName(returnType));
+                        pw.print(", function(");
+                        for (int i = 0; i < impl.methodType.getArgumentTypes().length; i++) {
+                            if (i > 0) {
+                                pw.print(",");
+                            }
+                            pw.print("arg");
+                            pw.print(i);
+                        }
+                        pw.print(") { return ");
+                        pw.print(JSHelpers.generateClassName(impl.owner.type));
+                        pw.print(".");
+                        pw.print(JSHelpers.generateMethodName(impl.methodNode.name, impl.methodType));
+                        pw.print(".call(this");
+
+                        for (final Object o : allArgs) {
+                            pw.print(", ");
+                            if (o instanceof String) {
+                                pw.print((String) o);
+                            } else {
+                                writeExpression((Node) o);
+                            }
+                        }
+
+                        pw.print(");");
+
+                        pw.print("})");
+                        return;
+                    }
+                    case INVOKEVIRTUAL:
+                    case INVOKEINTERFACE: {
+                        final Type returnType = argInvokedType.type.getReturnType();
+                        pw.print("bytecoder.instanceWithLambdaImpl(");
+                        pw.print(JSHelpers.generateClassName(returnType));
+                        pw.print(", function(");
+                        for (int i = 0; i < impl.methodType.getArgumentTypes().length; i++) {
+                            if (i > 0) {
+                                pw.print(",");
+                            }
+                            pw.print("arg");
+                            pw.print(i);
+                        }
+                        pw.print(") { return ");
+
+                        final Object firstArg = allArgs.get(0);
+                        if (firstArg instanceof String) {
+                            pw.print((String) firstArg);
+                        } else {
+                            writeExpression((Node) firstArg);
+                        }
+                        pw.print("['");
+                        pw.print(JSHelpers.generateMethodName(impl.methodNode.name, impl.methodType));
+                        pw.print("'].call(");
+
+                        if (firstArg instanceof String) {
+                            pw.print((String) firstArg);
+                        } else {
+                            writeExpression((Node) firstArg);
+                        }
+                        for (int i = 1; i < allArgs.size(); i++) {
+                            pw.print(", ");
+                            final Object arg = allArgs.get(i);
+                            if (arg instanceof String) {
+                                pw.print((String) arg);
+                            } else {
+                                writeExpression((Node) arg);
+                            }
+                        }
+                        pw.print(");");
+
+                        pw.print("})");
+                        return;
+                    }
+                    case INVOKESPECIAL: {
+                        final Type returnType = argInvokedType.type.getReturnType();
+                        pw.print("bytecoder.instanceWithLambdaImpl(");
+                        pw.print(JSHelpers.generateClassName(returnType));
+                        pw.print(", function(");
+                        for (int i = 0; i < impl.methodType.getArgumentTypes().length; i++) {
+                            if (i > 0) {
+                                pw.print(",");
+                            }
+                            pw.print("arg");
+                            pw.print(i);
+                        }
+                        pw.print(") { return ");
+
+                        // TODO: we need to call the right prototype here to support super.x invocations for overwritten methods
+                        final Object firstArg = allArgs.get(0);
+                        if (firstArg instanceof String) {
+                            pw.print((String) firstArg);
+                        } else {
+                            writeExpression((Node) firstArg);
+                        }
+                        pw.print("['");
+                        pw.print(JSHelpers.generateMethodName(impl.methodNode.name, impl.methodType));
+                        pw.print("'].call(");
+
+                        if (firstArg instanceof String) {
+                            pw.print((String) firstArg);
+                        } else {
+                            writeExpression((Node) firstArg);
+                        }
+                        for (int i = 1; i < allArgs.size(); i++) {
+                            pw.print(", ");
+                            final Object arg = allArgs.get(i);
+                            if (arg instanceof String) {
+                                pw.print((String) arg);
+                            } else {
+                                writeExpression((Node) arg);
+                            }
+                        }
+                        pw.print(");");
+
+                        pw.print("})");
+                        return;
+                    }
+                    case INVOKECONSTRUCTOR: {
+                        final Type returnType = argInvokedType.type.getReturnType();
+                        pw.print("bytecoder.instanceWithLambdaImpl(");
+                        pw.print(JSHelpers.generateClassName(returnType));
+                        pw.print(", function(");
+                        for (int i = 0; i < impl.methodType.getArgumentTypes().length; i++) {
+                            if (i > 0) {
+                                pw.print(",");
+                            }
+                            pw.print("arg");
+                            pw.print(i);
+                        }
+                        pw.print(") { return function() {");
+
+                        pw.print("const obj = new ");
+                        pw.print(JSHelpers.generateClassName(impl.owner.type));
+                        pw.print("();");
+
+                        pw.print("obj['");
+                        pw.print(JSHelpers.generateMethodName(impl.methodNode.name, impl.methodType));
+                        pw.print("'].call(obj");
+
+                        for (final Object arg : allArgs) {
+                            pw.print(", ");
+                            if (arg instanceof String) {
+                                pw.print((String) arg);
+                            } else {
+                                writeExpression((Node) arg);
+                            }
+                        }
+                        pw.print(");return obj;}();");
+
+                        pw.print("})");
+                        return;
+                    }
+                }
+            } else {
+                throw new IllegalArgumentException("Not supported method " + m.methodNode.name + " on " + m.owner.type);
+            }
+        } else {
+            throw new IllegalArgumentException("Not supported bootstrap class : " + m.owner.type);
+        }
+
+        // TODO: delete when ready
+        /*
         // Resolve callsite
         writeExpression(node.incomingDataFlows[0]);
         // Get target of callsite
@@ -291,7 +481,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         pw.print(".");
         pw.print(getTargetMethodName);
         // Invoke methodhandle using invokeExact semantics
-        pw.print("().invokeExact(");
+        pw.print("().Ljava$lang$Object$$invokeExact$$Ljava$lang$Object$(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {
                 pw.print(", ");
@@ -299,6 +489,8 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             writeExpression(node.incomingDataFlows[i]);
         }
         pw.print(")");
+
+         */
     }
 
     private void writeExpression(final ReadInstanceField node) {
@@ -454,6 +646,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         pw.print(")");
     }
 
+    // TODO: delete when ready
     private void writeExpression(final ResolveCallsite node) {
         final MethodReference methodReference = (MethodReference) node.incomingDataFlows[0];
         final ResolvedMethod m = methodReference.resolvedMethod;

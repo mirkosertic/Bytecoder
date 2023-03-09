@@ -16,7 +16,6 @@
 package de.mirkosertic.bytecoder.classlib.java.lang.invoke;
 
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
@@ -24,10 +23,4 @@ import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 public abstract class TCallSite {
 
     public abstract MethodHandle getTarget();
-
-    public abstract MethodType type();
-
-    public Object invokeExact(final Object... args) throws Throwable {
-        return null;
-    }
 }
