@@ -212,78 +212,76 @@ const bytecoder = {
         },
         "java.lang.invoke.LambdaMetafactory": {
             Ljava$lang$invoke$CallSite$$metafactory$Ljava$lang$invoke$MethodHandles$Lookup$$Ljava$lang$String$$Ljava$lang$invoke$MethodType$$Ljava$lang$invoke$MethodType$$Ljava$lang$invoke$MethodHandle$$Ljava$lang$invoke$MethodType$: function (lookups, methodName, invokedType, samMethodType, implMethod, aInstantiatedMethodType) {
-                return {
-                    Ljava$lang$invoke$MethodHandle$$getTarget$$: function () {
-                        return {
-                            lambdaref: this,
-                            invokeExact: function () {
+                let instType = invokedType[0];
+                switch (implMethod.kind) {
+                    case 1: {
+                        // Invoke static
+                        return bytecoder.instanceWithLambdaImpl(java$lang$invoke$CallSite, function () {
+                            return bytecoder.instanceWithLambdaImpl(java$lang$invoke$MethodHandle, function () {
                                 let linkingArguments = Array.from(arguments);
-                                let instType = invokedType[0];
-                                let inst = null;
-                                if ((instType.$modifiers & 512) > 0) {
-                                    let LambdaClass = class extends instType(java$lang$Object) {
-                                        static #rt = undefined;
-
-                                        static get $rt() {
-                                            if (!this.#rt) {
-                                                this.#rt = bytecoder.newRuntimeClassFor(this, [java$lang$Object, instType]);
-                                            }
-                                            return this.#rt;
-                                        }
-                                    };
-                                    inst = new LambdaClass();
-                                } else {
-                                    inst = new instType();
-                                }
-                                switch (implMethod.kind) {
-                                    case 1:
-                                        // Invoke static
-                                        inst.$lambdaimpl = function () {
-                                            let captureArguments = Array.from(arguments);
-                                            return implMethod.owner[implMethod.methodName].apply(inst, linkingArguments.concat(captureArguments));
-                                        };
-                                        break;
-                                    case 2:
-                                        // Invoke virtual
-                                        inst.$lambdaimpl = function () {
-                                            let captureArguments = Array.from(arguments);
-                                            let allargs = linkingArguments.concat(captureArguments)
-                                            return implMethod.owner.prototype[implMethod.methodName].apply(allargs[0], allargs.splice(1));
-                                        };
-                                        break;
-                                    case 3:
-                                        // Invoke interface
-                                        inst.$lambdaimpl = function () {
-                                            let captureArguments = Array.from(arguments);
-                                            let allargs = linkingArguments.concat(captureArguments)
-                                            return allargs[0][implMethod.methodName].apply(allargs[0], allargs.splice(1));
-                                        };
-                                        break;
-                                    case 4:
-                                        // Invoke constructor
-                                        inst.$lambdaimpl = function () {
-                                            let captureArguments = Array.from(arguments);
-                                            let obj = new implMethod.owner();
-                                            implMethod.owner.prototype[implMethod.methodName].apply(obj, linkingArguments.concat(captureArguments));
-                                            return obj;
-                                        };
-                                        break;
-                                    case 5:
-                                        // Invoke special
-                                        inst.$lambdaimpl = function () {
-                                            let captureArguments = Array.from(arguments);
-                                            let allargs = linkingArguments.concat(captureArguments)
-                                            return allargs[0][implMethod.methodName].apply(allargs[0], allargs.splice(1));
-                                        };
-                                        break;
-                                    default:
-                                        throw 'Not supported method kind : ' + implMethod.kind;
-                                }
-                                return inst;
-                            }
-                        };
+                                return bytecoder.instanceWithLambdaImpl(instType, function () {
+                                    let captureArguments = Array.from(arguments);
+                                    return implMethod.owner[implMethod.methodName].apply(this, linkingArguments.concat(captureArguments));
+                                });
+                            });
+                        });
                     }
-                };
+                    case 2: {
+                        // Invoke virtual
+                        return bytecoder.instanceWithLambdaImpl(java$lang$invoke$CallSite, function () {
+                            return bytecoder.instanceWithLambdaImpl(java$lang$invoke$MethodHandle, function () {
+                                let linkingArguments = Array.from(arguments);
+                                return bytecoder.instanceWithLambdaImpl(instType, function () {
+                                    let captureArguments = Array.from(arguments);
+                                    let allargs = linkingArguments.concat(captureArguments)
+                                    return implMethod.owner.prototype[implMethod.methodName].apply(allargs[0], allargs.splice(1));
+                                });
+                            });
+                        });
+                    }
+                    case 3: {
+                        // Invoke interface
+                        return bytecoder.instanceWithLambdaImpl(java$lang$invoke$CallSite, function () {
+                            return bytecoder.instanceWithLambdaImpl(java$lang$invoke$MethodHandle, function () {
+                                let linkingArguments = Array.from(arguments);
+                                return bytecoder.instanceWithLambdaImpl(instType, function () {
+                                    let captureArguments = Array.from(arguments);
+                                    let allargs = linkingArguments.concat(captureArguments)
+                                    return allargs[0][implMethod.methodName].apply(allargs[0], allargs.splice(1));
+                                });
+                            });
+                        });
+                    }
+                    case 4: {
+                        // Invoke constructor
+                        return bytecoder.instanceWithLambdaImpl(java$lang$invoke$CallSite, function () {
+                            return bytecoder.instanceWithLambdaImpl(java$lang$invoke$MethodHandle, function () {
+                                let linkingArguments = Array.from(arguments);
+                                return bytecoder.instanceWithLambdaImpl(instType, function () {
+                                    let captureArguments = Array.from(arguments);
+                                    let obj = new implMethod.owner();
+                                    implMethod.owner.prototype[implMethod.methodName].apply(obj, linkingArguments.concat(captureArguments));
+                                    return obj;
+                                });
+                            });
+                        });
+                    }
+                    case 5: {
+                        // Invoke special
+                        return bytecoder.instanceWithLambdaImpl(java$lang$invoke$CallSite, function () {
+                            return bytecoder.instanceWithLambdaImpl(java$lang$invoke$MethodHandle, function () {
+                                let linkingArguments = Array.from(arguments);
+                                return bytecoder.instanceWithLambdaImpl(instType, function () {
+                                    let captureArguments = Array.from(arguments);
+                                    let allargs = linkingArguments.concat(captureArguments)
+                                    return allargs[0][implMethod.methodName].apply(allargs[0], allargs.splice(1));
+                                });
+                            });
+                        });
+                    }
+                    default:
+                        throw 'Not supported method kind : ' + implMethod.kind;
+                }
             },
         },
         "de.mirkosertic.bytecoder.classlib.BytecoderCharsetDecoder": {
@@ -610,8 +608,8 @@ const bytecoder = {
             'Lde$mirkosertic$bytecoder$api$web$Int8Array$$createInt8Array$I': function(length) {
                 return new Int8Array(length);
             },
-            'Lde$mirkosertic$bytecoder$api$web$OpaqueReferenceArray$$createObjectArray$$': function() {
-                return [];
+            'Lde$mirkosertic$bytecoder$api$web$OpaqueReferenceArray$$createObjectArray$$': function(length) {
+                return new Array(length);
             }
         }
     },
@@ -664,6 +662,26 @@ const bytecoder = {
                 //throw 'not implemented';
             }
         };
+    },
+    instanceWithLambdaImpl: function(instType, lambdaImpl) {
+        let inst = null;
+        if ((instType.$modifiers & 512) > 0) {
+            let LambdaClass = class extends instType(java$lang$Object) {
+                static #rt = undefined;
+
+                static get $rt() {
+                    if (!this.#rt) {
+                        this.#rt = bytecoder.newRuntimeClassFor(this, [java$lang$Object, instType]);
+                    }
+                    return this.#rt;
+                }
+            };
+            inst = new LambdaClass();
+        } else {
+            inst = new instType();
+        }
+        inst.$lambdaimpl = lambdaImpl.bind(inst);
+        return inst;
     },
     primitives: {
         byte: {
