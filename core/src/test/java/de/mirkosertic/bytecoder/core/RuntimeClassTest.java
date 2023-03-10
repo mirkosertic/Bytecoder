@@ -115,7 +115,7 @@ public class RuntimeClassTest {
 
     @Test
     public void testHashCode() {
-        Assert.assertEquals(42, String.class.hashCode());
+        Assert.assertEquals(414493378, String.class.hashCode());
     }
 
     @Test

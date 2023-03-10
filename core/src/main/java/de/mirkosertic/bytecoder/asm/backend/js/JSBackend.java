@@ -89,6 +89,8 @@ public class JSBackend {
         final StringWriter sw = new StringWriter();
         final PrintWriter pw = new PrintWriter(sw);
 
+        final StringConcatRegistry stringConcatRegistry = new StringConcatRegistry();
+
         generateHeader(compileUnit, pw);
 
         for (final ResolvedClass cl : compileUnit.computeClassDependencies()) {
@@ -125,7 +127,7 @@ public class JSBackend {
 
                 generateLambdaLogicFor(pw, compileUnit, cl);
 
-                generateMethodsFor(pw, compileUnit, cl, compileOptions);
+                generateMethodsFor(pw, compileUnit, cl, compileOptions, stringConcatRegistry);
 
                 pw.println("};");
 
@@ -176,7 +178,7 @@ public class JSBackend {
 
                 generateLambdaLogicFor(pw, compileUnit, cl);
 
-                generateMethodsFor(pw, compileUnit, cl, compileOptions);
+                generateMethodsFor(pw, compileUnit, cl, compileOptions, stringConcatRegistry);
 
                 pw.println("}");
                 pw.println();
@@ -192,6 +194,12 @@ public class JSBackend {
             pw.print("] = bytecoder.toBytecoderString('");
             pw.print(StringEscapeUtils.escapeEcmaScript(pooledStrings.get(i)));
             pw.println("');");
+        }
+
+        // Generate string concatenation
+        final List<StringConcatMethod> stringConcatMethods = stringConcatRegistry.getMethods();
+        for (int i = 0; i < stringConcatMethods.size(); i++) {
+            stringConcatMethods.get(i).generateCode(pw, i);
         }
 
         // Generate exports
@@ -335,7 +343,7 @@ public class JSBackend {
         }
     }
 
-    public void generateMethodsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final CompileOptions compileOptions) {
+    public void generateMethodsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final CompileOptions compileOptions, final StringConcatRegistry stringConcatRegistry) {
 
         for (final ResolvedMethod m : cl.resolvedMethods) {
             if (m.owner == cl) {
@@ -343,7 +351,7 @@ public class JSBackend {
                     generateNativeMethod(pw, compileUnit, cl, m);
                 } else {
                     if (m.methodBody != null) {
-                        generateMethod(pw, compileUnit, cl, m, compileOptions);
+                        generateMethod(pw, compileUnit, cl, m, compileOptions, stringConcatRegistry);
                     } else if (cl.isOpaqueReferenceType()) {
                         generateOpaqueAdapterMethod(pw, compileUnit, cl, m);
                     }
@@ -682,7 +690,7 @@ public class JSBackend {
         pw.println("  }");
     }
 
-    public void generateMethod(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m, final CompileOptions options) {
+    public void generateMethod(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m, final CompileOptions options, final StringConcatRegistry stringConcatRegistry) {
         pw.println();
         pw.print("  ");
         if (Modifier.isStatic(m.methodNode.access)) {
@@ -719,7 +727,7 @@ public class JSBackend {
         }
 
         try {
-            new Sequencer(g, dt, new JSStructuredControlflowCodeGenerator(compileUnit, cl, pw));
+            new Sequencer(g, dt, new JSStructuredControlflowCodeGenerator(compileUnit, cl, pw, stringConcatRegistry));
         } catch (final RuntimeException e) {
             throw new CodeGenerationFailure(m, dt, e);
         }

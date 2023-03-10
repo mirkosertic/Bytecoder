@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core;
+package de.mirkosertic.bytecoder.asm.backend.js;
 
-import de.mirkosertic.bytecoder.classlib.Address;
-import de.mirkosertic.bytecoder.classlib.MemoryManager;
-import org.junit.Assert;
-import org.junit.Test;
+import java.io.PrintWriter;
 
-public class DirectMemoryAccessTest {
+public abstract class StringConcatMethod {
 
-    @Test
-    public void testReadAndWrite() {
-        MemoryManager.initNative();
-        final int theAddress = 20;
-        Address.setIntValue(theAddress, 5, 10);
-        final int theStored = Address.getIntValue(theAddress, 5);
-        Assert.assertEquals(10, theStored, 0);
-    }
+    public abstract void generateCode(final PrintWriter pw, final int index);
 }

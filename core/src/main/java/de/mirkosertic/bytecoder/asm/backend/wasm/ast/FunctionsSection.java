@@ -51,7 +51,8 @@ public class FunctionsSection extends ModuleSection {
     }
 
     public ExportableFunction newFunction(final String label) {
-        final ExportableFunction function = new ExportableFunction(getModule(), label);
+        final FunctionType type = getModule().getTypes().functionType((WasmType) null);
+        final ExportableFunction function = new ExportableFunction(getModule(), type, label);
         functions.add(function);
         return function;
     }
@@ -68,7 +69,7 @@ public class FunctionsSection extends ModuleSection {
             final List<ExportableFunction> exportableFunction = functionIndex.exportableFunctions();
             sectionWriter.writeUnsignedLeb128(exportableFunction.size());
             for (final ExportableFunction function : exportableFunction) {
-                //sectionWriter.writeUnsignedLeb128(function.getFunctionType().index());
+                sectionWriter.writeUnsignedLeb128(function.getFunctionType().index());
             }
         }
     }

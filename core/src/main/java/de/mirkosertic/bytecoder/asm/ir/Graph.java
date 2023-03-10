@@ -101,11 +101,11 @@ public class Graph {
         return (NullReference) register(new NullReference());
     }
 
-    public PrimitiveInt newIntNode(final int value) {
+    public PrimitiveInt newInt(final int value) {
         return (PrimitiveInt) register(new PrimitiveInt(value));
     }
 
-    public PrimitiveShort newShortNode(final short value) {
+    public PrimitiveShort newShort(final short value) {
         return (PrimitiveShort) register(new PrimitiveShort(value));
     }
 
@@ -441,5 +441,9 @@ public class Graph {
 
     public Reinterpret newReinterpret(final Type type) {
         return (Reinterpret) register(new Reinterpret(type));
+    }
+
+    public BootstrapMethod newBootstrapMethod(final Type methodType, final Type className, final String methodName, final MethodReference.Kind kind) {
+        return (BootstrapMethod) register(new BootstrapMethod(methodType, className, methodName, kind));
     }
 }

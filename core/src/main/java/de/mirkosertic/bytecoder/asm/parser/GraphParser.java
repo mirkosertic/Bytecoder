@@ -864,7 +864,7 @@ public class GraphParser {
     private List<ControlFlow> parse_BIPUSH(final ControlFlow currentFlow) {
         final IntInsnNode node = (IntInsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
-        final Value value = graph.newIntNode(node.operand);
+        final Value value = graph.newInt(node.operand);
         final Variable variable = graph.newVariable(value.type);
         final Copy copyNode = graph.newCopy();
         copyNode.addIncomingData(value);
@@ -883,7 +883,7 @@ public class GraphParser {
         final IntInsnNode node = (IntInsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
 
-        final Value value = graph.newShortNode((short) node.operand);
+        final Value value = graph.newShort((short) node.operand);
         final Variable variable = graph.newVariable(value.type);
         final Copy copyNode = graph.newCopy();
         copyNode.addIncomingData(value);
@@ -1000,7 +1000,7 @@ public class GraphParser {
     private List<ControlFlow> parse_ICONSTX(final ControlFlow currentFlow, final int constant) {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
-        final PrimitiveInt value = graph.newIntNode(constant);
+        final PrimitiveInt value = graph.newInt(constant);
         final Variable variable = graph.newVariable(value.type);
         final Copy copy = graph.newCopy();
         copy.addIncomingData(value);
@@ -1823,7 +1823,7 @@ public class GraphParser {
         graph.registerTranslation(node, new InstructionTranslation(ifNode, currentState.frame));
 
         final NumericalTest numericalTest = graph.newNumericalTest(compareOperation);
-        numericalTest.addIncomingData(pop1.value, graph.newIntNode(0));
+        numericalTest.addIncomingData(pop1.value, graph.newInt(0));
 
         ifNode.addIncomingData(numericalTest);
 
@@ -1885,7 +1885,7 @@ public class GraphParser {
 
         final int local = node.var;
         final Node currentValue = currentState.frame.incomingLocals[local];
-        final Node amountNode = graph.newIntNode(node.incr);
+        final Node amountNode = graph.newInt(node.incr);
 
         final Node addNode = graph.newAdd(Type.INT_TYPE);
         addNode.addIncomingData(currentValue, amountNode);
@@ -2172,7 +2172,7 @@ public class GraphParser {
 
         final Value source;
         if (node.cst instanceof Integer) {
-            source = graph.newIntNode((Integer) node.cst);
+            source = graph.newInt((Integer) node.cst);
         } else if (node.cst instanceof Float) {
             source = graph.newFloat((Float) node.cst);
         } else if (node.cst instanceof Long) {
@@ -2309,14 +2309,11 @@ public class GraphParser {
                 throw new IllegalStateException("Not supported method handle tag : " + h.getTag());
         }
 
-        final ResolvedClass bsmType = compileUnit.resolveClass(Type.getObjectType(h.getOwner()), analysisStack);
-        final ResolvedMethod bsmMethod = bsmType.resolveMethod(h.getName(), Type.getMethodType(h.getDesc()), analysisStack);
-
         final ResolveCallsite resolveCallsite = graph.newResolveCallsite();
 
         final Type invokeDynamicDesc = Type.getMethodType(node.desc);
         resolveMethodType(invokeDynamicDesc);
-        resolveCallsite.addIncomingData(graph.newMethodReference(bsmMethod, MethodReference.Kind.INVOKESTATIC), graph.newObjectString(compileUnit.getConstantPool().resolveFromPool(node.name)), graph.newMethodType(invokeDynamicDesc));
+        resolveCallsite.addIncomingData(graph.newBootstrapMethod(Type.getMethodType(h.getDesc()), Type.getObjectType(h.getOwner()), h.getName(), MethodReference.Kind.INVOKESTATIC), graph.newObjectString(compileUnit.getConstantPool().resolveFromPool(node.name)), graph.newMethodType(invokeDynamicDesc));
         for (final Object bsmArg : node.bsmArgs) {
             if (bsmArg instanceof Handle) {
                 final Handle x = (Handle) bsmArg;
@@ -2350,6 +2347,16 @@ public class GraphParser {
                 final Type t = (Type) bsmArg;
                 resolveMethodType(t);
                 resolveCallsite.addIncomingData(graph.newMethodType(t));
+            } else if (bsmArg instanceof String) {
+                resolveCallsite.addIncomingData(graph.newObjectString(compileUnit.getConstantPool().resolveFromPool((String) bsmArg)));
+            } else if (bsmArg instanceof Integer) {
+                resolveCallsite.addIncomingData(graph.newInt((Integer) bsmArg));
+            } else if (bsmArg instanceof Long) {
+                resolveCallsite.addIncomingData(graph.newLong((Long) bsmArg));
+            } else if (bsmArg instanceof Float) {
+                resolveCallsite.addIncomingData(graph.newFloat((Float) bsmArg));
+            } else if (bsmArg instanceof Double) {
+                resolveCallsite.addIncomingData(graph.newDouble((Double) bsmArg));
             } else {
                 throw new IllegalArgumentException("Not supported bootstrap method argument type : " + bsmArg);
             }

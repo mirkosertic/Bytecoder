@@ -15,13 +15,12 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang;
 
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
+
 import java.io.FileDescriptor;
 import java.net.InetAddress;
-import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.Permission;
-
-import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 @SubstitutesInClass(completeReplace = true)
 public class TSecurityManager {
@@ -41,16 +40,11 @@ public class TSecurityManager {
         return AccessController.getContext();
     }
 
-    public void checkPermission(Permission perm) {
+    public void checkPermission(final Permission perm) {
         java.security.AccessController.checkPermission(perm);
     }
 
-    public void checkPermission(Permission perm, Object context) {
-        if (context instanceof AccessControlContext) {
-            ((AccessControlContext)context).checkPermission(perm);
-        } else {
-            throw new SecurityException();
-        }
+    public void checkPermission(final Permission perm, final Object context) {
     }
 
     public void checkCreateClassLoader() {
@@ -64,64 +58,64 @@ public class TSecurityManager {
         return root;
     }
 
-    public void checkAccess(Thread t) {
+    public void checkAccess(final Thread t) {
     }
 
-    public void checkAccess(ThreadGroup g) {
+    public void checkAccess(final ThreadGroup g) {
     }
 
-    public void checkExit(int status) {
+    public void checkExit(final int status) {
     }
 
-    public void checkExec(String cmd) {
+    public void checkExec(final String cmd) {
     }
 
-    public void checkLink(String lib) {
+    public void checkLink(final String lib) {
     }
 
-    public void checkRead(FileDescriptor fd) {
+    public void checkRead(final FileDescriptor fd) {
     }
 
-    public void checkRead(String file) {
+    public void checkRead(final String file) {
     }
 
-    public void checkRead(String file, Object context) {
+    public void checkRead(final String file, final Object context) {
     }
 
-    public void checkWrite(FileDescriptor fd) {
+    public void checkWrite(final FileDescriptor fd) {
     }
 
-    public void checkWrite(String file) {
+    public void checkWrite(final String file) {
     }
 
-    public void checkDelete(String file) {
+    public void checkDelete(final String file) {
     }
 
-    public void checkConnect(String host, int port) {
+    public void checkConnect(final String host, final int port) {
     }
 
-    public void checkConnect(String host, int port, Object context) {
+    public void checkConnect(final String host, final int port, final Object context) {
     }
 
-    public void checkListen(int port) {
+    public void checkListen(final int port) {
     }
 
-    public void checkAccept(String host, int port) {
+    public void checkAccept(final String host, final int port) {
     }
 
-    public void checkMulticast(InetAddress maddr) {
+    public void checkMulticast(final InetAddress maddr) {
     }
 
-    public void checkMulticast(InetAddress maddr, byte ttl) {
+    public void checkMulticast(final InetAddress maddr, final byte ttl) {
     }
 
     public void checkPropertiesAccess() {
     }
 
-    public void checkPropertyAccess(String key) {
+    public void checkPropertyAccess(final String key) {
     }
 
-    public boolean checkTopLevelWindow(Object window) {
+    public boolean checkTopLevelWindow(final Object window) {
         return hasAllPermission();
     }
 
@@ -134,19 +128,19 @@ public class TSecurityManager {
     public void checkAwtEventQueueAccess() {
     }
 
-    public void checkPackageAccess(String pkg) {
+    public void checkPackageAccess(final String pkg) {
     }
 
-    public void checkPackageDefinition(String pkg) {
+    public void checkPackageDefinition(final String pkg) {
     }
 
     public void checkSetFactory() {
     }
 
-    public void checkMemberAccess(Class<?> clazz, int which) {
+    public void checkMemberAccess(final Class<?> clazz, final int which) {
     }
 
-    public void checkSecurityAccess(String target) {
+    public void checkSecurityAccess(final String target) {
     }
 
     public ThreadGroup getThreadGroup() {

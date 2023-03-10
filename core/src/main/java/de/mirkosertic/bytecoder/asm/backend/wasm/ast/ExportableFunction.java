@@ -88,8 +88,8 @@ public class ExportableFunction extends Function implements Exportable {
         this.localIndex = new LocalIndex();
     }
 
-    ExportableFunction(final Module aModule, final String label) {
-        super(aModule, null, label, (WasmType) null);
+    ExportableFunction(final Module aModule, final FunctionType functionType, final String label) {
+        super(aModule, functionType, label, (WasmType) null);
         this.localIndex = new LocalIndex();
     }
 

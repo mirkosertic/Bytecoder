@@ -475,11 +475,11 @@ public class ConstExpressions {
 
     public static class struct {
 
-        public static WasmValue newInstance(final ReferencableType type, final List<WasmValue> arguments) {
+        public static NewStruct newInstance(final ReferencableType type, final List<WasmValue> arguments) {
             return new NewStruct(type, arguments);
         }
 
-        public static WasmValue get(final StructType structType, final WasmValue source, final String fieldName) {
+        public static GetStruct get(final StructType structType, final WasmValue source, final String fieldName) {
             return new GetStruct(structType, source, fieldName);
         }
     }

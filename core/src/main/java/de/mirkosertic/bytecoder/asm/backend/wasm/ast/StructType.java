@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.asm.backend.wasm.ast;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
@@ -102,8 +103,17 @@ public class StructType implements ReferencableType {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer writer) {
-        // Do be implemented!
+    public void writeTo(final BinaryWriter.Writer writer) throws IOException {
+        writer.writeByte(PrimitiveType.struct.getBinaryType());
+        writer.writeByte((byte) fields.size());
+        for (final Field f : fields) {
+            f.type.writeTo(writer);
+            if (f.mutable) {
+                writer.writeByte((byte) 0x01);
+            } else {
+                writer.writeByte((byte) 0x00);
+            }
+        }
     }
 
     @Override
