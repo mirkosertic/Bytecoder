@@ -16,18 +16,18 @@
 package de.mirkosertic.bytecoder.cli;
 
 import de.mirkosertic.bytecoder.api.Logger;
-import de.mirkosertic.bytecoder.asm.backend.CompileOptions;
-import de.mirkosertic.bytecoder.asm.backend.wasm.WasmBackend;
-import de.mirkosertic.bytecoder.asm.backend.wasm.WasmCompileResult;
-import de.mirkosertic.bytecoder.asm.backend.wasm.WasmIntrinsics;
-import de.mirkosertic.bytecoder.asm.ir.AnalysisException;
-import de.mirkosertic.bytecoder.asm.ir.AnalysisStack;
-import de.mirkosertic.bytecoder.asm.loader.BytecoderLoader;
-import de.mirkosertic.bytecoder.asm.optimizer.Optimizations;
-import de.mirkosertic.bytecoder.asm.parser.CompileUnit;
-import de.mirkosertic.bytecoder.asm.parser.Loader;
-import de.mirkosertic.bytecoder.asm.backend.CompileResult;
-import de.mirkosertic.bytecoder.Slf4JLogger;
+import de.mirkosertic.bytecoder.core.Slf4JLogger;
+import de.mirkosertic.bytecoder.core.backend.CompileOptions;
+import de.mirkosertic.bytecoder.core.backend.CompileResult;
+import de.mirkosertic.bytecoder.core.backend.wasm.WasmBackend;
+import de.mirkosertic.bytecoder.core.backend.wasm.WasmCompileResult;
+import de.mirkosertic.bytecoder.core.backend.wasm.WasmIntrinsics;
+import de.mirkosertic.bytecoder.core.ir.AnalysisException;
+import de.mirkosertic.bytecoder.core.ir.AnalysisStack;
+import de.mirkosertic.bytecoder.core.loader.BytecoderLoader;
+import de.mirkosertic.bytecoder.core.optimizer.Optimizations;
+import de.mirkosertic.bytecoder.core.parser.CompileUnit;
+import de.mirkosertic.bytecoder.core.parser.Loader;
 import org.objectweb.asm.Type;
 
 import java.io.File;
@@ -36,9 +36,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.concurrent.Callable;
 
-import static picocli.CommandLine.Command;
-import static picocli.CommandLine.Option;
-import static picocli.CommandLine.ParentCommand;
+import static picocli.CommandLine.*;
 
 @Command(name = "wasm")
 public class CompileWasmCommand implements Callable<Integer> {

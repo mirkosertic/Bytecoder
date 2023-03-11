@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util.regex;
 
-import de.mirkosertic.bytecoder.asm.test.UnitTestRunner;
+import de.mirkosertic.bytecoder.core.test.UnitTestRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 

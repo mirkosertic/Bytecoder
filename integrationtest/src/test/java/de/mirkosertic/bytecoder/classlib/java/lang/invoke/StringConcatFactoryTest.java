@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.lang.invoke;
 
-import de.mirkosertic.bytecoder.asm.test.UnitTestRunner;
+import de.mirkosertic.bytecoder.core.test.UnitTestRunner;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;

@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core
 
-import de.mirkosertic.bytecoder.asm.test.UnitTestRunner
+import de.mirkosertic.bytecoder.core.test.UnitTestRunner
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith

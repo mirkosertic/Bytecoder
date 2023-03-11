@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.api.opencl;
 
-import de.mirkosertic.bytecoder.Slf4JLogger;
+import de.mirkosertic.bytecoder.core.Slf4JLogger;
 import org.junit.Test;
 
 import static de.mirkosertic.bytecoder.api.opencl.Float4.float4;
