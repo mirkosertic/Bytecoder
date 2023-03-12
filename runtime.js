@@ -609,13 +609,14 @@ const bytecoder = {
                 return new Int8Array(length);
             },
             'Lde$mirkosertic$bytecoder$api$web$OpaqueReferenceArray$$createObjectArray$$': function(length) {
-                return new Array(length);
+                return [];
             }
         }
     },
     exports: {},
     filehandles : [],
     stringconstants: [],
+    stringoperations: [],
     cmp: function(a,b) {
         if (a > b) return 1;
         if (a < b) return -1;
