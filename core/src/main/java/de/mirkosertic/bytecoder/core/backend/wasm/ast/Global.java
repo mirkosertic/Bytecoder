@@ -63,14 +63,14 @@ public class Global {
         textWriter.newLine();
     }
 
-    public void writeTo(final BinaryWriter.SectionWriter writer, final List<Global> globalIndex) throws IOException {
+    public void writeTo(final BinaryWriter.SectionWriter writer, final WasmValue.ExportContext context) throws IOException {
         type.writeTo(writer);
         if (mutable) {
             writer.writeByte((byte) 1);
         } else {
             writer.writeByte((byte) 0);
         }
-        initializer.writeTo(writer, null);
+        initializer.writeTo(writer, context);
         writer.writeByte((byte) 0x0b);
     }
 }

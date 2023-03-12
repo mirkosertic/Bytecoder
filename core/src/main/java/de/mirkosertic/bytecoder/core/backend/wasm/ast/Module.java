@@ -96,13 +96,55 @@ public class Module {
         final List<Memory> memoryIndex = new ArrayList<>();
         mems.addMemoriesToIndex(memoryIndex);
 
+        final WasmValue.ExportContext context = new WasmValue.ExportContext() {
+            @Override
+            public Container owningContainer() {
+                return null;
+            }
+
+            @Override
+            public TypeIndex typeIndex() {
+                return Module.this.types.typesIndex();
+            }
+
+            @Override
+            public FunctionIndex functionIndex() {
+                return Module.this.functionIndex();
+            }
+
+            @Override
+            public GlobalsIndex globalsIndex() {
+                return Module.this.globalsIndex();
+            }
+
+            @Override
+            public LocalIndex localIndex() {
+                return null;
+            }
+
+            @Override
+            public TagIndex tagIndex() {
+                return Module.this.tagIndex();
+            }
+
+            @Override
+            public WasmValue.ExportContext subWith(Container container) {
+                return null;
+            }
+
+            @Override
+            public TablesSection.AnyFuncTable anyFuncTable() {
+                return Module.this.getTables().funcTable();
+            }
+        };
+
         writer.header();
         types.writeTo(writer);
         imports.writeTo(writer, memoryIndex);
         functions.writeTo(writer, functionIndex);
         tables.writeTo(writer);
         mems.writeTo(writer);
-        globals.writeTo(writer);
+        globals.writeTo(writer, context);
         tags.writeCodeTo(writer);
         exports.writeTo(writer, memoryIndex);
         elements.writeTo(writer, functionIndex);

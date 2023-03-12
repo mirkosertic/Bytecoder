@@ -46,11 +46,11 @@ public class GlobalsSection extends ModuleSection {
         }
     }
 
-    public void writeTo(final BinaryWriter binaryWriter) throws IOException {
+    public void writeTo(final BinaryWriter binaryWriter, final WasmValue.ExportContext context) throws IOException {
         try (final BinaryWriter.SectionWriter writer = binaryWriter.globalsSection()) {
             writer.writeUnsignedLeb128(globals.size());
             for (final Global global : globals) {
-                global.writeTo(writer, globals);
+                global.writeTo(writer, context);
             }
         }
     }
