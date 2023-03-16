@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -64,7 +65,19 @@ public class StructSubtype extends StructType {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer writer) {
-        // Do be implemented!
+    public void writeTo(final BinaryWriter.Writer writer) throws IOException {
+        writer.writeByte((byte) 0x50);
+        writer.writeByte((byte) 1);
+        writer.writeUnsignedLeb128(typesSection.indexOf(supertype));
+        writer.writeByte(PrimitiveType.struct.getBinaryType());
+        writer.writeByte((byte) fields.size());
+        for (final Field f : fields) {
+            f.type.writeTo(writer);
+            if (f.mutable) {
+                writer.writeByte((byte) 0x01);
+            } else {
+                writer.writeByte((byte) 0x00);
+            }
+        }
     }
 }

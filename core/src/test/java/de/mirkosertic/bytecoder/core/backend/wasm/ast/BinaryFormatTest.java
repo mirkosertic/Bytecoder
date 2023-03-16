@@ -29,7 +29,7 @@ import java.util.List;
 
 public class BinaryFormatTest {
 
-     @Test
+    @Test
     public void testSimpleStructType() throws IOException {
         final Module module = new Module("test", "");
         final List<StructType.Field> fields = new ArrayList<>();
@@ -37,22 +37,34 @@ public class BinaryFormatTest {
         fields.add(new StructType.Field("field2", PrimitiveType.f32));
         final StructType str = module.getTypes().structType("str", fields);
 
+        final List<StructType.Field> subtypeFields = new ArrayList<>();
+        subtypeFields.add(new StructType.Field("field3", PrimitiveType.i64));
+
+        final StructSubtype sub = module.getTypes().structSubtype("sub", str, subtypeFields);
+
         final ExportableFunction f = module.getFunctions().newFunction("lala");
         final List<WasmValue> args = new ArrayList<>();
         args.add(ConstExpressions.i32.c(10));
         args.add(ConstExpressions.f32.c(20f));
-        f.flow.drop(ConstExpressions.struct.newInstance(str, args));
+        args.add(ConstExpressions.i64.c(30L));
+        f.flow.drop(ConstExpressions.struct.newInstance(sub, args));
+
+        final List<WasmValue> args2 = new ArrayList<>();
+        args2.add(ConstExpressions.i32.c(10));
+        args2.add(ConstExpressions.f32.c(20f));
+        f.flow.drop(ConstExpressions.struct.newInstance(sub, args));
+        f.flow.drop(ConstExpressions.struct.newInstance(str, args2));
 
         final CompileOptions options = new CompileOptions(new Slf4JLogger(), Optimizations.DISABLED, new String[0], "prefix", true);
         final Exporter exporter = new Exporter(options);
 
-        try (FileOutputStream fos = new FileOutputStream(new File("target/testfile.wasm"))) {
+        try (final FileOutputStream fos = new FileOutputStream(new File("target/testfile.wasm"))) {
             exporter.export(module, fos);
         }
 
-         try (PrintWriter pw = new PrintWriter(new FileOutputStream(new File("target/testfile.wat")))) {
-             exporter.export(module, pw);
-         }
+        try (final PrintWriter pw = new PrintWriter(new FileOutputStream(new File("target/testfile.wat")))) {
+            exporter.export(module, pw);
+        }
 
          /*
 
@@ -82,5 +94,5 @@ Correct
 
 
           */
-     }
+    }
 }
