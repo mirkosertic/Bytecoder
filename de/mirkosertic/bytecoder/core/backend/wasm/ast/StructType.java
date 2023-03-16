@@ -22,10 +22,10 @@ import java.util.Objects;
 public class StructType implements ReferencableType {
 
     public static class Field {
-        private final String name;
-        private final WasmType type;
+        protected final String name;
+        protected final WasmType type;
 
-        private final boolean mutable;
+        protected final boolean mutable;
 
         public Field(final String name, final WasmType type) {
             this(name, type, true);
@@ -34,7 +34,7 @@ public class StructType implements ReferencableType {
         public Field(final String name, final WasmType type, final boolean mutable) {
             this.name = name;
             this.type = type;
-            this.mutable = true;
+            this.mutable = mutable;
         }
 
         public String getName() {
