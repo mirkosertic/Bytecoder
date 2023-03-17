@@ -19,6 +19,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class F64Eq extends BinaryExpression {
 
     F64Eq(final WasmValue leftValue, final WasmValue rightValue) {
-        super(leftValue, rightValue, "f64.eq", (byte) 0x5b);
+        super(leftValue, rightValue, "f64.eq", (byte) 0x61);
     }
 }

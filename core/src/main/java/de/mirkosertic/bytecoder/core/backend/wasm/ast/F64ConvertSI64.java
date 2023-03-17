@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class F64ConvertSI64 extends UnaryExpression {
 
     F64ConvertSI64(final WasmValue value) {
-        super(value, "f64.convert_i64_s", (byte) 0xb2);
+        super(value, "f64.convert_i64_s", (byte) 0xb9);
     }
 }

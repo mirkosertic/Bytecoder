@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class F64Ne extends BinaryExpression {
 
     F64Ne(final WasmValue leftValue, final WasmValue rightValue) {
-        super(leftValue, rightValue, "f64.ne", (byte) 0x5c);
+        super(leftValue, rightValue, "f64.ne", (byte) 0x62);
     }
 }

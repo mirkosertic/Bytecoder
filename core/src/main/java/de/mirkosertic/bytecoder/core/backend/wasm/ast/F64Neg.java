@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class F64Neg extends UnaryExpression {
 
     F64Neg(final WasmValue value) {
-        super(value, "f64.neg", (byte) 0x8c);
+        super(value, "f64.neg", (byte) 0x9a);
     }
 }

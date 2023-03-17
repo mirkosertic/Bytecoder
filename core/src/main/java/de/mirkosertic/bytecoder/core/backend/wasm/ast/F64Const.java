@@ -41,7 +41,7 @@ public class F64Const implements WasmValue {
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) {
-        codeWriter.writeByte((byte) 0x43);
-        codeWriter.writeFloat32((float) value);
+        codeWriter.writeByte((byte) 0x44);
+        codeWriter.writeDouble64(value);
     }
 }
