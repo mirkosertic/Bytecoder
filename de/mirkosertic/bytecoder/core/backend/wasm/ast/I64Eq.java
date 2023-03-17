@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class I64Eq extends BinaryExpression {
 
     I64Eq(final WasmValue leftValue, final WasmValue rightValue) {
-        super(leftValue, rightValue, "i64.eq", (byte) 0x46);
+        super(leftValue, rightValue, "i64.eq", (byte) 0x5);
     }
 }

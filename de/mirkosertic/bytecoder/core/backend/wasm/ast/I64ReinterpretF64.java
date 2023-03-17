@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class I64ReinterpretF64 extends UnaryExpression {
 
     I64ReinterpretF64(final WasmValue value) {
-        super(value, "i64.reinterpret_f64", (byte) 0xbc);
+        super(value, "i64.reinterpret_f64", (byte) 0xbd);
     }
 }

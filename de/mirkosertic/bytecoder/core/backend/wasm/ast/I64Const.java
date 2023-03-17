@@ -36,7 +36,7 @@ public class I64Const implements WasmValue {
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        codeWriter.writeByte((byte) 0x41);
-        codeWriter.writeSignedLeb128((int) value);
+        codeWriter.writeByte((byte) 0x42);
+        codeWriter.writeLong64(value);
     }
 }

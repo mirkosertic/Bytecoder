@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class I64Or extends BinaryExpression {
 
     I64Or(final WasmValue left, final WasmValue right) {
-        super(left, right,"i64.or", (byte) 0x72);
+        super(left, right,"i64.or", (byte) 0x84);
     }
 }

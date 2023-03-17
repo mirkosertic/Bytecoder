@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class I64Mul extends BinaryExpression {
 
     I64Mul(final WasmValue left, final WasmValue right) {
-        super(left, right, "i64.mul", (byte) 0x6c);
+        super(left, right, "i64.mul", (byte) 0x7e);
     }
 }

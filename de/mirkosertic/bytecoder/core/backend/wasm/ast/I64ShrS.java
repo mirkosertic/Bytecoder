@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class I64ShrS extends BinaryExpression {
 
     I64ShrS(final WasmValue left, final WasmValue right) {
-        super(left, right, "i64.shr_s", (byte) 0x75);
+        super(left, right, "i64.shr_s", (byte) 0x87);
     }
 }

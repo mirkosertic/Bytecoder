@@ -19,6 +19,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class I64And extends BinaryExpression {
 
     I64And(final WasmValue left, final WasmValue right) {
-        super(left, right,"i64.and", (byte) 0x71);
+        super(left, right,"i64.and", (byte) 0x83);
     }
 }
