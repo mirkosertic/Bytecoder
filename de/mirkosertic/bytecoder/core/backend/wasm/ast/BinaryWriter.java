@@ -105,12 +105,28 @@ public class BinaryWriter implements AutoCloseable {
             writeInteger32(Float.floatToRawIntBits(value));
         }
 
+        public void writeDouble64(final double value) {
+            writeLong64(Double.doubleToRawLongBits(value));
+        }
+
         public void writeInteger32(final int value) {
             writeByte((byte) value);
             writeByte((byte) (value >> 8));
             writeByte((byte) (value >> 16));
             writeByte((byte) (value >> 24));
         }
+
+        public void writeLong64(final long value) {
+            writeByte((byte) value);
+            writeByte((byte) (value >> 8));
+            writeByte((byte) (value >> 16));
+            writeByte((byte) (value >> 24));
+            writeByte((byte) (value >> 32));
+            writeByte((byte) (value >> 40));
+            writeByte((byte) (value >> 48));
+            writeByte((byte) (value >> 56));
+        }
+
     }
 
     public class BlockWriter extends Writer {

@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class F32DemoteF64 extends UnaryExpression {
 
     F32DemoteF64(final WasmValue value) {
-        super(value, "f32.demote_f64", (byte) 0xa8);
+        super(value, "f32.demote_f64", (byte) 0xb6);
     }
 }
