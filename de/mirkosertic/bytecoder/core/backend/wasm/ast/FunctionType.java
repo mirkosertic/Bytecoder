@@ -66,6 +66,10 @@ public class FunctionType implements ReferencableType {
         return resultType;
     }
 
+    public List<WasmType> getParameter() {
+        return parameter;
+    }
+
     @Override
     public void writeTo(final TextWriter writer) {
         writer.opening();
