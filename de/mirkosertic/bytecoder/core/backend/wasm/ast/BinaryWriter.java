@@ -213,7 +213,7 @@ public class BinaryWriter implements AutoCloseable {
         return new SectionWriter((byte) 10, os, os.size());
     }
 
-    public SectionWriter eventSection() {
+    public SectionWriter tagSection() {
         return new SectionWriter((byte) 13, os, os.size());
     }
 

@@ -30,6 +30,9 @@ public class Tag implements Exportable {
     }
 
     public void writeTo(final BinaryWriter.SectionWriter sectionWriter) {
+        // TODO: https://github.com/WebAssembly/exception-handling/blob/main/proposals/exception-handling/Exceptions.md
+        // Tags do ha a function type with arguments and return type void
+        // change this here
         //sectionWriter.writeUnsignedLeb128(0);
         //sectionWriter.writeUnsignedLeb128(typesSection.indexOf(type));
     }

@@ -843,49 +843,49 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 130: return 'data type scale not a power of two';
       case 131: return 'Attempt to access an already released memory resource';
       case 132: return 'This segment is already closed';
-      case 133: return 'No java.util.Objects instances for you!';
-      case 134: return 'AABB[';
-      case 135: return ' . ';
-      case 136: return '(';
-      case 137: return ',';
-      case 138: return '[pos=';
-      case 139: return ' lim=';
-      case 140: return ' cap=';
-      case 141: return 'Sweep:\nlocalCenter: ';
-      case 142: return '\n';
-      case 143: return 'c0: ';
-      case 144: return ', c: ';
-      case 145: return 'a0: ';
-      case 146: return ', a: ';
-      case 147: return ']\n';
-      case 148: return '\/';
-      case 149: return '@';
-      case 150: return '.';
-      case 151: return 'Native Method)';
-      case 152: return ':';
-      case 153: return 'Unknown Source)';
-      case 154: return 'Rot(s:';
-      case 155: return ', c:';
-      case 156: return 'XForm:\n';
-      case 157: return 'Position: ';
-      case 158: return 'R: \n';
-      case 159: return '=';
-      case 160: return 'VERTEX';
-      case 161: return 'FACE';
-      case 162: return 'EDGE_A';
-      case 163: return 'EDGE_B';
+      case 133: return 'Sweep:\nlocalCenter: ';
+      case 134: return '\n';
+      case 135: return 'c0: ';
+      case 136: return ', c: ';
+      case 137: return 'a0: ';
+      case 138: return ', a: ';
+      case 139: return 'AABB[';
+      case 140: return ' . ';
+      case 141: return '(';
+      case 142: return ',';
+      case 143: return '=';
+      case 144: return 'XForm:\n';
+      case 145: return 'Position: ';
+      case 146: return 'R: \n';
+      case 147: return '[pos=';
+      case 148: return ' lim=';
+      case 149: return ' cap=';
+      case 150: return '\/';
+      case 151: return '@';
+      case 152: return '.';
+      case 153: return 'Native Method)';
+      case 154: return ':';
+      case 155: return 'Unknown Source)';
+      case 156: return 'Rot(s:';
+      case 157: return ', c:';
+      case 158: return ']\n';
+      case 159: return 'No java.util.Objects instances for you!';
+      case 160: return 'EDGE_A';
+      case 161: return 'EDGE_B';
+      case 162: return 'VERTEX';
+      case 163: return 'FACE';
       case 164: return 'Array not built with correct length';
   }
   throw 'Unknown string index ' + index;
 };
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLCanvasElement_generated"] = {
-    Lde$mirkosertic$bytecoder$api$web$CanvasRenderingContext2D$$getContext$Ljava$lang$String$ : function(thisref, arg0) {
-        return (thisref.getContext(arg0));
-    },
-};
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.ParentNode_generated"] = {
     Lde$mirkosertic$bytecoder$api$web$Element$$getElementById$Ljava$lang$String$ : function(thisref, arg0) {
         return (thisref.getElementById(arg0));
+    },
+};
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLButton_generated"] = {
+    V$disabled$Z : function(thisref, arg0) {
+        (thisref.disabled = (arg0 === 1 ? true : false));
     },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.Window_generated"] = {
@@ -896,9 +896,9 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.web.Window_generated"] = {
         (thisref.requestAnimationFrame(function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.AnimationFrameCallback_callback'](arg0,evt);}));
     },
 };
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLButton_generated"] = {
-    V$disabled$Z : function(thisref, arg0) {
-        (thisref.disabled = (arg0 === 1 ? true : false));
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLCanvasElement_generated"] = {
+    Lde$mirkosertic$bytecoder$api$web$CanvasRenderingContext2D$$getContext$Ljava$lang$String$ : function(thisref, arg0) {
+        return (thisref.getContext(arg0));
     },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.EventTarget_generated"] = {
