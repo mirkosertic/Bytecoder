@@ -137,4 +137,13 @@ public class StructType implements ReferencableType {
     public int hashCode() {
         return Objects.hash(typesSection, name, fields);
     }
+
+    public int indexOfField(final String fieldName) {
+        for (int i = 0; i < fields.size(); i++) {
+            if (fieldName.equals(fields.get(i).name)) {
+                return i;
+            }
+        }
+        throw new IllegalArgumentException("Unknown field : " + fieldName + " in struct " + name);
+    }
 }

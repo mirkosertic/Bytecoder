@@ -40,7 +40,10 @@ public class Cast implements WasmValue {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) {
-        //TODO
+    public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) throws IOException {
+        source.writeTo(binaryWriter, context);
+        binaryWriter.writeByte((byte) 0xfb);
+        binaryWriter.writeByte((byte) 0x49);
+        binaryWriter.writeSignedLeb128(structType.index());
     }
 }

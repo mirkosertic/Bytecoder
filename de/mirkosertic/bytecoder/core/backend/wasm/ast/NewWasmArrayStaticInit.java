@@ -28,12 +28,12 @@ public class NewWasmArrayStaticInit implements WasmValue {
 
     @Override
     public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) throws IOException {
-        for (int i = arguments.size() - 1; i >= 0; i--) {
-            arguments.get(i).writeTo(binaryWriter, context);
+        for (final WasmValue arg : arguments) {
+            arg.writeTo(binaryWriter, context);
         }
         binaryWriter.writeByte((byte) 0xfb);
         binaryWriter.writeByte((byte) 0x1a);
-        binaryWriter.writeUnsignedLeb128(context.typeIndex().indexOf(type));
+        binaryWriter.writeUnsignedLeb128(type.index());
         binaryWriter.writeUnsignedLeb128(arguments.size());
     }
 }

@@ -40,7 +40,10 @@ public class NewWasmArrayDefault implements WasmValue {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) {
-        //TODO
+    public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) throws IOException {
+        length.writeTo(binaryWriter, context);
+        binaryWriter.writeByte((byte) 0xfb);
+        binaryWriter.writeByte((byte) 0x1c);
+        binaryWriter.writeUnsignedLeb128(type.index());
     }
 }

@@ -19,6 +19,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class RefIsNull extends UnaryExpression {
 
     RefIsNull(final WasmValue left) {
-        super(left,"ref.is_null", (byte) 0x95);
+        super(left,"ref.is_null", (byte) 0xd1);
     }
 }

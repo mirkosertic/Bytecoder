@@ -50,7 +50,12 @@ public class SetStruct implements WasmExpression {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) {
-        //TODO
+    public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) throws IOException {
+        target.writeTo(binaryWriter, context);
+        value.writeTo(binaryWriter, context);
+        binaryWriter.writeByte((byte) 0xfb);
+        binaryWriter.writeByte((byte) 0x06);
+        binaryWriter.writeUnsignedLeb128(structType.index());
+        binaryWriter.writeUnsignedLeb128(structType.indexOfField(fieldName));
     }
 }

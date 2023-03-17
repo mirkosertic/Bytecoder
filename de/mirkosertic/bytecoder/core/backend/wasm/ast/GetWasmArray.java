@@ -29,7 +29,11 @@ public class GetWasmArray implements WasmValue {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) {
-        //TODO
+    public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) throws IOException {
+        array.writeTo(binaryWriter, context);
+        index.writeTo(binaryWriter, context);
+        binaryWriter.writeByte((byte) 0xfb);
+        binaryWriter.writeByte((byte) 0x13);
+        binaryWriter.writeUnsignedLeb128(type.index());
     }
 }

@@ -17,7 +17,7 @@ public class HostType implements ReferencableType {
 
     @Override
     public void writeTo(final BinaryWriter.Writer sectionWriter) {
-        sectionWriter.writeByte((byte) -1); // TODO
+        sectionWriter.writeByte((byte) 0x6f);
     }
 
     @Override

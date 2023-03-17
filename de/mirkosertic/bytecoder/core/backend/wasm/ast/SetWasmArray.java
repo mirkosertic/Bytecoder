@@ -50,7 +50,12 @@ public class SetWasmArray implements WasmExpression {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) {
-        //TODO
+    public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) throws IOException {
+        array.writeTo(binaryWriter, context);
+        index.writeTo(binaryWriter, context);
+        value.writeTo(binaryWriter, context);
+        binaryWriter.writeByte((byte) 0xfb);
+        binaryWriter.writeByte((byte) 0x16);
+        binaryWriter.writeUnsignedLeb128(type.index());
     }
 }

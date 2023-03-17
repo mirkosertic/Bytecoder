@@ -43,7 +43,11 @@ public class CallRef implements WasmValue  {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) {
-        // TODO
+    public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) throws IOException {
+        for (final WasmValue argument : arguments) {
+            argument.writeTo(binaryWriter, context);
+        }
+        binaryWriter.writeByte((byte) 0x14);
+        binaryWriter.writeUnsignedLeb128(type.index());
     }
 }
