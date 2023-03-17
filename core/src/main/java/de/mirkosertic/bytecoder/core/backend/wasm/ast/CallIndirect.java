@@ -59,7 +59,7 @@ public class CallIndirect implements WasmExpression {
         }
         functionIndex.writeTo(codeWriter, context);
         codeWriter.writeByte((byte) 0x11);
-        codeWriter.writeUnsignedLeb128(context.typeIndex().indexOf(functionType));
+        codeWriter.writeUnsignedLeb128(functionType.index());
         codeWriter.writeByte((byte) 0);
     }
 }

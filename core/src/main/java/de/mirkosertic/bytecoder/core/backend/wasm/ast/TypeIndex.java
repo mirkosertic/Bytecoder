@@ -29,8 +29,4 @@ public class TypeIndex {
     public void add(final WasmType type) {
         types.add(type);
     }
-
-    public int indexOf(final WasmType type) {
-        return types.indexOf(type);
-    }
 }

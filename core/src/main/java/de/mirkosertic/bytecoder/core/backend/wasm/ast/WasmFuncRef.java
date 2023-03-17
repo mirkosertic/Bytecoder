@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 
+import java.io.IOException;
+
 public class WasmFuncRef implements WasmValue {
 
     private final Callable function;
@@ -33,7 +35,8 @@ public class WasmFuncRef implements WasmValue {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) {
-        //TODO
+    public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) throws IOException {
+       binaryWriter.writeByte((byte) 0xd2);
+       binaryWriter.writeUnsignedLeb128(function.resolveIndex(context));
     }
 }
