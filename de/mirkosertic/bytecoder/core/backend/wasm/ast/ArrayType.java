@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 
+import java.io.IOException;
+
 public class ArrayType implements ReferencableType {
 
     private final TypesSection section;
@@ -56,8 +58,11 @@ public class ArrayType implements ReferencableType {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer writer) {
-        // TODO
+    public void writeTo(final BinaryWriter.Writer writer) throws IOException {
+        writer.writeByte(PrimitiveType.array.getBinaryType());
+        elementType.writeTo(writer);
+        // Always mutable
+        writer.writeByte((byte) 0x01);
     }
 
     @Override
