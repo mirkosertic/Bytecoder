@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class F64PromoteF32 extends UnaryExpression {
 
     F64PromoteF32(final WasmValue value) {
-        super(value, "f64.promote_f32", (byte) 0xa8);
+        super(value, "f64.promote_f32", (byte) 0xbb);
     }
 }

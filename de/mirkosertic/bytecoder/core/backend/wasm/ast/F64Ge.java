@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class F64Ge extends BinaryExpression {
 
     F64Ge(final WasmValue leftValue, final WasmValue rightValue) {
-        super(leftValue, rightValue, "f64.ge", (byte) 0x60);
+        super(leftValue, rightValue, "f64.ge", (byte) 0x66);
     }
 }

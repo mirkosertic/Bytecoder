@@ -19,6 +19,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class F64Div extends BinaryExpression {
 
     F64Div(final WasmValue left, final WasmValue right) {
-        super(left, right, "f64.div", (byte) 0x95);
+        super(left, right, "f64.div", (byte) 0xa3);
     }
 }

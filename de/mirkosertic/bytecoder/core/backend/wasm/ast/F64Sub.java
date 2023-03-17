@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class F64Sub extends BinaryExpression {
 
     F64Sub(final WasmValue left, final WasmValue right) {
-        super(left, right, "f64.sub", (byte) 0x93);
+        super(left, right, "f64.sub", (byte) 0xa1);
     }
 }
