@@ -68,7 +68,7 @@ public class StructSubtype extends StructType {
     public void writeTo(final BinaryWriter.Writer writer) throws IOException {
         writer.writeByte((byte) 0x50);
         writer.writeByte((byte) 1);
-        writer.writeUnsignedLeb128(typesSection.indexOf(supertype));
+        writer.writeUnsignedLeb128(supertype.index());
         writer.writeByte(PrimitiveType.struct.getBinaryType());
         writer.writeByte((byte) fields.size());
         for (final Field f : fields) {

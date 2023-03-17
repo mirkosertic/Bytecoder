@@ -32,8 +32,7 @@ public class TagSection extends ModuleSection {
 
     public void writeCodeTo(final BinaryWriter writer) throws IOException {
         if (!tagIndex.isEmpty()) {
-            try (final BinaryWriter.SectionWriter sectionWriter = writer.eventSection()) {
-                sectionWriter.writeUTF8("event");
+            try (final BinaryWriter.SectionWriter sectionWriter = writer.tagSection()) {
                 sectionWriter.writeUnsignedLeb128(tagIndex.size());
                 for (int i = 0; i< tagIndex.size(); i++) {
                     final Tag event = tagIndex.get(i);

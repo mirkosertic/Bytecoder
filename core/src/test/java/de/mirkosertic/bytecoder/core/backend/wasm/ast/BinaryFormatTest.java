@@ -38,18 +38,19 @@ public class BinaryFormatTest {
 
         final List<StructType.Field> subtypeFields = new ArrayList<>();
         subtypeFields.add(new StructType.Field("field3", PrimitiveType.i64));
-        //subtypeFields.add(new StructType.Field("field4", ConstExpressions.ref.type(str, true)));
+        subtypeFields.add(new StructType.Field("field4", ConstExpressions.ref.type(str, true)));
 
         final StructSubtype sub = module.getTypes().structSubtype("sub", str, subtypeFields);
 
         final ArrayType arr = module.getTypes().arrayType(PrimitiveType.i32);
 
         final ExportableFunction f = module.getFunctions().newFunction("lala");
+        f.newLocal("local", ConstExpressions.ref.type(str, true));
         final List<WasmValue> args = new ArrayList<>();
         args.add(ConstExpressions.i32.c(10));
         args.add(ConstExpressions.f32.c(20f));
         args.add(ConstExpressions.i64.c(30L));
-        //args.add(ConstExpressions.ref.nullRef());
+        args.add(ConstExpressions.ref.nullRef());
         f.flow.drop(ConstExpressions.struct.newInstance(sub, args));
 
         final List<WasmValue> args2 = new ArrayList<>();

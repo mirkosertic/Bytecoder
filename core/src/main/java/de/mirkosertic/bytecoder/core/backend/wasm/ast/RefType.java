@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 
+import java.io.IOException;
 import java.util.Objects;
 
 public class RefType implements WasmType {
@@ -66,8 +67,13 @@ public class RefType implements WasmType {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer writer) {
-        // Do be implemented
+    public void writeTo(final BinaryWriter.Writer writer) throws IOException {
+        if (nullable) {
+            writer.writeByte((byte) 0x6c);
+        } else {
+            writer.writeByte((byte) 0x6b);
+        }
+        writer.writeSignedLeb128(type.index());
     }
 
     @Override
