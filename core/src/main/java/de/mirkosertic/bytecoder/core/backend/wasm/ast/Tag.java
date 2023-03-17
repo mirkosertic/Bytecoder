@@ -15,26 +15,25 @@
  */
 package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 
+import java.io.IOException;
+
 public class Tag implements Exportable {
 
     private final String label;
-    private final WasmType[] params;
+    private final FunctionType functionType;
 
-    protected Tag(final String label, final WasmType... params) {
+    protected Tag(final String label, final FunctionType functionType) {
         this.label = label;
-        this.params = params;
+        this.functionType = functionType;
     }
 
     public String getLabel() {
         return label;
     }
 
-    public void writeTo(final BinaryWriter.SectionWriter sectionWriter) {
-        // TODO: https://github.com/WebAssembly/exception-handling/blob/main/proposals/exception-handling/Exceptions.md
-        // Tags do ha a function type with arguments and return type void
-        // change this here
-        //sectionWriter.writeUnsignedLeb128(0);
-        //sectionWriter.writeUnsignedLeb128(typesSection.indexOf(type));
+    public void writeTo(final BinaryWriter.SectionWriter sectionWriter) throws IOException {
+        sectionWriter.writeByte((byte) 0x00);
+        sectionWriter.writeUnsignedLeb128(functionType.index());
     }
 
     public void writeTo(final TextWriter textWriter) {
@@ -43,7 +42,7 @@ public class Tag implements Exportable {
         textWriter.space();
         textWriter.writeLabel(label);
 
-        for (final WasmType param : params) {
+        for (final WasmType param : functionType.getParameter()) {
             textWriter.space();
             textWriter.opening();
             textWriter.write("param");

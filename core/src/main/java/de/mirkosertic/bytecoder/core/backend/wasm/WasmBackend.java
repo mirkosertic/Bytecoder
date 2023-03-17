@@ -437,7 +437,9 @@ public class WasmBackend {
             setValue.exportAs(className + "$setNativeObject");
         }
 
-        module.getTags().tagIndex().add(ConstExpressions.tag("javaexception", ConstExpressions.ref.type(module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class))), true)));
+        final List<WasmType> exceptionArguments = new ArrayList<>();
+        exceptionArguments.add(ConstExpressions.ref.type(module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class))), true));
+        module.getTags().tagIndex().add(ConstExpressions.tag("javaexception",  module.getTypes().functionType(exceptionArguments)));
 
         // Primitive types
         final StructType javaLangObjectType = objectTypeMappings.get(objectClass);
