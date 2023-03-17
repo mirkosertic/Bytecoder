@@ -23,6 +23,7 @@ public enum PrimitiveType implements WasmType {
     anyfunc("anyfunc", (byte) 0x70),
     func("func", (byte) 0x60),
     struct("struct", (byte) 0x5f),
+    array("array", (byte) 0x5e),
     empty_pseudo_block("pseudo", (byte) 0x40),
     anyref("anyref", (byte) 0x6f);
 
