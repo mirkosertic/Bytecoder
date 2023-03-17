@@ -19,6 +19,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class I64Add extends BinaryExpression {
 
     I64Add(final WasmValue left, final WasmValue right) {
-        super(left, right, "i64.add", (byte) 0x6a);
+        super(left, right, "i64.add", (byte) 0x7c);
     }
 }

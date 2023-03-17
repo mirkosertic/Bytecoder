@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class I64Shl extends BinaryExpression {
 
     I64Shl(final WasmValue left, final WasmValue right) {
-        super(left, right, "i64.shl", (byte) 0x74);
+        super(left, right, "i64.shl", (byte) 0x86);
     }
 }

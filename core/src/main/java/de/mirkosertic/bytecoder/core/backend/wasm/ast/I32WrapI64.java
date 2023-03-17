@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class I32WrapI64 extends UnaryExpression {
 
     I32WrapI64(final WasmValue value) {
-        super(value, "i32.wrap_i64", (byte) 0x49);
+        super(value, "i32.wrap_i64", (byte) 0xa7);
     }
 }

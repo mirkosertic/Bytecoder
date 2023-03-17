@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class I64DivS extends BinaryExpression {
 
     I64DivS(final WasmValue left, final WasmValue right) {
-        super(left, right,"i64.div_s", (byte) 0x6d);
+        super(left, right,"i64.div_s", (byte) 0x7f);
     }
 }

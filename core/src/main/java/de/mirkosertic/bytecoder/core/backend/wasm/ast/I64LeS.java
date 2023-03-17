@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class I64LeS extends BinaryExpression {
 
     I64LeS(final WasmValue leftValue, final WasmValue rightValue) {
-        super(leftValue, rightValue, "i64.le_s", (byte) 0x4c);
+        super(leftValue, rightValue, "i64.le_s", (byte) 0x57);
     }
 }

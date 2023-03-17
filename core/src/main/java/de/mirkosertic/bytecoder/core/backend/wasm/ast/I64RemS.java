@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class I64RemS extends BinaryExpression {
 
     I64RemS(final WasmValue left, final WasmValue right) {
-        super(left, right,"i64.rem_s", (byte) 0x6f);
+        super(left, right,"i64.rem_s", (byte) 0x81);
     }
 }
