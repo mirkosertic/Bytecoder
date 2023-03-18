@@ -806,8 +806,8 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 93: return '[pos=';
       case 94: return ' lim=';
       case 95: return ' cap=';
-      case 96: return '=';
-      case 97: return 'No java.util.Objects instances for you!';
+      case 96: return 'No java.util.Objects instances for you!';
+      case 97: return '=';
   }
   throw 'Unknown string index ' + index;
 };
