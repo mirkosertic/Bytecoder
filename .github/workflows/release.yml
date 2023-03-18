@@ -16,12 +16,6 @@ jobs:
       - run: |
           cat <(echo -e "${{ secrets.OSSRH_GPG_SECRET_KEY }}") | gpg --batch --import
           gpg --list-secret-keys --keyid-format LONG
-      - run: |
-          wget https://apt.llvm.org/llvm.sh
-          chmod +x llvm.sh
-          sudo ./llvm.sh 11
-          sudo apt-get install -y ocl-icd-opencl-dev clang-11 lldb-11 lld-11 clangd-11
-          sudo update-alternatives --install /usr/bin/wasm-ld wasm-ld /usr/bin/wasm-ld-11 1000
       - name: Get tag
         id: tag
         uses: dawidd6/action-get-tag@v1
