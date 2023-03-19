@@ -44,6 +44,7 @@ import de.mirkosertic.bytecoder.core.ir.And;
 import de.mirkosertic.bytecoder.core.ir.ArrayLength;
 import de.mirkosertic.bytecoder.core.ir.ArrayLoad;
 import de.mirkosertic.bytecoder.core.ir.ArrayStore;
+import de.mirkosertic.bytecoder.core.ir.BootstrapMethod;
 import de.mirkosertic.bytecoder.core.ir.CMP;
 import de.mirkosertic.bytecoder.core.ir.Cast;
 import de.mirkosertic.bytecoder.core.ir.CaughtException;
@@ -115,6 +116,7 @@ import de.mirkosertic.bytecoder.core.ir.XOr;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 import org.objectweb.asm.Type;
 
+import java.lang.invoke.LambdaMetafactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -438,6 +440,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 )
         );
 
+        // TODO: Parameterize this for lambda support
         initArgs.add(ConstExpressions.ref.ref(module.functionIndex().firstByLabel(WasmHelpers.generateClassName(cl.type) + "_vt")));
 
         initArgs.add(externRef);
@@ -583,14 +586,27 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     }
 
     private WasmValue toWasmValue(final InvokeDynamicExpression value) {
-        // TODO: Implement this
-        return ConstExpressions.ref.nullRef();
-        //return ConstExpressions.i32.c(-1000);
-    }
-
-    private WasmValue toWasmValue(final ResolveCallsite value) {
-        // TODO: implement this
-        return ConstExpressions.i32.c(-2000);
+        final ResolveCallsite resolveCallsite = (ResolveCallsite) value.incomingDataFlows[0];
+        final BootstrapMethod bootstrapMethod = (BootstrapMethod) resolveCallsite.incomingDataFlows[0];
+        if (bootstrapMethod.className.getClassName().equals(LambdaMetafactory.class.getName())) {
+            if ("metafactory".equals(bootstrapMethod.methodName)) {
+                // TODO: Implement this
+                return ConstExpressions.ref.nullRef();
+                //return generateInvokeDynamicLambdaMetaFactoryInvocation(value, resolveCallsite);
+            } else {
+                throw new IllegalArgumentException("Not supported method " + bootstrapMethod.methodName + " on " + bootstrapMethod.className);
+            }
+        } else if (bootstrapMethod.className.getClassName().equals("java.lang.invoke.StringConcatFactory")) {
+            if ("makeConcatWithConstants".equals(bootstrapMethod.methodName)) {
+                // TODO: Implement this
+                return ConstExpressions.ref.nullRef();
+                //return generateInvokeDynamicStringMakeConcatWithConstants(value, resolveCallsite);
+            } else {
+                throw new IllegalArgumentException("Not supported method " + bootstrapMethod.methodName + " on " + bootstrapMethod.className);
+            }
+        } else {
+            throw new IllegalArgumentException("Not supported bootstrap class : " + bootstrapMethod.className);
+        }
     }
 
     private WasmValue toType(final Type type) {
@@ -1472,8 +1488,6 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             return toWasmValue((TypeConversion) value);
         } else if (value instanceof And) {
             return toWasmValue((And) value);
-        } else if (value instanceof ResolveCallsite) {
-            return toWasmValue((ResolveCallsite) value);
         } else if (value instanceof Sub) {
             return toWasmValue((Sub) value);
         } else if (value instanceof ArrayLoad) {

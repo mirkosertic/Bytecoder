@@ -308,7 +308,6 @@ public class WasmBackend {
                 final List<StructType.Field> rttypeFields = new ArrayList<>();
                 rttypeFields.add(new StructType.Field("typeId", PrimitiveType.i32, false));
                 rttypeFields.add(new StructType.Field("classImplTypes", ConstExpressions.ref.type(implTypesArray, true), false));
-                rttypeFields.add(new StructType.Field("lambdaMethod", PrimitiveType.i32, false));
                 rttypeFields.add(new StructType.Field("initStatus", PrimitiveType.i32));
                 rttypeFields.add(new StructType.Field("factoryFor", PrimitiveType.i32));
                 rttypeFields.add(new StructType.Field("$VALUES", ConstExpressions.ref.type(objectType, true)));
@@ -348,7 +347,6 @@ public class WasmBackend {
                 iff.flow.ret(ConstExpressions.weakFunctionTableReference(ownerClassName + "$" + methodName));
             }
 
-            // TODO: either call supertype vtable or lambda method
             vtFunction.flow.unreachable();
 
             final List<WasmValue> typeIds = cl.allTypesOf().stream().map(t -> ConstExpressions.i32.c(resolvedClasses.indexOf(t))).collect(Collectors.toList());
@@ -364,7 +362,6 @@ public class WasmBackend {
                     implTypesArray,
                     typeIds
             )); // class impl types
-            initArgs.add(ConstExpressions.i32.c(-1)); // lambda method id
             initArgs.add(ConstExpressions.i32.c(0)); // initstatus
             initArgs.add(ConstExpressions.i32.c(resolvedClasses.indexOf(cl))); // Factory for
             initArgs.add(ConstExpressions.ref.nullRef()); // $VALUES
