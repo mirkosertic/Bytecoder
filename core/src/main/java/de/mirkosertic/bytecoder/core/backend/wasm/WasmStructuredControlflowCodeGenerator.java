@@ -739,6 +739,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         } else {
             lambdaMethod = module.getFunctions().newFunction("lambda" + lambdaCounter++, lambdaMethodArgs, typeConverter.apply(implementationMethod.methodType.getReturnType()));
         }
+        lambdaMethod.toTable();
 
         // Finally construct a new type with virtual method table and
         // the linked closure fields
