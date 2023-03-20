@@ -128,7 +128,7 @@ public class Module {
             }
 
             @Override
-            public WasmValue.ExportContext subWith(Container container) {
+            public WasmValue.ExportContext subWith(final Container container) {
                 return null;
             }
 
@@ -144,8 +144,8 @@ public class Module {
         functions.writeTo(writer, functionIndex);
         tables.writeTo(writer);
         mems.writeTo(writer);
-        globals.writeTo(writer, context);
         tags.writeCodeTo(writer);
+        globals.writeTo(writer, context);
         exports.writeTo(writer, memoryIndex);
         elements.writeTo(writer, functionIndex);
         functions.writeCodeTo(writer, functionIndex);

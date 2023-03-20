@@ -25,7 +25,8 @@ public enum PrimitiveType implements WasmType {
     struct("struct", (byte) 0x5f),
     array("array", (byte) 0x5e),
     empty_pseudo_block("pseudo", (byte) 0x40),
-    anyref("anyref", (byte) 0x6f);
+    anyref("anyref", (byte) 0x6f),
+    externref("externref", (byte) 0x6f);
 
     private final String text;
     private final byte binaryType;

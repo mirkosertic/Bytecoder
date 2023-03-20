@@ -87,6 +87,8 @@ public class WasmHelpers {
         }
 
         vtFunction.flow.unreachable();
+        // Forward declaration by putting it to the table
+        vtFunction.toTable();
 
         return vtFunction;
     }

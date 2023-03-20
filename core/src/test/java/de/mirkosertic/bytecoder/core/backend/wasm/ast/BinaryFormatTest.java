@@ -83,4 +83,62 @@ public class BinaryFormatTest {
             exporter.export(module, pw);
         }
     }
+
+    @Test
+    public void testReturnNullReference() throws IOException {
+        final Module module = new Module("test", "");
+        final List<StructType.Field> fields = new ArrayList<>();
+        fields.add(new StructType.Field("field1", PrimitiveType.i32));
+        fields.add(new StructType.Field("field2", PrimitiveType.f32));
+        final StructType str = module.getTypes().structType("str", fields);
+
+        final ExportableFunction f = module.getFunctions().newFunction("lala", ConstExpressions.ref.type(str, true));
+        f.flow.ret(ConstExpressions.ref.nullRef());
+
+        f.exportAs("test");
+
+        final List<WasmType> exceptionArguments = new ArrayList<>();
+        exceptionArguments.add(ConstExpressions.ref.type(str, true));
+        module.getTags().tagIndex().add(ConstExpressions.tag("javaexception",  module.getTypes().functionType(exceptionArguments)));
+
+        final CompileOptions options = new CompileOptions(new Slf4JLogger(), Optimizations.DISABLED, new String[0], "prefix", true);
+        final Exporter exporter = new Exporter(options);
+
+        try (final FileOutputStream fos = new FileOutputStream("target/testfile.wasm")) {
+            exporter.export(module, fos);
+        }
+
+        try (final PrintWriter pw = new PrintWriter(new FileOutputStream("target/testfile.wat"))) {
+            exporter.export(module, pw);
+        }
+    }
+
+    @Test
+    public void testReturnNullExternReference() throws IOException {
+        final Module module = new Module("test", "");
+        final List<StructType.Field> fields = new ArrayList<>();
+        fields.add(new StructType.Field("field1", PrimitiveType.i32));
+        fields.add(new StructType.Field("field2", PrimitiveType.f32));
+        final StructType str = module.getTypes().structType("str", fields);
+
+        final ExportableFunction f = module.getFunctions().newFunction("lala", PrimitiveType.externref);
+        f.flow.ret(ConstExpressions.ref.externNullRef());
+
+        f.exportAs("test");
+
+        final List<WasmType> exceptionArguments = new ArrayList<>();
+        exceptionArguments.add(ConstExpressions.ref.type(str, true));
+        module.getTags().tagIndex().add(ConstExpressions.tag("javaexception",  module.getTypes().functionType(exceptionArguments)));
+
+        final CompileOptions options = new CompileOptions(new Slf4JLogger(), Optimizations.DISABLED, new String[0], "prefix", true);
+        final Exporter exporter = new Exporter(options);
+
+        try (final FileOutputStream fos = new FileOutputStream("target/testfile.wasm")) {
+            exporter.export(module, fos);
+        }
+
+        try (final PrintWriter pw = new PrintWriter(new FileOutputStream("target/testfile.wat"))) {
+            exporter.export(module, pw);
+        }
+    }
 }
