@@ -238,10 +238,6 @@ const bytecoder = {
                 bytecoder.filehandles[fd] = null;
             }
         },
-        "java.lang.invoke.LambdaMetafactory": {
-            Ljava$lang$invoke$CallSite$$metafactory$Ljava$lang$invoke$MethodHandles$Lookup$$Ljava$lang$String$$Ljava$lang$invoke$MethodType$$Ljava$lang$invoke$MethodType$$Ljava$lang$invoke$MethodHandle$$Ljava$lang$invoke$MethodType$: function (unused, lookups, methodName, invokedType, samMethodType, implMethod, aInstantiatedMethodType) {
-            }
-        },
         "de.mirkosertic.bytecoder.classlib.BytecoderCharsetDecoder": {
             $C$decodeFromBytes$Ljava$lang$String$$$B: function (decoder, charsetName, data) {
                 let targetCharacterSet = bytecoder.toJSString(charsetName);
@@ -811,6 +807,11 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
   }
   throw 'Unknown string index ' + index;
 };
+bytecoder.imports["de.mirkosertic.bytecoder.integrationtest.VueDemo$MyVueInstance_generated"] = {
+    V$welcomemessage$Ljava$lang$String$ : function(thisref, arg0) {
+        (thisref.welcomemessage = arg0);
+    },
+};
 bytecoder.imports["de.mirkosertic.bytecoder.api.vue.VueData_generated"] = {
     V$setProperty$Ljava$lang$String$$Ljava$lang$String$ : function(thisref, arg0, arg1) {
         (thisref.setProperty(arg0, arg1));
@@ -828,10 +829,5 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.vue.VueBuilder_generated"] = {
     },
     Lde$mirkosertic$bytecoder$api$vue$VueInstance$$build$$ : function(thisref) {
         return (thisref.build());
-    },
-};
-bytecoder.imports["de.mirkosertic.bytecoder.integrationtest.VueDemo$MyVueInstance_generated"] = {
-    V$welcomemessage$Ljava$lang$String$ : function(thisref, arg0) {
-        (thisref.welcomemessage = arg0);
     },
 };

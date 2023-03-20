@@ -238,10 +238,6 @@ const bytecoder = {
                 bytecoder.filehandles[fd] = null;
             }
         },
-        "java.lang.invoke.LambdaMetafactory": {
-            Ljava$lang$invoke$CallSite$$metafactory$Ljava$lang$invoke$MethodHandles$Lookup$$Ljava$lang$String$$Ljava$lang$invoke$MethodType$$Ljava$lang$invoke$MethodType$$Ljava$lang$invoke$MethodHandle$$Ljava$lang$invoke$MethodType$: function (unused, lookups, methodName, invokedType, samMethodType, implMethod, aInstantiatedMethodType) {
-            }
-        },
         "de.mirkosertic.bytecoder.classlib.BytecoderCharsetDecoder": {
             $C$decodeFromBytes$Ljava$lang$String$$$B: function (decoder, charsetName, data) {
                 let targetCharacterSet = bytecoder.toJSString(charsetName);

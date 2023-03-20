@@ -32,8 +32,10 @@ import de.mirkosertic.bytecoder.core.backend.wasm.ast.LabeledContainer;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.Local;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.Loop;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.Module;
+import de.mirkosertic.bytecoder.core.backend.wasm.ast.Param;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.PrimitiveType;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.RefType;
+import de.mirkosertic.bytecoder.core.backend.wasm.ast.StructSubtype;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.StructType;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.Try;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.WasmType;
@@ -64,6 +66,8 @@ import de.mirkosertic.bytecoder.core.ir.InvokeDynamicExpression;
 import de.mirkosertic.bytecoder.core.ir.LineNumberDebugInfo;
 import de.mirkosertic.bytecoder.core.ir.LookupSwitch;
 import de.mirkosertic.bytecoder.core.ir.MethodArgument;
+import de.mirkosertic.bytecoder.core.ir.MethodReference;
+import de.mirkosertic.bytecoder.core.ir.MethodType;
 import de.mirkosertic.bytecoder.core.ir.MonitorEnter;
 import de.mirkosertic.bytecoder.core.ir.MonitorExit;
 import de.mirkosertic.bytecoder.core.ir.Mul;
@@ -122,22 +126,27 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 public class WasmStructuredControlflowCodeGenerator implements StructuredControlflowCodeGenerator {
 
     static class NestingLevel<T extends Container> {
 
-        final NestingLevel parent;
+        final NestingLevel<?> parent;
 
         Expressions activeFlow;
 
         final T activeContainer;
 
-        public NestingLevel(final NestingLevel parent, final Expressions activeFlow, final T activeContainer) {
+        public NestingLevel(final NestingLevel<?> parent, final Expressions activeFlow, final T activeContainer) {
             this.parent = parent;
             this.activeFlow = activeFlow;
             this.activeContainer = activeContainer;
+        }
+
+        public NestingLevel(final Expressions activeFlow, final T activeContainer) {
+            this(null, activeFlow, activeContainer);
         }
 
         public LabeledContainer findByLabelInHierarchy(final String label) {
@@ -146,7 +155,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
         int depth() {
             int count = 0;
-            NestingLevel t = this;
+            NestingLevel<?> t = this;
             while (t != null) {
                 count = count + 1;
                 t = t.parent;
@@ -161,21 +170,21 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     static class NestingLevelIff extends NestingLevel<Iff> {
 
-        public NestingLevelIff(final NestingLevel parent, final Expressions activeFlow, final Iff activeContainer) {
+        public NestingLevelIff(final NestingLevel<?> parent, final Expressions activeFlow, final Iff activeContainer) {
             super(parent, activeFlow, activeContainer);
         }
     }
 
     static class NestingLevelBlock extends NestingLevel<Block> {
 
-        public NestingLevelBlock(final NestingLevel parent, final Expressions activeFlow, final Block activeContainer) {
+        public NestingLevelBlock(final NestingLevel<?> parent, final Expressions activeFlow, final Block activeContainer) {
             super(parent, activeFlow, activeContainer);
         }
     }
 
     static class NestingLevelLoop extends NestingLevel<Loop> {
 
-        public NestingLevelLoop(final NestingLevel parent, final Expressions activeFlow, final Loop activeContainer) {
+        public NestingLevelLoop(final NestingLevel<?> parent, final Expressions activeFlow, final Loop activeContainer) {
             super(parent, activeFlow, activeContainer);
         }
     }
@@ -184,7 +193,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
         final WasmValue valueToCheck;
 
-        public NestingLevelSwitch(final NestingLevel parent, final Expressions activeFlow, final LabeledContainer activeContainer, final WasmValue valueToCheck) {
+        public NestingLevelSwitch(final NestingLevel<?> parent, final Expressions activeFlow, final LabeledContainer activeContainer, final WasmValue valueToCheck) {
             super(parent, activeFlow, activeContainer);
             this.valueToCheck = valueToCheck;
         }
@@ -192,7 +201,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     static class NestingLevelTry extends NestingLevel<Try> {
 
-        public NestingLevelTry(final NestingLevel parent, final Expressions activeFlow, final Try activeContainer) {
+        public NestingLevelTry(final NestingLevel<?> parent, final Expressions activeFlow, final Try activeContainer) {
             super(parent, activeFlow, activeContainer);
         }
     }
@@ -215,11 +224,13 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private final Map<AbstractVar, Local> varLocalMap;
 
-    private NestingLevel activeLevel;
+    private NestingLevel<?> activeLevel;
 
     private final Graph graph;
 
     private final List<ResolvedClass> resolvedClasses;
+
+    private final VTableResolver vTableResolver;
 
     public WasmStructuredControlflowCodeGenerator(final CompileUnit compileUnit, final Module module,
                                                   final Map<ResolvedClass, StructType> rtMappings,
@@ -229,7 +240,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                                                   final Function<ResolvedMethod, FunctionType> functionTypeConverter,
                                                   final MethodToIDMapper methodToIDMapper,
                                                   final Graph graph,
-                                                  final List<ResolvedClass> resolvedClasses) {
+                                                  final List<ResolvedClass> resolvedClasses,
+                                                  final VTableResolver vTableResolver) {
         this.compileUnit = compileUnit;
         this.module = module;
         this.exportableFunction = exportableFunction;
@@ -239,9 +251,10 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         this.functionTypeConverter = functionTypeConverter;
         this.methodToIDMapper = methodToIDMapper;
         this.varLocalMap = new HashMap<>();
-        this.activeLevel = new NestingLevel(null, exportableFunction.flow, exportableFunction);
+        this.activeLevel = new NestingLevel<>(exportableFunction.flow, exportableFunction);
         this.graph = graph;
         this.resolvedClasses = resolvedClasses;
+        this.vTableResolver = vTableResolver;
     }
 
     @Override
@@ -440,7 +453,6 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 )
         );
 
-        // TODO: Parameterize this for lambda support
         initArgs.add(ConstExpressions.ref.ref(module.functionIndex().firstByLabel(WasmHelpers.generateClassName(cl.type) + "_vt")));
 
         initArgs.add(externRef);
@@ -585,14 +597,327 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         return ConstExpressions.call(ft, indirectCallArgs, resolver);
     }
 
+    static int lambdaCounter = 0;
+
+    static class LambdaInstance {
+
+        final WasmValue instance;
+        final StructSubtype type;
+
+        public LambdaInstance(final WasmValue instance, final StructSubtype type) {
+            this.instance = instance;
+            this.type = type;
+        }
+    }
+
+    private LambdaInstance createLambdaInstance(final Type type, final ExportableFunction implFunction,
+                                                final List<StructType.Field> closureFields,
+                                                final List<WasmValue> closureArguments) {
+        final ResolvedClass rc = compileUnit.findClass(type);
+        final Set<ResolvedMethod> abstractMethods = rc.abstractResolvedMethods();
+        if (abstractMethods.size() != 1) {
+            throw new IllegalArgumentException("Expected one abstract method in type " + type + ", got " + abstractMethods.size());
+        }
+        final ResolvedMethod lambdaMethod = abstractMethods.iterator().next();
+        final VTable vtable = vTableResolver.resolveFor(rc);
+
+        final Map<Integer, String> implMethods = new HashMap<>();
+        for (final Map.Entry<Integer, ResolvedMethod> entry : vtable.getMethods().entrySet()) {
+            final ResolvedMethod rm = entry.getValue();
+            final int methodId = entry.getKey();
+
+            final String ownerClassName = WasmHelpers.generateClassName(rm.owner.type);
+            final String methodName = WasmHelpers.generateMethodName(rm.methodNode.name, rm.methodType);
+            implMethods.put(methodId, ownerClassName + "$" + methodName);
+        }
+        implMethods.put(methodToIDMapper.resolveIdFor(lambdaMethod), implFunction.getLabel());
+
+        final String lambdaName = type.getClassName() + "$lambda$" + lambdaCounter++;
+        final String lambdavtName = lambdaName + "_vt";
+        final ExportableFunction lambdaVt = WasmHelpers.createVTableResolver(module, lambdavtName, implMethods);
+
+        final StructType baseType = module.getTypes().structTypeByName(WasmHelpers.generateClassName(type));
+        final StructSubtype lambdaSubType = module.getTypes().structSubtype(lambdaName, baseType, closureFields);
+
+        final String baseTypeClassName = WasmHelpers.generateClassName(rc.type);
+        final WasmValue rttype;
+
+        final Global global = module.getGlobals().globalsIndex().globalByLabel(baseTypeClassName  + "_cls");
+
+        if (rc.requiresClassInitializer()) {
+            final Callable initFunction = ConstExpressions.weakFunctionReference(baseTypeClassName + "_i");
+            rttype = ConstExpressions.call(initFunction, Collections.emptyList());
+        } else {
+            rttype = ConstExpressions.getGlobal(global);
+        }
+
+        final List<WasmValue> initArgs = new ArrayList<>();
+        initArgs.add(
+                ConstExpressions.struct.get(
+                        rtMappings.get(rc),
+                        rttype,
+                        "factoryFor"
+                )
+        );
+
+        initArgs.add(ConstExpressions.ref.ref(lambdaVt));
+
+        initArgs.add(ConstExpressions.ref.externNullRef());
+
+        initArgs.add(
+                ConstExpressions.struct.get(
+                        rtMappings.get(rc),
+                        ConstExpressions.getGlobal(global),
+                        "classImplTypes"
+                )
+        );
+
+        for (int i = 4; i < baseType.getFields().size(); i++) {
+            final StructType.Field f = baseType.getFields().get(i);
+            if (f.getType() instanceof PrimitiveType) {
+                switch ((PrimitiveType) f.getType()) {
+                    case i32:
+                        initArgs.add(ConstExpressions.i32.c(0));
+                        break;
+                    case f32:
+                        initArgs.add(ConstExpressions.f32.c(0.0f));
+                        break;
+                    case i64:
+                        initArgs.add(ConstExpressions.i64.c(0L));
+                        break;
+                    case f64:
+                        initArgs.add(ConstExpressions.f64.c(0.0d));
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Field type " + f.getType() + " not supported!");
+                }
+            } else if (f.getType() instanceof HostType) {
+                initArgs.add(ConstExpressions.ref.externNullRef());
+            } else if (f.getType() instanceof RefType) {
+                initArgs.add(ConstExpressions.ref.nullRef());
+            } else {
+                throw new IllegalArgumentException("Field type " + f.getType() + " not supported!");
+            }
+        }
+
+        initArgs.addAll(closureArguments);
+
+        return new LambdaInstance(ConstExpressions.struct.newInstance(lambdaSubType, initArgs), lambdaSubType);
+    }
+
+    private WasmValue generateInvokeDynamicLambdaMetaFactoryInvocation(final InvokeDynamicExpression node, final ResolveCallsite resolveCallsite) {
+        // Ok, we can create a lambda invocation here
+        final ObjectString argMethodName = (ObjectString) resolveCallsite.incomingDataFlows[1];
+        final MethodType argInvokedType = (MethodType) resolveCallsite.incomingDataFlows[2];
+        final MethodType argSamMethodType = (MethodType) resolveCallsite.incomingDataFlows[3];
+        final MethodReference argImplMethod = (MethodReference) resolveCallsite.incomingDataFlows[4];
+        final MethodType argInstanceMethodType = (MethodType) resolveCallsite.incomingDataFlows[5];
+
+        final ResolvedMethod implementationMethod = argImplMethod.resolvedMethod;
+
+        // Collect the closure fields
+        final List<StructType.Field> closureFields = new ArrayList<>();
+        final List<WasmValue> closureArguments = new ArrayList<>();
+        for (int i = 1; i < node.incomingDataFlows.length; i++) {
+            final Value closureArgument = (Value) node.incomingDataFlows[i];
+            final WasmValue wasmValue = toWasmValue(closureArgument);
+            closureFields.add(new StructType.Field("link" + i, typeConverter.apply(closureArgument.type)));
+            closureArguments.add(wasmValue);
+        }
+
+        // Construct the method to ambedd into the lambda type
+        final Type returnType = argInvokedType.type.getReturnType();
+        final ExportableFunction lambdaMethod;
+        final List<Param> lambdaMethodArgs = new ArrayList<>();
+        final WasmType thisRef = ConstExpressions.ref.type(module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class))), true);
+        lambdaMethodArgs.add(ConstExpressions.param("thisref", thisRef));
+        for (int i = 0; i < argSamMethodType.type.getArgumentTypes().length; i++) {
+            lambdaMethodArgs.add(ConstExpressions.param("arg" + i, typeConverter.apply(argSamMethodType.type.getArgumentTypes()[i])));
+        }
+        if (implementationMethod.methodType.getReturnType() == Type.VOID_TYPE) {
+            lambdaMethod = module.getFunctions().newFunction("lambda" + lambdaCounter++, lambdaMethodArgs);
+        } else {
+            lambdaMethod = module.getFunctions().newFunction("lambda" + lambdaCounter++, lambdaMethodArgs, typeConverter.apply(implementationMethod.methodType.getReturnType()));
+        }
+        lambdaMethod.toTable();
+
+        // Finally construct a new type with virtual method table and
+        // the linked closure fields
+        final LambdaInstance lambdaInstance = createLambdaInstance(returnType, lambdaMethod, closureFields, closureArguments);
+
+        // Depending on the method kind we generate different implementations of the
+        // lambda method body
+        switch (argImplMethod.kind) {
+            case INVOKESTATIC: {
+                /*pw.print("bytecoder.instanceWithLambdaImpl(");
+                pw.print(JSHelpers.generateClassName(returnType));
+                pw.print(", function(");
+                for (int i = 0; i < argSamMethodType.type.getArgumentTypes().length; i++) {
+                    if (i > 0) {
+                        pw.print(",");
+                    }
+                    pw.print("arg");
+                    pw.print(i);
+                }
+                pw.print(") { return ");
+                pw.print(JSHelpers.generateClassName(implementationMethod.owner.type));
+                pw.print(".");
+                pw.print(JSHelpers.generateMethodName(implementationMethod.methodNode.name, implementationMethod.methodType));
+                pw.print(".call(this");
+
+                for (final Object o : allArgs) {
+                    pw.print(", ");
+                    if (o instanceof String) {
+                        pw.print((String) o);
+                    } else {
+                        writeExpression((Node) o);
+                    }
+                }
+
+                pw.print(");");
+
+                pw.print("})");*/
+                lambdaMethod.flow.unreachable();
+
+                return lambdaInstance.instance;
+            }
+            case INVOKEVIRTUAL:
+            case INVOKEINTERFACE: {
+                /*final Type returnType = argInvokedType.type.getReturnType();
+                pw.print("bytecoder.instanceWithLambdaImpl(");
+                pw.print(JSHelpers.generateClassName(returnType));
+                pw.print(", function(");
+                for (int i = 0; i < argSamMethodType.type.getArgumentTypes().length; i++) {
+                    if (i > 0) {
+                        pw.print(",");
+                    }
+                    pw.print("arg");
+                    pw.print(i);
+                }
+                pw.print(") { return ");
+
+                final Object firstArg = allArgs.get(0);
+                if (firstArg instanceof String) {
+                    pw.print((String) firstArg);
+                } else {
+                    writeExpression((Node) firstArg);
+                }
+                pw.print("['");
+                pw.print(JSHelpers.generateMethodName(implementationMethod.methodNode.name, implementationMethod.methodType));
+                pw.print("'].call(");
+
+                if (firstArg instanceof String) {
+                    pw.print((String) firstArg);
+                } else {
+                    writeExpression((Node) firstArg);
+                }
+                for (int i = 1; i < allArgs.size(); i++) {
+                    pw.print(", ");
+                    final Object arg = allArgs.get(i);
+                    if (arg instanceof String) {
+                        pw.print((String) arg);
+                    } else {
+                        writeExpression((Node) arg);
+                    }
+                }
+                pw.print(");");
+
+                pw.print("})");*/
+                lambdaMethod.flow.unreachable();
+                return lambdaInstance.instance;
+            }
+            case INVOKESPECIAL: {
+                /*final Type returnType = argInvokedType.type.getReturnType();
+                pw.print("bytecoder.instanceWithLambdaImpl(");
+                pw.print(JSHelpers.generateClassName(returnType));
+                pw.print(", function(");
+                for (int i = 0; i < argSamMethodType.type.getArgumentTypes().length; i++) {
+                    if (i > 0) {
+                        pw.print(",");
+                    }
+                    pw.print("arg");
+                    pw.print(i);
+                }
+                pw.print(") { return ");
+
+                // TODO: we need to call the right prototype here to support super.x invocations for overwritten methods
+                final Object firstArg = allArgs.get(0);
+                if (firstArg instanceof String) {
+                    pw.print((String) firstArg);
+                } else {
+                    writeExpression((Node) firstArg);
+                }
+                pw.print("['");
+                pw.print(JSHelpers.generateMethodName(implementationMethod.methodNode.name, implementationMethod.methodType));
+                pw.print("'].call(");
+
+                if (firstArg instanceof String) {
+                    pw.print((String) firstArg);
+                } else {
+                    writeExpression((Node) firstArg);
+                }
+                for (int i = 1; i < allArgs.size(); i++) {
+                    pw.print(", ");
+                    final Object arg = allArgs.get(i);
+                    if (arg instanceof String) {
+                        pw.print((String) arg);
+                    } else {
+                        writeExpression((Node) arg);
+                    }
+                }
+                pw.print(");");
+
+                pw.print("})");*/
+                lambdaMethod.flow.unreachable();
+                return lambdaInstance.instance;
+            }
+            case INVOKECONSTRUCTOR: {
+                /*final Type returnType = argInvokedType.type.getReturnType();
+                pw.print("bytecoder.instanceWithLambdaImpl(");
+                pw.print(JSHelpers.generateClassName(returnType));
+                pw.print(", function(");
+                for (int i = 0; i < argSamMethodType.type.getArgumentTypes().length; i++) {
+                    if (i > 0) {
+                        pw.print(",");
+                    }
+                    pw.print("arg");
+                    pw.print(i);
+                }
+                pw.print(") { return function() {");
+
+                pw.print("const obj = new ");
+                pw.print(JSHelpers.generateClassName(implementationMethod.owner.type));
+                pw.print("();");
+
+                pw.print("obj['");
+                pw.print(JSHelpers.generateMethodName(implementationMethod.methodNode.name, implementationMethod.methodType));
+                pw.print("'].call(obj");
+
+                for (final Object arg : allArgs) {
+                    pw.print(", ");
+                    if (arg instanceof String) {
+                        pw.print((String) arg);
+                    } else {
+                        writeExpression((Node) arg);
+                    }
+                }
+                pw.print(");return obj;}();");
+
+                pw.print("})");*/
+                lambdaMethod.flow.unreachable();
+                return lambdaInstance.instance;
+            }
+        }
+        throw new IllegalArgumentException("Not implemented!");
+    }
+
+
     private WasmValue toWasmValue(final InvokeDynamicExpression value) {
         final ResolveCallsite resolveCallsite = (ResolveCallsite) value.incomingDataFlows[0];
         final BootstrapMethod bootstrapMethod = (BootstrapMethod) resolveCallsite.incomingDataFlows[0];
         if (bootstrapMethod.className.getClassName().equals(LambdaMetafactory.class.getName())) {
             if ("metafactory".equals(bootstrapMethod.methodName)) {
-                // TODO: Implement this
-                return ConstExpressions.ref.nullRef();
-                //return generateInvokeDynamicLambdaMetaFactoryInvocation(value, resolveCallsite);
+                return generateInvokeDynamicLambdaMetaFactoryInvocation(value, resolveCallsite);
             } else {
                 throw new IllegalArgumentException("Not supported method " + bootstrapMethod.methodName + " on " + bootstrapMethod.className);
             }

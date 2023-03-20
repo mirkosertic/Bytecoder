@@ -15,7 +15,20 @@
  */
 package de.mirkosertic.bytecoder.core.backend.wasm;
 
+import de.mirkosertic.bytecoder.core.backend.wasm.ast.ConstExpressions;
+import de.mirkosertic.bytecoder.core.backend.wasm.ast.ExportableFunction;
+import de.mirkosertic.bytecoder.core.backend.wasm.ast.Iff;
+import de.mirkosertic.bytecoder.core.backend.wasm.ast.Module;
+import de.mirkosertic.bytecoder.core.backend.wasm.ast.Param;
+import de.mirkosertic.bytecoder.core.backend.wasm.ast.PrimitiveType;
+import de.mirkosertic.bytecoder.core.ir.ResolvedClass;
+import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import org.objectweb.asm.Type;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class WasmHelpers {
 
@@ -54,5 +67,46 @@ public class WasmHelpers {
                 .replace('/', '$')
                 .replace(';', '$')
                 .replace('[', '$');
+    }
+
+    public static ExportableFunction createVTableResolver(final Module module, final String methodName, final Map<Integer, String> methods) {
+        final List<Param> params = new ArrayList<>();
+        params.add(ConstExpressions.param("methodid", PrimitiveType.i32));
+        final ExportableFunction vtFunction = module.getFunctions().newFunction(methodName, params, PrimitiveType.i32);
+
+        for (final Map.Entry<Integer, String> entry : methods.entrySet()) {
+            final int methodId = entry.getKey();
+
+            final String implMethodName = entry.getValue();
+
+            final Iff iff = vtFunction.flow.iff("check_" + methodId, ConstExpressions.i32.eq(
+                    ConstExpressions.i32.c(methodId),
+                    ConstExpressions.getLocal(vtFunction.localByLabel("methodid"))
+            ));
+            iff.flow.ret(ConstExpressions.weakFunctionTableReference(implMethodName));
+        }
+
+        vtFunction.flow.unreachable();
+
+        return vtFunction;
+    }
+
+    public static ExportableFunction createVTableResolver(final Module module, final ResolvedClass resolvedClass, final VTable vTable) {
+        final Map<Integer, String> implMethods = new HashMap<>();
+        for (final Map.Entry<Integer, ResolvedMethod> entry : vTable.getMethods().entrySet()) {
+            final ResolvedMethod rm = entry.getValue();
+            final int methodId = entry.getKey();
+
+            final String ownerClassName = WasmHelpers.generateClassName(rm.owner.type);
+            final String methodName = WasmHelpers.generateMethodName(rm.methodNode.name, rm.methodType);
+            implMethods.put(methodId, ownerClassName + "$" + methodName);
+        }
+
+        final String className = generateClassName(resolvedClass.type);
+
+        return createVTableResolver(module,
+                className + "_vt",
+                implMethods
+        );
     }
 }
