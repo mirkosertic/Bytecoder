@@ -17,10 +17,8 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 
 import de.mirkosertic.bytecoder.core.Slf4JLogger;
 import de.mirkosertic.bytecoder.core.backend.CompileOptions;
-import de.mirkosertic.bytecoder.core.backend.wasm.WasmHelpers;
 import de.mirkosertic.bytecoder.core.optimizer.Optimizations;
 import org.junit.Test;
-import org.objectweb.asm.Type;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -63,6 +61,12 @@ public class BinaryFormatTest {
         final List<WasmValue> arrayValues = new ArrayList<>();
         arrayValues.add(ConstExpressions.i32.c(100));
         f.flow.drop(ConstExpressions.array.newInstance(arr,arrayValues));
+
+        f.flow.drop(ConstExpressions.ref.ref(f));
+        f.flow.drop(ConstExpressions.i64.c(100000L));
+        f.flow.drop(ConstExpressions.f64.c(0.2d));
+        f.flow.drop(ConstExpressions.ref.nullRef());
+        f.flow.drop(ConstExpressions.ref.externNullRef());
 
         final List<WasmType> exceptionArguments = new ArrayList<>();
         exceptionArguments.add(ConstExpressions.ref.type(str, true));

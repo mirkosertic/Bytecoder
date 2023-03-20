@@ -28,6 +28,7 @@ public class Catch extends Container {
 
     public void writeTo(final BinaryWriter.Writer codeWriter, final WasmValue.ExportContext context) throws IOException {
         codeWriter.writeByte((byte) 0x07);
+        codeWriter.writeUnsignedLeb128(context.tagIndex().indexOf(catchTag));
         for (final WasmExpression e : getChildren()) {
             e.writeTo(codeWriter, context.subWith(this));
         }

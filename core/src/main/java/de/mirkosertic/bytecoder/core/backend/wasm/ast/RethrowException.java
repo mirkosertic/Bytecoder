@@ -15,6 +15,8 @@
  */
 package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 
+import java.io.IOException;
+
 public class RethrowException implements WasmExpression {
 
     RethrowException() {
@@ -31,7 +33,8 @@ public class RethrowException implements WasmExpression {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) {
+    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         codeWriter.writeByte((byte) 0x09);
+        codeWriter.writeUnsignedLeb128(0);
     }
 }
