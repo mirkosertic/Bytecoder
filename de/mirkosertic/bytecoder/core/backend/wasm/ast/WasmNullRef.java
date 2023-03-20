@@ -23,13 +23,13 @@ public class WasmNullRef implements WasmValue {
     @Override
     public void writeTo(final TextWriter writer, final ExportContext context) {
         writer.opening();
-        writer.write("ref.null any");
+        writer.write("ref.null none");
         writer.closing();
     }
 
     @Override
     public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) {
         binaryWriter.writeByte((byte) 0xd0);
-        binaryWriter.writeByte((byte) 0x6e);
+        binaryWriter.writeByte((byte) 0x65);
     }
 }

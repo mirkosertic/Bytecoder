@@ -542,6 +542,8 @@ public class WasmBackend {
             ischeck.falseFlow.branch(l);
 
             nullCheck.falseFlow.ret(ConstExpressions.i32.c(0));
+
+            instanceOfCheck.flow.unreachable();
         }
 
         {
