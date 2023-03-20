@@ -328,26 +328,7 @@ public class WasmBackend {
                 rtTypeMappings.put(cl, types.structSubtype(className + "_rtt", runtimeClassType, classFields));
             }
 
-            final List<Param> params = new ArrayList<>();
-            params.add(ConstExpressions.param("methodid", PrimitiveType.i32));
-            final ExportableFunction vtFunction = functionsSection.newFunction(className + "_vt", params, PrimitiveType.i32);
-
-            final VTable vTable = vTableResolver.resolveFor(cl);
-            for (final Map.Entry<Integer, ResolvedMethod> entry : vTable.getMethods().entrySet()) {
-                final ResolvedMethod rm = entry.getValue();
-                final int methodId = entry.getKey();
-
-                final String ownerClassName = WasmHelpers.generateClassName(rm.owner.type);
-                final String methodName = WasmHelpers.generateMethodName(rm.methodNode.name, rm.methodType);
-
-                final Iff iff = vtFunction.flow.iff("check_" + methodId, ConstExpressions.i32.eq(
-                        ConstExpressions.i32.c(methodId),
-                        ConstExpressions.getLocal(vtFunction.localByLabel("methodid"))
-                ));
-                iff.flow.ret(ConstExpressions.weakFunctionTableReference(ownerClassName + "$" + methodName));
-            }
-
-            vtFunction.flow.unreachable();
+            WasmHelpers.createVTableResolver(module, cl, vTableResolver.resolveFor(cl));
 
             final List<WasmValue> typeIds = cl.allTypesOf().stream().map(t -> ConstExpressions.i32.c(resolvedClasses.indexOf(t))).collect(Collectors.toList());
 
@@ -847,7 +828,7 @@ public class WasmBackend {
                         }
 
                         try {
-                            new Sequencer(g, dt, new WasmStructuredControlflowCodeGenerator(compileUnit, module, rtTypeMappings, objectTypeMappings, implFunction, toWASMType, toFunctionType, methodToIDMapper, g, resolvedClasses));
+                            new Sequencer(g, dt, new WasmStructuredControlflowCodeGenerator(compileUnit, module, rtTypeMappings, objectTypeMappings, implFunction, toWASMType, toFunctionType, methodToIDMapper, g, resolvedClasses, vTableResolver));
                         } catch (final RuntimeException e) {
                             throw new CodeGenerationFailure(method, dt, e);
                         }
