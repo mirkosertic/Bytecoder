@@ -1203,10 +1203,10 @@ public class WasmBackend {
         if (!StringUtils.isEmpty(compileOptions.getFilenamePrefix())) {
             result.add(new CompileResult.StringContent(compileOptions.getFilenamePrefix() + "wasmclasses.wat", theStringWriter.toString()));
             result.add(new CompileResult.StringContent(compileOptions.getFilenamePrefix() + "runtime.js", jsContentWriter.toString()));
-            //result.add(new CompileResult.BinaryContent(compileOptions.getFilenamePrefix() + "wasmclasses.wasm", theBinaryOutput.toByteArray()));
+            result.add(new CompileResult.BinaryContent(compileOptions.getFilenamePrefix() + "wasmclasses.wasm", theBinaryOutput.toByteArray()));
 
         } else{
-            //result.add(new CompileResult.BinaryContent("wasmclasses.wasm", theBinaryOutput.toByteArray()));
+            result.add(new CompileResult.BinaryContent("wasmclasses.wasm", theBinaryOutput.toByteArray()));
             result.add(new CompileResult.StringContent("wasmclasses.wat", theStringWriter.toString()));
             result.add(new CompileResult.StringContent("runtime.js", jsContentWriter.toString()));
         }

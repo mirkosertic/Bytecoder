@@ -799,10 +799,10 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 90: return 'data type scale not a power of two';
       case 91: return 'Attempt to access an already released memory resource';
       case 92: return 'This segment is already closed';
-      case 93: return 'No java.util.Objects instances for you!';
-      case 94: return '[pos=';
-      case 95: return ' lim=';
-      case 96: return ' cap=';
+      case 93: return '[pos=';
+      case 94: return ' lim=';
+      case 95: return ' cap=';
+      case 96: return 'No java.util.Objects instances for you!';
       case 97: return '=';
   }
   throw 'Unknown string index ' + index;
