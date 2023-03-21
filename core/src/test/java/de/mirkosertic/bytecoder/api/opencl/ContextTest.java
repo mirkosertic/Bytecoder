@@ -25,33 +25,8 @@ import static de.mirkosertic.bytecoder.api.opencl.VectorFunctions.normalize;
 public class ContextTest {
 
     @Test
-    public void testSimpleAddRelooper() throws Exception {
-        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(false));
-
-        final float[] theA = {10f, 20f, 30f, 40f};
-        final float[] theB = {100f, 200f, 300f, 400f};
-        final float[] theResult = new float[4];
-
-        try (final Context theContext = thePlatform.createContext()) {
-            theContext.compute(4, new Kernel() {
-                @Override
-                public void processWorkItem() {
-                    final int id = get_global_id(0);
-                    final float a = theA[id];
-                    final float b = theB[id];
-                    theResult[id] = a + b;
-                }
-            });
-        }
-
-        for (final float aTheResult : theResult) {
-            System.out.println(aTheResult);
-        }
-    }
-
-    @Test
-    public void testSimpleAddStackifier() throws Exception {
-        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
+    public void testSimpleAdd() throws Exception {
+        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions.Builder().build());
 
         final float[] theA = {10f, 20f, 30f, 40f};
         final float[] theB = {100f, 200f, 300f, 400f};
@@ -76,7 +51,7 @@ public class ContextTest {
 
     @Test
     public void testSimpleAddWithInlineMethod() throws Exception {
-        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
+        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions.Builder().build());
 
         final float[] theA = {10f, 20f, 30f, 40f};
         final float[] theB = {100f, 200f, 300f, 400f};
@@ -106,7 +81,7 @@ public class ContextTest {
 
     @Test
     public void testVectorNormalize() throws Exception {
-        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
+        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions.Builder().build());
 
         final Float2[] theA = {float2(10f, 20f)};
         final Float2[] theResult = new Float2[] {float2(-1f, -1f)};
@@ -129,7 +104,7 @@ public class ContextTest {
 
     @Test
     public void testSimpleCopy() throws Exception {
-        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
+        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions.Builder().build());
 
         final Float2[] theA = {float2(10f, 20f), float2(30f, 40f)};
         final Float2[] theResult = new Float2[] {float2(0f, 0f), float2(0f, 0f)};
@@ -152,7 +127,7 @@ public class ContextTest {
 
     @Test
     public void testSimpleCopyWithPrimitiveInput() throws Exception {
-        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
+        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions.Builder().build());
 
         final float adder = 10;
         final Float2[] theA = {float2(10f, 20f), float2(30f, 40f)};
@@ -177,7 +152,7 @@ public class ContextTest {
     @Test
     public void testMandelbrot() throws Exception {
 
-        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
+        final Platform thePlatform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions.Builder().build());
         // final Platform thePlatform = new CPUPlatform(new Slf4JLogger());
 
         final int iteration = 30;

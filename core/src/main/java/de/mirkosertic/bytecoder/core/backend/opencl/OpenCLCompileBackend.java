@@ -19,6 +19,7 @@ import de.mirkosertic.bytecoder.core.ir.AnalysisStack;
 import de.mirkosertic.bytecoder.core.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.core.ir.ResolvedField;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
+import de.mirkosertic.bytecoder.core.optimizer.Optimizer;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 import org.objectweb.asm.Type;
 
@@ -35,7 +36,8 @@ public class OpenCLCompileBackend {
             final Class entryPointClass,
             final String entryPointMethodName,
             final Type entryPointSignature,
-            final AnalysisStack analysisStack) {
+            final AnalysisStack analysisStack,
+            final Optimizer optimizer) {
 
         final ResolvedClass kernelClass = compileUnit.resolveClass(Type.getType(entryPointClass), analysisStack);
         final ResolvedMethod kernelMethod = kernelClass.resolveMethod(entryPointMethodName, entryPointSignature, analysisStack);
@@ -55,7 +57,7 @@ public class OpenCLCompileBackend {
         }
 
         // And then we ca pass it to the code generator to generate the kernel code
-        final OpenCLWriter writer = new OpenCLWriter(kernelClass, new PrintWriter(strWriter), compileUnit, inputOutputs);
+        final OpenCLWriter writer = new OpenCLWriter(kernelClass, new PrintWriter(strWriter), compileUnit, inputOutputs, optimizer);
 
         for (final ResolvedMethod method : kernelClass.resolvedMethods) {
 

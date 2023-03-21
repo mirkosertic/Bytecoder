@@ -27,7 +27,7 @@ public class MandelbrotOpenCL {
     private long computingTime;
 
     public MandelbrotOpenCL() {
-        platform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions(true));
+        platform = PlatformFactory.resolve().createPlatform(new Slf4JLogger(), new OpenCLOptions.Builder().build());
         //platform = new CPUPlatform(new Slf4JLogger());
         context = platform.createContext();
         kernel = new MandelbrotKernel(1024, 768, 512);
