@@ -128,7 +128,7 @@ class OpenCLContext implements Context {
             final BytecoderLoader loader = new BytecoderLoader(kernelClass.getClassLoader());
             final CompileUnit compileUnit = new CompileUnit(loader, logger, new OpenCLIntrinsics());
 
-            result = backend.generateCodeFor(compileUnit, kernel.getClass(), method.getName(), Type.getReturnType(method), analysisStack);
+            result = backend.generateCodeFor(compileUnit, kernel.getClass(), method.getName(), Type.getType(method), analysisStack);
 
             content = (OpenCLCompileResult.OpenCLContent) result.getContent()[0];
 

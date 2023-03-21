@@ -846,21 +846,21 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 137: return 'data type scale not a power of two';
       case 138: return 'Attempt to access an already released memory resource';
       case 139: return 'This segment is already closed';
-      case 140: return ':';
-      case 141: return '-';
-      case 142: return '[pos=';
-      case 143: return ' lim=';
-      case 144: return ' cap=';
-      case 145: return '\/';
-      case 146: return ' ';
-      case 147: return 'No java.util.Objects instances for you!';
-      case 148: return '(';
-      case 149: return ',';
-      case 150: return '=';
-      case 151: return 'function: ';
-      case 152: return 'none';
-      case 153: return 'true';
-      case 154: return 'false';
+      case 140: return 'No java.util.Objects instances for you!';
+      case 141: return '=';
+      case 142: return '\/';
+      case 143: return ' ';
+      case 144: return '[pos=';
+      case 145: return ' lim=';
+      case 146: return ' cap=';
+      case 147: return ':';
+      case 148: return '-';
+      case 149: return '(';
+      case 150: return ',';
+      case 151: return 'true';
+      case 152: return 'false';
+      case 153: return 'function: ';
+      case 154: return 'none';
       case 155: return 'Lua';
       case 156: return '?';
       case 157: return 'call';
@@ -993,10 +993,10 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 284: return 'attempt to index ? (a ';
       case 285: return ' value)';
       case 286: return 'Illegal opcode: ';
-      case 287: return ' on number and ';
-      case 288: return 'attempt to compare string with number';
-      case 289: return 'attempt to compare number with string';
-      case 290: return 'table index';
+      case 287: return 'table index';
+      case 288: return ' on number and ';
+      case 289: return 'attempt to compare string with number';
+      case 290: return 'attempt to compare number with string';
       case 291: return 'Illegal Capacity: ';
       case 292: return 'Illegal Load: ';
       case 293: return '(for control)';
@@ -1086,9 +1086,9 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 377: return 'Required array length ';
       case 378: return ' + ';
       case 379: return ' is too large';
-      case 380: return ' instack ';
-      case 381: return ' closed ';
-      case 382: return 'UNKNOWN';
+      case 380: return 'UNKNOWN';
+      case 381: return ' instack ';
+      case 382: return ' closed ';
       case 383: return 'start must be > 0';
       case 384: return 'bad argument #';
       case 385: return 'nan';
@@ -1137,17 +1137,17 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 428: return 'upvaluejoin';
       case 429: return 'table or string';
       case 430: return 'Input length = ';
-      case 431: return '; ';
-      case 432: return '<dead';
-      case 433: return 'c';
-      case 434: return 'l';
-      case 435: return 'r';
-      case 436: return 'flnStu';
-      case 437: return 'String';
-      case 438: return 'function or level';
-      case 439: return 'value expected';
-      case 440: return 'index out of range';
-      case 441: return 'interval is empty';
+      case 431: return '<dead';
+      case 432: return '; ';
+      case 433: return 'value expected';
+      case 434: return 'interval is empty';
+      case 435: return 'c';
+      case 436: return 'l';
+      case 437: return 'r';
+      case 438: return 'String';
+      case 439: return 'index out of range';
+      case 440: return 'flnStu';
+      case 441: return 'function or level';
       case 442: return 'weak<';
       case 443: return 'cannot set ';
       case 444: return ' for userdata';
@@ -1159,6 +1159,11 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
   }
   throw 'Unknown string index ' + index;
 };
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLTextAreaElement_generated"] = {
+    Ljava$lang$String$$value$$ : function(thisref) {
+        return (thisref.value);
+    },
+};
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.Window_generated"] = {
     Lde$mirkosertic$bytecoder$api$web$HTMLDocument$$document$$ : function(thisref) {
         return (thisref.document);
@@ -1169,18 +1174,13 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.web.EventTarget_generated"] = {
         (thisref.addEventListener(arg0, function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.EventListener_callback'](arg1,evt);}));
     },
 };
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.ParentNode_generated"] = {
-    Lde$mirkosertic$bytecoder$api$web$Element$$getElementById$Ljava$lang$String$ : function(thisref, arg0) {
-        return (thisref.getElementById(arg0));
-    },
-};
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.Element_generated"] = {
     V$innerHTML$Ljava$lang$String$ : function(thisref, arg0) {
         (thisref.innerHTML = arg0);
     },
 };
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLTextAreaElement_generated"] = {
-    Ljava$lang$String$$value$$ : function(thisref) {
-        return (thisref.value);
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.ParentNode_generated"] = {
+    Lde$mirkosertic$bytecoder$api$web$Element$$getElementById$Ljava$lang$String$ : function(thisref, arg0) {
+        return (thisref.getElementById(arg0));
     },
 };
