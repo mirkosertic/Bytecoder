@@ -15,8 +15,13 @@
  */
 package de.mirkosertic.bytecoder.core.backend.opencl;
 
+import de.mirkosertic.bytecoder.core.backend.CodeGenerationFailure;
+import de.mirkosertic.bytecoder.core.backend.sequencer.DominatorTree;
+import de.mirkosertic.bytecoder.core.backend.sequencer.Sequencer;
+import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
+import de.mirkosertic.bytecoder.core.optimizer.Optimizer;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 import org.objectweb.asm.Type;
 
@@ -32,17 +37,20 @@ public class OpenCLWriter {
 
     private final PrintWriter pw;
 
+    private final Optimizer optimizer;
 
     public OpenCLWriter(
             final ResolvedClass kernelClass,
             final PrintWriter writer,
             final CompileUnit compileUnit,
-            final OpenCLInputOutputs inputOutputs) {
+            final OpenCLInputOutputs inputOutputs,
+            final Optimizer optimizer) {
 
         this.compileUnit = compileUnit;
         this.pw = writer;
         this.inputOutputs = inputOutputs;
         this.kernelClass = kernelClass;
+        this.optimizer = optimizer;
     }
 
     private String toType(final Type type) {
@@ -136,7 +144,24 @@ public class OpenCLWriter {
 
         pw.println(") {");
 
-//        printProgramVariablesDeclaration(method);
+        final Graph g = method.methodBody;
+
+        while (optimizer.optimize(method)) {
+            //
+        }
+
+        final DominatorTree dt = new DominatorTree(g);
+
+        if (kernelClass.classNode.sourceFile != null) {
+            pw.print("    // source file is ");
+            pw.println(kernelClass.classNode.sourceFile);
+        }
+
+        try {
+            new Sequencer(g, dt, new OpenCLStructuredControlflowCodeGenerator(compileUnit, kernelClass, pw));
+        } catch (final RuntimeException e) {
+            throw new CodeGenerationFailure(method, dt, e);
+        }
 
         pw.println("}");
     }
@@ -151,8 +176,6 @@ public class OpenCLWriter {
 
         printInputOutputArgs(inputOutputs.arguments());
 
-        final boolean theFirst = inputOutputs.arguments().isEmpty();
-
         for (int i = 0; i < method.methodType.getArgumentTypes().length; i++)  {
             if (i > 0) {
                 pw.print(", ");
@@ -165,7 +188,24 @@ public class OpenCLWriter {
 
         pw.println(") {");
 
-//        printProgramVariablesDeclaration(resolvedMethod);
+        final Graph g = method.methodBody;
+
+        while (optimizer.optimize(method)) {
+            //
+        }
+
+        final DominatorTree dt = new DominatorTree(g);
+
+        if (kernelClass.classNode.sourceFile != null) {
+            pw.print("    // source file is ");
+            pw.println(kernelClass.classNode.sourceFile);
+        }
+
+        try {
+            new Sequencer(g, dt, new OpenCLStructuredControlflowCodeGenerator(compileUnit, kernelClass, pw));
+        } catch (final RuntimeException e) {
+            throw new CodeGenerationFailure(method, dt, e);
+        }
 
         pw.println("}");
     }
