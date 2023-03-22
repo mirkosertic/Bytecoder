@@ -66,19 +66,13 @@ public class OpenCLWriter {
             switch (theArgument.getType()) {
                 case INPUT:
                     pw.print("const ");
-                    pw.print(OpenCLHelpers.toType(theTypeRef));
-                    if (theArgument.getField().type.getSort() == Type.ARRAY) {
-                        pw.print("*");
-                    }
+                    pw.print(OpenCLHelpers.toType(theTypeRef, compileUnit));
                     pw.print(" ");
                     pw.print(theArgument.getField().name);
                     break;
                 case OUTPUT:
                 case INPUTOUTPUT:
-                    pw.print(OpenCLHelpers.toType(theTypeRef));
-                    if (theArgument.getField().type.getSort() == Type.ARRAY) {
-                        pw.print("*");
-                    }
+                    pw.print(OpenCLHelpers.toType(theTypeRef, compileUnit));
                     pw.print(" ");
                     pw.print(theArgument.getField().name);
                     break;
@@ -119,7 +113,7 @@ public class OpenCLWriter {
     public void writeInline(final ResolvedMethod method) {
 
         pw.print("__inline ");
-        pw.print(OpenCLHelpers.toType(method.methodType.getReturnType()));
+        pw.print(OpenCLHelpers.toType(method.methodType.getReturnType(), compileUnit));
         pw.print(" ");
         pw.print(OpenCLHelpers.generateMethodName(method.methodNode.name, method.methodType));
         pw.print("(");
@@ -130,7 +124,7 @@ public class OpenCLWriter {
             if (i > 0 || !inputOutputs.arguments().isEmpty()) {
                 pw.print(", ");
             }
-            pw.print(OpenCLHelpers.toType(method.methodType.getArgumentTypes()[i]));
+            pw.print(OpenCLHelpers.toType(method.methodType.getArgumentTypes()[i], compileUnit));
             pw.print(" arg");
             pw.print(i);
 
