@@ -53,37 +53,6 @@ public class OpenCLWriter {
         this.optimizer = optimizer;
     }
 
-    private String toType(final Type type) {
-        /*if (aType.isArray()) {
-            final TypeRef.ArrayTypeRef theArray = (TypeRef.ArrayTypeRef) aType;
-            return toType(TypeRef.toType(theArray.arrayType().getType()));
-        }
-        if (aType instanceof TypeRef.ObjectTypeRef) {
-            final TypeRef.ObjectTypeRef theObject = (TypeRef.ObjectTypeRef) aType;
-            return toStructName(theObject.objectType());
-        }*/
-        switch (type.getSort()) {
-            case Type.ARRAY:
-                return toType(type.getElementType());
-            case Type.INT:
-                return "int";
-            case Type.FLOAT:
-                return "float";
-            case Type.LONG:
-                return "long";
-            case Type.DOUBLE:
-                return "double";
-            case Type.SHORT:
-                return "short";
-            case Type.BYTE:
-                return "byte";
-            case Type.OBJECT:
-                return "void*";
-            default:
-                throw new IllegalArgumentException("Not supported : " + type);
-        }
-    }
-
     private void printInputOutputArgs(final List<OpenCLInputOutputs.KernelArgument> arguments) {
         for (int i = 0; i<arguments.size(); i++) {
             if (i>0) {
@@ -97,7 +66,7 @@ public class OpenCLWriter {
             switch (theArgument.getType()) {
                 case INPUT:
                     pw.print("const ");
-                    pw.print(toType(theTypeRef));
+                    pw.print(OpenCLHelpers.toType(theTypeRef));
                     if (theArgument.getField().type.getSort() == Type.ARRAY) {
                         pw.print("*");
                     }
@@ -106,7 +75,7 @@ public class OpenCLWriter {
                     break;
                 case OUTPUT:
                 case INPUTOUTPUT:
-                    pw.print(toType(theTypeRef));
+                    pw.print(OpenCLHelpers.toType(theTypeRef));
                     if (theArgument.getField().type.getSort() == Type.ARRAY) {
                         pw.print("*");
                     }
@@ -116,25 +85,6 @@ public class OpenCLWriter {
             }
         }
     }
-
-/*    private void printProgramVariablesDeclaration(final ResolvedMethod resolvedMethod) {
-        final List<Variable> variable = resolvedMethod.methodBody.;
-        for (final Register r : theRegisters) {
-            final TypeRef theVarType = r.getType();
-            if (theVarType.isArray()) {
-                print("__global ");
-                print(toType(theVarType));
-                print("* ");
-                print(registerName(r));
-                println(";");
-            } else {
-                print(toType(theVarType));
-                print(" ");
-                print(registerName(r));
-                println(";");
-            }
-        }
-    }*/
 
     public void writeKernel(final ResolvedMethod method) {
 
@@ -169,7 +119,7 @@ public class OpenCLWriter {
     public void writeInline(final ResolvedMethod method) {
 
         pw.print("__inline ");
-        pw.print(toType(method.methodType.getReturnType()));
+        pw.print(OpenCLHelpers.toType(method.methodType.getReturnType()));
         pw.print(" ");
         pw.print(method.methodNode.name);
         pw.print("(");
@@ -177,10 +127,10 @@ public class OpenCLWriter {
         printInputOutputArgs(inputOutputs.arguments());
 
         for (int i = 0; i < method.methodType.getArgumentTypes().length; i++)  {
-            if (i > 0) {
+            if (i > 0 || !inputOutputs.arguments().isEmpty()) {
                 pw.print(", ");
             }
-            pw.print(toType(method.methodType.getArgumentTypes()[i]));
+            pw.print(OpenCLHelpers.toType(method.methodType.getArgumentTypes()[i]));
             pw.print(" arg");
             pw.print(i);
 
