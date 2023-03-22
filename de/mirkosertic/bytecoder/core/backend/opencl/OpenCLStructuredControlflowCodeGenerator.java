@@ -126,30 +126,23 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
             variableToName.put(variables.get(i), varName);
 
             writeIndent();
-            pw.print("var ");
-            pw.print(varName);
-
-            if (v.type == null) {
-                pw.print(" = null");
-            } else {
-                switch (v.type.getSort()) {
-                    case Type.FLOAT:
-                    case Type.DOUBLE:
-                        pw.print(" = .0");
-                        break;
-                    case Type.OBJECT:
-                        pw.print(" = null");
-                        break;
-                    case Type.ARRAY:
-                        pw.print(" = null");
-                        break;
-                    default:
-                        pw.print(" = 0");
-                        break;
+            switch (v.type.getSort()) {
+                case Type.ARRAY: {
+                    pw.print("__global ");
+                    pw.print(OpenCLHelpers.toType(v.type));
+                    pw.print("* ");
+                    pw.print(varName);
+                    pw.println(";");
+                    break;
+                }
+                default: {
+                    pw.print(OpenCLHelpers.toType(v.type));
+                    pw.print(" ");
+                    pw.print(varName);
+                    pw.println(";");
+                    break;
                 }
             }
-
-            pw.println(";");
         }
     }
 
