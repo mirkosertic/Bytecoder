@@ -326,7 +326,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     @Override
     public void write(final StaticMethodInvocation node) {
-        final ResolvedMethod rm = node.method;
+        final ResolvedMethod rm = node.resolvedMethod;
         final ResolvedClass cl = rm.owner;
 
         final List<WasmValue> callArgs = new ArrayList<>();

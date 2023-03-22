@@ -1427,7 +1427,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
         writeIndent();
 
-        final ResolvedClass resolvedClass = node.method.owner;
+        final ResolvedClass resolvedClass = node.resolvedMethod.owner;
 
         pw.print(generateClassName(resolvedClass.type));
         if (resolvedClass.requiresClassInitializer()) {
@@ -1435,7 +1435,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         }
 
         pw.print(".");
-        pw.print(generateMethodName(node.method.methodNode.name, node.method.methodType));
+        pw.print(generateMethodName(node.resolvedMethod.methodNode.name, node.resolvedMethod.methodType));
         pw.print("(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {

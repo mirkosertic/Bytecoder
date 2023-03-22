@@ -108,7 +108,7 @@ public class OpenCLWriter {
         }
 
         try {
-            new Sequencer(g, dt, new OpenCLStructuredControlflowCodeGenerator(compileUnit, kernelClass, pw));
+            new Sequencer(g, dt, new OpenCLStructuredControlflowCodeGenerator(compileUnit, kernelClass, pw, inputOutputs));
         } catch (final RuntimeException e) {
             throw new CodeGenerationFailure(method, dt, e);
         }
@@ -121,7 +121,7 @@ public class OpenCLWriter {
         pw.print("__inline ");
         pw.print(OpenCLHelpers.toType(method.methodType.getReturnType()));
         pw.print(" ");
-        pw.print(method.methodNode.name);
+        pw.print(OpenCLHelpers.generateMethodName(method.methodNode.name, method.methodType));
         pw.print("(");
 
         printInputOutputArgs(inputOutputs.arguments());
@@ -152,7 +152,7 @@ public class OpenCLWriter {
         }
 
         try {
-            new Sequencer(g, dt, new OpenCLStructuredControlflowCodeGenerator(compileUnit, kernelClass, pw));
+            new Sequencer(g, dt, new OpenCLStructuredControlflowCodeGenerator(compileUnit, kernelClass, pw, inputOutputs));
         } catch (final RuntimeException e) {
             throw new CodeGenerationFailure(method, dt, e);
         }
