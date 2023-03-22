@@ -26,7 +26,6 @@ import de.mirkosertic.bytecoder.core.ir.ArrayLoad;
 import de.mirkosertic.bytecoder.core.ir.ArrayStore;
 import de.mirkosertic.bytecoder.core.ir.CMP;
 import de.mirkosertic.bytecoder.core.ir.Cast;
-import de.mirkosertic.bytecoder.core.ir.CaughtException;
 import de.mirkosertic.bytecoder.core.ir.Copy;
 import de.mirkosertic.bytecoder.core.ir.Div;
 import de.mirkosertic.bytecoder.core.ir.FrameDebugInfo;
@@ -35,7 +34,6 @@ import de.mirkosertic.bytecoder.core.ir.If;
 import de.mirkosertic.bytecoder.core.ir.InstanceMethodInvocation;
 import de.mirkosertic.bytecoder.core.ir.InstanceMethodInvocationExpression;
 import de.mirkosertic.bytecoder.core.ir.InterfaceMethodInvocation;
-import de.mirkosertic.bytecoder.core.ir.InterfaceMethodInvocationExpression;
 import de.mirkosertic.bytecoder.core.ir.LineNumberDebugInfo;
 import de.mirkosertic.bytecoder.core.ir.LookupSwitch;
 import de.mirkosertic.bytecoder.core.ir.MethodArgument;
@@ -44,7 +42,6 @@ import de.mirkosertic.bytecoder.core.ir.MonitorExit;
 import de.mirkosertic.bytecoder.core.ir.Mul;
 import de.mirkosertic.bytecoder.core.ir.Neg;
 import de.mirkosertic.bytecoder.core.ir.New;
-import de.mirkosertic.bytecoder.core.ir.NewArray;
 import de.mirkosertic.bytecoder.core.ir.Node;
 import de.mirkosertic.bytecoder.core.ir.NullReference;
 import de.mirkosertic.bytecoder.core.ir.NullTest;
@@ -73,7 +70,6 @@ import de.mirkosertic.bytecoder.core.ir.Sub;
 import de.mirkosertic.bytecoder.core.ir.TableSwitch;
 import de.mirkosertic.bytecoder.core.ir.This;
 import de.mirkosertic.bytecoder.core.ir.TypeConversion;
-import de.mirkosertic.bytecoder.core.ir.TypeReference;
 import de.mirkosertic.bytecoder.core.ir.USHR;
 import de.mirkosertic.bytecoder.core.ir.Unwind;
 import de.mirkosertic.bytecoder.core.ir.VirtualMethodInvocation;
@@ -125,14 +121,14 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
             switch (v.type.getSort()) {
                 case Type.ARRAY: {
                     pw.print("__global ");
-                    pw.print(OpenCLHelpers.toType(v.type));
-                    pw.print("* ");
+                    pw.print(OpenCLHelpers.toType(v.type, compileUnit));
+                    pw.print(" ");
                     pw.print(varName);
                     pw.println(";");
                     break;
                 }
                 default: {
-                    pw.print(OpenCLHelpers.toType(v.type));
+                    pw.print(OpenCLHelpers.toType(v.type, compileUnit));
                     pw.print(" ");
                     pw.print(varName);
                     pw.println(";");
@@ -245,22 +241,6 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
         pw.print(")");
     }
 
-    private void writeExpression(final NewArray node) {
-
-        pw.print("bytecoder.newarray((");
-        writeExpression(node.incomingDataFlows[0]);
-        pw.print("),");
-        switch (node.type.getElementType().getSort()) {
-            case Type.OBJECT:
-                pw.print("null");
-                break;
-            default:
-                pw.print("0");
-                break;
-        }
-        pw.print(")");
-    }
-
     private void writeExpression(final ArrayLoad node) {
 
         writeExpression(node.incomingDataFlows[0]);
@@ -305,10 +285,6 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
             default:
                 throw new IllegalStateException("Not implemented operation : " + node.operation);
         }
-    }
-
-    private void writeExpression(final CaughtException node) {
-        pw.print("__ex");
     }
 
     private void writeExpression(final And node) {
@@ -547,10 +523,6 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
         throw new IllegalArgumentException("Not supported by OpenCL!");
     }
 
-    private void writeExpression(final InterfaceMethodInvocationExpression node) {
-        throw new IllegalArgumentException("Not supported by OpenCL!");
-    }
-
     @Override
     public void write(final StaticMethodInvocation node) {
 
@@ -561,7 +533,13 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
         }
         final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/opencl/OpenCLFunction;", node.resolvedMethod.methodNode.visibleAnnotations);
 
-        pw.print(values.get("value"));
+        if (Boolean.TRUE.equals(values.get("literal"))) {
+            pw.print("(");
+            pw.print(values.get("value"));
+            pw.print(")");
+        } else {
+            pw.print(values.get("value"));
+        }
         pw.print("(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {
@@ -579,7 +557,13 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
         }
         final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/opencl/OpenCLFunction;", node.resolvedMethod.methodNode.visibleAnnotations);
 
-        pw.print(values.get("value"));
+        if (Boolean.TRUE.equals(values.get("literal"))) {
+            pw.print("(");
+            pw.print(values.get("value"));
+            pw.print(")");
+        } else {
+            pw.print(values.get("value"));
+        }
         pw.print("(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {
@@ -622,14 +606,10 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
             writeExpression((PrimitiveInt) node);
         } else if (node instanceof New) {
             writeExpression((New) node);
-        } else if (node instanceof TypeReference) {
-            writeExpression((TypeReference) node);
         } else if (node instanceof This) {
             writeExpression((This) node);
         } else if (node instanceof VirtualMethodInvocationExpression) {
             writeExpression((VirtualMethodInvocationExpression) node);
-        } else if (node instanceof InterfaceMethodInvocationExpression) {
-            writeExpression((InterfaceMethodInvocationExpression) node);
         } else if (node instanceof StaticMethodInvocationExpression) {
             writeExpression((StaticMethodInvocationExpression) node);
         } else if (node instanceof InstanceMethodInvocationExpression) {
@@ -638,8 +618,6 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
             writeExpression((ReadInstanceField) node);
         } else if (node instanceof ReadClassField) {
             writeExpression((ReadClassField) node);
-        } else if (node instanceof NewArray) {
-            writeExpression((NewArray) node);
         } else if (node instanceof ArrayLoad) {
             writeExpression((ArrayLoad) node);
         } else if (node instanceof MethodArgument) {
@@ -652,8 +630,6 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
             writeExpression((ReferenceTest) node);
         } else if (node instanceof NullTest) {
             writeExpression((NullTest) node);
-        } else if (node instanceof CaughtException) {
-            writeExpression((CaughtException) node);
         } else if (node instanceof And) {
             writeExpression((And) node);
         } else if (node instanceof TypeConversion) {
@@ -691,10 +667,6 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
         }
     }
 
-    private void writeExpression(final TypeReference node) {
-        throw new IllegalArgumentException("Not supported by OpenCL!");
-    }
-
     private void writeExpression(final This node) {
         pw.print("0");
     }
@@ -730,7 +702,7 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
             pw.print(")");
         } else {
             pw.print("(");
-            pw.print(OpenCLHelpers.toType(node.type));
+            pw.print(OpenCLHelpers.toType(node.type, compileUnit));
             pw.print(")(");
             writeExpression(node.incomingDataFlows[0]);
             pw.print(" / ");

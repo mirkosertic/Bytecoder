@@ -15,7 +15,12 @@
  */
 package de.mirkosertic.bytecoder.core.backend.opencl;
 
+import de.mirkosertic.bytecoder.core.ir.AnnotationUtils;
+import de.mirkosertic.bytecoder.core.ir.ResolvedClass;
+import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 import org.objectweb.asm.Type;
+
+import java.util.Map;
 
 public class OpenCLHelpers {
 
@@ -40,7 +45,7 @@ public class OpenCLHelpers {
                 .replace('[', '$');
     }
 
-    public static String toType(final Type type) {
+    public static String toType(final Type type, final CompileUnit compileUnit) {
         /*if (aType.isArray()) {
             final TypeRef.ArrayTypeRef theArray = (TypeRef.ArrayTypeRef) aType;
             return toType(TypeRef.toType(theArray.arrayType().getType()));
@@ -50,22 +55,38 @@ public class OpenCLHelpers {
             return toStructName(theObject.objectType());
         }*/
         switch (type.getSort()) {
-            case Type.ARRAY:
-                return toType(type.getElementType());
-            case Type.INT:
+            case Type.ARRAY: {
+                return toType(type.getElementType(), compileUnit) + "*";
+            }
+            case Type.INT: {
                 return "int";
-            case Type.FLOAT:
+            }
+            case Type.FLOAT: {
                 return "float";
-            case Type.LONG:
+            }
+            case Type.LONG: {
                 return "long";
-            case Type.DOUBLE:
+            }
+            case Type.DOUBLE: {
                 return "double";
-            case Type.SHORT:
+            }
+            case Type.SHORT: {
                 return "short";
-            case Type.BYTE:
+            }
+            case Type.BYTE: {
                 return "byte";
-            case Type.OBJECT:
-                return "void*";
+            }
+            case Type.OBJECT: {
+                final ResolvedClass cl = compileUnit.findClass(type);
+
+                if (!AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/opencl/OpenCLType;", cl.classNode.visibleAnnotations)) {
+                    // Happens for "this" reference, but is not used by code generator.
+                    return "void*";
+                }
+                final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/opencl/OpenCLType;", cl.classNode.visibleAnnotations);
+
+                return "" + values.get("name");
+            }
             default:
                 throw new IllegalArgumentException("Not supported : " + type);
         }
