@@ -15,8 +15,6 @@
  */
 package de.mirkosertic.bytecoder.core.backend.opencl;
 
-import de.mirkosertic.bytecoder.classlib.Array;
-import de.mirkosertic.bytecoder.core.backend.OpaqueReferenceTypeHelpers;
 import de.mirkosertic.bytecoder.core.backend.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.core.backend.sequencer.StructuredControlflowCodeGenerator;
 import de.mirkosertic.bytecoder.core.ir.AbstractVar;
@@ -63,7 +61,6 @@ import de.mirkosertic.bytecoder.core.ir.ReadInstanceField;
 import de.mirkosertic.bytecoder.core.ir.ReferenceTest;
 import de.mirkosertic.bytecoder.core.ir.Rem;
 import de.mirkosertic.bytecoder.core.ir.ResolvedClass;
-import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.ir.Return;
 import de.mirkosertic.bytecoder.core.ir.ReturnValue;
 import de.mirkosertic.bytecoder.core.ir.SHL;
@@ -86,13 +83,9 @@ import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 import org.objectweb.asm.Type;
 
 import java.io.PrintWriter;
-import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-
-import static de.mirkosertic.bytecoder.core.backend.js.JSHelpers.*;
 
 public class OpenCLStructuredControlflowCodeGenerator implements StructuredControlflowCodeGenerator {
 
@@ -106,11 +99,14 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
 
     private final CompileUnit compileUnit;
 
-    public OpenCLStructuredControlflowCodeGenerator(final CompileUnit compileUnit, final ResolvedClass cl, final PrintWriter pw) {
+    private final OpenCLInputOutputs inputOutputs;
+
+    public OpenCLStructuredControlflowCodeGenerator(final CompileUnit compileUnit, final ResolvedClass cl, final PrintWriter pw, final OpenCLInputOutputs inputOutputs) {
         this.compileUnit = compileUnit;
         this.cl = cl;
         this.pw = pw;
         this.variableToName = new HashMap<>();
+        this.inputOutputs = inputOutputs;
     }
 
     @Override
@@ -188,78 +184,56 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
     public void write(final InstanceMethodInvocation node) {
 
         final Type invocationTarget = Type.getObjectType(node.insnNode.owner);
-
-        writeIndent();
-        if (invocationTarget.equals(cl.type)) {
-            writeExpression(node.incomingDataFlows[0]);
-
-            pw.print(".");
-
-            pw.print(generateMethodName(node.insnNode.name, node.method.methodType));
-            pw.print("(");
-            for (int i = 1; i < node.incomingDataFlows.length; i++) {
-                if (i > 1) {
-                    pw.print(",");
-                }
-                writeExpression(node.incomingDataFlows[i]);
-            }
-            pw.println(");");
-        } else {
-            pw.print(generateClassName(invocationTarget));
-            pw.print(".prototype.");
-
-            pw.print(generateMethodName(node.insnNode.name, node.method.methodType));
-            pw.print(".call(");
-            writeExpression(node.incomingDataFlows[0]);
-            for (int i = 1; i < node.incomingDataFlows.length; i++) {
-                pw.print(",");
-                writeExpression(node.incomingDataFlows[i]);
-            }
-            pw.println(");");
+        if (!invocationTarget.getClassName().equals(cl.type.getClassName())) {
+            throw new IllegalArgumentException("Not supported by OpenCL! Target = " + invocationTarget);
         }
+
+        pw.print(OpenCLHelpers.generateMethodName(node.insnNode.name, node.method.methodType));
+        pw.print("(");
+
+        writeDelegateInputOutputs();
+
+        for (int i = 1; i < node.incomingDataFlows.length; i++) {
+            if (i > 1 || !inputOutputs.arguments().isEmpty()) {
+                pw.print(",");
+            }
+            writeExpression(node.incomingDataFlows[i]);
+        }
+        pw.println(");");
     }
 
     private void writeExpression(final InstanceMethodInvocationExpression node) {
 
         final Type invocationTarget = Type.getObjectType(node.insnNode.owner);
-
-        pw.print("(");
-        if (invocationTarget.equals(cl.type)) {
-            writeExpression(node.incomingDataFlows[0]);
-
-            pw.print(".");
-
-            pw.print(generateMethodName(node.insnNode.name, node.resolvedMethod.methodType));
-            pw.print("(");
-            for (int i = 1; i < node.incomingDataFlows.length; i++) {
-                if (i > 1) {
-                    pw.print(",");
-                }
-                writeExpression(node.incomingDataFlows[i]);
-            }
-            pw.print("))");
-        } else {
-            pw.print(generateClassName(invocationTarget));
-            pw.print(".prototype.");
-
-            pw.print(generateMethodName(node.insnNode.name, node.resolvedMethod.methodType));
-            pw.print(".call(");
-            writeExpression(node.incomingDataFlows[0]);
-            for (int i = 1; i < node.incomingDataFlows.length; i++) {
-                pw.print(",");
-                writeExpression(node.incomingDataFlows[i]);
-            }
-            pw.print("))");
+        if (!invocationTarget.getClassName().equals(cl.type.getClassName())) {
+            throw new IllegalArgumentException("Not supported by OpenCL! Target = " + invocationTarget);
         }
+
+        pw.print(OpenCLHelpers.generateMethodName(node.insnNode.name, node.resolvedMethod.methodType));
+        pw.print("(");
+
+        writeDelegateInputOutputs();
+
+        for (int i = 1; i < node.incomingDataFlows.length; i++) {
+            if (i > 1 || !inputOutputs.arguments().isEmpty()) {
+                pw.print(",");
+            }
+            writeExpression(node.incomingDataFlows[i]);
+        }
+        pw.print(")");
     }
 
     private void writeExpression(final ReadInstanceField node) {
 
-        pw.print("(");
-        writeExpression(node.incomingDataFlows[0]);
-        pw.print(".");
-        pw.print(generateFieldName(node.resolvedField.name));
-        pw.print(")");
+        if (node.resolvedField.owner == cl) {
+            pw.print(node.resolvedField.name);
+        } else {
+            pw.print("(");
+            writeExpression(node.incomingDataFlows[0]);
+            pw.print(".");
+            pw.print(OpenCLHelpers.generateFieldName(node.resolvedField.name));
+            pw.print(")");
+        }
     }
 
     private void writeExpression(final ReadClassField node) {
@@ -267,7 +241,7 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
         pw.print("(");
         writeExpression(node.incomingDataFlows[0]);
         pw.print(".");
-        pw.print(generateFieldName(node.resolvedField.name));
+        pw.print(OpenCLHelpers.generateFieldName(node.resolvedField.name));
         pw.print(")");
     }
 
@@ -289,11 +263,10 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
 
     private void writeExpression(final ArrayLoad node) {
 
-        pw.print("(");
         writeExpression(node.incomingDataFlows[0]);
-        pw.print(".data[");
+        pw.print("[");
         writeExpression(node.incomingDataFlows[1]);
-        pw.print("])");
+        pw.print("]");
     }
 
     private void writeExpression(final MethodArgument node) {
@@ -401,11 +374,18 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
     }
 
     private void writeExpression(final CMP node) {
-        pw.print("bytecoder.cmp(");
-        writeExpression(node.incomingDataFlows[0]);
-        pw.print(",");
-        writeExpression(node.incomingDataFlows[1]);
-        pw.print(")");
+        final Node theVariable1 = node.incomingDataFlows[0];
+        final Node theVariable2 = node.incomingDataFlows[1];
+        pw.print("(");
+        writeExpression(theVariable1);
+        pw.print(" > ");
+        writeExpression(theVariable2);
+        pw.print(" ? 1 ");
+        pw.print(" : (");
+        writeExpression(theVariable1);
+        pw.print(" < ");
+        writeExpression(theVariable2);
+        pw.print(" ? -1 : 0))");
     }
 
     private void writeExpression(final Cast node) {
@@ -481,9 +461,11 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
     public void write(final SetInstanceField node) {
 
         writeIndent();
-        writeExpression(node.outgoingFlows[0]);
-        pw.print(".");
-        pw.print(generateFieldName(node.field.name));
+        if (node.field.owner != cl) {
+            writeExpression(node.outgoingFlows[0]);
+            pw.print(".");
+        }
+        pw.print(OpenCLHelpers.generateFieldName(node.field.name));
         pw.print(" = ");
         writeExpression(node.incomingDataFlows[0]);
         pw.println(";");
@@ -491,38 +473,47 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
 
     @Override
     public void write(final SetClassField node) {
-
-        writeIndent();
-        writeExpression(node.outgoingFlows[0]);
-        pw.print(".");
-        pw.print(generateFieldName(node.field.name));
-        pw.print(" = ");
-        writeExpression(node.incomingDataFlows[0]);
-        pw.println(";");
+        throw new IllegalArgumentException("Not supported by OpenCL!");
     }
 
     @Override
     public void write(final ArrayStore node) {
         writeIndent();
         writeExpression(node.incomingDataFlows[0]);
-        pw.print(".data[");
+        pw.print("[");
         writeExpression(node.incomingDataFlows[1]);
         pw.print("] = ");
         writeExpression(node.incomingDataFlows[2]);
         pw.println(";");
     }
 
+    private void writeDelegateInputOutputs() {
+        for (int i = 0; i < inputOutputs.arguments().size(); i++) {
+            if (i > 0) {
+                pw.print(", ");
+            }
+            final OpenCLInputOutputs.KernelArgument theArgument = inputOutputs.arguments().get(i);
+            pw.print(theArgument.getField().name);
+        }
+    }
+
     @Override
     public void write(final VirtualMethodInvocation node) {
 
-        writeIndent();
-        writeExpression(node.incomingDataFlows[0]);
+        final Type invocationTarget = Type.getObjectType(node.insnNode.owner);
+        if (!invocationTarget.getClassName().equals(cl.type.getClassName())) {
+            throw new IllegalArgumentException("Not supported by OpenCL! Target = " + invocationTarget);
+        }
 
-        pw.print(".");
-        pw.print(generateMethodName(node.insnNode.name, node.resolvedMethod.methodType));
+        writeIndent();
+
+        pw.print(OpenCLHelpers.generateMethodName(node.insnNode.name, node.resolvedMethod.methodType));
         pw.print("(");
+
+        writeDelegateInputOutputs();
+
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
-            if (i > 1) {
+            if (i > 1 || !inputOutputs.arguments().isEmpty()) {
                 pw.print(",");
             }
             writeExpression(node.incomingDataFlows[i]);
@@ -532,425 +523,32 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
 
     private void writeExpression(final VirtualMethodInvocationExpression node) {
 
-        pw.print("(");
-        writeExpression(node.incomingDataFlows[0]);
+        final Type invocationTarget = Type.getObjectType(node.insnNode.owner);
+        if (!invocationTarget.getClassName().equals(cl.type.getClassName())) {
+            throw new IllegalArgumentException("Not supported by OpenCL! Target = " + invocationTarget);
+        }
 
-        pw.print(".");
-        pw.print(generateMethodName(node.insnNode.name, Type.getMethodType(node.insnNode.desc)));
+        pw.print(OpenCLHelpers.generateMethodName(node.insnNode.name, Type.getMethodType(node.insnNode.desc)));
         pw.print("(");
+
+        writeDelegateInputOutputs();
+
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
-            if (i > 1) {
+            if (i > 1 || !inputOutputs.arguments().isEmpty()) {
                 pw.print(",");
             }
             writeExpression(node.incomingDataFlows[i]);
         }
-        pw.print("))");
+        pw.print(")");
     }
 
     @Override
     public void write(final InterfaceMethodInvocation node) {
-
-        writeIndent();
-        final ResolvedClass cl = compileUnit.findClass(Type.getObjectType(node.insnNode.owner));
-        if (cl.isOpaqueReferenceType()) {
-
-            final ResolvedMethod method = node.method;
-            final Type[] arguments = method.methodType.getArgumentTypes();
-
-            if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueProperty;", method.methodNode.visibleAnnotations)) {
-                final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueProperty;", method.methodNode.visibleAnnotations);
-                final String propertyName = (String) values.get("value");
-
-                writeExpression(node.incomingDataFlows[0]);
-                pw.print(".nativeObject.");
-                if (propertyName != null) {
-                    pw.print(propertyName);
-                } else {
-                    pw.print(OpaqueReferenceTypeHelpers.derivePropertyNameFromMethodName(method.methodNode.name));
-                }
-                if (arguments.length > 0) {
-                    pw.print(" = ");
-                    switch (arguments[0].getSort()) {
-                        case Type.BOOLEAN: {
-                            pw.print("(");
-                            writeExpression(node.incomingDataFlows[1]);
-                            pw.print(" === 1 ? true : false)");
-                            break;
-                        }
-                        case Type.OBJECT: {
-                            final ResolvedClass targetType = compileUnit.findClass(arguments[0]);
-                            writeExpression(node.incomingDataFlows[1]);
-                            pw.print(".nativeObject");
-                            break;
-                        }
-                        default: {
-                            writeExpression(node.incomingDataFlows[1]);
-                            break;
-                        }
-                    }
-                }
-                pw.println(";");
-
-            } else if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueIndexed;", method.methodNode.visibleAnnotations)) {
-
-                writeExpression(node.incomingDataFlows[0]);
-                pw.print(".nativeObject.");
-                pw.print("[");
-                writeExpression(node.incomingDataFlows[1]);
-                pw.print("]");
-
-                if (arguments.length > 1) {
-                    pw.print(" = ");
-                    writeExpression(node.incomingDataFlows[2]);
-                    if (arguments[2].getSort() == Type.OBJECT) {
-                        pw.print(".nativeObject");
-                    }
-                }
-                pw.println(";");
-
-            } else {
-
-                writeExpression(node.incomingDataFlows[0]);
-                pw.print(".nativeObject.");
-                pw.print(method.methodNode.name);
-                pw.print("(");
-
-                for (int i = 0; i < arguments.length; i++) {
-                    if (i > 0) {
-                        pw.print(", ");
-                    }
-                    final Type argType = arguments[i];
-                    switch (argType.getSort()) {
-                        case Type.BOOLEAN: {
-                            pw.print("(");
-                            writeExpression(node.incomingDataFlows[i + 1]);
-                            pw.print(" === 1 ? true : false)");
-                            break;
-                        }
-                        case Type.OBJECT: {
-                            final ResolvedClass typeClass = compileUnit.findClass(argType);
-                            if (typeClass == null) {
-                                throw new IllegalStateException("Cannot find linked class for type " + argType);
-                            }
-                            if (typeClass.isCallback()) {
-                                if (!Modifier.isInterface(typeClass.classNode.access)) {
-                                    throw new IllegalStateException("Only callback interfaces are allowed in method signatures!");
-                                }
-
-                                final List<ResolvedMethod> callbackMethods = typeClass.resolvedMethods.stream().filter(t -> !t.methodNode.name.equals("init")).collect(Collectors.toList());
-                                if (callbackMethods.size() != 1) {
-                                    throw new IllegalStateException("Unexpected number of callback methods, expected 1, got " + callbackMethods.size() + " for type " + typeClass.type);
-                                }
-                                final ResolvedMethod callbackMethod = callbackMethods.get(0);
-                                final Type methodType = Type.getMethodType(callbackMethod.methodNode.desc);
-
-                                pw.print("function(");
-                                for (int j = 0; j < methodType.getArgumentTypes().length; j++) {
-                                    if (j > 0) {
-                                        pw.print(", ");
-                                    }
-                                    pw.print("arg");
-                                    pw.print(j);
-                                }
-                                pw.print(") {this.");
-                                pw.print(generateMethodName(callbackMethod.methodNode.name, methodType));
-                                pw.print("(");
-                                for (int j = 0; j < methodType.getArgumentTypes().length; j++) {
-                                    if (j > 0) {
-                                        pw.print(", ");
-                                    }
-                                    switch (methodType.getArgumentTypes()[j].getSort()) {
-                                        case Type.BOOLEAN: {
-                                            pw.print("(arg");
-                                            pw.print(j);
-                                            pw.print(" ? 1 : 0)");
-                                            break;
-                                        }
-                                        case Type.OBJECT: {
-                                            if (methodType.getArgumentTypes()[j].getClassName().equals(String.class.getName())) {
-                                                pw.print("bytecoder.toBytecoderString(arg");
-                                                pw.print(j);
-                                                pw.print(")");
-                                            } else {
-                                                pw.print("bytecoder.wrapNativeIntoTypeInstance(");
-                                                pw.print(generateClassName(methodType.getArgumentTypes()[j]));
-                                                pw.print(", arg");
-                                                pw.print(j);
-                                                pw.print(")");
-                                            }
-                                            break;
-                                        }
-                                        default: {
-                                            pw.print("arg");
-                                            pw.print(j);
-                                            break;
-                                        }
-                                    }
-                                }
-                                pw.print(")");
-                                pw.print("}.bind(");
-                                writeExpression(node.incomingDataFlows[i + 1]);
-                                pw.print(")");
-                            } else  {
-                                writeExpression(node.incomingDataFlows[i + 1]);
-                                pw.print(".nativeObject");
-                            }
-                            break;
-                        }
-                        default: {
-                            writeExpression(node.incomingDataFlows[i + 1]);
-                            break;
-                        }
-                    }
-                }
-
-                pw.println(");");
-            }
-
-        } else {
-            writeExpression(node.incomingDataFlows[0]);
-            pw.print(".");
-            pw.print(generateMethodName(node.insnNode.name, node.method.methodType));
-            pw.print("(");
-            for (int i = 1; i < node.incomingDataFlows.length; i++) {
-                if (i > 1) {
-                    pw.print(",");
-                }
-                writeExpression(node.incomingDataFlows[i]);
-            }
-            pw.println(");");
-        }
+        throw new IllegalArgumentException("Not supported by OpenCL!");
     }
 
     private void writeExpression(final InterfaceMethodInvocationExpression node) {
-
-        final ResolvedMethod method = node.resolvedMethod;
-        final ResolvedClass cl = method.owner;
-
-        if (cl.isOpaqueReferenceType()) {
-
-            final Type[] arguments = method.methodType.getArgumentTypes();
-
-            if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueProperty;", method.methodNode.visibleAnnotations)) {
-                final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueProperty;", method.methodNode.visibleAnnotations);
-                final String propertyName = (String) values.get("value");
-
-                final Type methodType = method.methodType;
-                switch (methodType.getReturnType().getSort()) {
-                    case Type.BOOLEAN: {
-                        pw.print("bytecoder.toBytecoderBoolean(");
-                        break;
-                    }
-                    case Type.OBJECT: {
-                        if (String.class.getName().equals(methodType.getReturnType().getClassName())) {
-                            pw.print("bytecoder.toBytecoderString(");
-                            break;
-                        } else {
-                            final ResolvedClass targetType = compileUnit.findClass(methodType.getReturnType());
-                            if (targetType.isOpaqueReferenceType()) {
-                                pw.print("bytecoder.wrapNativeIntoTypeInstance(");
-                                pw.print(generateClassName(methodType.getReturnType()));
-                                pw.print(",");
-                            } else {
-                                throw new IllegalStateException("Type " + methodType.getReturnType() + " not supported as return type");
-                            }
-                        }
-                        break;
-                    }
-                    default: {
-                        pw.print("(");
-                        break;
-                    }
-                }
-
-                writeExpression(node.incomingDataFlows[0]);
-                pw.print(".nativeObject.");
-                if (propertyName != null) {
-                    pw.print(propertyName);
-                } else {
-                    pw.print(OpaqueReferenceTypeHelpers.derivePropertyNameFromMethodName(method.methodNode.name));
-                }
-                if (arguments.length > 0) {
-                    pw.print(" = ");
-                    switch (arguments[0].getSort()) {
-                        case Type.BOOLEAN: {
-                            pw.print(" = (");
-                            writeExpression(node.incomingDataFlows[1]);
-                            pw.print(" === 1 ? true : false)");
-                            break;
-                        }
-                        case Type.OBJECT: {
-                            final ResolvedClass targetType = compileUnit.findClass(arguments[0]);
-                            writeExpression(node.incomingDataFlows[1]);
-                            if (targetType.isOpaqueReferenceType()) {
-                                pw.print(".nativeObject");
-                            } else {
-                                throw new IllegalStateException("Type " + arguments[0] + " is not supported as an opaque property type.");
-                            }
-                            break;
-                        }
-                        default: {
-                            pw.print(" = ");
-                            writeExpression(node.incomingDataFlows[1]);
-                            break;
-                        }
-                    }
-                }
-
-                pw.print(")");
-
-            } else if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/OpaqueIndexed;", method.methodNode.visibleAnnotations)) {
-
-                writeExpression(node.incomingDataFlows[0]);
-                pw.print(".nativeObject.");
-                pw.print("[");
-                writeExpression(node.incomingDataFlows[1]);
-                pw.print("]");
-
-                if (arguments.length > 1) {
-                    pw.print(" = ");
-                    writeExpression(node.incomingDataFlows[2]);
-                    if (arguments[2].getSort() == Type.OBJECT) {
-                        pw.print(".nativeObject");
-                    }
-                }
-            } else {
-
-                final Type returnType = node.resolvedMethod.methodType.getReturnType();
-                switch (returnType.getSort()) {
-                    case Type.OBJECT: {
-                        if (String.class.getName().equals(returnType.getClassName())) {
-                            pw.print("bytecoder.toBytecoderString(");
-                        } else {
-                            pw.print("bytecoder.wrapNativeIntoTypeInstance(");
-                            pw.print(generateClassName(returnType));
-                            pw.print(",");
-                        }
-                        break;
-                    }
-                    case Type.BOOLEAN: {
-                        pw.print("bytecoder.toBytecoderBoolean(");
-                        break;
-                    }
-                    default: {
-                        pw.print("(");
-                        break;
-                    }
-                }
-
-                writeExpression(node.incomingDataFlows[0]);
-                pw.print(".nativeObject.");
-                pw.print(method.methodNode.name);
-                pw.print("(");
-
-                for (int i = 0; i < arguments.length; i++) {
-                    if (i > 0) {
-                        pw.print(", ");
-                    }
-                    final Type argType = arguments[i];
-                    switch (argType.getSort()) {
-                        case Type.BOOLEAN: {
-                            pw.print("(");
-                            writeExpression(node.incomingDataFlows[i + 1]);
-                            pw.print(" === 1 ? true : false)");
-                            break;
-                        }
-                        case Type.OBJECT: {
-                            final ResolvedClass typeClass = compileUnit.findClass(argType);
-                            if (typeClass == null) {
-                                throw new IllegalStateException("Cannot find linked class for type " + argType);
-                            }
-                            if (typeClass.isCallback()) {
-                                if (!Modifier.isInterface(typeClass.classNode.access)) {
-                                    throw new IllegalStateException("Only callback interfaces are allowed in method signatures!");
-                                }
-
-                                final List<ResolvedMethod> callbackMethods = typeClass.resolvedMethods.stream().filter(t -> !t.methodNode.name.equals("init")).collect(Collectors.toList());
-                                if (callbackMethods.size() != 1) {
-                                    throw new IllegalStateException("Unexpected number of callback methods, expected 1, got " + callbackMethods.size() + " for type " + typeClass.type);
-                                }
-                                final ResolvedMethod callbackMethod = callbackMethods.get(0);
-                                final Type methodType = callbackMethod.methodType;
-
-                                pw.print("function(");
-                                for (int j = 0; j < methodType.getArgumentTypes().length; j++) {
-                                    if (j > 0) {
-                                        pw.print(", ");
-                                    }
-                                    pw.print("arg");
-                                    pw.print(j);
-                                }
-                                pw.print(") {this.");
-                                pw.print(generateMethodName(callbackMethod.methodNode.name, methodType));
-                                pw.print("(");
-                                for (int j = 0; j < methodType.getArgumentTypes().length; j++) {
-                                    if (j > 0) {
-                                        pw.print(", ");
-                                    }
-                                    switch (methodType.getArgumentTypes()[j].getSort()) {
-                                        case Type.BOOLEAN: {
-                                            pw.print("bytecoder.toBytecoderBoolean(arg");
-                                            pw.print(j);
-                                            pw.print(")");
-                                            break;
-                                        }
-                                        case Type.OBJECT: {
-                                            if (methodType.getArgumentTypes()[j].getClassName().equals(String.class.getName())) {
-                                                pw.print("bytecoder.toBytecoderString(arg");
-                                                pw.print(j);
-                                                pw.print(")");
-                                            } else {
-                                                pw.print("bytecoder.wrapNativeIntoTypeInstance(");
-                                                pw.print(generateClassName(methodType.getArgumentTypes()[j]));
-                                                pw.print(", arg");
-                                                pw.print(j);
-                                                pw.print(")");
-                                            }
-                                            break;
-                                        }
-                                        default: {
-                                            pw.print("arg");
-                                            pw.print(j);
-                                            break;
-                                        }
-                                    }
-                                }
-                                pw.print(")");
-                                pw.print("}.bind(");
-                                writeExpression(node.incomingDataFlows[i + 1]);
-                                pw.print(")");
-                            } else {
-                                writeExpression(node.incomingDataFlows[i + 1]);
-                                pw.print(".nativeObject");
-                            }
-                            break;
-                        }
-                        default: {
-                            writeExpression(node.incomingDataFlows[i + 1]);
-                            break;
-                        }
-                    }
-                }
-
-                pw.print("))");
-            }
-
-        } else {
-            pw.print("(");
-
-            writeExpression(node.incomingDataFlows[0]);
-            pw.print(".");
-            pw.print(generateMethodName(node.insnNode.name, node.resolvedMethod.methodType));
-            pw.print("(");
-            for (int i = 1; i < node.incomingDataFlows.length; i++) {
-                if (i > 1) {
-                    pw.print(",");
-                }
-                writeExpression(node.incomingDataFlows[i]);
-            }
-            pw.print(")");
-            pw.print(")");
-        }
+        throw new IllegalArgumentException("Not supported by OpenCL!");
     }
 
     @Override
@@ -958,15 +556,12 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
 
         writeIndent();
 
-        final ResolvedClass resolvedClass = node.method.owner;
-
-        pw.print(generateClassName(resolvedClass.type));
-        if (resolvedClass.requiresClassInitializer()) {
-            pw.print(".$i");
+        if (!AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/opencl/OpenCLFunction;", node.resolvedMethod.methodNode.visibleAnnotations)) {
+            throw new IllegalArgumentException("Static invocation target must have @OpenCLFunction annotation!");
         }
+        final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/opencl/OpenCLFunction;", node.resolvedMethod.methodNode.visibleAnnotations);
 
-        pw.print(".");
-        pw.print(generateMethodName(node.method.methodNode.name, node.method.methodType));
+        pw.print(values.get("value"));
         pw.print("(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {
@@ -979,17 +574,12 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
 
     private void writeExpression(final StaticMethodInvocationExpression node) {
 
-        pw.print("(");
-
-        final ResolvedClass resolvedClass = node.resolvedMethod.owner;
-
-        pw.print(generateClassName(node.resolvedMethod.owner.type));
-        if (resolvedClass.requiresClassInitializer()) {
-            pw.print(".$i");
+        if (!AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/opencl/OpenCLFunction;", node.resolvedMethod.methodNode.visibleAnnotations)) {
+            throw new IllegalArgumentException("Static invocation target must have @OpenCLFunction annotation!");
         }
+        final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/opencl/OpenCLFunction;", node.resolvedMethod.methodNode.visibleAnnotations);
 
-        pw.print(".");
-        pw.print(generateMethodName(node.resolvedMethod.methodNode.name, node.resolvedMethod.methodType));
+        pw.print(values.get("value"));
         pw.print("(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {
@@ -997,7 +587,7 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
             }
             writeExpression(node.incomingDataFlows[i]);
         }
-        pw.print("))");
+        pw.print(")");
     }
 
     @Override
@@ -1102,24 +692,11 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
     }
 
     private void writeExpression(final TypeReference node) {
-        final Type type = node.type;
-        if (type.getSort() == Type.ARRAY) {
-            final ResolvedClass cl = compileUnit.resolveClass(Type.getType(Array.class), null);
-            pw.print(generateClassName(cl.type));
-            if (cl.requiresClassInitializer()) {
-                pw.print(".$i");
-            }
-        } else {
-            final ResolvedClass cl = compileUnit.resolveClass(type, null);
-            pw.print(generateClassName(cl.type));
-            if (cl.requiresClassInitializer()) {
-                pw.print(".$i");
-            }
-        }
+        throw new IllegalArgumentException("Not supported by OpenCL!");
     }
 
     private void writeExpression(final This node) {
-        pw.print("this");
+        pw.print("0");
     }
 
     private void writeExpression(final New node) {
@@ -1152,7 +729,9 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
             writeExpression(node.incomingDataFlows[1]);
             pw.print(")");
         } else {
-            pw.print("Math.floor(");
+            pw.print("(");
+            pw.print(OpenCLHelpers.toType(node.type));
+            pw.print(")(");
             writeExpression(node.incomingDataFlows[0]);
             pw.print(" / ");
             writeExpression(node.incomingDataFlows[1]);
@@ -1267,7 +846,7 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
     @Override
     public void writeContinueTo(final String label) {
         writeIndent();
-        pw.print("continue ");
+        pw.print("goto ");
         pw.print(label);
         pw.println(";");
     }

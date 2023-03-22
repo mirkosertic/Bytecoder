@@ -17,14 +17,14 @@ package de.mirkosertic.bytecoder.core.ir;
 
 public class StaticMethodInvocation extends ControlTokenConsumer implements PotentialSideeffect {
 
-    public final ResolvedMethod method;
+    public final ResolvedMethod resolvedMethod;
 
-    public StaticMethodInvocation(final ResolvedMethod method) {
-        this.method = method;
+    public StaticMethodInvocation(final ResolvedMethod resolvedMethod) {
+        this.resolvedMethod = resolvedMethod;
     }
 
     @Override
     public String additionalDebugInfo() {
-        return method.methodNode.name + method.methodNode.desc;
+        return resolvedMethod.methodNode.name + resolvedMethod.methodNode.desc;
     }
 }

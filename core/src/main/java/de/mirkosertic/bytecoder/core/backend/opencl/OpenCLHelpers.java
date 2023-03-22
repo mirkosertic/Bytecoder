@@ -19,6 +19,27 @@ import org.objectweb.asm.Type;
 
 public class OpenCLHelpers {
 
+    public static String generateFieldName(final String name) {
+        return name;
+    }
+
+    public static String generateMethodName(final String name, final Type methodType) {
+        final StringBuilder builder = new StringBuilder(methodType.getReturnType().toString());
+        builder.append("$").append(name);
+        for (final Type arg : methodType.getArgumentTypes()) {
+            builder.append("$").append(arg);
+        }
+        if (methodType.getArgumentTypes().length == 0) {
+            builder.append("$$");
+        }
+        return builder.toString()
+                .replace('<', '$')
+                .replace('>', '$')
+                .replace('/', '$')
+                .replace(';', '$')
+                .replace('[', '$');
+    }
+
     public static String toType(final Type type) {
         /*if (aType.isArray()) {
             final TypeRef.ArrayTypeRef theArray = (TypeRef.ArrayTypeRef) aType;
