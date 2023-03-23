@@ -834,48 +834,33 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 return lambdaInstance.instance;
             }
             case INVOKESPECIAL: {
-                /*final Type returnType = argInvokedType.type.getReturnType();
-                pw.print("bytecoder.instanceWithLambdaImpl(");
-                pw.print(JSHelpers.generateClassName(returnType));
-                pw.print(", function(");
+                final String implMethodName = WasmHelpers.generateClassName(implementationMethod.owner.type) + "$" + WasmHelpers.generateMethodName(implementationMethod.methodNode.name, implementationMethod.methodType);
+                final List<WasmValue> arguments = new ArrayList<>();
+
+                for (int i = 1; i < node.incomingDataFlows.length; i++) {
+                    final String fieldName = "link" + i;
+                    arguments.add(
+                            ConstExpressions.struct.get(
+                                    lambdaInstance.type,
+                                    ConstExpressions.ref.cast(
+                                            lambdaInstance.type,
+                                            ConstExpressions.getLocal(lambdaMethod.localByLabel("thisref"))
+                                    ),
+                                    fieldName
+                            )
+                    );
+                }
+
                 for (int i = 0; i < argSamMethodType.type.getArgumentTypes().length; i++) {
-                    if (i > 0) {
-                        pw.print(",");
-                    }
-                    pw.print("arg");
-                    pw.print(i);
+                    arguments.add(ConstExpressions.getLocal(lambdaMethod.localByLabel("arg" + i)));
                 }
-                pw.print(") { return ");
 
-                // TODO: we need to call the right prototype here to support super.x invocations for overwritten methods
-                final Object firstArg = allArgs.get(0);
-                if (firstArg instanceof String) {
-                    pw.print((String) firstArg);
+                if (implementationMethod.methodType.getReturnType() == Type.VOID_TYPE) {
+                    lambdaMethod.flow.voidCall(ConstExpressions.weakFunctionReference(implMethodName), arguments);
                 } else {
-                    writeExpression((Node) firstArg);
+                    lambdaMethod.flow.ret(ConstExpressions.call(ConstExpressions.weakFunctionReference(implMethodName), arguments));
                 }
-                pw.print("['");
-                pw.print(JSHelpers.generateMethodName(implementationMethod.methodNode.name, implementationMethod.methodType));
-                pw.print("'].call(");
 
-                if (firstArg instanceof String) {
-                    pw.print((String) firstArg);
-                } else {
-                    writeExpression((Node) firstArg);
-                }
-                for (int i = 1; i < allArgs.size(); i++) {
-                    pw.print(", ");
-                    final Object arg = allArgs.get(i);
-                    if (arg instanceof String) {
-                        pw.print((String) arg);
-                    } else {
-                        writeExpression((Node) arg);
-                    }
-                }
-                pw.print(");");
-
-                pw.print("})");*/
-                lambdaMethod.flow.unreachable();
                 return lambdaInstance.instance;
             }
             case INVOKECONSTRUCTOR: {
