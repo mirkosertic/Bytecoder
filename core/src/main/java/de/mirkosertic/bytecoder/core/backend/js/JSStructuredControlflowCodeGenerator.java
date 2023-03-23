@@ -1686,13 +1686,6 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     @Override
-    public void finishBlock() {
-        level--;
-        writeIndent();
-        pw.println("}");
-    }
-
-    @Override
     public void startBlock(final Sequencer.Block block) {
         writeIndent();
         pw.print(block.label);
@@ -1702,6 +1695,13 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         }
         pw.println("{");
         level++;
+    }
+
+    @Override
+    public void finishBlock(final Sequencer.Block block, final boolean stackEmpty) {
+        level--;
+        writeIndent();
+        pw.println("}");
     }
 
     @Override
@@ -1739,6 +1739,13 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     public void writeRethrowException() {
         writeIndent();
         pw.println("throw __ex;");
+    }
+
+    @Override
+    public void finishTryCatch() {
+        level--;
+        writeIndent();
+        pw.println("}");
     }
 
     @Override

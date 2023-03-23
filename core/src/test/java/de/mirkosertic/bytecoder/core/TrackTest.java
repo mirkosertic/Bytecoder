@@ -22,7 +22,7 @@ import org.junit.runner.RunWith;
 @RunWith(UnitTestRunner.class)
 public class TrackTest {
 
-    private class TrackElement {
+    private static class TrackElement {
 
         public final int curveFactor;
         public final String[] segments;
@@ -38,7 +38,7 @@ public class TrackTest {
     private static String[] ODD = new String[10];
     private static String[] EVEN = new String[10];
 
-    private TrackElement compute(int aPosition) {
+    private static TrackElement compute(int aPosition) {
         int theCurveFactor = 2;
         double theHeight = (Math.cos(Math.toRadians(aPosition * 10)) * 1);
         return new TrackElement(theCurveFactor, aPosition % 2 == 0 ? ODD : EVEN, theHeight);

@@ -41,7 +41,6 @@ public class Exporter {
         try (final BinaryWriter binaryWriter = new BinaryWriter()) {
             module.writeTo(binaryWriter, compileOptions.isDebugOutput());
             final byte[] theData = binaryWriter.toByteArray();
-            System.out.println("Output is " + theData.length);
             binaryOutput.write(theData);
         }
         binaryOutput.flush();

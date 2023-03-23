@@ -57,6 +57,10 @@ public class TInteger extends Number implements Comparable<Integer> {
         return value;
     }
 
+    public static int hashCode(final int value) {
+        return value;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (this == o)

@@ -189,8 +189,7 @@ public class Sequencer {
         }
 
         while (activeStack.size() > startHeight) {
-            final Block pop = activeStack.pop();
-            codegenerator.finishBlock();
+            codegenerator.finishBlock(activeStack.pop(), activeStack.isEmpty());
         }
     }
 
@@ -252,15 +251,13 @@ public class Sequencer {
         for (int i = orderedBlocks.size() - 1; i >= 0; i--) {
             final ControlTokenConsumer target = orderedBlocks.get(i);
 
-            codegenerator.finishBlock();
-            activeStack.pop();
+            codegenerator.finishBlock(activeStack.pop(), activeStack.isEmpty());
 
             visitDominationTreeOf(target, activeStack);
         }
 
         if (hasIncomingBackEdges) {
-            codegenerator.finishBlock();
-            activeStack.pop();
+            codegenerator.finishBlock(activeStack.pop(), activeStack.isEmpty());
         }
     }
 
@@ -426,7 +423,7 @@ public class Sequencer {
 
                 codegenerator.writeRethrowException();
 
-                codegenerator.finishBlock();
+                codegenerator.finishTryCatch();
             }
         });
     }

@@ -56,12 +56,14 @@ public class InvokeDynamicTest {
         return aValue + 1;
     }
 
-    public int addMethodRef(final int aValue) {
-        return aValue + 1;
-    }
+    static class Helper {
+        public int addMethodRef(final int aValue) {
+            return aValue + 1;
+        }
 
-    public int add(final Adder adder) {
-        return adder.add(10);
+        public int add(final Adder adder) {
+            return adder.add(10);
+        }
     }
 
     @Test
@@ -72,19 +74,22 @@ public class InvokeDynamicTest {
 
     @Test
     public void testLambdaAdd() {
-        final int theResult = add((i) -> i + 10);
+        final Helper h = new Helper();
+        final int theResult = h.add((i) -> i + 10);
         Assert.assertEquals(20, theResult, 0);
     }
 
     @Test
     public void testStaticMethodRefAdd() {
-        final int theResult = add(InvokeDynamicTest::add);
+        final Helper h = new Helper();
+        final int theResult = h.add(InvokeDynamicTest::add);
         Assert.assertEquals(11, theResult, 0);
     }
 
     @Test
     public void testInstanceMethodRefAdd() {
-        final int theResult = add(this::addMethodRef);
+        final Helper h = new Helper();
+        final int theResult = h.add(h::addMethodRef);
         Assert.assertEquals(11, theResult, 0);
     }
 

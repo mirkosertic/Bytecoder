@@ -100,6 +100,7 @@ import org.objectweb.asm.tree.VarInsnNode;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -2279,7 +2280,12 @@ public class GraphParser {
     private void resolveMethodType(final Type type) {
         switch (type.getReturnType().getSort()) {
             case Type.OBJECT:
-                compileUnit.resolveClass(type.getReturnType(), analysisStack);
+                final ResolvedClass rc = compileUnit.resolveClass(type.getReturnType(), analysisStack);
+                for (final MethodNode node : rc.classNode.methods) {
+                    if (Modifier.isAbstract(node.access)) {
+                        rc.resolveMethod(node.name, Type.getMethodType(node.desc), analysisStack);
+                    }
+                }
                 break;
         }
         for (final Type argument : type.getArgumentTypes()) {

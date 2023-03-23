@@ -750,13 +750,6 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
     }
 
     @Override
-    public void finishBlock() {
-        level--;
-        writeIndent();
-        pw.println("}");
-    }
-
-    @Override
     public void startBlock(final Sequencer.Block block) {
         writeIndent();
         pw.print(block.label);
@@ -766,6 +759,18 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
         }
         pw.println("{");
         level++;
+    }
+
+    @Override
+    public void finishBlock(final Sequencer.Block block, final boolean stackEmpty) {
+        level--;
+        writeIndent();
+        pw.println("}");
+        writeIndent();
+        if (!stackEmpty) {
+            pw.print(block.label);
+            pw.println("_exit:");
+        }
     }
 
     @Override
@@ -794,6 +799,11 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
     }
 
     @Override
+    public void finishTryCatch() {
+        throw new IllegalArgumentException("Not supported by OpenCL!");
+    }
+
+    @Override
     public void write(final Return node) {
         writeIndent();
         pw.println("return;");
@@ -810,9 +820,9 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
     @Override
     public void writeBreakTo(final String label) {
         writeIndent();
-        pw.print("break ");
+        pw.print("goto ");
         pw.print(label);
-        pw.println(";");
+        pw.println("_exit;");
     }
 
     @Override
