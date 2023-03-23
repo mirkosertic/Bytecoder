@@ -61,6 +61,10 @@ public class InvokeDynamicTest {
             return aValue + 1;
         }
 
+        private int privAddMethodRef(final int aValue) {
+            return aValue + 1;
+        }
+
         public int add(final Adder adder) {
             return adder.add(10);
         }
@@ -90,6 +94,13 @@ public class InvokeDynamicTest {
     public void testInstanceMethodRefAdd() {
         final Helper h = new Helper();
         final int theResult = h.add(h::addMethodRef);
+        Assert.assertEquals(11, theResult, 0);
+    }
+
+    @Test
+    public void testPrivateInstanceMethodRefAdd() {
+        final Helper h = new Helper();
+        final int theResult = h.add(h::privAddMethodRef);
         Assert.assertEquals(11, theResult, 0);
     }
 
