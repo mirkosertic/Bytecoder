@@ -725,7 +725,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             closureArguments.add(wasmValue);
         }
 
-        // Construct the method to ambedd into the lambda type
+        // Construct the method to embed into the lambda type
         final Type returnType = argInvokedType.type.getReturnType();
         final ExportableFunction lambdaMethod;
         final List<Param> lambdaMethodArgs = new ArrayList<>();
@@ -749,35 +749,42 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         // lambda method body
         switch (argImplMethod.kind) {
             case INVOKESTATIC: {
-                /*pw.print("bytecoder.instanceWithLambdaImpl(");
-                pw.print(JSHelpers.generateClassName(returnType));
-                pw.print(", function(");
+                final String implMethodName = WasmHelpers.generateClassName(implementationMethod.owner.type) + "$" + WasmHelpers.generateMethodName(implementationMethod.methodNode.name, implementationMethod.methodType);
+                final List<WasmValue> arguments = new ArrayList<>();
+
+                final ResolvedClass cl = implementationMethod.owner;
+                final String className = WasmHelpers.generateClassName(implementationMethod.owner.type);
+                if (cl.requiresClassInitializer()) {
+                    final Callable initFunction = ConstExpressions.weakFunctionReference(className + "_i");
+                    arguments.add(ConstExpressions.call(initFunction, Collections.emptyList()));
+                } else {
+                    final Global global = module.getGlobals().globalsIndex().globalByLabel(className + "_cls");
+                    arguments.add(ConstExpressions.getGlobal(global));
+                }
+
+                for (int i = 1; i < node.incomingDataFlows.length; i++) {
+                    final String fieldName = "link" + i;
+                    arguments.add(
+                      ConstExpressions.struct.get(
+                              lambdaInstance.type,
+                              ConstExpressions.ref.cast(
+                                      lambdaInstance.type,
+                                      ConstExpressions.getLocal(lambdaMethod.localByLabel("thisref"))
+                              ),
+                              fieldName
+                      )
+                    );
+                }
+
                 for (int i = 0; i < argSamMethodType.type.getArgumentTypes().length; i++) {
-                    if (i > 0) {
-                        pw.print(",");
-                    }
-                    pw.print("arg");
-                    pw.print(i);
-                }
-                pw.print(") { return ");
-                pw.print(JSHelpers.generateClassName(implementationMethod.owner.type));
-                pw.print(".");
-                pw.print(JSHelpers.generateMethodName(implementationMethod.methodNode.name, implementationMethod.methodType));
-                pw.print(".call(this");
-
-                for (final Object o : allArgs) {
-                    pw.print(", ");
-                    if (o instanceof String) {
-                        pw.print((String) o);
-                    } else {
-                        writeExpression((Node) o);
-                    }
+                    arguments.add(ConstExpressions.getLocal(lambdaMethod.localByLabel("arg" + i)));
                 }
 
-                pw.print(");");
-
-                pw.print("})");*/
-                lambdaMethod.flow.unreachable();
+                if (implementationMethod.methodType.getReturnType() == Type.VOID_TYPE) {
+                    lambdaMethod.flow.voidCall(ConstExpressions.weakFunctionReference(implMethodName), arguments);
+                } else {
+                    lambdaMethod.flow.ret(ConstExpressions.call(ConstExpressions.weakFunctionReference(implMethodName), arguments));
+                }
 
                 return lambdaInstance.instance;
             }
@@ -1916,14 +1923,6 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     }
 
     @Override
-    public void finishBlock() {
-
-        activeLevel = activeLevel.parent;
-
-        activeLevel.writeDebug("finishBlock");
-    }
-
-    @Override
     public void startBlock(final Sequencer.Block node) {
 
         activeLevel.writeDebug("startBlock type=" + node.type + ", label = " + node.label);
@@ -1943,6 +1942,14 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 throw new IllegalArgumentException("Not supported block type " + node.type);
             }
         }
+    }
+
+    @Override
+    public void finishBlock(final Sequencer.Block node, final boolean stackEmpty) {
+
+        activeLevel = activeLevel.parent;
+
+        activeLevel.writeDebug("finishBlock");
     }
 
     @Override
@@ -2208,6 +2215,13 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     @Override
     public void writeRethrowException() {
         activeLevel.activeFlow.rethrowException();
+    }
+
+    @Override
+    public void finishTryCatch() {
+        activeLevel = activeLevel.parent;
+
+        activeLevel.writeDebug("finishTryCatch");
     }
 
     int tableSwitchCount = 0;

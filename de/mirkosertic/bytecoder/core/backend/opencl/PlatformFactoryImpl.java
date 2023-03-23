@@ -26,7 +26,7 @@ public class PlatformFactoryImpl extends PlatformFactory {
     public Platform createPlatform(final Logger logger, final OpenCLOptions options) {
         try {
             return new OpenCLPlatform(logger, options);
-        } catch (final Exception e) {
+        } catch (final Throwable e) {
             logger.warn("Problem while detecting OpenCL device. Using CPU emulation layer", e);
             return new CPUPlatform(logger);
         }

@@ -61,7 +61,7 @@ public interface StructuredControlflowCodeGenerator {
 
     void startBlock(Sequencer.Block node);
 
-    void finishBlock();
+    void finishBlock(Sequencer.Block node, boolean emptyStack);
 
     void write(LineNumberDebugInfo node);
 
@@ -98,6 +98,8 @@ public interface StructuredControlflowCodeGenerator {
     void finishCatchHandler();
 
     void writeRethrowException();
+
+    void finishTryCatch();
 
     void startTableSwitch(final TableSwitch node);
 
