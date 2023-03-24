@@ -146,4 +146,14 @@ public class StructType implements ReferencableType {
         }
         throw new IllegalArgumentException("Unknown field : " + fieldName + " in struct " + name);
     }
+
+    public Field fieldByName(final String fieldName) {
+        for (int i = 0; i < fields.size(); i++) {
+            final Field f = fields.get(i);
+            if (fieldName.equals(f.name)) {
+                return f;
+            }
+        }
+        throw new IllegalArgumentException("No such field " + fieldName + " in struct " + name);
+    }
 }

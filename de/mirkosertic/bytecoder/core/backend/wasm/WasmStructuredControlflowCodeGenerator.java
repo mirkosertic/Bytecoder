@@ -541,25 +541,22 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
         final List<WasmValue> indirectCallArgs = new ArrayList<>();
 
-        final List<WasmType> vtArgs = new ArrayList<>();
-        vtArgs.add(PrimitiveType.i32);
-        final FunctionType vtType = module.getTypes().functionType(vtArgs, PrimitiveType.i32);
-
         for (final Node arg : value.incomingDataFlows) {
             indirectCallArgs.add(toWasmValue((Value) arg));
         }
 
         final List<WasmValue> resolverArgs = new ArrayList<>();
         resolverArgs.add(ConstExpressions.i32.c(methodToIDMapper.resolveIdFor(rm)));
-
         final StructType objectType = module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class)));
-
         resolverArgs.add(ConstExpressions.struct.get(
                 objectType,
                 toWasmValue((Value) value.incomingDataFlows[0]),
                 "vt_resolver"
         ));
 
+        final List<WasmType> vtArgs = new ArrayList<>();
+        vtArgs.add(PrimitiveType.i32);
+        final FunctionType vtType = module.getTypes().functionType(vtArgs, PrimitiveType.i32);
         final WasmValue resolver = ConstExpressions.ref.callRef(vtType, resolverArgs);
         final FunctionType ft = functionTypeConverter.apply(value.resolvedMethod);
 
@@ -734,16 +731,22 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         for (int i = 0; i < argSamMethodType.type.getArgumentTypes().length; i++) {
             lambdaMethodArgs.add(ConstExpressions.param("arg" + i, typeConverter.apply(argSamMethodType.type.getArgumentTypes()[i])));
         }
-        if (implementationMethod.methodType.getReturnType() == Type.VOID_TYPE) {
-            lambdaMethod = module.getFunctions().newFunction("lambda" + lambdaCounter++, lambdaMethodArgs);
+        if (argImplMethod.kind == MethodReference.Kind.INVOKECONSTRUCTOR) {
+            lambdaMethod = module.getFunctions().newFunction("lambda" + lambdaCounter++, lambdaMethodArgs, typeConverter.apply(implementationMethod.owner.type));
         } else {
-            lambdaMethod = module.getFunctions().newFunction("lambda" + lambdaCounter++, lambdaMethodArgs, typeConverter.apply(implementationMethod.methodType.getReturnType()));
+            if (implementationMethod.methodType.getReturnType() == Type.VOID_TYPE) {
+                lambdaMethod = module.getFunctions().newFunction("lambda" + lambdaCounter++, lambdaMethodArgs);
+            } else {
+                lambdaMethod = module.getFunctions().newFunction("lambda" + lambdaCounter++, lambdaMethodArgs, typeConverter.apply(implementationMethod.methodType.getReturnType()));
+            }
         }
         lambdaMethod.toTable();
 
         // Finally construct a new type with virtual method table and
         // the linked closure fields
         final LambdaInstance lambdaInstance = createLambdaInstance(returnType, lambdaMethod, closureFields, closureArguments);
+
+        lambdaMethod.flow.comment("Invocation kind is " + argImplMethod.kind);
 
         // Depending on the method kind we generate different implementations of the
         // lambda method body
@@ -788,49 +791,96 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
                 return lambdaInstance.instance;
             }
-            case INVOKEVIRTUAL:
-            case INVOKEINTERFACE: {
-                /*final Type returnType = argInvokedType.type.getReturnType();
-                pw.print("bytecoder.instanceWithLambdaImpl(");
-                pw.print(JSHelpers.generateClassName(returnType));
-                pw.print(", function(");
+            case INVOKEVIRTUAL: {
+                final List<WasmValue> arguments = new ArrayList<>();
+
+                for (int i = 1; i < node.incomingDataFlows.length; i++) {
+                    final String fieldName = "link" + i;
+                    arguments.add(
+                            ConstExpressions.struct.get(
+                                    lambdaInstance.type,
+                                    ConstExpressions.ref.cast(
+                                            lambdaInstance.type,
+                                            ConstExpressions.getLocal(lambdaMethod.localByLabel("thisref"))
+                                    ),
+                                    fieldName
+                            )
+                    );
+                }
+
                 for (int i = 0; i < argSamMethodType.type.getArgumentTypes().length; i++) {
-                    if (i > 0) {
-                        pw.print(",");
-                    }
-                    pw.print("arg");
-                    pw.print(i);
+                    arguments.add(ConstExpressions.getLocal(lambdaMethod.localByLabel("arg" + i)));
                 }
-                pw.print(") { return ");
 
-                final Object firstArg = allArgs.get(0);
-                if (firstArg instanceof String) {
-                    pw.print((String) firstArg);
+                final List<WasmValue> resolverArgs = new ArrayList<>();
+                resolverArgs.add(ConstExpressions.i32.c(methodToIDMapper.resolveIdFor(implementationMethod)));
+                final StructType objectType = module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class)));
+                resolverArgs.add(ConstExpressions.struct.get(
+                        objectType,
+                        arguments.get(0),
+                        "vt_resolver"
+                ));
+
+                final List<WasmType> vtArgs = new ArrayList<>();
+                vtArgs.add(PrimitiveType.i32);
+                final FunctionType vtType = module.getTypes().functionType(vtArgs, PrimitiveType.i32);
+                final WasmValue resolver = ConstExpressions.ref.callRef(vtType, resolverArgs);
+                final FunctionType ft = functionTypeConverter.apply(implementationMethod);
+
+                if (implementationMethod.methodType.getReturnType() == Type.VOID_TYPE) {
+                    lambdaMethod.flow.voidCallIndirect(ft, arguments, resolver);
                 } else {
-                    writeExpression((Node) firstArg);
+                    lambdaMethod.flow.ret(ConstExpressions.call(ft, arguments, resolver));
                 }
-                pw.print("['");
-                pw.print(JSHelpers.generateMethodName(implementationMethod.methodNode.name, implementationMethod.methodType));
-                pw.print("'].call(");
 
-                if (firstArg instanceof String) {
-                    pw.print((String) firstArg);
+                return lambdaInstance.instance;
+            }
+            case INVOKEINTERFACE: {
+                final List<WasmValue> arguments = new ArrayList<>();
+                final List<WasmType> argumentTypes = new ArrayList<>();
+                for (int i = 1; i < node.incomingDataFlows.length; i++) {
+                    final String fieldName = "link" + i;
+                    arguments.add(
+                            ConstExpressions.struct.get(
+                                    lambdaInstance.type,
+                                    ConstExpressions.ref.cast(
+                                            lambdaInstance.type,
+                                            ConstExpressions.getLocal(lambdaMethod.localByLabel("thisref"))
+                                    ),
+                                    fieldName
+                            )
+                    );
+                    argumentTypes.add(lambdaInstance.type.fieldByName(fieldName).getType());
+                }
+
+                for (int i = 0; i < argSamMethodType.type.getArgumentTypes().length; i++) {
+                    final Local l = lambdaMethod.localByLabel("arg" + i);
+                    arguments.add(ConstExpressions.getLocal(l));
+                    argumentTypes.add(l.getType());
+                }
+
+                final List<WasmValue> resolverArgs = new ArrayList<>();
+                resolverArgs.add(ConstExpressions.i32.c(methodToIDMapper.resolveIdFor(implementationMethod)));
+                final StructType objectType = module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class)));
+                resolverArgs.add(ConstExpressions.struct.get(
+                        objectType,
+                        arguments.get(0),
+                        "vt_resolver"
+                ));
+
+                final List<WasmType> vtArgs = new ArrayList<>();
+                vtArgs.add(PrimitiveType.i32);
+                final FunctionType vtType = module.getTypes().functionType(vtArgs, PrimitiveType.i32);
+                final WasmValue resolver = ConstExpressions.ref.callRef(vtType, resolverArgs);
+
+                if (implementationMethod.methodType.getReturnType() == Type.VOID_TYPE) {
+                    final FunctionType ft = module.getTypes().functionType(argumentTypes);
+                    lambdaMethod.flow.voidCallIndirect(ft, arguments, resolver);
                 } else {
-                    writeExpression((Node) firstArg);
+                    final FunctionType ft = module.getTypes().functionType(argumentTypes, typeConverter.apply(implementationMethod.methodType.getReturnType()));
+                    lambdaMethod.flow.ret(ConstExpressions.call(ft, arguments, resolver));
                 }
-                for (int i = 1; i < allArgs.size(); i++) {
-                    pw.print(", ");
-                    final Object arg = allArgs.get(i);
-                    if (arg instanceof String) {
-                        pw.print((String) arg);
-                    } else {
-                        writeExpression((Node) arg);
-                    }
-                }
-                pw.print(");");
 
-                pw.print("})");*/
-                lambdaMethod.flow.unreachable();
                 return lambdaInstance.instance;
             }
             case INVOKESPECIAL: {
@@ -864,39 +914,40 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 return lambdaInstance.instance;
             }
             case INVOKECONSTRUCTOR: {
-                /*final Type returnType = argInvokedType.type.getReturnType();
-                pw.print("bytecoder.instanceWithLambdaImpl(");
-                pw.print(JSHelpers.generateClassName(returnType));
-                pw.print(", function(");
+
+                final List<WasmValue> arguments = new ArrayList<>();
+
+                for (int i = 1; i < node.incomingDataFlows.length; i++) {
+                    final String fieldName = "link" + i;
+                    arguments.add(
+                            ConstExpressions.struct.get(
+                                    lambdaInstance.type,
+                                    ConstExpressions.ref.cast(
+                                            lambdaInstance.type,
+                                            ConstExpressions.getLocal(lambdaMethod.localByLabel("thisref"))
+                                    ),
+                                    fieldName
+                            )
+                    );
+                }
+
                 for (int i = 0; i < argSamMethodType.type.getArgumentTypes().length; i++) {
-                    if (i > 0) {
-                        pw.print(",");
-                    }
-                    pw.print("arg");
-                    pw.print(i);
+                    arguments.add(ConstExpressions.getLocal(lambdaMethod.localByLabel("arg" + i)));
                 }
-                pw.print(") { return function() {");
 
-                pw.print("const obj = new ");
-                pw.print(JSHelpers.generateClassName(implementationMethod.owner.type));
-                pw.print("();");
+                final Local objInstance = lambdaMethod.newLocal("newInstance", typeConverter.apply(implementationMethod.owner.type));
 
-                pw.print("obj['");
-                pw.print(JSHelpers.generateMethodName(implementationMethod.methodNode.name, implementationMethod.methodType));
-                pw.print("'].call(obj");
+                lambdaMethod.flow.setLocal(objInstance,
+                        createNewInstanceOf(implementationMethod.owner.type,
+                                module, compileUnit, objectTypeMappings, rtMappings, ConstExpressions.ref.externNullRef()));
 
-                for (final Object arg : allArgs) {
-                    pw.print(", ");
-                    if (arg instanceof String) {
-                        pw.print((String) arg);
-                    } else {
-                        writeExpression((Node) arg);
-                    }
-                }
-                pw.print(");return obj;}();");
+                arguments.add(0, ConstExpressions.getLocal(objInstance));
 
-                pw.print("})");*/
-                lambdaMethod.flow.unreachable();
+                final String implMethodName = WasmHelpers.generateClassName(implementationMethod.owner.type) + "$" + WasmHelpers.generateMethodName(implementationMethod.methodNode.name, implementationMethod.methodType);
+                lambdaMethod.flow.voidCall(ConstExpressions.weakFunctionReference(implMethodName), arguments);
+
+                lambdaMethod.flow.ret(ConstExpressions.getLocal(objInstance));
+
                 return lambdaInstance.instance;
             }
         }
@@ -2121,11 +2172,11 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     }
 
     @Override
-    public void startTryCatch() {
+    public void startTryCatch(final String label) {
 
         activeLevel.writeDebug("startTryCatch");
 
-        final Try t = activeLevel.activeFlow.Try(module.tagIndex().byLabel("javaexception"));
+        final Try t = activeLevel.activeFlow.Try(label, module.tagIndex().byLabel("javaexception"));
         activeLevel = new NestingLevelTry(activeLevel, t.flow, t);
     }
 
@@ -2199,7 +2250,14 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     @Override
     public void writeRethrowException() {
-        activeLevel.activeFlow.rethrowException();
+        NestingLevel current = activeLevel;
+        while (!(current instanceof NestingLevelTry) && current != null) {
+            current = current.parent;
+        }
+        if (current == null) {
+            throw new IllegalStateException("Could not find enclosing try block!");
+        }
+        activeLevel.activeFlow.rethrowException(((NestingLevelTry) current).activeContainer);
     }
 
     @Override

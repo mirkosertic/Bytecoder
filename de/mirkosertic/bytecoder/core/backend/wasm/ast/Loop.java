@@ -44,7 +44,7 @@ public class Loop extends LabeledContainer implements WasmExpression {
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         codeWriter.writeByte((byte) 0x03);
-        PrimitiveType.empty_pseudo_block.writeTo(codeWriter);
+        PrimitiveType.empty_block.writeTo(codeWriter);
         for (final WasmExpression e : getChildren()) {
             e.writeTo(codeWriter, context.subWith(this));
         }

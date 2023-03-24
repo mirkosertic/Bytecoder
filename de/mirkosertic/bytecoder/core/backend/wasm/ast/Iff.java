@@ -110,7 +110,7 @@ public class Iff extends LabeledContainer implements WasmExpression {
         condition.writeTo(codeWriter, context);
 
         codeWriter.writeByte((byte) 0x04);
-        PrimitiveType.empty_pseudo_block.writeTo(codeWriter);
+        PrimitiveType.empty_block.writeTo(codeWriter);
         for (final WasmExpression e : getChildren()) {
             e.writeTo(codeWriter, context.subWith(this));
         }

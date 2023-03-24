@@ -19,11 +19,8 @@ import java.io.IOException;
 
 public class Block extends LabeledContainer implements WasmExpression {
 
-    private final PrimitiveType blockType;
-
-    Block(final String label, final Container parent, final PrimitiveType blockType) {
+    Block(final String label, final Container parent) {
         super(parent, label);
-        this.blockType = blockType;
     }
 
     @Override
@@ -32,14 +29,6 @@ public class Block extends LabeledContainer implements WasmExpression {
         textWriter.write("block");
         textWriter.space();
         textWriter.writeLabel(getLabel());
-        if (blockType != PrimitiveType.empty_pseudo_block) {
-            textWriter.space();
-            textWriter.opening();
-            textWriter.write("result");
-            textWriter.space();
-            blockType.writeTo(textWriter);
-            textWriter.closing();
-        }
         if (hasChildren()) {
             textWriter.newLine();
             for (final WasmValue child : getChildren()) {
@@ -55,7 +44,7 @@ public class Block extends LabeledContainer implements WasmExpression {
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         codeWriter.writeByte((byte) 0x02);
-        blockType.writeTo(codeWriter);
+        PrimitiveType.empty_block.writeTo(codeWriter);
         for (final WasmExpression e : getChildren()) {
             e.writeTo(codeWriter, context.subWith(this));
         }

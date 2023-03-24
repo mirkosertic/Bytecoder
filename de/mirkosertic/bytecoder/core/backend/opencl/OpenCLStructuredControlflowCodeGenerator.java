@@ -774,7 +774,7 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
     }
 
     @Override
-    public void startTryCatch() {
+    public void startTryCatch(final String label) {
         throw new IllegalArgumentException("Not supported by OpenCL!");
     }
 

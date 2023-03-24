@@ -60,7 +60,7 @@ public class Expressions {
     }
 
     public Block block(final String label) {
-        final Block block = new Block(label, parent, PrimitiveType.empty_pseudo_block);
+        final Block block = new Block(label, parent);
         parent.addChild(block);
         return block;
     }
@@ -107,8 +107,8 @@ public class Expressions {
         parent.addChild(setStruct);
     }
 
-    public Try Try(final Tag catchTag) {
-        final Try t = new Try(parent, null, catchTag);
+    public Try Try(final String label, final Tag catchTag) {
+        final Try t = new Try(parent, label, catchTag);
         parent.addChild(t);
         return t;
     }
@@ -118,8 +118,8 @@ public class Expressions {
         parent.addChild(t);
     }
 
-    public void rethrowException() {
-        final RethrowException r  = new RethrowException();
+    public void rethrowException(final LabeledContainer tryBlock) {
+        final RethrowException r  = new RethrowException(tryBlock);
         parent.addChild(r);
     }
 }
