@@ -133,7 +133,7 @@ public class ExceptionTest {
         writeExceptionTestMethod(10);
     }
 
-    private boolean computeMultiple() {
+    private static boolean computeMultiple() {
         try {
             for (int x=0;x<10;x++) {
                 if (x > 2) {
@@ -242,7 +242,7 @@ public class ExceptionTest {
         Assert.assertEquals(18, x, 0);
     }
 
-    private void doSomething() {
+    private static void doSomething() {
     }
 
     @Test

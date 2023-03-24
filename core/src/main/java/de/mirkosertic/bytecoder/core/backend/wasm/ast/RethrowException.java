@@ -19,15 +19,19 @@ import java.io.IOException;
 
 public class RethrowException implements WasmExpression {
 
-    RethrowException() {
+    private final LabeledContainer outerBlock;
+
+    RethrowException(final LabeledContainer surroundingBlock) {
+        this.outerBlock = surroundingBlock;
     }
 
     @Override
     public void writeTo(final TextWriter textWriter, final ExportContext context) {
+        final int relativeDepth = context.owningContainer().relativeDepthTo(outerBlock);
         textWriter.opening();
         textWriter.write("rethrow");
         textWriter.space();
-        textWriter.write("0");
+        textWriter.writeLabel(outerBlock.getLabel());
         textWriter.closing();
         textWriter.newLine();
     }

@@ -29,11 +29,11 @@ public class InstanceAccessTest {
         public Long member2;
     }
 
-    private void testWrite(final StaticClassWithStuffInside aTarget, final int aValue) {
+    private static void testWrite(final StaticClassWithStuffInside aTarget, final int aValue) {
         aTarget.member = aValue;
     }
 
-    private int testRead(final StaticClassWithStuffInside aTarget) {
+    private static int testRead(final StaticClassWithStuffInside aTarget) {
         return aTarget.member;
     }
 

@@ -380,13 +380,15 @@ public class Sequencer {
         });
     }
 
+    int tryCatchCounter = 0;
+
     private void visit(final TryCatch node, final Stack<Block> as) {
 
         visitBranchingNodeTemplate(node, as, blocks -> {
 
             final boolean hasExceptionHandler = node.controlFlowsTo.keySet().stream().anyMatch(t -> t instanceof Projection.ExceptionHandler);
             if (hasExceptionHandler) {
-                codegenerator.startTryCatch();
+                codegenerator.startTryCatch("trycatch_" + tryCatchCounter++);
             }
 
             for (final Map.Entry<Projection, ControlTokenConsumer> entry : node.controlFlowsTo.entrySet()) {

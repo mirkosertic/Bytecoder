@@ -89,7 +89,7 @@ public interface StructuredControlflowCodeGenerator {
 
     void writeContinueTo(String label);
 
-    void startTryCatch();
+    void startTryCatch(String label);
 
     void startCatchBlock();
 

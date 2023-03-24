@@ -17,14 +17,12 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 
 import java.io.IOException;
 
-public class Try extends Container implements WasmExpression {
+public class Try extends LabeledContainer implements WasmExpression {
 
-    private final PrimitiveType blockType;
     public final Catch catchBlock;
 
-    Try(final Container parent, final PrimitiveType blockType, final Tag catchTag) {
-        super(parent);
-        this.blockType = blockType;
+    Try(final Container parent, final String label, final Tag catchTag) {
+        super(parent, label);
         catchBlock = new Catch(this, catchTag);
     }
 
@@ -32,6 +30,8 @@ public class Try extends Container implements WasmExpression {
     public void writeTo(final TextWriter textWriter, final ExportContext context) throws IOException {
         textWriter.opening();
         textWriter.write("try");
+        textWriter.space();
+        textWriter.writeLabel(getLabel());
         textWriter.space();
         textWriter.opening();
         textWriter.write("do");
@@ -52,15 +52,11 @@ public class Try extends Container implements WasmExpression {
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
         codeWriter.writeByte((byte) 0x06);
-        if (blockType != null) {
-            blockType.writeTo(codeWriter);
-        } else {
-            PrimitiveType.empty_pseudo_block.writeTo(codeWriter);
-        }
+        PrimitiveType.empty_block.writeTo(codeWriter);
         for (final WasmExpression e : getChildren()) {
             e.writeTo(codeWriter, context.subWith(this));
         }
-        catchBlock.writeTo(codeWriter, context);
+        catchBlock.writeTo(codeWriter, context.subWith(this));
         codeWriter.writeByte((byte) 0x0b);
     }
 }

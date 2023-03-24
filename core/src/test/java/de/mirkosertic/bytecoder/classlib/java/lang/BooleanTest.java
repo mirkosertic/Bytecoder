@@ -49,4 +49,9 @@ public class BooleanTest {
         assertSame(Boolean.FALSE, Boolean.parseBoolean(null));
         assertSame(Boolean.FALSE, Boolean.parseBoolean("false"));
     }
+
+    @Test
+    public void testGetBoolean() {
+        assertFalse(Boolean.getBoolean("unused"));
+    }
 }
