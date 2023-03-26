@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.core.backend.wasm;
 
 import de.mirkosertic.bytecoder.classlib.Array;
+import de.mirkosertic.bytecoder.core.backend.StringConcatMethod;
 import de.mirkosertic.bytecoder.core.backend.StringConcatRegistry;
 import de.mirkosertic.bytecoder.core.backend.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.core.backend.sequencer.StructuredControlflowCodeGenerator;
@@ -29,6 +30,7 @@ import de.mirkosertic.bytecoder.core.backend.wasm.ast.FunctionType;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.Global;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.HostType;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.Iff;
+import de.mirkosertic.bytecoder.core.backend.wasm.ast.ImportReference;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.LabeledContainer;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.Local;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.Loop;
@@ -121,6 +123,7 @@ import de.mirkosertic.bytecoder.core.ir.XOr;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 import org.objectweb.asm.Type;
 
+import java.io.PrintWriter;
 import java.lang.invoke.LambdaMetafactory;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -959,9 +962,119 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         throw new IllegalArgumentException("Not implemented!");
     }
 
-    private WasmValue generateInvokeDynamicStringMakeConcatWithConstants(final InvokeDynamicExpression value, final ResolveCallsite resolveCallsite) {
-        // TODO: Implement this
-        return ConstExpressions.ref.nullRef();
+    private WasmValue generateInvokeDynamicStringMakeConcatWithConstants(final InvokeDynamicExpression node, final ResolveCallsite resolveCallsite) {
+        final MethodType functionType = (MethodType) resolveCallsite.incomingDataFlows[2];
+        final ObjectString receipe = (ObjectString) resolveCallsite.incomingDataFlows[3];
+        final String receipeStr = compileUnit.getConstantPool().getPooledStrings().get(receipe.value.index);
+
+        final List<Param> params = new ArrayList<>();
+        final List<WasmValue> arguments = new ArrayList<>();
+
+        if (resolveCallsite.incomingDataFlows.length > 4) {
+            final Value v = (Value) resolveCallsite.incomingDataFlows[4];
+            final WasmValue arg = toWasmValue(v);
+            arguments.add(arg);
+            params.add(ConstExpressions.param("linkarg", typeConverter.apply(v.type)));
+        }
+        for (int i = 1; i < node.incomingDataFlows.length; i++) {
+            final Value v = (Value) node.incomingDataFlows[i];
+            // TODO: Convert objects to strings here and pass the native reference
+            final WasmValue arg = toWasmValue(v);
+            arguments.add(arg);
+            params.add(ConstExpressions.param("dynarg" + (i - 1), typeConverter.apply(v.type)));
+        }
+        final int index = stringConcatRegistry.register(new StringConcatMethod() {
+            @Override
+            public void generateCode(final PrintWriter pw, final int index) {
+                pw.print("bytecoder.imports.bytecoder.stringoperations");
+                pw.print(index);
+                pw.print(" = function(linkarg");
+
+                for (int i = 1; i < node.incomingDataFlows.length; i++) {
+                    pw.print(",");
+                    pw.print("dynArg" + (i - 1));
+                }
+
+                pw.println(") {");
+
+                pw.println("    let str = '';");
+                final int linkingArgOffset = 0;
+                int dynamicArgoffset = 0;
+                int totalIndex = 0;
+
+                for (int i = 0; i < receipeStr.length(); i++) {
+                    final char c = receipeStr.charAt(i);
+                    // TODO: generate code
+                    switch (c) {
+                        case 1: {
+                            final Type typeToAdd = functionType.type.getArgumentTypes()[totalIndex];
+                            switch (typeToAdd.getSort()) {
+                                case Type.OBJECT:
+                                case Type.ARRAY: {
+                                    pw.print("    str = str + dynArg");
+                                    pw.print(dynamicArgoffset);
+                                    pw.print(" == null ? 'null' : dynArg");
+                                    pw.print(dynamicArgoffset);
+                                    pw.println(";");
+                                    break;
+                                }
+                                default: {
+                                    pw.print("    str = str + dynArg");
+                                    pw.print(dynamicArgoffset);
+                                    pw.println(";");
+                                    break;
+                                }
+                            }
+                            dynamicArgoffset++;
+                            totalIndex++;
+                            break;
+                        }
+                        case 2: {
+                            final Type typeToAdd = functionType.type.getArgumentTypes()[totalIndex];
+                            totalIndex++;
+                            break;
+                        }
+                        default: {
+                            pw.println("    str = str + '" + c + "';");
+                            break;
+                        }
+                    }
+                }
+
+                pw.println("    return str;");
+
+                pw.println("}");
+            }
+        });
+        final Callable concatFunction = module.getImports().importFunction(new ImportReference("bytecoder", "stringoperations" + index), "stringoperations" + index, params, ConstExpressions.ref.host());
+
+        final ResolvedClass stringClass = compileUnit.findClass(Type.getType(String.class));
+        final Global stringGlobal = module.getGlobals().globalsIndex().globalByLabel(WasmHelpers.generateClassName(stringClass.type)  + "_cls");
+        final StructType stringType = objectTypeMappings.get(stringClass);
+
+        final List<WasmValue> initArgs = new ArrayList<>();
+        initArgs.add(
+                ConstExpressions.struct.get(
+                        rtMappings.get(stringClass),
+                        ConstExpressions.getGlobal(stringGlobal),
+                        "factoryFor"
+                ));
+        initArgs.add(ConstExpressions.ref.ref(module.functionIndex().firstByLabel(WasmHelpers.generateClassName(stringClass.type) + "_vt")));
+
+        initArgs.add(ConstExpressions.call(concatFunction, arguments));
+
+        initArgs.add(
+                ConstExpressions.struct.get(
+                        rtMappings.get(stringClass),
+                        ConstExpressions.getGlobal(stringGlobal),
+                        "classImplTypes"
+                )
+        );
+
+        return ConstExpressions.struct.newInstance(
+            stringType,
+            initArgs
+        );
     }
 
     private WasmValue toWasmValue(final InvokeDynamicExpression value) {

@@ -317,21 +317,16 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             public void generateCode(final PrintWriter pw, final int index) {
                 pw.print("bytecoder.stringoperations[");
                 pw.print(index);
-                pw.print("] = function(linkArg,");
+                pw.print("] = function(linkArg");
 
-                boolean first = true;
                 for (int i = 1; i < node.incomingDataFlows.length; i++) {
-                    if (first) {
-                        first = false;
-                    } else {
-                        pw.print(",");
-                    }
+                    pw.print(",");
                     pw.print("dynArg" + (i - 1));
                 }
 
                 pw.println(") {");
 
-                pw.println("    let str = ''");
+                pw.println("    let str = '';");
                 final int linkingArgOffset = 0;
                 int dynamicArgoffset = 0;
                 int totalIndex = 0;
