@@ -16,8 +16,6 @@
 package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 
 
-import java.io.IOException;
-
 public class F64Const implements WasmValue {
 
     private final double value;
@@ -42,7 +40,7 @@ public class F64Const implements WasmValue {
     }
 
     @Override
-    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
+    public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) {
         codeWriter.writeByte((byte) 0x44);
         codeWriter.writeDouble64(value);
     }

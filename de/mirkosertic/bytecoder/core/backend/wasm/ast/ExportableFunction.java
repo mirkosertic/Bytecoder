@@ -56,11 +56,6 @@ public class ExportableFunction extends Function implements Exportable {
         }
 
         @Override
-        public TypeIndex typeIndex() {
-            return getModule().getTypes().typesIndex();
-        }
-
-        @Override
         public TablesSection.AnyFuncTable anyFuncTable() {
             return getModule().getTables().funcTable();
         }

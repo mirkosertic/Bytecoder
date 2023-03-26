@@ -17,16 +17,12 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 
 public class Local {
 
-    private String label;
+    private final String label;
     private final WasmType type;
 
     Local(final String label, final WasmType type) {
         this.label = label;
         this.type = type;
-    }
-
-    public void renameTo(final String newLabel) {
-        label = newLabel;
     }
 
     public String getLabel() {

@@ -155,7 +155,7 @@ import de.mirkosertic.bytecoder.api.web.Event; import de.mirkosertic.bytecoder.a
       
       <guid>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-e/</guid>
       <description>Testing code generation Bytecoder comes with built in JUnit Testing support using a specialized test runner. This test runner compiles the body of the test method to a target language and executes this code. For instance, the following JUnit Test
-@RunWith(de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner.class) public class SimpleMathTest { public static int sum(int a, int b) { return a + b; } @Test public void testAdd() throws Exception { int c = sum(10, 20); Assert.</description>
+@RunWith(de.mirkosertic.bytecoder.core.test.UnitTestRunner.class) public class SimpleMathTest { public static int sum(int a, int b) { return a + b; } @Test public void testAdd() throws Exception { int c = sum(10, 20); Assert.</description>
     </item>
     
     <item>

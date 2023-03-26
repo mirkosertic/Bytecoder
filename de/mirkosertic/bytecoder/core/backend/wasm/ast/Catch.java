@@ -26,11 +26,21 @@ public class Catch extends Container {
         this.catchTag = catchTag;
     }
 
+    @Override
+    public int relativeDepthTo(final LabeledContainer outerBlock) {
+        return parent().relativeDepthTo(outerBlock);
+    }
+
+    @Override
+    public int relativeDepthTo(final LabeledContainer outerBlock, final int offset) {
+        return parent().relativeDepthTo(outerBlock, offset);
+    }
+
     public void writeTo(final BinaryWriter.Writer codeWriter, final WasmValue.ExportContext context) throws IOException {
         codeWriter.writeByte((byte) 0x07);
         codeWriter.writeSignedLeb128(context.tagIndex().indexOf(catchTag));
         for (final WasmExpression e : getChildren()) {
-            e.writeTo(codeWriter, context.subWith(this));
+            e.writeTo(codeWriter, context);
         }
     }
 
@@ -42,7 +52,7 @@ public class Catch extends Container {
         textWriter.newLine();
 
         for (final WasmExpression e : getChildren()) {
-            e.writeTo(textWriter, context.subWith(this));
+            e.writeTo(textWriter, context);
         }
 
         textWriter.closing();

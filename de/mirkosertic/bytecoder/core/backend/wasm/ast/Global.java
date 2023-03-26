@@ -16,18 +16,15 @@
 package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 
 import java.io.IOException;
-import java.util.List;
 
 public class Global {
 
-    private final ExportsSection exportsSection;
     private final String label;
     private final WasmType type;
     private final boolean mutable;
     private final WasmValue initializer;
 
-    Global(final ExportsSection exportsSection, final String name, final WasmType type, final boolean mutable, final WasmValue initializer) {
-        this.exportsSection = exportsSection;
+    Global(final String name, final WasmType type, final boolean mutable, final WasmValue initializer) {
         this.label = name;
         this.type = type;
         this.mutable = mutable;

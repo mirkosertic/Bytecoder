@@ -103,11 +103,6 @@ public class Module {
             }
 
             @Override
-            public TypeIndex typeIndex() {
-                return Module.this.types.typesIndex();
-            }
-
-            @Override
             public FunctionIndex functionIndex() {
                 return Module.this.functionIndex();
             }
