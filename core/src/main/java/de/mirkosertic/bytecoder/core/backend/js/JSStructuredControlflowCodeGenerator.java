@@ -17,6 +17,8 @@ package de.mirkosertic.bytecoder.core.backend.js;
 
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.core.backend.OpaqueReferenceTypeHelpers;
+import de.mirkosertic.bytecoder.core.backend.StringConcatMethod;
+import de.mirkosertic.bytecoder.core.backend.StringConcatRegistry;
 import de.mirkosertic.bytecoder.core.backend.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.core.backend.sequencer.StructuredControlflowCodeGenerator;
 import de.mirkosertic.bytecoder.core.ir.AbstractVar;

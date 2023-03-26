@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.core.backend.wasm;
 
 import de.mirkosertic.bytecoder.classlib.Array;
+import de.mirkosertic.bytecoder.core.backend.StringConcatRegistry;
 import de.mirkosertic.bytecoder.core.backend.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.core.backend.sequencer.StructuredControlflowCodeGenerator;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.Block;
@@ -232,6 +233,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private final VTableResolver vTableResolver;
 
+    private final StringConcatRegistry stringConcatRegistry;
+
     public WasmStructuredControlflowCodeGenerator(final CompileUnit compileUnit, final Module module,
                                                   final Map<ResolvedClass, StructType> rtMappings,
                                                   final Map<ResolvedClass, StructType> objectTypeMappings,
@@ -241,7 +244,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                                                   final MethodToIDMapper methodToIDMapper,
                                                   final Graph graph,
                                                   final List<ResolvedClass> resolvedClasses,
-                                                  final VTableResolver vTableResolver) {
+                                                  final VTableResolver vTableResolver,
+                                                  final StringConcatRegistry stringConcatRegistry) {
         this.compileUnit = compileUnit;
         this.module = module;
         this.exportableFunction = exportableFunction;
@@ -255,6 +259,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         this.graph = graph;
         this.resolvedClasses = resolvedClasses;
         this.vTableResolver = vTableResolver;
+        this.stringConcatRegistry = stringConcatRegistry;
     }
 
     @Override
@@ -954,6 +959,10 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         throw new IllegalArgumentException("Not implemented!");
     }
 
+    private WasmValue generateInvokeDynamicStringMakeConcatWithConstants(final InvokeDynamicExpression value, final ResolveCallsite resolveCallsite) {
+        // TODO: Implement this
+        return ConstExpressions.ref.nullRef();
+    }
 
     private WasmValue toWasmValue(final InvokeDynamicExpression value) {
         final ResolveCallsite resolveCallsite = (ResolveCallsite) value.incomingDataFlows[0];
@@ -966,9 +975,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             }
         } else if (bootstrapMethod.className.getClassName().equals("java.lang.invoke.StringConcatFactory")) {
             if ("makeConcatWithConstants".equals(bootstrapMethod.methodName)) {
-                // TODO: Implement this
-                return ConstExpressions.ref.nullRef();
-                //return generateInvokeDynamicStringMakeConcatWithConstants(value, resolveCallsite);
+                return generateInvokeDynamicStringMakeConcatWithConstants(value, resolveCallsite);
             } else {
                 throw new IllegalArgumentException("Not supported method " + bootstrapMethod.methodName + " on " + bootstrapMethod.className);
             }
@@ -1916,7 +1923,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 if (value.type.getSort() == targetVar.type.getSort()) {
                     activeLevel.activeFlow.setLocal(local, toWasmValue(value));
                 } else {
-                    activeLevel.activeFlow.comment("Unable to assign " + value.type + " to " + targetVar.type + " for " + targetVar +" from " + value);
+                    throw new IllegalArgumentException("Unable to assign " + value.type + " to " + targetVar.type + " for " + targetVar +" from " + value);
                 }
             }
 
