@@ -118,14 +118,6 @@ public class TypesSection extends ModuleSection {
         }
     }
 
-    public TypeIndex typesIndex() {
-        final TypeIndex result = new TypeIndex();
-        for (final WasmType t : types) {
-            result.add(t);
-        }
-        return result;
-    }
-
     public StructType structTypeByName(final String name) {
         for (final WasmType t : types) {
             if (t instanceof StructType) {

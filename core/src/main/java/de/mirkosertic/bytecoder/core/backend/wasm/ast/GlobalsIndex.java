@@ -40,14 +40,6 @@ public class GlobalsIndex {
         throw new IllegalArgumentException("No such global : " + globalName);
     }
 
-    public int size() {
-        return globals.size();
-    }
-
-    public Global get(final int i) {
-        return globals.get(i);
-    }
-
     public int indexOf(final Global global) {
         return globals.indexOf(global);
     }

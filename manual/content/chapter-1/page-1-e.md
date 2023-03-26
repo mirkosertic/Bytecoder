@@ -11,7 +11,7 @@ Bytecoder comes with built in JUnit Testing support using a specialized test run
 and executes this code. For instance, the following JUnit Test
 
 ```
-@RunWith(de.mirkosertic.bytecoder.unittest.BytecoderUnitTestRunner.class)
+@RunWith(de.mirkosertic.bytecoder.core.test.UnitTestRunner.class)
 public class SimpleMathTest {
 
     public static int sum(int a, int b) {

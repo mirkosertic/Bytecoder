@@ -44,7 +44,7 @@ public class Try extends LabeledContainer implements WasmExpression {
         textWriter.closing();
         textWriter.newLine();
 
-        catchBlock.writeTo(textWriter, context);
+        catchBlock.writeTo(textWriter, context.subWith(this));
         textWriter.closing();
         textWriter.newLine();
     }

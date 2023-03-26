@@ -23,8 +23,6 @@ public interface WasmValue {
 
         Container owningContainer();
 
-        TypeIndex typeIndex();
-
         FunctionIndex functionIndex();
 
         GlobalsIndex globalsIndex();
