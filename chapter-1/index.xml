@@ -19,7 +19,7 @@
       <guid>https://mirkosertic.github.io/Bytecoder/chapter-1/page-1-a/</guid>
       <description>Jump-Start Lets assume we have the following Java class, and we want to compile it to JavaScript and run it in the Browser:
 package bytecodertest; public class HelloWorld { public static void main(String[] args) { System.out.println(&amp;quot;Hello World!&amp;quot;); } }  First of all, we need to compile the Java sources to a JVM class file. This is done by using the javac tool from the JDK:
-javac HelloWorld.java  Now, we have the compiled .</description>
+mkdir -p bytecodertest &amp;amp;&amp;amp; cd bytecodertest &amp;amp;&amp;amp; javac HelloWorld.</description>
     </item>
     
     <item>
