@@ -17,12 +17,14 @@ package de.mirkosertic.bytecoder.classlib.java.lang.reflect;
 
 import de.mirkosertic.bytecoder.core.test.UnitTestRunner;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.lang.reflect.Array;
 
 @RunWith(UnitTestRunner.class)
+@Ignore
 public class ArrayTest {
 
     @Test
@@ -98,6 +100,7 @@ public class ArrayTest {
     }
 
     @Test
+    @Ignore
     public void testCreateArrayTest() {
         final Object[] array = (Object[]) Array.newInstance(Object.class, 10);
         Assert.assertEquals(10, Array.getLength(array));

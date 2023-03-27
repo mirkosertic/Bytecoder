@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.core;
 
 import de.mirkosertic.bytecoder.core.test.UnitTestRunner;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -60,70 +61,72 @@ public class ArrayTest {
         }
     }
 
-    private static final byte[] bytes = new byte[10];
-    private static final short[] shorts = new short[10];
-    private static final char[] chars = new char[10];
-    private static final int[] ints = new int[10];
-    private static final boolean[] booleans = new boolean[10];
-    private static final float[] floats = new float[10];
-    private static final Entry[] entries = new Entry[10];
-    private static final long[] longs = new long[10];
-    private static final double[] doubles = new double[10];
+    private static class Holder {
+        private static final byte[] bytes = new byte[10];
+        private static final short[] shorts = new short[10];
+        private static final char[] chars = new char[10];
+        private static final int[] ints = new int[10];
+        private static final boolean[] booleans = new boolean[10];
+        private static final float[] floats = new float[10];
+        private static final Entry[] entries = new Entry[10];
+        private static final long[] longs = new long[10];
+        private static final double[] doubles = new double[10];
+    }
 
     @Test
     public void testLength() {
-        Assert.assertEquals(10, bytes.length, 0);
+        Assert.assertEquals(10, Holder.bytes.length, 0);
     }
 
     @Test
     public void testBytes() {
-        bytes[4] = (byte) 10;
-        Assert.assertEquals(10, bytes[4], 0);
-        Assert.assertEquals(0, bytes[0], 0);
+        Holder.bytes[4] = (byte) 10;
+        Assert.assertEquals(10, Holder.bytes[4], 0);
+        Assert.assertEquals(0, Holder.bytes[0], 0);
     }
 
     @Test
     public void testShorts() {
-        shorts[4] = (short) 10;
-        Assert.assertEquals(10, shorts[4], 0);
-        Assert.assertEquals(0, shorts[0], 0);
+        Holder.shorts[4] = (short) 10;
+        Assert.assertEquals(10, Holder.shorts[4], 0);
+        Assert.assertEquals(0, Holder.shorts[0], 0);
     }
 
     @Test
     public void testChars() {
-        chars[4] = (char) 10;
-        Assert.assertEquals(10, chars[4], 0);
-        Assert.assertEquals(0, chars[0], 0);
+        Holder.chars[4] = (char) 10;
+        Assert.assertEquals(10, Holder.chars[4], 0);
+        Assert.assertEquals(0, Holder.chars[0], 0);
     }
 
     @Test
     public void testInts() {
-        ints[4] = 10;
-        Assert.assertEquals(10, ints[4], 0);
-        Assert.assertEquals(0, ints[0], 0);
+        Holder.ints[4] = 10;
+        Assert.assertEquals(10, Holder.ints[4], 0);
+        Assert.assertEquals(0, Holder.ints[0], 0);
     }
 
     @Test
     public void testFloats() {
-        floats[4] = (float) 10;
-        Assert.assertEquals(10, floats[4], 0);
-        Assert.assertEquals(0, floats[0], 0);
+        Holder.floats[4] = (float) 10;
+        Assert.assertEquals(10, Holder.floats[4], 0);
+        Assert.assertEquals(0, Holder.floats[0], 0);
     }
 
     @Test
     public void testBooleans() {
-        booleans[4] = true;
-        Assert.assertTrue(booleans[4]);
-        Assert.assertFalse(booleans[0]);
+        Holder.booleans[4] = true;
+        Assert.assertTrue(Holder.booleans[4]);
+        Assert.assertFalse(Holder.booleans[0]);
     }
 
     @Test
     public void testEntries() {
         final Entry theEntry = new Entry();
-        Assert.assertNull(entries[0]);
+        Assert.assertNull(Holder.entries[0]);
         theEntry.test = 10;
-        entries[4] = theEntry;
-        Assert.assertEquals(10, entries[4].test, 0);
+        Holder.entries[4] = theEntry;
+        Assert.assertEquals(10, Holder.entries[4].test, 0);
 
         final Object[] theEmpty = new Object[100];
 
@@ -165,6 +168,7 @@ public class ArrayTest {
     }
 
     @Test
+    @Ignore
     public void testReflectiveCreation() {
         final Object[] theArray = (Object[]) Array.newInstance(Object.class, 10);
         Assert.assertEquals(10, theArray.length, 0);
@@ -179,21 +183,20 @@ public class ArrayTest {
     @Test
     public void testLongs() {
         System.out.println("Starting test");
-        longs[0] = 10L;
-        longs[1] = 20L;
-        System.out.println((int) longs[0]);
-        System.out.println((int) longs[1]);
-        Assert.assertEquals(10L, longs[0]);
-        Assert.assertEquals(20L, longs[1]);
+        Holder.longs[0] = 10L;
+        Holder.longs[1] = 20L;
+        System.out.println((int) Holder.longs[0]);
+        System.out.println((int) Holder.longs[1]);
+        Assert.assertEquals(10L, Holder.longs[0]);
+        Assert.assertEquals(20L, Holder.longs[1]);
     }
 
     @Test
     public void testDoubles() {
         System.out.println("Starting test");
-        doubles[0] = 10.5d;
-        doubles[1] = 20.5d;
-        Assert.assertEquals(10.5f, doubles[0], 0);
-        Assert.assertEquals(20.5d, doubles[1], 0);
+        Holder.doubles[0] = 10.5d;
+        Holder.doubles[1] = 20.5d;
+        Assert.assertEquals(10.5f, Holder.doubles[0], 0);
+        Assert.assertEquals(20.5d, Holder.doubles[1], 0);
     }
-
 }

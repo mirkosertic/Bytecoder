@@ -23,22 +23,28 @@ import org.junit.runner.RunWith;
 @RunWith(UnitTestRunner.class)
 public class StringConcatFactoryTest {
 
-    private String append(final int aValue) {
-        return "Hello" + aValue;
-    }
+    public static class Inst {
 
-    private String append(final String prefix, final int aValue) {
-        return prefix + aValue;
+        private String append(final int aValue) {
+            return "Hello" + aValue;
+        }
+
+        private String append(final String prefix, final int aValue) {
+            return prefix + aValue;
+        }
+
     }
 
     @Test
     public void testWithConstant() {
-        Assert.assertEquals("Hello42", append(42));
+        final Inst i = new Inst();
+        Assert.assertEquals("Hello42", i.append(42));
     }
 
     @Test
     public void testAppend() {
-        Assert.assertEquals("Hello42", append("Hello", 42));
+        final Inst i = new Inst();
+        Assert.assertEquals("Hello42", i.append("Hello", 42));
     }
 
     @Test

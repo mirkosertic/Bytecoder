@@ -185,12 +185,15 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
             java.util.logging.Logger.getLogger("org.openqa.selenium").setLevel(Level.OFF);
 
             final ChromeOptions theOptions = new ChromeOptions().setHeadless(true);
-            theOptions.addArguments("--js-flags=experimental-wasm-eh");
-            theOptions.addArguments("--enable-experimental-wasm-eh");
+
+            theOptions.addArguments("--js-flags=--experimental-wasm-gc");
+            theOptions.addArguments("--enable---experimental-wasm-gc");
+
             theOptions.addArguments("disable-infobars"); // disabling infobars
             theOptions.addArguments("--disable-dev-shm-usage"); // overcome limited resource problems
             theOptions.addArguments("--no-sandbox"); // Bypass OS security model
             theOptions.setExperimentalOption("useAutomationExtension", false);
+
             final LoggingPreferences theLoggingPreferences = new LoggingPreferences();
             theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
             theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
@@ -198,7 +201,7 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
 
             Testcontainers.exposeHostPorts(getTestWebServerPort());
 
-            SELENIUMCONTAINER = new BrowserWebDriverContainer()
+            SELENIUMCONTAINER = new BrowserWebDriverContainer("selenium/standalone-chrome:beta")
                     .withCapabilities(theOptions)
                     .withRecordingMode(BrowserWebDriverContainer.VncRecordingMode.SKIP, new File("."));
             SELENIUMCONTAINER.start();
@@ -287,7 +290,11 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                 final StringWriter strWriter = new StringWriter();
                 final PrintWriter codeWriter = new PrintWriter(strWriter);
 
-                final CompileOptions compileOptions = new CompileOptions(LOGGER, Optimizations.DISABLED, additionalResources, "", false);
+                final String className = JSHelpers.generateClassName(invokedType);
+                final String methodName = JSHelpers.generateMethodName(method.methodNode.name, Type.getMethodType(method.methodNode.desc));
+                final String filenamePrefix = className + "." + methodName + "_" + aTestOption.toFilePrefix();
+
+                final CompileOptions compileOptions = new CompileOptions(LOGGER, Optimizations.DISABLED, additionalResources, filenamePrefix, true);
 
                 final JSBackend backend = new JSBackend();
                 final JSCompileResult result = backend.generateCodeFor(compileUnit, compileOptions);
@@ -297,9 +304,6 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                         codeWriter.println(c.asString());
                     }
                 }
-
-                final String className = JSHelpers.generateClassName(invokedType);
-                final String methodName = JSHelpers.generateMethodName(method.methodNode.name, Type.getMethodType(method.methodNode.desc));
 
                 final String filename = className + "." + methodName + "_" + aTestOption.toFilePrefix() + ".html";
 
@@ -439,7 +443,11 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                 final StringWriter strWriter = new StringWriter();
                 final PrintWriter codeWriter = new PrintWriter(strWriter);
 
-                final CompileOptions compileOptions = new CompileOptions(LOGGER, Optimizations.DISABLED, additionalResources, "", false);
+                final String className = WasmHelpers.generateClassName(invokedType);
+                final String methodName = WasmHelpers.generateMethodName(method.methodNode.name, Type.getMethodType(method.methodNode.desc));
+                final String filenamePrefix = className + "." + methodName + "_" + aTestOption.toFilePrefix();
+
+                final CompileOptions compileOptions = new CompileOptions(LOGGER, Optimizations.DISABLED, additionalResources, filenamePrefix, true);
 
                 final WasmBackend backend = new WasmBackend();
                 final WasmCompileResult result = backend.generateCodeFor(compileUnit, compileOptions);
@@ -450,16 +458,13 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                     }
                 }
 
-                final String className = WasmHelpers.generateClassName(invokedType);
-                final String methodName = WasmHelpers.generateMethodName(method.methodNode.name, Type.getMethodType(method.methodNode.desc));
-
                 final String filename = className + "." + methodName + "_" + aTestOption.toFilePrefix() + ".html";
 
                 codeWriter.println("console.log(\"Starting test\");");
-                codeWriter.println("bytecoder.instantiate('wasmclasses.wasm').then(function() {");
-                codeWriter.println("    //var theTestInstance = new " + className + "();");
+                codeWriter.print("bytecoder.instantiate('");
+                codeWriter.print(filenamePrefix);
+                codeWriter.println("wasmclasses.wasm').then(function() {");
                 codeWriter.println("    try {");
-                codeWriter.println("        //theTestInstance." + methodName + "();");
                 codeWriter.println("        bytecoder.instance.exports.main(null);");
                 codeWriter.println("        console.log(\"Test finished OK\");");
                 codeWriter.println("    } catch (e) {");
@@ -489,7 +494,7 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
 
                 initializeTestWebServer();
 
-                /*final BrowserWebDriverContainer browserContainer = initializeSeleniumContainer();
+                final BrowserWebDriverContainer browserContainer = initializeSeleniumContainer();
 
                 initializeWebRoot(generatedFile.getParentFile());
 
@@ -520,7 +525,8 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
 
                 if (!lastLogEntry.getMessage().contains("Test finished OK")) {
                     aRunNotifier.fireTestFailure(new Failure(theDescription, new RuntimeException("Test did not succeed! Got : " + lastLogEntry.getMessage())));
-                }*/
+                }
+
             } catch (final CodeGenerationFailure e) {
 
                 final ResolvedMethod rm = e.getMethod();

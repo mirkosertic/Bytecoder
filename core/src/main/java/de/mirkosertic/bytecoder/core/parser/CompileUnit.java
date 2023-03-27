@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.core.parser;
 import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.BytecoderCharsetEncoder;
+import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.core.ReflectionConfiguration;
 import de.mirkosertic.bytecoder.core.ir.AnalysisStack;
 import de.mirkosertic.bytecoder.core.ir.AnnotationUtils;
@@ -205,6 +206,8 @@ public class CompileUnit {
                 callsiteCl.resolveMethod(method.name, Type.getMethodType(method.desc), analysisStack);
             }
         }
+
+        resolveClass(Type.getType(VM.class), analysisStack);
 
         final ResolvedClass resolvedClass = resolveClass(invokedType, analysisStack);
         final ResolvedMethod method = resolvedClass.resolveMethod(methodName, methodType, analysisStack);

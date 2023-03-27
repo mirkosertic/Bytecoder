@@ -129,4 +129,14 @@ public class TypesSection extends ModuleSection {
         }
         throw new IllegalArgumentException("Unknown struct type : " + name);
     }
+
+    public List<StructType> structTypes() {
+        final List<StructType> result = new ArrayList<>();
+        for (final WasmType t : types) {
+            if (t instanceof StructType) {
+                result.add((StructType) t);
+            }
+        }
+        return result;
+    }
 }

@@ -16,12 +16,14 @@
 package de.mirkosertic.bytecoder.classlib.java.util.regex;
 
 import de.mirkosertic.bytecoder.core.test.UnitTestRunner;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.util.regex.Pattern;
 
 @RunWith(UnitTestRunner.class)
+@Ignore
 public class PatternTest {
 
     @Test

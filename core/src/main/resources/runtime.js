@@ -210,80 +210,6 @@ const bytecoder = {
                 bytecoder.filehandles[fd] = null;
             }
         },
-        "java.lang.invoke.LambdaMetafactory": {
-            Ljava$lang$invoke$CallSite$$metafactory$Ljava$lang$invoke$MethodHandles$Lookup$$Ljava$lang$String$$Ljava$lang$invoke$MethodType$$Ljava$lang$invoke$MethodType$$Ljava$lang$invoke$MethodHandle$$Ljava$lang$invoke$MethodType$: function (lookups, methodName, invokedType, samMethodType, implMethod, aInstantiatedMethodType) {
-                let instType = invokedType[0];
-                switch (implMethod.kind) {
-                    case 1: {
-                        // Invoke static
-                        return bytecoder.instanceWithLambdaImpl(java$lang$invoke$CallSite, function () {
-                            return bytecoder.instanceWithLambdaImpl(java$lang$invoke$MethodHandle, function () {
-                                let linkingArguments = Array.from(arguments);
-                                return bytecoder.instanceWithLambdaImpl(instType, function () {
-                                    let captureArguments = Array.from(arguments);
-                                    return implMethod.owner[implMethod.methodName].apply(this, linkingArguments.concat(captureArguments));
-                                });
-                            });
-                        });
-                    }
-                    case 2: {
-                        // Invoke virtual
-                        return bytecoder.instanceWithLambdaImpl(java$lang$invoke$CallSite, function () {
-                            return bytecoder.instanceWithLambdaImpl(java$lang$invoke$MethodHandle, function () {
-                                let linkingArguments = Array.from(arguments);
-                                return bytecoder.instanceWithLambdaImpl(instType, function () {
-                                    let captureArguments = Array.from(arguments);
-                                    let allargs = linkingArguments.concat(captureArguments)
-                                    return implMethod.owner.prototype[implMethod.methodName].apply(allargs[0], allargs.splice(1));
-                                });
-                            });
-                        });
-                    }
-                    case 3: {
-                        // Invoke interface
-                        return bytecoder.instanceWithLambdaImpl(java$lang$invoke$CallSite, function () {
-                            return bytecoder.instanceWithLambdaImpl(java$lang$invoke$MethodHandle, function () {
-                                let linkingArguments = Array.from(arguments);
-                                return bytecoder.instanceWithLambdaImpl(instType, function () {
-                                    let captureArguments = Array.from(arguments);
-                                    let allargs = linkingArguments.concat(captureArguments)
-                                    return allargs[0][implMethod.methodName].apply(allargs[0], allargs.splice(1));
-                                });
-                            });
-                        });
-                    }
-                    case 4: {
-                        // Invoke constructor
-                        return bytecoder.instanceWithLambdaImpl(java$lang$invoke$CallSite, function () {
-                            return bytecoder.instanceWithLambdaImpl(java$lang$invoke$MethodHandle, function () {
-                                let linkingArguments = Array.from(arguments);
-                                return bytecoder.instanceWithLambdaImpl(instType, function () {
-                                    let captureArguments = Array.from(arguments);
-                                    let obj = new implMethod.owner();
-                                    implMethod.owner.prototype[implMethod.methodName].apply(obj, linkingArguments.concat(captureArguments));
-                                    return obj;
-                                });
-                            });
-                        });
-                    }
-                    case 5: {
-                        // Invoke special
-                        return bytecoder.instanceWithLambdaImpl(java$lang$invoke$CallSite, function () {
-                            return bytecoder.instanceWithLambdaImpl(java$lang$invoke$MethodHandle, function () {
-                                let linkingArguments = Array.from(arguments);
-                                return bytecoder.instanceWithLambdaImpl(instType, function () {
-                                    let captureArguments = Array.from(arguments);
-                                    let allargs = linkingArguments.concat(captureArguments)
-                                    return allargs[0][implMethod.methodName].apply(allargs[0], allargs.splice(1));
-                                });
-                            });
-                        });
-                    }
-                    default:
-                        throw 'Not supported method kind : ' + implMethod.kind;
-                }
-            },
-        },
         "de.mirkosertic.bytecoder.classlib.BytecoderCharsetDecoder": {
             $C$decodeFromBytes$Ljava$lang$String$$$B: function (decoder, charsetName, data) {
                 let targetCharacterSet = charsetName.nativeObject;
@@ -444,6 +370,31 @@ const bytecoder = {
             },
             V$initializeWith$Ljava$lang$String$: function (str, otherstr) {
                 str.nativeObject = otherstr.nativeObject;
+            },
+            V$initializeWith$$B$I$I$B: function(str, bytes, index, count, coder) {
+                const arr = new Uint8Array(bytecoder.exports.byteArrayLength(bytes))
+                for (var i = index; i < index + count; i++) {
+                    arr[i - index] = bytecoder.exports.getByteArrayEntry(bytes, i);
+                }
+                const jsstr = new TextDecoder().decode(arr);
+                str.nativeObject = jsstr;
+            },
+            $B$getBytes$$: function(str) {
+                const jsstr = str.nativeObject;
+                const bytes = new TextEncoder().encode(jsstr);
+
+                const arr = bytecoder.exports.newByteArray(bytes.length);
+                for (var i = 0; i < bytes.length; i++) {
+                    bytecoder.exports.setByteArrayEntry(arr, i, bytes[i]);
+                }
+
+                return arr;
+            },
+            Ljava$lang$String$$toUpperCase$$: function(str) {
+                return bytecoder.toBytecoderString(str.nativeObject.toUpperCase());
+            },
+            Ljava$lang$String$$toLowerCase$$: function(str) {
+                return bytecoder.toBytecoderString(str.nativeObject.toLowerCase());
             }
         },
         "java.lang.Character": {

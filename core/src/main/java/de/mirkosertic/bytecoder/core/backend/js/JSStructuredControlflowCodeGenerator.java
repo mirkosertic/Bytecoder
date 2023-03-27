@@ -92,6 +92,7 @@ import de.mirkosertic.bytecoder.core.ir.TypeConversion;
 import de.mirkosertic.bytecoder.core.ir.TypeReference;
 import de.mirkosertic.bytecoder.core.ir.USHR;
 import de.mirkosertic.bytecoder.core.ir.Unwind;
+import de.mirkosertic.bytecoder.core.ir.Value;
 import de.mirkosertic.bytecoder.core.ir.VirtualMethodInvocation;
 import de.mirkosertic.bytecoder.core.ir.VirtualMethodInvocationExpression;
 import de.mirkosertic.bytecoder.core.ir.XOr;
@@ -1469,7 +1470,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     @Override
     public void write(final Copy node) {
         writeIndent();
-        final Node target = node.outgoingFlows[0];
+        final Value target = (Value) node.outgoingFlows[0];
         final Node value = node.incomingDataFlows[0];
         if (target instanceof AbstractVar) {
             pw.print(variableToName.get(target));
@@ -1479,8 +1480,15 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             throw new IllegalStateException("Invalid copy target : " + target);
         }
         pw.print(" = ");
-        writeExpression(value);
-        pw.println(";");
+
+        if (target.type == Type.INT_TYPE) {
+            pw.print("(");
+            writeExpression(value);
+            pw.println(") | 0;");
+        } else {
+            writeExpression(value);
+            pw.println(";");
+        }
     }
 
     private void writeExpression(final Node node) {

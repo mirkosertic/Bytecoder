@@ -417,9 +417,6 @@ const bytecoder = {
                 }
                 bytecoder.setNativeObject(str, x);
             },
-            V$initializeWith$$B$I$I$B: function (str, bytes, offset, count) {
-                // TODO
-            },
             $C$toCharArray$$: function (str) {
                 let no = bytecoder.getNativeObject(str);
                 let arr = bytecoder.instance.exports.newCharArray(null, no.length);
@@ -430,6 +427,31 @@ const bytecoder = {
             },
             V$initializeWith$Ljava$lang$String$: function(str, otherstr) {
                 bytecoder.setNativeObject(str, bytecoder.getNativeObject(otherstr));
+            },
+            V$initializeWith$$B$I$I$B: function(str, bytes, index, count, coder) {
+                const arr = new Uint8Array(bytecoder.instance.exports.byteArrayLength(null, bytes))
+                for (var i = index; i < index + count; i++) {
+                    arr[i - index] = bytecoder.instance.exports.getByteArrayEntry(null, bytes, i);
+                }
+                const jsstr = new TextDecoder().decode(arr);
+                bytecoder.setNativeObject(str, jsstr);
+            },
+            $B$getBytes$$: function(str) {
+                const jsstr = bytecoder.getNativeObject(str);
+                const bytes = new TextEncoder().encode(jsstr);
+
+                const arr = bytecoder.instance.exports.newByteArray(null, bytes.length);
+                for (var i = 0; i < bytes.length; i++) {
+                    bytecoder.instance.exports.setByteArrayEntry(null, arr, i, bytes[i]);
+                }
+
+                return arr;
+            },
+            Ljava$lang$String$$toUpperCase$$: function(str) {
+                return bytecoder.toBytecoderString(bytecoder.getNativeObject(str).toUpperCase());
+            },
+            Ljava$lang$String$$toLowerCase$$: function(str) {
+                return bytecoder.toBytecoderString(bytecoder.getNativeObject(str).toLowerCase());
             }
         },
         "java.lang.Character": {

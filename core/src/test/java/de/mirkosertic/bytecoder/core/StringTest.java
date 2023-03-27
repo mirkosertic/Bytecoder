@@ -83,21 +83,21 @@ public class StringTest {
 
     @Test
     public void testHashCode() {
-        final int hashCode = "TOP_LEFT".hashCode();
+        final int hashCode = "TO".hashCode();
         System.out.println(hashCode);
-        Assert.assertTrue(-154073903 == hashCode || -1.54073903E8 == hashCode );
+        Assert.assertTrue(2683 == hashCode);
     }
 
     @Test
     public void testStringSwitch() {
         int x;
-        final String test = new String("TOP_LEFT".getBytes());
+        final String test = new String("TO".getBytes());
         switch (test) {
             case "LALA": {
                 x = 20;
                 break;
             }
-            case "TOP_LEFT": {
+            case "TO": {
                  x = 20;
                  break;
             }

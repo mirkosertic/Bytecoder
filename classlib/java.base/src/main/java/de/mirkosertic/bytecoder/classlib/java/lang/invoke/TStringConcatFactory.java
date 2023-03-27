@@ -16,8 +16,6 @@
 package de.mirkosertic.bytecoder.classlib.java.lang.invoke;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
-import de.mirkosertic.bytecoder.classlib.LambdaHelper;
-import de.mirkosertic.bytecoder.classlib.VM;
 
 import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandles;
@@ -27,64 +25,12 @@ import java.lang.invoke.MethodType;
 public class TStringConcatFactory {
 
     public static CallSite makeConcat(final MethodHandles.Lookup aLookup, final String aName, final MethodType aConcatType) {
-
-        return LambdaHelper.callsiteWith(new LambdaHelper.MethodHandleImpl() {
-            @Override
-            public Object invokeExact(Object... args) throws Throwable {
-                final StringBuilder theResult = new StringBuilder();
-                if (args != null) {
-                    for (int i=0;i<args.length;i++) {
-                        appendTo(theResult, args, i, aConcatType, i);
-                    }
-                }
-                return theResult.toString();
-            }
-        });
-    }
-
-    private static void appendTo(final StringBuilder aTarget, final Object[] aArray, final int aArrayIndex,  final MethodType aType, final int aIndex) {
-        if (VM.isInteger(aType, aIndex)) {
-            aTarget.append(VM.arrayEntryAsInt(aArray, aArrayIndex));
-        } else if (VM.isLong(aType, aIndex)) {
-            aTarget.append(VM.arrayEntryAsLong(aArray, aArrayIndex));
-        } else if (VM.isFloat(aType, aIndex)) {
-            aTarget.append(VM.arrayEntryAsFloat(aArray, aArrayIndex));
-        } else if (VM.isDouble(aType, aIndex)) {
-            aTarget.append(VM.arrayEntryAsDouble(aArray, aArrayIndex));
-        } else if (VM.isBoolean(aType, aIndex)) {
-            aTarget.append(VM.arrayEntryAsBoolean(aArray, aArrayIndex));
-        } else if (VM.isChar(aType, aIndex)) {
-            aTarget.append(VM.arrayEntryAsChar(aArray, aArrayIndex));
-        } else if (VM.isShort(aType, aIndex)) {
-            aTarget.append(VM.arrayEntryAsShort(aArray, aArrayIndex));
-        } else if (VM.isByte(aType, aIndex)) {
-            aTarget.append(VM.arrayEntryAsByte(aArray, aArrayIndex));
-        } else {
-            aTarget.append(aArray[aArrayIndex]);
-        }
+        // Never called due to intrinsics
+        return null;
     }
 
     public static CallSite makeConcatWithConstants(final MethodHandles.Lookup aLookup, final String aName, final MethodType aConcatType, final String aRecipe, final Object... aConstants) {
-
-        return LambdaHelper.callsiteWith(new LambdaHelper.MethodHandleImpl() {
-            @Override
-            public Object invokeExact(Object... args) throws Throwable {
-                int theConstIndex = 0;
-                int theDynIndex = 0;
-                int totalIndex = 0;
-                final StringBuilder theResult = new StringBuilder();
-                for (int i=0;i<aRecipe.length();i++) {
-                    final char theChar = aRecipe.charAt(i);
-                    if (theChar == 1) {
-                        appendTo(theResult, args, theDynIndex++, aConcatType, totalIndex++);
-                    } else if (theChar == 2) {
-                        appendTo(theResult, aConstants, theConstIndex++, aConcatType, totalIndex++);
-                    } else {
-                        theResult.append(theChar);
-                    }
-                }
-                return theResult.toString();
-            }
-        });
+        // Never called due to intrinsics
+        return null;
     }
 }

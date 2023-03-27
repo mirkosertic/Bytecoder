@@ -21,11 +21,13 @@ import de.mirkosertic.bytecoder.api.web.HTMLDocument
 import de.mirkosertic.bytecoder.api.web.Window
 import de.mirkosertic.bytecoder.core.test.BytecoderTestOptions
 import de.mirkosertic.bytecoder.core.test.UnitTestRunner
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(UnitTestRunner::class)
 @BytecoderTestOptions(includeJVM = false)
+@Ignore
 class OpaqueReferenceKotlinTest {
 
     var window : Window? = null

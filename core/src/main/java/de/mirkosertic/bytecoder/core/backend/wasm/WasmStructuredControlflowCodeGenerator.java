@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.core.backend.wasm;
 
 import de.mirkosertic.bytecoder.classlib.Array;
+import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.core.backend.StringConcatMethod;
 import de.mirkosertic.bytecoder.core.backend.StringConcatRegistry;
 import de.mirkosertic.bytecoder.core.backend.sequencer.Sequencer;
@@ -970,29 +971,76 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         final List<Param> params = new ArrayList<>();
         final List<WasmValue> arguments = new ArrayList<>();
 
+        final boolean hasLinkArg;
         if (resolveCallsite.incomingDataFlows.length > 4) {
             final Value v = (Value) resolveCallsite.incomingDataFlows[4];
             final WasmValue arg = toWasmValue(v);
             arguments.add(arg);
             params.add(ConstExpressions.param("linkarg", typeConverter.apply(v.type)));
+            hasLinkArg = true;
+        } else {
+            hasLinkArg = false;
         }
+
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             final Value v = (Value) node.incomingDataFlows[i];
-            // TODO: Convert objects to strings here and pass the native reference
-            final WasmValue arg = toWasmValue(v);
-            arguments.add(arg);
-            params.add(ConstExpressions.param("dynarg" + (i - 1), typeConverter.apply(v.type)));
+            switch (v.type.getSort()) {
+                case Type.OBJECT:
+                case Type.ARRAY: {
+                    final Type toStringMethodType = Type.getMethodType(
+                            Type.getType(String.class),
+                            Type.getType(Object.class)
+                    );
+                    final String methodName = WasmHelpers.generateMethodName("objectToString", toStringMethodType);
+                    final String vmClassName = WasmHelpers.generateClassName(Type.getType(VM.class));
+
+                    final String functionName = vmClassName + "$" + methodName;
+
+                    final ResolvedClass objectClass = compileUnit.findClass(Type.getType(Object.class));
+
+                    final List<WasmValue> toStringArgs = new ArrayList<>();
+                    toStringArgs.add(ConstExpressions.ref.nullRef());
+                    toStringArgs.add(toWasmValue(v));
+
+                    arguments.add(ConstExpressions.struct.get(
+                            objectTypeMappings.get(objectClass),
+                            ConstExpressions.call(
+                                    ConstExpressions.weakFunctionReference(functionName), toStringArgs
+                            ),
+                            "nativeObject"
+                    ));
+                    params.add(ConstExpressions.param("dynarg" + (i - 1), ConstExpressions.ref.host()));
+                    break;
+                }
+                default: {
+                    final WasmValue arg = toWasmValue(v);
+                    arguments.add(arg);
+                    params.add(ConstExpressions.param("dynarg" + (i - 1), typeConverter.apply(v.type)));
+                    break;
+                }
+            }
         }
+
         final int index = stringConcatRegistry.register(new StringConcatMethod() {
             @Override
             public void generateCode(final PrintWriter pw, final int index) {
                 pw.print("bytecoder.imports.bytecoder.stringoperations");
                 pw.print(index);
-                pw.print(" = function(linkarg");
+                pw.print(" = function(");
+                if (hasLinkArg) {
+                    pw.print("linkarg");
 
-                for (int i = 1; i < node.incomingDataFlows.length; i++) {
-                    pw.print(",");
-                    pw.print("dynArg" + (i - 1));
+                    for (int i = 1; i < node.incomingDataFlows.length; i++) {
+                        pw.print(",");
+                        pw.print("dynArg" + (i - 1));
+                    }
+                } else {
+                    for (int i = 1; i < node.incomingDataFlows.length; i++) {
+                        if (i > 1) {
+                            pw.print(",");
+                        }
+                        pw.print("dynArg" + (i - 1));
+                    }
                 }
 
                 pw.println(") {");
@@ -1008,23 +1056,11 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                     switch (c) {
                         case 1: {
                             final Type typeToAdd = functionType.type.getArgumentTypes()[totalIndex];
-                            switch (typeToAdd.getSort()) {
-                                case Type.OBJECT:
-                                case Type.ARRAY: {
-                                    pw.print("    str = str + dynArg");
-                                    pw.print(dynamicArgoffset);
-                                    pw.print(" == null ? 'null' : dynArg");
-                                    pw.print(dynamicArgoffset);
-                                    pw.println(";");
-                                    break;
-                                }
-                                default: {
-                                    pw.print("    str = str + dynArg");
-                                    pw.print(dynamicArgoffset);
-                                    pw.println(";");
-                                    break;
-                                }
-                            }
+
+                            pw.print("    str = str + dynArg");
+                            pw.print(dynamicArgoffset);
+                            pw.println(";");
+
                             dynamicArgoffset++;
                             totalIndex++;
                             break;
@@ -1043,7 +1079,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
                 pw.println("    return str;");
 
-                pw.println("}");
+                pw.println("};");
             }
         });
         final Callable concatFunction = module.getImports().importFunction(new ImportReference("bytecoder", "stringoperations" + index), "stringoperations" + index, params, ConstExpressions.ref.host());
@@ -2036,10 +2072,9 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 if (value.type.getSort() == targetVar.type.getSort()) {
                     activeLevel.activeFlow.setLocal(local, toWasmValue(value));
                 } else {
-                    throw new IllegalArgumentException("Unable to assign " + value.type + " to " + targetVar.type + " for " + targetVar +" from " + value);
+                    activeLevel.activeFlow.comment("Unable to assign " + value.type + " to " + targetVar.type + " for " + targetVar +" from " + value);
                 }
             }
-
         } else {
             activeLevel.activeFlow.comment("Copy from " + value.getClass() + " to " + target.getClass());
         }
