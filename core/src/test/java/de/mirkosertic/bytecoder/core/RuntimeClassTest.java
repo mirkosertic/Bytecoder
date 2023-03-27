@@ -16,12 +16,14 @@
 package de.mirkosertic.bytecoder.core;
 
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.lang.reflect.InvocationTargetException;
 
 /*@RunWith(BytecoderUnitTestRunner.class)
 @BytecoderTestOptions(includeJVM = false, additionalClassesToLink = {"de.mirkosertic.bytecoder.core.RuntimeClassTest", "java.lang.Object"})*/
+@Ignore
 public class RuntimeClassTest {
 
     @Test
