@@ -18,8 +18,6 @@ package de.mirkosertic.bytecoder.classlib;
 import de.mirkosertic.bytecoder.api.EmulatedByRuntime;
 import de.mirkosertic.bytecoder.api.Export;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.util.Locale;
 
@@ -35,54 +33,6 @@ public class VM {
     public static Locale defaultLocale() {
         return new Locale("en", "US");
     }
-
-    @EmulatedByRuntime
-    public static native boolean isChar(final MethodType aType, final int aParamIndex);
-
-    @EmulatedByRuntime
-    public static native boolean isFloat(final MethodType aType, final int aParamIndex);
-
-    @EmulatedByRuntime
-    public static native boolean isDouble(final MethodType aType, final int aParamIndex);
-
-    @EmulatedByRuntime
-    public static native boolean isBoolean(final MethodType aType, final int aParamIndex);
-
-    @EmulatedByRuntime
-    public static native boolean isInteger(final MethodType aType, final int aParamIndex);
-
-    @EmulatedByRuntime
-    public static native boolean isLong(final MethodType aType, final int aParamIndex);
-
-    @EmulatedByRuntime
-    public static native boolean isShort(final MethodType aType, final int aParamIndex);
-
-    @EmulatedByRuntime
-    public static native boolean isByte(final MethodType aType, final int aParamIndex);
-
-    @EmulatedByRuntime
-    public static native long arrayEntryAsLong(final Object[] aObject, final int index);
-
-    @EmulatedByRuntime
-    public static native int arrayEntryAsInt(final Object[] aObject, final int index);
-
-    @EmulatedByRuntime
-    public static native float arrayEntryAsFloat(final Object[] aObject, final int index);
-
-    @EmulatedByRuntime
-    public static native double arrayEntryAsDouble(final Object[] aObject, final int index);
-
-    @EmulatedByRuntime
-    public static native char arrayEntryAsChar(final Object[] aObject, final int index);
-
-    @EmulatedByRuntime
-    public static native char arrayEntryAsBoolean(final Object[] aObject, final int index);
-
-    @EmulatedByRuntime
-    public static native short arrayEntryAsShort(final Object[] aObject, final int index);
-
-    @EmulatedByRuntime
-    public static native byte arrayEntryAsByte(final Object[] aObject, final int index);
 
     @EmulatedByRuntime
     public static native Object getObjectFromStaticField(final Class declaredClass, final Field field);
@@ -125,5 +75,11 @@ public class VM {
         return e.getMessage();
     }
 
-    public static native int getReferenceKind(final MethodHandle handle);
+    @Export("objectToString")
+    public static String objectToString(final Object o) {
+        if (o == null) {
+            return "null";
+        }
+        return o.toString();
+    }
 }

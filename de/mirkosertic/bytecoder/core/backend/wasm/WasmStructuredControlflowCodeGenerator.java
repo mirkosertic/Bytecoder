@@ -16,6 +16,9 @@
 package de.mirkosertic.bytecoder.core.backend.wasm;
 
 import de.mirkosertic.bytecoder.classlib.Array;
+import de.mirkosertic.bytecoder.classlib.VM;
+import de.mirkosertic.bytecoder.core.backend.StringConcatMethod;
+import de.mirkosertic.bytecoder.core.backend.StringConcatRegistry;
 import de.mirkosertic.bytecoder.core.backend.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.core.backend.sequencer.StructuredControlflowCodeGenerator;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.Block;
@@ -28,6 +31,7 @@ import de.mirkosertic.bytecoder.core.backend.wasm.ast.FunctionType;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.Global;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.HostType;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.Iff;
+import de.mirkosertic.bytecoder.core.backend.wasm.ast.ImportReference;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.LabeledContainer;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.Local;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.Loop;
@@ -120,6 +124,7 @@ import de.mirkosertic.bytecoder.core.ir.XOr;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 import org.objectweb.asm.Type;
 
+import java.io.PrintWriter;
 import java.lang.invoke.LambdaMetafactory;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -232,6 +237,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private final VTableResolver vTableResolver;
 
+    private final StringConcatRegistry stringConcatRegistry;
+
     public WasmStructuredControlflowCodeGenerator(final CompileUnit compileUnit, final Module module,
                                                   final Map<ResolvedClass, StructType> rtMappings,
                                                   final Map<ResolvedClass, StructType> objectTypeMappings,
@@ -241,7 +248,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                                                   final MethodToIDMapper methodToIDMapper,
                                                   final Graph graph,
                                                   final List<ResolvedClass> resolvedClasses,
-                                                  final VTableResolver vTableResolver) {
+                                                  final VTableResolver vTableResolver,
+                                                  final StringConcatRegistry stringConcatRegistry) {
         this.compileUnit = compileUnit;
         this.module = module;
         this.exportableFunction = exportableFunction;
@@ -255,6 +263,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         this.graph = graph;
         this.resolvedClasses = resolvedClasses;
         this.vTableResolver = vTableResolver;
+        this.stringConcatRegistry = stringConcatRegistry;
     }
 
     @Override
@@ -954,6 +963,155 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         throw new IllegalArgumentException("Not implemented!");
     }
 
+    private WasmValue generateInvokeDynamicStringMakeConcatWithConstants(final InvokeDynamicExpression node, final ResolveCallsite resolveCallsite) {
+        final MethodType functionType = (MethodType) resolveCallsite.incomingDataFlows[2];
+        final ObjectString receipe = (ObjectString) resolveCallsite.incomingDataFlows[3];
+        final String receipeStr = compileUnit.getConstantPool().getPooledStrings().get(receipe.value.index);
+
+        final List<Param> params = new ArrayList<>();
+        final List<WasmValue> arguments = new ArrayList<>();
+
+        final boolean hasLinkArg;
+        if (resolveCallsite.incomingDataFlows.length > 4) {
+            final Value v = (Value) resolveCallsite.incomingDataFlows[4];
+            final WasmValue arg = toWasmValue(v);
+            arguments.add(arg);
+            params.add(ConstExpressions.param("linkarg", typeConverter.apply(v.type)));
+            hasLinkArg = true;
+        } else {
+            hasLinkArg = false;
+        }
+
+        for (int i = 1; i < node.incomingDataFlows.length; i++) {
+            final Value v = (Value) node.incomingDataFlows[i];
+            switch (v.type.getSort()) {
+                case Type.OBJECT:
+                case Type.ARRAY: {
+                    final Type toStringMethodType = Type.getMethodType(
+                            Type.getType(String.class),
+                            Type.getType(Object.class)
+                    );
+                    final String methodName = WasmHelpers.generateMethodName("objectToString", toStringMethodType);
+                    final String vmClassName = WasmHelpers.generateClassName(Type.getType(VM.class));
+
+                    final String functionName = vmClassName + "$" + methodName;
+
+                    final ResolvedClass objectClass = compileUnit.findClass(Type.getType(Object.class));
+
+                    final List<WasmValue> toStringArgs = new ArrayList<>();
+                    toStringArgs.add(ConstExpressions.ref.nullRef());
+                    toStringArgs.add(toWasmValue(v));
+
+                    arguments.add(ConstExpressions.struct.get(
+                            objectTypeMappings.get(objectClass),
+                            ConstExpressions.call(
+                                    ConstExpressions.weakFunctionReference(functionName), toStringArgs
+                            ),
+                            "nativeObject"
+                    ));
+                    params.add(ConstExpressions.param("dynarg" + (i - 1), ConstExpressions.ref.host()));
+                    break;
+                }
+                default: {
+                    final WasmValue arg = toWasmValue(v);
+                    arguments.add(arg);
+                    params.add(ConstExpressions.param("dynarg" + (i - 1), typeConverter.apply(v.type)));
+                    break;
+                }
+            }
+        }
+
+        final int index = stringConcatRegistry.register(new StringConcatMethod() {
+            @Override
+            public void generateCode(final PrintWriter pw, final int index) {
+                pw.print("bytecoder.imports.bytecoder.stringoperations");
+                pw.print(index);
+                pw.print(" = function(");
+                if (hasLinkArg) {
+                    pw.print("linkarg");
+
+                    for (int i = 1; i < node.incomingDataFlows.length; i++) {
+                        pw.print(",");
+                        pw.print("dynArg" + (i - 1));
+                    }
+                } else {
+                    for (int i = 1; i < node.incomingDataFlows.length; i++) {
+                        if (i > 1) {
+                            pw.print(",");
+                        }
+                        pw.print("dynArg" + (i - 1));
+                    }
+                }
+
+                pw.println(") {");
+
+                pw.println("    let str = '';");
+                final int linkingArgOffset = 0;
+                int dynamicArgoffset = 0;
+                int totalIndex = 0;
+
+                for (int i = 0; i < receipeStr.length(); i++) {
+                    final char c = receipeStr.charAt(i);
+                    // TODO: generate code
+                    switch (c) {
+                        case 1: {
+                            final Type typeToAdd = functionType.type.getArgumentTypes()[totalIndex];
+
+                            pw.print("    str = str + dynArg");
+                            pw.print(dynamicArgoffset);
+                            pw.println(";");
+
+                            dynamicArgoffset++;
+                            totalIndex++;
+                            break;
+                        }
+                        case 2: {
+                            final Type typeToAdd = functionType.type.getArgumentTypes()[totalIndex];
+                            totalIndex++;
+                            break;
+                        }
+                        default: {
+                            pw.println("    str = str + '" + c + "';");
+                            break;
+                        }
+                    }
+                }
+
+                pw.println("    return str;");
+
+                pw.println("};");
+            }
+        });
+        final Callable concatFunction = module.getImports().importFunction(new ImportReference("bytecoder", "stringoperations" + index), "stringoperations" + index, params, ConstExpressions.ref.host());
+
+        final ResolvedClass stringClass = compileUnit.findClass(Type.getType(String.class));
+        final Global stringGlobal = module.getGlobals().globalsIndex().globalByLabel(WasmHelpers.generateClassName(stringClass.type)  + "_cls");
+        final StructType stringType = objectTypeMappings.get(stringClass);
+
+        final List<WasmValue> initArgs = new ArrayList<>();
+        initArgs.add(
+                ConstExpressions.struct.get(
+                        rtMappings.get(stringClass),
+                        ConstExpressions.getGlobal(stringGlobal),
+                        "factoryFor"
+                ));
+        initArgs.add(ConstExpressions.ref.ref(module.functionIndex().firstByLabel(WasmHelpers.generateClassName(stringClass.type) + "_vt")));
+
+        initArgs.add(ConstExpressions.call(concatFunction, arguments));
+
+        initArgs.add(
+                ConstExpressions.struct.get(
+                        rtMappings.get(stringClass),
+                        ConstExpressions.getGlobal(stringGlobal),
+                        "classImplTypes"
+                )
+        );
+
+        return ConstExpressions.struct.newInstance(
+            stringType,
+            initArgs
+        );
+    }
 
     private WasmValue toWasmValue(final InvokeDynamicExpression value) {
         final ResolveCallsite resolveCallsite = (ResolveCallsite) value.incomingDataFlows[0];
@@ -966,9 +1124,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             }
         } else if (bootstrapMethod.className.getClassName().equals("java.lang.invoke.StringConcatFactory")) {
             if ("makeConcatWithConstants".equals(bootstrapMethod.methodName)) {
-                // TODO: Implement this
-                return ConstExpressions.ref.nullRef();
-                //return generateInvokeDynamicStringMakeConcatWithConstants(value, resolveCallsite);
+                return generateInvokeDynamicStringMakeConcatWithConstants(value, resolveCallsite);
             } else {
                 throw new IllegalArgumentException("Not supported method " + bootstrapMethod.methodName + " on " + bootstrapMethod.className);
             }
@@ -1919,7 +2075,6 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                     activeLevel.activeFlow.comment("Unable to assign " + value.type + " to " + targetVar.type + " for " + targetVar +" from " + value);
                 }
             }
-
         } else {
             activeLevel.activeFlow.comment("Copy from " + value.getClass() + " to " + target.getClass());
         }

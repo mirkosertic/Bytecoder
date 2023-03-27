@@ -33,6 +33,11 @@ public class TString implements CharSequence, Comparable<String> {
         initializeWith(data, 0, data.length, coder);
     }
 
+    public TString(final byte[] data) {
+        this();
+        initializeWith(data, 0, data.length, (byte) 0);
+    }
+
     public TString(final byte[] data, final int offset, final int count) {
         this();
         initializeWith(data, offset, count, (byte) 0);
@@ -91,6 +96,10 @@ public class TString implements CharSequence, Comparable<String> {
 
     public static String valueOf(final double d) {
         return Double.toString(d);
+    }
+
+    public static String valueOf(final boolean b) {
+        return Boolean.toString(b);
     }
 
     public native char[] toCharArray();
@@ -160,4 +169,20 @@ public class TString implements CharSequence, Comparable<String> {
     public CharSequence subSequence(final int start, final int end) {
         return substring(start, end - start);
     }
+
+    public native byte[] getBytes();
+
+    @Override
+    public int hashCode() {
+        final byte[] value = getBytes();
+        int h = 0;
+        for (int i = 0; i < value.length; i++) {
+            h = 31 * h + value[i];
+        }
+        return h;
+    }
+
+    public native String toUpperCase();
+
+    public native String toLowerCase();
 }

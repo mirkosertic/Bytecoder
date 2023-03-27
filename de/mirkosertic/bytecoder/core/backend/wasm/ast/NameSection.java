@@ -68,7 +68,7 @@ public class NameSection extends ModuleSection {
             }
             final TagIndex tagIndex = getModule().tagIndex();
             if (!tagIndex.isEmpty()) {
-                try (final BinaryWriter.SectionWriter functionSection = sectionWriter.subSection((byte) 3)) {
+                try (final BinaryWriter.SectionWriter functionSection = sectionWriter.subSection((byte) 11)) {
                     functionSection.writeUnsignedLeb128(tagIndex.size());
                     for (int i = 0; i < tagIndex.size(); i++) {
                         final Tag f = tagIndex.get(i);
@@ -76,6 +76,33 @@ public class NameSection extends ModuleSection {
                         functionSection.writeUTF8(f.getLabel());
                     }
                 }
+            }
+
+            final List<StructType> structTypes = getModule().getTypes().structTypes();
+            if (!structTypes.isEmpty()) {
+                try (final BinaryWriter.SectionWriter functionSection = sectionWriter.subSection((byte) 4)) {
+                    functionSection.writeUnsignedLeb128(structTypes.size());
+                    for (int i = 0; i < structTypes.size(); i++) {
+                        final StructType f = structTypes.get(i);
+                        functionSection.writeUnsignedLeb128(getModule().getTypes().indexOf(f));
+                        functionSection.writeUTF8(f.name);
+                    }
+                }
+
+                try (final BinaryWriter.SectionWriter functionSection = sectionWriter.subSection((byte) 10)) {
+                    functionSection.writeUnsignedLeb128(structTypes.size());
+                    for (int i = 0; i < structTypes.size(); i++) {
+                        final StructType f = structTypes.get(i);
+                        functionSection.writeUnsignedLeb128(getModule().getTypes().indexOf(f));
+                        functionSection.writeUnsignedLeb128(f.fields.size());
+                        for (int j = 0; j < f.fields.size(); j++) {
+                            final StructType.Field k = f.fields.get(j);
+                            functionSection.writeUnsignedLeb128(j);
+                            functionSection.writeUTF8(k.name);
+                        }
+                    }
+                }
+
             }
         }
     }

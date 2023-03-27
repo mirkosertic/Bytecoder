@@ -417,9 +417,6 @@ const bytecoder = {
                 }
                 bytecoder.setNativeObject(str, x);
             },
-            V$initializeWith$$B$I$I$B: function (str, bytes, offset, count) {
-                // TODO
-            },
             $C$toCharArray$$: function (str) {
                 let no = bytecoder.getNativeObject(str);
                 let arr = bytecoder.instance.exports.newCharArray(null, no.length);
@@ -430,6 +427,31 @@ const bytecoder = {
             },
             V$initializeWith$Ljava$lang$String$: function(str, otherstr) {
                 bytecoder.setNativeObject(str, bytecoder.getNativeObject(otherstr));
+            },
+            V$initializeWith$$B$I$I$B: function(str, bytes, index, count, coder) {
+                const arr = new Uint8Array(bytecoder.instance.exports.byteArrayLength(null, bytes))
+                for (var i = index; i < index + count; i++) {
+                    arr[i - index] = bytecoder.instance.exports.getByteArrayEntry(null, bytes, i);
+                }
+                const jsstr = new TextDecoder().decode(arr);
+                bytecoder.setNativeObject(str, jsstr);
+            },
+            $B$getBytes$$: function(str) {
+                const jsstr = bytecoder.getNativeObject(str);
+                const bytes = new TextEncoder().encode(jsstr);
+
+                const arr = bytecoder.instance.exports.newByteArray(null, bytes.length);
+                for (var i = 0; i < bytes.length; i++) {
+                    bytecoder.instance.exports.setByteArrayEntry(null, arr, i, bytes[i]);
+                }
+
+                return arr;
+            },
+            Ljava$lang$String$$toUpperCase$$: function(str) {
+                return bytecoder.toBytecoderString(bytecoder.getNativeObject(str).toUpperCase());
+            },
+            Ljava$lang$String$$toLowerCase$$: function(str) {
+                return bytecoder.toBytecoderString(bytecoder.getNativeObject(str).toLowerCase());
             }
         },
         "java.lang.Character": {
@@ -706,27 +728,27 @@ bytecoder.filehandles[1] = {
 
 bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
   switch(index) {
-      case 0: return '#vuetemplate';
-      case 1: return 'welcomemessage';
-      case 2: return 'hello world!';
-      case 3: return 'clicked';
-      case 4: return 'RESET';
-      case 5: return 'CODING';
-      case 6: return 'CODING_END';
-      case 7: return 'FLUSHED';
-      case 8: return 'IGNORE';
-      case 9: return 'REPLACE';
-      case 10: return 'REPORT';
-      case 11: return 'Non-positive averageBytesPerChar';
-      case 12: return 'Non-positive maxBytesPerChar';
-      case 13: return 'averageBytesPerChar exceeds maxBytesPerChar';
-      case 14: return 'Null replacement';
-      case 15: return 'Empty replacement';
-      case 16: return 'Replacement too long';
-      case 17: return 'Null action';
-      case 18: return 'capacity expected to be negative';
-      case 19: return 'null';
-      case 20: return '';
+      case 0: return 'null';
+      case 1: return '';
+      case 2: return '#vuetemplate';
+      case 3: return 'welcomemessage';
+      case 4: return 'hello world!';
+      case 5: return 'clicked';
+      case 6: return 'RESET';
+      case 7: return 'CODING';
+      case 8: return 'CODING_END';
+      case 9: return 'FLUSHED';
+      case 10: return 'IGNORE';
+      case 11: return 'REPLACE';
+      case 12: return 'REPORT';
+      case 13: return 'Non-positive averageBytesPerChar';
+      case 14: return 'Non-positive maxBytesPerChar';
+      case 15: return 'averageBytesPerChar exceeds maxBytesPerChar';
+      case 16: return 'Null replacement';
+      case 17: return 'Empty replacement';
+      case 18: return 'Replacement too long';
+      case 19: return 'Null action';
+      case 20: return 'capacity expected to be negative';
       case 21: return 'capacity < 0: (';
       case 22: return ' < 0)';
       case 23: return 'newLimit > capacity: (';
@@ -799,18 +821,13 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 90: return 'data type scale not a power of two';
       case 91: return 'Attempt to access an already released memory resource';
       case 92: return 'This segment is already closed';
-      case 93: return '=';
-      case 94: return '[pos=';
-      case 95: return ' lim=';
-      case 96: return ' cap=';
+      case 93: return '[pos=';
+      case 94: return ' lim=';
+      case 95: return ' cap=';
+      case 96: return '=';
       case 97: return 'No java.util.Objects instances for you!';
   }
   throw 'Unknown string index ' + index;
-};
-bytecoder.imports["de.mirkosertic.bytecoder.integrationtest.VueDemo$MyVueInstance_generated"] = {
-    V$welcomemessage$Ljava$lang$String$ : function(thisref, arg0) {
-        (thisref.welcomemessage = arg0);
-    },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.vue.VueData_generated"] = {
     V$setProperty$Ljava$lang$String$$Ljava$lang$String$ : function(thisref, arg0, arg1) {
@@ -829,5 +846,10 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.vue.VueBuilder_generated"] = {
     },
     Lde$mirkosertic$bytecoder$api$vue$VueInstance$$build$$ : function(thisref) {
         return (thisref.build());
+    },
+};
+bytecoder.imports["de.mirkosertic.bytecoder.integrationtest.VueDemo$MyVueInstance_generated"] = {
+    V$welcomemessage$Ljava$lang$String$ : function(thisref, arg0) {
+        (thisref.welcomemessage = arg0);
     },
 };

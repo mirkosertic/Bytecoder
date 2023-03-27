@@ -27,12 +27,15 @@ import java.lang.invoke.MethodType;
 @EmulatedByRuntime
 public class TLambdaMetafactory {
 
-    public static native CallSite metafactory(final MethodHandles.Lookup aCaller,
+    public static CallSite metafactory(final MethodHandles.Lookup aCaller,
                                        final String aMethodName,
                                        final MethodType aInvokedType,
                                        final MethodType aSamMethodType,
                                        final MethodHandle aImplMethod,
-                                       final MethodType aInstantiatedMethodType);
+                                       final MethodType aInstantiatedMethodType) {
+        // Never called due to intrinsics
+        return null;
+    }
 
     //public static native CallSite altMetafactory(final MethodHandles.Lookup aCaller,
     //                                      final String aMethodName,

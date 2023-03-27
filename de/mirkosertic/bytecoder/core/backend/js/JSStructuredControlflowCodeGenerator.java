@@ -17,6 +17,8 @@ package de.mirkosertic.bytecoder.core.backend.js;
 
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.core.backend.OpaqueReferenceTypeHelpers;
+import de.mirkosertic.bytecoder.core.backend.StringConcatMethod;
+import de.mirkosertic.bytecoder.core.backend.StringConcatRegistry;
 import de.mirkosertic.bytecoder.core.backend.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.core.backend.sequencer.StructuredControlflowCodeGenerator;
 import de.mirkosertic.bytecoder.core.ir.AbstractVar;
@@ -90,6 +92,7 @@ import de.mirkosertic.bytecoder.core.ir.TypeConversion;
 import de.mirkosertic.bytecoder.core.ir.TypeReference;
 import de.mirkosertic.bytecoder.core.ir.USHR;
 import de.mirkosertic.bytecoder.core.ir.Unwind;
+import de.mirkosertic.bytecoder.core.ir.Value;
 import de.mirkosertic.bytecoder.core.ir.VirtualMethodInvocation;
 import de.mirkosertic.bytecoder.core.ir.VirtualMethodInvocationExpression;
 import de.mirkosertic.bytecoder.core.ir.XOr;
@@ -315,21 +318,16 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             public void generateCode(final PrintWriter pw, final int index) {
                 pw.print("bytecoder.stringoperations[");
                 pw.print(index);
-                pw.print("] = function(linkArg,");
+                pw.print("] = function(linkArg");
 
-                boolean first = true;
                 for (int i = 1; i < node.incomingDataFlows.length; i++) {
-                    if (first) {
-                        first = false;
-                    } else {
-                        pw.print(",");
-                    }
+                    pw.print(",");
                     pw.print("dynArg" + (i - 1));
                 }
 
                 pw.println(") {");
 
-                pw.println("    let str = ''");
+                pw.println("    let str = '';");
                 final int linkingArgOffset = 0;
                 int dynamicArgoffset = 0;
                 int totalIndex = 0;
@@ -1472,7 +1470,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     @Override
     public void write(final Copy node) {
         writeIndent();
-        final Node target = node.outgoingFlows[0];
+        final Value target = (Value) node.outgoingFlows[0];
         final Node value = node.incomingDataFlows[0];
         if (target instanceof AbstractVar) {
             pw.print(variableToName.get(target));
@@ -1482,8 +1480,15 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             throw new IllegalStateException("Invalid copy target : " + target);
         }
         pw.print(" = ");
-        writeExpression(value);
-        pw.println(";");
+
+        if (target.type == Type.INT_TYPE) {
+            pw.print("(");
+            writeExpression(value);
+            pw.println(") | 0;");
+        } else {
+            writeExpression(value);
+            pw.println(";");
+        }
     }
 
     private void writeExpression(final Node node) {
