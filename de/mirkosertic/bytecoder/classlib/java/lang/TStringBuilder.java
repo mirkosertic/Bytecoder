@@ -50,6 +50,10 @@ public class TStringBuilder implements CharSequence {
         return append(Double.toString(value));
     }
 
+    public StringBuilder append(final boolean value) {
+        return append(Boolean.toString(value));
+    }
+
     public StringBuilder append(final Object value) {
         if (value != null) {
             return append(value.toString());
