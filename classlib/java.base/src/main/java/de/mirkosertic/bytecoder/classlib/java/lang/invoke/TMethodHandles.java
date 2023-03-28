@@ -18,7 +18,6 @@ package de.mirkosertic.bytecoder.classlib.java.lang.invoke;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
 
 @SubstitutesInClass(completeReplace = true)
 public class TMethodHandles {
