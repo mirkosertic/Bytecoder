@@ -772,66 +772,67 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 41: return 'apply';
       case 42: return 'checkFromIndexSize';
       case 43: return '-XX:DumpLoadedClassList=';
-      case 44: return '-XX:+DumpSharedSpaces';
-      case 45: return '-XX:+DynamicDumpSharedSpaces';
-      case 46: return '-XX:+RecordDynamicDumpInfo';
-      case 47: return '-Xshare:';
-      case 48: return '-XX:SharedClassListFile=';
-      case 49: return '-XX:SharedArchiveFile=';
-      case 50: return '-XX:ArchiveClassesAtExit=';
-      case 51: return '-XX:+UseSharedSpaces';
-      case 52: return '-XX:+RequireSharedSpaces';
-      case 53: return 'void';
-      case 54: return 'byte';
-      case 55: return 'char';
-      case 56: return 'short';
-      case 57: return 'int';
-      case 58: return 'float';
-      case 59: return 'double';
-      case 60: return 'long';
-      case 61: return 'boolean';
-      case 62: return 'Illegal initial capacity: ';
-      case 63: return 'Illegal load factor: ';
-      case 64: return 'java.awt.graphicsenv';
-      case 65: return 'de.mirkosertic.bytecoder.classlib.BytecoderGraphicsEnvironment';
-      case 66: return 'Null output stream';
-      case 67: return 'UTF-8';
-      case 68: return 'Buffer size <= 0';
-      case 69: return 'duplicate element: ';
-      case 70: return 'length is odd';
-      case 71: return 'duplicate key: ';
-      case 72: return 'Range check failed';
-      case 73: return 'Range check failed: %s';
-      case 74: return 'Range [%s, %<s + %s) out of bounds for length %s';
-      case 75: return 'Range [%s, %s) out of bounds for length %s';
-      case 76: return 'Index %s out of bounds for length %s';
-      case 77: return 'Range check failed: %s %s';
-      case 78: return 'checkFromToIndex';
-      case 79: return 'checkIndex';
-      case 80: return '[';
-      case 81: return ']';
-      case 82: return 'Illegal replacement';
-      case 83: return '\uFFFD';
-      case 84: return 'Non-positive averageCharsPerByte';
-      case 85: return 'Non-positive maxCharsPerByte';
-      case 86: return 'averageCharsPerByte exceeds maxCharsPerByte';
-      case 87: return 'Index: ';
-      case 88: return ' Size: ';
-      case 89: return 'hello world, you have clicked. Timestamp is %s';
-      case 90: return 'data type scale not a power of two';
-      case 91: return 'Attempt to access an already released memory resource';
-      case 92: return 'This segment is already closed';
+      case 44: return '-XX:+RecordDynamicDumpInfo';
+      case 45: return '-Xshare:';
+      case 46: return '-XX:SharedClassListFile=';
+      case 47: return '-XX:SharedArchiveFile=';
+      case 48: return '-XX:ArchiveClassesAtExit=';
+      case 49: return 'void';
+      case 50: return 'byte';
+      case 51: return 'char';
+      case 52: return 'short';
+      case 53: return 'int';
+      case 54: return 'float';
+      case 55: return 'double';
+      case 56: return 'long';
+      case 57: return 'boolean';
+      case 58: return 'Illegal initial capacity: ';
+      case 59: return 'Illegal load factor: ';
+      case 60: return 'java.awt.graphicsenv';
+      case 61: return 'de.mirkosertic.bytecoder.classlib.BytecoderGraphicsEnvironment';
+      case 62: return 'Null output stream';
+      case 63: return 'charset';
+      case 64: return 'jdk.io.useMonitors';
+      case 65: return 'true';
+      case 66: return 'Wrong init level';
+      case 67: return 'system';
+      case 68: return 'main';
+      case 69: return 'Buffer size <= 0';
+      case 70: return 'UTF-8';
+      case 71: return 'duplicate element: ';
+      case 72: return 'length is odd';
+      case 73: return 'duplicate key: ';
+      case 74: return 'Range check failed';
+      case 75: return 'Range check failed: %s';
+      case 76: return 'Range [%s, %<s + %s) out of bounds for length %s';
+      case 77: return 'Range [%s, %s) out of bounds for length %s';
+      case 78: return 'Index %s out of bounds for length %s';
+      case 79: return 'Range check failed: %s %s';
+      case 80: return 'checkFromToIndex';
+      case 81: return 'checkIndex';
+      case 82: return '[';
+      case 83: return ']';
+      case 84: return 'Illegal replacement';
+      case 85: return '\uFFFD';
+      case 86: return 'Non-positive averageCharsPerByte';
+      case 87: return 'Non-positive maxCharsPerByte';
+      case 88: return 'averageCharsPerByte exceeds maxCharsPerByte';
+      case 89: return 'Index: ';
+      case 90: return ' Size: ';
+      case 91: return 'hello world, you have clicked. Timestamp is %s';
+      case 92: return 'data type scale not a power of two';
       case 93: return '[pos=';
       case 94: return ' lim=';
       case 95: return ' cap=';
-      case 96: return '=';
-      case 97: return 'No java.util.Objects instances for you!';
+      case 96: return 'No java.util.Objects instances for you!';
+      case 97: return '=';
+      case 98: return 'UNKNOWN';
   }
   throw 'Unknown string index ' + index;
 };
-bytecoder.imports["de.mirkosertic.bytecoder.integrationtest.VueDemo$MyVueInstance_generated"] = {
-    V$welcomemessage$Ljava$lang$String$ : function(thisref, arg0) {
-        (thisref.welcomemessage = arg0);
+bytecoder.imports["de.mirkosertic.bytecoder.api.vue.VueData_generated"] = {
+    V$setProperty$Ljava$lang$String$$Ljava$lang$String$ : function(thisref, arg0, arg1) {
+        (thisref.setProperty(arg0, arg1));
     },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.vue.VueBuilder_generated"] = {
@@ -848,8 +849,8 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.vue.VueBuilder_generated"] = {
         return (thisref.build());
     },
 };
-bytecoder.imports["de.mirkosertic.bytecoder.api.vue.VueData_generated"] = {
-    V$setProperty$Ljava$lang$String$$Ljava$lang$String$ : function(thisref, arg0, arg1) {
-        (thisref.setProperty(arg0, arg1));
+bytecoder.imports["de.mirkosertic.bytecoder.integrationtest.VueDemo$MyVueInstance_generated"] = {
+    V$welcomemessage$Ljava$lang$String$ : function(thisref, arg0) {
+        (thisref.welcomemessage = arg0);
     },
 };

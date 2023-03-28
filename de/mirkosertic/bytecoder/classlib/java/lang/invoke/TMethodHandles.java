@@ -24,6 +24,10 @@ public class TMethodHandles {
 
     @SubstitutesInClass(completeReplace = true)
     public static class Lookup {
+
+        public Class ensureInitialized(final Class cls) {
+            return cls;
+        }
     }
 
     public static MethodHandles.Lookup lookup() {

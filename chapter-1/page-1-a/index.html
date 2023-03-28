@@ -12,20 +12,20 @@
     <title>The Command-Line Interface (CLI) :: Bytecoder - JVM to JavaScript, OpenCL and WebAssembly Transpiler</title>
 
     
-    <link href="/Bytecoder/css/nucleus.css?1679946901" rel="stylesheet">
-    <link href="/Bytecoder/css/fontawesome-all.min.css?1679946901" rel="stylesheet">
-    <link href="/Bytecoder/css/hybrid.css?1679946901" rel="stylesheet">
-    <link href="/Bytecoder/css/featherlight.min.css?1679946901" rel="stylesheet">
-    <link href="/Bytecoder/css/perfect-scrollbar.min.css?1679946901" rel="stylesheet">
-    <link href="/Bytecoder/css/auto-complete.css?1679946901" rel="stylesheet">
-    <link href="/Bytecoder/css/atom-one-dark-reasonable.css?1679946901" rel="stylesheet">
-    <link href="/Bytecoder/css/theme.css?1679946901" rel="stylesheet">
-    <link href="/Bytecoder/css/tabs.css?1679946901" rel="stylesheet">
-    <link href="/Bytecoder/css/hugo-theme.css?1679946901" rel="stylesheet">
+    <link href="/Bytecoder/css/nucleus.css?1680028435" rel="stylesheet">
+    <link href="/Bytecoder/css/fontawesome-all.min.css?1680028435" rel="stylesheet">
+    <link href="/Bytecoder/css/hybrid.css?1680028435" rel="stylesheet">
+    <link href="/Bytecoder/css/featherlight.min.css?1680028435" rel="stylesheet">
+    <link href="/Bytecoder/css/perfect-scrollbar.min.css?1680028435" rel="stylesheet">
+    <link href="/Bytecoder/css/auto-complete.css?1680028435" rel="stylesheet">
+    <link href="/Bytecoder/css/atom-one-dark-reasonable.css?1680028435" rel="stylesheet">
+    <link href="/Bytecoder/css/theme.css?1680028435" rel="stylesheet">
+    <link href="/Bytecoder/css/tabs.css?1680028435" rel="stylesheet">
+    <link href="/Bytecoder/css/hugo-theme.css?1680028435" rel="stylesheet">
     
     
 
-    <script src="/Bytecoder/js/jquery-3.3.1.min.js?1679946901"></script>
+    <script src="/Bytecoder/js/jquery-3.3.1.min.js?1680028435"></script>
 
     <style>
       :root #header + #content > #left > #rlblock_left{
@@ -47,6 +47,8 @@ if (!doNotTrack) {
 }
 </script>
 
+<meta http-equiv="origin-trial" content="ApipjW5RswyJkg9ZfqNScpbuzTK6g6pwc3pUVkqsQNwSNYyq6V4Y/4sjkG8GdXoiBvRTu5/RmTIZenZffILlDwYAAABceyJvcmlnaW4iOiJodHRwczovL21pcmtvc2VydGljLmdpdGh1Yi5pbzo0NDMiLCJmZWF0dXJlIjoiV2ViQXNzZW1ibHlHQyIsImV4cGlyeSI6MTY5ODk2OTU5OX0=">
+
   </head>
   <body class="" data-url="/Bytecoder/chapter-1/page-1-a/">
     <nav id="sidebar" class="">
@@ -66,14 +68,14 @@ if (!doNotTrack) {
     <span data-search-clear=""><i class="fas fa-times"></i></span>
 </div>
 
-<script type="text/javascript" src="/Bytecoder/js/lunr.min.js?1679946901"></script>
-<script type="text/javascript" src="/Bytecoder/js/auto-complete.js?1679946901"></script>
+<script type="text/javascript" src="/Bytecoder/js/lunr.min.js?1680028435"></script>
+<script type="text/javascript" src="/Bytecoder/js/auto-complete.js?1680028435"></script>
 <script type="text/javascript">
     
         var baseurl = "https:\/\/mirkosertic.github.io\/Bytecoder";
     
 </script>
-<script type="text/javascript" src="/Bytecoder/js/search.js?1679946901"></script>
+<script type="text/javascript" src="/Bytecoder/js/search.js?1680028435"></script>
 
     
   </div>
@@ -716,16 +718,17 @@ public class HelloWorld {
 
 <p>First of all, we need to compile the Java sources to a JVM class file. This is done by using the <code>javac</code> tool from the JDK:</p>
 
-<pre><code>mkdir -p bytecodertest &amp;&amp; cd bytecodertest  &amp;&amp; javac HelloWorld.java
+<pre><code>mkdir -p bytecodertest &amp;&amp; cd bytecodertest &amp;&amp; javac HelloWorld.java
 </code></pre>
 
-<p>The directry structure</p>
+<p>The directory structure should be now:</p>
 
-<pre><code>[root@host]# tree
+<pre><code>[user@host]# tree
 .
 ├── bytecoder-cli-2021-11-02-executable.jar
 └── bytecodertest
     └── HelloWorld.java
+    └── HelloWorld.class
 
 </code></pre>
 
@@ -793,7 +796,7 @@ HTML embedding, which is shown here:</p>
 </code></pre>
 
 
-<div class="notices warning" ><p>The WebAssembly backend generates Wasm bytecoded based on the Exception-Handling and GC proposal. These features
+<div class="notices warning" ><p>The WebAssembly backend generates Wasm bytecode based on the Exception-Handling and GC proposal. These features
 must be manually enabled in Chrome or Firefox as long as they have not been fully standardized.</p>
 </div>
 
@@ -1900,19 +1903,19 @@ must be manually enabled in Chrome or Firefox as long as they have not been full
     <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
       <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
     </div>
-    <script src="/Bytecoder/js/clipboard.min.js?1679946901"></script>
-    <script src="/Bytecoder/js/perfect-scrollbar.min.js?1679946901"></script>
-    <script src="/Bytecoder/js/perfect-scrollbar.jquery.min.js?1679946901"></script>
-    <script src="/Bytecoder/js/jquery.sticky.js?1679946901"></script>
-    <script src="/Bytecoder/js/featherlight.min.js?1679946901"></script>
-    <script src="/Bytecoder/js/highlight.pack.js?1679946901"></script>
+    <script src="/Bytecoder/js/clipboard.min.js?1680028435"></script>
+    <script src="/Bytecoder/js/perfect-scrollbar.min.js?1680028435"></script>
+    <script src="/Bytecoder/js/perfect-scrollbar.jquery.min.js?1680028435"></script>
+    <script src="/Bytecoder/js/jquery.sticky.js?1680028435"></script>
+    <script src="/Bytecoder/js/featherlight.min.js?1680028435"></script>
+    <script src="/Bytecoder/js/highlight.pack.js?1680028435"></script>
     <script>hljs.initHighlightingOnLoad();</script>
-    <script src="/Bytecoder/js/modernizr.custom-3.6.0.js?1679946901"></script>
-    <script src="/Bytecoder/js/learn.js?1679946901"></script>
-    <script src="/Bytecoder/js/hugo-learn.js?1679946901"></script>
+    <script src="/Bytecoder/js/modernizr.custom-3.6.0.js?1680028435"></script>
+    <script src="/Bytecoder/js/learn.js?1680028435"></script>
+    <script src="/Bytecoder/js/hugo-learn.js?1680028435"></script>
     
         
-            <script src="/Bytecoder/mermaid/mermaid.js?1679946901"></script>
+            <script src="/Bytecoder/mermaid/mermaid.js?1680028435"></script>
         
         <script>
             mermaid.initialize({ startOnLoad: true });

@@ -196,7 +196,6 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
 
             final LoggingPreferences theLoggingPreferences = new LoggingPreferences();
             theLoggingPreferences.enable(LogType.BROWSER, Level.ALL);
-            theOptions.setCapability(CapabilityType.LOGGING_PREFS, theLoggingPreferences);
             theOptions.setCapability("goog:loggingPrefs", theLoggingPreferences);
 
             Testcontainers.exposeHostPorts(getTestWebServerPort());

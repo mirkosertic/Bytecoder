@@ -189,4 +189,8 @@ public class TVM {
     public static long getRandomSeedForCDSDump() {
         return 0L;
     }
+
+    public static int classFileVersion() {
+        return 64;
+    }
 }

@@ -26,6 +26,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.InsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.objectweb.asm.tree.TypeInsnNode;
@@ -34,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Map;
 
 public class BytecoderLoader implements Loader {
@@ -123,20 +125,27 @@ public class BytecoderLoader implements Loader {
 
             original.interfaces.clear();
             original.interfaces.addAll(patch.interfaces);
+
         } else {
             original.fields.addAll(patch.fields);
 
             for (final MethodNode patchMethod : patch.methods) {
                 if (!"<init>".equals(patchMethod.name)) {
-                    search:
-                    for (final MethodNode originalMethod : original.methods) {
-                        if (originalMethod.name.equals(patchMethod.name) && originalMethod.desc.equals(patchMethod.desc)) {
-                            // We have something to patch
-                            original.methods.remove(originalMethod);
-                            break search;
+
+                    final Map<String, Object> replaceInfo = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/Substitutes;", patchMethod.visibleAnnotations);
+                    if (replaceInfo != null) {
+
+                    } else {
+                        search:
+                        for (final MethodNode originalMethod : original.methods) {
+                            if (originalMethod.name.equals(patchMethod.name) && originalMethod.desc.equals(patchMethod.desc)) {
+                                // We have something to patch
+                                original.methods.remove(originalMethod);
+                                break search;
+                            }
                         }
+                        original.methods.add(patchMethod);
                     }
-                    original.methods.add(patchMethod);
                 }
             }
         }
@@ -181,6 +190,37 @@ public class BytecoderLoader implements Loader {
                         }
                     }
                     n = n.getNext();
+                }
+            }
+        }
+
+        if (substitutionInfo.containsKey("emptyMethods")) {
+            final List<String> emptyMethods = (List<String>) substitutionInfo.get("emptyMethods");
+            for (final MethodNode m : original.methods) {
+                for (final String name : emptyMethods) {
+                    if (m.name.equals(name)) {
+                        final Type methodType = Type.getMethodType(m.desc);
+                        if (methodType.getReturnType() == Type.VOID_TYPE) {
+                            final InsnList list = new InsnList();
+                            list.add(new InsnNode(Opcodes.RETURN));
+                            m.instructions = list;
+                        } else if (methodType.getReturnType() == Type.BOOLEAN_TYPE) {
+                            final InsnList list = new InsnList();
+                            list.add(new InsnNode(Opcodes.ICONST_0));
+                            list.add(new InsnNode(Opcodes.IRETURN));
+                            m.instructions = list;
+                        } else {
+                            if (methodType.getReturnType().getSort() == Type.OBJECT) {
+                                final InsnList list = new InsnList();
+                                list.add(new InsnNode(Opcodes.ACONST_NULL));
+                                list.add(new InsnNode(Opcodes.ARETURN));
+                                m.instructions = list;
+                            } else {
+                                throw new IllegalArgumentException("Can only generate null return for objects in " + patch.name + " and method " + name);
+                            }
+                        }
+                        // We need to patch this
+                    }
                 }
             }
         }

@@ -18,10 +18,19 @@ package de.mirkosertic.bytecoder.classlib.java.util.concurrent;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 import java.io.Serializable;
+import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.Future;
 
 @SubstitutesInClass(completeReplace = true)
 public abstract class TForkJoinTask<V> implements Future<V>, Serializable {
 
     public abstract V invoke();
+
+    public ForkJoinTask fork() {
+        return (ForkJoinTask) (Object) this;
+    }
+
+    public Object join() {
+        return this;
+    }
 }

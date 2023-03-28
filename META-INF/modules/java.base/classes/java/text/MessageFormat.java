@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -249,7 +249,7 @@ import java.util.Locale;
  * <blockquote><pre>
  * int fileCount = 1273;
  * String diskName = "MyDisk";
- * Object[] testArgs = {new Long(fileCount), diskName};
+ * Object[] testArgs = {Long.valueOf(fileCount), diskName};
  *
  * MessageFormat form = new MessageFormat(
  *     "The disk \"{1}\" contains {0} file(s).");
@@ -275,7 +275,7 @@ import java.util.Locale;
  *
  * int fileCount = 1273;
  * String diskName = "MyDisk";
- * Object[] testArgs = {new Long(fileCount), diskName};
+ * Object[] testArgs = {Long.valueOf(fileCount), diskName};
  *
  * System.out.println(form.format(testArgs));
  * </pre></blockquote>
@@ -307,12 +307,11 @@ import java.util.Locale;
  * will be the final result of the parsing.  For example,
  * <blockquote><pre>
  * MessageFormat mf = new MessageFormat("{0,number,#.##}, {0,number,#.#}");
- * Object[] objs = {new Double(3.1415)};
+ * Object[] objs = {Double.valueOf(3.1415)};
  * String result = mf.format( objs );
  * // result now equals "3.14, 3.1"
- * objs = null;
  * objs = mf.parse(result, new ParsePosition(0));
- * // objs now equals {new Double(3.1)}
+ * // objs now equals {Double.valueOf(3.1)}
  * </pre></blockquote>
  *
  * <p>
@@ -778,7 +777,7 @@ public class MessageFormat extends Format {
      * {@code null} or has fewer than argumentIndex+1 elements.
      *
      * <table class="plain">
-     * <caption style="display:none">Examples of subformat,argument,and formatted text</caption>
+     * <caption style="display:none">Examples of subformat, argument, and formatted text</caption>
      * <thead>
      *    <tr>
      *       <th scope="col">Subformat
