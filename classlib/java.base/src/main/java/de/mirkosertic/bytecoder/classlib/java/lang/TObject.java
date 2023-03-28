@@ -20,7 +20,7 @@ import de.mirkosertic.bytecoder.api.IsObject;
 import de.mirkosertic.bytecoder.api.Substitutes;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-@SubstitutesInClass(completeReplace = true)
+@SubstitutesInClass(completeReplace = true, emptyMethods = {"<init>", "getClass", "wait", "notify", "notifyAll"})
 @IsObject
 public class TObject {
 
@@ -47,27 +47,4 @@ public class TObject {
     public Object clone() throws CloneNotSupportedException {
         throw new CloneNotSupportedException();
     }
-
-    @EmulatedByRuntime
-    @Substitutes("getClass")
-    public Class getClassInternal() {
-        return null;
-    }
-
-    @Substitutes("wait")
-    public void waitInternal() {
-    }
-
-    @Substitutes("wait")
-    public void waitInternal(final long aTimeout) {
-    }
-
-    @Substitutes("notify")
-    public void notifyInternal() {
-    }
-
-    @Substitutes("notifyAll")
-    public void notifyAllInternal() {
-    }
-
 }

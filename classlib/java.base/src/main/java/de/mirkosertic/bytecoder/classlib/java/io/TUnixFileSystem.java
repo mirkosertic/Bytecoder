@@ -206,4 +206,8 @@ public class TUnixFileSystem {
     public int hashCode(final File f) {
         return f.getPath().hashCode() ^ 1234321;
     }
+
+    public boolean isInvalid(final File f) {
+        return false;
+    }
 }

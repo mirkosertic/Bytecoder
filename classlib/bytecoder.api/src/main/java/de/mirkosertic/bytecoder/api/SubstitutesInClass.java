@@ -25,4 +25,6 @@ import java.lang.annotation.Target;
 public @interface SubstitutesInClass {
 
     boolean completeReplace() default false;
+
+    String[] emptyMethods() default {};
 }

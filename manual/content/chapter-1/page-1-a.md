@@ -23,15 +23,17 @@ public class HelloWorld {
 First of all, we need to compile the Java sources to a JVM class file. This is done by using the `javac` tool from the JDK:
 
 ```
-mkdir -p bytecodertest && cd bytecodertest  && javac HelloWorld.java
+mkdir -p bytecodertest && cd bytecodertest && javac HelloWorld.java
 ```
-The directry structure
+
+The directory structure should be now:
 ```
-[root@host]# tree
+[user@host]# tree
 .
-├── bytecoder-cli-2021-11-02-executable.jar
+├── bytecoder-cli-{{% siteparam "bytecoderversion" %}}-executable.jar
 └── bytecodertest
     └── HelloWorld.java
+    └── HelloWorld.class
 
 ```
 
@@ -103,6 +105,6 @@ HTML embedding, which is shown here:
 ```
 
 {{% notice warning %}}
-The WebAssembly backend generates Wasm bytecoded based on the Exception-Handling and GC proposal. These features
+The WebAssembly backend generates Wasm bytecode based on the Exception-Handling and GC proposal. These features
 must be manually enabled in Chrome or Firefox as long as they have not been fully standardized.
 {{% /notice %}}

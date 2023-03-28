@@ -16,10 +16,9 @@
 package de.mirkosertic.bytecoder.classlib.sun.util.logging;
 
 import de.mirkosertic.bytecoder.api.AnyTypeMatches;
-import de.mirkosertic.bytecoder.api.Substitutes;
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
-@SubstitutesInClass(completeReplace = true)
+@SubstitutesInClass(completeReplace = true, emptyMethods = {"isLoggable"})
 public class TPlatformLogger {
 
     private static final TPlatformLogger PLATFORM_LOGGER = new TPlatformLogger();
@@ -29,11 +28,6 @@ public class TPlatformLogger {
     }
 
     public void config(final String aConfig) {
-    }
-
-    @Substitutes("isLoggable")
-    public boolean isLoggable(final AnyTypeMatches level) {
-        return false;
     }
 
     public boolean isEnabled() {

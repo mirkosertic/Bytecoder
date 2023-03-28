@@ -147,4 +147,8 @@ public class TThread implements Runnable {
     public StackTraceElement[] getStackTrace() {
         return new StackTraceElement[0];
     }
+
+    public boolean isVirtual() {
+        return false;
+    }
 }

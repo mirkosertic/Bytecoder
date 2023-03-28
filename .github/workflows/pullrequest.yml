@@ -7,7 +7,7 @@ jobs:
     runs-on: 'ubuntu-20.04'
     strategy:
       matrix:
-        java: [8,11,17]
+        java: [8,11,20]
     steps:
       - uses: actions/checkout@v2
       - uses: joschi/setup-jdk@v2
@@ -24,7 +24,7 @@ jobs:
     runs-on: 'ubuntu-20.04'
     strategy:
       matrix:
-        java: [8,11,17]
+        java: [8,11,20]
     steps:
      - uses: actions/checkout@v2
      - uses: joschi/setup-jdk@v2
@@ -41,7 +41,7 @@ jobs:
     runs-on: 'ubuntu-20.04'
     strategy:
       matrix:
-        java: [8,11,17]
+        java: [8,11,20]
     steps:
       - uses: actions/checkout@v2
       - uses: joschi/setup-jdk@v2

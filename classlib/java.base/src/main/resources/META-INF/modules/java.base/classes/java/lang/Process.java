@@ -158,7 +158,7 @@ public abstract class Process {
      * merged standard output and the standard error of the process.
      *
      * @apiNote
-     * Use {@link #getInputStream} and {@link #inputReader} with extreme care.
+     * Use {@link #getInputStream()} and {@link #inputReader()} with extreme care.
      * The {@code BufferedReader} may have buffered input from the input stream.
      *
      * @implNote
@@ -184,8 +184,8 @@ public abstract class Process {
      * <a href="ProcessBuilder.html#redirect-output">null input stream</a>.
      *
      * @apiNote
-     * Use {@link #getInputStream} and {@link #inputReader} with extreme care.
-     * The {@code BufferedReader} may have buffered input from the input stream.
+     * Use {@link #getErrorStream()} and {@link #errorReader()} with extreme care.
+     * The {@code BufferedReader} may have buffered input from the error stream.
      *
      * @implNote
      * Implementation note: It is a good idea for the returned
@@ -440,7 +440,7 @@ public abstract class Process {
      * terminated and the timeout value is less than, or equal to, zero, then
      * this method returns immediately with the value {@code false}.
      *
-     * <p>The default implementation of this methods polls the {@code exitValue}
+     * <p>The default implementation of this method polls the {@code exitValue}
      * to check if the process has terminated. Concrete implementations of this
      * class are strongly encouraged to override this method with a more
      * efficient implementation.
@@ -845,7 +845,7 @@ public abstract class Process {
      * A nested class to delay looking up the Charset for the native encoding.
      */
     private static class CharsetHolder {
-        private final static Charset nativeCharset;
+        private static final Charset nativeCharset;
         static {
             Charset cs;
             try {
