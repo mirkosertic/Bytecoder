@@ -99,7 +99,7 @@ public class TString implements CharSequence, Comparable<String> {
     }
 
     public static String valueOf(final boolean b) {
-        return Boolean.toString(b);
+        return b ? "true" : "false";
     }
 
     public native char[] toCharArray();

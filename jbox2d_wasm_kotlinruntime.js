@@ -861,33 +861,33 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 130: return 'End of stack reached, there is probably a leak somewhere';
       case 131: return 'Beginning of stack reached, push\/pops are unmatched';
       case 132: return 'data type scale not a power of two';
-      case 133: return 'Rot(s:';
-      case 134: return ', c:';
-      case 135: return '(';
-      case 136: return ',';
-      case 137: return 'No java.util.Objects instances for you!';
-      case 138: return 'AABB[';
-      case 139: return ' . ';
-      case 140: return ']\n';
-      case 141: return '=';
-      case 142: return 'XForm:\n';
-      case 143: return 'Position: ';
-      case 144: return '\n';
-      case 145: return 'R: \n';
-      case 146: return 'Sweep:\nlocalCenter: ';
-      case 147: return 'c0: ';
-      case 148: return ', c: ';
-      case 149: return 'a0: ';
-      case 150: return ', a: ';
+      case 133: return '(';
+      case 134: return ',';
+      case 135: return 'AABB[';
+      case 136: return ' . ';
+      case 137: return 'Rot(s:';
+      case 138: return ', c:';
+      case 139: return ']\n';
+      case 140: return 'XForm:\n';
+      case 141: return 'Position: ';
+      case 142: return '\n';
+      case 143: return 'R: \n';
+      case 144: return 'Sweep:\nlocalCenter: ';
+      case 145: return 'c0: ';
+      case 146: return ', c: ';
+      case 147: return 'a0: ';
+      case 148: return ', a: ';
+      case 149: return '=';
+      case 150: return 'No java.util.Objects instances for you!';
       case 151: return '[pos=';
       case 152: return ' lim=';
       case 153: return ' cap=';
       case 154: return 'Unknown Source';
       case 155: return 'Native Method';
-      case 156: return 'EDGE_A';
-      case 157: return 'EDGE_B';
-      case 158: return 'VERTEX';
-      case 159: return 'FACE';
+      case 156: return 'VERTEX';
+      case 157: return 'FACE';
+      case 158: return 'EDGE_A';
+      case 159: return 'EDGE_B';
       case 160: return 'Array not built with correct length';
   }
   throw 'Unknown string index ' + index;
@@ -939,6 +939,11 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.web.CanvasRenderingContext2D_gen
         (thisref.restore());
     },
 };
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLCanvasElement_generated"] = {
+    Lde$mirkosertic$bytecoder$api$web$CanvasRenderingContext2D$$getContext$Ljava$lang$String$ : function(thisref, arg0) {
+        return (thisref.getContext(arg0));
+    },
+};
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.EventTarget_generated"] = {
     V$addEventListener$Ljava$lang$String$$Lde$mirkosertic$bytecoder$api$web$EventListener$ : function(thisref, arg0, arg1) {
         (thisref.addEventListener(arg0, function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.EventListener_callback'](arg1,evt);}));
@@ -949,21 +954,16 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.web.ParentNode_generated"] = {
         return (thisref.getElementById(arg0));
     },
 };
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLButton_generated"] = {
+    V$disabled$Z : function(thisref, arg0) {
+        (thisref.disabled = (arg0 === 1 ? true : false));
+    },
+};
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.Window_generated"] = {
     Lde$mirkosertic$bytecoder$api$web$HTMLDocument$$document$$ : function(thisref) {
         return (thisref.document);
     },
     V$requestAnimationFrame$Lde$mirkosertic$bytecoder$api$web$AnimationFrameCallback$ : function(thisref, arg0) {
         (thisref.requestAnimationFrame(function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.AnimationFrameCallback_callback'](arg0,evt);}));
-    },
-};
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLCanvasElement_generated"] = {
-    Lde$mirkosertic$bytecoder$api$web$CanvasRenderingContext2D$$getContext$Ljava$lang$String$ : function(thisref, arg0) {
-        return (thisref.getContext(arg0));
-    },
-};
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLButton_generated"] = {
-    V$disabled$Z : function(thisref, arg0) {
-        (thisref.disabled = (arg0 === 1 ? true : false));
     },
 };
