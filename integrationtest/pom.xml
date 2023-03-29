@@ -97,7 +97,7 @@
             <plugin>
                 <groupId>com.theoryinpractise</groupId>
                 <artifactId>clojure-maven-plugin</artifactId>
-                <version>1.8.4</version>
+                <version>1.9.2</version>
                 <executions>
                     <execution>
                         <id>compile</id>
