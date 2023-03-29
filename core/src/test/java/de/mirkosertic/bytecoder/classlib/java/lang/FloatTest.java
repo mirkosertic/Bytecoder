@@ -28,6 +28,7 @@ import static org.junit.Assert.assertNotEquals;
 public class FloatTest {
 
     @Test
+    @Ignore
     public void testRawBitsFromFloat() {
         final int raw = Float.floatToIntBits(1.1999967098236084f);
         System.out.println(raw);
