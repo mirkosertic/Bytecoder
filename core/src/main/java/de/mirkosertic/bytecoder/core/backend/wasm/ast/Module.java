@@ -147,7 +147,9 @@ public class Module {
         if (enableDebug) {
             names.writeCodeTo(writer);
         }
-        sourceMapSection.writeTo(writer);
+
+        // Disabled, as source maps are currently not generated for Wasm
+        //sourceMapSection.writeTo(writer);
     }
 
     public String getLabel() {
