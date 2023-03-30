@@ -36,4 +36,40 @@ public class ThreadTest {
         final String name = t.getName();
         Assert.assertEquals("main", name);
     }
+
+    static class Holder {
+        static int counter;
+    }
+
+    @Test
+    public void testThreadRun() {
+        Holder.counter = 0;
+        final Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for (int i = 0; i < 10; i++) {
+                    Holder.counter = Holder.counter + 1;
+                }
+            }
+        });
+        t.run();
+        Assert.assertEquals(10, Holder.counter);
+    }
+
+    @Test
+    public void testThreadStart() throws InterruptedException {
+        Holder.counter = 0;
+        final Thread t = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                for (int i = 0; i < 10; i++) {
+                    Holder.counter = Holder.counter + 1;
+                }
+            }
+        });
+        t.start();
+        t.join();
+        Assert.assertEquals(10, Holder.counter);
+    }
+
 }
