@@ -78,6 +78,7 @@ public class TThread implements Runnable {
     }
 
     public void start() {
+        run();
     }
 
     public void stop() {
