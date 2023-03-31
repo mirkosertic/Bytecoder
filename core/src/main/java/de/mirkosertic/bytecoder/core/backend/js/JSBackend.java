@@ -20,8 +20,8 @@ import de.mirkosertic.bytecoder.core.ReflectionConfiguration;
 import de.mirkosertic.bytecoder.core.backend.CodeGenerationFailure;
 import de.mirkosertic.bytecoder.core.backend.CompileOptions;
 import de.mirkosertic.bytecoder.core.backend.CompileResult;
-import de.mirkosertic.bytecoder.core.backend.StringConcatMethod;
-import de.mirkosertic.bytecoder.core.backend.StringConcatRegistry;
+import de.mirkosertic.bytecoder.core.backend.GeneratedMethod;
+import de.mirkosertic.bytecoder.core.backend.GeneratedMethodsRegistry;
 import de.mirkosertic.bytecoder.core.backend.sequencer.DominatorTree;
 import de.mirkosertic.bytecoder.core.backend.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.core.ir.AnnotationUtils;
@@ -89,7 +89,7 @@ public class JSBackend {
         final StringWriter sw = new StringWriter();
         final PrintWriter pw = new PrintWriter(sw);
 
-        final StringConcatRegistry stringConcatRegistry = new StringConcatRegistry();
+        final GeneratedMethodsRegistry generatedMethodsRegistry = new GeneratedMethodsRegistry();
 
         generateHeader(compileUnit, pw);
 
@@ -127,7 +127,7 @@ public class JSBackend {
 
                 generateLambdaLogicFor(pw, compileUnit, cl);
 
-                generateMethodsFor(pw, compileUnit, cl, compileOptions, stringConcatRegistry);
+                generateInstanceMethodsFor(pw, compileUnit, cl, compileOptions, generatedMethodsRegistry);
 
                 pw.println("};");
 
@@ -135,6 +135,8 @@ public class JSBackend {
                 pw.print(".$modifiers = ");
                 pw.print(cl.classNode.access);
                 pw.println(";");
+
+                generateStaticMethodsFor(className, pw, compileUnit, cl, compileOptions, generatedMethodsRegistry);
 
                 pw.println();
             } else {
@@ -178,7 +180,7 @@ public class JSBackend {
 
                 generateLambdaLogicFor(pw, compileUnit, cl);
 
-                generateMethodsFor(pw, compileUnit, cl, compileOptions, stringConcatRegistry);
+                generateMethodsFor(pw, compileUnit, cl, compileOptions, generatedMethodsRegistry);
 
                 pw.println("}");
                 pw.println();
@@ -197,9 +199,9 @@ public class JSBackend {
         }
 
         // Generate string concatenation
-        final List<StringConcatMethod> stringConcatMethods = stringConcatRegistry.getMethods();
-        for (int i = 0; i < stringConcatMethods.size(); i++) {
-            stringConcatMethods.get(i).generateCode(pw, i);
+        final List<GeneratedMethod> generatedMethods = generatedMethodsRegistry.getMethods();
+        for (int i = 0; i < generatedMethods.size(); i++) {
+            generatedMethods.get(i).generateCode(pw, i);
         }
 
         // Generate exports
@@ -343,31 +345,80 @@ public class JSBackend {
         }
     }
 
-    public void generateMethodsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final CompileOptions compileOptions, final StringConcatRegistry stringConcatRegistry) {
+    public void generateMethodsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final CompileOptions compileOptions, final GeneratedMethodsRegistry generatedMethodsRegistry) {
 
         for (final ResolvedMethod m : cl.resolvedMethods) {
             if (m.owner == cl) {
                 if (Modifier.isNative(m.methodNode.access) || AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/EmulatedByRuntime;", m.methodNode.visibleAnnotations)) {
-                    generateNativeMethod(pw, compileUnit, cl, m);
+                    generateNativeMethod(null, pw, compileUnit, cl, m);
                 } else {
                     if (m.methodBody != null) {
-                        generateMethod(pw, compileUnit, cl, m, compileOptions, stringConcatRegistry);
+                        generateMethod(null, pw, compileUnit, cl, m, compileOptions, generatedMethodsRegistry);
                     } else if (cl.isOpaqueReferenceType()) {
-                        generateOpaqueAdapterMethod(pw, compileUnit, cl, m);
+                        generateOpaqueAdapterMethod(null, pw, compileUnit, cl, m);
                     }
                 }
             }
         }
     }
 
-    public void generateNativeMethod(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m) {
-        pw.println();
-        pw.print("  ");
-        if (Modifier.isStatic(m.methodNode.access)) {
-            pw.print("static ");
+    public void generateInstanceMethodsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final CompileOptions compileOptions, final GeneratedMethodsRegistry generatedMethodsRegistry) {
+
+        for (final ResolvedMethod m : cl.resolvedMethods) {
+            if (m.owner == cl) {
+                if (!Modifier.isStatic(m.methodNode.access)) {
+                    if (Modifier.isNative(m.methodNode.access) || AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/EmulatedByRuntime;", m.methodNode.visibleAnnotations)) {
+                        generateNativeMethod(null, pw, compileUnit, cl, m);
+                    } else {
+                        if (m.methodBody != null) {
+                            generateMethod(null, pw, compileUnit, cl, m, compileOptions, generatedMethodsRegistry);
+                        } else if (cl.isOpaqueReferenceType()) {
+                            generateOpaqueAdapterMethod(null, pw, compileUnit, cl, m);
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    public void generateStaticMethodsFor(final String prefix, final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final CompileOptions compileOptions, final GeneratedMethodsRegistry generatedMethodsRegistry) {
+
+        for (final ResolvedMethod m : cl.resolvedMethods) {
+            if (m.owner == cl && Modifier.isStatic(m.methodNode.access)) {
+                if (Modifier.isNative(m.methodNode.access) || AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/EmulatedByRuntime;", m.methodNode.visibleAnnotations)) {
+                    generateNativeMethod(prefix, pw, compileUnit, cl, m);
+                } else {
+                    if (m.methodBody != null) {
+                        generateMethod(prefix, pw, compileUnit, cl, m, compileOptions, generatedMethodsRegistry);
+                    } else if (cl.isOpaqueReferenceType()) {
+                        generateOpaqueAdapterMethod(prefix, pw, compileUnit, cl, m);
+                    }
+                }
+            }
+        }
+    }
+
+    public void generateNativeMethod(final String prefix, final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m) {
+        pw.println();
+
         final String methodName = generateMethodName(m.methodNode.name, m.methodType);
-        pw.print(methodName);
+
+        if (prefix == null) {
+            pw.print("  ");
+            if (Modifier.isStatic(m.methodNode.access)) {
+                pw.print("static ");
+            }
+
+            pw.print(methodName);
+
+        } else {
+            pw.print(prefix);
+            pw.print(".");
+
+            pw.print(methodName);
+
+            pw.print(" = function");
+        }
 
         final Type[] arguments = Type.getArgumentTypes(m.methodNode.desc);
         final Type returnType = Type.getReturnType(m.methodNode.desc);
@@ -422,7 +473,11 @@ public class JSBackend {
 
             pw.println("));");
 
-            pw.println("  }");
+            if (prefix == null) {
+                pw.println("  }");
+            } else {
+                pw.println("  };");
+            }
         } else {
 
             if (!returnType.equals(Type.VOID_TYPE)) {
@@ -464,15 +519,30 @@ public class JSBackend {
 
             pw.println(");");
 
-            pw.println("  }");
+            if (prefix == null) {
+                pw.println("  }");
+            } else {
+                pw.println("  };");
+            }
         }
     }
 
-    public void generateOpaqueAdapterMethod(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m) {
+    public void generateOpaqueAdapterMethod(final String prefix, final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m) {
         pw.println();
-        pw.print("  ");
+
         final String methodName = generateMethodName(m.methodNode.name, m.methodType);
-        pw.print(methodName);
+        if (prefix == null) {
+            pw.print("  ");
+
+            pw.print(methodName);
+        } else {
+            pw.print(prefix);
+            pw.print(".");
+
+            pw.print(methodName);
+
+            pw.print(" = function");
+        }
 
         final Type[] arguments = Type.getArgumentTypes(m.methodNode.desc);
         final Type returnType = Type.getReturnType(m.methodNode.desc);
@@ -687,17 +757,33 @@ public class JSBackend {
 
         pw.println(";");
 
-        pw.println("  }");
+        if (prefix == null) {
+            pw.println("  }");
+        } else {
+            pw.println("  };");
+        }
     }
 
-    public void generateMethod(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m, final CompileOptions options, final StringConcatRegistry stringConcatRegistry) {
+    public void generateMethod(final String prefix, final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m, final CompileOptions options, final GeneratedMethodsRegistry generatedMethodsRegistry) {
         pw.println();
-        pw.print("  ");
-        if (Modifier.isStatic(m.methodNode.access)) {
-            pw.print("static ");
-        }
+
         final String methodName = generateMethodName(m.methodNode.name, m.methodType);
-        pw.print(methodName);
+
+        if (prefix == null) {
+            pw.print("  ");
+            if (Modifier.isStatic(m.methodNode.access)) {
+                pw.print("static ");
+            }
+
+            pw.print(methodName);
+        } else {
+            pw.print(prefix);
+            pw.print(".");
+
+            pw.print(methodName);
+
+            pw.print(" = function");
+        }
 
         final Type[] arguments = Type.getArgumentTypes(m.methodNode.desc);
 
@@ -727,11 +813,15 @@ public class JSBackend {
         }
 
         try {
-            new Sequencer(g, dt, new JSStructuredControlflowCodeGenerator(compileUnit, cl, pw, stringConcatRegistry));
+            new Sequencer(g, dt, new JSStructuredControlflowCodeGenerator(compileUnit, cl, pw, generatedMethodsRegistry));
         } catch (final RuntimeException e) {
             throw new CodeGenerationFailure(m, dt, e);
         }
 
-        pw.println("  }");
+        if (prefix == null) {
+            pw.println("  }");
+        } else {
+            pw.println("  };");
+        }
     }
 }

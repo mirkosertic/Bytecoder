@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 Mirko Sertic
+ * Copyright 2022 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,24 +17,27 @@ package de.mirkosertic.bytecoder.core.ir;
 
 import org.objectweb.asm.Type;
 
-import java.lang.invoke.CallSite;
+public class Reference extends PrimitiveValue {
 
-public class BootstrapMethod extends Value {
+    public enum Kind {
 
-    public final Type methodType;
+        INVOKESTATIC(1), INVOKEVIRTUAL(2), INVOKEINTERFACE(3), INVOKECONSTRUCTOR(4), INVOKESPECIAL(5), GETINSTANCEFIELD(6);
 
-    public final Type className;
+        private final int id;
 
-    public final String methodName;
+        Kind(final int id) {
+            this.id = id;
+        }
 
-    public final Reference.Kind kind;
+        public int id() {
+            return id;
+        }
+    }
 
-    public BootstrapMethod(final Type methodType, final Type className, final String methodName,
-                           final MethodReference.Kind kind) {
-        super(Type.getType(CallSite.class));
-        this.methodType = methodType;
-        this.className = className;
-        this.methodName = methodName;
+    public final FieldReference.Kind kind;
+
+    public Reference(final Type type, final FieldReference.Kind kind) {
+        super(type);
         this.kind = kind;
     }
 }

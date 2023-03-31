@@ -82,4 +82,15 @@ public class VM {
         }
         return o.toString();
     }
+
+    @Export("nullsafeEquals")
+    public static boolean nullsafeEquals(final Object a, final Object b) {
+        if (a == b) {
+            return true;
+        }
+        if (a != null) {
+            return a.equals(b);
+        }
+        return false;
+    }
 }

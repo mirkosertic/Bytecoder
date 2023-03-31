@@ -35,7 +35,6 @@ import de.mirkosertic.bytecoder.core.ir.InstructionTranslation;
 import de.mirkosertic.bytecoder.core.ir.InvokeDynamicExpression;
 import de.mirkosertic.bytecoder.core.ir.LineNumberDebugInfo;
 import de.mirkosertic.bytecoder.core.ir.LookupSwitch;
-import de.mirkosertic.bytecoder.core.ir.MethodReference;
 import de.mirkosertic.bytecoder.core.ir.MonitorEnter;
 import de.mirkosertic.bytecoder.core.ir.MonitorExit;
 import de.mirkosertic.bytecoder.core.ir.New;
@@ -53,6 +52,7 @@ import de.mirkosertic.bytecoder.core.ir.PrimitiveLong;
 import de.mirkosertic.bytecoder.core.ir.Projection;
 import de.mirkosertic.bytecoder.core.ir.ReadClassField;
 import de.mirkosertic.bytecoder.core.ir.ReadInstanceField;
+import de.mirkosertic.bytecoder.core.ir.Reference;
 import de.mirkosertic.bytecoder.core.ir.ReferenceTest;
 import de.mirkosertic.bytecoder.core.ir.Region;
 import de.mirkosertic.bytecoder.core.ir.ResolveCallsite;
@@ -2319,40 +2319,66 @@ public class GraphParser {
 
         final Type invokeDynamicDesc = Type.getMethodType(node.desc);
         resolveMethodType(invokeDynamicDesc);
-        resolveCallsite.addIncomingData(graph.newBootstrapMethod(Type.getMethodType(h.getDesc()), Type.getObjectType(h.getOwner()), h.getName(), MethodReference.Kind.INVOKESTATIC), graph.newObjectString(compileUnit.getConstantPool().resolveFromPool(node.name)), graph.newMethodType(invokeDynamicDesc));
+        resolveCallsite.addIncomingData(graph.newBootstrapMethod(Type.getMethodType(h.getDesc()), Type.getObjectType(h.getOwner()), h.getName(), Reference.Kind.INVOKESTATIC), graph.newObjectString(compileUnit.getConstantPool().resolveFromPool(node.name)), graph.newMethodType(invokeDynamicDesc));
         for (final Object bsmArg : node.bsmArgs) {
             if (bsmArg instanceof Handle) {
                 final Handle x = (Handle) bsmArg;
 
-                final ResolvedClass argType = compileUnit.resolveClass(Type.getObjectType(x.getOwner()), analysisStack);
-                final ResolvedMethod argMethod = argType.resolveMethod(x.getName(), Type.getMethodType(x.getDesc()), analysisStack);
-                final MethodReference.Kind invocationKind;
                 if ("<init>".equals(x.getName())) {
-                    invocationKind = MethodReference.Kind.INVOKECONSTRUCTOR;
+                    final ResolvedClass argType = compileUnit.resolveClass(Type.getObjectType(x.getOwner()), analysisStack);
+                    final ResolvedMethod argMethod = argType.resolveMethod(x.getName(), Type.getMethodType(x.getDesc()), analysisStack);
+                    resolveCallsite.addIncomingData(graph.newMethodReference(argMethod, Reference.Kind.INVOKECONSTRUCTOR));
                 } else {
                     switch (x.getTag()) {
-                        case Opcodes.H_INVOKESTATIC:
-                            invocationKind = MethodReference.Kind.INVOKESTATIC;
+                        case Opcodes.H_GETFIELD: {
+                            final ResolvedClass argType = compileUnit.resolveClass(Type.getObjectType(x.getOwner()), analysisStack);
+                            final ResolvedField resolvedField = argType.resolveField(x.getName(), Type.getType(x.getDesc()));
+                            resolveCallsite.addIncomingData(graph.newFieldReference(resolvedField, Reference.Kind.GETINSTANCEFIELD));
                             break;
-                        case Opcodes.H_INVOKEVIRTUAL:
-                            invocationKind = MethodReference.Kind.INVOKEVIRTUAL;
+                        }
+                        case Opcodes.H_INVOKESTATIC: {
+                            final ResolvedClass argType = compileUnit.resolveClass(Type.getObjectType(x.getOwner()), analysisStack);
+                            final ResolvedMethod argMethod = argType.resolveMethod(x.getName(), Type.getMethodType(x.getDesc()), analysisStack);
+                            resolveCallsite.addIncomingData(graph.newMethodReference(argMethod, Reference.Kind.INVOKESTATIC));
                             break;
-                        case Opcodes.H_INVOKEINTERFACE:
-                            invocationKind = MethodReference.Kind.INVOKEINTERFACE;
+                        }
+                        case Opcodes.H_INVOKEVIRTUAL: {
+                            final ResolvedClass argType = compileUnit.resolveClass(Type.getObjectType(x.getOwner()), analysisStack);
+                            final ResolvedMethod argMethod = argType.resolveMethod(x.getName(), Type.getMethodType(x.getDesc()), analysisStack);
+                            resolveCallsite.addIncomingData(graph.newMethodReference(argMethod, Reference.Kind.INVOKEVIRTUAL));
                             break;
-                        case Opcodes.H_INVOKESPECIAL:
-                            invocationKind = MethodReference.Kind.INVOKESPECIAL;
+                        }
+                        case Opcodes.H_INVOKEINTERFACE: {
+                            final ResolvedClass argType = compileUnit.resolveClass(Type.getObjectType(x.getOwner()), analysisStack);
+                            final ResolvedMethod argMethod = argType.resolveMethod(x.getName(), Type.getMethodType(x.getDesc()), analysisStack);
+                            resolveCallsite.addIncomingData(graph.newMethodReference(argMethod, Reference.Kind.INVOKEINTERFACE));
                             break;
+                        }
+                        case Opcodes.H_INVOKESPECIAL: {
+                            final ResolvedClass argType = compileUnit.resolveClass(Type.getObjectType(x.getOwner()), analysisStack);
+                            final ResolvedMethod argMethod = argType.resolveMethod(x.getName(), Type.getMethodType(x.getDesc()), analysisStack);
+                            resolveCallsite.addIncomingData(graph.newMethodReference(argMethod, Reference.Kind.INVOKESPECIAL));
+                            break;
+                        }
                         default:
-                            throw new IllegalStateException("Not supported invocation kind for method handle : " + x.getTag() + " " + argType.type + "." + argMethod.methodNode.name + argMethod.methodNode.desc);
+                            throw new IllegalStateException("Not supported invocation kind for method handle : " + x.getTag() + " " + x);
                     }
                 }
 
-                resolveCallsite.addIncomingData(graph.newMethodReference(argMethod, invocationKind));
             } else if (bsmArg instanceof Type) {
                 final Type t = (Type) bsmArg;
-                resolveMethodType(t);
-                resolveCallsite.addIncomingData(graph.newMethodType(t));
+                switch (t.getSort()) {
+                    case Type.METHOD: {
+                        resolveMethodType(t);
+                        resolveCallsite.addIncomingData(graph.newMethodType(t));
+                        break;
+                    }
+                    default: {
+                        final ResolvedClass rc = compileUnit.resolveClass(Type.getObjectType(t.getInternalName()), analysisStack);
+                        resolveCallsite.addIncomingData(graph.newTypeReference(t));
+                        break;
+                    }
+                }
             } else if (bsmArg instanceof String) {
                 resolveCallsite.addIncomingData(graph.newObjectString(compileUnit.getConstantPool().resolveFromPool((String) bsmArg)));
             } else if (bsmArg instanceof Integer) {

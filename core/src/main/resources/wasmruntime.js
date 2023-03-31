@@ -166,7 +166,7 @@ const bytecoder = {
             V$initializeFromArchive$Ljava$lang$Class$: function (cls) {
             },
             J$getRandomSeedForDumping$$: function(unused) {
-                return Math.trunc(Math.random() * 10000000);
+                return BigInt(Math.trunc(Math.random() * 10000000));
             },
         },
         "java.io.UnixFileSystem": {
