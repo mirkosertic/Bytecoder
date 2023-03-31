@@ -15,23 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core.backend;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.PrintWriter;
 
-public class StringConcatRegistry {
+public abstract class GeneratedMethod {
 
-    private final List<StringConcatMethod> methods;
-
-    public StringConcatRegistry() {
-        methods = new ArrayList<>();
-    }
-
-    public int register(final StringConcatMethod m) {
-        methods.add(m);
-        return methods.indexOf(m);
-    }
-
-    public List<StringConcatMethod> getMethods() {
-        return methods;
-    }
+    public abstract void generateCode(final PrintWriter pw, final int index);
 }

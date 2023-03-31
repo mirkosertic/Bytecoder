@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2022 Mirko Sertic
  *
@@ -16,17 +15,17 @@
  */
 package de.mirkosertic.bytecoder.core.ir;
 
-public class MethodReference extends Reference {
+public class FieldReference extends Reference {
 
-    public final ResolvedMethod resolvedMethod;
+    public final ResolvedField resolvedField;
 
-    public MethodReference(final ResolvedMethod resolvedMethod, final Kind kind) {
-        super(resolvedMethod.methodType, kind);
-        this.resolvedMethod = resolvedMethod;
+    public FieldReference(final ResolvedField resolvedField, final Kind kind) {
+        super(resolvedField.type, kind);
+        this.resolvedField = resolvedField;
     }
 
     @Override
     public String additionalDebugInfo() {
-        return ": " + resolvedMethod.owner.type +"." + resolvedMethod.methodNode.name + type ;
+        return ": " + resolvedField.owner.type +"." + resolvedField.name + type ;
     }
 }
