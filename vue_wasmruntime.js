@@ -166,7 +166,7 @@ const bytecoder = {
             V$initializeFromArchive$Ljava$lang$Class$: function (cls) {
             },
             J$getRandomSeedForDumping$$: function(unused) {
-                return Math.trunc(Math.random() * 10000000);
+                return BigInt(Math.trunc(Math.random() * 10000000));
             },
         },
         "java.io.UnixFileSystem": {
@@ -821,12 +821,12 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 90: return ' Size: ';
       case 91: return 'hello world, you have clicked. Timestamp is %s';
       case 92: return 'data type scale not a power of two';
-      case 93: return 'UNKNOWN';
-      case 94: return '[pos=';
-      case 95: return ' lim=';
-      case 96: return ' cap=';
-      case 97: return '=';
-      case 98: return 'No java.util.Objects instances for you!';
+      case 93: return 'No java.util.Objects instances for you!';
+      case 94: return 'UNKNOWN';
+      case 95: return '=';
+      case 96: return '[pos=';
+      case 97: return ' lim=';
+      case 98: return ' cap=';
   }
   throw 'Unknown string index ' + index;
 };
@@ -844,13 +844,13 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.vue.VueBuilder_generated"] = {
         return (thisref.build());
     },
 };
-bytecoder.imports["de.mirkosertic.bytecoder.integrationtest.VueDemo$MyVueInstance_generated"] = {
-    V$welcomemessage$Ljava$lang$String$ : function(thisref, arg0) {
-        (thisref.welcomemessage = arg0);
-    },
-};
 bytecoder.imports["de.mirkosertic.bytecoder.api.vue.VueData_generated"] = {
     V$setProperty$Ljava$lang$String$$Ljava$lang$String$ : function(thisref, arg0, arg1) {
         (thisref.setProperty(arg0, arg1));
+    },
+};
+bytecoder.imports["de.mirkosertic.bytecoder.integrationtest.VueDemo$MyVueInstance_generated"] = {
+    V$welcomemessage$Ljava$lang$String$ : function(thisref, arg0) {
+        (thisref.welcomemessage = arg0);
     },
 };

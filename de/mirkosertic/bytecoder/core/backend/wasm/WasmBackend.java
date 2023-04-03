@@ -22,8 +22,8 @@ import de.mirkosertic.bytecoder.core.backend.CodeGenerationFailure;
 import de.mirkosertic.bytecoder.core.backend.CompileOptions;
 import de.mirkosertic.bytecoder.core.backend.CompileResult;
 import de.mirkosertic.bytecoder.core.backend.OpaqueReferenceTypeHelpers;
-import de.mirkosertic.bytecoder.core.backend.StringConcatMethod;
-import de.mirkosertic.bytecoder.core.backend.StringConcatRegistry;
+import de.mirkosertic.bytecoder.core.backend.GeneratedMethod;
+import de.mirkosertic.bytecoder.core.backend.GeneratedMethodsRegistry;
 import de.mirkosertic.bytecoder.core.backend.sequencer.DominatorTree;
 import de.mirkosertic.bytecoder.core.backend.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.ConstExpressions;
@@ -581,7 +581,7 @@ public class WasmBackend {
         }
 
         final OpaqueTypesAdapterMethods adapterMethods = new OpaqueTypesAdapterMethods();
-        final StringConcatRegistry stringConcatRegistry = new StringConcatRegistry();
+        final GeneratedMethodsRegistry generatedMethodsRegistry = new GeneratedMethodsRegistry();
 
         for (final ResolvedClass cl : resolvedClasses) {
             // Class objects for
@@ -833,7 +833,7 @@ public class WasmBackend {
                         }
 
                         try {
-                            new Sequencer(g, dt, new WasmStructuredControlflowCodeGenerator(compileUnit, module, rtTypeMappings, objectTypeMappings, implFunction, toWASMType, toFunctionType, methodToIDMapper, g, resolvedClasses, vTableResolver, stringConcatRegistry));
+                            new Sequencer(g, dt, new WasmStructuredControlflowCodeGenerator(compileUnit, module, rtTypeMappings, objectTypeMappings, implFunction, toWASMType, toFunctionType, methodToIDMapper, g, resolvedClasses, vTableResolver, generatedMethodsRegistry));
                         } catch (final RuntimeException e) {
                             throw new CodeGenerationFailure(method, dt, e);
                         }
@@ -1037,9 +1037,9 @@ public class WasmBackend {
             }
         }
 
-        final List<StringConcatMethod> stringConcatMethods = stringConcatRegistry.getMethods();
-        for (final StringConcatMethod stringConcatMethod : stringConcatMethods) {
-            stringConcatMethod.generateCode(jsContentPrintWriter, stringConcatMethods.indexOf(stringConcatMethod));
+        final List<GeneratedMethod> generatedMethods = generatedMethodsRegistry.getMethods();
+        for (final GeneratedMethod generatedMethod : generatedMethods) {
+            generatedMethod.generateCode(jsContentPrintWriter, generatedMethods.indexOf(generatedMethod));
         }
 
         adapterMethods.getKnownMethods().forEach((cl, value) -> {

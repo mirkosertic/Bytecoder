@@ -139,6 +139,9 @@ const bytecoder = {
             },
             V$initializeFromArchive$Ljava$lang$Class$: function (cls) {
             },
+            J$getRandomSeedForDumping$$: function(cls) {
+                return Math.trunc(Math.random() * 10000000);
+            },
         },
         "java.io.UnixFileSystem": {
             I$getBooleanAttributes0$Ljava$lang$String$: function (fsref, path) {
@@ -567,7 +570,7 @@ const bytecoder = {
     exports: {},
     filehandles : [],
     stringconstants: [],
-    stringoperations: [],
+    generated: [],
     cmp: function(a,b) {
         if (a > b) return 1;
         if (a < b) return -1;
@@ -604,16 +607,6 @@ const bytecoder = {
     },
     toBytecoderBoolean: function(v) {
         return v ? 1: 0;
-    },
-    methodHandle: function(owner, methodName, kind) {
-        return {
-            owner: owner,
-            methodName: methodName,
-            kind: kind,
-            invokeExact: function() {
-                //throw 'not implemented';
-            }
-        };
     },
     instanceWithLambdaImpl: function(instType, lambdaImpl) {
         let inst = null;

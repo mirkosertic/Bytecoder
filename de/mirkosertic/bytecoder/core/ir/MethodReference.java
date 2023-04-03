@@ -16,33 +16,14 @@
  */
 package de.mirkosertic.bytecoder.core.ir;
 
-public class MethodReference extends PrimitiveValue {
-
-    public enum Kind {
-
-        INVOKESTATIC(1), INVOKEVIRTUAL(2), INVOKEINTERFACE(3), INVOKECONSTRUCTOR(4), INVOKESPECIAL(5);
-
-        private final int id;
-
-        Kind(final int id) {
-            this.id = id;
-        }
-
-        public int id() {
-            return id;
-        }
-    }
+public class MethodReference extends Reference {
 
     public final ResolvedMethod resolvedMethod;
 
-    public final Kind kind;
-
     public MethodReference(final ResolvedMethod resolvedMethod, final Kind kind) {
-        super(resolvedMethod.methodType);
+        super(resolvedMethod.methodType, kind);
         this.resolvedMethod = resolvedMethod;
-        this.kind = kind;
     }
-
 
     @Override
     public String additionalDebugInfo() {

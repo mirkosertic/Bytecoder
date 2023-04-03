@@ -27,7 +27,7 @@ public class BootstrapMethod extends Value {
 
     public final String methodName;
 
-    public final MethodReference.Kind kind;
+    public final Reference.Kind kind;
 
     public BootstrapMethod(final Type methodType, final Type className, final String methodName,
                            final MethodReference.Kind kind) {

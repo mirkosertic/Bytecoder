@@ -17,85 +17,11 @@ package de.mirkosertic.bytecoder.core.backend.js;
 
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.core.backend.OpaqueReferenceTypeHelpers;
-import de.mirkosertic.bytecoder.core.backend.StringConcatMethod;
-import de.mirkosertic.bytecoder.core.backend.StringConcatRegistry;
+import de.mirkosertic.bytecoder.core.backend.GeneratedMethod;
+import de.mirkosertic.bytecoder.core.backend.GeneratedMethodsRegistry;
 import de.mirkosertic.bytecoder.core.backend.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.core.backend.sequencer.StructuredControlflowCodeGenerator;
-import de.mirkosertic.bytecoder.core.ir.AbstractVar;
-import de.mirkosertic.bytecoder.core.ir.Add;
-import de.mirkosertic.bytecoder.core.ir.And;
-import de.mirkosertic.bytecoder.core.ir.AnnotationUtils;
-import de.mirkosertic.bytecoder.core.ir.ArrayLength;
-import de.mirkosertic.bytecoder.core.ir.ArrayLoad;
-import de.mirkosertic.bytecoder.core.ir.ArrayStore;
-import de.mirkosertic.bytecoder.core.ir.BootstrapMethod;
-import de.mirkosertic.bytecoder.core.ir.CMP;
-import de.mirkosertic.bytecoder.core.ir.Cast;
-import de.mirkosertic.bytecoder.core.ir.CaughtException;
-import de.mirkosertic.bytecoder.core.ir.Copy;
-import de.mirkosertic.bytecoder.core.ir.Div;
-import de.mirkosertic.bytecoder.core.ir.EnumValuesOf;
-import de.mirkosertic.bytecoder.core.ir.FrameDebugInfo;
-import de.mirkosertic.bytecoder.core.ir.Goto;
-import de.mirkosertic.bytecoder.core.ir.If;
-import de.mirkosertic.bytecoder.core.ir.InstanceMethodInvocation;
-import de.mirkosertic.bytecoder.core.ir.InstanceMethodInvocationExpression;
-import de.mirkosertic.bytecoder.core.ir.InstanceOf;
-import de.mirkosertic.bytecoder.core.ir.InterfaceMethodInvocation;
-import de.mirkosertic.bytecoder.core.ir.InterfaceMethodInvocationExpression;
-import de.mirkosertic.bytecoder.core.ir.InvokeDynamicExpression;
-import de.mirkosertic.bytecoder.core.ir.LineNumberDebugInfo;
-import de.mirkosertic.bytecoder.core.ir.LookupSwitch;
-import de.mirkosertic.bytecoder.core.ir.MethodArgument;
-import de.mirkosertic.bytecoder.core.ir.MethodReference;
-import de.mirkosertic.bytecoder.core.ir.MethodType;
-import de.mirkosertic.bytecoder.core.ir.MonitorEnter;
-import de.mirkosertic.bytecoder.core.ir.MonitorExit;
-import de.mirkosertic.bytecoder.core.ir.Mul;
-import de.mirkosertic.bytecoder.core.ir.Neg;
-import de.mirkosertic.bytecoder.core.ir.New;
-import de.mirkosertic.bytecoder.core.ir.NewArray;
-import de.mirkosertic.bytecoder.core.ir.Node;
-import de.mirkosertic.bytecoder.core.ir.NullReference;
-import de.mirkosertic.bytecoder.core.ir.NullTest;
-import de.mirkosertic.bytecoder.core.ir.NumericalTest;
-import de.mirkosertic.bytecoder.core.ir.ObjectString;
-import de.mirkosertic.bytecoder.core.ir.Or;
-import de.mirkosertic.bytecoder.core.ir.PHI;
-import de.mirkosertic.bytecoder.core.ir.PrimitiveClassReference;
-import de.mirkosertic.bytecoder.core.ir.PrimitiveDouble;
-import de.mirkosertic.bytecoder.core.ir.PrimitiveFloat;
-import de.mirkosertic.bytecoder.core.ir.PrimitiveInt;
-import de.mirkosertic.bytecoder.core.ir.PrimitiveLong;
-import de.mirkosertic.bytecoder.core.ir.PrimitiveShort;
-import de.mirkosertic.bytecoder.core.ir.ReadClassField;
-import de.mirkosertic.bytecoder.core.ir.ReadInstanceField;
-import de.mirkosertic.bytecoder.core.ir.ReferenceTest;
-import de.mirkosertic.bytecoder.core.ir.Rem;
-import de.mirkosertic.bytecoder.core.ir.ResolveCallsite;
-import de.mirkosertic.bytecoder.core.ir.ResolvedClass;
-import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
-import de.mirkosertic.bytecoder.core.ir.Return;
-import de.mirkosertic.bytecoder.core.ir.ReturnValue;
-import de.mirkosertic.bytecoder.core.ir.RuntimeClass;
-import de.mirkosertic.bytecoder.core.ir.RuntimeClassOf;
-import de.mirkosertic.bytecoder.core.ir.SHL;
-import de.mirkosertic.bytecoder.core.ir.SHR;
-import de.mirkosertic.bytecoder.core.ir.SetClassField;
-import de.mirkosertic.bytecoder.core.ir.SetInstanceField;
-import de.mirkosertic.bytecoder.core.ir.StaticMethodInvocation;
-import de.mirkosertic.bytecoder.core.ir.StaticMethodInvocationExpression;
-import de.mirkosertic.bytecoder.core.ir.Sub;
-import de.mirkosertic.bytecoder.core.ir.TableSwitch;
-import de.mirkosertic.bytecoder.core.ir.This;
-import de.mirkosertic.bytecoder.core.ir.TypeConversion;
-import de.mirkosertic.bytecoder.core.ir.TypeReference;
-import de.mirkosertic.bytecoder.core.ir.USHR;
-import de.mirkosertic.bytecoder.core.ir.Unwind;
-import de.mirkosertic.bytecoder.core.ir.Value;
-import de.mirkosertic.bytecoder.core.ir.VirtualMethodInvocation;
-import de.mirkosertic.bytecoder.core.ir.VirtualMethodInvocationExpression;
-import de.mirkosertic.bytecoder.core.ir.XOr;
+import de.mirkosertic.bytecoder.core.ir.*;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 import org.objectweb.asm.Type;
 
@@ -122,14 +48,14 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
     private final CompileUnit compileUnit;
 
-    private final StringConcatRegistry stringConcatRegistry;
+    private final GeneratedMethodsRegistry generatedMethodsRegistry;
 
-    public JSStructuredControlflowCodeGenerator(final CompileUnit compileUnit, final ResolvedClass cl, final PrintWriter pw, final StringConcatRegistry stringConcatRegistry) {
+    public JSStructuredControlflowCodeGenerator(final CompileUnit compileUnit, final ResolvedClass cl, final PrintWriter pw, final GeneratedMethodsRegistry generatedMethodsRegistry) {
         this.compileUnit = compileUnit;
         this.cl = cl;
         this.pw = pw;
         this.variableToName = new HashMap<>();
-        this.stringConcatRegistry = stringConcatRegistry;
+        this.generatedMethodsRegistry = generatedMethodsRegistry;
     }
 
     @Override
@@ -304,6 +230,22 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             } else {
                 throw new IllegalArgumentException("Not supported method " + bootstrapMethod.methodName + " on " + bootstrapMethod.className);
             }
+        } else if (bootstrapMethod.className.getClassName().equals("java.lang.runtime.ObjectMethods")) {
+            if ("bootstrap".equals(bootstrapMethod.methodName)) {
+                final ObjectString operation = (ObjectString) resolveCallsite.incomingDataFlows[1];
+                final String operationStr = compileUnit.getConstantPool().getPooledStrings().get(operation.value.index);
+                if ("toString".equals(operationStr)) {
+                    generateInvokeDynamicObjectMethodsToString(node, resolveCallsite);
+                } else if ("hashCode".equals(operationStr)) {
+                    generateInvokeDynamicObjectMethodsHashCode(node, resolveCallsite);
+                } else if ("equals".equals(operationStr)) {
+                    generateInvokeDynamicObjectMethodsEquals(node, resolveCallsite);
+                } else {
+                    throw new IllegalArgumentException("Not supported operation " +operationStr + " on " + bootstrapMethod.methodName + " on " + bootstrapMethod.className);
+                }
+            } else {
+                throw new IllegalArgumentException("Not supported method " + bootstrapMethod.methodName + " on " + bootstrapMethod.className);
+            }
         } else {
             throw new IllegalArgumentException("Not supported bootstrap class : " + bootstrapMethod.className);
         }
@@ -313,10 +255,10 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         final MethodType functionType = (MethodType) resolveCallsite.incomingDataFlows[2];
         final ObjectString receipe = (ObjectString) resolveCallsite.incomingDataFlows[3];
         final String receipeStr = compileUnit.getConstantPool().getPooledStrings().get(receipe.value.index);
-        final int index = stringConcatRegistry.register(new StringConcatMethod() {
+        final int index = generatedMethodsRegistry.register(new GeneratedMethod() {
             @Override
             public void generateCode(final PrintWriter pw, final int index) {
-                pw.print("bytecoder.stringoperations[");
+                pw.print("bytecoder.generated[");
                 pw.print(index);
                 pw.print("] = function(linkArg");
 
@@ -341,11 +283,9 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                             switch (typeToAdd.getSort()) {
                                 case Type.OBJECT:
                                 case Type.ARRAY: {
-                                    pw.print("    str = str + dynArg");
+                                    pw.print("    str = str + de$mirkosertic$bytecoder$classlib$VM.Ljava$lang$String$$objectToString$Ljava$lang$Object$(dynArg");
                                     pw.print(dynamicArgoffset);
-                                    pw.print(" == null ? 'null' : dynArg");
-                                    pw.print(dynamicArgoffset);
-                                    pw.println(".Ljava$lang$String$$toString$$().nativeObject;");
+                                    pw.println(").nativeObject;");
                                     break;
                                 }
                                 default: {
@@ -376,7 +316,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                 pw.println("};");
             }
         });
-        pw.print("bytecoder.stringoperations[");
+        pw.print("bytecoder.generated[");
         pw.print(index);
         pw.print("](");
         if (resolveCallsite.incomingDataFlows.length > 4) {
@@ -390,6 +330,192 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             if (first) {
                 first = false;
             } else {
+                pw.print(",");
+            }
+            writeExpression(node.incomingDataFlows[i]);
+        }
+        pw.print(")");
+    }
+
+    private void generateInvokeDynamicObjectMethodsToString(final InvokeDynamicExpression node, final ResolveCallsite resolveCallsite) {
+        final ObjectString fields = (ObjectString) resolveCallsite.incomingDataFlows[4];
+        final TypeReference sourceType = (TypeReference) resolveCallsite.incomingDataFlows[3];
+        final int index = generatedMethodsRegistry.register(new GeneratedMethod() {
+            @Override
+            public void generateCode(final PrintWriter pw, final int index) {
+                pw.print("bytecoder.generated[");
+                pw.print(index);
+                pw.print("] = function(");
+
+                for (int i = 1; i < node.incomingDataFlows.length; i++) {
+                    if (i > 1) {
+                        pw.print(",");
+                    }
+                    pw.print("dynArg" + (i - 1));
+                }
+
+                pw.println(") {");
+
+                String sourceTypeName = sourceType.type.getClassName();
+                int x = sourceTypeName.lastIndexOf(".");
+                if (x > -1) {
+                    sourceTypeName = sourceTypeName.substring(x + 1);
+                }
+                x = sourceTypeName.lastIndexOf("$");
+                if (x > -1) {
+                    sourceTypeName = sourceTypeName.substring(x + 1);
+                }
+
+                pw.print("    let str = '");
+                pw.print(sourceTypeName);
+                pw.println("[';");
+                for (int i = 5; i < resolveCallsite.incomingDataFlows.length; i++) {
+                    final FieldReference fieldRef = (FieldReference) resolveCallsite.incomingDataFlows[i];
+                    if (i > 5) {
+                        pw.println("    str = str + ', ';");
+                    }
+                    pw.print("    str = str + '");
+                    pw.print(fieldRef.resolvedField.name);
+                    pw.println("=';");
+                    switch (fieldRef.type.getSort()) {
+                        case Type.ARRAY:
+                        case Type.OBJECT: {
+                            pw.print("    str = str + de$mirkosertic$bytecoder$classlib$VM.Ljava$lang$String$$objectToString$Ljava$lang$Object$(dynArg0.");
+                            pw.print(JSHelpers.generateFieldName(fieldRef.resolvedField.name));
+                            pw.println(").nativeObject;");
+                            break;
+                        }
+                        default: {
+                            pw.print("    str = str + dynArg0.");
+                            pw.print(JSHelpers.generateFieldName(fieldRef.resolvedField.name));
+                            pw.println(";");
+                            break;
+                        }
+                    }
+                }
+                pw.println("    str = str + ']';");
+
+                pw.println("    return bytecoder.toBytecoderString(str);");
+
+                pw.println("};");
+            }
+        });
+        pw.print("bytecoder.generated[");
+        pw.print(index);
+        pw.print("](");
+        for (int i = 1; i < node.incomingDataFlows.length; i++) {
+            if (i > 1) {
+                pw.print(",");
+            }
+            writeExpression(node.incomingDataFlows[i]);
+        }
+        pw.print(")");
+    }
+
+    private void generateInvokeDynamicObjectMethodsHashCode(final InvokeDynamicExpression node, final ResolveCallsite resolveCallsite) {
+        final ObjectString fields = (ObjectString) resolveCallsite.incomingDataFlows[4];
+        final TypeReference sourceType = (TypeReference) resolveCallsite.incomingDataFlows[3];
+        final int index = generatedMethodsRegistry.register(new GeneratedMethod() {
+            @Override
+            public void generateCode(final PrintWriter pw, final int index) {
+                pw.print("bytecoder.generated[");
+                pw.print(index);
+                pw.print("] = function(");
+
+                for (int i = 1; i < node.incomingDataFlows.length; i++) {
+                    if (i > 1) {
+                        pw.print(",");
+                    }
+                    pw.print("dynArg" + (i - 1));
+                }
+
+                pw.println(") {");
+
+                // Really inefficient hashcode, needs optimization!
+                pw.println("  return 0;");
+
+                pw.println("};");
+            }
+        });
+        pw.print("bytecoder.generated[");
+        pw.print(index);
+        pw.print("](");
+        for (int i = 1; i < node.incomingDataFlows.length; i++) {
+            if (i > 1) {
+                pw.print(",");
+            }
+            writeExpression(node.incomingDataFlows[i]);
+        }
+        pw.print(")");
+    }
+
+    private void generateInvokeDynamicObjectMethodsEquals(final InvokeDynamicExpression node, final ResolveCallsite resolveCallsite) {
+        final ObjectString fields = (ObjectString) resolveCallsite.incomingDataFlows[4];
+        final TypeReference sourceType = (TypeReference) resolveCallsite.incomingDataFlows[3];
+        final int index = generatedMethodsRegistry.register(new GeneratedMethod() {
+            @Override
+            public void generateCode(final PrintWriter pw, final int index) {
+                pw.print("bytecoder.generated[");
+                pw.print(index);
+                pw.print("] = function(");
+
+                for (int i = 1; i < node.incomingDataFlows.length; i++) {
+                    if (i > 1) {
+                        pw.print(",");
+                    }
+                    pw.print("dynArg" + (i - 1));
+                }
+
+                pw.println(") {");
+
+                pw.print("  if (bytecoder.instanceOf(dynArg1, ");
+
+                final ResolvedClass tc = compileUnit.findClass(sourceType.type);
+                pw.print(generateClassName(sourceType.type));
+                if (tc.requiresClassInitializer()) {
+                    pw.print(".$i");
+                }
+                pw.println(")) {");
+
+                for (int i = 5; i < resolveCallsite.incomingDataFlows.length; i++) {
+                    final FieldReference fieldRef = (FieldReference) resolveCallsite.incomingDataFlows[i];
+                    final String fieldName = JSHelpers.generateFieldName(fieldRef.resolvedField.name);
+                    switch (fieldRef.type.getSort()) {
+                        case Type.OBJECT:
+                        case Type.ARRAY: {
+                            pw.print("    if (de$mirkosertic$bytecoder$classlib$VM.Z$nullsafeEquals$Ljava$lang$Object$$Ljava$lang$Object$(dynArg0.");
+                            pw.print(fieldName);
+                            pw.print(",dynArg1.");
+                            pw.print(fieldName);
+                            pw.println(") == 0) {");
+                            pw.println("      return 0;");
+                            pw.println("    }");
+                            break;
+                        }
+                        default: {
+                            pw.print("    if (dynArg0.");
+                            pw.print(fieldName);
+                            pw.print(" != dynArg1.");
+                            pw.print(fieldName);
+                            pw.println(") {");
+                            pw.println("      return 0;");
+                            pw.println("    }");
+                            break;
+                        }
+                    }
+                }
+
+                pw.println("    return 1;");
+                pw.println("  };");
+                pw.println("  return 0;");
+                pw.println("};");
+            }
+        });
+        pw.print("bytecoder.generated[");
+        pw.print(index);
+        pw.print("](");
+        for (int i = 1; i < node.incomingDataFlows.length; i++) {
+            if (i > 1) {
                 pw.print(",");
             }
             writeExpression(node.incomingDataFlows[i]);
@@ -725,17 +851,6 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         writeExpression(node.incomingDataFlows[0]);
         pw.print(" * ");
         writeExpression(node.incomingDataFlows[1]);
-        pw.print(")");
-    }
-
-    private void writeExpression(final MethodReference node) {
-        final ResolvedMethod m = node.resolvedMethod;
-        pw.print("bytecoder.methodHandle(");
-        pw.print(generateClassName(m.owner.type));
-        pw.print(",'");
-        pw.print(generateMethodName(m.methodNode.name, node.type));
-        pw.print("',");
-        pw.print(node.kind.id());
         pw.print(")");
     }
 
@@ -1558,8 +1673,6 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             writeExpression((Neg) node);
         } else if (node instanceof Mul) {
             writeExpression((Mul) node);
-        } else if (node instanceof MethodReference) {
-            writeExpression((MethodReference) node);
         } else if (node instanceof MethodType) {
             writeExpression((MethodType) node);
         } else if (node instanceof CMP) {

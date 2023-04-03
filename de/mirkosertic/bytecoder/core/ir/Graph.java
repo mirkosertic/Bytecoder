@@ -395,8 +395,12 @@ public class Graph {
         return (FrameDebugInfo) register(new FrameDebugInfo(frame));
     }
 
-    public MethodReference newMethodReference(final ResolvedMethod method, final MethodReference.Kind kind) {
+    public MethodReference newMethodReference(final ResolvedMethod method, final Reference.Kind kind) {
         return (MethodReference) register(new MethodReference(method, kind));
+    }
+
+    public FieldReference newFieldReference(final ResolvedField field, final Reference.Kind kind) {
+        return (FieldReference) register(new FieldReference(field, kind));
     }
 
     public ResolveCallsite newResolveCallsite() {
@@ -443,7 +447,7 @@ public class Graph {
         return (Reinterpret) register(new Reinterpret(type));
     }
 
-    public BootstrapMethod newBootstrapMethod(final Type methodType, final Type className, final String methodName, final MethodReference.Kind kind) {
+    public BootstrapMethod newBootstrapMethod(final Type methodType, final Type className, final String methodName, final Reference.Kind kind) {
         return (BootstrapMethod) register(new BootstrapMethod(methodType, className, methodName, kind));
     }
 }

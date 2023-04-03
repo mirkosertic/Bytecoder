@@ -17,8 +17,8 @@ package de.mirkosertic.bytecoder.core.backend.wasm;
 
 import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.VM;
-import de.mirkosertic.bytecoder.core.backend.StringConcatMethod;
-import de.mirkosertic.bytecoder.core.backend.StringConcatRegistry;
+import de.mirkosertic.bytecoder.core.backend.GeneratedMethod;
+import de.mirkosertic.bytecoder.core.backend.GeneratedMethodsRegistry;
 import de.mirkosertic.bytecoder.core.backend.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.core.backend.sequencer.StructuredControlflowCodeGenerator;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.Block;
@@ -57,6 +57,7 @@ import de.mirkosertic.bytecoder.core.ir.CaughtException;
 import de.mirkosertic.bytecoder.core.ir.Copy;
 import de.mirkosertic.bytecoder.core.ir.Div;
 import de.mirkosertic.bytecoder.core.ir.EnumValuesOf;
+import de.mirkosertic.bytecoder.core.ir.FieldReference;
 import de.mirkosertic.bytecoder.core.ir.FrameDebugInfo;
 import de.mirkosertic.bytecoder.core.ir.Goto;
 import de.mirkosertic.bytecoder.core.ir.Graph;
@@ -93,6 +94,7 @@ import de.mirkosertic.bytecoder.core.ir.PrimitiveLong;
 import de.mirkosertic.bytecoder.core.ir.PrimitiveShort;
 import de.mirkosertic.bytecoder.core.ir.ReadClassField;
 import de.mirkosertic.bytecoder.core.ir.ReadInstanceField;
+import de.mirkosertic.bytecoder.core.ir.Reference;
 import de.mirkosertic.bytecoder.core.ir.ReferenceTest;
 import de.mirkosertic.bytecoder.core.ir.Reinterpret;
 import de.mirkosertic.bytecoder.core.ir.Rem;
@@ -237,7 +239,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private final VTableResolver vTableResolver;
 
-    private final StringConcatRegistry stringConcatRegistry;
+    private final GeneratedMethodsRegistry generatedMethodsRegistry;
 
     public WasmStructuredControlflowCodeGenerator(final CompileUnit compileUnit, final Module module,
                                                   final Map<ResolvedClass, StructType> rtMappings,
@@ -249,7 +251,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                                                   final Graph graph,
                                                   final List<ResolvedClass> resolvedClasses,
                                                   final VTableResolver vTableResolver,
-                                                  final StringConcatRegistry stringConcatRegistry) {
+                                                  final GeneratedMethodsRegistry generatedMethodsRegistry) {
         this.compileUnit = compileUnit;
         this.module = module;
         this.exportableFunction = exportableFunction;
@@ -263,7 +265,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         this.graph = graph;
         this.resolvedClasses = resolvedClasses;
         this.vTableResolver = vTableResolver;
-        this.stringConcatRegistry = stringConcatRegistry;
+        this.generatedMethodsRegistry = generatedMethodsRegistry;
     }
 
     @Override
@@ -740,7 +742,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         for (int i = 0; i < argSamMethodType.type.getArgumentTypes().length; i++) {
             lambdaMethodArgs.add(ConstExpressions.param("arg" + i, typeConverter.apply(argSamMethodType.type.getArgumentTypes()[i])));
         }
-        if (argImplMethod.kind == MethodReference.Kind.INVOKECONSTRUCTOR) {
+        if (argImplMethod.kind == Reference.Kind.INVOKECONSTRUCTOR) {
             lambdaMethod = module.getFunctions().newFunction("lambda" + lambdaCounter++, lambdaMethodArgs, typeConverter.apply(implementationMethod.owner.type));
         } else {
             if (implementationMethod.methodType.getReturnType() == Type.VOID_TYPE) {
@@ -1021,7 +1023,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             }
         }
 
-        final int index = stringConcatRegistry.register(new StringConcatMethod() {
+        final int index = generatedMethodsRegistry.register(new GeneratedMethod() {
             @Override
             public void generateCode(final PrintWriter pw, final int index) {
                 pw.print("bytecoder.imports.bytecoder.stringoperations");
@@ -1113,6 +1115,234 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         );
     }
 
+    private WasmValue generateInvokeDynamicObjectMethodsToString(final InvokeDynamicExpression node, final ResolveCallsite resolveCallsite) {
+        final ObjectString fields = (ObjectString) resolveCallsite.incomingDataFlows[4];
+        final TypeReference sourceType = (TypeReference) resolveCallsite.incomingDataFlows[3];
+
+        final List<Param> params = new ArrayList<>();
+        final List<WasmValue> arguments = new ArrayList<>();
+
+        final ResolvedClass resolvedClass = compileUnit.findClass(sourceType.type);
+        final StructType structType = objectTypeMappings.get(resolvedClass);
+
+        final WasmValue source = toWasmValue((Value) node.incomingDataFlows[1]);
+
+        for (int i = 5; i < resolveCallsite.incomingDataFlows.length; i++) {
+            final FieldReference fieldRef = (FieldReference) resolveCallsite.incomingDataFlows[i];
+
+            final WasmValue fieldValue = ConstExpressions.struct.get(
+                structType,
+                ConstExpressions.ref.cast(structType, source),
+                fieldRef.resolvedField.name
+            );
+
+            switch (fieldRef.type.getSort()) {
+                case Type.OBJECT:
+                case Type.ARRAY: {
+                    final Type toStringMethodType = Type.getMethodType(
+                            Type.getType(String.class),
+                            Type.getType(Object.class)
+                    );
+                    final String methodName = WasmHelpers.generateMethodName("objectToString", toStringMethodType);
+                    final String vmClassName = WasmHelpers.generateClassName(Type.getType(VM.class));
+
+                    final String functionName = vmClassName + "$" + methodName;
+
+                    final ResolvedClass objectClass = compileUnit.findClass(Type.getType(Object.class));
+
+                    final List<WasmValue> toStringArgs = new ArrayList<>();
+                    toStringArgs.add(ConstExpressions.ref.nullRef());
+                    toStringArgs.add(fieldValue);
+
+                    arguments.add(ConstExpressions.struct.get(
+                            objectTypeMappings.get(objectClass),
+                            ConstExpressions.call(
+                                    ConstExpressions.weakFunctionReference(functionName), toStringArgs
+                            ),
+                            "nativeObject"
+                    ));
+                    params.add(ConstExpressions.param("dynarg" + (i - 1), ConstExpressions.ref.host()));
+                    break;
+                }
+                default: {
+                    arguments.add(fieldValue);
+                    params.add(ConstExpressions.param("dynarg" + (i - 1), typeConverter.apply(fieldRef.type)));
+                    break;
+                }
+            }
+        }
+
+        final int index = generatedMethodsRegistry.register(new GeneratedMethod() {
+            @Override
+            public void generateCode(final PrintWriter pw, final int index) {
+                pw.print("bytecoder.imports.bytecoder.stringoperations");
+                pw.print(index);
+                pw.print(" = function(");
+                for (int i = 5; i < resolveCallsite.incomingDataFlows.length; i++) {
+                    if (i > 5) {
+                        pw.print(",");
+                    }
+                    pw.print("dynArg" + (i - 5));
+                }
+
+                pw.println(") {");
+
+                String sourceTypeName = sourceType.type.getClassName();
+                int x = sourceTypeName.lastIndexOf(".");
+                if (x > -1) {
+                    sourceTypeName = sourceTypeName.substring(x + 1);
+                }
+                x = sourceTypeName.lastIndexOf("$");
+                if (x > -1) {
+                    sourceTypeName = sourceTypeName.substring(x + 1);
+                }
+
+                pw.print("    let str = '");
+                pw.print(sourceTypeName);
+                pw.println("[';");
+                for (int i = 5; i < resolveCallsite.incomingDataFlows.length; i++) {
+                    final FieldReference fieldRef = (FieldReference) resolveCallsite.incomingDataFlows[i];
+                    if (i > 5) {
+                        pw.println("    str = str + ', ';");
+                    }
+                    pw.print("    str = str + '");
+                    pw.print(fieldRef.resolvedField.name);
+                    pw.println("=';");
+
+                    pw.print("    str = str + dynArg");
+                    pw.print((i - 5));
+                    pw.println(";");
+
+                }
+                pw.println("    str = str + ']';");
+
+                pw.println("    return str;");
+
+                pw.println("};");
+            }
+        });
+        final Callable concatFunction = module.getImports().importFunction(new ImportReference("bytecoder", "stringoperations" + index), "stringoperations" + index, params, ConstExpressions.ref.host());
+
+        final ResolvedClass stringClass = compileUnit.findClass(Type.getType(String.class));
+        final Global stringGlobal = module.getGlobals().globalsIndex().globalByLabel(WasmHelpers.generateClassName(stringClass.type)  + "_cls");
+        final StructType stringType = objectTypeMappings.get(stringClass);
+
+        final List<WasmValue> initArgs = new ArrayList<>();
+        initArgs.add(
+                ConstExpressions.struct.get(
+                        rtMappings.get(stringClass),
+                        ConstExpressions.getGlobal(stringGlobal),
+                        "factoryFor"
+                ));
+        initArgs.add(ConstExpressions.ref.ref(module.functionIndex().firstByLabel(WasmHelpers.generateClassName(stringClass.type) + "_vt")));
+
+        initArgs.add(ConstExpressions.call(concatFunction, arguments));
+
+        initArgs.add(
+                ConstExpressions.struct.get(
+                        rtMappings.get(stringClass),
+                        ConstExpressions.getGlobal(stringGlobal),
+                        "classImplTypes"
+                )
+        );
+
+        return ConstExpressions.struct.newInstance(
+                stringType,
+                initArgs
+        );
+    }
+
+    int generatedEquals = 0;
+
+    private WasmValue generateInvokeDynamicObjectMethodsEquals(final InvokeDynamicExpression node, final ResolveCallsite resolveCallsite) {
+        final ObjectString fields = (ObjectString) resolveCallsite.incomingDataFlows[4];
+        final TypeReference sourceType = (TypeReference) resolveCallsite.incomingDataFlows[3];
+
+        final List<Param> params = new ArrayList<>();
+        final List<WasmValue> arguments = new ArrayList<>();
+
+        final ResolvedClass resolvedClass = compileUnit.findClass(sourceType.type);
+        final StructType structType = objectTypeMappings.get(resolvedClass);
+
+        final WasmValue source = ConstExpressions.ref.cast(structType, toWasmValue((Value) node.incomingDataFlows[1]));
+
+        for (int i = 1; i < node.incomingDataFlows.length; i++) {
+            final Value v = (Value) node.incomingDataFlows[i];
+            final WasmType type = typeConverter.apply(v.type);
+            params.add(ConstExpressions.param("dynArg" + (i - 1), type));
+            arguments.add(toWasmValue(v));
+        }
+
+        final ExportableFunction hashCodeFunction = module.getFunctions().newFunction("generatedEquals" + (generatedEquals++), params, PrimitiveType.i32);
+        final Local dynArg0 = hashCodeFunction.localByLabel("dynArg0");
+        final Local dynArg1 = hashCodeFunction.localByLabel("dynArg1");
+
+        final WasmValue instanceOfCheck = toInstanceOfCheck(ConstExpressions.getLocal(dynArg1), sourceType.type);
+        final Iff iCheck = hashCodeFunction.flow.iff("icheck", ConstExpressions.i32.ne(instanceOfCheck, ConstExpressions.i32.c(1)));
+        iCheck.flow.ret(ConstExpressions.i32.c(0));
+
+        final WasmValue leftCast = ConstExpressions.ref.cast(structType, ConstExpressions.getLocal(dynArg0));
+        final WasmValue rightCast = ConstExpressions.ref.cast(structType, ConstExpressions.getLocal(dynArg1));
+        for (int i = 5; i < resolveCallsite.incomingDataFlows.length; i++) {
+            final FieldReference fieldRef = (FieldReference) resolveCallsite.incomingDataFlows[i];
+            final WasmValue left = ConstExpressions.struct.get(structType, leftCast, fieldRef.resolvedField.name);
+            final WasmValue right = ConstExpressions.struct.get(structType, rightCast, fieldRef.resolvedField.name);
+            final WasmValue condition;
+            switch (fieldRef.type.getSort()) {
+                case Type.BOOLEAN:
+                case Type.BYTE:
+                case Type.CHAR:
+                case Type.SHORT:
+                case Type.INT: {
+                    condition = ConstExpressions.i32.eq(left, right);
+                    break;
+                }
+                case Type.FLOAT: {
+                    condition = ConstExpressions.f32.eq(left, right);
+                    break;
+                }
+                case Type.LONG: {
+                    condition = ConstExpressions.i64.eq(left, right);
+                    break;
+                }
+                case Type.DOUBLE: {
+                    condition = ConstExpressions.f64.eq(left, right);
+                    break;
+                }
+                case Type.OBJECT:
+                case Type.ARRAY: {
+                    final Type compareMethodTyoe = Type.getMethodType(
+                            Type.BOOLEAN_TYPE,
+                            Type.getType(Object.class),
+                            Type.getType(Object.class)
+                    );
+                    final String methodName = WasmHelpers.generateMethodName("nullsafeEquals", compareMethodTyoe);
+                    final String vmClassName = WasmHelpers.generateClassName(Type.getType(VM.class));
+
+                    final String functionName = vmClassName + "$" + methodName;
+
+                    final List<WasmValue> callArgs = new ArrayList<>();
+                    callArgs.add(ConstExpressions.ref.nullRef());
+                    callArgs.add(left);
+                    callArgs.add(right);
+
+                    condition = ConstExpressions.call(ConstExpressions.weakFunctionReference(functionName), callArgs);
+                    break;
+                }
+                default: {
+                    throw new IllegalArgumentException("Not supported field type for equals generation " + fieldRef.type + " on " + fieldRef.resolvedField.name);
+                }
+            }
+
+            final Iff check = hashCodeFunction.flow.iff("fcheck" + (i - 5), ConstExpressions.i32.ne(condition, ConstExpressions.i32.c(1)));
+            check.flow.ret(ConstExpressions.i32.c(0));
+        }
+
+        hashCodeFunction.flow.ret(ConstExpressions.i32.c(1));
+
+        return ConstExpressions.call(hashCodeFunction, arguments);
+    }
+
     private WasmValue toWasmValue(final InvokeDynamicExpression value) {
         final ResolveCallsite resolveCallsite = (ResolveCallsite) value.incomingDataFlows[0];
         final BootstrapMethod bootstrapMethod = (BootstrapMethod) resolveCallsite.incomingDataFlows[0];
@@ -1125,6 +1355,23 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         } else if (bootstrapMethod.className.getClassName().equals("java.lang.invoke.StringConcatFactory")) {
             if ("makeConcatWithConstants".equals(bootstrapMethod.methodName)) {
                 return generateInvokeDynamicStringMakeConcatWithConstants(value, resolveCallsite);
+            } else {
+                throw new IllegalArgumentException("Not supported method " + bootstrapMethod.methodName + " on " + bootstrapMethod.className);
+            }
+        } else if (bootstrapMethod.className.getClassName().equals("java.lang.runtime.ObjectMethods")) {
+            if ("bootstrap".equals(bootstrapMethod.methodName)) {
+                final ObjectString operation = (ObjectString) resolveCallsite.incomingDataFlows[1];
+                final String operationStr = compileUnit.getConstantPool().getPooledStrings().get(operation.value.index);
+                if ("toString".equals(operationStr)) {
+                    return generateInvokeDynamicObjectMethodsToString(value, resolveCallsite);
+                } else if ("hashCode".equals(operationStr)) {
+                    return ConstExpressions.i32.c(0);
+                    //return generateInvokeDynamicObjectMethodsHashCode(value, resolveCallsite);
+                } else if ("equals".equals(operationStr)) {
+                    return generateInvokeDynamicObjectMethodsEquals(value, resolveCallsite);
+                } else {
+                    throw new IllegalArgumentException("Not supported operation " +operationStr + " on " + bootstrapMethod.methodName + " on " + bootstrapMethod.className);
+                }
             } else {
                 throw new IllegalArgumentException("Not supported method " + bootstrapMethod.methodName + " on " + bootstrapMethod.className);
             }
@@ -1446,9 +1693,13 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     private WasmValue toWasmValue(final InstanceOf value) {
         final Value left = (Value) value.incomingDataFlows[0];
         final TypeReference right = (TypeReference) value.incomingDataFlows[1];
+        return toInstanceOfCheck(toWasmValue(left), right.type);
+    }
+
+    private WasmValue toInstanceOfCheck(final WasmValue value, final Type typeToCheck) {
         final List<WasmValue> params = new ArrayList<>();
-        params.add(toWasmValue(left));
-        final ResolvedClass questionType = compileUnit.findClass(right.type);
+        params.add(value);
+        final ResolvedClass questionType = compileUnit.findClass(typeToCheck);
         params.add(ConstExpressions.i32.c(resolvedClasses.indexOf(questionType)));
         return ConstExpressions.call(ConstExpressions.weakFunctionReference("instanceOf"), params);
     }
