@@ -371,6 +371,17 @@ const bytecoder = {
                 }
                 return 0;
             },
+            Z$endsWith$Ljava$lang$String$: function (str, otherstr) {
+                const a = bytecoder.toJSString(str);
+                const b = bytecoder.toJSString(otherstr);
+                if (a.endsWith(b)) {
+                    return 1;
+                }
+                return 0;
+            },
+            Ljava$lang$String$$replaceAll$Ljava$lang$String$$Ljava$lang$String$: function(str, regex, replacement) {
+                return str;
+            },
             I$lastIndexOf$Ljava$lang$String$: function (str, s) {
                 const a = bytecoder.toJSString(str);
                 return a.lastIndexOf(bytecoder.toJSString(s));
@@ -414,6 +425,13 @@ const bytecoder = {
                 let x = '';
                 for (let i = offset; i < offset + count; i++) {
                     x += String.fromCodePoint(bytecoder.instance.exports.getByteArrayEntry(null, chars, i));
+                }
+                bytecoder.setNativeObject(str, x);
+            },
+            V$initializeWith$$I$I$I: function (str, points, offset, count) {
+                let x = '';
+                for (let i = offset; i < offset + count; i++) {
+                    x += String.fromCodePoint(bytecoder.instance.exports.getIntArrayEntry(null, points, i));
                 }
                 bytecoder.setNativeObject(str, x);
             },
@@ -724,4 +742,3 @@ bytecoder.filehandles[1] = {
         }
     },
 };
-

@@ -37,10 +37,19 @@ public class DefaultMethodTest {
         }
     }
 
+    public interface WithStaticFields {
+        int value = Integer.valueOf(20).intValue();
+    }
+
     @Test
     public void testDefaultImplInvocation() {
         final Impl theImpl = new Impl();
         final int theResult = theImpl.compute(10, 20);
         Assert.assertEquals(30, theResult, 0);
+    }
+
+    @Test
+    public void testInterfaceStaticFieldDefault() {
+        Assert.assertEquals(20, WithStaticFields.value, 0);
     }
 }

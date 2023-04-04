@@ -35,6 +35,7 @@ import de.mirkosertic.bytecoder.core.ir.InstructionTranslation;
 import de.mirkosertic.bytecoder.core.ir.InvokeDynamicExpression;
 import de.mirkosertic.bytecoder.core.ir.LineNumberDebugInfo;
 import de.mirkosertic.bytecoder.core.ir.LookupSwitch;
+import de.mirkosertic.bytecoder.core.ir.MethodType;
 import de.mirkosertic.bytecoder.core.ir.MonitorEnter;
 import de.mirkosertic.bytecoder.core.ir.MonitorExit;
 import de.mirkosertic.bytecoder.core.ir.New;
@@ -2406,6 +2407,19 @@ public class GraphParser {
         }
 
         invokeDynamic.addIncomingData(arguments);
+
+        final MethodType mt = (MethodType) resolveCallsite.incomingDataFlows[2];
+        if (mt.type.getReturnType().getSort() == Type.OBJECT) {
+            final ResolvedClass mtc = compileUnit.resolveClass(mt.type.getReturnType(), analysisStack);
+            if (Modifier.isAbstract(mtc.classNode.access) || Modifier.isInterface(mtc.classNode.access)) {
+                final Set<MethodNode> abstractMethods = mtc.abstractMethods();
+                if (abstractMethods.size() == 1) {
+                    // We need to resolve something
+                    final MethodNode singleOne = abstractMethods.iterator().next();
+                    mtc.resolveMethod(singleOne.name, Type.getMethodType(singleOne.desc), analysisStack);
+                }
+            }
+        }
 
         resolveCallsite.addIncomingData();
 

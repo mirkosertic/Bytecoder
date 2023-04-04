@@ -140,4 +140,10 @@ public class Array {
     public static void setByteArrayEntry(final byte[] arr, final int index, final byte value) {
         arr[index] = value;
     }
+
+    @Export("getIntArrayEntry")
+    public static int getIntArrayEntry(final int[] arr, final int index) {
+        return arr[index];
+    }
+
 }
