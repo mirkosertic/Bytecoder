@@ -121,9 +121,7 @@ public class JSBackend {
                 }
                 pw.println(" {");
 
-                generateFieldsFor(pw, compileUnit, cl);
-
-                generateClassInitFor(pw, compileUnit, cl);
+                generateInterfaceFieldsFor(pw, compileUnit, cl);
 
                 generateLambdaLogicFor(pw, compileUnit, cl);
 
@@ -136,7 +134,11 @@ public class JSBackend {
                 pw.print(cl.classNode.access);
                 pw.println(";");
 
+                generateInterfaceClassInitFor(className, pw, compileUnit, cl);
+
                 generateStaticMethodsFor(className, pw, compileUnit, cl, compileOptions, generatedMethodsRegistry);
+
+                generateStaticInterfaceFieldsFor(className, pw, compileUnit, cl);
 
                 pw.println();
             } else {
@@ -262,7 +264,6 @@ public class JSBackend {
     }
 
     private void generateClassInitFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
-
         pw.println();
         pw.println("  static #rt = undefined;");
         pw.println("  static get $rt() {");
@@ -309,6 +310,60 @@ public class JSBackend {
         }
     }
 
+    private void generateInterfaceClassInitFor(final String prefix, final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
+        pw.print(prefix);
+        pw.println("._rt = null;");
+        pw.print("Object.defineProperty(");
+        pw.print(prefix);
+        pw.println(",'$rt', {");
+        pw.println("  get() {");
+        pw.println("    if (!this._rt) {");
+        pw.print("      this._rt = bytecoder.newRuntimeClassFor(");
+        pw.print(generateClassName(cl.type));
+        pw.print(",[");
+        boolean f = true;
+        for (final ResolvedClass type : cl.allTypesOf()) {
+            if (f) {
+                f = false;
+            } else {
+                pw.print(",");
+            }
+            pw.print(generateClassName(type.type));
+        }
+        pw.println("]);");
+        pw.println("    }");
+        pw.println("    return this._rt;");
+        pw.println("  }");
+        pw.println("});");
+
+        if (cl.requiresClassInitializer()) {
+            pw.println();
+            pw.print(prefix);
+            pw.println("._iguard = false;");
+            pw.print("Object.defineProperty(");
+            pw.print(prefix);
+            pw.println(",'$i', {");
+            pw.println("  get() {");
+            pw.println("    if (!this._iguard) {");
+            pw.println("      this._iguard = true;");
+            if (cl.superClass != null && cl.superClass.requiresClassInitializer()) {
+                pw.print("      ");
+                pw.print(generateClassName(cl.superClass.type));
+                pw.println(".$i;");
+            }
+
+            if (cl.classInitializer != null) {
+                pw.print("      this.");
+                pw.print(generateMethodName("<clinit>", cl.classInitializer.methodType));
+                pw.println("();");
+            }
+            pw.println("    }");
+            pw.println("    return this;");
+            pw.println("  }");
+            pw.println("});");
+        }
+    }
+
     private void generateFieldsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
 
         pw.println("  nativeObject = null;");
@@ -339,6 +394,73 @@ public class JSBackend {
                         break;
                 }
                 pw.println(";");
+            }
+
+            pw.println();
+        }
+    }
+
+    private void generateInterfaceFieldsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
+
+        pw.println("  nativeObject = null;");
+
+        if (!cl.resolvedFields.isEmpty()) {
+            pw.println();
+            for (final ResolvedField f : cl.resolvedFields) {
+                if (!Modifier.isStatic(f.access)) {
+                    pw.print("  ");
+                    pw.print(generateFieldName(f.name));
+                    switch (f.type.getSort()) {
+                        case Type.FLOAT:
+                        case Type.DOUBLE:
+                            pw.print(" = 0.0");
+                            break;
+                        case Type.BOOLEAN:
+                            pw.print(" = false");
+                            break;
+                        case Type.ARRAY:
+                        case Type.OBJECT:
+                        case Type.METHOD:
+                            pw.print(" = null");
+                            break;
+                        default:
+                            pw.print(" = 0");
+                            break;
+                    }
+                    pw.println(";");
+                }
+            }
+
+            pw.println();
+        }
+    }
+
+    private void generateStaticInterfaceFieldsFor(final String prefix, final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
+        if (!cl.resolvedFields.isEmpty()) {
+            for (final ResolvedField f : cl.resolvedFields) {
+                if (!Modifier.isStatic(f.access)) {
+                    pw.print(prefix);
+                    pw.print(".");
+                    pw.print(generateFieldName(f.name));
+                    switch (f.type.getSort()) {
+                        case Type.FLOAT:
+                        case Type.DOUBLE:
+                            pw.print(" = 0.0");
+                            break;
+                        case Type.BOOLEAN:
+                            pw.print(" = false");
+                            break;
+                        case Type.ARRAY:
+                        case Type.OBJECT:
+                        case Type.METHOD:
+                            pw.print(" = null");
+                            break;
+                        default:
+                            pw.print(" = 0");
+                            break;
+                    }
+                    pw.println(";");
+                }
             }
 
             pw.println();

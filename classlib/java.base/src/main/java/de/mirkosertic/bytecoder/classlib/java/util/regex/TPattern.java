@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,26 +15,26 @@
  */
 package de.mirkosertic.bytecoder.classlib.java.util.regex;
 
-import de.mirkosertic.bytecoder.core.test.UnitTestRunner;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
 import java.util.regex.Pattern;
 
-@RunWith(UnitTestRunner.class)
-public class PatternTest {
+@SubstitutesInClass(completeReplace = true)
+public class TPattern {
 
-    @Test
-    public void testCompile1() {
-        System.out.println("Before Pattern call");
-        final Pattern javascriptPattern = Pattern.compile("^[a-zA-Z_$][a-zA-Z_$0-9]*$");
-        System.out.println("After Pattern call");
+    private int flags;
+
+    private String pattern;
+
+    public static Pattern compile(final String regex) {
+        return compile(regex, 0);
+    }
+    public static Pattern compile(final String regex, final int flags) {
+        return (Pattern) (Object) new TPattern(flags, regex);
     }
 
-    @Test
-    public void testCompile2() {
-        System.out.println("Before Pattern call");
-        final Pattern javascriptPattern = Pattern.compile("^[^\":,}/ ][^:]*$");
-        System.out.println("After Pattern call");
+    public TPattern(final int flags, final String pattern) {
+        this.flags = flags;
+        this.pattern = pattern;
     }
 }

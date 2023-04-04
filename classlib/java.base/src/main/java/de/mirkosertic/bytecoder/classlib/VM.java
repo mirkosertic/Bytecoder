@@ -93,4 +93,34 @@ public class VM {
         }
         return false;
     }
+
+    @Export("toByte")
+    public static Byte toByte(final byte v) {
+        return Byte.valueOf(v);
+    }
+
+    @Export("toShort")
+    public static Short toShort(final short v) {
+        return Short.valueOf(v);
+    }
+
+    @Export("toInteger")
+    public static Integer toInteger(final int v) {
+        return Integer.valueOf(v);
+    }
+
+    @Export("toLong")
+    public static Long toLong(final long v) {
+        return Long.valueOf(v);
+    }
+
+    @Export("toFloat")
+    public static Float toFloat(final float v) {
+        return Float.valueOf(v);
+    }
+
+    @Export("toDouble")
+    public static Double toDouble(final float v) {
+        return Double.valueOf(v);
+    }
 }
