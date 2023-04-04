@@ -116,7 +116,7 @@
         <dependency>
             <groupId>org.jmonkeyengine</groupId>
             <artifactId>jme3-core</artifactId>
-            <version>3.5.2-stable</version>
+            <version>3.6.0-stable</version>
             <scope>test</scope>
         </dependency>
         <dependency>
