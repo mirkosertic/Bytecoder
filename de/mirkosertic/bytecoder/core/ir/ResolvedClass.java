@@ -236,6 +236,22 @@ public class ResolvedClass {
         return result;
     }
 
+    public Set<MethodNode> abstractMethods() {
+        final Set<MethodNode> result = new HashSet<>();
+        for (final MethodNode m : classNode.methods) {
+            if (Modifier.isAbstract(m.access)) {
+                result.add(m);
+            }
+        }
+        for (final ResolvedClass interf : interfaces) {
+            result.addAll(interf.abstractMethods());
+        }
+        if (superClass != null) {
+            result.addAll(superClass.abstractMethods());
+        }
+        return result;
+    }
+
     public void computeOpaqueReferenceTypeAndCallbackStatus(final AnalysisStack analysisStack) {
         if (isOpaqueReferenceType == null) {
             isOpaqueReferenceType = allTypesOf().stream().anyMatch(t -> t.type.getClassName().equals(OpaqueReferenceType.class.getName()));

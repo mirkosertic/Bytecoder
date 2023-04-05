@@ -371,6 +371,17 @@ const bytecoder = {
                 }
                 return 0;
             },
+            Z$endsWith$Ljava$lang$String$: function (str, otherstr) {
+                const a = bytecoder.toJSString(str);
+                const b = bytecoder.toJSString(otherstr);
+                if (a.endsWith(b)) {
+                    return 1;
+                }
+                return 0;
+            },
+            Ljava$lang$String$$replaceAll$Ljava$lang$String$$Ljava$lang$String$: function(str, regex, replacement) {
+                return str;
+            },
             I$lastIndexOf$Ljava$lang$String$: function (str, s) {
                 const a = bytecoder.toJSString(str);
                 return a.lastIndexOf(bytecoder.toJSString(s));
@@ -414,6 +425,13 @@ const bytecoder = {
                 let x = '';
                 for (let i = offset; i < offset + count; i++) {
                     x += String.fromCodePoint(bytecoder.instance.exports.getByteArrayEntry(null, chars, i));
+                }
+                bytecoder.setNativeObject(str, x);
+            },
+            V$initializeWith$$I$I$I: function (str, points, offset, count) {
+                let x = '';
+                for (let i = offset; i < offset + count; i++) {
+                    x += String.fromCodePoint(bytecoder.instance.exports.getIntArrayEntry(null, points, i));
                 }
                 bytecoder.setNativeObject(str, x);
             },
@@ -725,7 +743,6 @@ bytecoder.filehandles[1] = {
     },
 };
 
-
 bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
   switch(index) {
       case 0: return 'null';
@@ -868,20 +885,20 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 137: return ' Size: ';
       case 138: return 'vm error: ';
       case 139: return 'data type scale not a power of two';
-      case 140: return '\/';
-      case 141: return ' ';
-      case 142: return '=';
-      case 143: return 'UNKNOWN';
-      case 144: return 'No java.util.Objects instances for you!';
-      case 145: return '(';
-      case 146: return ',';
-      case 147: return ':';
-      case 148: return '-';
-      case 149: return '[pos=';
-      case 150: return ' lim=';
-      case 151: return ' cap=';
-      case 152: return 'false';
-      case 153: return 'function: ';
+      case 140: return '[pos=';
+      case 141: return ' lim=';
+      case 142: return ' cap=';
+      case 143: return ':';
+      case 144: return '-';
+      case 145: return 'UNKNOWN';
+      case 146: return '=';
+      case 147: return '(';
+      case 148: return ',';
+      case 149: return '\/';
+      case 150: return ' ';
+      case 151: return 'No java.util.Objects instances for you!';
+      case 152: return 'function: ';
+      case 153: return 'false';
       case 154: return 'none';
       case 155: return 'Lua';
       case 156: return '?';
@@ -1016,157 +1033,157 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 285: return ' on number and ';
       case 286: return 'attempt to compare string with number';
       case 287: return 'table index';
-      case 288: return 'Illegal Capacity: ';
-      case 289: return 'Illegal Load: ';
-      case 290: return '(for control)';
-      case 291: return '(for generator)';
-      case 292: return '(for index)';
-      case 293: return '(for limit)';
-      case 294: return '(for state)';
-      case 295: return '(for step)';
-      case 296: return 'and';
-      case 297: return 'break';
-      case 298: return 'do';
-      case 299: return 'else';
-      case 300: return 'elseif';
-      case 301: return 'end';
-      case 302: return 'for';
-      case 303: return 'goto';
-      case 304: return 'if';
-      case 305: return 'in';
-      case 306: return 'not';
-      case 307: return 'or';
-      case 308: return 'repeat';
-      case 309: return 'then';
-      case 310: return 'until';
-      case 311: return 'while';
-      case 312: return '..';
-      case 313: return '...';
-      case 314: return '==';
-      case 315: return '>=';
-      case 316: return '<=';
-      case 317: return '~=';
-      case 318: return '::';
-      case 319: return '<eos>';
-      case 320: return '<number>';
-      case 321: return '<name>';
-      case 322: return '<string>';
-      case 323: return '<eof>';
-      case 324: return 'compiler assert failed';
-      case 325: return 'upvalues';
-      case 326: return 'main function has more than ';
-      case 327: return '[string \"';
-      case 328: return '\"]';
-      case 329: return 'syntax error: ';
-      case 330: return ' near ';
-      case 331: return 'char(';
-      case 332: return 'function at line ';
-      case 333: return ' has more than ';
-      case 334: return 'Ee';
-      case 335: return 'Xx';
-      case 336: return 'Pp';
-      case 337: return '+-';
-      case 338: return 'chunk has too many lines';
-      case 339: return 'nesting of [[...]] is deprecated';
-      case 340: return 'unfinished long string';
-      case 341: return 'unfinished long comment';
-      case 342: return 'invalid long string delimiter';
-      case 343: return '.';
-      case 344: return 'escape sequence too large';
-      case 345: return 'hexadecimal digit expected \'x';
-      case 346: return 'unfinished string';
-      case 347: return 'chunk has too many syntax levels';
-      case 348: return 'unexpected symbol ';
-      case 349: return ' (';
-      case 350: return ' expected';
-      case 351: return 'control structure too long';
-      case 352: return 'function or expression too complex';
-      case 353: return 'cannot use ';
-      case 354: return ' outside a vararg function';
-      case 355: return 'self';
-      case 356: return 'local variables';
-      case 357: return '<name> or ';
-      case 358: return ' expected ';
-      case 359: return '(to close ';
-      case 360: return ' at line ';
-      case 361: return '<goto ';
-      case 362: return '> at line ';
-      case 363: return ' jumps into the scope of local \'';
-      case 364: return '<';
-      case 365: return ' not inside a loop';
-      case 366: return 'no visible label \'';
-      case 367: return '\' for <goto> at line ';
-      case 368: return 'items in a constructor';
-      case 369: return 'function arguments expected';
-      case 370: return 'syntax error';
-      case 371: return 'label \'';
-      case 372: return ' already defined on line ';
-      case 373: return ' or ';
-      case 374: return 'Required array length ';
-      case 375: return ' + ';
-      case 376: return ' is too large';
-      case 377: return ' instack ';
-      case 378: return ' closed ';
-      case 379: return 'start must be > 0';
-      case 380: return 'bad argument #';
-      case 381: return 'nan';
-      case 382: return '-inf';
-      case 383: return 'inf';
-      case 384: return 'attempt to compare number with string';
-      case 385: return 'abs';
-      case 386: return 'ceil';
-      case 387: return 'cos';
-      case 388: return 'deg';
-      case 389: return 'exp';
-      case 390: return 'floor';
-      case 391: return 'fmod';
-      case 392: return 'frexp';
-      case 393: return 'huge';
-      case 394: return 'ldexp';
-      case 395: return 'max';
-      case 396: return 'min';
-      case 397: return 'modf';
-      case 398: return 'pi';
-      case 399: return 'pow';
-      case 400: return 'random';
-      case 401: return 'randomseed';
-      case 402: return 'rad';
-      case 403: return 'sin';
-      case 404: return 'sqrt';
-      case 405: return 'tan';
-      case 406: return 'math';
-      case 407: return 'package';
-      case 408: return 'loaded';
-      case 409: return 'globals';
-      case 410: return 'debug';
-      case 411: return 'gethook';
-      case 412: return 'getinfo';
-      case 413: return 'getlocal';
-      case 414: return 'getmetatable';
-      case 415: return 'getregistry';
-      case 416: return 'getupvalue';
-      case 417: return 'getuservalue';
-      case 418: return 'sethook';
-      case 419: return 'setlocal';
-      case 420: return 'setmetatable';
-      case 421: return 'setupvalue';
-      case 422: return 'setuservalue';
-      case 423: return 'traceback';
-      case 424: return 'upvalueid';
-      case 425: return 'upvaluejoin';
+      case 288: return 'attempt to compare number with string';
+      case 289: return 'Illegal Capacity: ';
+      case 290: return 'Illegal Load: ';
+      case 291: return '(for control)';
+      case 292: return '(for generator)';
+      case 293: return '(for index)';
+      case 294: return '(for limit)';
+      case 295: return '(for state)';
+      case 296: return '(for step)';
+      case 297: return 'and';
+      case 298: return 'break';
+      case 299: return 'do';
+      case 300: return 'else';
+      case 301: return 'elseif';
+      case 302: return 'end';
+      case 303: return 'for';
+      case 304: return 'goto';
+      case 305: return 'if';
+      case 306: return 'in';
+      case 307: return 'not';
+      case 308: return 'or';
+      case 309: return 'repeat';
+      case 310: return 'then';
+      case 311: return 'until';
+      case 312: return 'while';
+      case 313: return '..';
+      case 314: return '...';
+      case 315: return '==';
+      case 316: return '>=';
+      case 317: return '<=';
+      case 318: return '~=';
+      case 319: return '::';
+      case 320: return '<eos>';
+      case 321: return '<number>';
+      case 322: return '<name>';
+      case 323: return '<string>';
+      case 324: return '<eof>';
+      case 325: return 'compiler assert failed';
+      case 326: return 'upvalues';
+      case 327: return 'main function has more than ';
+      case 328: return '[string \"';
+      case 329: return '\"]';
+      case 330: return 'syntax error: ';
+      case 331: return ' near ';
+      case 332: return 'char(';
+      case 333: return 'function at line ';
+      case 334: return ' has more than ';
+      case 335: return 'Ee';
+      case 336: return 'Xx';
+      case 337: return 'Pp';
+      case 338: return '+-';
+      case 339: return 'chunk has too many lines';
+      case 340: return 'nesting of [[...]] is deprecated';
+      case 341: return 'unfinished long string';
+      case 342: return 'unfinished long comment';
+      case 343: return 'invalid long string delimiter';
+      case 344: return '.';
+      case 345: return 'escape sequence too large';
+      case 346: return 'hexadecimal digit expected \'x';
+      case 347: return 'unfinished string';
+      case 348: return 'chunk has too many syntax levels';
+      case 349: return 'unexpected symbol ';
+      case 350: return ' (';
+      case 351: return ' expected';
+      case 352: return 'control structure too long';
+      case 353: return 'function or expression too complex';
+      case 354: return 'cannot use ';
+      case 355: return ' outside a vararg function';
+      case 356: return 'self';
+      case 357: return 'local variables';
+      case 358: return '<name> or ';
+      case 359: return ' expected ';
+      case 360: return '(to close ';
+      case 361: return ' at line ';
+      case 362: return '<goto ';
+      case 363: return '> at line ';
+      case 364: return ' jumps into the scope of local \'';
+      case 365: return '<';
+      case 366: return ' not inside a loop';
+      case 367: return 'no visible label \'';
+      case 368: return '\' for <goto> at line ';
+      case 369: return 'items in a constructor';
+      case 370: return 'function arguments expected';
+      case 371: return 'syntax error';
+      case 372: return 'label \'';
+      case 373: return ' already defined on line ';
+      case 374: return ' or ';
+      case 375: return 'Required array length ';
+      case 376: return ' + ';
+      case 377: return ' is too large';
+      case 378: return ' instack ';
+      case 379: return ' closed ';
+      case 380: return 'start must be > 0';
+      case 381: return 'bad argument #';
+      case 382: return 'nan';
+      case 383: return '-inf';
+      case 384: return 'inf';
+      case 385: return 'globals';
+      case 386: return 'debug';
+      case 387: return 'gethook';
+      case 388: return 'getinfo';
+      case 389: return 'getlocal';
+      case 390: return 'getmetatable';
+      case 391: return 'getregistry';
+      case 392: return 'getupvalue';
+      case 393: return 'getuservalue';
+      case 394: return 'sethook';
+      case 395: return 'setlocal';
+      case 396: return 'setmetatable';
+      case 397: return 'setupvalue';
+      case 398: return 'setuservalue';
+      case 399: return 'traceback';
+      case 400: return 'upvalueid';
+      case 401: return 'upvaluejoin';
+      case 402: return 'package';
+      case 403: return 'loaded';
+      case 404: return 'abs';
+      case 405: return 'ceil';
+      case 406: return 'cos';
+      case 407: return 'deg';
+      case 408: return 'exp';
+      case 409: return 'floor';
+      case 410: return 'fmod';
+      case 411: return 'frexp';
+      case 412: return 'huge';
+      case 413: return 'ldexp';
+      case 414: return 'max';
+      case 415: return 'min';
+      case 416: return 'modf';
+      case 417: return 'pi';
+      case 418: return 'pow';
+      case 419: return 'random';
+      case 420: return 'randomseed';
+      case 421: return 'rad';
+      case 422: return 'sin';
+      case 423: return 'sqrt';
+      case 424: return 'tan';
+      case 425: return 'math';
       case 426: return 'table or string';
       case 427: return 'Input length = ';
-      case 428: return '<dead';
-      case 429: return '; ';
-      case 430: return 'c';
-      case 431: return 'l';
-      case 432: return 'r';
+      case 428: return '; ';
+      case 429: return '<dead';
+      case 430: return 'String';
+      case 431: return 'flnStu';
+      case 432: return 'function or level';
       case 433: return 'interval is empty';
-      case 434: return 'String';
-      case 435: return 'flnStu';
-      case 436: return 'function or level';
-      case 437: return 'value expected';
-      case 438: return 'index out of range';
+      case 434: return 'index out of range';
+      case 435: return 'c';
+      case 436: return 'l';
+      case 437: return 'r';
+      case 438: return 'value expected';
       case 439: return 'weak<';
       case 440: return 'cannot set ';
       case 441: return ' for userdata';
@@ -1178,9 +1195,9 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
   }
   throw 'Unknown string index ' + index;
 };
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.EventTarget_generated"] = {
-    V$addEventListener$Ljava$lang$String$$Lde$mirkosertic$bytecoder$api$web$EventListener$ : function(thisref, arg0, arg1) {
-        (thisref.addEventListener(arg0, function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.EventListener_callback'](arg1,evt);}));
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.ParentNode_generated"] = {
+    Lde$mirkosertic$bytecoder$api$web$Element$$getElementById$Ljava$lang$String$ : function(thisref, arg0) {
+        return (thisref.getElementById(arg0));
     },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.Window_generated"] = {
@@ -1188,14 +1205,14 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.web.Window_generated"] = {
         return (thisref.document);
     },
 };
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.ParentNode_generated"] = {
-    Lde$mirkosertic$bytecoder$api$web$Element$$getElementById$Ljava$lang$String$ : function(thisref, arg0) {
-        return (thisref.getElementById(arg0));
-    },
-};
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLTextAreaElement_generated"] = {
     Ljava$lang$String$$value$$ : function(thisref) {
         return (thisref.value);
+    },
+};
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.EventTarget_generated"] = {
+    V$addEventListener$Ljava$lang$String$$Lde$mirkosertic$bytecoder$api$web$EventListener$ : function(thisref, arg0, arg1) {
+        (thisref.addEventListener(arg0, function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.EventListener_callback'](arg1,evt);}));
     },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.Element_generated"] = {

@@ -32,6 +32,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import static de.mirkosertic.bytecoder.core.backend.js.JSHelpers.*;
@@ -185,7 +187,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         final Type invocationTarget = Type.getObjectType(node.insnNode.owner);
 
         pw.print("(");
-        if (invocationTarget.equals(cl.type)) {
+        if (invocationTarget.equals(cl.type) || Modifier.isInterface(node.resolvedMethod.owner.classNode.access)) {
             writeExpression(node.incomingDataFlows[0]);
 
             pw.print(".");
@@ -523,6 +525,16 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         pw.print(")");
     }
 
+    static class LinkageArgument {
+        final String name;
+        final Type type;
+
+        public LinkageArgument(final String name, final Type type) {
+            this.name = name;
+            this.type = type;
+        }
+    }
+
     private void generateInvokeDynamicLambdaMetaFactoryInvocation(final InvokeDynamicExpression node, final ResolveCallsite resolveCallsite) {
         // Ok, we can create a lambda invocation here
         final ObjectString argMethodName = (ObjectString) resolveCallsite.incomingDataFlows[1];
@@ -538,13 +550,80 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             allArgs.add(node.incomingDataFlows[i]);
         }
 
-        for (int i = 0; i < argSamMethodType.type.getArgumentTypes().length; i++) {
-            allArgs.add("arg" + i);
+        for (int i = 0; i < argInstanceMethodType.type.getArgumentTypes().length; i++) {
+            allArgs.add(new LinkageArgument("arg" + i, argInstanceMethodType.type.getArgumentTypes()[i]));
         }
+
+        final BiFunction<Type, Type, String> typeConverterFunction = (source, target) -> {
+            if (source.getSort() != target.getSort()) {
+                if (source.getSort() != Type.OBJECT && target.getSort() == Type.OBJECT) {
+                    // Primitive to Object
+                    switch (source.getSort()) {
+                        case Type.BYTE: {
+                            return "java$lang$Byte.Ljava$lang$Byte$$valueOf$B";
+                        }
+                        case Type.SHORT: {
+                            return "java$lang$Short.Ljava$lang$Short$$valueOf$S";
+                        }
+                        case Type.INT: {
+                            return "java$lang$Integer.Ljava$lang$Integer$$valueOf$I";
+                        }
+                        case Type.LONG: {
+                            return "java$lang$Long.Ljava$lang$Long$$valueOf$L";
+                        }
+                        case Type.FLOAT: {
+                            return "java$lang$Float.Ljava$lang$Float$$valueOf$F";
+                        }
+                        case Type.DOUBLE: {
+                            return "java$lang$Double.Ljava$lang$Double$$valueOf$D";
+                        }
+                        default: {
+                            throw new IllegalStateException("No converter from " + source + " to " + target + " implemented!");
+                        }
+                    }
+                }
+                if (source.getSort() == Type.OBJECT && target.getSort() != Type.OBJECT) {
+                    // Object to primitive
+                    switch (source.getSort()) {
+                        default: {
+                            throw new IllegalStateException("No converter from " + source + " to " + target + " implemented!");
+                        }
+                    }
+                }
+            }
+            return null;
+        };
+
+        final BiConsumer<Object, Type> writeArgumentWithOptionalConversion = (o, t)-> {
+            if (o instanceof LinkageArgument) {
+                final LinkageArgument argument = (LinkageArgument) o;
+                final String conversionFunction = typeConverterFunction.apply(argument.type, t);
+                if (conversionFunction != null) {
+                    pw.print(conversionFunction);
+                    pw.print("(");
+                    pw.print(argument.name);
+                    pw.print(")");
+                } else {
+                    pw.print(argument.name);
+                }
+            } else {
+                final Value v = (Value) o;
+                final String conversionFunction = typeConverterFunction.apply(v.type, t);
+                if (conversionFunction != null) {
+                    pw.print(conversionFunction);
+                    pw.print("(");
+                    writeExpression(v);
+                    pw.print(")");
+                } else {
+                    writeExpression(v);
+                }
+            }
+        };
+
+        final Type returnType = argInvokedType.type.getReturnType();
 
         switch (argImplMethod.kind) {
             case INVOKESTATIC: {
-                final Type returnType = argInvokedType.type.getReturnType();
                 pw.print("bytecoder.instanceWithLambdaImpl(");
                 pw.print(JSHelpers.generateClassName(returnType));
                 pw.print(", function(");
@@ -556,28 +635,39 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                     pw.print(i);
                 }
                 pw.print(") { return ");
+
+                final String converterFunction = typeConverterFunction.apply(implementationMethod.methodType.getReturnType(), argInstanceMethodType.type.getReturnType());
+                if (converterFunction != null) {
+                    pw.print(converterFunction);
+                    pw.print("(");
+                }
+
                 pw.print(JSHelpers.generateClassName(implementationMethod.owner.type));
                 pw.print(".");
                 pw.print(JSHelpers.generateMethodName(implementationMethod.methodNode.name, implementationMethod.methodType));
                 pw.print(".call(this");
 
-                for (final Object o : allArgs) {
+                for (int x = 0; x < allArgs.size(); x++) {
+                    final Object o = allArgs.get(x);
+
                     pw.print(", ");
-                    if (o instanceof String) {
-                        pw.print((String) o);
-                    } else {
-                        writeExpression((Node) o);
-                    }
+
+                    writeArgumentWithOptionalConversion.accept(o, implementationMethod.methodType.getArgumentTypes()[x]);
                 }
 
-                pw.print(");");
+                pw.print(")");
+
+                if (converterFunction != null) {
+                    pw.print(")");
+                }
+
+                pw.print(";");
 
                 pw.print("})");
                 return;
             }
             case INVOKEVIRTUAL:
             case INVOKEINTERFACE: {
-                final Type returnType = argInvokedType.type.getReturnType();
                 pw.print("bytecoder.instanceWithLambdaImpl(");
                 pw.print(JSHelpers.generateClassName(returnType));
                 pw.print(", function(");
@@ -590,9 +680,15 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                 }
                 pw.print(") { return ");
 
+                final String converterFunction = typeConverterFunction.apply(implementationMethod.methodType.getReturnType(), argInstanceMethodType.type.getReturnType());
+                if (converterFunction != null) {
+                    pw.print(converterFunction);
+                    pw.print("(");
+                }
+
                 final Object firstArg = allArgs.get(0);
-                if (firstArg instanceof String) {
-                    pw.print((String) firstArg);
+                if (firstArg instanceof LinkageArgument) {
+                    pw.print(((LinkageArgument) firstArg).name);
                 } else {
                     writeExpression((Node) firstArg);
                 }
@@ -600,27 +696,29 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                 pw.print(JSHelpers.generateMethodName(implementationMethod.methodNode.name, implementationMethod.methodType));
                 pw.print("'].call(");
 
-                if (firstArg instanceof String) {
-                    pw.print((String) firstArg);
+                if (firstArg instanceof LinkageArgument) {
+                    pw.print(((LinkageArgument) firstArg).name);
                 } else {
                     writeExpression((Node) firstArg);
                 }
-                for (int i = 1; i < allArgs.size(); i++) {
+
+                for (int x = 1; x < allArgs.size(); x++) {
+                    final Object arg = allArgs.get(x);
                     pw.print(", ");
-                    final Object arg = allArgs.get(i);
-                    if (arg instanceof String) {
-                        pw.print((String) arg);
-                    } else {
-                        writeExpression((Node) arg);
-                    }
+                    writeArgumentWithOptionalConversion.accept(arg, implementationMethod.methodType.getArgumentTypes()[x - 1]);
                 }
-                pw.print(");");
+                pw.print(")");
+
+                if (converterFunction != null) {
+                    pw.print(")");
+                }
+
+                pw.print(";");
 
                 pw.print("})");
                 return;
             }
             case INVOKESPECIAL: {
-                final Type returnType = argInvokedType.type.getReturnType();
                 pw.print("bytecoder.instanceWithLambdaImpl(");
                 pw.print(JSHelpers.generateClassName(returnType));
                 pw.print(", function(");
@@ -633,10 +731,16 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                 }
                 pw.print(") { return ");
 
+                final String converterFunction = typeConverterFunction.apply(implementationMethod.methodType.getReturnType(), argInstanceMethodType.type.getReturnType());
+                if (converterFunction != null) {
+                    pw.print(converterFunction);
+                    pw.print("(");
+                }
+
                 // TODO: we need to call the right prototype here to support super.x invocations for overwritten methods
                 final Object firstArg = allArgs.get(0);
-                if (firstArg instanceof String) {
-                    pw.print((String) firstArg);
+                if (firstArg instanceof LinkageArgument) {
+                    pw.print(((LinkageArgument) firstArg).name);
                 } else {
                     writeExpression((Node) firstArg);
                 }
@@ -644,27 +748,30 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                 pw.print(JSHelpers.generateMethodName(implementationMethod.methodNode.name, implementationMethod.methodType));
                 pw.print("'].call(");
 
-                if (firstArg instanceof String) {
-                    pw.print((String) firstArg);
+                if (firstArg instanceof LinkageArgument) {
+                    pw.print(((LinkageArgument) firstArg).name);
                 } else {
                     writeExpression((Node) firstArg);
                 }
-                for (int i = 1; i < allArgs.size(); i++) {
+
+                for (int x = 1; x < allArgs.size(); x++) {
+                    final Object arg = allArgs.get(x);
                     pw.print(", ");
-                    final Object arg = allArgs.get(i);
-                    if (arg instanceof String) {
-                        pw.print((String) arg);
-                    } else {
-                        writeExpression((Node) arg);
-                    }
+                    writeArgumentWithOptionalConversion.accept(arg, implementationMethod.methodType.getArgumentTypes()[x - 1]);
                 }
-                pw.print(");");
+
+                pw.print(")");
+
+                if (converterFunction != null) {
+                    pw.print(")");
+                }
+
+                pw.print(";");
 
                 pw.print("})");
                 return;
             }
             case INVOKECONSTRUCTOR: {
-                final Type returnType = argInvokedType.type.getReturnType();
                 pw.print("bytecoder.instanceWithLambdaImpl(");
                 pw.print(JSHelpers.generateClassName(returnType));
                 pw.print(", function(");
@@ -685,14 +792,12 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                 pw.print(JSHelpers.generateMethodName(implementationMethod.methodNode.name, implementationMethod.methodType));
                 pw.print("'].call(obj");
 
-                for (final Object arg : allArgs) {
+                for (int x = 0; x < allArgs.size(); x++) {
+                    final Object arg = allArgs.get(x);
                     pw.print(", ");
-                    if (arg instanceof String) {
-                        pw.print((String) arg);
-                    } else {
-                        writeExpression((Node) arg);
-                    }
+                    writeArgumentWithOptionalConversion.accept(arg, implementationMethod.methodType.getArgumentTypes()[x]);
                 }
+
                 pw.print(");return obj;}();");
 
                 pw.print("})");

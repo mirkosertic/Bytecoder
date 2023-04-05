@@ -371,6 +371,17 @@ const bytecoder = {
                 }
                 return 0;
             },
+            Z$endsWith$Ljava$lang$String$: function (str, otherstr) {
+                const a = bytecoder.toJSString(str);
+                const b = bytecoder.toJSString(otherstr);
+                if (a.endsWith(b)) {
+                    return 1;
+                }
+                return 0;
+            },
+            Ljava$lang$String$$replaceAll$Ljava$lang$String$$Ljava$lang$String$: function(str, regex, replacement) {
+                return str;
+            },
             I$lastIndexOf$Ljava$lang$String$: function (str, s) {
                 const a = bytecoder.toJSString(str);
                 return a.lastIndexOf(bytecoder.toJSString(s));
@@ -414,6 +425,13 @@ const bytecoder = {
                 let x = '';
                 for (let i = offset; i < offset + count; i++) {
                     x += String.fromCodePoint(bytecoder.instance.exports.getByteArrayEntry(null, chars, i));
+                }
+                bytecoder.setNativeObject(str, x);
+            },
+            V$initializeWith$$I$I$I: function (str, points, offset, count) {
+                let x = '';
+                for (let i = offset; i < offset + count; i++) {
+                    x += String.fromCodePoint(bytecoder.instance.exports.getIntArrayEntry(null, points, i));
                 }
                 bytecoder.setNativeObject(str, x);
             },
@@ -725,7 +743,6 @@ bytecoder.filehandles[1] = {
     },
 };
 
-
 bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
   switch(index) {
       case 0: return 'null';
@@ -821,14 +838,19 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 90: return ' Size: ';
       case 91: return 'hello world, you have clicked. Timestamp is %s';
       case 92: return 'data type scale not a power of two';
-      case 93: return 'No java.util.Objects instances for you!';
-      case 94: return 'UNKNOWN';
-      case 95: return '=';
-      case 96: return '[pos=';
-      case 97: return ' lim=';
-      case 98: return ' cap=';
+      case 93: return '=';
+      case 94: return '[pos=';
+      case 95: return ' lim=';
+      case 96: return ' cap=';
+      case 97: return 'No java.util.Objects instances for you!';
+      case 98: return 'UNKNOWN';
   }
   throw 'Unknown string index ' + index;
+};
+bytecoder.imports["de.mirkosertic.bytecoder.integrationtest.VueDemo$MyVueInstance_generated"] = {
+    V$welcomemessage$Ljava$lang$String$ : function(thisref, arg0) {
+        (thisref.welcomemessage = arg0);
+    },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.vue.VueBuilder_generated"] = {
     V$bindToTemplateSelector$Ljava$lang$String$ : function(thisref, arg0) {
@@ -847,10 +869,5 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.vue.VueBuilder_generated"] = {
 bytecoder.imports["de.mirkosertic.bytecoder.api.vue.VueData_generated"] = {
     V$setProperty$Ljava$lang$String$$Ljava$lang$String$ : function(thisref, arg0, arg1) {
         (thisref.setProperty(arg0, arg1));
-    },
-};
-bytecoder.imports["de.mirkosertic.bytecoder.integrationtest.VueDemo$MyVueInstance_generated"] = {
-    V$welcomemessage$Ljava$lang$String$ : function(thisref, arg0) {
-        (thisref.welcomemessage = arg0);
     },
 };

@@ -325,6 +325,17 @@ const bytecoder = {
                 }
                 return 0;
             },
+            Z$endsWith$Ljava$lang$String$: function (str, otherstr) {
+                const a = bytecoder.toJSString(str);
+                const b = bytecoder.toJSString(otherstr);
+                if (a.endsWith(b)) {
+                    return 1;
+                }
+                return 0;
+            },
+            Ljava$lang$String$$replaceAll$Ljava$lang$String$$Ljava$lang$String$(str, regex, replacement) {
+                return str;
+            },
             I$lastIndexOf$Ljava$lang$String$: function (str, s) {
                 return str.nativeObject.lastIndexOf(s.nativeObject);
             },
@@ -362,6 +373,12 @@ const bytecoder = {
                 str.nativeObject = '';
                 for (let i = offset; i < offset + count; i++) {
                     str.nativeObject += String.fromCodePoint(chars.data[i]);
+                }
+            },
+            V$initializeWith$$I$I$I: function (str, points, offset, count) {
+                str.nativeObject = '';
+                for (let i = offset; i < offset + count; i++) {
+                    str.nativeObject += String.fromCodePoint(points.data[i]);
                 }
             },
             $C$toCharArray$$: function (str) {
@@ -490,7 +507,7 @@ const bytecoder = {
                 return bytecoder.toBytecoderString(value.toString(radix));
             },
             B$parseByte$Ljava$lang$String$: function (str) {
-                return parseInt(str.nativeObject);
+                return parseInt(str.nativeObject);Ljava$lang$String$$replaceAll$Ljava$lang$String$$Ljava$lang$String$
             },
         },
         "java.lang.Short": {

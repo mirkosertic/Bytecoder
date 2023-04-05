@@ -17,13 +17,15 @@ package de.mirkosertic.bytecoder.classlib.java.lang;
 
 import de.mirkosertic.bytecoder.api.SubstitutesInClass;
 
+import java.util.Locale;
+
 @SubstitutesInClass(completeReplace = true)
 public class TString implements CharSequence, Comparable<String> {
 
     public TString() {
     }
 
-    public TString(String value) {
+    public TString(final String value) {
         this();
         initializeWith(value);
     }
@@ -53,11 +55,18 @@ public class TString implements CharSequence, Comparable<String> {
         initializeWith(data, 0, data.length);
     }
 
+    public TString(final int[] data, final int offset, final int count) {
+        this();
+        initializeWith(data, offset, count);
+    }
+
     native void initializeWith(byte[] data, int offset, int count, byte coder);
 
     native void initializeWith(final String value);
 
     native void initializeWith(char[] data, int offset, int count);
+
+    native void initializeWith(int[] data, int offset, int count);
 
     public String toString() {
         return (String) (Object) this;
@@ -158,6 +167,14 @@ public class TString implements CharSequence, Comparable<String> {
 
     public native boolean startsWith(final String value);
 
+    public native boolean endsWith(final String value);
+
+    public native String replaceAll(final String regex, final String replacement);
+
+    public int codePointCount(final int beginIndex, final int endIndex) {
+        return endIndex - beginIndex;
+    }
+
     public native String trim();
 
     public native int length();
@@ -184,5 +201,9 @@ public class TString implements CharSequence, Comparable<String> {
 
     public native String toUpperCase();
 
+    public native String toUpperCase(final Locale locale);
+
     public native String toLowerCase();
+
+    public native String toLowerCase(final Locale locale);
 }
