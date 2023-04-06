@@ -880,27 +880,27 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 132: return 'data type scale not a power of two';
       case 133: return '(';
       case 134: return ',';
-      case 135: return 'AABB[';
-      case 136: return ' . ';
-      case 137: return 'XForm:\n';
-      case 138: return 'Position: ';
-      case 139: return '\n';
-      case 140: return 'R: \n';
-      case 141: return 'Unknown Source';
-      case 142: return 'Native Method';
-      case 143: return '=';
-      case 144: return 'Sweep:\nlocalCenter: ';
-      case 145: return 'c0: ';
-      case 146: return ', c: ';
-      case 147: return 'a0: ';
-      case 148: return ', a: ';
-      case 149: return ']\n';
-      case 150: return '[pos=';
-      case 151: return ' lim=';
-      case 152: return ' cap=';
-      case 153: return 'Rot(s:';
-      case 154: return ', c:';
-      case 155: return 'No java.util.Objects instances for you!';
+      case 135: return 'XForm:\n';
+      case 136: return 'Position: ';
+      case 137: return '\n';
+      case 138: return 'R: \n';
+      case 139: return 'Rot(s:';
+      case 140: return ', c:';
+      case 141: return 'No java.util.Objects instances for you!';
+      case 142: return 'Sweep:\nlocalCenter: ';
+      case 143: return 'c0: ';
+      case 144: return ', c: ';
+      case 145: return 'a0: ';
+      case 146: return ', a: ';
+      case 147: return 'AABB[';
+      case 148: return ' . ';
+      case 149: return '=';
+      case 150: return 'Unknown Source';
+      case 151: return 'Native Method';
+      case 152: return '[pos=';
+      case 153: return ' lim=';
+      case 154: return ' cap=';
+      case 155: return ']\n';
       case 156: return 'EDGE_A';
       case 157: return 'EDGE_B';
       case 158: return 'VERTEX';
@@ -915,6 +915,21 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.web.Window_generated"] = {
     },
     V$requestAnimationFrame$Lde$mirkosertic$bytecoder$api$web$AnimationFrameCallback$ : function(thisref, arg0) {
         (thisref.requestAnimationFrame(function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.AnimationFrameCallback_callback'](arg0,evt);}));
+    },
+};
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.EventTarget_generated"] = {
+    V$addEventListener$Ljava$lang$String$$Lde$mirkosertic$bytecoder$api$web$EventListener$ : function(thisref, arg0, arg1) {
+        (thisref.addEventListener(arg0, function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.EventListener_callback'](arg1,evt);}));
+    },
+};
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLButton_generated"] = {
+    V$disabled$Z : function(thisref, arg0) {
+        (thisref.disabled = (arg0 === 1 ? true : false));
+    },
+};
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.ParentNode_generated"] = {
+    Lde$mirkosertic$bytecoder$api$web$Element$$getElementById$Ljava$lang$String$ : function(thisref, arg0) {
+        return (thisref.getElementById(arg0));
     },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLCanvasElement_generated"] = {
@@ -967,20 +982,5 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.web.CanvasRenderingContext2D_gen
     },
     V$restore$$ : function(thisref) {
         (thisref.restore());
-    },
-};
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.EventTarget_generated"] = {
-    V$addEventListener$Ljava$lang$String$$Lde$mirkosertic$bytecoder$api$web$EventListener$ : function(thisref, arg0, arg1) {
-        (thisref.addEventListener(arg0, function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.EventListener_callback'](arg1,evt);}));
-    },
-};
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLButton_generated"] = {
-    V$disabled$Z : function(thisref, arg0) {
-        (thisref.disabled = (arg0 === 1 ? true : false));
-    },
-};
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.ParentNode_generated"] = {
-    Lde$mirkosertic$bytecoder$api$web$Element$$getElementById$Ljava$lang$String$ : function(thisref, arg0) {
-        return (thisref.getElementById(arg0));
     },
 };
