@@ -9,7 +9,7 @@ author = "Mirko Sertic"
 editURL = "https://github.com/mirkosertic/Bytecoder/tree/master/manual/content/"
 landingPageURL = "https://mirkosertic.github.io/Bytecoder"
 landingPageName = "<i class='fas fa-home'></i> Home"
-bytecoderversion = "2021-11-02"
+bytecoderversion = "2023-04-05"
 [outputs]
 home = [ "HTML", "RSS", "JSON"]
 [[menu.shortcuts]]
