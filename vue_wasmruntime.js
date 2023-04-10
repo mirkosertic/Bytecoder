@@ -838,12 +838,12 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 90: return ' Size: ';
       case 91: return 'hello world, you have clicked. Timestamp is %s';
       case 92: return 'data type scale not a power of two';
-      case 93: return '=';
-      case 94: return 'UNKNOWN';
-      case 95: return '[pos=';
-      case 96: return ' lim=';
-      case 97: return ' cap=';
-      case 98: return 'No java.util.Objects instances for you!';
+      case 93: return 'No java.util.Objects instances for you!';
+      case 94: return '=';
+      case 95: return 'UNKNOWN';
+      case 96: return '[pos=';
+      case 97: return ' lim=';
+      case 98: return ' cap=';
   }
   throw 'Unknown string index ' + index;
 };
