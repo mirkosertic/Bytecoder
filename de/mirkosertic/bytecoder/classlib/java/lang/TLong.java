@@ -140,4 +140,8 @@ public class TLong extends Number implements Comparable<Long> {
     public static int compare(final long x, final long y) {
         return (x < y) ? -1 : ((x == y) ? 0 : 1);
     }
+
+    public static int hashCode(final long value) {
+        return (int) value;
+    }
 }

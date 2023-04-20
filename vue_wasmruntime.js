@@ -329,6 +329,24 @@ const bytecoder = {
                 }
                 return builder;
             },
+            Ljava$lang$StringBuilder$$deleteCharAt$I: function(builder, index) {
+                const current = bytecoder.getNativeObject(builder);
+                bytecoder.setNativeObject(builder, current.slice(0, index) + current.slice(index + 1));
+                return builder;
+            },
+            V$setCharAt$I$C: function(builder, index, char) {
+                const current = bytecoder.getNativeObject(builder);
+                bytecoder.setNativeObject(builder, current.slice(0, index) + String.fromCodePoint(char) + current.slice(index + 1));
+            },
+            Ljava$lang$StringBuilder$$insert$I$C: function(builder, index, char) {
+                const current = bytecoder.getNativeObject(builder);
+                bytecoder.setNativeObject(builder, current.slice(0, index) + String.fromCodePoint(char) + current.slice(index));
+                return builder
+            },
+            C$charAt$I: function(builder, index) {
+                const current = bytecoder.getNativeObject(builder);
+                return current.codePointAt(index);
+            }
         },
         "java.lang.String": {
             C$charAt$I: function (str, index) {
@@ -838,12 +856,17 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 90: return ' Size: ';
       case 91: return 'hello world, you have clicked. Timestamp is %s';
       case 92: return 'data type scale not a power of two';
-      case 93: return 'No java.util.Objects instances for you!';
-      case 94: return '=';
-      case 95: return 'UNKNOWN';
-      case 96: return '[pos=';
-      case 97: return ' lim=';
-      case 98: return ' cap=';
+      case 93: return '[]';
+      case 94: return '(this Collection)';
+      case 95: return '{}';
+      case 96: return '(this Map)';
+      case 97: return 'No java.util.Objects instances for you!';
+      case 98: return '=';
+      case 99: return '[pos=';
+      case 100: return ' lim=';
+      case 101: return ' cap=';
+      case 102: return 'UNKNOWN';
+      case 103: return ', Size: ';
   }
   throw 'Unknown string index ' + index;
 };

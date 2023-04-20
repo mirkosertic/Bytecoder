@@ -79,4 +79,10 @@ public class TStringBuilder implements CharSequence {
 
     @Override
     public native CharSequence subSequence(int start, int end);
+
+    public native StringBuilder deleteCharAt(final int index);
+
+    public native void setCharAt(final int index, final char c);
+
+    public native StringBuilder insert(final int index, final char c);
 }

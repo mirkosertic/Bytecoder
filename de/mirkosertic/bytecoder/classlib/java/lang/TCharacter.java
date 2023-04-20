@@ -24,6 +24,12 @@ public class TCharacter {
 
     public static final int MAX_RADIX = 36;
 
+    private final char value;
+
+    public TCharacter(final char value) {
+        this.value = value;
+    }
+
     public static native int digit(char ch, int radix);
 
     public static int compare(final char x, final char y) {
@@ -56,4 +62,8 @@ public class TCharacter {
     public static native int getNumericValue(char c);
 
     public static native String toString(char c);
+
+    public static Character valueOf(final char c) {
+        return new Character(c);
+    }
 }

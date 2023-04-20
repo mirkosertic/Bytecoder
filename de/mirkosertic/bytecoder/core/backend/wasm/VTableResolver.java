@@ -19,7 +19,10 @@ import de.mirkosertic.bytecoder.core.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class VTableResolver {
@@ -37,15 +40,16 @@ public class VTableResolver {
         if (known != null) {
             return known;
         }
-        final VTable resolved;
-        if (rc.superClass != null) {
-            resolved = new VTable(resolveFor(rc.superClass));
-        } else {
-            resolved = new VTable();
-        }
 
-        for (final ResolvedClass interf : rc.interfaces) {
-            resolved.mergeWith(resolveFor(interf));
+        final VTable resolved = new VTable();
+        final List<ResolvedClass> classesToCheck = new ArrayList<>();
+        if (rc.superClass != null) {
+            classesToCheck.add(rc.superClass);
+        }
+        Collections.addAll(classesToCheck, rc.interfaces);
+
+        for (int i = classesToCheck.size() - 1; i >= 0; i--) {
+            resolved.mergeWith(resolveFor(classesToCheck.get(i)));
         }
 
         for (final ResolvedMethod m : rc.resolvedMethods) {

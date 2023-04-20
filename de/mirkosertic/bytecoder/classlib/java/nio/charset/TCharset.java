@@ -54,4 +54,12 @@ public abstract class TCharset implements Comparable<java.nio.charset.Charset> {
     public abstract CharsetEncoder newEncoder();
 
     public abstract CharsetDecoder newDecoder();
+
+    public static boolean isSupported(final String charactersetName) {
+        return "UTF-8".equals(charactersetName);
+    }
+
+    public static boolean atBugLevel(final String level) {
+        return true;
+    }
 }

@@ -25,6 +25,7 @@ import org.objectweb.asm.tree.MethodNode;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -135,8 +136,15 @@ public class ResolvedClass {
                 }
             }
         }
-        for (final ResolvedClass interf : interfaces) {
-            final ResolvedMethod m = interf.resolveMethodInternal(methodName, methodType, analysisStack, onlyImplementations);
+
+        final List<ResolvedClass> classesToCheck = new ArrayList<>();
+        if (superClass != null) {
+            classesToCheck.add(superClass);
+        }
+        Collections.addAll(classesToCheck, interfaces);
+
+        for (final ResolvedClass classToCheck : classesToCheck) {
+            final ResolvedMethod m = classToCheck.resolveMethodInternal(methodName, methodType, analysisStack, onlyImplementations);
             if (m != null) {
                 if (onlyImplementations) {
                     if (!(Modifier.isAbstract(m.methodNode.access) || Modifier.isNative(m.methodNode.access))) {
@@ -146,9 +154,6 @@ public class ResolvedClass {
                     return m;
                 }
             }
-        }
-        if (superClass != null) {
-            return superClass.resolveMethodInternal(methodName, methodType, analysisStack, onlyImplementations);
         }
         return null;
     }
@@ -181,8 +186,8 @@ public class ResolvedClass {
     }
 
     public void finalizeLinkingHierarchy(final AnalysisStack analysisStack) {
+        final List<ResolvedMethod> methods = new ArrayList<>(resolvedMethods);
         for (final ResolvedClass leaf : leafSubclasses()) {
-            final List<ResolvedMethod> methods = new ArrayList<>(resolvedMethods);
             for (final ResolvedMethod m : methods) {
                 if (!Modifier.isStatic(m.methodNode.access)) {
                     leaf.resolveMethodInternal(m.methodNode.name, m.methodType, analysisStack, true);
