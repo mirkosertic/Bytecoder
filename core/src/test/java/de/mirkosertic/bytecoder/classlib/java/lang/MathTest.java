@@ -68,4 +68,9 @@ public class MathTest {
         Assert.assertEquals(3d, Math.cbrt(27d), 0);
         Assert.assertEquals(-3d, Math.cbrt(-27d), 0);
     }
+
+    @Test
+    public void testFloorDiv() {
+        Assert.assertEquals(1681910020L, Math.floorDiv(1681910020325L, 1000L));
+    }
 }

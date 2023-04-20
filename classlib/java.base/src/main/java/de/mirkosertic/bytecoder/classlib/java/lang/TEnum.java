@@ -38,6 +38,11 @@ public class TEnum implements Comparable<Enum> {
         return name;
     }
 
+    @Override
+    public String toString() {
+        return name;
+    }
+
     public static Enum valueOf(final Class<Enum> aClass, final String aValue) {
         for (final Enum theEnum : aClass.getEnumConstants()) {
             if (theEnum.name().equals(aValue)) {

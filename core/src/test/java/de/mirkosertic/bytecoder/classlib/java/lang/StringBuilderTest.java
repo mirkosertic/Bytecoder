@@ -111,4 +111,31 @@ public class StringBuilderTest {
         final StringBuilder theBuilder = new StringBuilder(10);
         Assert.assertEquals("", theBuilder.toString());
     }
+
+    @Test
+    public void testDeleteCharAt() {
+        StringBuilder builder = new StringBuilder("ABC");
+        builder = builder.deleteCharAt(0);
+        Assert.assertEquals("BC", builder.toString());
+    }
+
+    @Test
+    public void testSetCharAt() {
+        final StringBuilder builder = new StringBuilder("ABC");
+        builder.setCharAt(0, 'E');
+        Assert.assertEquals("EBC", builder.toString());
+    }
+
+    @Test
+    public void testInsert() {
+        StringBuilder builder = new StringBuilder("ABC");
+        builder = builder.insert(0, 'I');
+        Assert.assertEquals("IABC", builder.toString());
+    }
+
+    @Test
+    public void testCharAt() {
+        final StringBuilder builder = new StringBuilder("ABC");
+        Assert.assertEquals('A', builder.charAt(0));
+    }
 }

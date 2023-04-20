@@ -58,6 +58,26 @@ public class BinaryWriter implements AutoCloseable {
         return count;
     }
 
+    private static int writeSignedLeb128(long value, final OutputStream os) throws IOException {
+        long remaining = value >> 7;
+        boolean hasMore = true;
+        final int end = (0 == (value & Long.MIN_VALUE)) ? 0 : -1;
+
+        int count = 0;
+
+        while (hasMore) {
+            hasMore = (remaining != end)
+                    || ((remaining & 1) != ((value >> 6) & 1));
+
+            os.write((byte) ((value & 0x7f) | (hasMore ? 0x80 : 0)));
+            count++;
+            value = remaining;
+            remaining >>= 7;
+        }
+
+        return count;
+    }
+
 
     public abstract class Writer implements AutoCloseable {
 
@@ -92,6 +112,10 @@ public class BinaryWriter implements AutoCloseable {
         }
 
         public void writeSignedLeb128(final int value) throws IOException {
+            BinaryWriter.writeSignedLeb128(value, bos);
+        }
+
+        public void writeSignedLeb128(final long value) throws IOException {
             BinaryWriter.writeSignedLeb128(value, bos);
         }
 

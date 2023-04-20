@@ -329,6 +329,24 @@ const bytecoder = {
                 }
                 return builder;
             },
+            Ljava$lang$StringBuilder$$deleteCharAt$I: function(builder, index) {
+                const current = bytecoder.getNativeObject(builder);
+                bytecoder.setNativeObject(builder, current.slice(0, index) + current.slice(index + 1));
+                return builder;
+            },
+            V$setCharAt$I$C: function(builder, index, char) {
+                const current = bytecoder.getNativeObject(builder);
+                bytecoder.setNativeObject(builder, current.slice(0, index) + String.fromCodePoint(char) + current.slice(index + 1));
+            },
+            Ljava$lang$StringBuilder$$insert$I$C: function(builder, index, char) {
+                const current = bytecoder.getNativeObject(builder);
+                bytecoder.setNativeObject(builder, current.slice(0, index) + String.fromCodePoint(char) + current.slice(index));
+                return builder
+            },
+            C$charAt$I: function(builder, index) {
+                const current = bytecoder.getNativeObject(builder);
+                return current.codePointAt(index);
+            }
         },
         "java.lang.String": {
             C$charAt$I: function (str, index) {

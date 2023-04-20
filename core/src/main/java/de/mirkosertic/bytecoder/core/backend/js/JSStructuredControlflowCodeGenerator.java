@@ -223,6 +223,8 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         if (bootstrapMethod.className.getClassName().equals(LambdaMetafactory.class.getName())) {
             if ("metafactory".equals(bootstrapMethod.methodName)) {
                 generateInvokeDynamicLambdaMetaFactoryInvocation(node, resolveCallsite);
+            } else if ("altMetafactory".equals(bootstrapMethod.methodName)) {
+                generateInvokeDynamicLambdaMetaFactoryInvocation(node, resolveCallsite);
             } else {
                 throw new IllegalArgumentException("Not supported method " + bootstrapMethod.methodName + " on " + bootstrapMethod.className);
             }
