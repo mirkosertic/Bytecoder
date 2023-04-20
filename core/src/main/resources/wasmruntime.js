@@ -657,6 +657,15 @@ const bytecoder = {
                 return [];
             }
         },
+        "java.time.ZoneId": {
+            Ljava$lang$String$$defaultZoneId$$: function(unused) {
+                return bytecoder.toBytecoderString(Intl.DateTimeFormat().resolvedOptions().timeZone);
+            },
+            I$zoneOffsetFor$Ljava$lang$String$: function(unused, zoneId) {
+                // TODO
+                return 0;
+            }
+        },
         "bytecoder": {
         }
     },

@@ -601,6 +601,15 @@ const bytecoder = {
                 return [];
             }
         },
+        "java.time.ZoneId": {
+            Ljava$lang$String$$defaultZoneId$$: function() {
+                return bytecoder.toBytecoderString(Intl.DateTimeFormat().resolvedOptions().timeZone);
+            },
+            I$zoneOffsetFor$Ljava$lang$String$: function(zoneId) {
+                // TODO
+                return 0;
+            }
+        },
     },
     exports: {},
     filehandles : [],
