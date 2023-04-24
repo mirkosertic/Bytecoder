@@ -59,7 +59,6 @@ public class FloatTest {
     }
 
     @Test
-    @Ignore
     public void testHashCode() {
         assertEquals(new Float((int) 10), new Float((int) 10));
     }

@@ -412,7 +412,7 @@ public class GraphParser {
 
         // Step 4: Fix the initial control flow
         start.addControlFlowTo(StandardProjections.DEFAULT,
-                graph.translationFor(methodNode.instructions.getFirst()).main);
+                graph.translationFor(methodNode.instructions.getFirst()).instructions[0]);
 
         // Step 5: Fixup stuff not possible during analysis
         graph.applyFixups(incomingEdgesPerInstruction);
@@ -423,7 +423,7 @@ public class GraphParser {
 
         final Region region = getOrCreateRegionNodeFor(node);
         region.frame = currentFlow.graphParserState.frame;
-        graph.registerTranslation(node, new InstructionTranslation(region, region.frame));
+        graph.registerTranslation(node, new InstructionTranslation(region.frame, region));
 
         final GraphParserState state = currentFlow.graphParserState;
         final List<ControlFlow> flowsToCheck = new ArrayList<>();
@@ -503,7 +503,7 @@ public class GraphParser {
         final GraphParserState currentState = currentFlow.graphParserState;
         final LineNumberDebugInfo n = graph.newLineNumberDebugInfo(node.line);
 
-        graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, n));
 
         final GraphParserState newState = currentState.withLineNumber(node.line).controlFlowsTo(n);
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -522,7 +522,7 @@ public class GraphParser {
         final Copy copy = graph.newCopy();
         copy.addIncomingData(value);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
         final Frame newFrame = currentFlow.graphParserState.frame.pushToStack(variable);
 
@@ -544,7 +544,7 @@ public class GraphParser {
         final Copy copy = graph.newCopy();
         copy.addIncomingData(value);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
         final Frame newFrame = popResult.newFrame.setLocal(local, variable);
 
@@ -622,7 +622,7 @@ public class GraphParser {
                 n = graph.newInstanceMethodInvocation(node, rm);
                 n.addIncomingData(incomingData);
             }
-            graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+            graph.registerTranslation(node, new InstructionTranslation(currentState.frame, n));
 
             newState = currentState.controlFlowsTo(n).withFrame(latest.newFrame);
             graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -645,7 +645,7 @@ public class GraphParser {
             copy.addIncomingData(n);
             var.addIncomingData(copy);
 
-            graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+            graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
             newState = currentState.controlFlowsTo(copy).withFrame(latest.newFrame.pushToStack(var));
             graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -688,7 +688,7 @@ public class GraphParser {
                 n.addIncomingData(incomingData);
             }
 
-            graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+            graph.registerTranslation(node, new InstructionTranslation(currentState.frame, n));
 
             newState = currentState.controlFlowsTo(n).withFrame(latest.newFrame);
             graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -711,7 +711,7 @@ public class GraphParser {
             copy.addIncomingData(n);
             var.addIncomingData(copy);
 
-            graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+            graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
             newState = currentState.controlFlowsTo(copy).withFrame(latest.newFrame.pushToStack(var));
             graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -749,7 +749,7 @@ public class GraphParser {
                 n.addIncomingData(incomingData);
             }
 
-            graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+            graph.registerTranslation(node, new InstructionTranslation(currentState.frame, n));
 
             newState = currentState.controlFlowsTo(n).withFrame(latest.newFrame);
             graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -772,7 +772,7 @@ public class GraphParser {
             copy.addIncomingData(n);
             var.addIncomingData(copy);
 
-            graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+            graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
             newState = currentState.controlFlowsTo(copy).withFrame(latest.newFrame.pushToStack(var));
             graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -814,7 +814,7 @@ public class GraphParser {
                 n.addIncomingData(incomingData);
             }
 
-            graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+            graph.registerTranslation(node, new InstructionTranslation(currentState.frame, n));
 
             newState = currentState.controlFlowsTo(n).withFrame(latest);
             graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -837,7 +837,7 @@ public class GraphParser {
             copy.addIncomingData(n);
             var.addIncomingData(copy);
 
-            graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+            graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
             newState = currentState.controlFlowsTo(copy).withFrame(latest.pushToStack(var));
             graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -871,7 +871,7 @@ public class GraphParser {
         final Copy copyNode = graph.newCopy();
         copyNode.addIncomingData(value);
         variable.addIncomingData(copyNode);
-        graph.registerTranslation(node, new InstructionTranslation(copyNode, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copyNode));
 
         final Frame newFrame = currentState.frame.pushToStack(variable);
 
@@ -890,7 +890,7 @@ public class GraphParser {
         final Copy copyNode = graph.newCopy();
         copyNode.addIncomingData(value);
         variable.addIncomingData(copyNode);
-        graph.registerTranslation(node, new InstructionTranslation(copyNode, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copyNode));
 
         final Frame newFrame = currentState.frame.pushToStack(variable);
 
@@ -942,7 +942,7 @@ public class GraphParser {
         final Copy copyNode = graph.newCopy();
         copyNode.addIncomingData(value);
         variable.addIncomingData(copyNode);
-        graph.registerTranslation(node, new InstructionTranslation(copyNode, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copyNode));
 
         final Frame newFrame = popresult.newFrame.pushToStack(variable);
 
@@ -970,7 +970,7 @@ public class GraphParser {
         final InsnNode node = (InsnNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
         final Return value = graph.newReturnNothing();
-        graph.registerTranslation(node, new InstructionTranslation(value, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, value));
         currentState.controlFlowsTo(value);
         return Collections.emptyList();
     }
@@ -980,7 +980,7 @@ public class GraphParser {
         final GraphParserState currentState = currentFlow.graphParserState;
 
         final Nop nop = graph.newNop();
-        graph.registerTranslation(node, new InstructionTranslation(nop, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, nop));
 
         final GraphParserState newState = currentState.controlFlowsTo(nop);
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -994,7 +994,7 @@ public class GraphParser {
         final ReturnValue value = graph.newReturnValue();
         final Frame.PopResult popResult = currentState.frame.popFromStack();
         value.addIncomingData(popResult.value);
-        graph.registerTranslation(node, new InstructionTranslation(value, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, value));
         currentState.controlFlowsTo(value);
         return Collections.emptyList();
     }
@@ -1007,7 +1007,7 @@ public class GraphParser {
         final Copy copy = graph.newCopy();
         copy.addIncomingData(value);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
         final Frame newFrame = currentState.frame.pushToStack(variable);
 
@@ -1025,7 +1025,7 @@ public class GraphParser {
         final Copy copy = graph.newCopy();
         copy.addIncomingData(value);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
         final Frame newFrame = currentState.frame.pushToStack(variable);
 
@@ -1043,7 +1043,7 @@ public class GraphParser {
         final Copy copy = graph.newCopy();
         copy.addIncomingData(value);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
         final Frame newFrame = currentState.frame.pushToStack(variable);
 
@@ -1061,7 +1061,7 @@ public class GraphParser {
         final Copy copy = graph.newCopy();
         copy.addIncomingData(value);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
         final Frame newFrame = currentState.frame.pushToStack(variable);
 
@@ -1079,7 +1079,7 @@ public class GraphParser {
         final Copy copy = graph.newCopy();
         copy.addIncomingData(value);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
         final Frame newFrame = currentState.frame.pushToStack(variable);
 
@@ -1111,7 +1111,7 @@ public class GraphParser {
         final Copy copy = graph.newCopy();
         copy.addIncomingData(v);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentFlow.graphParserState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentFlow.graphParserState.frame, copy));
 
         final Frame newFrame = latestFrame.pushToStack(variable);
 
@@ -1135,11 +1135,46 @@ public class GraphParser {
         final Copy copy = graph.newCopy();
         copy.addIncomingData(cmpNode);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
         final Frame newFrame = pop1.newFrame.pushToStack(variable);
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(newFrame);
+        graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+        return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
+    }
+
+    int swapCounter = 0;
+
+    private List<ControlFlow> parse_SWAP(final ControlFlow currentFlow) {
+        final InsnNode node = (InsnNode) currentFlow.currentNode;
+        final GraphParserState currentState = currentFlow.graphParserState;
+
+        final Frame.PopResult pop1 = currentState.frame.popFromStack();
+        final Frame.PopResult pop2 = pop1.newFrame.popFromStack();
+
+        final Region r = graph.newRegion("SWAP" + swapCounter++);
+
+        final Variable temp1 = graph.newVariable(pop1.value.type);
+        final Copy copy1 = graph.newCopy();
+        copy1.addIncomingData(pop1.value);
+        temp1.addIncomingData(copy1);
+
+        final Variable temp2 = graph.newVariable(pop2.value.type);
+        final Copy copy2 = graph.newCopy();
+        copy2.addIncomingData(pop2.value);
+        temp2.addIncomingData(copy2);
+
+        r.addControlFlowTo(StandardProjections.DEFAULT, copy1);
+        copy1.addControlFlowTo(StandardProjections.DEFAULT, copy2);
+
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, r, copy1, copy2));
+
+        final Frame newFrame = pop2.newFrame.pushToStack(temp1).pushToStack(temp2);
+
+        final GraphParserState newState = currentState.controlFlowsTo(copy2).withFrame(newFrame);
+
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
@@ -1157,7 +1192,7 @@ public class GraphParser {
         final Copy copy = graph.newCopy();
         copy.addIncomingData(value1.value);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
         final Frame newFrame = value2.newFrame.pushToStack(value1.value).pushToStack(value2.value).pushToStack(variable);
 
@@ -1182,7 +1217,7 @@ public class GraphParser {
             final Copy copy = graph.newCopy();
             copy.addIncomingData(value1.value);
             variable.addIncomingData(copy);
-            graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+            graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
             final Frame newFrame = value3.newFrame.pushToStack(value1.value).pushToStack(value3.value).pushToStack(value2.value).pushToStack(variable);
 
@@ -1198,7 +1233,7 @@ public class GraphParser {
         final Copy copy = graph.newCopy();
         copy.addIncomingData(value1.value);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
         final Frame newFrame = value2.newFrame.pushToStack(value1.value).pushToStack(value2.value).pushToStack(variable);
 
@@ -1216,7 +1251,7 @@ public class GraphParser {
         final ControlTokenConsumer throwNode = graph.newUnwind();
         throwNode.addIncomingData(pop1.value);
 
-        graph.registerTranslation(node, new InstructionTranslation(throwNode, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, throwNode));
         return Collections.emptyList();
     }
 
@@ -1231,7 +1266,7 @@ public class GraphParser {
         c.addIncomingData(pop1.value);
         dest.addIncomingData(c);
 
-        graph.registerTranslation(node, new InstructionTranslation(c, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, c));
 
         final Frame newFrame = pop1.newFrame.pushToStack(pop1.value).pushToStack(dest);
 
@@ -1253,7 +1288,7 @@ public class GraphParser {
             c.addIncomingData(pop1.value);
             dest.addIncomingData(c);
 
-            graph.registerTranslation(node, new InstructionTranslation(c, currentState.frame));
+            graph.registerTranslation(node, new InstructionTranslation(currentState.frame, c));
 
             final Frame newFrame = pop1.newFrame.pushToStack(pop1.value).pushToStack(dest);
 
@@ -1276,9 +1311,9 @@ public class GraphParser {
             c2.addIncomingData(pop2.value);
             dest2.addIncomingData(c2);
 
-            c.addControlFlowTo(StandardProjections.DEFAULT,c2);
+            c.addControlFlowTo(StandardProjections.DEFAULT, c2);
 
-            graph.registerTranslation(node, new InstructionTranslation(c, currentState.frame));
+            graph.registerTranslation(node, new InstructionTranslation(currentState.frame, c, c2));
 
             final Frame newFrame = pop2.newFrame.pushToStack(pop2.value).pushToStack(pop1.value).pushToStack(dest2).pushToStack(dest1);
 
@@ -1304,7 +1339,7 @@ public class GraphParser {
             c.addIncomingData(pop1.value);
             dest.addIncomingData(c);
 
-            graph.registerTranslation(node, new InstructionTranslation(c, currentState.frame));
+            graph.registerTranslation(node, new InstructionTranslation(currentState.frame, c));
 
             final Frame newFrame = pop2.newFrame.pushToStack(pop1.value).pushToStack(pop2.value).pushToStack(dest);
 
@@ -1329,7 +1364,7 @@ public class GraphParser {
 
             c.addControlFlowTo(StandardProjections.DEFAULT,c2);
 
-            graph.registerTranslation(node, new InstructionTranslation(c, currentState.frame));
+            graph.registerTranslation(node, new InstructionTranslation(currentState.frame, c, c2));
 
             final Frame newFrame = pop3.newFrame.pushToStack(pop2.value).pushToStack(pop1.value).pushToStack(pop3.value).pushToStack(dest2).pushToStack(dest1);
 
@@ -1352,7 +1387,7 @@ public class GraphParser {
         c.addIncomingData(pop1.value);
         dest.addIncomingData(c);
 
-        graph.registerTranslation(node, new InstructionTranslation(c, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, c));
 
         final GraphParserState newState = currentState.controlFlowsTo(c).withFrame(pop1.newFrame);
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -1381,7 +1416,7 @@ public class GraphParser {
 
             copy1.addControlFlowTo(StandardProjections.DEFAULT, copy2);
 
-            graph.registerTranslation(node, new InstructionTranslation(copy1, currentState.frame));
+            graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy1, copy2));
 
             final GraphParserState newState = currentState.controlFlowsTo(copy2).withFrame(pop2.newFrame);
             graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -1394,7 +1429,7 @@ public class GraphParser {
         c.addIncomingData(pop1.value);
         dest.addIncomingData(c);
 
-        graph.registerTranslation(node, new InstructionTranslation(c, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, c));
 
         final GraphParserState newState = currentState.controlFlowsTo(c).withFrame(pop1.newFrame);
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -1415,7 +1450,7 @@ public class GraphParser {
         final Copy copy = graph.newCopy();
         copy.addIncomingData(mulNode);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
         final Frame newFrame = pop1.newFrame.pushToStack(variable);
 
@@ -1436,7 +1471,7 @@ public class GraphParser {
         final ArrayStore store = graph.newArrayStore();
         store.addIncomingData(arrayPop.value, indexPop.value, valuePop.value);
 
-        graph.registerTranslation(node, new InstructionTranslation(store, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, store));
 
         final GraphParserState newState = currentState.controlFlowsTo(store).withFrame(arrayPop.newFrame);
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -1478,7 +1513,7 @@ public class GraphParser {
 
         final Frame newFrame = arrayPop.newFrame.pushToStack(var);
 
-        graph.registerTranslation(node, new InstructionTranslation(c, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, c));
 
         final GraphParserState newState = currentState.controlFlowsTo(c).withFrame(newFrame);
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -1693,6 +1728,8 @@ public class GraphParser {
             case Opcodes.DCMPG:
             case Opcodes.DCMPL:
                 return parse_CMP(currentFlow);
+            case Opcodes.SWAP:
+                return parse_SWAP(currentFlow);
             default:
                 throw new IllegalStateException("Not implemented : " + node + " -> " + node.getOpcode());
         }
@@ -1709,7 +1746,7 @@ public class GraphParser {
         final GraphParserState currentState = currentFlow.graphParserState;
         final FrameDebugInfo n = graph.newFrameDebugInfo(currentState.frame);
 
-        graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, n));
 
         final GraphParserState newState = currentState.controlFlowsTo(n);
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -1723,7 +1760,7 @@ public class GraphParser {
 
         final Goto gotoNode = graph.newGoto();
 
-        graph.registerTranslation(node, new InstructionTranslation(gotoNode, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, gotoNode));
 
         final Region target = graph.regionByLabel(node.label.getLabel().toString());
         graph.addFixup(new ControlFlowFixup(node, currentState.frame, StandardProjections.DEFAULT, node.label));
@@ -1738,7 +1775,7 @@ public class GraphParser {
         final Frame.PopResult pop1 = pop2.newFrame.popFromStack();
 
         final If ifNode = graph.newIf();
-        graph.registerTranslation(node, new InstructionTranslation(ifNode, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, ifNode));
 
         final Test numericalTest = testSupplier.get();
         numericalTest.addIncomingData(pop1.value, pop2.value);
@@ -1772,7 +1809,7 @@ public class GraphParser {
         final Test t = testSupplier.get();
         t.addIncomingData(pop1.value);
 
-        graph.registerTranslation(node, new InstructionTranslation(ifNode, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, ifNode));
         ifNode.addIncomingData(t);
 
         final List<ControlFlow> results = new ArrayList<>();
@@ -1822,7 +1859,7 @@ public class GraphParser {
         }
 
         final If ifNode = graph.newIf();
-        graph.registerTranslation(node, new InstructionTranslation(ifNode, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, ifNode));
 
         final NumericalTest numericalTest = graph.newNumericalTest(compareOperation);
         numericalTest.addIncomingData(pop1.value, graph.newInt(0));
@@ -1896,7 +1933,7 @@ public class GraphParser {
             final Copy copy = graph.newCopy();
             copy.addIncomingData(addNode);
             currentValue.addIncomingData(copy);
-            graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+            graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
             final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(currentState.frame);
             graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -1908,7 +1945,7 @@ public class GraphParser {
             final Copy copy = graph.newCopy();
             copy.addIncomingData(addNode);
             variable.addIncomingData(copy);
-            graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+            graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
             final Frame newFrame = currentState.frame.setLocal(local, variable);
 
@@ -1935,7 +1972,7 @@ public class GraphParser {
         final Copy copy = graph.newCopy();
         copy.addIncomingData(n);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
         final Frame newFrame = currentState.frame.pushToStack(variable);
 
@@ -1966,7 +2003,7 @@ public class GraphParser {
         final Copy copy = graph.newCopy();
         copy.addIncomingData(n);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
         final Frame newFrame = pop1.newFrame.pushToStack(variable);
 
@@ -1999,7 +2036,7 @@ public class GraphParser {
 
         final Frame newFrame = pop1.newFrame.pushToStack(v);
 
-        graph.registerTranslation(node, new InstructionTranslation(c, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, c));
 
         final GraphParserState newState = currentState.controlFlowsTo(c).withFrame(newFrame);
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -2016,7 +2053,7 @@ public class GraphParser {
         final MonitorEnter n = graph.newMonitorEnter();
         n.addIncomingData(pop1.value);
 
-        graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, n));
 
         final GraphParserState newState = currentState.controlFlowsTo(n).withFrame(pop1.newFrame);
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -2033,7 +2070,7 @@ public class GraphParser {
         final MonitorExit n = graph.newMonitorExit();
         n.addIncomingData(pop1.value);
 
-        graph.registerTranslation(node, new InstructionTranslation(n, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, n));
 
         final GraphParserState newState = currentState.controlFlowsTo(n).withFrame(pop1.newFrame);
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -2075,7 +2112,7 @@ public class GraphParser {
 
         field.addIncomingData(reference.value);
 
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(reference.newFrame.pushToStack(target));
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -2098,7 +2135,7 @@ public class GraphParser {
         copy.addIncomingData(field);
         target.addIncomingData(copy);
 
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(currentState.frame.pushToStack(target));
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -2122,7 +2159,7 @@ public class GraphParser {
         setfield.addIncomingData(valuePop.value);
         referencePop.value.addIncomingData(setfield);
 
-        graph.registerTranslation(node, new InstructionTranslation(setfield, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, setfield));
 
         final GraphParserState newState = currentState.controlFlowsTo(setfield).withFrame(referencePop.newFrame);
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -2145,7 +2182,7 @@ public class GraphParser {
         setfield.addIncomingData(valuePop.value);
         graph.newTypeReference(targetClass.type).addIncomingData(setfield);
 
-        graph.registerTranslation(node, new InstructionTranslation(setfield, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, setfield));
 
         final GraphParserState newState = currentState.controlFlowsTo(setfield).withFrame(valuePop.newFrame);
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -2205,7 +2242,7 @@ public class GraphParser {
         final Copy copy = graph.newCopy();
         copy.addIncomingData(source);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
         final Frame newFrame = currentState.frame.pushToStack(variable);
 
@@ -2223,7 +2260,7 @@ public class GraphParser {
         final TableSwitch sw = graph.newTableSwitch(node.min, node.max);
         sw.addIncomingData(valuePop.value);
 
-        graph.registerTranslation(node, new InstructionTranslation(sw, currentFlow.graphParserState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentFlow.graphParserState.frame, sw));
 
         final List<ControlFlow> continueWith = new ArrayList<>();
 
@@ -2249,7 +2286,7 @@ public class GraphParser {
         final LookupSwitch sw = graph.newLookupSwitch();
         sw.addIncomingData(valuePop.value);
 
-        graph.registerTranslation(node, new InstructionTranslation(sw, currentFlow.graphParserState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentFlow.graphParserState.frame, sw));
 
         final GraphParserState newState = currentFlow.graphParserState.controlFlowsTo(sw).withFrame(valuePop.newFrame);
 
@@ -2428,7 +2465,7 @@ public class GraphParser {
         final Copy copy = graph.newCopy();
         copy.addIncomingData(invokeDynamic);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
 
         final Frame newFrame = latest.pushToStack(variable);
 
@@ -2501,7 +2538,7 @@ public class GraphParser {
         final Copy copy = graph.newCopy();
         copy.addIncomingData(cast);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(copy, currentFlow.graphParserState.frame));
+        graph.registerTranslation(node, new InstructionTranslation(currentFlow.graphParserState.frame, copy));
 
         final Frame newFrame = latest.pushToStack(variable);
 
