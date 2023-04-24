@@ -58,67 +58,69 @@ public class ControlFlowFixup implements Fixup {
 
     @Override
     public void applyTo(final Graph g, final Map<AbstractInsnNode, Map<AbstractInsnNode, EdgeType>> incomingEdgesPerInstruction) {
-        final InstructionTranslation translation = g.translationFor(targetInstruction);
-        if (translation != null) {
-            final InstructionTranslation sourcetranslation = g.translationFor(sourceInstruction);
-            if (sourcetranslation == null) {
-                throw new IllegalStateException("No translation for source " + sourceInstruction + " found!");
-            }
-            final Frame targetFrame = translation.frame;
-            ControlTokenConsumer current = sourcetranslation.main;
-            Projection p = projection;
-            for (int i = 0; i < frame.incomingLocals.length; i++) {
-                final Value sourceValue = frame.incomingLocals[i];
-                final Value targetValue = targetFrame.incomingLocals[i];
-                if (sourceValue != null && sourceValue != targetValue && targetValue != null) {
-                    if (assignableTypes(sourceValue.type, targetValue.type)) {
-                        final Copy c = g.newCopy();
-                        c.addIncomingData(sourceValue);
-                        targetValue.addIncomingData(c);
-                        current.addControlFlowTo(p, c);
-                        current = c;
-                        p = StandardProjections.DEFAULT;
-                    }
-                }
-            }
-            for (int i = 0; i < frame.incomingStack.length; i++) {
-                final Value sourceValue = frame.incomingStack[i];
-                final Value targetValue = targetFrame.incomingStack[i];
-                if (sourceValue != null && sourceValue != targetValue) {
-                    if (assignableTypes(sourceValue.type, targetValue.type)) {
-                        final Copy c = g.newCopy();
-                        c.addIncomingData(sourceValue);
-                        targetValue.addIncomingData(c);
-                        current.addControlFlowTo(p, c);
-                        current = c;
-                        p = StandardProjections.DEFAULT;
-                    }
-                }
-            }
 
-            // TODO: Check for the correct edge type here!!
-            final Map<AbstractInsnNode, EdgeType> incomingEdges = incomingEdgesPerInstruction.get(targetInstruction);
-            if (incomingEdges != null) {
-                final EdgeType edgeType = incomingEdges.get(sourceInstruction);
-                if (edgeType != null) {
-                    if (current == sourcetranslation.main) {
+        final Map<AbstractInsnNode, EdgeType> incomingEdges = incomingEdgesPerInstruction.get(targetInstruction);
+        if (incomingEdges != null) {
+            final EdgeType edgeType = incomingEdges.get(sourceInstruction);
+            if (edgeType != null) {
+
+                final InstructionTranslation targetTranslation = g.translationFor(targetInstruction);
+                if (targetTranslation != null) {
+                    final InstructionTranslation sourcetranslation = g.translationFor(sourceInstruction);
+                    if (sourcetranslation == null) {
+                        throw new IllegalStateException("No translation for source " + sourceInstruction + " found!");
+                    }
+                    final Frame targetFrame = targetTranslation.frame;
+                    ControlTokenConsumer current = sourcetranslation.instructions[sourcetranslation.instructions.length - 1];
+                    Projection p = projection;
+                    for (int i = 0; i < frame.incomingLocals.length; i++) {
+                        final Value sourceValue = frame.incomingLocals[i];
+                        final Value targetValue = targetFrame.incomingLocals[i];
+                        if (sourceValue != null && sourceValue != targetValue && targetValue != null) {
+                            if (assignableTypes(sourceValue.type, targetValue.type)) {
+                                final Copy c = g.newCopy();
+                                c.addIncomingData(sourceValue);
+                                targetValue.addIncomingData(c);
+                                current.addControlFlowTo(p, c);
+                                current = c;
+                                p = StandardProjections.DEFAULT;
+                            }
+                        }
+                    }
+                    for (int i = 0; i < frame.incomingStack.length; i++) {
+                        final Value sourceValue = frame.incomingStack[i];
+                        final Value targetValue = targetFrame.incomingStack[i];
+                        if (sourceValue != null && sourceValue != targetValue) {
+                            if (assignableTypes(sourceValue.type, targetValue.type)) {
+                                final Copy c = g.newCopy();
+                                c.addIncomingData(sourceValue);
+                                targetValue.addIncomingData(c);
+                                current.addControlFlowTo(p, c);
+                                current = c;
+                                p = StandardProjections.DEFAULT;
+                            }
+                        }
+                    }
+
+                    if (current == sourcetranslation.instructions[sourcetranslation.instructions.length - 1]) {
                         // No copy instruction generated
-                        current.addControlFlowTo(projection.withEdgeType(edgeType), translation.main);
+                        current.addControlFlowTo(projection.withEdgeType(edgeType), targetTranslation.instructions[0]);
                     } else {
-                        current.addControlFlowTo(p.withEdgeType(edgeType), translation.main);
+                        current.addControlFlowTo(p.withEdgeType(edgeType), targetTranslation.instructions[0]);
                     }
+
                 } else {
-                    if (sourceInstruction instanceof LabelNode) {
-                        throw new IllegalStateException("No incoming edges found for " + ((LabelNode) sourceInstruction).getLabel() + " to jump to " + targetInstruction);
-                    } else {
-                        throw new IllegalStateException("No incoming edges found for " + sourceInstruction + " to jump to " + targetInstruction);
-                    }
+                    throw new IllegalStateException("No translation found for " + targetTranslation + " opcode " + targetInstruction.getOpcode());
                 }
             } else {
-                throw new IllegalStateException("Confused : no incoming edges for " + targetInstruction + " from " + sourceInstruction);
+                if (sourceInstruction instanceof LabelNode) {
+                    throw new IllegalStateException("No incoming edges found for " + ((LabelNode) sourceInstruction).getLabel() + " to jump to " + targetInstruction);
+                } else {
+                    throw new IllegalStateException("No incoming edges found for " + sourceInstruction + " to jump to " + targetInstruction);
+                }
             }
         } else {
-            throw new IllegalStateException("No translation found for " + translation + " opcode " + targetInstruction.getOpcode());
+            throw new IllegalStateException("Confused : no incoming edges for " + targetInstruction + " from " + sourceInstruction);
         }
     }
 }

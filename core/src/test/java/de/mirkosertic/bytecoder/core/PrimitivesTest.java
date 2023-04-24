@@ -17,7 +17,6 @@ package de.mirkosertic.bytecoder.core;
 
 import de.mirkosertic.bytecoder.core.test.UnitTestRunner;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -65,7 +64,6 @@ public class PrimitivesTest {
     }
 
     @Test
-    @Ignore
     public void testLongValue() {
         Container theContainer = new Container();
         Assert.assertEquals(1000L, theContainer.longValue.longValue(), 0);
