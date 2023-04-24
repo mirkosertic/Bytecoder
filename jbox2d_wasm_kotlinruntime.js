@@ -837,100 +837,109 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 71: return 'Incorrect joint definition.  Joints have to correspond to the bodies';
       case 72: return 'benchmark-canvas';
       case 73: return '2d';
-      case 74: return 'button';
-      case 75: return 'click';
-      case 76: return 'Non-positive averageBytesPerChar';
-      case 77: return 'Non-positive maxBytesPerChar';
-      case 78: return 'averageBytesPerChar exceeds maxBytesPerChar';
-      case 79: return 'Null replacement';
-      case 80: return 'Empty replacement';
-      case 81: return 'Replacement too long';
-      case 82: return 'UNDERFLOW';
-      case 83: return 'OVERFLOW';
-      case 84: return 'MALFORMED';
-      case 85: return 'UNMAPPABLE';
-      case 86: return 'Current state = ';
-      case 87: return ', new state = ';
-      case 88: return 'Non-positive length';
-      case 89: return 'apply';
-      case 90: return 'checkFromIndexSize';
-      case 91: return '-XX:DumpLoadedClassList=';
-      case 92: return '-XX:+RecordDynamicDumpInfo';
-      case 93: return '-Xshare:';
-      case 94: return '-XX:SharedClassListFile=';
-      case 95: return '-XX:SharedArchiveFile=';
-      case 96: return '-XX:ArchiveClassesAtExit=';
-      case 97: return 'duplicate element: ';
-      case 98: return 'length is odd';
-      case 99: return 'duplicate key: ';
-      case 100: return 'Range check failed';
-      case 101: return 'Range check failed: %s';
-      case 102: return 'Range [%s, %<s + %s) out of bounds for length %s';
-      case 103: return 'Range [%s, %s) out of bounds for length %s';
-      case 104: return 'Index %s out of bounds for length %s';
-      case 105: return 'Range check failed: %s %s';
-      case 106: return 'checkFromToIndex';
-      case 107: return 'checkIndex';
-      case 108: return '[';
-      case 109: return ']';
-      case 110: return 'Illegal replacement';
-      case 111: return '\uFFFD';
-      case 112: return 'Non-positive averageCharsPerByte';
-      case 113: return 'Non-positive maxCharsPerByte';
-      case 114: return 'averageCharsPerByte exceeds maxCharsPerByte';
-      case 115: return 'CIRCLES';
-      case 116: return 'FACE_A';
-      case 117: return 'FACE_B';
-      case 118: return 'FAILED';
-      case 119: return 'OVERLAPPED';
-      case 120: return 'TOUCHING';
-      case 121: return 'SEPARATED';
-      case 122: return 'POINTS';
-      case 123: return 'white';
-      case 124: return 'black';
-      case 125: return 'shape';
-      case 126: return ' must not be null';
-      case 127: return 'Index: ';
-      case 128: return ' Size: ';
-      case 129: return 'Vertices of chain shape are too close together';
-      case 130: return 'End of stack reached, there is probably a leak somewhere';
-      case 131: return 'Beginning of stack reached, push\/pops are unmatched';
-      case 132: return 'data type scale not a power of two';
-      case 133: return '[]';
-      case 134: return '(this Collection)';
-      case 135: return '{}';
-      case 136: return '(this Map)';
-      case 137: return 'Rot(s:';
-      case 138: return ', c:';
-      case 139: return 'Unknown Source';
-      case 140: return 'Native Method';
-      case 141: return 'Sweep:\nlocalCenter: ';
-      case 142: return '\n';
-      case 143: return 'c0: ';
-      case 144: return ', c: ';
-      case 145: return 'a0: ';
-      case 146: return ', a: ';
-      case 147: return '(';
-      case 148: return ',';
-      case 149: return 'No java.util.Objects instances for you!';
-      case 150: return '=';
-      case 151: return '[pos=';
-      case 152: return ' lim=';
-      case 153: return ' cap=';
-      case 154: return ']\n';
-      case 155: return 'XForm:\n';
-      case 156: return 'Position: ';
-      case 157: return 'R: \n';
-      case 158: return 'AABB[';
-      case 159: return ' . ';
-      case 160: return 'VERTEX';
-      case 161: return 'FACE';
-      case 162: return 'EDGE_A';
-      case 163: return 'EDGE_B';
-      case 164: return 'Array not built with correct length';
-      case 165: return ', Size: ';
+      case 74: return 'run';
+      case 75: return 'CIRCLES';
+      case 76: return 'FACE_A';
+      case 77: return 'FACE_B';
+      case 78: return 'FAILED';
+      case 79: return 'OVERLAPPED';
+      case 80: return 'TOUCHING';
+      case 81: return 'SEPARATED';
+      case 82: return 'POINTS';
+      case 83: return 'white';
+      case 84: return 'black';
+      case 85: return 'null cannot be cast to non-null type org.jbox2d.collision.shapes.CircleShape';
+      case 86: return 'null cannot be cast to non-null type org.jbox2d.collision.shapes.PolygonShape';
+      case 87: return 'button';
+      case 88: return 'click';
+      case 89: return 'Non-positive averageBytesPerChar';
+      case 90: return 'Non-positive maxBytesPerChar';
+      case 91: return 'averageBytesPerChar exceeds maxBytesPerChar';
+      case 92: return 'Null replacement';
+      case 93: return 'Empty replacement';
+      case 94: return 'Replacement too long';
+      case 95: return 'UNDERFLOW';
+      case 96: return 'OVERFLOW';
+      case 97: return 'MALFORMED';
+      case 98: return 'UNMAPPABLE';
+      case 99: return 'Current state = ';
+      case 100: return ', new state = ';
+      case 101: return 'Non-positive length';
+      case 102: return 'apply';
+      case 103: return 'checkFromIndexSize';
+      case 104: return '-XX:DumpLoadedClassList=';
+      case 105: return '-XX:+RecordDynamicDumpInfo';
+      case 106: return '-Xshare:';
+      case 107: return '-XX:SharedClassListFile=';
+      case 108: return '-XX:SharedArchiveFile=';
+      case 109: return '-XX:ArchiveClassesAtExit=';
+      case 110: return 'duplicate element: ';
+      case 111: return 'length is odd';
+      case 112: return 'duplicate key: ';
+      case 113: return 'Range check failed';
+      case 114: return 'Range check failed: %s';
+      case 115: return 'Range [%s, %<s + %s) out of bounds for length %s';
+      case 116: return 'Range [%s, %s) out of bounds for length %s';
+      case 117: return 'Index %s out of bounds for length %s';
+      case 118: return 'Range check failed: %s %s';
+      case 119: return 'checkFromToIndex';
+      case 120: return 'checkIndex';
+      case 121: return '[';
+      case 122: return ']';
+      case 123: return 'Illegal replacement';
+      case 124: return '\uFFFD';
+      case 125: return 'Non-positive averageCharsPerByte';
+      case 126: return 'Non-positive maxCharsPerByte';
+      case 127: return 'averageCharsPerByte exceeds maxCharsPerByte';
+      case 128: return 'Index: ';
+      case 129: return ' Size: ';
+      case 130: return 'Vertices of chain shape are too close together';
+      case 131: return 'End of stack reached, there is probably a leak somewhere';
+      case 132: return 'Beginning of stack reached, push\/pops are unmatched';
+      case 133: return 'Array not built with correct length';
+      case 134: return 'data type scale not a power of two';
+      case 135: return '[]';
+      case 136: return '(this Collection)';
+      case 137: return 'Sweep:\nlocalCenter: ';
+      case 138: return '\n';
+      case 139: return 'c0: ';
+      case 140: return ', c: ';
+      case 141: return 'a0: ';
+      case 142: return ', a: ';
+      case 143: return 'XForm:\n';
+      case 144: return 'Position: ';
+      case 145: return 'R: \n';
+      case 146: return '[pos=';
+      case 147: return ' lim=';
+      case 148: return ' cap=';
+      case 149: return '{}';
+      case 150: return '(this Map)';
+      case 151: return 'No java.util.Objects instances for you!';
+      case 152: return 'Unknown Source';
+      case 153: return 'Native Method';
+      case 154: return 'AABB[';
+      case 155: return ' . ';
+      case 156: return ',';
+      case 157: return ']\n';
+      case 158: return 'Rot(s:';
+      case 159: return ', c:';
+      case 160: return '=';
+      case 161: return '(';
+      case 162: return 'VERTEX';
+      case 163: return 'FACE';
+      case 164: return 'EDGE_A';
+      case 165: return 'EDGE_B';
+      case 166: return ', Size: ';
   }
   throw 'Unknown string index ' + index;
+};
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.Window_generated"] = {
+    Lde$mirkosertic$bytecoder$api$web$HTMLDocument$$document$$ : function(thisref) {
+        return (thisref.document);
+    },
+    V$requestAnimationFrame$Lde$mirkosertic$bytecoder$api$web$AnimationFrameCallback$ : function(thisref, arg0) {
+        (thisref.requestAnimationFrame(function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.AnimationFrameCallback_callback'](arg0,evt);}));
+    },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.CanvasRenderingContext2D_generated"] = {
     V$setFillStyle$Ljava$lang$String$ : function(thisref, arg0) {
@@ -979,27 +988,19 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.web.CanvasRenderingContext2D_gen
         (thisref.restore());
     },
 };
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.ParentNode_generated"] = {
-    Lde$mirkosertic$bytecoder$api$web$Element$$getElementById$Ljava$lang$String$ : function(thisref, arg0) {
-        return (thisref.getElementById(arg0));
-    },
-};
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLButton_generated"] = {
     V$disabled$Z : function(thisref, arg0) {
         (thisref.disabled = (arg0 === 1 ? true : false));
     },
 };
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.ParentNode_generated"] = {
+    Lde$mirkosertic$bytecoder$api$web$Element$$getElementById$Ljava$lang$String$ : function(thisref, arg0) {
+        return (thisref.getElementById(arg0));
+    },
+};
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLCanvasElement_generated"] = {
     Lde$mirkosertic$bytecoder$api$web$CanvasRenderingContext2D$$getContext$Ljava$lang$String$ : function(thisref, arg0) {
         return (thisref.getContext(arg0));
-    },
-};
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.Window_generated"] = {
-    Lde$mirkosertic$bytecoder$api$web$HTMLDocument$$document$$ : function(thisref) {
-        return (thisref.document);
-    },
-    V$requestAnimationFrame$Lde$mirkosertic$bytecoder$api$web$AnimationFrameCallback$ : function(thisref, arg0) {
-        (thisref.requestAnimationFrame(function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.AnimationFrameCallback_callback'](arg0,evt);}));
     },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.EventTarget_generated"] = {

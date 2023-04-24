@@ -51,7 +51,6 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.logging.LogEntry;
 import org.openqa.selenium.logging.LogType;
 import org.openqa.selenium.logging.LoggingPreferences;
-import org.openqa.selenium.remote.CapabilityType;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.BrowserWebDriverContainer;
 
@@ -330,6 +329,22 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                         }
                     }
                 }
+
+                /*
+
+                UNCOMMENT FOR DEBUGGING
+
+                final Pattern p = Pattern.compile(invokedType.getClassName() + ".*");
+
+                final GraphExporter.Filter filter = (resolvedClass, resolvedMethod) -> {
+                    final String fq = resolvedClass.type.getClassName() + "." + resolvedMethod.methodNode.name;
+                    return p.matcher(fq).matches();
+                };
+
+                final GraphExporter exporter = new GraphExporter();
+                exporter.export(compileUnit, LOGGER, Optimizations.DISABLED, filter, generatedFilesDir);
+
+                */
 
                 final File generatedFile = new File(generatedFilesDir, filename);
                 final PrintWriter writer = new PrintWriter(generatedFile);
