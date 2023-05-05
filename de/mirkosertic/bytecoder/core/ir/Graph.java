@@ -234,6 +234,11 @@ public class Graph {
             if (n.error) {
                 pw.print(" color=\"red\"");
             }
+
+            if (n.tobepruned) {
+                pw.print(" color=\"green\" penwidth=\"4\" ");
+            }
+
             pw.println("];");
             for (int inidx = 0; inidx < n.incomingDataFlows.length; inidx++) {
                 final Node incoming = n.incomingDataFlows[inidx];
@@ -449,5 +454,11 @@ public class Graph {
 
     public BootstrapMethod newBootstrapMethod(final Type methodType, final Type className, final String methodName, final Reference.Kind kind) {
         return (BootstrapMethod) register(new BootstrapMethod(methodType, className, methodName, kind));
+    }
+
+    public void remapDataFlow(final Node original, final Node newValue) {
+        for (final Node n : nodes) {
+            n.remapDataFlow(original, newValue);
+        }
     }
 }

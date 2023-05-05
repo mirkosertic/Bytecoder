@@ -26,9 +26,15 @@ public class Node {
 
     boolean error;
 
+    boolean tobepruned;
+
     public Node() {
         this.incomingDataFlows = new Node[0];
         this.outgoingFlows = new Node[0];
+    }
+
+    public void markAsDoBePruned() {
+        tobepruned = true;
     }
 
     public String additionalDebugInfo() {
@@ -36,6 +42,13 @@ public class Node {
     }
 
     public void addIncomingData(final Node... nodes) {
+        addIncomingDataNoInternal(nodes);
+        for (final Node n : nodes) {
+            n.addOutgoingData(this);
+        }
+    }
+
+    private void addIncomingDataNoInternal(final Node... nodes) {
         if (incomingDataFlows.length == 0) {
             incomingDataFlows = nodes;
         } else {
@@ -43,9 +56,6 @@ public class Node {
             System.arraycopy(incomingDataFlows, 0, newData, 0, incomingDataFlows.length);
             System.arraycopy(nodes, 0, newData, incomingDataFlows.length, nodes.length);
             incomingDataFlows = newData;
-        }
-        for (final Node n : nodes) {
-            n.addOutgoingData(this);
         }
     }
 
@@ -66,15 +76,6 @@ public class Node {
         outgoingFlows = l.toArray(new Node[0]);
     }
 
-    public void replaceIncomingDataFlowsWith(final Node original, final Node replacement) {
-        for (int i = 0; i < incomingDataFlows.length; i++) {
-            if (incomingDataFlows[i] == original) {
-                incomingDataFlows[i] = replacement;
-                replacement.addOutgoingData(this);
-            }
-        }
-    }
-
     public void clearIncomingData() {
         for (final Node incoming : incomingDataFlows) {
             incoming.removeFromOutgoingData(this);
@@ -82,9 +83,22 @@ public class Node {
         this.incomingDataFlows = new Node[0];
     }
 
-    public void removeFromIncomingData(final Node node) {
-        final List<Node> l = new ArrayList<>(Arrays.asList(incomingDataFlows));
-        l.remove(node);
-        incomingDataFlows = l.toArray(new Node[0]);
+    public boolean remapDataFlow(final Node original, final Node newValue) {
+        boolean changed = false;
+        for (int i = 0; i < incomingDataFlows.length; i++) {
+            if (incomingDataFlows[i] == original) {
+                incomingDataFlows[i] = newValue;
+                newValue.addOutgoingData(this);
+                changed = true;
+            }
+        }
+        for (int i = 0; i < outgoingFlows.length; i++) {
+            if (outgoingFlows[i] == original) {
+                outgoingFlows[i] = newValue;
+                newValue.addIncomingDataNoInternal(this);
+                changed = true;
+            }
+        }
+        return changed;
     }
 }

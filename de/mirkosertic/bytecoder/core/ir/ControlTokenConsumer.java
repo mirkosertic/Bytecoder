@@ -17,10 +17,8 @@ package de.mirkosertic.bytecoder.core.ir;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public abstract class ControlTokenConsumer extends Node {
 
@@ -44,23 +42,6 @@ public abstract class ControlTokenConsumer extends Node {
         node.controlComingFrom.add(this);
     }
 
-    public void deleteControlFlowTo(final ControlTokenConsumer consumer) {
-        final Set<Projection> keysToDelete = new HashSet<>();
-        for (final Map.Entry<Projection, ControlTokenConsumer> entry : controlFlowsTo.entrySet()) {
-            if (entry.getValue() == consumer) {
-                keysToDelete.add(entry.getKey());
-            }
-        }
-        for (final Projection p : keysToDelete) {
-            controlFlowsTo.remove(p);
-        }
-    }
-
-    public void deleteControlFlowFrom(final ControlTokenConsumer consumer) {
-        controlComingFrom.remove(consumer);
-        consumer.deleteControlFlowTo(this);
-    }
-
     public boolean hasIncomingBackEdges() {
         for (final ControlTokenConsumer pred : controlComingFrom) {
             for (final Map.Entry<Projection, ControlTokenConsumer> entry : pred.controlFlowsTo.entrySet()) {
@@ -70,5 +51,16 @@ public abstract class ControlTokenConsumer extends Node {
             }
         }
         return false;
+    }
+
+    public void remapControlFlowTo(final ControlTokenConsumer original, final ControlTokenConsumer newToken) {
+        final Map<Projection, ControlTokenConsumer> newValues = new HashMap<>();
+        for (final Map.Entry<Projection, ControlTokenConsumer> entry : controlFlowsTo.entrySet()) {
+            if (entry.getValue() == original) {
+                newValues.put(entry.getKey(), newToken);
+                newToken.controlComingFrom.add(this);
+            }
+        }
+        controlFlowsTo.putAll(newValues);
     }
 }
