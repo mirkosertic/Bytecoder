@@ -894,31 +894,31 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 128: return 'End of stack reached, there is probably a leak somewhere';
       case 129: return 'Beginning of stack reached, push\/pops are unmatched';
       case 130: return 'data type scale not a power of two';
-      case 131: return '{}';
-      case 132: return '(this Map)';
-      case 133: return '[]';
-      case 134: return '(this Collection)';
-      case 135: return 'No java.util.Objects instances for you!';
-      case 136: return ',';
-      case 137: return ']\n';
-      case 138: return '(';
-      case 139: return 'AABB[';
-      case 140: return ' . ';
-      case 141: return '=';
-      case 142: return 'XForm:\n';
-      case 143: return 'Position: ';
-      case 144: return '\n';
-      case 145: return 'R: \n';
-      case 146: return '[pos=';
-      case 147: return ' lim=';
-      case 148: return ' cap=';
-      case 149: return 'Rot(s:';
-      case 150: return ', c:';
-      case 151: return 'Sweep:\nlocalCenter: ';
-      case 152: return 'c0: ';
-      case 153: return ', c: ';
-      case 154: return 'a0: ';
-      case 155: return ', a: ';
+      case 131: return '(';
+      case 132: return ',';
+      case 133: return 'AABB[';
+      case 134: return ' . ';
+      case 135: return 'Rot(s:';
+      case 136: return ', c:';
+      case 137: return '[]';
+      case 138: return '(this Collection)';
+      case 139: return 'No java.util.Objects instances for you!';
+      case 140: return '=';
+      case 141: return '[pos=';
+      case 142: return ' lim=';
+      case 143: return ' cap=';
+      case 144: return 'XForm:\n';
+      case 145: return 'Position: ';
+      case 146: return '\n';
+      case 147: return 'R: \n';
+      case 148: return 'Sweep:\nlocalCenter: ';
+      case 149: return 'c0: ';
+      case 150: return ', c: ';
+      case 151: return 'a0: ';
+      case 152: return ', a: ';
+      case 153: return ']\n';
+      case 154: return '{}';
+      case 155: return '(this Map)';
       case 156: return 'VERTEX';
       case 157: return 'FACE';
       case 158: return 'EDGE_A';
@@ -928,6 +928,19 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
   }
   throw 'Unknown string index ' + index;
 };
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.ParentNode_generated"] = {
+    Lde$mirkosertic$bytecoder$api$web$Element$$getElementById$Ljava$lang$String$ : function(thisref, arg0) {
+        return (thisref.getElementById(arg0));
+    },
+};
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.Window_generated"] = {
+    Lde$mirkosertic$bytecoder$api$web$HTMLDocument$$document$$ : function(thisref) {
+        return (thisref.document);
+    },
+    V$requestAnimationFrame$Lde$mirkosertic$bytecoder$api$web$AnimationFrameCallback$ : function(thisref, arg0) {
+        (thisref.requestAnimationFrame(function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.AnimationFrameCallback_callback'](arg0,evt);}));
+    },
+};
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.EventTarget_generated"] = {
     V$addEventListener$Ljava$lang$String$$Lde$mirkosertic$bytecoder$api$web$EventListener$ : function(thisref, arg0, arg1) {
         (thisref.addEventListener(arg0, function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.EventListener_callback'](arg1,evt);}));
@@ -936,16 +949,6 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.web.EventTarget_generated"] = {
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLCanvasElement_generated"] = {
     Lde$mirkosertic$bytecoder$api$web$CanvasRenderingContext2D$$getContext$Ljava$lang$String$ : function(thisref, arg0) {
         return (thisref.getContext(arg0));
-    },
-};
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLButton_generated"] = {
-    V$disabled$Z : function(thisref, arg0) {
-        (thisref.disabled = (arg0 === 1 ? true : false));
-    },
-};
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.ParentNode_generated"] = {
-    Lde$mirkosertic$bytecoder$api$web$Element$$getElementById$Ljava$lang$String$ : function(thisref, arg0) {
-        return (thisref.getElementById(arg0));
     },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.CanvasRenderingContext2D_generated"] = {
@@ -995,11 +998,8 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.web.CanvasRenderingContext2D_gen
         (thisref.restore());
     },
 };
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.Window_generated"] = {
-    Lde$mirkosertic$bytecoder$api$web$HTMLDocument$$document$$ : function(thisref) {
-        return (thisref.document);
-    },
-    V$requestAnimationFrame$Lde$mirkosertic$bytecoder$api$web$AnimationFrameCallback$ : function(thisref, arg0) {
-        (thisref.requestAnimationFrame(function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.AnimationFrameCallback_callback'](arg0,evt);}));
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLButton_generated"] = {
+    V$disabled$Z : function(thisref, arg0) {
+        (thisref.disabled = (arg0 === 1 ? true : false));
     },
 };

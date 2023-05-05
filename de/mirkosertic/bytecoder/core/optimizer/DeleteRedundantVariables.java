@@ -53,7 +53,7 @@ public class DeleteRedundantVariables implements Optimizer {
 
                 outgoing.clearIncomingData();
 
-                final ControlTokenConsumer pred = ct.controlComingFrom.get(0);
+                final ControlTokenConsumer pred = ct.controlComingFrom.iterator().next();
                 final ControlTokenConsumer succ = ct.controlFlowsTo.values().iterator().next();
 
                 pred.remapControlFlowTo(ct, succ);
