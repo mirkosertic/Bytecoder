@@ -15,19 +15,19 @@
  */
 package de.mirkosertic.bytecoder.core.ir;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public abstract class ControlTokenConsumer extends Node {
 
     public final Map<Projection, ControlTokenConsumer> controlFlowsTo;
-    public final List<ControlTokenConsumer> controlComingFrom;
+    public final Set<ControlTokenConsumer> controlComingFrom;
 
     public ControlTokenConsumer() {
         controlFlowsTo = new HashMap<>();
-        controlComingFrom = new ArrayList<>();
+        controlComingFrom = new HashSet<>();
     }
 
     public void addControlFlowTo(final Projection projection, final ControlTokenConsumer node) {
