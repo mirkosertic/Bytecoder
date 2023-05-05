@@ -292,7 +292,7 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                 final String methodName = JSHelpers.generateMethodName(method.methodNode.name, Type.getMethodType(method.methodNode.desc));
                 final String filenamePrefix = className + "." + methodName + "_" + aTestOption.toFilePrefix();
 
-                final CompileOptions compileOptions = new CompileOptions(LOGGER, Optimizations.DISABLED, additionalResources, filenamePrefix, true);
+                final CompileOptions compileOptions = new CompileOptions(LOGGER, Optimizations.DEFAULT, additionalResources, filenamePrefix, true);
 
                 final JSBackend backend = new JSBackend();
                 final JSCompileResult result = backend.generateCodeFor(compileUnit, compileOptions);
@@ -334,7 +334,9 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
 
                 UNCOMMENT FOR DEBUGGING
 
-                final Pattern p = Pattern.compile(invokedType.getClassName() + ".*");
+                */
+
+                /*final Pattern p = Pattern.compile(invokedType.getClassName() + ".*");
 
                 final GraphExporter.Filter filter = (resolvedClass, resolvedMethod) -> {
                     final String fq = resolvedClass.type.getClassName() + "." + resolvedMethod.methodNode.name;
@@ -342,8 +344,7 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                 };
 
                 final GraphExporter exporter = new GraphExporter();
-                exporter.export(compileUnit, LOGGER, Optimizations.DISABLED, filter, generatedFilesDir);
-
+                exporter.export(compileUnit, LOGGER, compileOptions.getOptimizer(), filter, generatedFilesDir);
                 */
 
                 final File generatedFile = new File(generatedFilesDir, filename);
@@ -461,7 +462,7 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                 final String methodName = WasmHelpers.generateMethodName(method.methodNode.name, Type.getMethodType(method.methodNode.desc));
                 final String filenamePrefix = className + "." + methodName + "_" + aTestOption.toFilePrefix();
 
-                final CompileOptions compileOptions = new CompileOptions(LOGGER, Optimizations.DISABLED, additionalResources, filenamePrefix, true);
+                final CompileOptions compileOptions = new CompileOptions(LOGGER, Optimizations.DEFAULT, additionalResources, filenamePrefix, true);
 
                 final WasmBackend backend = new WasmBackend();
                 final WasmCompileResult result = backend.generateCodeFor(compileUnit, compileOptions);

@@ -23,8 +23,14 @@ public enum Optimizations implements Optimizer {
     DEFAULT(new Optimizer[] {
                 new DeleteUnusedConstants(),
                 new DeleteUnusedVariables(),
+                //new DeleteCopyToUnusedVariable(),
+                new DeleteRedundantVariables()
             }),
     ALL(new Optimizer[] {
+            new DeleteUnusedConstants(),
+            new DeleteUnusedVariables(),
+            //new DeleteCopyToUnusedVariable(),
+            new DeleteRedundantVariables()
     }),
     ;
 
