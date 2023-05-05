@@ -23,6 +23,10 @@ import java.util.function.Predicate;
 
 public class NodePredicates {
 
+    public static Predicate<Node> itemOfType(final Class nodeClass) {
+        return item -> nodeClass.isAssignableFrom(item.getClass());
+    }
+
     public static GraphNodePredicate ofType(final Class nodeClass) {
         return (graph, node, context) -> nodeClass.isAssignableFrom(node.getClass());
     }
@@ -33,6 +37,10 @@ public class NodePredicates {
 
     public static Predicate<Node[]> length(final int expected) {
         return nodes -> nodes.length == expected;
+    }
+
+    public static Predicate<Node[]> item(final int index, final Predicate<Node> pred) {
+        return nodes -> pred.test(nodes[index]);
     }
 
     public static GraphNodePredicate incomingDataFlows(final Predicate<Node[]> pred) {
