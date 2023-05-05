@@ -44,10 +44,12 @@ public class DeleteRedundantVariables implements Optimizer {
         for (final Node node : g.nodes()) {
             if (patternMatcher.test(g, node)) {
                 final ControlTokenConsumer ct = (ControlTokenConsumer) node;
-                final Variable incoming = (Variable) node.incomingDataFlows[0];
-                final Variable outgoing = (Variable) node.outgoingFlows[0];
+                final Node incoming = node.incomingDataFlows[0];
+                final Node outgoing = node.outgoingFlows[0];
 
                 g.remapDataFlow(outgoing, incoming);
+
+                incoming.removeFromIncomingData(node);
 
                 outgoing.clearIncomingData();
 

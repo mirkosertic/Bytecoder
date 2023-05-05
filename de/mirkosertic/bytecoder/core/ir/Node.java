@@ -101,4 +101,10 @@ public class Node {
         }
         return changed;
     }
+
+    public void removeFromIncomingData(final Node node) {
+        final List<Node> l = new ArrayList<>(Arrays.asList(incomingDataFlows));
+        l.remove(node);
+        incomingDataFlows = l.toArray(new Node[0]);
+    }
 }
