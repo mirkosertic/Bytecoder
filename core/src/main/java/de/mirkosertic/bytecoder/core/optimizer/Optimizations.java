@@ -24,13 +24,15 @@ public enum Optimizations implements Optimizer {
                 new DeleteUnusedConstants(),
                 new DeleteUnusedVariables(),
                 //new DeleteCopyToUnusedVariable(),
-                new DeleteRedundantVariables()
+                new DeleteRedundantVariables(),
+                new VariableIsConstant()
             }),
     ALL(new Optimizer[] {
             new DeleteUnusedConstants(),
             new DeleteUnusedVariables(),
             //new DeleteCopyToUnusedVariable(),
-            new DeleteRedundantVariables()
+            new DeleteRedundantVariables(),
+            new VariableIsConstant()
     }),
     ;
 
