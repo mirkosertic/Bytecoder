@@ -22,6 +22,9 @@ import de.mirkosertic.bytecoder.core.backend.CompileOptions;
 import de.mirkosertic.bytecoder.core.backend.CompileResult;
 import de.mirkosertic.bytecoder.core.backend.GeneratedMethod;
 import de.mirkosertic.bytecoder.core.backend.GeneratedMethodsRegistry;
+import de.mirkosertic.bytecoder.core.backend.MethodToIDMapper;
+import de.mirkosertic.bytecoder.core.backend.VTable;
+import de.mirkosertic.bytecoder.core.backend.VTableResolver;
 import de.mirkosertic.bytecoder.core.backend.sequencer.DominatorTree;
 import de.mirkosertic.bytecoder.core.backend.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.core.ir.AnnotationUtils;
@@ -50,7 +53,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static de.mirkosertic.bytecoder.core.backend.js.JSHelpers.*;
+import static de.mirkosertic.bytecoder.core.backend.js.JSHelpers.generateClassName;
+import static de.mirkosertic.bytecoder.core.backend.js.JSHelpers.generateFieldName;
+import static de.mirkosertic.bytecoder.core.backend.js.JSHelpers.generateMethodName;
 
 public class JSBackend {
 
@@ -91,101 +96,96 @@ public class JSBackend {
 
         final GeneratedMethodsRegistry generatedMethodsRegistry = new GeneratedMethodsRegistry();
 
+        final VTableResolver vTableResolver = new VTableResolver(new MethodToIDMapper());
+
         generateHeader(compileUnit, pw);
 
         for (final ResolvedClass cl : compileUnit.computeClassDependencies()) {
+
+            generateMethodsImplementationsFor(pw, compileUnit, cl, compileOptions, generatedMethodsRegistry);
+
             final String className = generateClassName(cl.type);
-            if (Modifier.isInterface(cl.classNode.access)) {
-                pw.print("const ");
-                pw.print(className);
 
-                int bracesCounter = 0;
-                final StringBuilder extendsClause = new StringBuilder();
-                if (!cl.superClass.type.getClassName().equals(Object.class.getName())) {
-                    extendsClause.append(generateClassName(cl.superClass.type));
-                    extendsClause.append("(");
-                    bracesCounter++;
+            pw.println();
+            pw.print("class ");
+            pw.print(className);
+
+            final StringBuilder extendsClause = new StringBuilder();
+            if (cl.superClass != null) {
+                extendsClause.append(generateClassName(cl.superClass.type));
+            }
+
+            if (extendsClause.length() > 0) {
+                pw.print(" extends ");
+                pw.print(extendsClause);
+            }
+
+            pw.print(" ");
+            pw.println("{");
+
+            generateFieldsFor(pw, compileUnit, cl);
+
+            pw.println("  constructor() {");
+            if (cl.superClass != null) {
+                pw.println("    super();");
+            }
+            pw.println("  }");
+
+            generateClassInitFor(pw, compileUnit, cl);
+
+            generateLambdaLogicFor(pw, compileUnit, cl);
+
+            pw.println("}");
+            pw.println();
+
+            for (final ResolvedMethod m : cl.resolvedMethods) {
+                if ((m.owner == cl) && (Modifier.isStatic(m.methodNode.access) || ("<init>".equals(m.methodNode.name)))) {
+                    if (!Modifier.isAbstract(m.methodNode.access) || cl.isOpaqueReferenceType()) {
+                        final String methodName = JSHelpers.generateMethodName(m.methodNode.name, m.methodType);
+
+                        pw.print(className);
+                        pw.print(".");
+
+                        if (!Modifier.isStatic(m.methodNode.access)) {
+                            pw.print("prototype.");
+                        }
+
+                        pw.print(methodName);
+
+                        pw.print(" = ");
+
+                        pw.print(JSHelpers.generateClassName(m.owner.type));
+                        pw.print("$");
+                        pw.print(methodName);
+                        pw.println(";");
+                    }
                 }
-                for (int i = cl.interfaces.length - 1; i >= 0; i--) {
-                    extendsClause.insert(0, generateClassName(cl.interfaces[i].type) + "(");
-                    bracesCounter++;
+            }
+
+            final VTable vtable = vTableResolver.resolveFor(cl);
+
+            VTable parentVTable = null;
+            if (cl.superClass != null) {
+                parentVTable = vTableResolver.resolveFor(cl.superClass);
+            }
+
+            for (final Map.Entry<Integer, ResolvedMethod> entry : vtable.getMethods().entrySet()) {
+                final ResolvedMethod resolvedMethod = entry.getValue();
+                if (parentVTable == null || parentVTable.getMethods().get(entry.getKey()) != entry.getValue()) {
+                    final String methodName = JSHelpers.generateMethodName(resolvedMethod.methodNode.name, resolvedMethod.methodType);
+
+                    pw.print(className);
+                    pw.print(".prototype.");
+
+                    pw.print(methodName);
+
+                    pw.print(" = ");
+
+                    pw.print(JSHelpers.generateClassName(resolvedMethod.owner.type));
+                    pw.print("$");
+                    pw.print(methodName);
+                    pw.println(";");
                 }
-
-                pw.print(" = (superclass) => class extends ");
-                if (extendsClause.length() > 0) {
-                    pw.print(extendsClause);
-                }
-                pw.print("superclass");
-                for (int i = 0; i < bracesCounter; i++) {
-                    pw.print(")");
-                }
-                pw.println(" {");
-
-                generateInterfaceFieldsFor(pw, compileUnit, cl);
-
-                generateLambdaLogicFor(pw, compileUnit, cl);
-
-                generateInstanceMethodsFor(pw, compileUnit, cl, compileOptions, generatedMethodsRegistry);
-
-                pw.println("};");
-
-                pw.print(className);
-                pw.print(".$modifiers = ");
-                pw.print(cl.classNode.access);
-                pw.println(";");
-
-                generateInterfaceClassInitFor(className, pw, compileUnit, cl);
-
-                generateStaticMethodsFor(className, pw, compileUnit, cl, compileOptions, generatedMethodsRegistry);
-
-                generateStaticInterfaceFieldsFor(className, pw, compileUnit, cl);
-
-                pw.println();
-            } else {
-                pw.print("class ");
-                pw.print(className);
-
-                int bracesCounter = 0;
-                final StringBuilder extendsClause = new StringBuilder();
-                for (int i = 0; i < cl.interfaces.length; i++) {
-                    extendsClause.append(generateClassName(cl.interfaces[i].type)).append("(");
-                    bracesCounter++;
-                }
-                if (cl.superClass != null) {
-                    extendsClause.append(generateClassName(cl.superClass.type));
-                }
-                for (int i = 0; i < bracesCounter; i++) {
-                    extendsClause.append(")");
-                }
-
-                if (extendsClause.length() > 0) {
-                    pw.print(" extends ");
-                    pw.print(extendsClause);
-                }
-
-                pw.print(" ");
-                pw.println("{");
-
-                pw.print("  static $modifiers = ");
-                pw.print(cl.classNode.access);
-                pw.println(";");
-
-                generateFieldsFor(pw, compileUnit, cl);
-
-                pw.println("  constructor() {");
-                if (cl.superClass != null) {
-                    pw.println("    super();");
-                }
-                pw.println("  }");
-
-                generateClassInitFor(pw, compileUnit, cl);
-
-                generateLambdaLogicFor(pw, compileUnit, cl);
-
-                generateMethodsFor(pw, compileUnit, cl, compileOptions, generatedMethodsRegistry);
-
-                pw.println("}");
-                pw.println();
             }
         }
 
@@ -310,60 +310,6 @@ public class JSBackend {
         }
     }
 
-    private void generateInterfaceClassInitFor(final String prefix, final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
-        pw.print(prefix);
-        pw.println("._rt = null;");
-        pw.print("Object.defineProperty(");
-        pw.print(prefix);
-        pw.println(",'$rt', {");
-        pw.println("  get() {");
-        pw.println("    if (!this._rt) {");
-        pw.print("      this._rt = bytecoder.newRuntimeClassFor(");
-        pw.print(generateClassName(cl.type));
-        pw.print(",[");
-        boolean f = true;
-        for (final ResolvedClass type : cl.allTypesOf()) {
-            if (f) {
-                f = false;
-            } else {
-                pw.print(",");
-            }
-            pw.print(generateClassName(type.type));
-        }
-        pw.println("]);");
-        pw.println("    }");
-        pw.println("    return this._rt;");
-        pw.println("  }");
-        pw.println("});");
-
-        if (cl.requiresClassInitializer()) {
-            pw.println();
-            pw.print(prefix);
-            pw.println("._iguard = false;");
-            pw.print("Object.defineProperty(");
-            pw.print(prefix);
-            pw.println(",'$i', {");
-            pw.println("  get() {");
-            pw.println("    if (!this._iguard) {");
-            pw.println("      this._iguard = true;");
-            if (cl.superClass != null && cl.superClass.requiresClassInitializer()) {
-                pw.print("      ");
-                pw.print(generateClassName(cl.superClass.type));
-                pw.println(".$i;");
-            }
-
-            if (cl.classInitializer != null) {
-                pw.print("      this.");
-                pw.print(generateMethodName("<clinit>", cl.classInitializer.methodType));
-                pw.println("();");
-            }
-            pw.println("    }");
-            pw.println("    return this;");
-            pw.println("  }");
-            pw.println("});");
-        }
-    }
-
     private void generateFieldsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
 
         pw.println("  nativeObject = null;");
@@ -400,147 +346,32 @@ public class JSBackend {
         }
     }
 
-    private void generateInterfaceFieldsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
-
-        pw.println("  nativeObject = null;");
-
-        if (!cl.resolvedFields.isEmpty()) {
-            pw.println();
-            for (final ResolvedField f : cl.resolvedFields) {
-                if (!Modifier.isStatic(f.access)) {
-                    pw.print("  ");
-                    pw.print(generateFieldName(f.name));
-                    switch (f.type.getSort()) {
-                        case Type.FLOAT:
-                        case Type.DOUBLE:
-                            pw.print(" = 0.0");
-                            break;
-                        case Type.BOOLEAN:
-                            pw.print(" = false");
-                            break;
-                        case Type.ARRAY:
-                        case Type.OBJECT:
-                        case Type.METHOD:
-                            pw.print(" = null");
-                            break;
-                        default:
-                            pw.print(" = 0");
-                            break;
-                    }
-                    pw.println(";");
-                }
-            }
-
-            pw.println();
-        }
-    }
-
-    private void generateStaticInterfaceFieldsFor(final String prefix, final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl) {
-        if (!cl.resolvedFields.isEmpty()) {
-            for (final ResolvedField f : cl.resolvedFields) {
-                if (!Modifier.isStatic(f.access)) {
-                    pw.print(prefix);
-                    pw.print(".");
-                    pw.print(generateFieldName(f.name));
-                    switch (f.type.getSort()) {
-                        case Type.FLOAT:
-                        case Type.DOUBLE:
-                            pw.print(" = 0.0");
-                            break;
-                        case Type.BOOLEAN:
-                            pw.print(" = false");
-                            break;
-                        case Type.ARRAY:
-                        case Type.OBJECT:
-                        case Type.METHOD:
-                            pw.print(" = null");
-                            break;
-                        default:
-                            pw.print(" = 0");
-                            break;
-                    }
-                    pw.println(";");
-                }
-            }
-
-            pw.println();
-        }
-    }
-
-    public void generateMethodsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final CompileOptions compileOptions, final GeneratedMethodsRegistry generatedMethodsRegistry) {
+    public void generateMethodsImplementationsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final CompileOptions compileOptions, final GeneratedMethodsRegistry generatedMethodsRegistry) {
 
         for (final ResolvedMethod m : cl.resolvedMethods) {
             if (m.owner == cl) {
                 if (Modifier.isNative(m.methodNode.access) || AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/EmulatedByRuntime;", m.methodNode.visibleAnnotations)) {
-                    generateNativeMethod(null, pw, compileUnit, cl, m);
+                    generateNativeMethodWithPrefix(pw, compileUnit, cl, m);
                 } else {
                     if (m.methodBody != null) {
-                        generateMethod(null, pw, compileUnit, cl, m, compileOptions, generatedMethodsRegistry);
+                        generateMethodWithPrefix(pw, compileUnit, cl, m, compileOptions, generatedMethodsRegistry);
                     } else if (cl.isOpaqueReferenceType()) {
-                        generateOpaqueAdapterMethod(null, pw, compileUnit, cl, m);
+                        generateOpaqueAdapterMethodWithPrefix(pw, compileUnit, cl, m);
                     }
                 }
             }
         }
     }
 
-    public void generateInstanceMethodsFor(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final CompileOptions compileOptions, final GeneratedMethodsRegistry generatedMethodsRegistry) {
-
-        for (final ResolvedMethod m : cl.resolvedMethods) {
-            if (m.owner == cl) {
-                if (!Modifier.isStatic(m.methodNode.access)) {
-                    if (Modifier.isNative(m.methodNode.access) || AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/EmulatedByRuntime;", m.methodNode.visibleAnnotations)) {
-                        generateNativeMethod(null, pw, compileUnit, cl, m);
-                    } else {
-                        if (m.methodBody != null) {
-                            generateMethod(null, pw, compileUnit, cl, m, compileOptions, generatedMethodsRegistry);
-                        } else if (cl.isOpaqueReferenceType()) {
-                            generateOpaqueAdapterMethod(null, pw, compileUnit, cl, m);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    public void generateStaticMethodsFor(final String prefix, final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final CompileOptions compileOptions, final GeneratedMethodsRegistry generatedMethodsRegistry) {
-
-        for (final ResolvedMethod m : cl.resolvedMethods) {
-            if (m.owner == cl && Modifier.isStatic(m.methodNode.access)) {
-                if (Modifier.isNative(m.methodNode.access) || AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/EmulatedByRuntime;", m.methodNode.visibleAnnotations)) {
-                    generateNativeMethod(prefix, pw, compileUnit, cl, m);
-                } else {
-                    if (m.methodBody != null) {
-                        generateMethod(prefix, pw, compileUnit, cl, m, compileOptions, generatedMethodsRegistry);
-                    } else if (cl.isOpaqueReferenceType()) {
-                        generateOpaqueAdapterMethod(prefix, pw, compileUnit, cl, m);
-                    }
-                }
-            }
-        }
-    }
-
-    public void generateNativeMethod(final String prefix, final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m) {
+    public void generateNativeMethodWithPrefix(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m) {
         pw.println();
 
         final String methodName = generateMethodName(m.methodNode.name, m.methodType);
 
-        if (prefix == null) {
-            pw.print("  ");
-            if (Modifier.isStatic(m.methodNode.access)) {
-                pw.print("static ");
-            }
-
-            pw.print(methodName);
-
-        } else {
-            pw.print(prefix);
-            pw.print(".");
-
-            pw.print(methodName);
-
-            pw.print(" = function");
-        }
+        pw.print(JSHelpers.generateClassName(cl.type));
+        pw.print("$");
+        pw.print(methodName);
+        pw.print(" = function");
 
         final Type[] arguments = Type.getArgumentTypes(m.methodNode.desc);
         final Type returnType = Type.getReturnType(m.methodNode.desc);
@@ -595,11 +426,7 @@ public class JSBackend {
 
             pw.println("));");
 
-            if (prefix == null) {
-                pw.println("  }");
-            } else {
-                pw.println("  };");
-            }
+            pw.println("};");
         } else {
 
             if (!returnType.equals(Type.VOID_TYPE)) {
@@ -640,31 +467,17 @@ public class JSBackend {
             }
 
             pw.println(");");
-
-            if (prefix == null) {
-                pw.println("  }");
-            } else {
-                pw.println("  };");
-            }
+            pw.println("};");
         }
     }
 
-    public void generateOpaqueAdapterMethod(final String prefix, final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m) {
+    public void generateOpaqueAdapterMethodWithPrefix(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m) {
         pw.println();
 
-        final String methodName = generateMethodName(m.methodNode.name, m.methodType);
-        if (prefix == null) {
-            pw.print("  ");
-
-            pw.print(methodName);
-        } else {
-            pw.print(prefix);
-            pw.print(".");
-
-            pw.print(methodName);
-
-            pw.print(" = function");
-        }
+        pw.print(JSHelpers.generateClassName(cl.type));
+        pw.print("$");
+        pw.print(JSHelpers.generateMethodName(m.methodNode.name, m.methodType));
+        pw.print(" = function");
 
         final Type[] arguments = Type.getArgumentTypes(m.methodNode.desc);
         final Type returnType = Type.getReturnType(m.methodNode.desc);
@@ -879,33 +692,19 @@ public class JSBackend {
 
         pw.println(";");
 
-        if (prefix == null) {
-            pw.println("  }");
-        } else {
-            pw.println("  };");
-        }
+        pw.println("};");
     }
 
-    public void generateMethod(final String prefix, final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m, final CompileOptions options, final GeneratedMethodsRegistry generatedMethodsRegistry) {
+    public void generateMethodWithPrefix(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m, final CompileOptions options, final GeneratedMethodsRegistry generatedMethodsRegistry) {
         pw.println();
 
         final String methodName = generateMethodName(m.methodNode.name, m.methodType);
 
-        if (prefix == null) {
-            pw.print("  ");
-            if (Modifier.isStatic(m.methodNode.access)) {
-                pw.print("static ");
-            }
+        pw.print(JSHelpers.generateClassName(cl.type));
+        pw.print("$");
+        pw.print(methodName);
 
-            pw.print(methodName);
-        } else {
-            pw.print(prefix);
-            pw.print(".");
-
-            pw.print(methodName);
-
-            pw.print(" = function");
-        }
+        pw.print(" = function");
 
         final Type[] arguments = Type.getArgumentTypes(m.methodNode.desc);
 
@@ -940,10 +739,6 @@ public class JSBackend {
             throw new CodeGenerationFailure(m, dt, e);
         }
 
-        if (prefix == null) {
-            pw.println("  }");
-        } else {
-            pw.println("  };");
-        }
+        pw.println("};");
     }
 }

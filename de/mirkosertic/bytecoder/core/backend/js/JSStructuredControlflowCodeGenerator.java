@@ -153,33 +153,21 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         final Type invocationTarget = Type.getObjectType(node.insnNode.owner);
 
         writeIndent();
-        if (invocationTarget.equals(cl.type)) {
-            writeExpression(node.incomingDataFlows[0]);
 
-            pw.print(".");
-
-            pw.print(generateMethodName(node.insnNode.name, node.method.methodType));
-            pw.print("(");
-            for (int i = 1; i < node.incomingDataFlows.length; i++) {
-                if (i > 1) {
-                    pw.print(",");
-                }
-                writeExpression(node.incomingDataFlows[i]);
-            }
-            pw.println(");");
+        pw.print(generateClassName(invocationTarget));
+        if ("<init>".equals(node.method.methodNode.name)) {
+            pw.print("$");
         } else {
-            pw.print(generateClassName(invocationTarget));
             pw.print(".prototype.");
-
-            pw.print(generateMethodName(node.insnNode.name, node.method.methodType));
-            pw.print(".call(");
-            writeExpression(node.incomingDataFlows[0]);
-            for (int i = 1; i < node.incomingDataFlows.length; i++) {
-                pw.print(",");
-                writeExpression(node.incomingDataFlows[i]);
-            }
-            pw.println(");");
         }
+        pw.print(generateMethodName(node.insnNode.name, node.method.methodType));
+        pw.print(".call(");
+        writeExpression(node.incomingDataFlows[0]);
+        for (int i = 1; i < node.incomingDataFlows.length; i++) {
+            pw.print(",");
+            writeExpression(node.incomingDataFlows[i]);
+        }
+        pw.println(");");
     }
 
     private void writeExpression(final InstanceMethodInvocationExpression node) {
@@ -187,33 +175,20 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         final Type invocationTarget = Type.getObjectType(node.insnNode.owner);
 
         pw.print("(");
-        if (invocationTarget.equals(cl.type) || Modifier.isInterface(node.resolvedMethod.owner.classNode.access)) {
-            writeExpression(node.incomingDataFlows[0]);
-
-            pw.print(".");
-
-            pw.print(generateMethodName(node.insnNode.name, node.resolvedMethod.methodType));
-            pw.print("(");
-            for (int i = 1; i < node.incomingDataFlows.length; i++) {
-                if (i > 1) {
-                    pw.print(",");
-                }
-                writeExpression(node.incomingDataFlows[i]);
-            }
-            pw.print("))");
+        pw.print(generateClassName(invocationTarget));
+        if ("<init>".equals(node.resolvedMethod.methodNode.name)) {
+            pw.print("$");
         } else {
-            pw.print(generateClassName(invocationTarget));
             pw.print(".prototype.");
-
-            pw.print(generateMethodName(node.insnNode.name, node.resolvedMethod.methodType));
-            pw.print(".call(");
-            writeExpression(node.incomingDataFlows[0]);
-            for (int i = 1; i < node.incomingDataFlows.length; i++) {
-                pw.print(",");
-                writeExpression(node.incomingDataFlows[i]);
-            }
-            pw.print("))");
         }
+        pw.print(generateMethodName(node.insnNode.name, node.resolvedMethod.methodType));
+        pw.print(".call(");
+        writeExpression(node.incomingDataFlows[0]);
+        for (int i = 1; i < node.incomingDataFlows.length; i++) {
+            pw.print(",");
+            writeExpression(node.incomingDataFlows[i]);
+        }
+        pw.print("))");
     }
 
     private void writeExpression(final InvokeDynamicExpression node) {
