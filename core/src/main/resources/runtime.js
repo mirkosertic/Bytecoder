@@ -636,7 +636,7 @@ const bytecoder = {
     },
     toBytecoderString: function(jsstring) {
         const x = new java$lang$String();
-        x.V$$init$$$();
+        x.V$$init$$$.call(x);
         x.nativeObject = jsstring;
         return x;
     },
@@ -644,22 +644,7 @@ const bytecoder = {
         return v ? 1: 0;
     },
     instanceWithLambdaImpl: function(instType, lambdaImpl) {
-        let inst = null;
-        if ((instType.$modifiers & 512) > 0) {
-            let LambdaClass = class extends instType(java$lang$Object) {
-                static #rt = undefined;
-
-                static get $rt() {
-                    if (!this.#rt) {
-                        this.#rt = bytecoder.newRuntimeClassFor(this, [java$lang$Object, instType]);
-                    }
-                    return this.#rt;
-                }
-            };
-            inst = new LambdaClass();
-        } else {
-            inst = new instType();
-        }
+        let inst = new instType();
         inst.$lambdaimpl = lambdaImpl.bind(inst);
         return inst;
     },
@@ -762,21 +747,7 @@ const bytecoder = {
         };
     },
     wrapNativeIntoTypeInstance: function(instType, value) {
-        let inst = null;
-        if ((instType.$modifiers & 512) > 0) {
-            let OpaqueClass = class extends instType(java$lang$Object) {
-                static #rt = undefined;
-                static get $rt() {
-                    if (!this.#rt) {
-                        this.#rt = bytecoder.newRuntimeClassFor(this, [java$lang$Object, instType]);
-                    }
-                    return this.#rt;
-                }
-            };
-            inst = new OpaqueClass();
-        } else {
-            inst = new instType();
-        }
+        let inst = new instType();
         inst.nativeObject = value;
         return inst;
     }

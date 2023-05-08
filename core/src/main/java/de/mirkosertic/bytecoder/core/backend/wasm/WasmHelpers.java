@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core.backend.wasm;
 
+import de.mirkosertic.bytecoder.core.backend.VTable;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.ConstExpressions;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.ExportableFunction;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.Iff;
