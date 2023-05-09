@@ -149,32 +149,12 @@ public class Graph {
         return (ObjectString) register(new ObjectString(value));
     }
 
-    public InstanceMethodInvocation newInstanceMethodInvocation(final MethodInsnNode insn, final ResolvedMethod rm) {
-        return (InstanceMethodInvocation) register(new InstanceMethodInvocation(insn, rm));
+    public MethodInvocation newMethodInvocation(final InvocationType invocationType, final MethodInsnNode insn, final ResolvedMethod rm) {
+        return (MethodInvocation) register(new MethodInvocation(insn, rm, invocationType));
     }
 
-    public InstanceMethodInvocationExpression newInstanceMethodInvocationExpression(final MethodInsnNode insn, final ResolvedMethod rm) {
-        return (InstanceMethodInvocationExpression) register(new InstanceMethodInvocationExpression(insn, rm));
-    }
-
-    public VirtualMethodInvocation newVirtualMethodInvocation(final MethodInsnNode insn, final ResolvedMethod resolvedMethod) {
-        return (VirtualMethodInvocation) register(new VirtualMethodInvocation(insn, resolvedMethod));
-    }
-
-    public InterfaceMethodInvocation newInterfaceMethodInvocation(final MethodInsnNode insn, final ResolvedMethod rm) {
-        return (InterfaceMethodInvocation) register(new InterfaceMethodInvocation(insn, rm));
-    }
-
-    public InterfaceMethodInvocationExpression newInterfaceMethodInvocationExpression(final MethodInsnNode insn, final ResolvedMethod rm) {
-        return (InterfaceMethodInvocationExpression) register(new InterfaceMethodInvocationExpression(insn, rm));
-    }
-
-    public StaticMethodInvocation newStaticMethodInvocation(final ResolvedMethod rm) {
-        return (StaticMethodInvocation) register(new StaticMethodInvocation(rm));
-    }
-
-    public StaticMethodInvocationExpression newStaticMethodInvocationExpression(final ResolvedMethod rm) {
-        return (StaticMethodInvocationExpression) register(new StaticMethodInvocationExpression(rm));
+    public MethodInvocationExpression newMethodInvocationExpression(final InvocationType invocationType, final MethodInsnNode insn, final ResolvedMethod rm) {
+        return (MethodInvocationExpression) register(new MethodInvocationExpression(insn, rm, invocationType));
     }
 
     public Return newReturnNothing() {
@@ -386,10 +366,6 @@ public class Graph {
 
     public PrimitiveLong newLong(final long constant) {
         return (PrimitiveLong) register(new PrimitiveLong(constant));
-    }
-
-    public VirtualMethodInvocationExpression newVirtualMethodInvocationExpression(final MethodInsnNode node, final ResolvedMethod resolvedMethod) {
-        return (VirtualMethodInvocationExpression) register(new VirtualMethodInvocationExpression(node, resolvedMethod));
     }
 
     public LineNumberDebugInfo newLineNumberDebugInfo(final int lineNumber) {

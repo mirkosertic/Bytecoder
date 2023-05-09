@@ -21,20 +21,17 @@ import de.mirkosertic.bytecoder.core.ir.Copy;
 import de.mirkosertic.bytecoder.core.ir.FrameDebugInfo;
 import de.mirkosertic.bytecoder.core.ir.Goto;
 import de.mirkosertic.bytecoder.core.ir.If;
-import de.mirkosertic.bytecoder.core.ir.InstanceMethodInvocation;
-import de.mirkosertic.bytecoder.core.ir.InterfaceMethodInvocation;
 import de.mirkosertic.bytecoder.core.ir.LineNumberDebugInfo;
 import de.mirkosertic.bytecoder.core.ir.LookupSwitch;
+import de.mirkosertic.bytecoder.core.ir.MethodInvocation;
 import de.mirkosertic.bytecoder.core.ir.MonitorEnter;
 import de.mirkosertic.bytecoder.core.ir.MonitorExit;
 import de.mirkosertic.bytecoder.core.ir.Return;
 import de.mirkosertic.bytecoder.core.ir.ReturnValue;
 import de.mirkosertic.bytecoder.core.ir.SetClassField;
 import de.mirkosertic.bytecoder.core.ir.SetInstanceField;
-import de.mirkosertic.bytecoder.core.ir.StaticMethodInvocation;
 import de.mirkosertic.bytecoder.core.ir.TableSwitch;
 import de.mirkosertic.bytecoder.core.ir.Unwind;
-import de.mirkosertic.bytecoder.core.ir.VirtualMethodInvocation;
 import org.objectweb.asm.Type;
 
 import java.util.List;
@@ -43,13 +40,7 @@ public interface StructuredControlflowCodeGenerator {
 
     void registerVariables(List<AbstractVar> variables);
 
-    void write(InstanceMethodInvocation node);
-
-    void write(VirtualMethodInvocation node);
-
-    void write(StaticMethodInvocation node);
-
-    void write(InterfaceMethodInvocation node);
+    void write(MethodInvocation node);
 
     void write(Copy node);
 

@@ -90,7 +90,7 @@ public class OpenCLWriter {
 
         final Graph g = method.methodBody;
 
-        while (optimizer.optimize(method)) {
+        while (optimizer.optimize(compileUnit, method)) {
             //
         }
 
@@ -134,7 +134,7 @@ public class OpenCLWriter {
 
         final Graph g = method.methodBody;
 
-        while (optimizer.optimize(method)) {
+        while (optimizer.optimize(compileUnit, method)) {
             //
         }
 

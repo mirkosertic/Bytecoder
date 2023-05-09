@@ -19,6 +19,7 @@ import de.mirkosertic.bytecoder.core.ir.AbstractVar;
 import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.Node;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
+import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
 public class DeleteUnusedVariables implements Optimizer {
 
@@ -32,7 +33,7 @@ public class DeleteUnusedVariables implements Optimizer {
     }
 
     @Override
-    public boolean optimize(final ResolvedMethod method) {
+    public boolean optimize(final CompileUnit compileUnit, final ResolvedMethod method) {
         final Graph g = method.methodBody;
         boolean changed = false;
         for (final Node node : g.nodes()) {

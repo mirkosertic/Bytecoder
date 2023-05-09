@@ -49,7 +49,7 @@ public class GraphExporter {
                         rm.methodBody.writeDebugTo(fos);
                     }
 
-                    while (optimizer.optimize(rm)) {
+                    while (optimizer.optimize(compileUnit, rm)) {
                         //
                     }
 

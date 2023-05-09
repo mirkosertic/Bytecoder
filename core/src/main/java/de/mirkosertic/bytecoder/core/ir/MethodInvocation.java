@@ -17,20 +17,37 @@ package de.mirkosertic.bytecoder.core.ir;
 
 import org.objectweb.asm.tree.MethodInsnNode;
 
-public class VirtualMethodInvocationExpression extends Value implements PotentialSideeffect {
+public class MethodInvocation extends ControlTokenConsumer implements PotentialSideeffect, AbstractInvocation {
 
     public final MethodInsnNode insnNode;
 
-    public final ResolvedMethod resolvedMethod;
+    public final ResolvedMethod method;
 
-    public VirtualMethodInvocationExpression(final MethodInsnNode insnNode, final ResolvedMethod resolvedMethod) {
-        super(resolvedMethod.methodType.getReturnType());
+    public InvocationType invocationType;
+
+    public MethodInvocation(final MethodInsnNode insnNode, final ResolvedMethod method, final InvocationType invocationType) {
         this.insnNode = insnNode;
-        this.resolvedMethod = resolvedMethod;
+        this.method = method;
+        this.invocationType = invocationType;
     }
 
     @Override
     public String additionalDebugInfo() {
-        return insnNode.owner + "." + insnNode.name + insnNode.desc;
+        return invocationType + " " + method.owner + "." + method.methodNode.name + insnNode.desc;
+    }
+
+    @Override
+    public ResolvedMethod method() {
+        return method;
+    }
+
+    @Override
+    public InvocationType invocationType() {
+        return invocationType;
+    }
+
+    @Override
+    public void changeInvocationTypeTo(final InvocationType newInvocationType) {
+        invocationType = newInvocationType;
     }
 }

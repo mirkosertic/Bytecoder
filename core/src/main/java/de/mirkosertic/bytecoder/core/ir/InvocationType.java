@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Mirko Sertic
+ * Copyright 2023 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core.ir;
 
-import org.objectweb.asm.tree.MethodInsnNode;
+public enum InvocationType {
 
-public class InstanceMethodInvocation extends ControlTokenConsumer implements PotentialSideeffect {
-
-    public final MethodInsnNode insnNode;
-
-    public final ResolvedMethod method;
-
-    public InstanceMethodInvocation(final MethodInsnNode insnNode, final ResolvedMethod method) {
-        this.insnNode = insnNode;
-        this.method = method;
-    }
-
-    @Override
-    public String additionalDebugInfo() {
-        return insnNode.name + insnNode.desc;
-    }
+    DIRECT, VIRTUAL, INTERFACE, STATIC
 }

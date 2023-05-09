@@ -167,6 +167,9 @@ const bytecoder = {
             Ljava$lang$Class$$forName$Ljava$lang$String$$Z$Ljava$lang$ClassLoader$: function(className, initialize, classLoader) {
                 throw 'Not supported class for reflective access';
             },
+            Z$desiredAssertionStatus$$: function(classRef) {
+                return false;
+            }
         },
         "java.io.FileInputStream": {
             I$open0$Ljava$io$FileDescriptor$$Ljava$lang$String$: function (fis, fdd, name) {

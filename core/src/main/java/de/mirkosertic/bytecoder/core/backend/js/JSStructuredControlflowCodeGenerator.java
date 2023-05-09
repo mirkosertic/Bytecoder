@@ -16,12 +16,81 @@
 package de.mirkosertic.bytecoder.core.backend.js;
 
 import de.mirkosertic.bytecoder.classlib.Array;
-import de.mirkosertic.bytecoder.core.backend.OpaqueReferenceTypeHelpers;
 import de.mirkosertic.bytecoder.core.backend.GeneratedMethod;
 import de.mirkosertic.bytecoder.core.backend.GeneratedMethodsRegistry;
+import de.mirkosertic.bytecoder.core.backend.OpaqueReferenceTypeHelpers;
 import de.mirkosertic.bytecoder.core.backend.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.core.backend.sequencer.StructuredControlflowCodeGenerator;
-import de.mirkosertic.bytecoder.core.ir.*;
+import de.mirkosertic.bytecoder.core.ir.AbstractVar;
+import de.mirkosertic.bytecoder.core.ir.Add;
+import de.mirkosertic.bytecoder.core.ir.And;
+import de.mirkosertic.bytecoder.core.ir.AnnotationUtils;
+import de.mirkosertic.bytecoder.core.ir.ArrayLength;
+import de.mirkosertic.bytecoder.core.ir.ArrayLoad;
+import de.mirkosertic.bytecoder.core.ir.ArrayStore;
+import de.mirkosertic.bytecoder.core.ir.BootstrapMethod;
+import de.mirkosertic.bytecoder.core.ir.CMP;
+import de.mirkosertic.bytecoder.core.ir.Cast;
+import de.mirkosertic.bytecoder.core.ir.CaughtException;
+import de.mirkosertic.bytecoder.core.ir.Copy;
+import de.mirkosertic.bytecoder.core.ir.Div;
+import de.mirkosertic.bytecoder.core.ir.EnumValuesOf;
+import de.mirkosertic.bytecoder.core.ir.FieldReference;
+import de.mirkosertic.bytecoder.core.ir.FrameDebugInfo;
+import de.mirkosertic.bytecoder.core.ir.Goto;
+import de.mirkosertic.bytecoder.core.ir.If;
+import de.mirkosertic.bytecoder.core.ir.InstanceOf;
+import de.mirkosertic.bytecoder.core.ir.InvokeDynamicExpression;
+import de.mirkosertic.bytecoder.core.ir.LineNumberDebugInfo;
+import de.mirkosertic.bytecoder.core.ir.LookupSwitch;
+import de.mirkosertic.bytecoder.core.ir.MethodArgument;
+import de.mirkosertic.bytecoder.core.ir.MethodInvocation;
+import de.mirkosertic.bytecoder.core.ir.MethodInvocationExpression;
+import de.mirkosertic.bytecoder.core.ir.MethodReference;
+import de.mirkosertic.bytecoder.core.ir.MethodType;
+import de.mirkosertic.bytecoder.core.ir.MonitorEnter;
+import de.mirkosertic.bytecoder.core.ir.MonitorExit;
+import de.mirkosertic.bytecoder.core.ir.Mul;
+import de.mirkosertic.bytecoder.core.ir.Neg;
+import de.mirkosertic.bytecoder.core.ir.New;
+import de.mirkosertic.bytecoder.core.ir.NewArray;
+import de.mirkosertic.bytecoder.core.ir.Node;
+import de.mirkosertic.bytecoder.core.ir.NullReference;
+import de.mirkosertic.bytecoder.core.ir.NullTest;
+import de.mirkosertic.bytecoder.core.ir.NumericalTest;
+import de.mirkosertic.bytecoder.core.ir.ObjectString;
+import de.mirkosertic.bytecoder.core.ir.Or;
+import de.mirkosertic.bytecoder.core.ir.PHI;
+import de.mirkosertic.bytecoder.core.ir.PrimitiveClassReference;
+import de.mirkosertic.bytecoder.core.ir.PrimitiveDouble;
+import de.mirkosertic.bytecoder.core.ir.PrimitiveFloat;
+import de.mirkosertic.bytecoder.core.ir.PrimitiveInt;
+import de.mirkosertic.bytecoder.core.ir.PrimitiveLong;
+import de.mirkosertic.bytecoder.core.ir.PrimitiveShort;
+import de.mirkosertic.bytecoder.core.ir.ReadClassField;
+import de.mirkosertic.bytecoder.core.ir.ReadInstanceField;
+import de.mirkosertic.bytecoder.core.ir.ReferenceTest;
+import de.mirkosertic.bytecoder.core.ir.Rem;
+import de.mirkosertic.bytecoder.core.ir.ResolveCallsite;
+import de.mirkosertic.bytecoder.core.ir.ResolvedClass;
+import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
+import de.mirkosertic.bytecoder.core.ir.Return;
+import de.mirkosertic.bytecoder.core.ir.ReturnValue;
+import de.mirkosertic.bytecoder.core.ir.RuntimeClass;
+import de.mirkosertic.bytecoder.core.ir.RuntimeClassOf;
+import de.mirkosertic.bytecoder.core.ir.SHL;
+import de.mirkosertic.bytecoder.core.ir.SHR;
+import de.mirkosertic.bytecoder.core.ir.SetClassField;
+import de.mirkosertic.bytecoder.core.ir.SetInstanceField;
+import de.mirkosertic.bytecoder.core.ir.Sub;
+import de.mirkosertic.bytecoder.core.ir.TableSwitch;
+import de.mirkosertic.bytecoder.core.ir.This;
+import de.mirkosertic.bytecoder.core.ir.TypeConversion;
+import de.mirkosertic.bytecoder.core.ir.TypeReference;
+import de.mirkosertic.bytecoder.core.ir.USHR;
+import de.mirkosertic.bytecoder.core.ir.Unwind;
+import de.mirkosertic.bytecoder.core.ir.Value;
+import de.mirkosertic.bytecoder.core.ir.XOr;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 import org.objectweb.asm.Type;
 
@@ -36,7 +105,9 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-import static de.mirkosertic.bytecoder.core.backend.js.JSHelpers.*;
+import static de.mirkosertic.bytecoder.core.backend.js.JSHelpers.generateClassName;
+import static de.mirkosertic.bytecoder.core.backend.js.JSHelpers.generateFieldName;
+import static de.mirkosertic.bytecoder.core.backend.js.JSHelpers.generateMethodName;
 
 public class JSStructuredControlflowCodeGenerator implements StructuredControlflowCodeGenerator {
 
@@ -148,18 +219,35 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     @Override
-    public void write(final InstanceMethodInvocation node) {
+    public void write(final MethodInvocation invocation) {
+        switch (invocation.invocationType) {
+            case DIRECT: {
+                writeDirect(invocation);
+                break;
+            }
+            case STATIC: {
+                writeStatic(invocation);
+                break;
+            }
+            case INTERFACE: {
+                writeInterface(invocation);
+                break;
+            }
+            case VIRTUAL: {
+                writeVirtual(invocation);
+                break;
+            }
+        }
+    }
+
+    private void writeDirect(final MethodInvocation node) {
 
         final Type invocationTarget = Type.getObjectType(node.insnNode.owner);
 
         writeIndent();
 
         pw.print(generateClassName(invocationTarget));
-        if ("<init>".equals(node.method.methodNode.name)) {
-            pw.print("$");
-        } else {
-            pw.print(".prototype.");
-        }
+        pw.print(".prototype.");
         pw.print(generateMethodName(node.insnNode.name, node.method.methodType));
         pw.print(".call(");
         writeExpression(node.incomingDataFlows[0]);
@@ -170,18 +258,42 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         pw.println(");");
     }
 
-    private void writeExpression(final InstanceMethodInvocationExpression node) {
+    private void writeExpression(final MethodInvocationExpression node) {
+        switch (node.invocationType) {
+            case STATIC: {
+                writeExpressionStaticInvocation(node);
+                break;
+            }
+            case DIRECT: {
+                writeExpressionDirectInvocation(node);
+                break;
+            }
+            case VIRTUAL: {
+                writeExpressionVirtualInvocation(node);
+                break;
+            }
+            case INTERFACE: {
+                writeExpressionInterfaceInvocation(node);
+                break;
+            }
+            default: {
+                throw new IllegalArgumentException("Not implemented : " + node.invocationType);
+            }
+        }
+    }
+
+    private void writeExpressionDirectInvocation(final MethodInvocationExpression node) {
 
         final Type invocationTarget = Type.getObjectType(node.insnNode.owner);
 
         pw.print("(");
         pw.print(generateClassName(invocationTarget));
-        if ("<init>".equals(node.resolvedMethod.methodNode.name)) {
+        if ("<init>".equals(node.method.methodNode.name)) {
             pw.print("$");
         } else {
             pw.print(".prototype.");
         }
-        pw.print(generateMethodName(node.insnNode.name, node.resolvedMethod.methodType));
+        pw.print(generateMethodName(node.insnNode.name, node.method.methodType));
         pw.print(".call(");
         writeExpression(node.incomingDataFlows[0]);
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
@@ -1176,14 +1288,13 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         pw.println(";");
     }
 
-    @Override
-    public void write(final VirtualMethodInvocation node) {
+    private void writeVirtual(final MethodInvocation node) {
 
         writeIndent();
         writeExpression(node.incomingDataFlows[0]);
 
         pw.print(".");
-        pw.print(generateMethodName(node.insnNode.name, node.resolvedMethod.methodType));
+        pw.print(generateMethodName(node.insnNode.name, node.method.methodType));
         pw.print("(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {
@@ -1194,7 +1305,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         pw.println(");");
     }
 
-    private void writeExpression(final VirtualMethodInvocationExpression node) {
+    private void writeExpressionVirtualInvocation(final MethodInvocationExpression node) {
 
         pw.print("(");
         writeExpression(node.incomingDataFlows[0]);
@@ -1211,8 +1322,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         pw.print("))");
     }
 
-    @Override
-    public void write(final InterfaceMethodInvocation node) {
+    private void writeInterface(final MethodInvocation node) {
 
         writeIndent();
         final ResolvedClass cl = compileUnit.findClass(Type.getObjectType(node.insnNode.owner));
@@ -1386,9 +1496,9 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         }
     }
 
-    private void writeExpression(final InterfaceMethodInvocationExpression node) {
+    private void writeExpressionInterfaceInvocation(final MethodInvocationExpression node) {
 
-        final ResolvedMethod method = node.resolvedMethod;
+        final ResolvedMethod method = node.method;
         final ResolvedClass cl = method.owner;
 
         if (cl.isOpaqueReferenceType()) {
@@ -1480,7 +1590,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                 }
             } else {
 
-                final Type returnType = node.resolvedMethod.methodType.getReturnType();
+                final Type returnType = node.method.methodType.getReturnType();
                 switch (returnType.getSort()) {
                     case Type.OBJECT: {
                         if (String.class.getName().equals(returnType.getClassName())) {
@@ -1604,7 +1714,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
             writeExpression(node.incomingDataFlows[0]);
             pw.print(".");
-            pw.print(generateMethodName(node.insnNode.name, node.resolvedMethod.methodType));
+            pw.print(generateMethodName(node.insnNode.name, node.method.methodType));
             pw.print("(");
             for (int i = 1; i < node.incomingDataFlows.length; i++) {
                 if (i > 1) {
@@ -1617,12 +1727,11 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         }
     }
 
-    @Override
-    public void write(final StaticMethodInvocation node) {
+    private void writeStatic(final MethodInvocation node) {
 
         writeIndent();
 
-        final ResolvedClass resolvedClass = node.resolvedMethod.owner;
+        final ResolvedClass resolvedClass = node.method.owner;
 
         pw.print(generateClassName(resolvedClass.type));
         if (resolvedClass.requiresClassInitializer()) {
@@ -1630,7 +1739,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         }
 
         pw.print(".");
-        pw.print(generateMethodName(node.resolvedMethod.methodNode.name, node.resolvedMethod.methodType));
+        pw.print(generateMethodName(node.method.methodNode.name, node.method.methodType));
         pw.print("(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {
@@ -1641,19 +1750,19 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         pw.println(");");
     }
 
-    private void writeExpression(final StaticMethodInvocationExpression node) {
+    private void writeExpressionStaticInvocation(final MethodInvocationExpression node) {
 
         pw.print("(");
 
-        final ResolvedClass resolvedClass = node.resolvedMethod.owner;
+        final ResolvedClass resolvedClass = node.method.owner;
 
-        pw.print(generateClassName(node.resolvedMethod.owner.type));
+        pw.print(generateClassName(node.method.owner.type));
         if (resolvedClass.requiresClassInitializer()) {
             pw.print(".$i");
         }
 
         pw.print(".");
-        pw.print(generateMethodName(node.resolvedMethod.methodNode.name, node.resolvedMethod.methodType));
+        pw.print(generateMethodName(node.method.methodNode.name, node.method.methodType));
         pw.print("(");
         for (int i = 1; i < node.incomingDataFlows.length; i++) {
             if (i > 1) {
@@ -1707,14 +1816,8 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             writeExpression((TypeReference) node);
         } else if (node instanceof This) {
             writeExpression((This) node);
-        } else if (node instanceof VirtualMethodInvocationExpression) {
-            writeExpression((VirtualMethodInvocationExpression) node);
-        } else if (node instanceof InterfaceMethodInvocationExpression) {
-            writeExpression((InterfaceMethodInvocationExpression) node);
-        } else if (node instanceof StaticMethodInvocationExpression) {
-            writeExpression((StaticMethodInvocationExpression) node);
-        } else if (node instanceof InstanceMethodInvocationExpression) {
-            writeExpression((InstanceMethodInvocationExpression) node);
+        } else if (node instanceof MethodInvocationExpression) {
+            writeExpression((MethodInvocationExpression) node);
         } else if (node instanceof InvokeDynamicExpression) {
             writeExpression((InvokeDynamicExpression) node);
         } else if (node instanceof ReadInstanceField) {
