@@ -19,3 +19,13 @@
             JBOX2D  JS      Optimized       3239584 bytes
             LUA     Wasm    Optimized        584139 bytes
             LUA     JS      Optimized       2606343 bytes
+
+2023-05-09  JBOX2D  Wasm    Optimized        622220 bytes
+            JBOX2D  JS      Optimized       3312916 bytes
+            LUA     Wasm    Optimized        560663 bytes
+            LUA     JS      Optimized       2687527 bytes
+
+2023-05-10  JBOX2D  Wasm    Optimized        620746 bytes
+            JBOX2D  JS      Optimized       3069118 bytes
+            LUA     Wasm    Optimized        557837 bytes
+            LUA     JS      Optimized       2368451 bytes

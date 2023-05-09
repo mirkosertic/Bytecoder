@@ -32,9 +32,11 @@ import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.If;
 import de.mirkosertic.bytecoder.core.ir.InstanceOf;
 import de.mirkosertic.bytecoder.core.ir.InstructionTranslation;
+import de.mirkosertic.bytecoder.core.ir.InvocationType;
 import de.mirkosertic.bytecoder.core.ir.InvokeDynamicExpression;
 import de.mirkosertic.bytecoder.core.ir.LineNumberDebugInfo;
 import de.mirkosertic.bytecoder.core.ir.LookupSwitch;
+import de.mirkosertic.bytecoder.core.ir.MethodInvocationExpression;
 import de.mirkosertic.bytecoder.core.ir.MethodType;
 import de.mirkosertic.bytecoder.core.ir.MonitorEnter;
 import de.mirkosertic.bytecoder.core.ir.MonitorExit;
@@ -65,7 +67,6 @@ import de.mirkosertic.bytecoder.core.ir.ReturnValue;
 import de.mirkosertic.bytecoder.core.ir.SetClassField;
 import de.mirkosertic.bytecoder.core.ir.SetInstanceField;
 import de.mirkosertic.bytecoder.core.ir.StandardProjections;
-import de.mirkosertic.bytecoder.core.ir.StaticMethodInvocationExpression;
 import de.mirkosertic.bytecoder.core.ir.StringConstant;
 import de.mirkosertic.bytecoder.core.ir.TableSwitch;
 import de.mirkosertic.bytecoder.core.ir.Test;
@@ -619,7 +620,7 @@ public class GraphParser {
                 final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
                 final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
 
-                n = graph.newInstanceMethodInvocation(node, rm);
+                n = graph.newMethodInvocation(InvocationType.DIRECT, node, rm);
                 n.addIncomingData(incomingData);
             }
             graph.registerTranslation(node, new InstructionTranslation(currentState.frame, n));
@@ -636,7 +637,7 @@ public class GraphParser {
                 final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
                 final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
 
-                n = graph.newInstanceMethodInvocationExpression(node, rm);
+                n = graph.newMethodInvocationExpression(InvocationType.DIRECT, node, rm);
                 n.addIncomingData(incomingData);
             }
 
@@ -684,7 +685,7 @@ public class GraphParser {
                 final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
                 final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
 
-                n = graph.newVirtualMethodInvocation(node, rm);
+                n = graph.newMethodInvocation(InvocationType.VIRTUAL, node, rm);
                 n.addIncomingData(incomingData);
             }
 
@@ -702,7 +703,7 @@ public class GraphParser {
                 final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
                 final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
 
-                n = graph.newVirtualMethodInvocationExpression(node, rm);
+                n = graph.newMethodInvocationExpression(InvocationType.VIRTUAL, node, rm);
                 n.addIncomingData(incomingData);
             }
 
@@ -745,7 +746,7 @@ public class GraphParser {
                 final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
                 final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
 
-                n = graph.newInterfaceMethodInvocation(node, rm);
+                n = graph.newMethodInvocation(InvocationType.INTERFACE, node, rm);
                 n.addIncomingData(incomingData);
             }
 
@@ -763,7 +764,7 @@ public class GraphParser {
                 final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
                 final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
 
-                n = graph.newInterfaceMethodInvocationExpression(node, rm);
+                n = graph.newMethodInvocationExpression(InvocationType.INTERFACE, node, rm);
                 n.addIncomingData(incomingData);
             }
 
@@ -810,7 +811,7 @@ public class GraphParser {
                 final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
                 final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
 
-                n = graph.newStaticMethodInvocation(rm);
+                n = graph.newMethodInvocation(InvocationType.STATIC, node, rm);
                 n.addIncomingData(incomingData);
             }
 
@@ -828,7 +829,7 @@ public class GraphParser {
                 final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
                 final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
 
-                n = graph.newStaticMethodInvocationExpression(rm);
+                n = graph.newMethodInvocationExpression(InvocationType.STATIC, node, rm);
                 n.addIncomingData(incomingData);
             }
 
@@ -2517,7 +2518,7 @@ public class GraphParser {
 
         final ResolvedMethod method = rc.resolveMethod(methodName, Type.getMethodType(Type.getType(Object.class), Type.INT_TYPE, Type.INT_TYPE), analysisStack);
 
-        final StaticMethodInvocationExpression staticMethodInvocationExpression = graph.newStaticMethodInvocationExpression(method);
+        final MethodInvocationExpression staticMethodInvocationExpression = graph.newMethodInvocationExpression(InvocationType.STATIC, null, method);
 
         final Value[] incomingData = new Value[node.dims + 1];
         final GraphParserState currentState = currentFlow.graphParserState;

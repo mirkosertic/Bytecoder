@@ -15,21 +15,11 @@
  */
 package de.mirkosertic.bytecoder.core.ir;
 
-import org.objectweb.asm.tree.MethodInsnNode;
+public interface AbstractInvocation {
 
-public class InterfaceMethodInvocation extends ControlTokenConsumer implements PotentialSideeffect {
+    ResolvedMethod method();
 
-    public final MethodInsnNode insnNode;
+    InvocationType invocationType();
 
-    public final ResolvedMethod method;
-
-    public InterfaceMethodInvocation(final MethodInsnNode insnNode, final ResolvedMethod method) {
-        this.insnNode = insnNode;
-        this.method = method;
-    }
-
-    @Override
-    public String additionalDebugInfo() {
-        return insnNode.owner + "." + insnNode.name + insnNode.desc;
-    }
+    void changeInvocationTypeTo(final InvocationType newInvocationType);
 }

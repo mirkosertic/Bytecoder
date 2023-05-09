@@ -824,7 +824,7 @@ public class WasmBackend {
 
                         final Graph g = method.methodBody;
                         final Optimizer o = compileOptions.getOptimizer();
-                        while (o.optimize(method)) {
+                        while (o.optimize(compileUnit, method)) {
                             //
                         }
 

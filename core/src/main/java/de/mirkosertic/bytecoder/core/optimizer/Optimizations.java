@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.core.optimizer;
 
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
+import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
 public enum Optimizations implements Optimizer {
     DISABLED(new Optimizer[] {
@@ -23,16 +24,18 @@ public enum Optimizations implements Optimizer {
     DEFAULT(new Optimizer[] {
                 new DeleteUnusedConstants(),
                 new DeleteUnusedVariables(),
-                //new DeleteCopyToUnusedVariable(),
                 new DeleteRedundantVariables(),
-                new VariableIsConstant()
+                new VariableIsConstant(),
+                new VirtualToDirectInvocation(),
+                new DeleteCopyToUnusedPHI()
             }),
     ALL(new Optimizer[] {
             new DeleteUnusedConstants(),
             new DeleteUnusedVariables(),
-            //new DeleteCopyToUnusedVariable(),
             new DeleteRedundantVariables(),
-            new VariableIsConstant()
+            new VariableIsConstant(),
+            new VirtualToDirectInvocation(),
+            new DeleteCopyToUnusedPHI()
     }),
     ;
 
@@ -42,10 +45,10 @@ public enum Optimizations implements Optimizer {
         this.optimizers = optimizers;
     }
 
-    public boolean optimize(final ResolvedMethod method) {
+    public boolean optimize(final CompileUnit compileUnit, final ResolvedMethod method) {
         boolean graphchanged = false;
         for (final Optimizer o : optimizers) {
-            graphchanged = graphchanged | o.optimize(method);
+            graphchanged = graphchanged | o.optimize(compileUnit, method);
         }
         return graphchanged;
     }

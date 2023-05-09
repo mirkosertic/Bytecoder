@@ -31,12 +31,11 @@ import de.mirkosertic.bytecoder.core.ir.Div;
 import de.mirkosertic.bytecoder.core.ir.FrameDebugInfo;
 import de.mirkosertic.bytecoder.core.ir.Goto;
 import de.mirkosertic.bytecoder.core.ir.If;
-import de.mirkosertic.bytecoder.core.ir.InstanceMethodInvocation;
-import de.mirkosertic.bytecoder.core.ir.InstanceMethodInvocationExpression;
-import de.mirkosertic.bytecoder.core.ir.InterfaceMethodInvocation;
 import de.mirkosertic.bytecoder.core.ir.LineNumberDebugInfo;
 import de.mirkosertic.bytecoder.core.ir.LookupSwitch;
 import de.mirkosertic.bytecoder.core.ir.MethodArgument;
+import de.mirkosertic.bytecoder.core.ir.MethodInvocation;
+import de.mirkosertic.bytecoder.core.ir.MethodInvocationExpression;
 import de.mirkosertic.bytecoder.core.ir.MonitorEnter;
 import de.mirkosertic.bytecoder.core.ir.MonitorExit;
 import de.mirkosertic.bytecoder.core.ir.Mul;
@@ -64,16 +63,12 @@ import de.mirkosertic.bytecoder.core.ir.SHL;
 import de.mirkosertic.bytecoder.core.ir.SHR;
 import de.mirkosertic.bytecoder.core.ir.SetClassField;
 import de.mirkosertic.bytecoder.core.ir.SetInstanceField;
-import de.mirkosertic.bytecoder.core.ir.StaticMethodInvocation;
-import de.mirkosertic.bytecoder.core.ir.StaticMethodInvocationExpression;
 import de.mirkosertic.bytecoder.core.ir.Sub;
 import de.mirkosertic.bytecoder.core.ir.TableSwitch;
 import de.mirkosertic.bytecoder.core.ir.This;
 import de.mirkosertic.bytecoder.core.ir.TypeConversion;
 import de.mirkosertic.bytecoder.core.ir.USHR;
 import de.mirkosertic.bytecoder.core.ir.Unwind;
-import de.mirkosertic.bytecoder.core.ir.VirtualMethodInvocation;
-import de.mirkosertic.bytecoder.core.ir.VirtualMethodInvocationExpression;
 import de.mirkosertic.bytecoder.core.ir.XOr;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 import org.objectweb.asm.Type;
@@ -177,7 +172,28 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
     }
 
     @Override
-    public void write(final InstanceMethodInvocation node) {
+    public void write(final MethodInvocation invocation) {
+        switch (invocation.invocationType) {
+            case DIRECT: {
+                writeDirect(invocation);
+                break;
+            }
+            case STATIC: {
+                writeStatic(invocation);
+                break;
+            }
+            case INTERFACE: {
+                writeInterface(invocation);
+                break;
+            }
+            case VIRTUAL: {
+                writeVirtual(invocation);
+                break;
+            }
+        }
+    }
+
+    private void writeDirect(final MethodInvocation node) {
 
         final Type invocationTarget = Type.getObjectType(node.insnNode.owner);
         if (!invocationTarget.getClassName().equals(cl.type.getClassName())) {
@@ -198,14 +214,34 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
         pw.println(");");
     }
 
-    private void writeExpression(final InstanceMethodInvocationExpression node) {
+    private void writeExpression(final MethodInvocationExpression node) {
+        switch (node.invocationType) {
+            case STATIC: {
+                writeExpressionStaticInvocation(node);
+                break;
+            }
+            case DIRECT: {
+                writeExpressionDirectInvocation(node);
+                break;
+            }
+            case VIRTUAL: {
+                writeExpressionVirtualInvocation(node);
+                break;
+            }
+            default: {
+                throw new IllegalArgumentException("Not implemented : " + node.invocationType);
+            }
+        }
+    }
+
+    private void writeExpressionDirectInvocation(final MethodInvocationExpression node) {
 
         final Type invocationTarget = Type.getObjectType(node.insnNode.owner);
         if (!invocationTarget.getClassName().equals(cl.type.getClassName())) {
             throw new IllegalArgumentException("Not supported by OpenCL! Target = " + invocationTarget);
         }
 
-        pw.print(OpenCLHelpers.generateMethodName(node.insnNode.name, node.resolvedMethod.methodType));
+        pw.print(OpenCLHelpers.generateMethodName(node.insnNode.name, node.method.methodType));
         pw.print("(");
 
         writeDelegateInputOutputs();
@@ -473,8 +509,7 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
         }
     }
 
-    @Override
-    public void write(final VirtualMethodInvocation node) {
+    private void writeVirtual(final MethodInvocation node) {
 
         final Type invocationTarget = Type.getObjectType(node.insnNode.owner);
         if (!invocationTarget.getClassName().equals(cl.type.getClassName())) {
@@ -483,7 +518,7 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
 
         writeIndent();
 
-        pw.print(OpenCLHelpers.generateMethodName(node.insnNode.name, node.resolvedMethod.methodType));
+        pw.print(OpenCLHelpers.generateMethodName(node.insnNode.name, node.method.methodType));
         pw.print("(");
 
         writeDelegateInputOutputs();
@@ -497,7 +532,7 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
         pw.println(");");
     }
 
-    private void writeExpression(final VirtualMethodInvocationExpression node) {
+    private void writeExpressionVirtualInvocation(final MethodInvocationExpression node) {
 
         final Type invocationTarget = Type.getObjectType(node.insnNode.owner);
         if (!invocationTarget.getClassName().equals(cl.type.getClassName())) {
@@ -518,20 +553,18 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
         pw.print(")");
     }
 
-    @Override
-    public void write(final InterfaceMethodInvocation node) {
+    private void writeInterface(final MethodInvocation node) {
         throw new IllegalArgumentException("Not supported by OpenCL!");
     }
 
-    @Override
-    public void write(final StaticMethodInvocation node) {
+    private void writeStatic(final MethodInvocation node) {
 
         writeIndent();
 
-        if (!AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/opencl/OpenCLFunction;", node.resolvedMethod.methodNode.visibleAnnotations)) {
+        if (!AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/opencl/OpenCLFunction;", node.method.methodNode.visibleAnnotations)) {
             throw new IllegalArgumentException("Static invocation target must have @OpenCLFunction annotation!");
         }
-        final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/opencl/OpenCLFunction;", node.resolvedMethod.methodNode.visibleAnnotations);
+        final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/opencl/OpenCLFunction;", node.method.methodNode.visibleAnnotations);
 
         if (Boolean.TRUE.equals(values.get("literal"))) {
             pw.print("(");
@@ -550,12 +583,12 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
         pw.println(");");
     }
 
-    private void writeExpression(final StaticMethodInvocationExpression node) {
+    private void writeExpressionStaticInvocation(final MethodInvocationExpression node) {
 
-        if (!AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/opencl/OpenCLFunction;", node.resolvedMethod.methodNode.visibleAnnotations)) {
+        if (!AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/opencl/OpenCLFunction;", node.method.methodNode.visibleAnnotations)) {
             throw new IllegalArgumentException("Static invocation target must have @OpenCLFunction annotation!");
         }
-        final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/opencl/OpenCLFunction;", node.resolvedMethod.methodNode.visibleAnnotations);
+        final Map<String, Object> values = AnnotationUtils.parseAnnotation("Lde/mirkosertic/bytecoder/api/opencl/OpenCLFunction;", node.method.methodNode.visibleAnnotations);
 
         if (Boolean.TRUE.equals(values.get("literal"))) {
             pw.print("(");
@@ -608,12 +641,8 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
             writeExpression((New) node);
         } else if (node instanceof This) {
             writeExpression((This) node);
-        } else if (node instanceof VirtualMethodInvocationExpression) {
-            writeExpression((VirtualMethodInvocationExpression) node);
-        } else if (node instanceof StaticMethodInvocationExpression) {
-            writeExpression((StaticMethodInvocationExpression) node);
-        } else if (node instanceof InstanceMethodInvocationExpression) {
-            writeExpression((InstanceMethodInvocationExpression) node);
+        } else if (node instanceof MethodInvocationExpression) {
+            writeExpression((MethodInvocationExpression) node);
         } else if (node instanceof ReadInstanceField) {
             writeExpression((ReadInstanceField) node);
         } else if (node instanceof ReadClassField) {

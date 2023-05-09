@@ -102,8 +102,6 @@ public class JSBackend {
 
         for (final ResolvedClass cl : compileUnit.computeClassDependencies()) {
 
-            generateMethodsImplementationsFor(pw, compileUnit, cl, compileOptions, generatedMethodsRegistry);
-
             final String className = generateClassName(cl.type);
 
             pw.println();
@@ -135,32 +133,10 @@ public class JSBackend {
 
             generateLambdaLogicFor(pw, compileUnit, cl);
 
+            generateMethodsImplementationsFor(pw, compileUnit, cl, compileOptions, generatedMethodsRegistry);
+
             pw.println("}");
             pw.println();
-
-            for (final ResolvedMethod m : cl.resolvedMethods) {
-                if ((m.owner == cl) && (Modifier.isStatic(m.methodNode.access) || ("<init>".equals(m.methodNode.name)))) {
-                    if (!Modifier.isAbstract(m.methodNode.access) || cl.isOpaqueReferenceType()) {
-                        final String methodName = JSHelpers.generateMethodName(m.methodNode.name, m.methodType);
-
-                        pw.print(className);
-                        pw.print(".");
-
-                        if (!Modifier.isStatic(m.methodNode.access)) {
-                            pw.print("prototype.");
-                        }
-
-                        pw.print(methodName);
-
-                        pw.print(" = ");
-
-                        pw.print(JSHelpers.generateClassName(m.owner.type));
-                        pw.print("$");
-                        pw.print(methodName);
-                        pw.println(";");
-                    }
-                }
-            }
 
             final VTable vtable = vTableResolver.resolveFor(cl);
 
@@ -171,20 +147,22 @@ public class JSBackend {
 
             for (final Map.Entry<Integer, ResolvedMethod> entry : vtable.getMethods().entrySet()) {
                 final ResolvedMethod resolvedMethod = entry.getValue();
-                if (parentVTable == null || parentVTable.getMethods().get(entry.getKey()) != entry.getValue()) {
+                if (!Modifier.isStatic(entry.getValue().methodNode.access) && (parentVTable == null || parentVTable.getMethods().get(entry.getKey()) != entry.getValue())) {
                     final String methodName = JSHelpers.generateMethodName(resolvedMethod.methodNode.name, resolvedMethod.methodType);
 
-                    pw.print(className);
-                    pw.print(".prototype.");
+                    if (resolvedMethod.owner != cl) {
+                        pw.print(className);
+                        pw.print(".prototype.");
 
-                    pw.print(methodName);
+                        pw.print(methodName);
 
-                    pw.print(" = ");
+                        pw.print(" = ");
 
-                    pw.print(JSHelpers.generateClassName(resolvedMethod.owner.type));
-                    pw.print("$");
-                    pw.print(methodName);
-                    pw.println(";");
+                        pw.print(JSHelpers.generateClassName(resolvedMethod.owner.type));
+                        pw.print(".prototype.");
+                        pw.print(methodName);
+                        pw.println(";");
+                    }
                 }
             }
         }
@@ -368,13 +346,16 @@ public class JSBackend {
 
         final String methodName = generateMethodName(m.methodNode.name, m.methodType);
 
-        pw.print(JSHelpers.generateClassName(cl.type));
-        pw.print("$");
-        pw.print(methodName);
-        pw.print(" = function");
-
         final Type[] arguments = Type.getArgumentTypes(m.methodNode.desc);
         final Type returnType = Type.getReturnType(m.methodNode.desc);
+
+        pw.print("  ");
+
+        if (Modifier.isStatic(m.methodNode.access)) {
+            pw.print("static ");
+        }
+
+        pw.print(methodName);
 
         pw.print("(");
         for (int i = 0; i < arguments.length; i++) {
@@ -467,21 +448,23 @@ public class JSBackend {
             }
 
             pw.println(");");
-            pw.println("};");
+            pw.println("  }");
         }
     }
 
     public void generateOpaqueAdapterMethodWithPrefix(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m) {
         pw.println();
 
-        pw.print(JSHelpers.generateClassName(cl.type));
-        pw.print("$");
-        pw.print(JSHelpers.generateMethodName(m.methodNode.name, m.methodType));
-        pw.print(" = function");
-
         final Type[] arguments = Type.getArgumentTypes(m.methodNode.desc);
         final Type returnType = Type.getReturnType(m.methodNode.desc);
 
+        pw.print("  ");
+
+        if (Modifier.isStatic(m.methodNode.access)) {
+            pw.print("static ");
+        }
+
+        pw.print(JSHelpers.generateMethodName(m.methodNode.name, m.methodType));
         pw.print("(");
         for (int i = 0; i < arguments.length; i++) {
             if (i > 0) {
@@ -692,7 +675,7 @@ public class JSBackend {
 
         pw.println(";");
 
-        pw.println("};");
+        pw.println("  }");
     }
 
     public void generateMethodWithPrefix(final PrintWriter pw, final CompileUnit compileUnit, final ResolvedClass cl, final ResolvedMethod m, final CompileOptions options, final GeneratedMethodsRegistry generatedMethodsRegistry) {
@@ -700,14 +683,15 @@ public class JSBackend {
 
         final String methodName = generateMethodName(m.methodNode.name, m.methodType);
 
-        pw.print(JSHelpers.generateClassName(cl.type));
-        pw.print("$");
-        pw.print(methodName);
-
-        pw.print(" = function");
-
         final Type[] arguments = Type.getArgumentTypes(m.methodNode.desc);
 
+        pw.print("  ");
+
+        if (Modifier.isStatic(m.methodNode.access)) {
+            pw.print("static ");
+        }
+
+        pw.print(methodName);
         pw.print("(");
         for (int i = 0; i < arguments.length; i++) {
             if (i > 0) {
@@ -722,7 +706,7 @@ public class JSBackend {
         final Optimizer o = options.getOptimizer();
 
 
-        while (o.optimize(m)) {
+        while (o.optimize(compileUnit, m)) {
             //
         }
 
@@ -739,6 +723,6 @@ public class JSBackend {
             throw new CodeGenerationFailure(m, dt, e);
         }
 
-        pw.println("};");
+        pw.println("  }");
     }
 }
