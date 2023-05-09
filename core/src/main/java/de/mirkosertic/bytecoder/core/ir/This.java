@@ -22,4 +22,9 @@ public class This extends Value implements Constant {
     public This(final Type type) {
         super(type);
     }
+
+    @Override
+    public String additionalDebugInfo() {
+        return ": " + type;
+    }
 }
