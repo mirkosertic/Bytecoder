@@ -19,12 +19,12 @@ import de.mirkosertic.bytecoder.core.ir.Constant;
 import de.mirkosertic.bytecoder.core.ir.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.core.ir.Copy;
 import de.mirkosertic.bytecoder.core.ir.Graph;
+import de.mirkosertic.bytecoder.core.ir.InvokeDynamicExpression;
 import de.mirkosertic.bytecoder.core.ir.Node;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.ir.Variable;
 
 import java.util.Arrays;
-import java.util.stream.Collectors;
 
 public class VariableIsConstant implements Optimizer {
 
@@ -51,7 +51,15 @@ public class VariableIsConstant implements Optimizer {
                 final Node outgoing = node.outgoingFlows[0];
 
                 // Variable must not contain other incoming dataflows beside the current investigated one
-                if (Arrays.stream(outgoing.incomingDataFlows).filter(t -> t != node).count() == 0) {
+                if (Arrays.stream(outgoing.incomingDataFlows).noneMatch(t -> t != node)) {
+
+                    // Special case: this is by invokedynamic
+                    // This and MethodArgument constants will get a different meaning in JS backend, so we skip this case here
+                    // This is caused by a bug in JS code generator
+                    if ((Arrays.stream(outgoing.outgoingFlows).anyMatch(t -> t instanceof InvokeDynamicExpression))) {
+                        return false;
+                    }
+
                     g.remapDataFlow(outgoing, incoming);
 
                     incoming.removeFromIncomingData(node);
