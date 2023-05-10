@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.core.parser;
 import de.mirkosertic.bytecoder.core.ir.AnalysisStack;
 import de.mirkosertic.bytecoder.core.ir.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.core.ir.Graph;
+import de.mirkosertic.bytecoder.core.ir.InvocationType;
 import de.mirkosertic.bytecoder.core.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.ir.Value;
@@ -84,7 +85,7 @@ public class JavaLangSystemIntrinsics implements Intrinsic {
 
                     final ResolvedMethod rm = systemClass.resolveMethod(node.name,
                             methodType, analysisStack);
-                    final ControlTokenConsumer n = graph.newStaticMethodInvocation(rm);
+                    final ControlTokenConsumer n = graph.newMethodInvocation(InvocationType.STATIC, node, rm);
                     n.addIncomingData(incomingData);
                     return n;
 

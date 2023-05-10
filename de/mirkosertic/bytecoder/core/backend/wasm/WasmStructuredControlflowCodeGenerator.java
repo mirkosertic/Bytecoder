@@ -65,15 +65,13 @@ import de.mirkosertic.bytecoder.core.ir.FrameDebugInfo;
 import de.mirkosertic.bytecoder.core.ir.Goto;
 import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.If;
-import de.mirkosertic.bytecoder.core.ir.InstanceMethodInvocation;
-import de.mirkosertic.bytecoder.core.ir.InstanceMethodInvocationExpression;
 import de.mirkosertic.bytecoder.core.ir.InstanceOf;
-import de.mirkosertic.bytecoder.core.ir.InterfaceMethodInvocation;
-import de.mirkosertic.bytecoder.core.ir.InterfaceMethodInvocationExpression;
 import de.mirkosertic.bytecoder.core.ir.InvokeDynamicExpression;
 import de.mirkosertic.bytecoder.core.ir.LineNumberDebugInfo;
 import de.mirkosertic.bytecoder.core.ir.LookupSwitch;
 import de.mirkosertic.bytecoder.core.ir.MethodArgument;
+import de.mirkosertic.bytecoder.core.ir.MethodInvocation;
+import de.mirkosertic.bytecoder.core.ir.MethodInvocationExpression;
 import de.mirkosertic.bytecoder.core.ir.MethodReference;
 import de.mirkosertic.bytecoder.core.ir.MethodType;
 import de.mirkosertic.bytecoder.core.ir.MonitorEnter;
@@ -113,8 +111,6 @@ import de.mirkosertic.bytecoder.core.ir.SHL;
 import de.mirkosertic.bytecoder.core.ir.SHR;
 import de.mirkosertic.bytecoder.core.ir.SetClassField;
 import de.mirkosertic.bytecoder.core.ir.SetInstanceField;
-import de.mirkosertic.bytecoder.core.ir.StaticMethodInvocation;
-import de.mirkosertic.bytecoder.core.ir.StaticMethodInvocationExpression;
 import de.mirkosertic.bytecoder.core.ir.Sub;
 import de.mirkosertic.bytecoder.core.ir.TableSwitch;
 import de.mirkosertic.bytecoder.core.ir.This;
@@ -123,8 +119,6 @@ import de.mirkosertic.bytecoder.core.ir.TypeReference;
 import de.mirkosertic.bytecoder.core.ir.USHR;
 import de.mirkosertic.bytecoder.core.ir.Unwind;
 import de.mirkosertic.bytecoder.core.ir.Value;
-import de.mirkosertic.bytecoder.core.ir.VirtualMethodInvocation;
-import de.mirkosertic.bytecoder.core.ir.VirtualMethodInvocationExpression;
 import de.mirkosertic.bytecoder.core.ir.XOr;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 import org.apache.commons.lang3.function.TriFunction;
@@ -291,7 +285,28 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     }
 
     @Override
-    public void write(final InstanceMethodInvocation node) {
+    public void write(final MethodInvocation invocation) {
+        switch (invocation.invocationType) {
+            case DIRECT: {
+                writeDirect(invocation);
+                break;
+            }
+            case STATIC: {
+                writeStatic(invocation);
+                break;
+            }
+            case INTERFACE: {
+                writeInterface(invocation);
+                break;
+            }
+            case VIRTUAL: {
+                writeVirtual(invocation);
+                break;
+            }
+        }
+    }
+
+    private void writeDirect(final MethodInvocation node) {
         final ResolvedMethod rm = node.method;
         final ResolvedClass cl = rm.owner;
 
@@ -305,9 +320,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         activeLevel.activeFlow.voidCall(ConstExpressions.weakFunctionReference(functionName), callArgs);
     }
 
-    @Override
-    public void write(final VirtualMethodInvocation node) {
-        final ResolvedMethod rm = node.resolvedMethod;
+    private void writeVirtual(final MethodInvocation node) {
+        final ResolvedMethod rm = node.method;
         //final ResolvedClass cl = rm.owner;
 
         final List<WasmValue> indirectCallArgs = new ArrayList<>();
@@ -334,14 +348,13 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         ));
 
         final WasmValue resolver = ConstExpressions.ref.callRef(vtType, resolverArgs);
-        final FunctionType ft = functionTypeConverter.apply(node.resolvedMethod);
+        final FunctionType ft = functionTypeConverter.apply(node.method);
 
         activeLevel.activeFlow.voidCallIndirect(ft, indirectCallArgs, resolver);
     }
 
-    @Override
-    public void write(final StaticMethodInvocation node) {
-        final ResolvedMethod rm = node.resolvedMethod;
+    private void writeStatic(final MethodInvocation node) {
+        final ResolvedMethod rm = node.method;
         final ResolvedClass cl = rm.owner;
 
         final List<WasmValue> callArgs = new ArrayList<>();
@@ -353,8 +366,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         activeLevel.activeFlow.voidCall(ConstExpressions.weakFunctionReference(functionName), callArgs);
     }
 
-    @Override
-    public void write(final InterfaceMethodInvocation node) {
+    private void writeInterface(final MethodInvocation node) {
         final ResolvedMethod rm = node.method;
         //final ResolvedClass cl = rm.owner;
 
@@ -524,8 +536,28 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 value.resolvedField.name);
     }
 
-    private WasmValue toWasmValue(final StaticMethodInvocationExpression value) {
-        final ResolvedMethod rm = value.resolvedMethod;
+    private WasmValue toWasmValue(final MethodInvocationExpression value) {
+        switch (value.invocationType) {
+            case STATIC: {
+                return toWasmValueStatic(value);
+            }
+            case DIRECT: {
+                return toWasmValueDirect(value);
+            }
+            case INTERFACE: {
+                return toWasmValueInterface(value);
+            }
+            case VIRTUAL: {
+                return toWasmValueVirtual(value);
+            }
+            default: {
+                throw new IllegalArgumentException("Not implemented invocation type : " + value.invocationType);
+            }
+        }
+    }
+
+    private WasmValue toWasmValueStatic(final MethodInvocationExpression value) {
+        final ResolvedMethod rm = value.method;
         final ResolvedClass cl = rm.owner;
 
         final List<WasmValue> callArgs = new ArrayList<>();
@@ -537,8 +569,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         return ConstExpressions.call(ConstExpressions.weakFunctionReference(functionName), callArgs);
     }
 
-    private WasmValue toWasmValue(final InstanceMethodInvocationExpression value) {
-        final ResolvedMethod rm = value.resolvedMethod;
+    private WasmValue toWasmValueDirect(final MethodInvocationExpression value) {
+        final ResolvedMethod rm = value.method;
         final ResolvedClass cl = rm.owner;
 
         final List<WasmValue> callArgs = new ArrayList<>();
@@ -551,8 +583,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         return ConstExpressions.call(ConstExpressions.weakFunctionReference(functionName), callArgs);
     }
 
-    private WasmValue toWasmValue(final VirtualMethodInvocationExpression value) {
-        final ResolvedMethod rm = value.resolvedMethod;
+    private WasmValue toWasmValueVirtual(final MethodInvocationExpression value) {
+        final ResolvedMethod rm = value.method;
 
         final List<WasmValue> indirectCallArgs = new ArrayList<>();
 
@@ -573,13 +605,13 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         vtArgs.add(PrimitiveType.i32);
         final FunctionType vtType = module.getTypes().functionType(vtArgs, PrimitiveType.i32);
         final WasmValue resolver = ConstExpressions.ref.callRef(vtType, resolverArgs);
-        final FunctionType ft = functionTypeConverter.apply(value.resolvedMethod);
+        final FunctionType ft = functionTypeConverter.apply(rm);
 
         return ConstExpressions.call(ft, indirectCallArgs, resolver);
     }
 
-    private WasmValue toWasmValue(final InterfaceMethodInvocationExpression value) {
-        final ResolvedMethod rm = value.resolvedMethod;
+    private WasmValue toWasmValueInterface(final MethodInvocationExpression value) {
+        final ResolvedMethod rm = value.method;
         //final ResolvedClass cl = rm.owner;
 
         final List<WasmValue> indirectCallArgs = new ArrayList<>();
@@ -604,7 +636,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         ));
 
         final WasmValue resolver = ConstExpressions.ref.callRef(vtType, resolverArgs);
-        final FunctionType ft = functionTypeConverter.apply(value.resolvedMethod);
+        final FunctionType ft = functionTypeConverter.apply(rm);
 
         return ConstExpressions.call(ft, indirectCallArgs, resolver);
     }
@@ -2348,14 +2380,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             return toWasmValue((New) value);
         } else if (value instanceof ReadInstanceField) {
             return toWasmValue((ReadInstanceField) value);
-        } else if (value instanceof StaticMethodInvocationExpression) {
-            return toWasmValue((StaticMethodInvocationExpression) value);
-        } else if (value instanceof VirtualMethodInvocationExpression) {
-            return toWasmValue((VirtualMethodInvocationExpression) value);
-        } else if (value instanceof InterfaceMethodInvocationExpression) {
-            return toWasmValue((InterfaceMethodInvocationExpression) value);
-        } else if (value instanceof InstanceMethodInvocationExpression) {
-            return toWasmValue((InstanceMethodInvocationExpression) value);
+        } else if (value instanceof MethodInvocationExpression) {
+            return toWasmValue((MethodInvocationExpression) value);
         } else if (value instanceof InvokeDynamicExpression) {
             return toWasmValue((InvokeDynamicExpression) value);
         } else if (value instanceof TypeReference) {

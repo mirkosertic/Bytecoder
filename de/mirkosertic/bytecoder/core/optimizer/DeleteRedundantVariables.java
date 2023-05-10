@@ -21,6 +21,7 @@ import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.Node;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.ir.Variable;
+import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
 public class DeleteRedundantVariables implements Optimizer {
 
@@ -37,7 +38,7 @@ public class DeleteRedundantVariables implements Optimizer {
     }
 
     @Override
-    public boolean optimize(final ResolvedMethod method) {
+    public boolean optimize(final CompileUnit compileUnit, final ResolvedMethod method) {
 
         final Graph g = method.methodBody;
 

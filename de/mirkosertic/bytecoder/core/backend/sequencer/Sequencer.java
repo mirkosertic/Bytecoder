@@ -23,10 +23,9 @@ import de.mirkosertic.bytecoder.core.ir.FrameDebugInfo;
 import de.mirkosertic.bytecoder.core.ir.Goto;
 import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.If;
-import de.mirkosertic.bytecoder.core.ir.InstanceMethodInvocation;
-import de.mirkosertic.bytecoder.core.ir.InterfaceMethodInvocation;
 import de.mirkosertic.bytecoder.core.ir.LineNumberDebugInfo;
 import de.mirkosertic.bytecoder.core.ir.LookupSwitch;
+import de.mirkosertic.bytecoder.core.ir.MethodInvocation;
 import de.mirkosertic.bytecoder.core.ir.MonitorEnter;
 import de.mirkosertic.bytecoder.core.ir.MonitorExit;
 import de.mirkosertic.bytecoder.core.ir.Node;
@@ -37,11 +36,9 @@ import de.mirkosertic.bytecoder.core.ir.Return;
 import de.mirkosertic.bytecoder.core.ir.ReturnValue;
 import de.mirkosertic.bytecoder.core.ir.SetClassField;
 import de.mirkosertic.bytecoder.core.ir.SetInstanceField;
-import de.mirkosertic.bytecoder.core.ir.StaticMethodInvocation;
 import de.mirkosertic.bytecoder.core.ir.TableSwitch;
 import de.mirkosertic.bytecoder.core.ir.TryCatch;
 import de.mirkosertic.bytecoder.core.ir.Unwind;
-import de.mirkosertic.bytecoder.core.ir.VirtualMethodInvocation;
 
 import java.util.List;
 import java.util.Map;
@@ -129,17 +126,8 @@ public class Sequencer {
                 if (current instanceof Region) {
                     visit((Region) current, activeStack);
                     current = followUpProcessor.apply(current);
-                } else if (current instanceof InstanceMethodInvocation) {
-                    codegenerator.write((InstanceMethodInvocation) current);
-                    current = followUpProcessor.apply(current);
-                } else if (current instanceof VirtualMethodInvocation) {
-                    codegenerator.write((VirtualMethodInvocation) current);
-                    current = followUpProcessor.apply(current);
-                } else if (current instanceof StaticMethodInvocation) {
-                    codegenerator.write((StaticMethodInvocation) current);
-                    current = followUpProcessor.apply(current);
-                } else if (current instanceof InterfaceMethodInvocation) {
-                    codegenerator.write((InterfaceMethodInvocation) current);
+                } else if (current instanceof MethodInvocation) {
+                    codegenerator.write((MethodInvocation) current);
                     current = followUpProcessor.apply(current);
                 } else if (current instanceof Copy) {
                     codegenerator.write((Copy) current);

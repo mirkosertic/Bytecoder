@@ -23,6 +23,7 @@ import de.mirkosertic.bytecoder.core.ir.InvokeDynamicExpression;
 import de.mirkosertic.bytecoder.core.ir.Node;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.ir.Variable;
+import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
 import java.util.Arrays;
 
@@ -41,9 +42,8 @@ public class VariableIsConstant implements Optimizer {
     }
 
     @Override
-    public boolean optimize(final ResolvedMethod method) {
+    public boolean optimize(final CompileUnit compileUnit, final ResolvedMethod method) {
         final Graph g = method.methodBody;
-        boolean changed = false;
         for (final Node node : g.nodes()) {
             if (patternMatcher.test(g, node)) {
                 final ControlTokenConsumer ct = (ControlTokenConsumer) node;
@@ -77,6 +77,6 @@ public class VariableIsConstant implements Optimizer {
                 }
             }
         }
-        return changed;
+        return false;
     }
 }
