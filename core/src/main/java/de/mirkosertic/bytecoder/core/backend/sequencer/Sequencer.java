@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.core.backend.sequencer;
 
 import de.mirkosertic.bytecoder.core.ir.AbstractVar;
 import de.mirkosertic.bytecoder.core.ir.ArrayStore;
+import de.mirkosertic.bytecoder.core.ir.ClassInitialization;
 import de.mirkosertic.bytecoder.core.ir.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.core.ir.Copy;
 import de.mirkosertic.bytecoder.core.ir.FrameDebugInfo;
@@ -165,9 +166,12 @@ public class Sequencer {
                     codegenerator.write((MonitorExit) current);
                     current = followUpProcessor.apply(current);
                 } else if (current instanceof Unwind) {
-                    // We are finished here
                     codegenerator.write((Unwind) current);
+                    // We are finished here
                     current = null;
+                } else if (current instanceof ClassInitialization) {
+                    codegenerator.write((ClassInitialization) current);
+                    current = followUpProcessor.apply(current);
                 } else if (current instanceof Nop) {
                     current = followUpProcessor.apply(current);
                 } else {

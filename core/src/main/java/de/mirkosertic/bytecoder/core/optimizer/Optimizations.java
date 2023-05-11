@@ -18,6 +18,10 @@ package de.mirkosertic.bytecoder.core.optimizer;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 public enum Optimizations implements Optimizer {
     DISABLED(new Optimizer[] {
     }),
@@ -27,7 +31,8 @@ public enum Optimizations implements Optimizer {
                 new DeleteRedundantVariables(),
                 new VariableIsConstant(),
                 new VirtualToDirectInvocation(),
-                new DeleteCopyToUnusedPHI()
+                new DeleteCopyToUnusedPHI(),
+                new DeleteRedundantClassInitializations()
             }),
     ALL(new Optimizer[] {
             new DeleteUnusedConstants(),
@@ -35,7 +40,8 @@ public enum Optimizations implements Optimizer {
             new DeleteRedundantVariables(),
             new VariableIsConstant(),
             new VirtualToDirectInvocation(),
-            new DeleteCopyToUnusedPHI()
+            new DeleteCopyToUnusedPHI(),
+            new DeleteRedundantClassInitializations()
     }),
     ;
 
@@ -47,8 +53,16 @@ public enum Optimizations implements Optimizer {
 
     public boolean optimize(final CompileUnit compileUnit, final ResolvedMethod method) {
         boolean graphchanged = false;
+        final Set<GlobalOptimizer> go = Arrays.stream(optimizers).filter(t -> t instanceof GlobalOptimizer).map(t -> (GlobalOptimizer) t).collect(Collectors.toSet());
         for (final Optimizer o : optimizers) {
-            graphchanged = graphchanged | o.optimize(compileUnit, method);
+            if (!go.contains(o)) {
+                graphchanged = graphchanged | o.optimize(compileUnit, method);
+            }
+        }
+        if (!graphchanged) {
+            for (final GlobalOptimizer o : go) {
+                o.optimize(compileUnit, method);
+            }
         }
         return graphchanged;
     }
