@@ -37,6 +37,10 @@ public class Node {
         tobepruned = true;
     }
 
+    public boolean isMarkedToBePruned() {
+        return tobepruned;
+    }
+
     public String additionalDebugInfo() {
         return "";
     }

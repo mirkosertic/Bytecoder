@@ -26,6 +26,7 @@ import de.mirkosertic.bytecoder.core.ir.ArrayLoad;
 import de.mirkosertic.bytecoder.core.ir.ArrayStore;
 import de.mirkosertic.bytecoder.core.ir.CMP;
 import de.mirkosertic.bytecoder.core.ir.Cast;
+import de.mirkosertic.bytecoder.core.ir.ClassInitialization;
 import de.mirkosertic.bytecoder.core.ir.Copy;
 import de.mirkosertic.bytecoder.core.ir.Div;
 import de.mirkosertic.bytecoder.core.ir.FrameDebugInfo;
@@ -266,6 +267,10 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
             pw.print(OpenCLHelpers.generateFieldName(node.resolvedField.name));
             pw.print(")");
         }
+    }
+
+    @Override
+    public void write(final ClassInitialization node) {
     }
 
     private void writeExpression(final ReadClassField node) {

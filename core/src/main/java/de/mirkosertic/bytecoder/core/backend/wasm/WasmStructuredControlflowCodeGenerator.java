@@ -57,6 +57,7 @@ import de.mirkosertic.bytecoder.core.ir.BootstrapMethod;
 import de.mirkosertic.bytecoder.core.ir.CMP;
 import de.mirkosertic.bytecoder.core.ir.Cast;
 import de.mirkosertic.bytecoder.core.ir.CaughtException;
+import de.mirkosertic.bytecoder.core.ir.ClassInitialization;
 import de.mirkosertic.bytecoder.core.ir.Copy;
 import de.mirkosertic.bytecoder.core.ir.Div;
 import de.mirkosertic.bytecoder.core.ir.EnumValuesOf;
@@ -398,6 +399,16 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         activeLevel.activeFlow.voidCallIndirect(ft, indirectCallArgs, resolver);
     }
 
+    @Override
+    public void write(final ClassInitialization node) {
+        final ResolvedClass cl = compileUnit.findClass(node.type);
+        if (cl.requiresClassInitializer() && !node.skip) {
+            final String className = WasmHelpers.generateClassName(cl.type);
+            final Callable initFunction = ConstExpressions.weakFunctionReference(className + "_i");
+            activeLevel.activeFlow.drop(ConstExpressions.call(initFunction, Collections.emptyList()));
+        }
+    }
+
     private WasmValue toWasmValue(final This value) {
         final Local local = exportableFunction.localByLabel("thisref");
         return ConstExpressions.getLocal(local);
@@ -461,16 +472,10 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         final List<WasmValue> initArgs = new ArrayList<>();
 
         final String className = WasmHelpers.generateClassName(cl.type);
-        final WasmValue rttype;
 
         final Global global = module.getGlobals().globalsIndex().globalByLabel(className  + "_cls");
 
-        if (cl.requiresClassInitializer()) {
-            final Callable initFunction = ConstExpressions.weakFunctionReference(className + "_i");
-            rttype = ConstExpressions.call(initFunction, Collections.emptyList());
-        } else {
-            rttype = ConstExpressions.getGlobal(global);
-        }
+        final WasmValue rttype = ConstExpressions.getGlobal(global);
 
         initArgs.add(
                 ConstExpressions.struct.get(
@@ -1582,12 +1587,6 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         final ResolvedClass cl = field.owner;
         final StructType type = rtMappings.get(cl);
         final String className = WasmHelpers.generateClassName(cl.type);
-        if (cl.requiresClassInitializer()) {
-            final Callable initFunction = ConstExpressions.weakFunctionReference(className + "_i");
-            return ConstExpressions.struct.get(type,
-                    ConstExpressions.ref.cast(type, ConstExpressions.call(initFunction, Collections.emptyList())),
-                    field.name);
-        }
         final Global global = module.getGlobals().globalsIndex().globalByLabel(className  + "_cls");
         return ConstExpressions.struct.get(type, ConstExpressions.getGlobal(global),
                     field.name);

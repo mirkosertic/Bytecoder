@@ -32,6 +32,7 @@ import de.mirkosertic.bytecoder.core.ir.BootstrapMethod;
 import de.mirkosertic.bytecoder.core.ir.CMP;
 import de.mirkosertic.bytecoder.core.ir.Cast;
 import de.mirkosertic.bytecoder.core.ir.CaughtException;
+import de.mirkosertic.bytecoder.core.ir.ClassInitialization;
 import de.mirkosertic.bytecoder.core.ir.Copy;
 import de.mirkosertic.bytecoder.core.ir.Div;
 import de.mirkosertic.bytecoder.core.ir.EnumValuesOf;
@@ -279,6 +280,16 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             default: {
                 throw new IllegalArgumentException("Not implemented : " + node.invocationType);
             }
+        }
+    }
+
+    @Override
+    public void write(final ClassInitialization node) {
+        final ResolvedClass tc = compileUnit.findClass(node.type);
+        if (tc.requiresClassInitializer() && !node.skip) {
+            writeIndent();
+            pw.print(generateClassName(node.type));
+            pw.println(".$i;");
         }
     }
 
@@ -1734,9 +1745,6 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         final ResolvedClass resolvedClass = node.method.owner;
 
         pw.print(generateClassName(resolvedClass.type));
-        if (resolvedClass.requiresClassInitializer()) {
-            pw.print(".$i");
-        }
 
         pw.print(".");
         pw.print(generateMethodName(node.method.methodNode.name, node.method.methodType));
@@ -1754,12 +1762,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
 
         pw.print("(");
 
-        final ResolvedClass resolvedClass = node.method.owner;
-
         pw.print(generateClassName(node.method.owner.type));
-        if (resolvedClass.requiresClassInitializer()) {
-            pw.print(".$i");
-        }
 
         pw.print(".");
         pw.print(generateMethodName(node.method.methodNode.name, node.method.methodType));
@@ -1896,15 +1899,9 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         if (type.getSort() == Type.ARRAY) {
             final ResolvedClass cl = compileUnit.resolveClass(Type.getType(Array.class), null);
             pw.print(generateClassName(cl.type));
-            if (cl.requiresClassInitializer()) {
-                pw.print(".$i");
-            }
         } else {
             final ResolvedClass cl = compileUnit.resolveClass(type, null);
             pw.print(generateClassName(cl.type));
-            if (cl.requiresClassInitializer()) {
-                pw.print(".$i");
-            }
         }
     }
 
