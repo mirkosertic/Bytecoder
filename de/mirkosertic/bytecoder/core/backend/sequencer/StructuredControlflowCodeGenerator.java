@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.core.backend.sequencer;
 
 import de.mirkosertic.bytecoder.core.ir.AbstractVar;
 import de.mirkosertic.bytecoder.core.ir.ArrayStore;
+import de.mirkosertic.bytecoder.core.ir.ClassInitialization;
 import de.mirkosertic.bytecoder.core.ir.Copy;
 import de.mirkosertic.bytecoder.core.ir.FrameDebugInfo;
 import de.mirkosertic.bytecoder.core.ir.Goto;
@@ -75,6 +76,8 @@ public interface StructuredControlflowCodeGenerator {
     void write(SetClassField node);
 
     void write(ArrayStore node);
+
+    void write(ClassInitialization node);
 
     void writeBreakTo(String label);
 

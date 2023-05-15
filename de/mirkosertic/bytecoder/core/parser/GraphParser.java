@@ -22,6 +22,7 @@ import de.mirkosertic.bytecoder.core.ir.ArrayLoad;
 import de.mirkosertic.bytecoder.core.ir.ArrayStore;
 import de.mirkosertic.bytecoder.core.ir.CMP;
 import de.mirkosertic.bytecoder.core.ir.Cast;
+import de.mirkosertic.bytecoder.core.ir.ClassInitialization;
 import de.mirkosertic.bytecoder.core.ir.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.core.ir.Copy;
 import de.mirkosertic.bytecoder.core.ir.EdgeType;
@@ -811,11 +812,19 @@ public class GraphParser {
                 final ResolvedClass rc = compileUnit.resolveClass(targetClass, analysisStack);
                 final ResolvedMethod rm = rc.resolveMethod(node.name, methodType, analysisStack);
 
+                final ClassInitialization classInit = graph.newClassInitialization(rc.type);
+
                 n = graph.newMethodInvocation(InvocationType.STATIC, node, rm);
                 n.addIncomingData(incomingData);
+
+                classInit.addControlFlowTo(StandardProjections.DEFAULT, n);
+
+                graph.registerTranslation(node, new InstructionTranslation(currentState.frame, classInit, n));
+            } else {
+
+                graph.registerTranslation(node, new InstructionTranslation(currentState.frame, n));
             }
 
-            graph.registerTranslation(node, new InstructionTranslation(currentState.frame, n));
 
             newState = currentState.controlFlowsTo(n).withFrame(latest);
             graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -831,18 +840,33 @@ public class GraphParser {
 
                 n = graph.newMethodInvocationExpression(InvocationType.STATIC, node, rm);
                 n.addIncomingData(incomingData);
+
+                final ClassInitialization classInit = graph.newClassInitialization(rc.type);
+
+                final Variable var = graph.newVariable(methodType.getReturnType());
+                final Copy copy = graph.newCopy();
+                copy.addIncomingData(n);
+                var.addIncomingData(copy);
+
+                classInit.addControlFlowTo(StandardProjections.DEFAULT, copy);
+
+                graph.registerTranslation(node, new InstructionTranslation(currentState.frame, classInit, copy));
+
+                newState = currentState.controlFlowsTo(copy).withFrame(latest.pushToStack(var));
+                graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
+
+            } else {
+
+                final Variable var = graph.newVariable(methodType.getReturnType());
+                final Copy copy = graph.newCopy();
+                copy.addIncomingData(n);
+                var.addIncomingData(copy);
+
+                graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
+
+                newState = currentState.controlFlowsTo(copy).withFrame(latest.pushToStack(var));
+                graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
             }
-
-            final Variable var = graph.newVariable(methodType.getReturnType());
-            final Copy copy = graph.newCopy();
-            copy.addIncomingData(n);
-            var.addIncomingData(copy);
-
-            graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
-
-            newState = currentState.controlFlowsTo(copy).withFrame(latest.pushToStack(var));
-            graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
-
         }
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));
@@ -1968,12 +1992,17 @@ public class GraphParser {
         final New n = graph.newNew(type);
         n.addIncomingData(typeReference);
 
+        final ClassInitialization classInitialization = graph.newClassInitialization(type);
+
         final Variable variable = graph.newVariable(type);
 
         final Copy copy = graph.newCopy();
         copy.addIncomingData(n);
         variable.addIncomingData(copy);
-        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
+
+        classInitialization.addControlFlowTo(StandardProjections.DEFAULT, copy);
+
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, classInitialization, copy));
 
         final Frame newFrame = currentState.frame.pushToStack(variable);
 
@@ -2132,11 +2161,16 @@ public class GraphParser {
         final ReadClassField field = graph.newClassFieldExpression(t, resolvedField);
         field.addIncomingData(graph.newTypeReference(targetClass.type));
         final Variable target = graph.newVariable(t);
+
+        final ClassInitialization classInit = graph.newClassInitialization(targetClass.type);
+
         final Copy copy = graph.newCopy();
         copy.addIncomingData(field);
         target.addIncomingData(copy);
 
-        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, copy));
+        classInit.addControlFlowTo(StandardProjections.DEFAULT, copy);
+
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, classInit, copy));
 
         final GraphParserState newState = currentState.controlFlowsTo(copy).withFrame(currentState.frame.pushToStack(target));
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
@@ -2180,10 +2214,14 @@ public class GraphParser {
 
         final SetClassField setfield = graph.newSetClassField(resolvedField);
 
+        final ClassInitialization classInit = graph.newClassInitialization(targetClass.type);
+
         setfield.addIncomingData(valuePop.value);
         graph.newTypeReference(targetClass.type).addIncomingData(setfield);
 
-        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, setfield));
+        classInit.addControlFlowTo(StandardProjections.DEFAULT, setfield);
+
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, classInit, setfield));
 
         final GraphParserState newState = currentState.controlFlowsTo(setfield).withFrame(valuePop.newFrame);
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));

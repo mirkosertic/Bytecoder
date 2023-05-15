@@ -432,6 +432,10 @@ public class Graph {
         return (BootstrapMethod) register(new BootstrapMethod(methodType, className, methodName, kind));
     }
 
+    public ClassInitialization newClassInitialization(final Type type) {
+        return (ClassInitialization) register(new ClassInitialization(type));
+    }
+
     public void remapDataFlow(final Node original, final Node newValue) {
         for (final Node n : nodes) {
             n.remapDataFlow(original, newValue);
