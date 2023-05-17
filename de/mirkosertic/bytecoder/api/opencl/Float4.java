@@ -25,7 +25,7 @@ public class Float4 implements FloatSerializable {
     public float s2;
     public float s3;
 
-    @OpenCLFunction(value = "float2", literal = true)
+    @OpenCLFunction(value = "float4", literal = true)
     public static Float4 float4(final float aS0, final float aS1, final float aS2, final float aS3) {
         return new Float4(aS0, aS1, aS2, aS3);
     }
