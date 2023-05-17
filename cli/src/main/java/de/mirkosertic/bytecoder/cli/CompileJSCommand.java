@@ -44,7 +44,7 @@ public class CompileJSCommand implements Callable<Integer> {
     @ParentCommand
     CompileCommand parent;
 
-    @Option(names = "-classpath", required = true, description = "Die Directory containing the JVM class files to be compiled.")
+    @Option(names = "-classpath", required = true, description = "The directory containing the JVM class files to be compiled.")
     protected String classpath;
 
     @Option(names = "-mainclass", required = true, description = "Name of the class that contains the main() method")
