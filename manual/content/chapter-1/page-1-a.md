@@ -50,6 +50,7 @@ wget https://repo.maven.apache.org/maven2/de/mirkosertic/bytecoder/bytecoder-cli
 ```
 java -jar bytecoder-cli-{{% siteparam "bytecoderversion" %}}-executable.jar compile js -classpath=. -mainclass=bytecodertest.HelloWorld -builddirectory=.
 ```
+> **Note**: Keep in mind that `classpath` is comma seperated `,` and not semicolon `;` or colon `:`  as in the native java tools 
 
 **Step 3: Create an embedding HTML document**:
 

@@ -38,10 +38,19 @@ public class BytecoderCLITest {
     public void testCompileToJS() {
         Assert.assertEquals(new CommandLine(new BytecoderCommand()).execute("compile", "js", "-builddirectory=./target", "-classpath=.", "-mainclass=de.mirkosertic.bytecoder.cli.BytecoderCLITest$MainClass"), 0);
     }
+    @Test
+    public void testCompileToJSMultipleClasspath() {
+        Assert.assertEquals(new CommandLine(new BytecoderCommand()).execute("compile", "js", "-builddirectory=./target", "-classpath=./some/nonexisting/path,.", "-mainclass=de.mirkosertic.bytecoder.cli.BytecoderCLITest$MainClass"), 0);
+    }
 
     @Test
     public void testCompileToWasm() {
         Assert.assertEquals(new CommandLine(new BytecoderCommand()).execute("compile", "wasm", "-builddirectory=./target", "-classpath=.", "-mainclass=de.mirkosertic.bytecoder.cli.BytecoderCLITest$MainClass"), 0);
+    }
+
+    @Test
+    public void testCompileToWasmMultipleClasspath() {
+        Assert.assertEquals(new CommandLine(new BytecoderCommand()).execute("compile", "wasm", "-builddirectory=./target", "-classpath=.,./some/nonexisiting/path", "-mainclass=de.mirkosertic.bytecoder.cli.BytecoderCLITest$MainClass"), 0);
     }
 
     @Test

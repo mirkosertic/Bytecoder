@@ -15,8 +15,23 @@
  */
 package de.mirkosertic.bytecoder.cli;
 
+import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.util.Arrays;
+
 import static picocli.CommandLine.*;
 
 @Command(name = "bytecoder", subcommands = {GraphCommand.class, CompileCommand.class}, mixinStandardHelpOptions = true)
 public class BytecoderCommand {
+    public static URL[] parseClasspath(String classpath) {
+        return Arrays.stream(classpath.split(",")).map(path -> {
+            try {
+                return new File(path).toURI().toURL();
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
+            }
+        }).toArray(URL[]::new);
+    }
 }

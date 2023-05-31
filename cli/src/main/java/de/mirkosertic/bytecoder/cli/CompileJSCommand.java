@@ -34,8 +34,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.Arrays;
 import java.util.concurrent.Callable;
 
+import static de.mirkosertic.bytecoder.cli.BytecoderCommand.parseClasspath;
 import static picocli.CommandLine.*;
 
 @Command(name = "js")
@@ -44,7 +46,7 @@ public class CompileJSCommand implements Callable<Integer> {
     @ParentCommand
     CompileCommand parent;
 
-    @Option(names = "-classpath", required = true, description = "The directory containing the JVM class files to be compiled.")
+    @Option(names = "-classpath", required = true, description = "The classpath containing the JVM class files and JARs to be compiled. Format: /path/to/classes,/path/to/some.jar.")
     protected String classpath;
 
     @Option(names = "-mainclass", required = true, description = "Name of the class that contains the main() method")
@@ -70,7 +72,7 @@ public class CompileJSCommand implements Callable<Integer> {
 
         try {
             final ClassLoader rootClassLoader = BytecoderCLI.class.getClassLoader();
-            final URLClassLoader classLoader = new URLClassLoader(new URL[] {new File(classpath).toURI().toURL()}, rootClassLoader);
+            final URLClassLoader classLoader = new URLClassLoader(parseClasspath(classpath), rootClassLoader);
 
             final Loader loader = new BytecoderLoader(classLoader);
 
