@@ -24,11 +24,15 @@ import de.mirkosertic.bytecoder.core.loader.BytecoderLoader;
 import de.mirkosertic.bytecoder.core.optimizer.Optimizations;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 import de.mirkosertic.bytecoder.core.parser.Loader;
+import org.apache.commons.lang3.StringUtils;
 import org.objectweb.asm.Type;
 
 import java.io.File;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 
@@ -40,7 +44,7 @@ public class GraphGenerateCommand implements Callable<Integer> {
     @ParentCommand
     GraphCommand parent;
 
-    @Option(names = "-classpath", required = true, description = "Die Directory containing the JVM class files to be compiled.")
+    @Option(names = "-classpath", required = true, description = "The directories containing the JVM class files to be compiled.")
     protected String classpath;
 
     @Option(names = "-mainclass", required = true, description = "Name of the class that contains the main() method")
@@ -55,12 +59,20 @@ public class GraphGenerateCommand implements Callable<Integer> {
     @Option(names = "-matchpattern", required = false, description = "Regex to match the full qualified class and method names for the export. Defaults to all methods of the main class.")
     protected String matchPattern;
 
+    private URL[] splitClasspath() throws MalformedURLException {
+        final List<URL> l = new ArrayList<>();
+        for (final String s : StringUtils.split(classpath, File.pathSeparator)) {
+            l.add(new File(s).toURI().toURL());
+        }
+        return l.toArray(new URL[0]);
+    }
+
     @Override
     public Integer call() throws Exception {
 
         try {
             final ClassLoader rootClassLoader = BytecoderCLI.class.getClassLoader();
-            final URLClassLoader classLoader = new URLClassLoader(new URL[] {new File(classpath).toURI().toURL()}, rootClassLoader);
+            final URLClassLoader classLoader = new URLClassLoader(splitClasspath(), rootClassLoader);
 
             final Loader loader = new BytecoderLoader(classLoader);
 
