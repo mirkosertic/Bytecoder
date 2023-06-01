@@ -15,13 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core.parser;
 
-import de.mirkosertic.bytecoder.core.ir.AnalysisStack;
-import de.mirkosertic.bytecoder.core.ir.ControlTokenConsumer;
-import de.mirkosertic.bytecoder.core.ir.Graph;
-import de.mirkosertic.bytecoder.core.ir.InvocationType;
-import de.mirkosertic.bytecoder.core.ir.ResolvedClass;
-import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
-import de.mirkosertic.bytecoder.core.ir.Value;
+import de.mirkosertic.bytecoder.core.ir.*;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodInsnNode;
@@ -35,53 +29,62 @@ public class JavaLangSystemIntrinsics implements Intrinsic {
             if (System.class.getName().equals(targetClass.getClassName())) {
                 if ("arraycopy".equals(node.name)) {
                     final Value source = incomingData[1];
-
-                    if (source.type.getSort() != Type.ARRAY) {
-                        throw new IllegalArgumentException("Expected array type for arrayCopy, got " + source.type);
-                    }
-
+                    final Type methodType;
                     final ResolvedClass systemClass = compileUnit.resolveClass(Type.getType(System.class), analysisStack);
 
-                    final Type methodType;
-                    switch (source.type.getElementType().getSort()) {
-                        case Type.CHAR: {
-                            methodType = Type.getMethodType("([CI[CII)V");
-                            break;
+
+
+                    if (source.type.getClassName().contentEquals(Object.class.getName())) {
+                        // (Ljava/lang/Object;ILjava/lang/Object;II)V
+                        methodType = Type.getMethodType(node.desc);
+                    } else if (source.type.getSort() == Type.ARRAY) {
+                        switch (source.type.getElementType().getSort()) {
+                            case Type.CHAR: {
+                                methodType = Type.getMethodType("([CI[CII)V");
+                                break;
+                            }
+                            case Type.BYTE: {
+                                methodType = Type.getMethodType("([BI[BII)V");
+                                break;
+                            }
+                            case Type.DOUBLE: {
+                                methodType = Type.getMethodType("([DI[DII)V");
+                                break;
+                            }
+                            case Type.FLOAT: {
+                                methodType = Type.getMethodType("([FI[FII)V");
+                                break;
+                            }
+                            case Type.INT: {
+                                methodType = Type.getMethodType("([II[III)V");
+                                break;
+                            }
+                            case Type.LONG: {
+                                methodType = Type.getMethodType("([JI[JII)V");
+                                break;
+                            }
+                            case Type.SHORT: {
+                                methodType = Type.getMethodType("([SI[SII)V");
+                                break;
+                            }
+                            case Type.BOOLEAN: {
+                                methodType = Type.getMethodType("([ZI[ZII)V");
+                                break;
+                            }
+                            case Type.OBJECT: {
+                                // (Ljava/lang/Object;ILjava/lang/Object;II)V
+                                methodType = Type.getMethodType(node.desc);
+                                break;
+                            }
+                            default: {
+                                throw new IllegalArgumentException(source.type.getElementType().getSort()+" is not a valid type for an array in System.arraycopy() !");
+                            }
                         }
-                        case Type.BYTE: {
-                            methodType = Type.getMethodType("([BI[BII)V");
-                            break;
-                        }
-                        case Type.DOUBLE: {
-                            methodType = Type.getMethodType("([DI[DII)V");
-                            break;
-                        }
-                        case Type.FLOAT: {
-                            methodType = Type.getMethodType("([FI[FII)V");
-                            break;
-                        }
-                        case Type.INT: {
-                            methodType = Type.getMethodType("([II[III)V");
-                            break;
-                        }
-                        case Type.LONG: {
-                            methodType = Type.getMethodType("([JI[JII)V");
-                            break;
-                        }
-                        case Type.SHORT: {
-                            methodType = Type.getMethodType("([SI[SII)V");
-                            break;
-                        }
-                        case Type.BOOLEAN: {
-                            methodType = Type.getMethodType("([ZI[ZII)V");
-                            break;
-                        }
-                        default: {
-                            // (Ljava/lang/Object;ILjava/lang/Object;II)V
-                            methodType = Type.getMethodType(node.desc);
-                            break;
-                        }
+                    } else {
+                        throw new IllegalArgumentException("Expected array type or "+Object.class.getName()+" for arrayCopy, got " + source.type);
                     }
+
+
 
                     final ResolvedMethod rm = systemClass.resolveMethod(node.name,
                             methodType, analysisStack);
