@@ -682,11 +682,11 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                         }
                     }
                 }
-                if (source.getSort() == Type.OBJECT && target.getSort() != Type.OBJECT) {
+                if (source.getSort() == Type.OBJECT && target.getSort() != Type.OBJECT && target.getSort() != Type.VOID) {
                     // Object to primitive
                     switch (source.getSort()) {
                         default: {
-                            throw new IllegalStateException("No converter from " + source + " to " + target + " implemented!");
+                            throw new IllegalStateException("No converter from " + source + " to " + target + " implemented! ("  + argMethodName +")");
                         }
                     }
                 }
