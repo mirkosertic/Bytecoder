@@ -20,11 +20,20 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+
 @RunWith(UnitTestRunner.class)
 public class EnumTest {
 
     public enum Value {
         ONE, TWO, THREE
+    }
+    public enum SubclassedEnum {
+        ONE{
+            private final int innerField1 = 0;
+        }, TWO{
+            private final String innerField2 = "0";
+        }, THREE
     }
 
     private static Value getEnum() {
@@ -47,6 +56,11 @@ public class EnumTest {
     @Test
     public void testValuesRuntimeClass() {
         Value[] theValues= Value.class.getEnumConstants();
+        Assert.assertEquals(3, theValues.length, 0);
+    }
+    @Test
+    public void testValuesRuntimeClassOnSubclassingEnum() {
+        SubclassedEnum[] theValues= SubclassedEnum.class.getEnumConstants();
         Assert.assertEquals(3, theValues.length, 0);
     }
 
@@ -76,5 +90,30 @@ public class EnumTest {
         Assert.assertTrue(theValues[0].getClass() == Value.class);
         Assert.assertTrue(theValues[1].name().equals("TWO"));
         System.out.println(theValues[1].name());
+    }
+
+    @Test
+    public void testValuesForSubclassedEnum() {
+        SubclassedEnum[] theValues = SubclassedEnum.values();
+        Assert.assertEquals(3, theValues.length, 0);
+        Assert.assertTrue(theValues[0] == SubclassedEnum.ONE);
+        Assert.assertTrue(theValues[1].name().equals("TWO"));
+        System.out.println(theValues[1].name());
+    }
+    @Test
+    public void testGetDeclaringClass(){
+        Value v = Value.TWO;
+        Class<Value> desclaring = v.getDeclaringClass();
+        for (Value val : Value.values()){
+            Assert.assertEquals(desclaring, val.getDeclaringClass());
+        }
+    }
+    @Test
+    public void testGetDeclaringClassSubclassed(){
+        SubclassedEnum v = SubclassedEnum.TWO;
+        Class<SubclassedEnum> declaring = v.getDeclaringClass();
+        for (SubclassedEnum val : SubclassedEnum.values()){
+            Assert.assertEquals(declaring, val.getDeclaringClass());
+        }
     }
 }

@@ -389,6 +389,12 @@ const bytecoder = {
                 }
                 return 0;
             },
+            Z$matches$Ljava$lang$String$: function (self, regex) {
+                var match = RegExp(regex.nativeObject).exec(self.nativeObject);
+                if(!match)
+                    return false;
+                return match[0].length == self.nativeObject.length;
+            },
             Z$endsWith$Ljava$lang$String$: function (str, otherstr) {
                 const a = bytecoder.toJSString(str);
                 const b = bytecoder.toJSString(otherstr);

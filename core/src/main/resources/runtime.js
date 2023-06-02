@@ -164,12 +164,16 @@ const bytecoder = {
             Ljava$lang$ClassLoader$$getClassLoader$$: function (classRef) {
                 return null;
             },
-            Ljava$lang$Class$$forName$Ljava$lang$String$$Z$Ljava$lang$ClassLoader$: function(className, initialize, classLoader) {
-                throw 'Not supported class for reflective access';
+            Ljava$lang$Class$$forName$Ljava$lang$String$$Z$Ljava$lang$ClassLoader$: function (className, initialize, classLoader) {
+                throw new Error('Not supported class for reflective access');
             },
             Z$desiredAssertionStatus$$: function(classRef) {
                 return false;
-            }
+            },
+            Ljava$lang$String$$getName$$: function (classRef) {
+                //I am probably missing some knowledge here. This does work but it seems that @EmulateAtRuntime should do that for me?
+                return classRef.Ljava$lang$String$$getName$$();
+            },
         },
         "java.io.FileInputStream": {
             I$open0$Ljava$io$FileDescriptor$$Ljava$lang$String$: function (fis, fdd, name) {
@@ -316,6 +320,15 @@ const bytecoder = {
             },
             I$length$$: function (str) {
                 return str.nativeObject.length;
+            },
+            Z$matches$Ljava$lang$String$: function (self, regex) {
+                var match = RegExp(regex.nativeObject).exec(self.nativeObject);
+                if(!match)
+                    return false;
+                return match[0].length == self.nativeObject.length;
+            },
+            Z$contains$Ljava$lang$CharSequence$: function (str, sub) {
+                return str.nativeObject.includes(sub);
             },
             V$getChars$I$I$$C$I: function (str, srcBegin, srcEnd, dst, dstBegin) {
                 let dstOffset = dstBegin;
@@ -722,7 +735,7 @@ const bytecoder = {
             return -1;
         }
     },
-    newRuntimeClassFor: function(type,supportedtypes) {
+    newRuntimeClassFor: function (type,javaName, supportedtypes) {
         return {
             Ljava$lang$ClassLoader$$getClassLoader$$: function() {
                 return null;
@@ -741,7 +754,13 @@ const bytecoder = {
             $Ljava$lang$Object$$getEnumConstants$$: function() {
                 return type.$i.$VALUES;
             },
-            instanceOf: function(a, b) {
+            Ljava$lang$String$$getName$$: function () {
+                return bytecoder.toBytecoderString(javaName);
+            },
+            Z$equals$Ljava$lang$Object$: function (self, obj) {
+                return this.Ljava$lang$String$$getName$$(self).nativeObject == this.Ljava$lang$String$$getName$$(obj).nativeObject
+            },
+            instanceOf: function (a, b) {
                 if (supportedtypes.includes(b)) {
                     return 1;
                 }

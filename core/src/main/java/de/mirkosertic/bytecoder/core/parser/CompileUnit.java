@@ -120,7 +120,12 @@ public class CompileUnit {
             throw new RuntimeException(e);
         }
         resolvedClasses.put(resourceName, rs);
-
+        boolean isEnumType = rs.allTypesOf().stream().anyMatch(parent -> parent.type.getClassName().equals(Enum.class.getName())) || rs.type.getClassName().equals(Enum.class.getName());
+        if(isEnumType){
+            //Why aren't all classes considered for lookups? Performance? It would simplify implementation a lot if Class.forName just looped over classes.#rt and checked that
+            getReflectionConfiguration().resolve(rs.type.getClassName()).setSupportsClassForName(true);
+            getConstantPool().resolveFromPool(rs.type.getClassName());//add of not already there
+        }
         // If there are any methods annotated with Export, we resolve them, too
         for (final MethodNode mn : rs.classNode.methods) {
             if (AnnotationUtils.hasAnnotation("Lde/mirkosertic/bytecoder/api/Export;", mn.visibleAnnotations)) {

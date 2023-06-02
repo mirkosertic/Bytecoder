@@ -84,7 +84,7 @@ public class JSBackend {
             }
         }
 
-        pw.println("  throw 'Not supported class for reflective access';");
+        pw.println("  throw new Error('Not supported class for reflective access');");
         pw.println("};");
         pw.println();
     }
@@ -246,9 +246,10 @@ public class JSBackend {
         pw.println("  static #rt = undefined;");
         pw.println("  static get $rt() {");
         pw.println("    if (!this.#rt) {");
-        pw.print("      this.#rt = bytecoder.newRuntimeClassFor(");
-        pw.print(generateClassName(cl.type));
-        pw.print(",[");
+        pw.println("      this.#rt = bytecoder.newRuntimeClassFor(");
+        pw.println("        "+generateClassName(cl.type)+",");
+        pw.println("        '"+cl.type.getClassName()+"',");
+        pw.print("         [");
         boolean f = true;
         for (final ResolvedClass type : cl.allTypesOf()) {
             if (f) {
