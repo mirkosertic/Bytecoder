@@ -682,11 +682,11 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                         }
                     }
                 }
-                if (source.getSort() == Type.OBJECT && target.getSort() != Type.OBJECT) {
+                if (source.getSort() == Type.OBJECT && target.getSort() != Type.OBJECT && target.getSort() != Type.VOID) {
                     // Object to primitive
                     switch (source.getSort()) {
                         default: {
-                            throw new IllegalStateException("No converter from " + source + " to " + target + " implemented!");
+                            throw new IllegalStateException("No converter from " + source + " to " + target + " implemented! ("  + argMethodName +")");
                         }
                     }
                 }
@@ -1988,7 +1988,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     @Override
     public void startBlock(final Sequencer.Block block) {
         writeIndent();
-        pw.print(block.label);
+        pw.print(block.label.replace("-",""));
         pw.print(": ");
         if (block.type == Sequencer.Block.Type.LOOP) {
             pw.print("while(true) ");
@@ -2066,7 +2066,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     public void writeBreakTo(final String label) {
         writeIndent();
         pw.print("break ");
-        pw.print(label);
+        pw.print(label.replace("-",""));
         pw.println(";");
     }
 
@@ -2074,7 +2074,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     public void writeContinueTo(final String label) {
         writeIndent();
         pw.print("continue ");
-        pw.print(label);
+        pw.print(label.replace("-",""));
         pw.println(";");
     }
 

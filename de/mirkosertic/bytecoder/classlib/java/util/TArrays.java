@@ -206,6 +206,20 @@ public class TArrays {
         }
         return true;
     }
+    public static boolean equals(final short[] a, final short[] b) {
+        if (a == b) {
+            return true;
+        }
+        if (a.length != b.length) {
+            return false;
+        }
+        for (int i=0;i<a.length;i++) {
+            if (a[i] != b[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     public static boolean equals(final long[] a, final long[] b) {
         if (a == b) {
@@ -236,8 +250,52 @@ public class TArrays {
         }
         return true;
     }
+    public static boolean equals(final double[] a, final double[] b) {
+        if (a == b) {
+            return true;
+        }
+        if (a.length != b.length) {
+            return false;
+        }
+        for (int i=0;i<a.length;i++) {
+            if (a[i] != b[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
 
     public static boolean equals(final int[] a, final int[] b) {
+        if (a == b) {
+            return true;
+        }
+        if (a.length != b.length) {
+            return false;
+        }
+        for (int i=0;i<a.length;i++) {
+            if (a[i] != b[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean equals(final boolean[] a, final boolean[] b) {
+        if (a == b) {
+            return true;
+        }
+        if (a.length != b.length) {
+            return false;
+        }
+        for (int i=0;i<a.length;i++) {
+            if (a[i] != b[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean equals(final char[] a, final char[] b) {
         if (a == b) {
             return true;
         }
