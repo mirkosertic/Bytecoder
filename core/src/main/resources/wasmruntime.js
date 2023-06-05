@@ -324,9 +324,11 @@ const bytecoder = {
             V$setLength$I: function (builder, size) {
             },
             Ljava$lang$StringBuilder$$append$$C$I$I: function (builder, chars, offset, count) {
+                let x = bytecoder.getNativeObject(builder);
                 for (let i = offset; i < offset + count; i++) {
-                    builder.nativeObject += String.fromCodePoint(chars.data[i]);
+                    x += String.fromCodePoint(chars.data[i]);
                 }
+                bytecoder.setNativeObject(builder, x);
                 return builder;
             },
             Ljava$lang$StringBuilder$$deleteCharAt$I: function(builder, index) {
