@@ -104,14 +104,14 @@ public class SystemTest {
         Assert.assertArrayEquals(targetStringArr, new String[]{"b","c"});
 
         Object concealedArray = new Object[]{"A","b","c"};
-        Object conclealedTargetArray = new Object[2];
-        System.arraycopy(concealedArray,1,conclealedTargetArray,0,2);
-        Assert.assertArrayEquals((Object[]) conclealedTargetArray, new Object[]{"b","c"});
+        Object concealedTargetArray = new Object[2];
+        System.arraycopy(concealedArray,1,concealedTargetArray,0,2);
+        Assert.assertArrayEquals((Object[]) concealedTargetArray, new Object[]{"b","c"});
 
 
         Object concealedStringArray = new String[]{"A","b","c"};
-        Object conclealedTargetStringArray = new String[2];
-        System.arraycopy(concealedStringArray,1,conclealedTargetStringArray,0,2);
-        Assert.assertArrayEquals((String[]) conclealedTargetStringArray, new String[]{"b","c"});
+        Object concealedTargetStringArray = new String[2];
+        System.arraycopy(concealedStringArray,1,concealedTargetStringArray,0,2);
+        Assert.assertArrayEquals((String[]) concealedTargetStringArray, new String[]{"b","c"});
     }
 }
