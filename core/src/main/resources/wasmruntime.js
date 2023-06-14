@@ -390,10 +390,10 @@ const bytecoder = {
                 return 0;
             },
             Z$matches$Ljava$lang$String$: function (self, regex) {
-                var match = RegExp(regex.nativeObject).exec(self.nativeObject);
+                var match = RegExp(bytecoder.getNativeObject(regex)).exec(bytecoder.getNativeObject(self));
                 if(!match)
                     return false;
-                return match[0].length == self.nativeObject.length;
+                return match[0].length == bytecoder.getNativeObject(self).length;
             },
             Z$endsWith$Ljava$lang$String$: function (str, otherstr) {
                 const a = bytecoder.toJSString(str);
