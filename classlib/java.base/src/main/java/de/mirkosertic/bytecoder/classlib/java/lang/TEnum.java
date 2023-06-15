@@ -23,7 +23,18 @@ public class TEnum implements Comparable<Enum> {
 
     private final String name;
     private final int ordinalNumber;
+    public final Class getDeclaringClass() throws ClassNotFoundException {
+        Class clazzObj = getClass();
+        String clazzname = clazzObj.getName();
 
+        if(clazzname.matches(".+\\$\\d+")){
+            //its a subclassed Enum
+            // enum E { VAL {private int i;} }
+            // E.VAL.getClass() == E$1
+            return Class.forName(clazzname.substring(0,clazzname.lastIndexOf('$')));
+        }
+        return clazzObj;
+    }
     @NoExceptionCheck
     protected TEnum(final String aName, final int aOrdinalNumber) {
         name = aName;

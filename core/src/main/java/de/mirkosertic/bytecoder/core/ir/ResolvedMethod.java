@@ -40,7 +40,7 @@ public class ResolvedMethod {
     public void parseBody(final AnalysisStack analysisStack) {
         if (!Modifier.isAbstract(methodNode.access) && !Modifier.isNative(methodNode.access)) {
             // Method is not abstract and not native
-            final AnalysisStack newStack = analysisStack.addAction(new AnalysisStack.Action("Parsing method body of " + owner.type + "." + methodNode.name));
+            final AnalysisStack newStack = analysisStack.addAction(new AnalysisStack.Action("Parsing method body of " + owner.type.getClassName() + "." + methodNode.name));
             try {
                 final GraphParser graphParser = new GraphParser(owner.compileUnit, owner.type, methodNode, newStack);
                 methodBody = graphParser.graph();

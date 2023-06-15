@@ -49,6 +49,23 @@ public class StringTest {
     }
 
     @Test
+    public void testMatches(){
+        assertTrue("123".matches("\\d+"));
+        assertTrue("123".matches("\\d*"));
+        assertTrue("very nice words".matches("very nice .+"));
+        assertTrue("false".matches("false"));
+        assertFalse("true".matches("false"));
+        assertFalse("true".matches("rue"));
+        assertFalse("true".matches("t"));
+        assertFalse("true".matches("e"));
+        assertFalse("not all matched".matches("."));
+        assertFalse("not all matched".matches(".{1,3}"));
+        assertFalse("not all matched".matches("matched"));
+        assertFalse("not all matched".matches("not"));
+        assertFalse("not all matched".matches("all"));
+    }
+
+    @Test
     public void testEqualsIgnoreCase() {
         assertTrue("A123".equalsIgnoreCase(new String("a123")));
         assertTrue("abcdefghijklmnopqrstuvwxyz".equalsIgnoreCase(new String("ABCDEFGHIJKLMNOPQRSTUVWXYZ")));
