@@ -72,6 +72,8 @@ public class TString implements CharSequence, Comparable<String> {
         return (String) (Object) this;
     }
 
+    public native boolean matches(String regex);
+
     static String valueOf(final Object obj) {
         if (obj == null) {
             return "null";
