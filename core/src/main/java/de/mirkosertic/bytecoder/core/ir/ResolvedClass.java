@@ -117,14 +117,6 @@ public class ResolvedClass {
         }
         return m;
     }
-
-    private String printStackTrace(AnalysisStack analysisStack) {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        PrintStream stringStream = new PrintStream(bos);
-        analysisStack.dumpAnalysisStack(stringStream);
-        return "\n" + bos;
-    }
-
     private ResolvedMethod resolveMethodInternal(final String methodName, final Type methodType, final AnalysisStack analysisStack, final boolean onlyImplementations) {
         for (final ResolvedMethod m : resolvedMethods) {
             final MethodNode methodNode = m.methodNode;
