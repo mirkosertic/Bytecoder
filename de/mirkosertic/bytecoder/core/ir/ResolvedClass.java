@@ -23,6 +23,7 @@ import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldNode;
 import org.objectweb.asm.tree.MethodNode;
 
+import java.io.*;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -109,9 +110,19 @@ public class ResolvedClass {
     public ResolvedMethod resolveMethod(final String methodName, final Type methodType, final AnalysisStack analysisStack) {
         final ResolvedMethod m = resolveMethodInternal(methodName, methodType, analysisStack, false);
         if (m == null) {
-            throw new IllegalStateException("No such method : " + classNode.name + "." + methodName + methodType);
+            throw new AnalysisException(
+                    new IllegalStateException("No such method : " + classNode.name + "." + methodName + methodType),
+                    analysisStack
+            );
         }
         return m;
+    }
+
+    private String printStackTrace(AnalysisStack analysisStack) {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        PrintStream stringStream = new PrintStream(bos);
+        analysisStack.dumpAnalysisStack(stringStream);
+        return "\n" + bos;
     }
 
     private ResolvedMethod resolveMethodInternal(final String methodName, final Type methodType, final AnalysisStack analysisStack, final boolean onlyImplementations) {

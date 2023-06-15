@@ -869,11 +869,11 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 95: return '{}';
       case 96: return '(this Map)';
       case 97: return '=';
-      case 98: return 'No java.util.Objects instances for you!';
-      case 99: return 'UNKNOWN';
-      case 100: return '[pos=';
-      case 101: return ' lim=';
-      case 102: return ' cap=';
+      case 98: return '[pos=';
+      case 99: return ' lim=';
+      case 100: return ' cap=';
+      case 101: return 'UNKNOWN';
+      case 102: return 'No java.util.Objects instances for you!';
       case 103: return ', Size: ';
   }
   throw 'Unknown string index ' + index;
