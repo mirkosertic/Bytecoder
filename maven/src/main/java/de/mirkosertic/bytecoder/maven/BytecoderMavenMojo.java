@@ -21,6 +21,7 @@ import de.mirkosertic.bytecoder.core.backend.js.JSIntrinsics;
 import de.mirkosertic.bytecoder.core.backend.wasm.WasmBackend;
 import de.mirkosertic.bytecoder.core.backend.wasm.WasmCompileResult;
 import de.mirkosertic.bytecoder.core.backend.wasm.WasmIntrinsics;
+import de.mirkosertic.bytecoder.core.ir.AnalysisException;
 import de.mirkosertic.bytecoder.core.ir.AnalysisStack;
 import de.mirkosertic.bytecoder.core.loader.BytecoderLoader;
 import de.mirkosertic.bytecoder.core.optimizer.Optimizations;
@@ -38,8 +39,10 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.objectweb.asm.Type;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -120,7 +123,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
             if ("js".equals(backend)) {
 
                 final CompileUnit compileUnit = new CompileUnit(loader, new Slf4JLogger(), new JSIntrinsics());
-                final Type invokedType = Type.getObjectType(mainClass.replace('.','/'));
+                final Type invokedType = Type.getObjectType(mainClass.replace('.', '/'));
 
                 compileUnit.resolveMainMethod(invokedType, "main", Type.getMethodType(Type.VOID_TYPE, Type.getType("[Ljava/lang/String;")));
 
@@ -147,7 +150,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
 
             } else {
                 final CompileUnit compileUnit = new CompileUnit(loader, new Slf4JLogger(), new WasmIntrinsics());
-                final Type invokedType = Type.getObjectType(mainClass.replace('.','/'));
+                final Type invokedType = Type.getObjectType(mainClass.replace('.', '/'));
 
                 compileUnit.resolveMainMethod(invokedType, "main", Type.getMethodType(Type.VOID_TYPE, Type.getType("[Ljava/lang/String;")));
 
@@ -172,9 +175,18 @@ public class BytecoderMavenMojo extends AbstractMojo {
                     }
                 }
             }
+        } catch (final AnalysisException e) {
+            throw new MojoExecutionException("Error running Bytecoder : " + printStackTrace(e.getAnalysisStack()), e);
         } catch (final Exception e) {
-            throw new MojoExecutionException("Error running bytecoder", e);
+            throw new MojoExecutionException("Error running Bytecoder", e);
         }
+    }
+
+    private String printStackTrace(final AnalysisStack analysisStack) {
+        final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        final PrintStream stringStream = new PrintStream(bos);
+        analysisStack.dumpAnalysisStack(stringStream);
+        return "\n" + bos;
     }
 
     protected boolean isSupportedScope(final String scope) {
