@@ -911,25 +911,25 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 137: return ' Size: ';
       case 138: return 'vm error: ';
       case 139: return 'data type scale not a power of two';
-      case 140: return ':';
-      case 141: return '-';
-      case 142: return '{}';
-      case 143: return '(this Map)';
-      case 144: return '=';
-      case 145: return '[]';
-      case 146: return '(this Collection)';
-      case 147: return '\/';
-      case 148: return ' ';
-      case 149: return 'UNKNOWN';
-      case 150: return 'No java.util.Objects instances for you!';
-      case 151: return '[pos=';
-      case 152: return ' lim=';
-      case 153: return ' cap=';
-      case 154: return '(';
-      case 155: return ',';
-      case 156: return 'false';
-      case 157: return 'none';
-      case 158: return 'function: ';
+      case 140: return '{}';
+      case 141: return '(this Map)';
+      case 142: return '[]';
+      case 143: return '(this Collection)';
+      case 144: return 'No java.util.Objects instances for you!';
+      case 145: return '(';
+      case 146: return ',';
+      case 147: return 'UNKNOWN';
+      case 148: return '[pos=';
+      case 149: return ' lim=';
+      case 150: return ' cap=';
+      case 151: return '=';
+      case 152: return '\/';
+      case 153: return ' ';
+      case 154: return ':';
+      case 155: return '-';
+      case 156: return 'none';
+      case 157: return 'function: ';
+      case 158: return 'false';
       case 159: return 'Lua';
       case 160: return '?';
       case 161: return 'call';
@@ -1153,92 +1153,82 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 379: return ' is too large';
       case 380: return ' instack ';
       case 381: return ' closed ';
-      case 382: return 'table index';
-      case 383: return 'nan';
-      case 384: return '-inf';
-      case 385: return 'inf';
-      case 386: return ' on number and ';
-      case 387: return 'abs';
-      case 388: return 'ceil';
-      case 389: return 'cos';
-      case 390: return 'deg';
-      case 391: return 'exp';
-      case 392: return 'floor';
-      case 393: return 'fmod';
-      case 394: return 'frexp';
-      case 395: return 'huge';
-      case 396: return 'ldexp';
-      case 397: return 'max';
-      case 398: return 'min';
-      case 399: return 'modf';
-      case 400: return 'pi';
-      case 401: return 'pow';
-      case 402: return 'random';
-      case 403: return 'randomseed';
-      case 404: return 'rad';
-      case 405: return 'sin';
-      case 406: return 'sqrt';
-      case 407: return 'tan';
-      case 408: return 'math';
-      case 409: return 'package';
-      case 410: return 'loaded';
-      case 411: return 'attempt to compare string with number';
-      case 412: return 'globals';
-      case 413: return 'debug';
-      case 414: return 'gethook';
-      case 415: return 'getinfo';
-      case 416: return 'getlocal';
-      case 417: return 'getmetatable';
-      case 418: return 'getregistry';
-      case 419: return 'getupvalue';
-      case 420: return 'getuservalue';
-      case 421: return 'sethook';
-      case 422: return 'setlocal';
-      case 423: return 'setmetatable';
-      case 424: return 'setupvalue';
-      case 425: return 'setuservalue';
-      case 426: return 'traceback';
-      case 427: return 'upvalueid';
-      case 428: return 'upvaluejoin';
+      case 382: return ' on number and ';
+      case 383: return 'attempt to compare string with number';
+      case 384: return 'table index';
+      case 385: return 'globals';
+      case 386: return 'debug';
+      case 387: return 'gethook';
+      case 388: return 'getinfo';
+      case 389: return 'getlocal';
+      case 390: return 'getmetatable';
+      case 391: return 'getregistry';
+      case 392: return 'getupvalue';
+      case 393: return 'getuservalue';
+      case 394: return 'sethook';
+      case 395: return 'setlocal';
+      case 396: return 'setmetatable';
+      case 397: return 'setupvalue';
+      case 398: return 'setuservalue';
+      case 399: return 'traceback';
+      case 400: return 'upvalueid';
+      case 401: return 'upvaluejoin';
+      case 402: return 'package';
+      case 403: return 'loaded';
+      case 404: return 'abs';
+      case 405: return 'ceil';
+      case 406: return 'cos';
+      case 407: return 'deg';
+      case 408: return 'exp';
+      case 409: return 'floor';
+      case 410: return 'fmod';
+      case 411: return 'frexp';
+      case 412: return 'huge';
+      case 413: return 'ldexp';
+      case 414: return 'max';
+      case 415: return 'min';
+      case 416: return 'modf';
+      case 417: return 'pi';
+      case 418: return 'pow';
+      case 419: return 'random';
+      case 420: return 'randomseed';
+      case 421: return 'rad';
+      case 422: return 'sin';
+      case 423: return 'sqrt';
+      case 424: return 'tan';
+      case 425: return 'math';
+      case 426: return 'nan';
+      case 427: return '-inf';
+      case 428: return 'inf';
       case 429: return ', Size: ';
       case 430: return 'table or string';
       case 431: return 'Input length = ';
-      case 432: return '; ';
-      case 433: return '<dead';
-      case 434: return 'String';
-      case 435: return 'index out of range';
-      case 436: return 'interval is empty';
-      case 437: return 'flnStu';
-      case 438: return 'function or level';
-      case 439: return 'attempt to compare number with string';
-      case 440: return 'value expected';
-      case 441: return 'c';
-      case 442: return 'l';
-      case 443: return 'r';
+      case 432: return '<dead';
+      case 433: return '; ';
+      case 434: return 'c';
+      case 435: return 'l';
+      case 436: return 'r';
+      case 437: return 'interval is empty';
+      case 438: return 'attempt to compare number with string';
+      case 439: return 'value expected';
+      case 440: return 'String';
+      case 441: return 'flnStu';
+      case 442: return 'function or level';
+      case 443: return 'index out of range';
       case 444: return 'weak<';
-      case 445: return 'typename';
-      case 446: return 'weak value';
-      case 447: return 'illegal operation \'';
-      case 448: return '\' for ';
-      case 449: return 'type';
-      case 450: return 'cannot set ';
-      case 451: return ' for userdata';
+      case 445: return 'cannot set ';
+      case 446: return ' for userdata';
+      case 447: return 'typename';
+      case 448: return 'weak value';
+      case 449: return 'illegal operation \'';
+      case 450: return '\' for ';
+      case 451: return 'type';
   }
   throw 'Unknown string index ' + index;
-};
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.EventTarget_generated"] = {
-    V$addEventListener$Ljava$lang$String$$Lde$mirkosertic$bytecoder$api$web$EventListener$ : function(thisref, arg0, arg1) {
-        (thisref.addEventListener(arg0, function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.EventListener_callback'](arg1,evt);}));
-    },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.Element_generated"] = {
     V$innerHTML$Ljava$lang$String$ : function(thisref, arg0) {
         (thisref.innerHTML = arg0);
-    },
-};
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.Window_generated"] = {
-    Lde$mirkosertic$bytecoder$api$web$HTMLDocument$$document$$ : function(thisref) {
-        return (thisref.document);
     },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.ParentNode_generated"] = {
@@ -1246,8 +1236,18 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.web.ParentNode_generated"] = {
         return (thisref.getElementById(arg0));
     },
 };
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.Window_generated"] = {
+    Lde$mirkosertic$bytecoder$api$web$HTMLDocument$$document$$ : function(thisref) {
+        return (thisref.document);
+    },
+};
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLTextAreaElement_generated"] = {
     Ljava$lang$String$$value$$ : function(thisref) {
         return (thisref.value);
+    },
+};
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.EventTarget_generated"] = {
+    V$addEventListener$Ljava$lang$String$$Lde$mirkosertic$bytecoder$api$web$EventListener$ : function(thisref, arg0, arg1) {
+        (thisref.addEventListener(arg0, function(evt) {bytecoder.instance.exports['de.mirkosertic.bytecoder.api.web.EventListener_callback'](arg1,evt);}));
     },
 };
