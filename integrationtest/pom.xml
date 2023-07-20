@@ -62,7 +62,7 @@
         <dependency>
             <groupId>am.ik.yavi</groupId>
             <artifactId>yavi</artifactId>
-            <version>0.12.1</version>
+            <version>0.13.1</version>
             <scope>test</scope>
         </dependency>
 
