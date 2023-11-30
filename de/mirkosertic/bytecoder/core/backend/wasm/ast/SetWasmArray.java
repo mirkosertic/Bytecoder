@@ -55,7 +55,7 @@ public class SetWasmArray implements WasmExpression {
         index.writeTo(binaryWriter, context);
         value.writeTo(binaryWriter, context);
         binaryWriter.writeByte((byte) 0xfb);
-        binaryWriter.writeByte((byte) 0x16);
+        binaryWriter.writeByte((byte) 0x0e);
         binaryWriter.writeUnsignedLeb128(type.index());
     }
 }

@@ -30,6 +30,6 @@ public class WasmNullRef implements WasmValue {
     @Override
     public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) {
         binaryWriter.writeByte((byte) 0xd0);
-        binaryWriter.writeByte((byte) 0x65);
+        binaryWriter.writeByte((byte) 0x71);
     }
 }

@@ -33,7 +33,7 @@ public class NewStruct implements WasmValue{
             arg.writeTo(binaryWriter, context);
         }
         binaryWriter.writeByte((byte) 0xfb);
-        binaryWriter.writeByte((byte) 0x07);
+        binaryWriter.writeByte((byte) 0x00);
         binaryWriter.writeUnsignedLeb128(type.index());
     }
 }

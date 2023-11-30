@@ -69,9 +69,9 @@ public class RefType implements WasmType {
     @Override
     public void writeTo(final BinaryWriter.Writer writer) throws IOException {
         if (nullable) {
-            writer.writeByte((byte) 0x6c);
+            writer.writeByte((byte) 0x63);
         } else {
-            writer.writeByte((byte) 0x6b);
+            writer.writeByte((byte) 0x64);
         }
         writer.writeSignedLeb128(type.index());
     }

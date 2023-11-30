@@ -43,7 +43,7 @@ public class NewWasmArrayDefault implements WasmValue {
     public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) throws IOException {
         length.writeTo(binaryWriter, context);
         binaryWriter.writeByte((byte) 0xfb);
-        binaryWriter.writeByte((byte) 0x1c);
+        binaryWriter.writeByte((byte) 0x07);
         binaryWriter.writeUnsignedLeb128(type.index());
     }
 }

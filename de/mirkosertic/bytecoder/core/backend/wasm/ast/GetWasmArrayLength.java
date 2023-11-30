@@ -27,6 +27,6 @@ public class GetWasmArrayLength implements WasmValue {
     public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) throws IOException {
         array.writeTo(binaryWriter, context);
         binaryWriter.writeByte((byte) 0xfb);
-        binaryWriter.writeByte((byte) 0x19);
+        binaryWriter.writeByte((byte) 0x0f);
     }
 }

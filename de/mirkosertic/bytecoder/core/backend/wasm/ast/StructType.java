@@ -87,11 +87,15 @@ public class StructType implements ReferencableType {
         writer.write(name);
         writer.space();
         writer.opening();
+        writer.write("sub");
+        writer.space();
+        writer.opening();
         writer.write("struct");
         for (final Field field : fields) {
             writer.space();
             field.writeTo(writer);
         }
+        writer.closing();
         writer.closing();
         writer.closing();
     }
@@ -104,6 +108,8 @@ public class StructType implements ReferencableType {
 
     @Override
     public void writeTo(final BinaryWriter.Writer writer) throws IOException {
+        writer.writeByte((byte) 0x50);
+        writer.writeByte((byte) 0);
         writer.writeByte(PrimitiveType.struct.getBinaryType());
         writer.writeByte((byte) fields.size());
         for (final Field f : fields) {
