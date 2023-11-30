@@ -54,7 +54,7 @@ public class SetStruct implements WasmExpression {
         target.writeTo(binaryWriter, context);
         value.writeTo(binaryWriter, context);
         binaryWriter.writeByte((byte) 0xfb);
-        binaryWriter.writeByte((byte) 0x06);
+        binaryWriter.writeByte((byte) 0x05);
         binaryWriter.writeUnsignedLeb128(structType.index());
         binaryWriter.writeUnsignedLeb128(structType.indexOfField(fieldName));
     }

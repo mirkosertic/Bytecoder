@@ -45,14 +45,18 @@ public class StructSubtype extends StructType {
         writer.space();
 
         writer.opening();
-        writer.write("struct_subtype");
+        writer.write("sub");
+        writer.space();
+        writer.write("$");
+        writer.write(supertype.name);
+        writer.space();
+        writer.opening();
+        writer.write("struct");
         for (final Field field : fields) {
             writer.space();
             field.writeTo(writer);
         }
-        writer.space();
-        writer.write("$");
-        writer.write(supertype.name);
+        writer.closing();
         writer.closing();
 
         writer.closing();

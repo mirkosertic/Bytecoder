@@ -19,6 +19,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 public class RefEq extends BinaryExpression {
 
     RefEq(final WasmValue left, final WasmValue right) {
-        super(left, right, "ref.eq", (byte) 0xd5);
+        super(left, right, "ref.eq", (byte) 0xd3);
     }
 }

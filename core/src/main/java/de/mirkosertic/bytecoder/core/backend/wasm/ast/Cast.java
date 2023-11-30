@@ -31,19 +31,22 @@ public class Cast implements WasmValue {
     @Override
     public void writeTo(final TextWriter writer, final ExportContext context) throws IOException {
         writer.opening();
-        writer.write("ref.cast_static $");
+        writer.write("ref.cast");
+        writer.space();
+        writer.opening();
+        writer.write("ref null $");
         writer.write(structType.getName());
+        writer.closing();
         writer.space();
         source.writeTo(writer, context);
         writer.closing();
-
     }
 
     @Override
     public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) throws IOException {
         source.writeTo(binaryWriter, context);
         binaryWriter.writeByte((byte) 0xfb);
-        binaryWriter.writeByte((byte) 0x45);
+        binaryWriter.writeByte((byte) 0x17);
         binaryWriter.writeSignedLeb128(structType.index());
     }
 }

@@ -34,7 +34,7 @@ public class GetStruct implements WasmValue {
     public void writeTo(final BinaryWriter.Writer binaryWriter, final ExportContext context) throws IOException {
         source.writeTo(binaryWriter, context);
         binaryWriter.writeByte((byte) 0xfb);
-        binaryWriter.writeByte((byte) 0x03);
+        binaryWriter.writeByte((byte) 0x02);
         binaryWriter.writeUnsignedLeb128(structType.index());
         binaryWriter.writeUnsignedLeb128(structType.indexOfField(fieldName));
     }

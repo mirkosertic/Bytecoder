@@ -33,7 +33,7 @@ public class GetWasmArray implements WasmValue {
         array.writeTo(binaryWriter, context);
         index.writeTo(binaryWriter, context);
         binaryWriter.writeByte((byte) 0xfb);
-        binaryWriter.writeByte((byte) 0x13);
+        binaryWriter.writeByte((byte) 0x0b);
         binaryWriter.writeUnsignedLeb128(type.index());
     }
 }
