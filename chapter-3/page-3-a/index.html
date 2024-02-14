@@ -12,20 +12,20 @@
     <title>Intermediate Representation :: Bytecoder - JVM to JavaScript, OpenCL and WebAssembly Transpiler</title>
 
     
-    <link href="/Bytecoder/css/nucleus.css?1707734351" rel="stylesheet">
-    <link href="/Bytecoder/css/fontawesome-all.min.css?1707734351" rel="stylesheet">
-    <link href="/Bytecoder/css/hybrid.css?1707734351" rel="stylesheet">
-    <link href="/Bytecoder/css/featherlight.min.css?1707734351" rel="stylesheet">
-    <link href="/Bytecoder/css/perfect-scrollbar.min.css?1707734351" rel="stylesheet">
-    <link href="/Bytecoder/css/auto-complete.css?1707734351" rel="stylesheet">
-    <link href="/Bytecoder/css/atom-one-dark-reasonable.css?1707734351" rel="stylesheet">
-    <link href="/Bytecoder/css/theme.css?1707734351" rel="stylesheet">
-    <link href="/Bytecoder/css/tabs.css?1707734351" rel="stylesheet">
-    <link href="/Bytecoder/css/hugo-theme.css?1707734351" rel="stylesheet">
+    <link href="/Bytecoder/css/nucleus.css?1707910199" rel="stylesheet">
+    <link href="/Bytecoder/css/fontawesome-all.min.css?1707910199" rel="stylesheet">
+    <link href="/Bytecoder/css/hybrid.css?1707910199" rel="stylesheet">
+    <link href="/Bytecoder/css/featherlight.min.css?1707910199" rel="stylesheet">
+    <link href="/Bytecoder/css/perfect-scrollbar.min.css?1707910199" rel="stylesheet">
+    <link href="/Bytecoder/css/auto-complete.css?1707910199" rel="stylesheet">
+    <link href="/Bytecoder/css/atom-one-dark-reasonable.css?1707910199" rel="stylesheet">
+    <link href="/Bytecoder/css/theme.css?1707910199" rel="stylesheet">
+    <link href="/Bytecoder/css/tabs.css?1707910199" rel="stylesheet">
+    <link href="/Bytecoder/css/hugo-theme.css?1707910199" rel="stylesheet">
     
     
 
-    <script src="/Bytecoder/js/jquery-3.3.1.min.js?1707734351"></script>
+    <script src="/Bytecoder/js/jquery-3.3.1.min.js?1707910199"></script>
 
     <style>
       :root #header + #content > #left > #rlblock_left{
@@ -68,14 +68,14 @@ if (!doNotTrack) {
     <span data-search-clear=""><i class="fas fa-times"></i></span>
 </div>
 
-<script type="text/javascript" src="/Bytecoder/js/lunr.min.js?1707734351"></script>
-<script type="text/javascript" src="/Bytecoder/js/auto-complete.js?1707734351"></script>
+<script type="text/javascript" src="/Bytecoder/js/lunr.min.js?1707910199"></script>
+<script type="text/javascript" src="/Bytecoder/js/auto-complete.js?1707910199"></script>
 <script type="text/javascript">
     
         var baseurl = "https:\/\/mirkosertic.github.io\/Bytecoder";
     
 </script>
-<script type="text/javascript" src="/Bytecoder/js/search.js?1707734351"></script>
+<script type="text/javascript" src="/Bytecoder/js/search.js?1707910199"></script>
 
     
   </div>
@@ -694,14 +694,15 @@ if (!doNotTrack) {
 
 
 <p>The Bytecoder internal intermediate representation is basically a directed graph. The key idea behind this is described
-<a href="https://github.com/mirkosertic/Bytecoder/tree/master/core/src/main/java/de/mirkosertic/bytecoder/graph/c2-ir95-150110.pdf">in this paper</a>.</p>
+<a href="https://github.com/mirkosertic/Bytecoder/blob/master/core/src/main/java/de/mirkosertic/bytecoder/core/ir/c2-ir95-150110.pdf">in this paper</a>.</p>
 
 <p>Given this Java source code:</p>
 
 <pre><code>@Test
 public void testSimpleLoop() {
-    for (int i=0;i&lt;10;i++) {
-
+    int x = 0;
+    for (int i = 0; i &lt; 100; i++) {
+        x = x + i;
     }
 }
 </code></pre>
@@ -718,31 +719,6 @@ the graph problem.</p>
 <p>The following graph shows the further optimized version of the previous loop:</p>
 
 <p><img src="/Bytecoder/docassets/ir_loopexample_optimized.svg" alt="Intermediate representation graph optimized" /></p>
-
-<p>There are two different output styles available for generated code:</p>
-
-<ul>
-<li><p>Relooper</p>
-
-<p>The <a href="https://github.com/mirkosertic/Bytecoder/tree/master/core/src/main/java/de/mirkosertic/bytecoder/relooper/paper.pdf">Relooper output generator</a>
-tries to recover high level control flow constructs from the intermediate representation. This step eliminates
-the needs of GOTO statements and thus allows generation of more natural source code, which in turn can be easier read
-and optimized by Web Browsers or other tools. The Relooper supports all styles of control flows and also supports
-exception handling.</p></li>
-
-<li><p>Stackifier</p></li>
-</ul>
-
-<p>The Stackifier is based on <a href="https://github.com/mirkosertic/Bytecoder/tree/master/core/src/main/java/de/mirkosertic/bytecoder/stackifier/SRC-RR-4.pdf">this paper</a>. It
-   tries to remove all GOTO statements and replaces them with structured control flow elements and multi level break
-   and continues. The Stackifier does only work for reducible control flows and also does not support
-   exception handling. The generated output is smaller and in some cases faster compared to the Relooper output.</p>
-
-<p>Relooper output is enabled by default for <code>JS</code> and <code>Wasm</code> backends. The Stackifier can be enabled for <code>CLI</code> or <code>Maven</code> by setting
-<code>preferStackifier</code> to <code>true</code> as a configuration parameter. If Stackifier is enabled and Bytecoder detects an
-irreducible control flow Relooper is used as a fallback.</p>
-
-<p>Stackifier is used as the default by the <code>OpenCL</code> backend.</p>
 
 
 <footer class="footline">
@@ -1846,19 +1822,19 @@ irreducible control flow Relooper is used as a fallback.</p>
     <div style="left: -1000px; overflow: scroll; position: absolute; top: -1000px; border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;">
       <div style="border: none; box-sizing: content-box; height: 200px; margin: 0px; padding: 0px; width: 200px;"></div>
     </div>
-    <script src="/Bytecoder/js/clipboard.min.js?1707734351"></script>
-    <script src="/Bytecoder/js/perfect-scrollbar.min.js?1707734351"></script>
-    <script src="/Bytecoder/js/perfect-scrollbar.jquery.min.js?1707734351"></script>
-    <script src="/Bytecoder/js/jquery.sticky.js?1707734351"></script>
-    <script src="/Bytecoder/js/featherlight.min.js?1707734351"></script>
-    <script src="/Bytecoder/js/highlight.pack.js?1707734351"></script>
+    <script src="/Bytecoder/js/clipboard.min.js?1707910199"></script>
+    <script src="/Bytecoder/js/perfect-scrollbar.min.js?1707910199"></script>
+    <script src="/Bytecoder/js/perfect-scrollbar.jquery.min.js?1707910199"></script>
+    <script src="/Bytecoder/js/jquery.sticky.js?1707910199"></script>
+    <script src="/Bytecoder/js/featherlight.min.js?1707910199"></script>
+    <script src="/Bytecoder/js/highlight.pack.js?1707910199"></script>
     <script>hljs.initHighlightingOnLoad();</script>
-    <script src="/Bytecoder/js/modernizr.custom-3.6.0.js?1707734351"></script>
-    <script src="/Bytecoder/js/learn.js?1707734351"></script>
-    <script src="/Bytecoder/js/hugo-learn.js?1707734351"></script>
+    <script src="/Bytecoder/js/modernizr.custom-3.6.0.js?1707910199"></script>
+    <script src="/Bytecoder/js/learn.js?1707910199"></script>
+    <script src="/Bytecoder/js/hugo-learn.js?1707910199"></script>
     
         
-            <script src="/Bytecoder/mermaid/mermaid.js?1707734351"></script>
+            <script src="/Bytecoder/mermaid/mermaid.js?1707910199"></script>
         
         <script>
             mermaid.initialize({ startOnLoad: true });
