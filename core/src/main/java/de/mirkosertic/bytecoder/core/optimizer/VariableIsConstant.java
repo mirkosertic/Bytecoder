@@ -1,18 +1,21 @@
 package de.mirkosertic.bytecoder.core.optimizer;
 
 import de.mirkosertic.bytecoder.core.ir.CaughtException;
+import de.mirkosertic.bytecoder.core.ir.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.core.ir.Copy;
 import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.Node;
 import de.mirkosertic.bytecoder.core.ir.NullReference;
 import de.mirkosertic.bytecoder.core.ir.ObjectString;
 import de.mirkosertic.bytecoder.core.ir.PrimitiveValue;
+import de.mirkosertic.bytecoder.core.ir.Projection;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.ir.RuntimeClass;
 import de.mirkosertic.bytecoder.core.ir.TypeReference;
 import de.mirkosertic.bytecoder.core.ir.Variable;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
+import java.util.Map;
 import java.util.Stack;
 
 public class VariableIsConstant implements Optimizer {
@@ -61,8 +64,8 @@ public class VariableIsConstant implements Optimizer {
             // Step 1 : Remove copy from control flow
             //workingItem.deleteFromControlFlow();
 
-            for (final var pred : workingItem.controlComingFrom) {
-                for (final var entry : workingItem.controlFlowsTo.entrySet()) {
+            for (final ControlTokenConsumer pred : workingItem.controlComingFrom) {
+                for (final Map.Entry<Projection, ControlTokenConsumer> entry : workingItem.controlFlowsTo.entrySet()) {
                     pred.remapControlFlowTo(workingItem, entry.getValue());
                     entry.getValue().controlComingFrom.remove(workingItem);
                 }

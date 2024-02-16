@@ -112,7 +112,7 @@ public class WasmBackend {
 
         final GlobalsSection globalsSection = module.getGlobals();
 
-        final java.util.function.Function<Type, WasmType> toWASMType = new java.util.function.Function<>() {
+        final java.util.function.Function<Type, WasmType> toWASMType = new java.util.function.Function<Type, WasmType>() {
             @Override
             public WasmType apply(final Type argument) {
                 switch (argument.getSort()) {

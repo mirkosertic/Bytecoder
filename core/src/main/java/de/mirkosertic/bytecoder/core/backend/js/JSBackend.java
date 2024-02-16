@@ -113,7 +113,7 @@ public class JSBackend {
                 extendsClause.append(generateClassName(cl.superClass.type));
             }
 
-            if (!extendsClause.isEmpty()) {
+            if (extendsClause.length() > 0) {
                 pw.print(" extends ");
                 pw.print(extendsClause);
             }

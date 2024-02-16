@@ -19,6 +19,7 @@ import org.objectweb.asm.Type;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.stream.Collectors;
 
 public class IRExport {
 
@@ -65,7 +66,7 @@ public class IRExport {
 //        new VariableIsConstant().optimize(compileUnit, method);
 
         // Drop no longer used constants
-        for (final Node unusedConstant : g.nodes().stream().filter(t -> ((t instanceof Constant) && t.outgoingFlows.length == 0)).toList()) {
+        for (final Node unusedConstant : g.nodes().stream().filter(t -> ((t instanceof Constant) && t.outgoingFlows.length == 0)).collect(Collectors.toList())) {
             g.deleteNode(unusedConstant);
         }
 

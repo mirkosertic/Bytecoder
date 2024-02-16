@@ -74,8 +74,8 @@ public abstract class ControlTokenConsumer extends Node {
     }
 
     public void deleteFromControlFlow() {
-        for (final var pred : this.controlComingFrom) {
-            for (final var entry : controlFlowsTo.entrySet()) {
+        for (final ControlTokenConsumer pred : this.controlComingFrom) {
+            for (final Map.Entry<Projection, ControlTokenConsumer> entry : controlFlowsTo.entrySet()) {
                 pred.removeControlFlowTo(this);
                 pred.addControlFlowTo(entry.getKey(), entry.getValue());
 
