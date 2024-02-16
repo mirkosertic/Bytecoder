@@ -215,10 +215,6 @@ public class Graph {
                 pw.print(" color=\"red\"");
             }
 
-            if (n.tobepruned) {
-                pw.print(" color=\"green\" penwidth=\"4\" ");
-            }
-
             pw.println("];");
             for (int inidx = 0; inidx < n.incomingDataFlows.length; inidx++) {
                 final Node incoming = n.incomingDataFlows[inidx];

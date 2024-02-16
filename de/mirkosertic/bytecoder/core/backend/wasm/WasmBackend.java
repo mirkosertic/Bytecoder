@@ -836,6 +836,8 @@ public class WasmBackend {
 
                         try {
                             new Sequencer(g, dt, new WasmStructuredControlflowCodeGenerator(compileUnit, module, rtTypeMappings, objectTypeMappings, implFunction, toWASMType, toFunctionType, methodToIDMapper, g, resolvedClasses, vTableResolver, generatedMethodsRegistry));
+                        } catch (final CodeGenerationFailure e) {
+                            throw e;
                         } catch (final RuntimeException e) {
                             throw new CodeGenerationFailure(method, dt, e);
                         }

@@ -26,19 +26,9 @@ public class Node {
 
     boolean error;
 
-    boolean tobepruned;
-
     public Node() {
         this.incomingDataFlows = new Node[0];
         this.outgoingFlows = new Node[0];
-    }
-
-    public void markAsDoBePruned() {
-        tobepruned = true;
-    }
-
-    public boolean isMarkedToBePruned() {
-        return tobepruned;
     }
 
     public String additionalDebugInfo() {
@@ -64,6 +54,11 @@ public class Node {
     }
 
     public void addOutgoingData(final Node node) {
+        for (final Node n : outgoingFlows) {
+            if (n == node) {
+                return;
+            }
+        }
         if (outgoingFlows.length == 0) {
             outgoingFlows = new Node[] {node};
         } else {
@@ -78,13 +73,6 @@ public class Node {
         final List<Node> l = new ArrayList<>(Arrays.asList(outgoingFlows));
         l.remove(node);
         outgoingFlows = l.toArray(new Node[0]);
-    }
-
-    public void clearIncomingData() {
-        for (final Node incoming : incomingDataFlows) {
-            incoming.removeFromOutgoingData(this);
-        }
-        this.incomingDataFlows = new Node[0];
     }
 
     public boolean remapDataFlow(final Node original, final Node newValue) {
@@ -104,11 +92,5 @@ public class Node {
             }
         }
         return changed;
-    }
-
-    public void removeFromIncomingData(final Node node) {
-        final List<Node> l = new ArrayList<>(Arrays.asList(incomingDataFlows));
-        l.remove(node);
-        incomingDataFlows = l.toArray(new Node[0]);
     }
 }

@@ -876,21 +876,16 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 93: return '{}';
       case 94: return '(this Map)';
       case 95: return 'UNKNOWN';
-      case 96: return '[pos=';
-      case 97: return ' lim=';
-      case 98: return ' cap=';
-      case 99: return '=';
-      case 100: return '[]';
-      case 101: return '(this Collection)';
-      case 102: return 'No java.util.Objects instances for you!';
+      case 96: return '[]';
+      case 97: return '(this Collection)';
+      case 98: return '[pos=';
+      case 99: return ' lim=';
+      case 100: return ' cap=';
+      case 101: return 'No java.util.Objects instances for you!';
+      case 102: return '=';
       case 103: return ', Size: ';
   }
   throw 'Unknown string index ' + index;
-};
-bytecoder.imports["de.mirkosertic.bytecoder.api.vue.VueData_generated"] = {
-    V$setProperty$Ljava$lang$String$$Ljava$lang$String$ : function(thisref, arg0, arg1) {
-        (thisref.setProperty(arg0, arg1));
-    },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.vue.VueBuilder_generated"] = {
     V$bindToTemplateSelector$Ljava$lang$String$ : function(thisref, arg0) {
@@ -904,6 +899,11 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.vue.VueBuilder_generated"] = {
     },
     Lde$mirkosertic$bytecoder$api$vue$VueInstance$$build$$ : function(thisref) {
         return (thisref.build());
+    },
+};
+bytecoder.imports["de.mirkosertic.bytecoder.api.vue.VueData_generated"] = {
+    V$setProperty$Ljava$lang$String$$Ljava$lang$String$ : function(thisref, arg0, arg1) {
+        (thisref.setProperty(arg0, arg1));
     },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.integrationtest.VueDemo$MyVueInstance_generated"] = {

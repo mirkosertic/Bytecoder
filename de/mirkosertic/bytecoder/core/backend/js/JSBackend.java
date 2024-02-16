@@ -720,6 +720,8 @@ public class JSBackend {
 
         try {
             new Sequencer(g, dt, new JSStructuredControlflowCodeGenerator(compileUnit, cl, pw, generatedMethodsRegistry));
+        } catch (final CodeGenerationFailure e) {
+            throw e;
         } catch (final RuntimeException e) {
             throw new CodeGenerationFailure(m, dt, e);
         }

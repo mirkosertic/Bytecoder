@@ -27,14 +27,7 @@ import java.util.stream.Collectors;
 
 public class DeleteRedundantClassInitializations implements GlobalOptimizer {
 
-    private final NodePatternMatcher patternMatcher;
-
     public DeleteRedundantClassInitializations() {
-        patternMatcher = new NodePatternMatcher(
-                NodePredicates.ofType(ClassInitialization.class),
-                NodePredicates.singlePredWithForwardEdge(),
-                NodePredicates.singleSuccWithForwardEdge()
-        );
     }
 
     @Override

@@ -142,7 +142,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
             } else {
                 varName = "var" + i;
             }
-            variableToName.put(variables.get(i), varName);
+            variableToName.put(v, varName);
 
             writeIndent();
             pw.print("var ");
