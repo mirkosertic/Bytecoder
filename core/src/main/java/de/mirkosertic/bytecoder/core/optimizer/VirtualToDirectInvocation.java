@@ -30,12 +30,7 @@ import java.util.Set;
 
 public class VirtualToDirectInvocation implements Optimizer {
 
-    private final NodePatternMatcher patternMatcher;
-
     public VirtualToDirectInvocation() {
-        patternMatcher = new NodePatternMatcher(
-                NodePredicates.ofType(AbstractInvocation.class)
-        );
     }
 
     private Set<ResolvedClass> subclassesOf(final ResolvedClass rc) {
@@ -65,7 +60,7 @@ public class VirtualToDirectInvocation implements Optimizer {
         final Graph g = method.methodBody;
 
         for (final Node node : g.nodes()) {
-            if (patternMatcher.test(g, node)) {
+            if (node instanceof AbstractInvocation) {
                 final AbstractInvocation invocation = (AbstractInvocation) node;
                 switch (invocation.invocationType()) {
                     case VIRTUAL: {

@@ -1,0 +1,51 @@
+package de.mirkosertic.bytecoder.core.optimizer;
+
+import de.mirkosertic.bytecoder.core.ir.Copy;
+import de.mirkosertic.bytecoder.core.ir.Graph;
+import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
+import de.mirkosertic.bytecoder.core.ir.Variable;
+import de.mirkosertic.bytecoder.core.parser.CompileUnit;
+
+import java.util.Stack;
+
+public class VariableIsVariable implements Optimizer {
+
+    @Override
+    public boolean optimize(final CompileUnit compileUnit, final ResolvedMethod method) {
+        boolean changed = false;
+
+        final Graph g = method.methodBody;
+
+        // Variable and Constant propagation
+        final Stack<Copy> workingQueue = new Stack<>();
+
+        // We search for Constants and Variables A and check if they are copied to a variable B.
+        // In this case, the variable B is redundant and can be replaced with A.
+        g.nodes().stream().filter(t -> (t instanceof Copy) && t.incomingDataFlows[0] instanceof Variable && t.outgoingFlows[0] instanceof Variable).map(t -> (Copy) t).forEach(workingQueue::push);
+
+        // We perform a recursive search across the invocation graph
+        while (!workingQueue.isEmpty()) {
+            final Copy workingItem = workingQueue.pop();
+            final Variable source = (Variable) workingItem.incomingDataFlows[0];
+            final Variable target = (Variable) workingItem.outgoingFlows[0];
+
+            if (source.outgoingFlows.length == 1) {
+                // Step 1 : Remove copy from control flow
+                workingItem.deleteFromControlFlow();
+
+                // Correct dataflow
+                source.removeFromOutgoingData(workingItem);
+                workingItem.removeFromOutgoingData(target);
+
+                g.remapDataFlow(target, source);
+
+                g.deleteNode(workingItem);
+                g.deleteNode(target);
+
+                changed = true;
+            }
+        }
+
+        return changed;
+    }
+}

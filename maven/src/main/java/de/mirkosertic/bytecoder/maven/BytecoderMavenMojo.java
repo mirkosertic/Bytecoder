@@ -15,14 +15,17 @@
  */
 package de.mirkosertic.bytecoder.maven;
 
+import de.mirkosertic.bytecoder.core.backend.CodeGenerationFailure;
 import de.mirkosertic.bytecoder.core.backend.js.JSBackend;
 import de.mirkosertic.bytecoder.core.backend.js.JSCompileResult;
+import de.mirkosertic.bytecoder.core.backend.js.JSHelpers;
 import de.mirkosertic.bytecoder.core.backend.js.JSIntrinsics;
 import de.mirkosertic.bytecoder.core.backend.wasm.WasmBackend;
 import de.mirkosertic.bytecoder.core.backend.wasm.WasmCompileResult;
 import de.mirkosertic.bytecoder.core.backend.wasm.WasmIntrinsics;
 import de.mirkosertic.bytecoder.core.ir.AnalysisException;
 import de.mirkosertic.bytecoder.core.ir.AnalysisStack;
+import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.loader.BytecoderLoader;
 import de.mirkosertic.bytecoder.core.optimizer.Optimizations;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
@@ -42,6 +45,7 @@ import org.objectweb.asm.Type;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -177,6 +181,28 @@ public class BytecoderMavenMojo extends AbstractMojo {
             }
         } catch (final AnalysisException e) {
             throw new MojoExecutionException("Error running Bytecoder : " + printStackTrace(e.getAnalysisStack()), e);
+        } catch (final CodeGenerationFailure e) {
+            final ResolvedMethod rm = e.getMethod();
+
+            final String className = JSHelpers.generateClassName(rm.owner.type);
+            final String methodName = JSHelpers.generateMethodName(rm.methodNode.name, Type.getMethodType(rm.methodNode.desc));
+
+            final String filenameDg = className + "." + methodName + "_debuggraph.dot";
+            try {
+                try (final FileOutputStream fos = new FileOutputStream(new File(bytecoderDirectory, filenameDg))) {
+                    rm.methodBody.writeDebugTo(fos);
+                }
+
+                final String filenameDt = className + "." + methodName + "_dominatortree.dot";
+                try (final FileOutputStream fos = new FileOutputStream(new File(bytecoderDirectory, filenameDt))) {
+                    e.getDominatorTree().writeDebugTo(fos);
+                }
+            } catch (final IOException ex) {
+                throw new RuntimeException("Error writing debug data", ex);
+            }
+
+            throw new MojoExecutionException("Error Bytecoder : code generation error! Debug files were written!", e);
+
         } catch (final Exception e) {
             throw new MojoExecutionException("Error running Bytecoder", e);
         }

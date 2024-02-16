@@ -26,21 +26,17 @@ public enum Optimizations implements Optimizer {
     DISABLED(new Optimizer[] {
     }),
     DEFAULT(new Optimizer[] {
-                new DeleteUnusedConstants(),
-                new DeleteUnusedVariables(),
-                new DeleteRedundantVariables(),
+                //new UnusedAbstractVar(),
                 new VariableIsConstant(),
+                new VariableIsVariable(),
                 new VirtualToDirectInvocation(),
-                new DeleteCopyToUnusedPHI(),
                 new DeleteRedundantClassInitializations()
             }),
     ALL(new Optimizer[] {
-            new DeleteUnusedConstants(),
-            new DeleteUnusedVariables(),
-            new DeleteRedundantVariables(),
+            //new UnusedAbstractVar(),
             new VariableIsConstant(),
+            new VariableIsVariable(),
             new VirtualToDirectInvocation(),
-            new DeleteCopyToUnusedPHI(),
             new DeleteRedundantClassInitializations()
     }),
     ;

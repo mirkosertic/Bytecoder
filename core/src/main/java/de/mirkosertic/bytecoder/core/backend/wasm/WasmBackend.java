@@ -112,7 +112,7 @@ public class WasmBackend {
 
         final GlobalsSection globalsSection = module.getGlobals();
 
-        final java.util.function.Function<Type, WasmType> toWASMType = new java.util.function.Function<Type, WasmType>() {
+        final java.util.function.Function<Type, WasmType> toWASMType = new java.util.function.Function<>() {
             @Override
             public WasmType apply(final Type argument) {
                 switch (argument.getSort()) {
@@ -836,6 +836,8 @@ public class WasmBackend {
 
                         try {
                             new Sequencer(g, dt, new WasmStructuredControlflowCodeGenerator(compileUnit, module, rtTypeMappings, objectTypeMappings, implFunction, toWASMType, toFunctionType, methodToIDMapper, g, resolvedClasses, vTableResolver, generatedMethodsRegistry));
+                        } catch (final CodeGenerationFailure e) {
+                            throw e;
                         } catch (final RuntimeException e) {
                             throw new CodeGenerationFailure(method, dt, e);
                         }
