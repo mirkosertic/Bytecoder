@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.core.ir;
 
 public class MonitorEnter extends ControlTokenConsumer {
 
-    public MonitorEnter() {
+    MonitorEnter(final Graph owner) {
+        super(owner);
     }
 }

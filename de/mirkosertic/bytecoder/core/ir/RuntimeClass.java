@@ -17,14 +17,19 @@ package de.mirkosertic.bytecoder.core.ir;
 
 import org.objectweb.asm.Type;
 
-public class RuntimeClass extends Value implements Constant {
+public class RuntimeClass extends Value {
 
-    public RuntimeClass() {
-        super(Type.getType(Class.class));
+    RuntimeClass(final Graph owner) {
+        super(owner, Type.getType(Class.class));
     }
 
     @Override
     public String additionalDebugInfo() {
         return ": " + type;
+    }
+
+    @Override
+    public boolean isConstant() {
+        return true;
     }
 }

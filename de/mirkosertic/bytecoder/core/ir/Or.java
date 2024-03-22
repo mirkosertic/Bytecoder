@@ -19,7 +19,7 @@ import org.objectweb.asm.Type;
 
 public class Or extends Value {
 
-    public Or(final Type type) {
-        super(type);
+    Or(final Graph owner, final Type type) {
+        super(owner, type);
     }
 }

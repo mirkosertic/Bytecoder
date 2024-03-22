@@ -19,7 +19,7 @@ import org.objectweb.asm.Type;
 
 public class ArrayLoad extends Value {
 
-    public ArrayLoad(final Type type) {
-        super(type);
+    ArrayLoad(final Graph owner, final Type type) {
+        super(owner, type);
     }
 }

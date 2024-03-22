@@ -20,7 +20,7 @@ import org.objectweb.asm.Type;
 
 public class InvokeDynamicExpression extends Value {
 
-    public InvokeDynamicExpression(final Type type) {
-        super(type);
+    InvokeDynamicExpression(final Graph owner, final Type type) {
+        super(owner, type);
     }
 }

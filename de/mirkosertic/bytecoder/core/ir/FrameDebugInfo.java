@@ -19,7 +19,8 @@ public class FrameDebugInfo extends ControlTokenConsumer {
 
     public final Frame frame;
 
-    public FrameDebugInfo(final Frame frame) {
+    FrameDebugInfo(final Graph owner, final Frame frame) {
+        super(owner);
         this.frame = frame;
     }
 }

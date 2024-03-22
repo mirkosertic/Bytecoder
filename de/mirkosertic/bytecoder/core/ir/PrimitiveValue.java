@@ -17,9 +17,14 @@ package de.mirkosertic.bytecoder.core.ir;
 
 import org.objectweb.asm.Type;
 
-public class PrimitiveValue extends Value implements Constant {
+public abstract class PrimitiveValue extends Value {
 
-    public PrimitiveValue(final Type type) {
-        super(type);
+    PrimitiveValue(final Graph owner, final Type type) {
+        super(owner, type);
+    }
+
+    @Override
+    public boolean isConstant() {
+        return true;
     }
 }

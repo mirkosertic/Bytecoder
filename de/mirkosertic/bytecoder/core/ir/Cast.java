@@ -19,7 +19,7 @@ import org.objectweb.asm.Type;
 
 public class Cast extends Value {
 
-    public Cast(final Type type) {
-        super(type);
+    Cast(final Graph owner, final Type type) {
+        super(owner, type);
     }
 }

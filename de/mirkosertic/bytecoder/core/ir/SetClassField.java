@@ -19,7 +19,8 @@ public class SetClassField extends ControlTokenConsumer implements PotentialSide
 
     public final ResolvedField field;
 
-    public SetClassField(final ResolvedField field) {
+    SetClassField(final Graph owner, final ResolvedField field) {
+        super(owner);
         this.field = field;
     }
 

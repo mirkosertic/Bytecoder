@@ -17,10 +17,10 @@ package de.mirkosertic.bytecoder.core.ir;
 
 import org.objectweb.asm.Type;
 
-public class AbstractVar extends Value {
+public abstract class AbstractVar extends Value {
 
-    public AbstractVar(final Type value) {
-        super(value);
+    AbstractVar(final Graph owner, final Type value) {
+        super(owner, value);
     }
 
     @Override

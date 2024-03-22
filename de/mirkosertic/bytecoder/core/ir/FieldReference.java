@@ -19,8 +19,8 @@ public class FieldReference extends Reference {
 
     public final ResolvedField resolvedField;
 
-    public FieldReference(final ResolvedField resolvedField, final Kind kind) {
-        super(resolvedField.type, kind);
+    FieldReference(final Graph owner, final ResolvedField resolvedField, final Kind kind) {
+        super(owner, resolvedField.type, kind);
         this.resolvedField = resolvedField;
     }
 

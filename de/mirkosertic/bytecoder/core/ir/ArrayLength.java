@@ -19,7 +19,7 @@ import org.objectweb.asm.Type;
 
 public class ArrayLength extends Value {
 
-    public ArrayLength() {
-        super(Type.INT_TYPE);
+    ArrayLength(final Graph owner) {
+        super(owner, Type.INT_TYPE);
     }
 }

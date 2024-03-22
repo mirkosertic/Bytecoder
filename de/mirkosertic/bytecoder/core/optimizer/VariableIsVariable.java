@@ -21,22 +21,19 @@ public class VariableIsVariable implements Optimizer {
 
         // We search for Constants and Variables A and check if they are copied to a variable B.
         // In this case, the variable B is redundant and can be replaced with A.
-        g.nodes().stream().filter(t -> (t instanceof Copy) && t.incomingDataFlows[0] instanceof Variable && t.outgoingFlows[0] instanceof Variable).map(t -> (Copy) t).forEach(workingQueue::push);
+        g.nodes().stream().filter(t -> (t instanceof Copy) && t.incomingDataFlows[0] instanceof Variable && g.outgoingDataFlowsFor(t)[0] instanceof Variable).map(t -> (Copy) t).forEach(workingQueue::push);
 
         // We perform a recursive search across the invocation graph
         while (!workingQueue.isEmpty()) {
             final Copy workingItem = workingQueue.pop();
             final Variable source = (Variable) workingItem.incomingDataFlows[0];
-            final Variable target = (Variable) workingItem.outgoingFlows[0];
+            final Variable target = (Variable) g.outgoingDataFlowsFor(workingItem)[0];
 
-            if (source.outgoingFlows.length == 1) {
+            if (g.outgoingDataFlowsFor(source).length == 1) {
                 // Step 1 : Remove copy from control flow
                 workingItem.deleteFromControlFlow();
 
                 // Correct dataflow
-                source.removeFromOutgoingData(workingItem);
-                workingItem.removeFromOutgoingData(target);
-
                 g.remapDataFlow(target, source);
 
                 g.deleteNode(workingItem);

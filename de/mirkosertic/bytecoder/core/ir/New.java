@@ -19,7 +19,7 @@ import org.objectweb.asm.Type;
 
 public class New extends Value {
 
-    public New(final Type type) {
-        super(type);
+    New(final Graph owner, final Type type) {
+        super(owner, type);
     }
 }

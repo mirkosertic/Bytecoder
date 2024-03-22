@@ -29,9 +29,9 @@ public class BootstrapMethod extends Value {
 
     public final Reference.Kind kind;
 
-    public BootstrapMethod(final Type methodType, final Type className, final String methodName,
+    BootstrapMethod(final Graph owner, final Type methodType, final Type className, final String methodName,
                            final MethodReference.Kind kind) {
-        super(Type.getType(CallSite.class));
+        super(owner, Type.getType(CallSite.class));
         this.methodType = methodType;
         this.className = className;
         this.methodName = methodName;

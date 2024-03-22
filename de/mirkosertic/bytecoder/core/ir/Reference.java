@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.core.ir;
 
 import org.objectweb.asm.Type;
 
-public class Reference extends PrimitiveValue {
+public abstract class Reference extends PrimitiveValue {
 
     public enum Kind {
 
@@ -36,8 +36,8 @@ public class Reference extends PrimitiveValue {
 
     public final FieldReference.Kind kind;
 
-    public Reference(final Type type, final FieldReference.Kind kind) {
-        super(type);
+    Reference(final Graph owner, final Type type, final FieldReference.Kind kind) {
+        super(owner, type);
         this.kind = kind;
     }
 }

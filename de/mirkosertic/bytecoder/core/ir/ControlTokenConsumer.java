@@ -25,7 +25,8 @@ public abstract class ControlTokenConsumer extends Node {
     public final Map<Projection, ControlTokenConsumer> controlFlowsTo;
     public final Set<ControlTokenConsumer> controlComingFrom;
 
-    public ControlTokenConsumer() {
+    ControlTokenConsumer(final Graph owner) {
+        super(owner);
         controlFlowsTo = new HashMap<>();
         controlComingFrom = new HashSet<>();
     }

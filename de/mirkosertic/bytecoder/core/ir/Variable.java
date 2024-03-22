@@ -19,12 +19,7 @@ import org.objectweb.asm.Type;
 
 public class Variable extends AbstractVar {
 
-    public Variable(final Type value) {
-        super(value);
-    }
-
-    @Override
-    public String additionalDebugInfo() {
-        return ": " + type;
+    Variable(final Graph owner, final Type value) {
+        super(owner, value);
     }
 }

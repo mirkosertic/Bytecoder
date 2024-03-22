@@ -21,8 +21,8 @@ public class PrimitiveLong extends PrimitiveValue {
 
     public final long value;
 
-    public PrimitiveLong(final long value) {
-        super(Type.LONG_TYPE);
+    PrimitiveLong(final Graph owner, final long value) {
+        super(owner, Type.LONG_TYPE);
         this.value = value;
     }
 

@@ -19,7 +19,7 @@ import org.objectweb.asm.Type;
 
 public class CMP extends Value {
 
-    public CMP() {
-        super(Type.INT_TYPE);
+    CMP(final Graph owner) {
+        super(owner, Type.INT_TYPE);
     }
 }

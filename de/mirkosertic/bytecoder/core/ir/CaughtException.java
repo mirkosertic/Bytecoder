@@ -17,9 +17,14 @@ package de.mirkosertic.bytecoder.core.ir;
 
 import org.objectweb.asm.Type;
 
-public class CaughtException extends Value implements Constant {
+public class CaughtException extends Value {
 
-    public CaughtException(final Type value) {
-        super(value);
+    CaughtException(final Graph owner, final Type value) {
+        super(owner, value);
+    }
+
+    @Override
+    public boolean isConstant() {
+        return true;
     }
 }

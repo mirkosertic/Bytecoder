@@ -23,7 +23,8 @@ public class NumericalTest extends Test {
 
     public final Operation operation;
 
-    public NumericalTest(final Operation operation) {
+    NumericalTest(final Graph owner, final Operation operation) {
+        super(owner);
         this.operation = operation;
     }
 

@@ -17,10 +17,10 @@ package de.mirkosertic.bytecoder.core.ir;
 
 import org.objectweb.asm.Type;
 
-public class This extends Value implements Constant {
+public class This extends Value {
 
-    public This(final Type type) {
-        super(type);
+    This(final Graph owner, final Type type) {
+        super(owner, type);
     }
 
     @Override

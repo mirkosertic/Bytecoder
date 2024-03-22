@@ -15,20 +15,17 @@
  */
 package de.mirkosertic.bytecoder.core.ir;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-public class Node {
+public abstract class Node {
 
     public Node[] incomingDataFlows;
-    public Node[] outgoingFlows;
 
     boolean error;
 
-    public Node() {
+    final Graph owner;
+
+    Node(final Graph owner) {
+        this.owner = owner;
         this.incomingDataFlows = new Node[0];
-        this.outgoingFlows = new Node[0];
     }
 
     public String additionalDebugInfo() {
@@ -36,13 +33,6 @@ public class Node {
     }
 
     public void addIncomingData(final Node... nodes) {
-        addIncomingDataNoInternal(nodes);
-        for (final Node n : nodes) {
-            n.addOutgoingData(this);
-        }
-    }
-
-    private void addIncomingDataNoInternal(final Node... nodes) {
         if (incomingDataFlows.length == 0) {
             incomingDataFlows = nodes;
         } else {
@@ -53,44 +43,19 @@ public class Node {
         }
     }
 
-    public void addOutgoingData(final Node node) {
-        for (final Node n : outgoingFlows) {
-            if (n == node) {
-                return;
-            }
-        }
-        if (outgoingFlows.length == 0) {
-            outgoingFlows = new Node[] {node};
-        } else {
-            final Node[] newData = new Node[outgoingFlows.length + 1];
-            System.arraycopy(outgoingFlows, 0, newData, 0, outgoingFlows.length);
-            newData[outgoingFlows.length] = node;
-            outgoingFlows = newData;
-        }
+    public Node[] outgoingDataFlows() {
+        return owner.outgoingDataFlowsFor(this);
     }
 
-    public void removeFromOutgoingData(final Node node) {
-        final List<Node> l = new ArrayList<>(Arrays.asList(outgoingFlows));
-        l.remove(node);
-        outgoingFlows = l.toArray(new Node[0]);
-    }
-
-    public boolean remapDataFlow(final Node original, final Node newValue) {
-        boolean changed = false;
+    public void remapDataFlow(final Node original, final Node newValue) {
         for (int i = 0; i < incomingDataFlows.length; i++) {
             if (incomingDataFlows[i] == original) {
                 incomingDataFlows[i] = newValue;
-                newValue.addOutgoingData(this);
-                changed = true;
             }
         }
-        for (int i = 0; i < outgoingFlows.length; i++) {
-            if (outgoingFlows[i] == original) {
-                outgoingFlows[i] = newValue;
-                newValue.addIncomingDataNoInternal(this);
-                changed = true;
-            }
-        }
-        return changed;
+    }
+
+    public boolean isConstant() {
+        return false;
     }
 }

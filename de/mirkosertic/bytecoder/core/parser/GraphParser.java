@@ -174,7 +174,7 @@ public class GraphParser {
         final Type methodType = Type.getMethodType(methodNode.desc);
 
         final Frame startFrame = new Frame(initialLocals, initialStack);
-        final Region startRegion = (Region) graph.register(new Region(Graph.START_REGION_NAME));
+        final Region startRegion = graph.newStartRegion();
 
         ControlTokenConsumer start = startRegion;
         int localIndex = 0;

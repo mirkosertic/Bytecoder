@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.core.ir;
 
 public class Goto extends ControlTokenConsumer {
 
-    public Goto() {
+    Goto(final Graph owner) {
+        super(owner);
     }
 }

@@ -1268,7 +1268,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     public void write(final SetInstanceField node) {
 
         writeIndent();
-        writeExpression(node.outgoingFlows[0]);
+        writeExpression(node.outgoingDataFlows()[0]);
         pw.print(".");
         pw.print(generateFieldName(node.field.name));
         pw.print(" = ");
@@ -1280,7 +1280,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     public void write(final SetClassField node) {
 
         writeIndent();
-        writeExpression(node.outgoingFlows[0]);
+        writeExpression(node.outgoingDataFlows()[0]);
         pw.print(".");
         pw.print(generateFieldName(node.field.name));
         pw.print(" = ");
@@ -1779,7 +1779,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     @Override
     public void write(final Copy node) {
         writeIndent();
-        final Value target = (Value) node.outgoingFlows[0];
+        final Value target = (Value) node.outgoingDataFlows()[0];
         final Node value = node.incomingDataFlows[0];
         if (target instanceof AbstractVar) {
             pw.print(variableToName.get(target));
