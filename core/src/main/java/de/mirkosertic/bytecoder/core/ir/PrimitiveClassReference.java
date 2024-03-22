@@ -21,8 +21,8 @@ public class PrimitiveClassReference extends Value {
 
     public final Type referenceType;
 
-    public PrimitiveClassReference(final Type type) {
-        super(Type.getType(Class.class));
+    PrimitiveClassReference(final Graph owner, final Type type) {
+        super(owner, Type.getType(Class.class));
         this.referenceType = type;
     }
 }

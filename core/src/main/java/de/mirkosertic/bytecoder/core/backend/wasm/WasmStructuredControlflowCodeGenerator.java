@@ -2450,7 +2450,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     @Override
     public void write(final Copy node) {
         final Value value = (Value) node.incomingDataFlows[0];
-        final Node target = node.outgoingFlows[0];
+        final Node target = node.outgoingDataFlows()[0];
         if (target instanceof AbstractVar) {
             final AbstractVar targetVar = (AbstractVar) target;
             final Local local = varLocalMap.get(targetVar);
@@ -2590,7 +2590,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 final StructType objectType = module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class)));
                 activeLevel.activeFlow.setStruct(
                         structType,
-                        ConstExpressions.ref.cast(structType, toWasmValue((Value) node.outgoingFlows[0])),
+                        ConstExpressions.ref.cast(structType, toWasmValue((Value) node.outgoingDataFlows()[0])),
                         WasmHelpers.generateFieldName(field.name),
                         ConstExpressions.ref.cast(objectType, toWasmValue((Value) node.incomingDataFlows[0]))
                 );
@@ -2599,7 +2599,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             default: {
                 activeLevel.activeFlow.setStruct(
                         structType,
-                        ConstExpressions.ref.cast(structType, toWasmValue((Value) node.outgoingFlows[0])),
+                        ConstExpressions.ref.cast(structType, toWasmValue((Value) graph.outgoingDataFlowsFor(node)[0])),
                         WasmHelpers.generateFieldName(field.name),
                         toWasmValue((Value) node.incomingDataFlows[0])
                 );
@@ -2621,7 +2621,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 final StructType objectType = module.getTypes().structTypeByName(WasmHelpers.generateClassName(Type.getType(Object.class)));
                 activeLevel.activeFlow.setStruct(
                         structType,
-                        ConstExpressions.ref.cast(structType, toWasmValue((Value) node.outgoingFlows[0])),
+                        ConstExpressions.ref.cast(structType, toWasmValue((Value) node.outgoingDataFlows()[0])),
                         WasmHelpers.generateFieldName(field.name),
                         ConstExpressions.ref.cast(objectType, toWasmValue((Value) node.incomingDataFlows[0]))
                 );
@@ -2630,7 +2630,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             default: {
                 activeLevel.activeFlow.setStruct(
                         structType,
-                        ConstExpressions.ref.cast(structType, toWasmValue((Value) node.outgoingFlows[0])),
+                        ConstExpressions.ref.cast(structType, toWasmValue((Value) node.outgoingDataFlows()[0])),
                         WasmHelpers.generateFieldName(field.name),
                         toWasmValue((Value) node.incomingDataFlows[0])
                 );

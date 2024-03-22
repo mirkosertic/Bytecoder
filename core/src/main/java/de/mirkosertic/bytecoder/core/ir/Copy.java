@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.core.ir;
 
 public class Copy extends ControlTokenConsumer {
 
-    public Copy() {
+    Copy(final Graph owner) {
+        super(owner);
     }
 }

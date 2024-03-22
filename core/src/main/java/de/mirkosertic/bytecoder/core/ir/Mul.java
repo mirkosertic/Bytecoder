@@ -19,7 +19,7 @@ import org.objectweb.asm.Type;
 
 public class Mul extends Value {
 
-    public Mul(final Type type) {
-        super(type);
+    Mul(final Graph owner, final Type type) {
+        super(owner, type);
     }
 }

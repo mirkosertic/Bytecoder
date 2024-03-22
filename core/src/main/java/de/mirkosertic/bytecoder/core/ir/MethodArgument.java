@@ -17,12 +17,12 @@ package de.mirkosertic.bytecoder.core.ir;
 
 import org.objectweb.asm.Type;
 
-public class MethodArgument extends Value implements Constant {
+public class MethodArgument extends Value {
 
     public final int index;
 
-    public MethodArgument(final Type type, final int index) {
-        super(type);
+    MethodArgument(final Graph owner, final Type type, final int index) {
+        super(owner, type);
 
         this.index = index;
     }

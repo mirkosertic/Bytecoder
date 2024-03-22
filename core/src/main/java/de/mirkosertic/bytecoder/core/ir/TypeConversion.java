@@ -19,7 +19,7 @@ import org.objectweb.asm.Type;
 
 public class TypeConversion extends Value {
 
-    public TypeConversion(final Type type) {
-        super(type);
+    TypeConversion(final Graph owner, final Type type) {
+        super(owner, type);
     }
 }

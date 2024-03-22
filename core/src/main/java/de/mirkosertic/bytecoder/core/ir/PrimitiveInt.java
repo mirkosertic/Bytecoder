@@ -20,8 +20,8 @@ public class PrimitiveInt extends PrimitiveValue {
 
     public final int value;
 
-    public PrimitiveInt(final int value) {
-        super(Type.INT_TYPE);
+    PrimitiveInt(final Graph owner, final int value) {
+        super(owner, Type.INT_TYPE);
         this.value = value;
     }
 

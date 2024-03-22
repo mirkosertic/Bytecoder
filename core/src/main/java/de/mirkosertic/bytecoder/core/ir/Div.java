@@ -19,7 +19,7 @@ import org.objectweb.asm.Type;
 
 public class Div extends Value {
 
-    public Div(final Type type) {
-        super(type);
+    Div(final Graph owner, final Type type) {
+        super(owner, type);
     }
 }

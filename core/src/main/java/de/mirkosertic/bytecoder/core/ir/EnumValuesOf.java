@@ -19,7 +19,7 @@ import org.objectweb.asm.Type;
 
 public class EnumValuesOf extends Value {
 
-    public EnumValuesOf(final Type type) {
-        super(type);
+    EnumValuesOf(final Graph owner, final Type type) {
+        super(owner, type);
     }
 }

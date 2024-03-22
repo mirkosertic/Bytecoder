@@ -21,7 +21,8 @@ public class Region extends ControlTokenConsumer {
 
     public Frame frame;
 
-    public Region(final String label) {
+    Region(final Graph owner, final String label) {
+        super(owner);
         this.label = label;
     }
 

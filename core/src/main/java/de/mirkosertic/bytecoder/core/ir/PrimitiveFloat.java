@@ -21,8 +21,8 @@ public class PrimitiveFloat extends PrimitiveValue {
 
     public final float value;
 
-    public PrimitiveFloat(final float value) {
-        super(Type.FLOAT_TYPE);
+    PrimitiveFloat(final Graph owner, final float value) {
+        super(owner, Type.FLOAT_TYPE);
         this.value = value;
     }
 

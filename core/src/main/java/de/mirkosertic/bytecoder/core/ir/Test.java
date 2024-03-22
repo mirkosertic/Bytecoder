@@ -19,7 +19,7 @@ import org.objectweb.asm.Type;
 
 public abstract class Test extends Value {
 
-    public Test() {
-        super(Type.BOOLEAN_TYPE);
+    Test(final Graph owner) {
+        super(owner, Type.BOOLEAN_TYPE);
     }
 }

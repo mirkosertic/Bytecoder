@@ -20,7 +20,7 @@ public class DeleteRedundantVariablesTest {
     @Test
     public void test() throws IOException {
         final Graph g = new Graph(new Slf4JLogger());
-        final Region startRegion = (Region) g.register(new Region(Graph.START_REGION_NAME));
+        final Region startRegion = g.newStartRegion();
 
         final Variable v1 = g.newVariable(Type.INT_TYPE);
         final Copy copy1 = g.newCopy();

@@ -17,14 +17,19 @@ package de.mirkosertic.bytecoder.core.ir;
 
 import org.objectweb.asm.Type;
 
-public class TypeReference extends Value implements Constant {
+public class TypeReference extends Value {
 
-    public TypeReference(final Type type) {
-        super(type);
+    TypeReference(final Graph owner, final Type type) {
+        super(owner, type);
     }
 
     @Override
     public String additionalDebugInfo() {
         return ": " + type;
+    }
+
+    @Override
+    public boolean isConstant() {
+        return true;
     }
 }

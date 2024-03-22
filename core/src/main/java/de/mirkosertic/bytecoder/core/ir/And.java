@@ -19,7 +19,7 @@ import org.objectweb.asm.Type;
 
 public class And extends Value {
 
-    public And(final Type type) {
-        super(type);
+    And(final Graph owner, final Type type) {
+        super(owner, type);
     }
 }

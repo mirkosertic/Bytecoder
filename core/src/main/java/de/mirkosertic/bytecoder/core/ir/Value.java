@@ -17,11 +17,12 @@ package de.mirkosertic.bytecoder.core.ir;
 
 import org.objectweb.asm.Type;
 
-public class Value extends Node {
+public abstract class Value extends Node {
 
     public final Type type;
 
-    public Value(final Type type) {
+    public Value(final Graph owner,final Type type) {
+        super(owner);
         this.type = type;
     }
 }

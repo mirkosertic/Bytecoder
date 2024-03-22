@@ -20,7 +20,8 @@ public class TableSwitch extends ControlTokenConsumer {
     public final int min;
     public final int max;
 
-    public TableSwitch(final int min, final int max) {
+    TableSwitch(final Graph owner, final int min, final int max) {
+        super(owner);
         this.min = min;
         this.max = max;
     }

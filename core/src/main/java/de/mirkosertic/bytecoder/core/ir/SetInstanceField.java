@@ -19,7 +19,8 @@ public class SetInstanceField extends ControlTokenConsumer implements PotentialS
 
     public final ResolvedField field;
 
-    public SetInstanceField(final ResolvedField field) {
+    SetInstanceField(final Graph owner, final ResolvedField field) {
+        super(owner);
         this.field = field;
     }
 

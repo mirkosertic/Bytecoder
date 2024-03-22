@@ -17,9 +17,14 @@ package de.mirkosertic.bytecoder.core.ir;
 
 import org.objectweb.asm.Type;
 
-public class NullReference extends Value implements Constant {
+public class NullReference extends Value {
 
-    public NullReference() {
-        super(Type.getType(Object.class));
+    NullReference(final Graph owner) {
+        super(owner, Type.getType(Object.class));
+    }
+
+    @Override
+    public boolean isConstant() {
+        return true;
     }
 }

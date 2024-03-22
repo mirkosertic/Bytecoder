@@ -23,9 +23,8 @@ public class ClassInitialization extends ControlTokenConsumer {
 
     public boolean skip;
 
-    public ClassInitialization(final Type type) {
+    ClassInitialization(final Graph owner, final Type type) {
+        super(owner);
         this.type = type;
     }
-
-
 }

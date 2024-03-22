@@ -6,7 +6,6 @@ import de.mirkosertic.bytecoder.core.backend.js.JSStructuredControlflowCodeGener
 import de.mirkosertic.bytecoder.core.backend.sequencer.DominatorTree;
 import de.mirkosertic.bytecoder.core.backend.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.core.backend.wasm.WasmIntrinsics;
-import de.mirkosertic.bytecoder.core.ir.Constant;
 import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.Node;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
@@ -66,7 +65,7 @@ public class IRExport {
 //        new VariableIsConstant().optimize(compileUnit, method);
 
         // Drop no longer used constants
-        for (final Node unusedConstant : g.nodes().stream().filter(t -> ((t instanceof Constant) && t.outgoingFlows.length == 0)).collect(Collectors.toList())) {
+        for (final Node unusedConstant : g.nodes().stream().filter(t -> ((t.isConstant()) && g.outgoingDataFlowsFor(t).length == 0)).collect(Collectors.toList())) {
             g.deleteNode(unusedConstant);
         }
 

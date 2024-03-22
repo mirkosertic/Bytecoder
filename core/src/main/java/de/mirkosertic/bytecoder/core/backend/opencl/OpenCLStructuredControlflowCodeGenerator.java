@@ -479,7 +479,7 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
 
         writeIndent();
         if (node.field.owner != cl) {
-            writeExpression(node.outgoingFlows[0]);
+            writeExpression(node.outgoingDataFlows()[0]);
             pw.print(".");
         }
         pw.print(OpenCLHelpers.generateFieldName(node.field.name));
@@ -615,7 +615,7 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
     @Override
     public void write(final Copy node) {
         writeIndent();
-        final Node target = node.outgoingFlows[0];
+        final Node target = node.outgoingDataFlows()[0];
         final Node value = node.incomingDataFlows[0];
         if (target instanceof AbstractVar) {
             pw.print(variableToName.get(target));

@@ -23,7 +23,8 @@ public class NullTest extends Test {
 
     public final Operation operation;
 
-    public NullTest(final Operation operation) {
+    NullTest(final Graph owner, final Operation operation) {
+        super(owner);
         this.operation = operation;
     }
 

@@ -19,8 +19,8 @@ import org.objectweb.asm.Type;
 
 public class MethodType extends PrimitiveValue {
 
-    public MethodType(final Type type) {
-        super(type);
+    MethodType(final Graph owner, final Type type) {
+        super(owner, type);
     }
 
 

@@ -19,7 +19,7 @@ import org.objectweb.asm.Type;
 
 public class NewArray extends Value {
 
-    public NewArray(final Type type) {
-        super(type);
+    NewArray(final Graph owner, final Type type) {
+        super(owner, type);
     }
 }

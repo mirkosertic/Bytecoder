@@ -23,7 +23,8 @@ public class ReferenceTest extends Test {
 
     public final Operation operation;
 
-    public ReferenceTest(final Operation operation) {
+    ReferenceTest(final Graph owner, final Operation operation) {
+        super(owner);
         this.operation = operation;
     }
 

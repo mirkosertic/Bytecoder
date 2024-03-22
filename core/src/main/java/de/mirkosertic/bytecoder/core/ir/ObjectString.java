@@ -17,17 +17,22 @@ package de.mirkosertic.bytecoder.core.ir;
 
 import org.objectweb.asm.Type;
 
-public class ObjectString extends Value implements Constant {
+public class ObjectString extends Value {
 
     public final StringConstant value;
 
-    public ObjectString(final StringConstant value) {
-        super(Type.getObjectType("java/lang/String"));
+    ObjectString(final Graph owner, final StringConstant value) {
+        super(owner, Type.getObjectType("java/lang/String"));
         this.value = value;
     }
 
     @Override
     public String additionalDebugInfo() {
         return ": " + value.index;
+    }
+
+    @Override
+    public boolean isConstant() {
+        return true;
     }
 }

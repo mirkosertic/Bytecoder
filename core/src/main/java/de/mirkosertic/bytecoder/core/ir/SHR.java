@@ -19,7 +19,7 @@ import org.objectweb.asm.Type;
 
 public class SHR extends Value {
 
-    public SHR(final Type type) {
-        super(type);
+    SHR(final Graph owner, final Type type) {
+        super(owner, type);
     }
 }

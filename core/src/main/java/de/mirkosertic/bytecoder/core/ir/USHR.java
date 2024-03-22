@@ -19,7 +19,7 @@ import org.objectweb.asm.Type;
 
 public class USHR extends Value {
 
-    public USHR(final Type type) {
-        super(type);
+    USHR(final Graph owner, final Type type) {
+        super(owner, type);
     }
 }

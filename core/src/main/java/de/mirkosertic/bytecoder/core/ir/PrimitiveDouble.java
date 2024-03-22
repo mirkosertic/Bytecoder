@@ -21,8 +21,8 @@ public class PrimitiveDouble extends PrimitiveValue {
 
     public final double value;
 
-    public PrimitiveDouble(final double value) {
-        super(Type.DOUBLE_TYPE);
+    PrimitiveDouble(final Graph owner, final double value) {
+        super(owner, Type.DOUBLE_TYPE);
         this.value = value;
     }
 

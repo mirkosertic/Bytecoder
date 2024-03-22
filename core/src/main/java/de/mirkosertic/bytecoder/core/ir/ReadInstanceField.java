@@ -21,8 +21,8 @@ public class ReadInstanceField extends Value {
 
     public final ResolvedField resolvedField;
 
-    public ReadInstanceField(final Type type, final ResolvedField resolvedField) {
-        super(type);
+    ReadInstanceField(final Graph owner, final Type type, final ResolvedField resolvedField) {
+        super(owner, type);
         this.resolvedField = resolvedField;
     }
 

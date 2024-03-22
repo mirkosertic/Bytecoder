@@ -19,7 +19,7 @@ import org.objectweb.asm.Type;
 
 public class Rem extends Value {
 
-    public Rem(final Type type) {
-        super(type);
+    Rem(final Graph owner, final Type type) {
+        super(owner, type);
     }
 }

@@ -20,8 +20,8 @@ public class MethodReference extends Reference {
 
     public final ResolvedMethod resolvedMethod;
 
-    public MethodReference(final ResolvedMethod resolvedMethod, final Kind kind) {
-        super(resolvedMethod.methodType, kind);
+    MethodReference(final Graph owner, final ResolvedMethod resolvedMethod, final Kind kind) {
+        super(owner, resolvedMethod.methodType, kind);
         this.resolvedMethod = resolvedMethod;
     }
 
