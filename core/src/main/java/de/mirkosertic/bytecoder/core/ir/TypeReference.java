@@ -20,7 +20,7 @@ import org.objectweb.asm.Type;
 public class TypeReference extends Value {
 
     TypeReference(final Graph owner, final Type type) {
-        super(owner, type);
+        super(owner, type, NodeType.TypeReference);
     }
 
     @Override

@@ -24,7 +24,7 @@ public class NumericalTest extends Test {
     public final Operation operation;
 
     NumericalTest(final Graph owner, final Operation operation) {
-        super(owner);
+        super(owner, NodeType.NumericalTest);
         this.operation = operation;
     }
 

@@ -20,6 +20,6 @@ import org.objectweb.asm.Type;
 public class Variable extends AbstractVar {
 
     Variable(final Graph owner, final Type value) {
-        super(owner, value);
+        super(owner, value, NodeType.Variable);
     }
 }

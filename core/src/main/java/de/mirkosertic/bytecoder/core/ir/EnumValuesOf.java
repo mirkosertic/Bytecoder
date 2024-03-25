@@ -20,6 +20,6 @@ import org.objectweb.asm.Type;
 public class EnumValuesOf extends Value {
 
     EnumValuesOf(final Graph owner, final Type type) {
-        super(owner, type);
+        super(owner, type, NodeType.EnumValuesOf);
     }
 }

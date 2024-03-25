@@ -22,7 +22,7 @@ public class ObjectString extends Value {
     public final StringConstant value;
 
     ObjectString(final Graph owner, final StringConstant value) {
-        super(owner, Type.getObjectType("java/lang/String"));
+        super(owner, Type.getObjectType("java/lang/String"), NodeType.ObjectString);
         this.value = value;
     }
 

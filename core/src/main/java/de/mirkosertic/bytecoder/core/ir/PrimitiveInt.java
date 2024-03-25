@@ -21,7 +21,7 @@ public class PrimitiveInt extends PrimitiveValue {
     public final int value;
 
     PrimitiveInt(final Graph owner, final int value) {
-        super(owner, Type.INT_TYPE);
+        super(owner, Type.INT_TYPE, NodeType.PrimitiveInt);
         this.value = value;
     }
 

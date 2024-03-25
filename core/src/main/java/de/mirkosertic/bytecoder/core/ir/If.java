@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.ir;
 public class If extends ControlTokenConsumer {
 
     If(final Graph owner) {
-        super(owner);
+        super(owner, NodeType.If);
     }
 }

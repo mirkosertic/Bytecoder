@@ -18,6 +18,10 @@ package de.mirkosertic.bytecoder.core.ir;
 public class Copy extends ControlTokenConsumer {
 
     Copy(final Graph owner) {
-        super(owner);
+        super(owner, NodeType.Copy);
+    }
+
+    public void deleteFromControlFlow() {
+        owner.deleteFromControlFlowInternally(this);
     }
 }

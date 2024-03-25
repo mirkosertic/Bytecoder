@@ -21,10 +21,12 @@ public class ClassInitialization extends ControlTokenConsumer {
 
     public final Type type;
 
-    public boolean skip;
-
     ClassInitialization(final Graph owner, final Type type) {
-        super(owner);
+        super(owner, NodeType.ClassInitialization);
         this.type = type;
+    }
+
+    public void deleteFromControlFlow() {
+        owner.deleteFromControlFlowInternally(this);
     }
 }

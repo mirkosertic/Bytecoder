@@ -31,7 +31,7 @@ public class BootstrapMethod extends Value {
 
     BootstrapMethod(final Graph owner, final Type methodType, final Type className, final String methodName,
                            final MethodReference.Kind kind) {
-        super(owner, Type.getType(CallSite.class));
+        super(owner, Type.getType(CallSite.class), NodeType.BootstrapMethod);
         this.methodType = methodType;
         this.className = className;
         this.methodName = methodName;

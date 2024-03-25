@@ -20,6 +20,6 @@ import org.objectweb.asm.Type;
 public class Neg extends Value {
 
     Neg(final Graph owner, final Type type) {
-        super(owner, type);
+        super(owner, type, NodeType.Neg);
     }
 }

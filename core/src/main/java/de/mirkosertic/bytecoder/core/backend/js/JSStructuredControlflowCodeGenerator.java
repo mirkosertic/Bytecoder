@@ -286,7 +286,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     @Override
     public void write(final ClassInitialization node) {
         final ResolvedClass tc = compileUnit.findClass(node.type);
-        if (tc.requiresClassInitializer() && !node.skip) {
+        if (tc.requiresClassInitializer()) {
             writeIndent();
             pw.print(generateClassName(node.type));
             pw.println(".$i;");

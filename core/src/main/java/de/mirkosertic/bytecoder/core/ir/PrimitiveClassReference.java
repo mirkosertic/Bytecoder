@@ -22,7 +22,7 @@ public class PrimitiveClassReference extends Value {
     public final Type referenceType;
 
     PrimitiveClassReference(final Graph owner, final Type type) {
-        super(owner, Type.getType(Class.class));
+        super(owner, Type.getType(Class.class), NodeType.PrimitiveClassReference);
         this.referenceType = type;
     }
 }

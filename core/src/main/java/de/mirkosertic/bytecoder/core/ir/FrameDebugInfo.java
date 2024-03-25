@@ -20,7 +20,7 @@ public class FrameDebugInfo extends ControlTokenConsumer {
     public final Frame frame;
 
     FrameDebugInfo(final Graph owner, final Frame frame) {
-        super(owner);
+        super(owner, NodeType.FrameDebugInfo);
         this.frame = frame;
     }
 }

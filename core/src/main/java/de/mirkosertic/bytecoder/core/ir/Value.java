@@ -21,8 +21,8 @@ public abstract class Value extends Node {
 
     public final Type type;
 
-    public Value(final Graph owner,final Type type) {
-        super(owner);
+    public Value(final Graph owner,final Type type, final NodeType nodeType) {
+        super(owner, nodeType);
         this.type = type;
     }
 }

@@ -20,7 +20,7 @@ public class LineNumberDebugInfo extends ControlTokenConsumer {
     public final int lineNumber;
 
     LineNumberDebugInfo(final Graph owner, final int lineNumber) {
-        super(owner);
+        super(owner, NodeType.LineNumberDebugInfo);
         this.lineNumber = lineNumber;
     }
 

@@ -455,4 +455,31 @@ public class Graph {
             n.remapDataFlow(original, newValue);
         }
     }
+
+    private void removeControlFlowTo(final ControlTokenConsumer source, final ControlTokenConsumer target) {
+        final Set<Projection> keysToRemove = new HashSet<>();
+        for (final Map.Entry<Projection, ControlTokenConsumer> entry : source.controlFlowsTo.entrySet()) {
+            if (entry.getValue() == target) {
+                keysToRemove.add(entry.getKey());
+            }
+        }
+        for (final Projection key : keysToRemove) {
+            source.controlFlowsTo.remove(key);
+        }
+    }
+
+    void deleteFromControlFlowInternally(final ControlTokenConsumer consumer) {
+        if (consumer.hasIncomingBackEdges()) {
+            throw new IllegalStateException("Cannot delete node with incoming back edges!");
+        }
+        for (final ControlTokenConsumer pred : consumer.controlComingFrom) {
+            for (final Map.Entry<Projection, ControlTokenConsumer> entry : consumer.controlFlowsTo.entrySet()) {
+                removeControlFlowTo(pred, consumer);
+                pred.addControlFlowTo(entry.getKey(), entry.getValue());
+
+                entry.getValue().controlComingFrom.remove(this);
+            }
+            consumer.controlComingFrom.remove(pred);
+        }
+    }
 }

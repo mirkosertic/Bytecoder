@@ -20,7 +20,7 @@ import org.objectweb.asm.Type;
 public class CaughtException extends Value {
 
     CaughtException(final Graph owner, final Type value) {
-        super(owner, value);
+        super(owner, value, NodeType.CaughtException);
     }
 
     @Override

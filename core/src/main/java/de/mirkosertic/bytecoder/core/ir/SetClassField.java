@@ -20,7 +20,7 @@ public class SetClassField extends ControlTokenConsumer implements PotentialSide
     public final ResolvedField field;
 
     SetClassField(final Graph owner, final ResolvedField field) {
-        super(owner);
+        super(owner, NodeType.SetClassField);
         this.field = field;
     }
 

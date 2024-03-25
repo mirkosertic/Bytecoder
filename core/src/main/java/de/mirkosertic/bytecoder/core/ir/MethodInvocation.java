@@ -26,7 +26,7 @@ public class MethodInvocation extends ControlTokenConsumer implements PotentialS
     public InvocationType invocationType;
 
     MethodInvocation(final Graph owner, final MethodInsnNode insnNode, final ResolvedMethod method, final InvocationType invocationType) {
-        super(owner);
+        super(owner, NodeType.MethodInvocation);
         this.insnNode = insnNode;
         this.method = method;
         this.invocationType = invocationType;

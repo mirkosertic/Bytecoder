@@ -23,6 +23,6 @@ import java.lang.invoke.CallSite;
 public class ResolveCallsite extends Value {
 
     ResolveCallsite(final Graph owner) {
-        super(owner, Type.getType(CallSite.class));
+        super(owner, Type.getType(CallSite.class), NodeType.ResolveCallsite);
     }
 }

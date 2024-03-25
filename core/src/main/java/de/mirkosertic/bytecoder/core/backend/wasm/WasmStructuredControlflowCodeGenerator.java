@@ -402,7 +402,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     @Override
     public void write(final ClassInitialization node) {
         final ResolvedClass cl = compileUnit.findClass(node.type);
-        if (cl.requiresClassInitializer() && !node.skip) {
+        if (cl.requiresClassInitializer()) {
             final String className = WasmHelpers.generateClassName(cl.type);
             final Callable initFunction = ConstExpressions.weakFunctionReference(className + "_i");
             activeLevel.activeFlow.drop(ConstExpressions.call(initFunction, Collections.emptyList()));

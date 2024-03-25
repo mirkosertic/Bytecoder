@@ -22,7 +22,7 @@ public class PrimitiveFloat extends PrimitiveValue {
     public final float value;
 
     PrimitiveFloat(final Graph owner, final float value) {
-        super(owner, Type.FLOAT_TYPE);
+        super(owner, Type.FLOAT_TYPE, NodeType.PrimitiveFloat);
         this.value = value;
     }
 

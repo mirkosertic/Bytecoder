@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.ir;
 public class ReturnValue extends ControlTokenConsumer {
 
     ReturnValue(final Graph owner) {
-        super(owner);
+        super(owner, NodeType.ReturnValue);
     }
 }

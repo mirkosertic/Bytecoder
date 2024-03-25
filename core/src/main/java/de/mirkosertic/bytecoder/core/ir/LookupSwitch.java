@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.ir;
 public class LookupSwitch extends ControlTokenConsumer {
 
     LookupSwitch(final Graph owner) {
-        super(owner);
+        super(owner, NodeType.LookupSwitch);
     }
 }

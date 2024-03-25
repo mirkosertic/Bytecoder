@@ -20,6 +20,6 @@ import org.objectweb.asm.Type;
 public class SHL extends Value {
 
     SHL(final Graph owner, final Type type) {
-        super(owner, type);
+        super(owner, type, NodeType.SHL);
     }
 }

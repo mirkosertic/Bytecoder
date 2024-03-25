@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.ir;
 public class TryCatch extends Region {
 
     TryCatch(final Graph owner, final String label) {
-        super(owner, label);
+        super(owner, label, NodeType.TryCatch);
     }
 }

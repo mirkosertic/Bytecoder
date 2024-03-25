@@ -25,8 +25,8 @@ public abstract class ControlTokenConsumer extends Node {
     public final Map<Projection, ControlTokenConsumer> controlFlowsTo;
     public final Set<ControlTokenConsumer> controlComingFrom;
 
-    ControlTokenConsumer(final Graph owner) {
-        super(owner);
+    ControlTokenConsumer(final Graph owner, final NodeType nodeType) {
+        super(owner, nodeType);
         controlFlowsTo = new HashMap<>();
         controlComingFrom = new HashSet<>();
     }
@@ -49,40 +49,5 @@ public abstract class ControlTokenConsumer extends Node {
             }
         }
         return false;
-    }
-
-    public void removeControlFlowTo(final ControlTokenConsumer target) {
-        final Set<Projection> keysToRemove = new HashSet<>();
-        for (final Map.Entry<Projection, ControlTokenConsumer> entry : controlFlowsTo.entrySet()) {
-            if (entry.getValue() == target) {
-                keysToRemove.add(entry.getKey());
-            }
-        }
-        for (final Projection key : keysToRemove) {
-            controlFlowsTo.remove(key);
-        }
-    }
-
-    public void remapControlFlowTo(final ControlTokenConsumer original, final ControlTokenConsumer newToken) {
-        final Map<Projection, ControlTokenConsumer> newValues = new HashMap<>();
-        for (final Map.Entry<Projection, ControlTokenConsumer> entry : controlFlowsTo.entrySet()) {
-            if (entry.getValue() == original) {
-                newValues.put(entry.getKey(), newToken);
-                newToken.controlComingFrom.add(this);
-            }
-        }
-        controlFlowsTo.putAll(newValues);
-    }
-
-    public void deleteFromControlFlow() {
-        for (final ControlTokenConsumer pred : this.controlComingFrom) {
-            for (final Map.Entry<Projection, ControlTokenConsumer> entry : controlFlowsTo.entrySet()) {
-                pred.removeControlFlowTo(this);
-                pred.addControlFlowTo(entry.getKey(), entry.getValue());
-
-                entry.getValue().controlComingFrom.remove(this);
-            }
-            this.controlComingFrom.remove(pred);
-        }
     }
 }

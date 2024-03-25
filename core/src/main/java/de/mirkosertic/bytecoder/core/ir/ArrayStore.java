@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.ir;
 public class ArrayStore extends ControlTokenConsumer implements PotentialSideeffect {
 
     ArrayStore(final Graph owner) {
-        super(owner);
+        super(owner, NodeType.ArrayStore);
     }
 }
