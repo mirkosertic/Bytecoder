@@ -472,12 +472,12 @@ public class Graph {
         if (consumer.hasIncomingBackEdges()) {
             throw new IllegalStateException("Cannot delete node with incoming back edges!");
         }
-        for (final ControlTokenConsumer pred : consumer.controlComingFrom) {
+        for (final ControlTokenConsumer pred : new HashSet<>(consumer.controlComingFrom)) {
             for (final Map.Entry<Projection, ControlTokenConsumer> entry : consumer.controlFlowsTo.entrySet()) {
                 removeControlFlowTo(pred, consumer);
                 pred.addControlFlowTo(entry.getKey(), entry.getValue());
 
-                entry.getValue().controlComingFrom.remove(this);
+                entry.getValue().controlComingFrom.remove(consumer);
             }
             consumer.controlComingFrom.remove(pred);
         }
