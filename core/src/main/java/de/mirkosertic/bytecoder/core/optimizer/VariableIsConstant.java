@@ -3,6 +3,7 @@ package de.mirkosertic.bytecoder.core.optimizer;
 import de.mirkosertic.bytecoder.core.ir.Copy;
 import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.Node;
+import de.mirkosertic.bytecoder.core.ir.NodeType;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.ir.Variable;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
@@ -22,7 +23,7 @@ public class VariableIsConstant implements Optimizer {
 
         // We search for Constants and Variables A and check if they are copied to a variable B.
         // In this case, the variable B is redundant and can be replaced with A.
-        g.nodes().stream().filter(t -> (t instanceof Copy) && t.incomingDataFlows[0].isConstant() && g.outgoingDataFlowsFor(t)[0] instanceof Variable).map(t -> (Copy) t).forEach(workingQueue::push);
+        g.nodes().stream().filter(t -> (t.nodeType == NodeType.Copy) && t.incomingDataFlows[0].isConstant() && g.outgoingDataFlowsFor(t)[0].nodeType == NodeType.Variable).map(t -> (Copy) t).forEach(workingQueue::push);
 
         // We perform a recursive search across the invocation graph
         while (!workingQueue.isEmpty()) {

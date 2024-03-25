@@ -30,14 +30,14 @@ public enum Optimizations implements Optimizer {
                 //new VariableIsConstant(),
                 //new VariableIsVariable(),
                 new VirtualToDirectInvocation(),
-                new DeleteRedundantClassInitializations()
+                //new DeleteRedundantClassInitializations()
             }),
     ALL(new Optimizer[] {
             //new DeleteUnusedAbstractVar(),
             //new VariableIsConstant(),
             //new VariableIsVariable(),
             new VirtualToDirectInvocation(),
-            new DeleteRedundantClassInitializations()
+            //new DeleteRedundantClassInitializations()
     }),
     ;
 
