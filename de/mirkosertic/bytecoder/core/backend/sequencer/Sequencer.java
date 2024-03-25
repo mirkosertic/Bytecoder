@@ -30,7 +30,6 @@ import de.mirkosertic.bytecoder.core.ir.MethodInvocation;
 import de.mirkosertic.bytecoder.core.ir.MonitorEnter;
 import de.mirkosertic.bytecoder.core.ir.MonitorExit;
 import de.mirkosertic.bytecoder.core.ir.Node;
-import de.mirkosertic.bytecoder.core.ir.Nop;
 import de.mirkosertic.bytecoder.core.ir.Projection;
 import de.mirkosertic.bytecoder.core.ir.Region;
 import de.mirkosertic.bytecoder.core.ir.Return;
@@ -106,77 +105,115 @@ public class Sequencer {
         };
 
         while (current != null) {
-            if (current instanceof TryCatch) {
-                // Special-Case : branching
-                visit((TryCatch) current, activeStack);
-                current = null;
-            } else if (current instanceof If) {
-                // Special-Case : branching
-                visit((If) current, activeStack);
-                current = null;
-            } else if (current instanceof TableSwitch) {
-                // Special-Case : branching
-                visit((TableSwitch) current, activeStack);
-                current = null;
-            } else if (current instanceof LookupSwitch) {
-                // Special-Case : branching
-                visit((LookupSwitch) current, activeStack);
-                current = null;
-            } else {
-                // Regular case
-                if (current instanceof Region) {
+            switch (current.nodeType) {
+                case TryCatch: {
+                    // Special-Case : branching
+                    visit((TryCatch) current, activeStack);
+                    current = null;
+                    break;
+                }
+                case If: {
+                    // Special-Case : branching
+                    visit((If) current, activeStack);
+                    current = null;
+                    break;
+                }
+                case TableSwitch: {
+                    // Special-Case : branching
+                    visit((TableSwitch) current, activeStack);
+                    current = null;
+                    break;
+                }
+                case LookupSwitch: {
+                    // Special-Case : branching
+                    visit((LookupSwitch) current, activeStack);
+                    current = null;
+                    break;
+                }
+                case Region: {
                     visit((Region) current, activeStack);
                     current = followUpProcessor.apply(current);
-                } else if (current instanceof MethodInvocation) {
+                    break;
+                }
+                case MethodInvocation: {
                     codegenerator.write((MethodInvocation) current);
                     current = followUpProcessor.apply(current);
-                } else if (current instanceof Copy) {
+                    break;
+                }
+                case Copy: {
                     codegenerator.write((Copy) current);
                     current = followUpProcessor.apply(current);
-                } else if (current instanceof Return) {
+                    break;
+                }
+                case Return: {
                     codegenerator.write((Return) current);
                     // We are finished here
                     current = null;
-                } else if (current instanceof ReturnValue) {
+                    break;
+                }
+                case ReturnValue: {
                     codegenerator.write((ReturnValue) current);
                     // We are finished here
                     current = null;
-                } else if (current instanceof SetInstanceField) {
+                    break;
+                }
+                case SetInstanceField: {
                     codegenerator.write((SetInstanceField) current);
                     current = followUpProcessor.apply(current);
-                } else if (current instanceof ArrayStore) {
+                    break;
+                }
+                case ArrayStore: {
                     codegenerator.write((ArrayStore) current);
                     current = followUpProcessor.apply(current);
-                } else if (current instanceof SetClassField) {
+                    break;
+                }
+                case SetClassField: {
                     codegenerator.write((SetClassField) current);
                     current = followUpProcessor.apply(current);
-                } else if (current instanceof LineNumberDebugInfo) {
+                    break;
+                }
+                case LineNumberDebugInfo: {
                     codegenerator.write((LineNumberDebugInfo) current);
                     current = followUpProcessor.apply(current);
-                } else if (current instanceof FrameDebugInfo) {
+                    break;
+                }
+                case FrameDebugInfo: {
                     codegenerator.write((FrameDebugInfo) current);
                     current = followUpProcessor.apply(current);
-                } else if (current instanceof Goto) {
+                    break;
+                }
+                case Goto: {
                     codegenerator.write((Goto) current);
                     current = followUpProcessor.apply(current);
-                } else if (current instanceof MonitorEnter) {
+                    break;
+                }
+                case MonitorEnter: {
                     codegenerator.write((MonitorEnter) current);
                     current = followUpProcessor.apply(current);
-                } else if (current instanceof MonitorExit) {
+                    break;
+                }
+                case MonitorExit: {
                     codegenerator.write((MonitorExit) current);
                     current = followUpProcessor.apply(current);
-                } else if (current instanceof Unwind) {
+                    break;
+                }
+                case Unwind: {
                     codegenerator.write((Unwind) current);
                     // We are finished here
                     current = null;
-                } else if (current instanceof ClassInitialization) {
+                    break;
+                }
+                case ClassInitialization: {
                     codegenerator.write((ClassInitialization) current);
                     current = followUpProcessor.apply(current);
-                } else if (current instanceof Nop) {
-                    current = followUpProcessor.apply(current);
-                } else {
-                    throw new IllegalStateException("Not implemented : " + current.getClass().getSimpleName());
+                    break;
                 }
+                case Nop: {
+                    current = followUpProcessor.apply(current);
+                    break;
+                }
+                default:
+                    throw new IllegalStateException("Unsupported node type : " + current.nodeType);
             }
         }
 

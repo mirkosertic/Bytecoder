@@ -24,7 +24,7 @@ public class NullTest extends Test {
     public final Operation operation;
 
     NullTest(final Graph owner, final Operation operation) {
-        super(owner);
+        super(owner, NodeType.NullTest);
         this.operation = operation;
     }
 

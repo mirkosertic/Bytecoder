@@ -20,6 +20,6 @@ import org.objectweb.asm.Type;
 public class Reinterpret extends Value {
 
     Reinterpret(final Graph owner, final Type type) {
-        super(owner, type);
+        super(owner, type, NodeType.Reinterpret);
     }
 }

@@ -22,7 +22,7 @@ public class ReadClassField extends Value {
     public final ResolvedField resolvedField;
 
     ReadClassField(final Graph owner, final Type type, final ResolvedField resolvedField) {
-        super(owner, type);
+        super(owner, type, NodeType.ReadClassField);
         this.resolvedField = resolvedField;
     }
 

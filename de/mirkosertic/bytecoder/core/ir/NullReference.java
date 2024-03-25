@@ -20,7 +20,7 @@ import org.objectweb.asm.Type;
 public class NullReference extends Value {
 
     NullReference(final Graph owner) {
-        super(owner, Type.getType(Object.class));
+        super(owner, Type.getType(Object.class), NodeType.NullReference);
     }
 
     @Override

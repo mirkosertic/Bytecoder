@@ -19,8 +19,8 @@ import org.objectweb.asm.Type;
 
 public abstract class PrimitiveValue extends Value {
 
-    PrimitiveValue(final Graph owner, final Type type) {
-        super(owner, type);
+    PrimitiveValue(final Graph owner, final Type type, final NodeType nodeType) {
+        super(owner, type, nodeType);
     }
 
     @Override

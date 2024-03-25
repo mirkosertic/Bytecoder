@@ -22,7 +22,7 @@ public class PrimitiveShort extends PrimitiveValue {
     public final short value;
 
     PrimitiveShort(final Graph owner, final short value) {
-        super(owner, Type.SHORT_TYPE);
+        super(owner, Type.SHORT_TYPE, NodeType.PrimitiveShort);
         this.value = value;
     }
 

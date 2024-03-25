@@ -23,8 +23,11 @@ public abstract class Node {
 
     final Graph owner;
 
-    Node(final Graph owner) {
+    public final NodeType nodeType;
+
+    Node(final Graph owner, final NodeType nodeType) {
         this.owner = owner;
+        this.nodeType = nodeType;
         this.incomingDataFlows = new Node[0];
     }
 

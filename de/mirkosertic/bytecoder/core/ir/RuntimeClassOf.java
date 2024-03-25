@@ -20,6 +20,6 @@ import org.objectweb.asm.Type;
 public class RuntimeClassOf extends Value {
 
     RuntimeClassOf(final Graph owner) {
-        super(owner, Type.getType(Class.class));
+        super(owner, Type.getType(Class.class), NodeType.RuntimeClassOf);
     }
 }

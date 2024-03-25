@@ -36,8 +36,8 @@ public abstract class Reference extends PrimitiveValue {
 
     public final FieldReference.Kind kind;
 
-    Reference(final Graph owner, final Type type, final FieldReference.Kind kind) {
-        super(owner, type);
+    Reference(final Graph owner, final Type type, final FieldReference.Kind kind, final NodeType nodeType) {
+        super(owner, type, nodeType);
         this.kind = kind;
     }
 }

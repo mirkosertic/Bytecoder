@@ -24,7 +24,7 @@ public class ReferenceTest extends Test {
     public final Operation operation;
 
     ReferenceTest(final Graph owner, final Operation operation) {
-        super(owner);
+        super(owner, NodeType.ReferenceTest);
         this.operation = operation;
     }
 

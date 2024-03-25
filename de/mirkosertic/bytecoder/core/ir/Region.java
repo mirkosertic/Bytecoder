@@ -21,10 +21,15 @@ public class Region extends ControlTokenConsumer {
 
     public Frame frame;
 
-    Region(final Graph owner, final String label) {
-        super(owner);
+    Region(final Graph owner, final String label, final NodeType nodeType) {
+        super(owner, nodeType);
         this.label = label;
     }
+
+    Region(final Graph owner, final String label) {
+        this(owner, label, NodeType.Region);
+    }
+
 
     @Override
     public void addControlFlowTo(final Projection projection, final ControlTokenConsumer node) {

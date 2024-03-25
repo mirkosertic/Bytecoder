@@ -20,6 +20,6 @@ import org.objectweb.asm.Type;
 public class InstanceOf extends Value {
 
     InstanceOf(final Graph owner) {
-        super(owner, Type.INT_TYPE);
+        super(owner, Type.INT_TYPE, NodeType.InstanceOf);
     }
 }

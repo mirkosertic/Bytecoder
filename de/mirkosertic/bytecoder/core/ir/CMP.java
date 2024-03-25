@@ -20,6 +20,6 @@ import org.objectweb.asm.Type;
 public class CMP extends Value {
 
     CMP(final Graph owner) {
-        super(owner, Type.INT_TYPE);
+        super(owner, Type.INT_TYPE, NodeType.CMP);
     }
 }

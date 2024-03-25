@@ -26,7 +26,7 @@ public class MethodInvocationExpression extends Value implements PotentialSideef
     public InvocationType invocationType;
 
     MethodInvocationExpression(final Graph owner, final MethodInsnNode insnNode, final ResolvedMethod method, final InvocationType invocationType) {
-        super(owner, method.methodType.getReturnType());
+        super(owner, method.methodType.getReturnType(), NodeType.MethodInvocationExpression);
         this.insnNode = insnNode;
         this.method = method;
         this.invocationType = invocationType;

@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.ir;
 public class Nop extends ControlTokenConsumer {
 
     Nop(final Graph owner) {
-        super(owner);
+        super(owner, NodeType.Nop);
     }
 }

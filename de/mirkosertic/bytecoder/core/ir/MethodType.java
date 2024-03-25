@@ -20,7 +20,7 @@ import org.objectweb.asm.Type;
 public class MethodType extends PrimitiveValue {
 
     MethodType(final Graph owner, final Type type) {
-        super(owner, type);
+        super(owner, type, NodeType.MethodType);
     }
 
 

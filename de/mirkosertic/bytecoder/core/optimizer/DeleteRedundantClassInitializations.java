@@ -18,12 +18,12 @@ package de.mirkosertic.bytecoder.core.optimizer;
 import de.mirkosertic.bytecoder.core.backend.sequencer.DominatorTree;
 import de.mirkosertic.bytecoder.core.ir.ClassInitialization;
 import de.mirkosertic.bytecoder.core.ir.Graph;
+import de.mirkosertic.bytecoder.core.ir.NodeType;
 import de.mirkosertic.bytecoder.core.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Stack;
 
 public class DeleteRedundantClassInitializations implements GlobalOptimizer {
 
@@ -35,17 +35,24 @@ public class DeleteRedundantClassInitializations implements GlobalOptimizer {
 
         final Graph g = method.methodBody;
 
+        // Variable and Constant propagation
+        final Stack<ClassInitialization> workingQueue = new Stack<>();
+
         final DominatorTree dominatorTree = new DominatorTree(g);
-        final List<ClassInitialization> initializers = g.nodes().stream().filter(t -> t instanceof ClassInitialization).map(t -> (ClassInitialization) t).collect(Collectors.toList());
-        for (final ClassInitialization ci : initializers) {
+        g.nodes().stream().filter(t -> t.nodeType == NodeType.ClassInitialization).map(t -> (ClassInitialization) t).forEach(workingQueue::add);
+
+        while (!workingQueue.empty()) {
+            final ClassInitialization ci = workingQueue.pop();
             final ResolvedClass rc = compileUnit.findClass(ci.type);
             if (!rc.requiresClassInitializer()) {
-                ci.skip = true;
-            }
-            for (final ClassInitialization j : initializers) {
-                if (j != ci && ci.type.equals(j.type)) {
-                    if (dominatorTree.dominates(ci, j)) {
-                        j.skip = true;
+                ci.deleteFromControlFlow();
+            } else {
+                for (final ClassInitialization j : workingQueue) {
+                    if (j != ci && ci.type.equals(j.type)) {
+                        if (dominatorTree.dominates(ci, j)) {
+                            j.deleteFromControlFlow();
+                            workingQueue.remove(j);
+                        }
                     }
                 }
             }

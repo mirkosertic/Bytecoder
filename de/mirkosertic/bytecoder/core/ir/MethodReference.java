@@ -21,7 +21,7 @@ public class MethodReference extends Reference {
     public final ResolvedMethod resolvedMethod;
 
     MethodReference(final Graph owner, final ResolvedMethod resolvedMethod, final Kind kind) {
-        super(owner, resolvedMethod.methodType, kind);
+        super(owner, resolvedMethod.methodType, kind, NodeType.MethodReference);
         this.resolvedMethod = resolvedMethod;
     }
 

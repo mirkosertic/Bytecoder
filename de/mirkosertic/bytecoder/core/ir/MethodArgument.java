@@ -22,7 +22,7 @@ public class MethodArgument extends Value {
     public final int index;
 
     MethodArgument(final Graph owner, final Type type, final int index) {
-        super(owner, type);
+        super(owner, type, NodeType.MethodArgument);
 
         this.index = index;
     }

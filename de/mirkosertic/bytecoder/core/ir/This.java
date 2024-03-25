@@ -20,7 +20,7 @@ import org.objectweb.asm.Type;
 public class This extends Value {
 
     This(final Graph owner, final Type type) {
-        super(owner, type);
+        super(owner, type, NodeType.This);
     }
 
     @Override

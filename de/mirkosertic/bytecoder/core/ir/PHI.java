@@ -20,6 +20,6 @@ import org.objectweb.asm.Type;
 public class PHI extends AbstractVar {
 
     PHI(final Graph owner, final Type type) {
-        super(owner, type);
+        super(owner, type, NodeType.PHI);
     }
 }

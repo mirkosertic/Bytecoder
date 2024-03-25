@@ -22,7 +22,7 @@ public class ReadInstanceField extends Value {
     public final ResolvedField resolvedField;
 
     ReadInstanceField(final Graph owner, final Type type, final ResolvedField resolvedField) {
-        super(owner, type);
+        super(owner, type, NodeType.ReadInstanceField);
         this.resolvedField = resolvedField;
     }
 

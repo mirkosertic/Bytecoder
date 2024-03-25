@@ -20,7 +20,7 @@ public class SetInstanceField extends ControlTokenConsumer implements PotentialS
     public final ResolvedField field;
 
     SetInstanceField(final Graph owner, final ResolvedField field) {
-        super(owner);
+        super(owner, NodeType.SetInstanceField);
         this.field = field;
     }
 

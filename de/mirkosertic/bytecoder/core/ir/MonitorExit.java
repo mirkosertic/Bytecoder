@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.ir;
 public class MonitorExit extends ControlTokenConsumer {
 
     MonitorExit(final Graph owner) {
-        super(owner);
+        super(owner, NodeType.MonitorExit);
     }
 }

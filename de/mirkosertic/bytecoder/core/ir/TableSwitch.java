@@ -21,7 +21,7 @@ public class TableSwitch extends ControlTokenConsumer {
     public final int max;
 
     TableSwitch(final Graph owner, final int min, final int max) {
-        super(owner);
+        super(owner, NodeType.TableSwitch);
         this.min = min;
         this.max = max;
     }

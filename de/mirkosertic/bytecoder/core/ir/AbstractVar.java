@@ -19,8 +19,8 @@ import org.objectweb.asm.Type;
 
 public abstract class AbstractVar extends Value {
 
-    AbstractVar(final Graph owner, final Type value) {
-        super(owner, value);
+    AbstractVar(final Graph owner, final Type value, final NodeType nodeType) {
+        super(owner, value, nodeType);
     }
 
     @Override

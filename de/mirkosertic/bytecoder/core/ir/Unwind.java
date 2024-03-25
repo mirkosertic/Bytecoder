@@ -18,6 +18,6 @@ package de.mirkosertic.bytecoder.core.ir;
 public class Unwind extends ControlTokenConsumer {
 
     Unwind(final Graph owner) {
-        super(owner);
+        super(owner, NodeType.Unwind);
     }
 }

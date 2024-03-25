@@ -20,6 +20,6 @@ import org.objectweb.asm.Type;
 public class Div extends Value {
 
     Div(final Graph owner, final Type type) {
-        super(owner, type);
+        super(owner, type, NodeType.Div);
     }
 }
