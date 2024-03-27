@@ -25,4 +25,9 @@ public class PrimitiveClassReference extends Value {
         super(owner, Type.getType(Class.class), NodeType.PrimitiveClassReference);
         this.referenceType = type;
     }
+
+    public boolean isConstant() {
+        return true;
+    }
+
 }

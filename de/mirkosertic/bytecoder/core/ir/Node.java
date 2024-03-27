@@ -50,7 +50,7 @@ public abstract class Node {
         return owner.outgoingDataFlowsFor(this);
     }
 
-    public void remapDataFlow(final Node original, final Node newValue) {
+    public final void remapDataFlow(final Node original, final Node newValue) {
         for (int i = 0; i < incomingDataFlows.length; i++) {
             if (incomingDataFlows[i] == original) {
                 incomingDataFlows[i] = newValue;

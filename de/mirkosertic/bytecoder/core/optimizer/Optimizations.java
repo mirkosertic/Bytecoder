@@ -26,18 +26,14 @@ public enum Optimizations implements Optimizer {
     DISABLED(new Optimizer[] {
     }),
     DEFAULT(new Optimizer[] {
-                //new DeleteUnusedAbstractVar(),
-                //new VariableIsConstant(),
-                //new VariableIsVariable(),
+                new VariableIsConstant(),
                 new VirtualToDirectInvocation(),
-                //new DeleteRedundantClassInitializations()
+                new DeleteRedundantClassInitializations()
             }),
     ALL(new Optimizer[] {
-            //new DeleteUnusedAbstractVar(),
-            //new VariableIsConstant(),
-            //new VariableIsVariable(),
+            new VariableIsConstant(),
             new VirtualToDirectInvocation(),
-            //new DeleteRedundantClassInitializations()
+            new DeleteRedundantClassInitializations()
     }),
     ;
 
@@ -48,6 +44,14 @@ public enum Optimizations implements Optimizer {
     }
 
     public boolean optimize(final CompileUnit compileUnit, final ResolvedMethod method) {
+
+        //if (!method.owner.type.getClassName().contains("TailcallVarargs")) {
+        //    return false;
+        //}
+        //if (!"eval".equals(method.methodNode.name)) {
+        //    return false;
+        //}
+
         boolean graphchanged = false;
         final Set<GlobalOptimizer> go = Arrays.stream(optimizers).filter(t -> t instanceof GlobalOptimizer).map(t -> (GlobalOptimizer) t).collect(Collectors.toSet());
         for (final Optimizer o : optimizers) {

@@ -25,6 +25,7 @@ import de.mirkosertic.bytecoder.core.backend.MethodToIDMapper;
 import de.mirkosertic.bytecoder.core.backend.OpaqueReferenceTypeHelpers;
 import de.mirkosertic.bytecoder.core.backend.GeneratedMethod;
 import de.mirkosertic.bytecoder.core.backend.GeneratedMethodsRegistry;
+import de.mirkosertic.bytecoder.core.optimizer.OptimizerLogging;
 import de.mirkosertic.bytecoder.core.backend.VTableResolver;
 import de.mirkosertic.bytecoder.core.backend.sequencer.DominatorTree;
 import de.mirkosertic.bytecoder.core.backend.sequencer.Sequencer;
@@ -824,8 +825,12 @@ public class WasmBackend {
 
                         final Graph g = method.methodBody;
                         final Optimizer o = compileOptions.getOptimizer();
+
+                        final OptimizerLogging optimizerLogging = new OptimizerLogging(method);
+                        int optimizerStep = 0;
                         while (o.optimize(compileUnit, method)) {
-                            //
+                            optimizerStep++;
+                            optimizerLogging.logStep(optimizerStep);
                         }
 
                         final DominatorTree dt = new DominatorTree(g);
@@ -836,6 +841,7 @@ public class WasmBackend {
 
                         try {
                             new Sequencer(g, dt, new WasmStructuredControlflowCodeGenerator(compileUnit, module, rtTypeMappings, objectTypeMappings, implFunction, toWASMType, toFunctionType, methodToIDMapper, g, resolvedClasses, vTableResolver, generatedMethodsRegistry));
+                            optimizerLogging.finished();
                         } catch (final CodeGenerationFailure e) {
                             throw e;
                         } catch (final RuntimeException e) {

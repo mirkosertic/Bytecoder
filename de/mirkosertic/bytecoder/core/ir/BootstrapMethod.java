@@ -37,4 +37,8 @@ public class BootstrapMethod extends Value {
         this.methodName = methodName;
         this.kind = kind;
     }
+
+    public boolean isConstant() {
+        return true;
+    }
 }
