@@ -27,4 +27,9 @@ public class This extends Value {
     public String additionalDebugInfo() {
         return ": " + type;
     }
+
+    @Override
+    public boolean isConstant() {
+        return true;
+    }
 }

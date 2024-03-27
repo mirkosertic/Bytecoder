@@ -31,4 +31,9 @@ public class MethodArgument extends Value {
     public String additionalDebugInfo() {
         return ": #" + index;
     }
+
+    @Override
+    public boolean isConstant() {
+        return true;
+    }
 }

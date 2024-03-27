@@ -23,6 +23,7 @@ import de.mirkosertic.bytecoder.core.backend.CompileResult;
 import de.mirkosertic.bytecoder.core.backend.GeneratedMethod;
 import de.mirkosertic.bytecoder.core.backend.GeneratedMethodsRegistry;
 import de.mirkosertic.bytecoder.core.backend.MethodToIDMapper;
+import de.mirkosertic.bytecoder.core.optimizer.OptimizerLogging;
 import de.mirkosertic.bytecoder.core.backend.VTable;
 import de.mirkosertic.bytecoder.core.backend.VTableResolver;
 import de.mirkosertic.bytecoder.core.backend.sequencer.DominatorTree;
@@ -53,9 +54,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static de.mirkosertic.bytecoder.core.backend.js.JSHelpers.generateClassName;
-import static de.mirkosertic.bytecoder.core.backend.js.JSHelpers.generateFieldName;
-import static de.mirkosertic.bytecoder.core.backend.js.JSHelpers.generateMethodName;
+import static de.mirkosertic.bytecoder.core.backend.js.JSHelpers.*;
 
 public class JSBackend {
 
@@ -706,9 +705,11 @@ public class JSBackend {
         final Graph g = m.methodBody;
         final Optimizer o = options.getOptimizer();
 
-
-        while (o.optimize(compileUnit, m)) {
-            //
+        final OptimizerLogging optimizerLogging = new OptimizerLogging(m);
+        int optimizerStep = 0;
+        while (optimizerStep < 1 && o.optimize(compileUnit, m)) {
+            optimizerStep++;
+            optimizerLogging.logStep(optimizerStep);
         }
 
         final DominatorTree dt = new DominatorTree(g);
@@ -720,6 +721,7 @@ public class JSBackend {
 
         try {
             new Sequencer(g, dt, new JSStructuredControlflowCodeGenerator(compileUnit, cl, pw, generatedMethodsRegistry));
+            optimizerLogging.finished();
         } catch (final CodeGenerationFailure e) {
             throw e;
         } catch (final RuntimeException e) {

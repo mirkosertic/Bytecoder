@@ -34,6 +34,9 @@ public class MethodInvocationExpression extends Value implements PotentialSideef
 
     @Override
     public String additionalDebugInfo() {
+        if (insnNode == null) {
+            return invocationType + " " + method.owner + "." + method.methodNode.name;
+        }
         return invocationType + " " + method.owner + "." + method.methodNode.name + insnNode.desc;
     }
 

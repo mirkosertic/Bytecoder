@@ -456,30 +456,34 @@ public class Graph {
         }
     }
 
-    private void removeControlFlowTo(final ControlTokenConsumer source, final ControlTokenConsumer target) {
-        final Set<Projection> keysToRemove = new HashSet<>();
-        for (final Map.Entry<Projection, ControlTokenConsumer> entry : source.controlFlowsTo.entrySet()) {
-            if (entry.getValue() == target) {
-                keysToRemove.add(entry.getKey());
-            }
-        }
-        for (final Projection key : keysToRemove) {
-            source.controlFlowsTo.remove(key);
-        }
-    }
-
     void deleteFromControlFlowInternally(final ControlTokenConsumer consumer) {
         if (consumer.hasIncomingBackEdges()) {
             throw new IllegalStateException("Cannot delete node with incoming back edges!");
         }
-        for (final ControlTokenConsumer pred : new HashSet<>(consumer.controlComingFrom)) {
-            for (final Map.Entry<Projection, ControlTokenConsumer> entry : consumer.controlFlowsTo.entrySet()) {
-                removeControlFlowTo(pred, consumer);
-                pred.addControlFlowTo(entry.getKey(), entry.getValue());
-
-                entry.getValue().controlComingFrom.remove(consumer);
-            }
-            consumer.controlComingFrom.remove(pred);
+        if (consumer.controlComingFrom.size() != 1) {
+            throw new IllegalStateException("Can only delete nodes with exactly one incoming edge!");
         }
+        if (consumer.controlFlowsTo.size() != 1) {
+            throw new IllegalStateException("Can only delete nodes with exactly one outgoing edge!");
+        }
+        if (consumer.controlFlowsTo.keySet().stream().anyMatch(t -> t.edgeType() == EdgeType.BACK)) {
+            throw new IllegalStateException("Can only delete nodes without outgoing back edges!");
+        }
+
+        for (final ControlTokenConsumer pred : consumer.controlComingFrom) {
+            for (final Map.Entry<Projection, ControlTokenConsumer> entry : new HashSet<>(pred.controlFlowsTo.entrySet())) {
+                if (entry.getValue() == consumer) {
+                    for (final Map.Entry<Projection, ControlTokenConsumer> to : consumer.controlFlowsTo.entrySet()) {
+                        pred.controlFlowsTo.put(entry.getKey(), to.getValue());
+                        to.getValue().controlComingFrom.remove(consumer);
+                        to.getValue().controlComingFrom.add(pred);
+                    }
+                }
+            }
+        }
+
+        consumer.controlComingFrom.clear();
+        consumer.controlFlowsTo.clear();
+        nodes.remove(consumer);
     }
 }

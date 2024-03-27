@@ -34,7 +34,7 @@ public class MethodInvocation extends ControlTokenConsumer implements PotentialS
 
     @Override
     public String additionalDebugInfo() {
-        return invocationType + " " + method.owner + "." + method.methodNode.name + insnNode.desc;
+        return invocationType + " " + method.owner.type + "." + method.methodNode.name + insnNode.desc;
     }
 
     @Override
