@@ -82,12 +82,12 @@ import de.mirkosertic.bytecoder.core.ir.Neg;
 import de.mirkosertic.bytecoder.core.ir.New;
 import de.mirkosertic.bytecoder.core.ir.NewArray;
 import de.mirkosertic.bytecoder.core.ir.Node;
+import de.mirkosertic.bytecoder.core.ir.NodeType;
 import de.mirkosertic.bytecoder.core.ir.NullReference;
 import de.mirkosertic.bytecoder.core.ir.NullTest;
 import de.mirkosertic.bytecoder.core.ir.NumericalTest;
 import de.mirkosertic.bytecoder.core.ir.ObjectString;
 import de.mirkosertic.bytecoder.core.ir.Or;
-import de.mirkosertic.bytecoder.core.ir.PHI;
 import de.mirkosertic.bytecoder.core.ir.PrimitiveClassReference;
 import de.mirkosertic.bytecoder.core.ir.PrimitiveDouble;
 import de.mirkosertic.bytecoder.core.ir.PrimitiveFloat;
@@ -273,7 +273,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         for (int i = 0; i < variables.size(); i++) {
             final AbstractVar v = variables.get(i);
             final String varName;
-            if (v instanceof PHI) {
+            if (v.nodeType == NodeType.PHI) {
                 varName = "phi" + i;
             } else {
                 varName = "var" + i;
@@ -2355,103 +2355,106 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     }
 
     private WasmValue toWasmValue(final Value value) {
-        if (value instanceof This) {
-            return toWasmValue((This) value);
-        } else if (value instanceof ObjectString) {
-            return toWasmValue((ObjectString) value);
-        } else if (value instanceof PrimitiveShort) {
-            return toWasmValue((PrimitiveShort) value);
-        } else if (value instanceof PrimitiveInt) {
-            return toWasmValue((PrimitiveInt) value);
-        } else if (value instanceof PrimitiveLong) {
-            return toWasmValue((PrimitiveLong) value);
-        } else if (value instanceof PrimitiveFloat) {
-            return toWasmValue((PrimitiveFloat) value);
-        } else if (value instanceof PrimitiveDouble) {
-            return toWasmValue((PrimitiveDouble) value);
-        } else if (value instanceof MethodArgument) {
-            return toWasmValue((MethodArgument) value);
-        } else if (value instanceof AbstractVar) {
-            return toWasmValue((AbstractVar) value);
-        } else if (value instanceof NullReference) {
-            return toWasmValue((NullReference) value);
-        } else if (value instanceof New) {
-            return toWasmValue((New) value);
-        } else if (value instanceof ReadInstanceField) {
-            return toWasmValue((ReadInstanceField) value);
-        } else if (value instanceof MethodInvocationExpression) {
-            return toWasmValue((MethodInvocationExpression) value);
-        } else if (value instanceof InvokeDynamicExpression) {
-            return toWasmValue((InvokeDynamicExpression) value);
-        } else if (value instanceof TypeReference) {
-            return toWasmValue((TypeReference) value);
-        } else if (value instanceof ReadClassField) {
-            return toWasmValue((ReadClassField) value);
-        } else if (value instanceof RuntimeClass) {
-            return toWasmValue((RuntimeClass) value);
-        } else if (value instanceof CaughtException) {
-            return toWasmValue((CaughtException) value);
-        } else if (value instanceof NewArray) {
-            return toWasmValue((NewArray) value);
-        } else if (value instanceof CMP) {
-            return toWasmValue((CMP) value);
-        } else if (value instanceof Mul) {
-            return toWasmValue((Mul) value);
-        } else if (value instanceof SHR) {
-            return toWasmValue((SHR) value);
-        } else if (value instanceof TypeConversion) {
-            return toWasmValue((TypeConversion) value);
-        } else if (value instanceof And) {
-            return toWasmValue((And) value);
-        } else if (value instanceof Sub) {
-            return toWasmValue((Sub) value);
-        } else if (value instanceof ArrayLoad) {
-            return toWasmValue((ArrayLoad) value);
-        } else if (value instanceof Div) {
-            return toWasmValue((Div) value);
-        } else if (value instanceof SHL) {
-            return toWasmValue((SHL) value);
-        } else if (value instanceof XOr) {
-            return toWasmValue((XOr) value);
-        } else if (value instanceof Add) {
-            return toWasmValue((Add) value);
-        } else if (value instanceof ArrayLength) {
-            return toWasmValue((ArrayLength) value);
-        } else if (value instanceof Or) {
-            return toWasmValue((Or) value);
-        } else if (value instanceof InstanceOf) {
-            return toWasmValue((InstanceOf) value);
-        } else if (value instanceof USHR) {
-            return toWasmValue((USHR) value);
-        } else if (value instanceof Neg) {
-            return toWasmValue((Neg) value);
-        } else if (value instanceof Cast) {
-            return toWasmValue((Cast) value);
-        } else if (value instanceof ReferenceTest) {
-            return toWasmValue((ReferenceTest) value);
-        } else if (value instanceof NullTest) {
-            return toWasmValue((NullTest) value);
-        } else if (value instanceof NumericalTest) {
-            return toWasmValue((NumericalTest) value);
-        } else if (value instanceof Rem) {
-            return toWasmValue((Rem) value);
-        } else if (value instanceof PrimitiveClassReference) {
-            return toWasmValue((PrimitiveClassReference) value);
-        } else if (value instanceof RuntimeClassOf) {
-            return toWasmValue((RuntimeClassOf) value);
-        } else if (value instanceof EnumValuesOf) {
-            return toWasmValue((EnumValuesOf) value);
-        } else if (value instanceof Reinterpret) {
-            return toWasmValue((Reinterpret) value);
+        switch (value.nodeType) {
+            case This:
+                return toWasmValue((This) value);
+            case ObjectString:
+                return toWasmValue((ObjectString) value);
+            case PrimitiveShort:
+                return toWasmValue((PrimitiveShort) value);
+            case PrimitiveInt:
+                return toWasmValue((PrimitiveInt) value);
+            case PrimitiveLong:
+                return toWasmValue((PrimitiveLong) value);
+            case PrimitiveFloat:
+                return toWasmValue((PrimitiveFloat) value);
+            case PrimitiveDouble:
+                return toWasmValue((PrimitiveDouble) value);
+            case MethodArgument:
+                return toWasmValue((MethodArgument) value);
+            case Variable:
+            case PHI:
+                return toWasmValue((AbstractVar) value);
+            case NullReference:
+                return toWasmValue((NullReference) value);
+            case New:
+                return toWasmValue((New) value);
+            case ReadInstanceField:
+                return toWasmValue((ReadInstanceField) value);
+            case MethodInvocationExpression:
+                return toWasmValue((MethodInvocationExpression) value);
+            case InvokeDynamicExpression:
+                return toWasmValue((InvokeDynamicExpression) value);
+            case TypeReference:
+                return toWasmValue((TypeReference) value);
+            case ReadClassField:
+                return toWasmValue((ReadClassField) value);
+            case RuntimeClass:
+                return toWasmValue((RuntimeClass) value);
+            case CaughtException:
+                return toWasmValue((CaughtException) value);
+            case NewArray:
+                return toWasmValue((NewArray) value);
+            case CMP:
+                return toWasmValue((CMP) value);
+            case Mul:
+                return toWasmValue((Mul) value);
+            case SHR:
+                return toWasmValue((SHR) value);
+            case TypeConversion:
+                return toWasmValue((TypeConversion) value);
+            case And:
+                return toWasmValue((And) value);
+            case Sub:
+                return toWasmValue((Sub) value);
+            case ArrayLoad:
+                return toWasmValue((ArrayLoad) value);
+            case Div:
+                return toWasmValue((Div) value);
+            case SHL:
+                return toWasmValue((SHL) value);
+            case XOr:
+                return toWasmValue((XOr) value);
+            case Add:
+                return toWasmValue((Add) value);
+            case ArrayLength:
+                return toWasmValue((ArrayLength) value);
+            case Or:
+                return toWasmValue((Or) value);
+            case InstanceOf:
+                return toWasmValue((InstanceOf) value);
+            case USHR:
+                return toWasmValue((USHR) value);
+            case Neg:
+                return toWasmValue((Neg) value);
+            case Cast:
+                return toWasmValue((Cast) value);
+            case ReferenceTest:
+                return toWasmValue((ReferenceTest) value);
+            case NullTest:
+                return toWasmValue((NullTest) value);
+            case NumericalTest:
+                return toWasmValue((NumericalTest) value);
+            case Rem:
+                return toWasmValue((Rem) value);
+            case PrimitiveClassReference:
+                return toWasmValue((PrimitiveClassReference) value);
+            case RuntimeClassOf:
+                return toWasmValue((RuntimeClassOf) value);
+            case EnumValuesOf:
+                return toWasmValue((EnumValuesOf) value);
+            case Reinterpret:
+                return toWasmValue((Reinterpret) value);
+            default:
+                throw new IllegalArgumentException("Not implemented " + value.getClass());
         }
-        throw new IllegalArgumentException("Not implemented " + value.getClass());
     }
 
     @Override
     public void write(final Copy node) {
         final Value value = (Value) node.incomingDataFlows[0];
         final Node target = node.outgoingDataFlows()[0];
-        if (target instanceof AbstractVar) {
+        if (target.nodeType == NodeType.Variable || target.nodeType == NodeType.PHI) {
             final AbstractVar targetVar = (AbstractVar) target;
             final Local local = varLocalMap.get(targetVar);
             if (local == null) {

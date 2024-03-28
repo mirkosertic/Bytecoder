@@ -56,12 +56,12 @@ import de.mirkosertic.bytecoder.core.ir.Neg;
 import de.mirkosertic.bytecoder.core.ir.New;
 import de.mirkosertic.bytecoder.core.ir.NewArray;
 import de.mirkosertic.bytecoder.core.ir.Node;
+import de.mirkosertic.bytecoder.core.ir.NodeType;
 import de.mirkosertic.bytecoder.core.ir.NullReference;
 import de.mirkosertic.bytecoder.core.ir.NullTest;
 import de.mirkosertic.bytecoder.core.ir.NumericalTest;
 import de.mirkosertic.bytecoder.core.ir.ObjectString;
 import de.mirkosertic.bytecoder.core.ir.Or;
-import de.mirkosertic.bytecoder.core.ir.PHI;
 import de.mirkosertic.bytecoder.core.ir.PrimitiveClassReference;
 import de.mirkosertic.bytecoder.core.ir.PrimitiveDouble;
 import de.mirkosertic.bytecoder.core.ir.PrimitiveFloat;
@@ -137,7 +137,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         for (int i = 0; i < variables.size(); i++) {
             final AbstractVar v = variables.get(i);
             final String varName;
-            if (v instanceof PHI) {
+            if (v.nodeType == NodeType.PHI) {
                 varName = "phi" + i;
             } else {
                 varName = "var" + i;
@@ -1781,9 +1781,9 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         writeIndent();
         final Value target = (Value) node.outgoingDataFlows()[0];
         final Node value = node.incomingDataFlows[0];
-        if (target instanceof AbstractVar) {
+        if (target.nodeType == NodeType.Variable || target.nodeType == NodeType.PHI) {
             pw.print(variableToName.get(target));
-        } else if (target instanceof MethodArgument) {
+        } else if (target.nodeType == NodeType.MethodArgument) {
             writeExpression(target);
         } else {
             throw new IllegalStateException("Invalid copy target : " + target);
@@ -1801,96 +1801,187 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     private void writeExpression(final Node node) {
-        if (node instanceof AbstractVar) {
-            writeExpression((AbstractVar) node);
-        } else if (node instanceof PrimitiveShort) {
-            writeExpression((PrimitiveShort) node);
-        } else if (node instanceof Sub) {
-            writeExpression((Sub) node);
-        } else if (node instanceof Add) {
-            writeExpression((Add) node);
-        } else if (node instanceof Div) {
-            writeExpression((Div) node);
-        } else if (node instanceof PrimitiveInt) {
-            writeExpression((PrimitiveInt) node);
-        } else if (node instanceof New) {
-            writeExpression((New) node);
-        } else if (node instanceof TypeReference) {
-            writeExpression((TypeReference) node);
-        } else if (node instanceof This) {
-            writeExpression((This) node);
-        } else if (node instanceof MethodInvocationExpression) {
-            writeExpression((MethodInvocationExpression) node);
-        } else if (node instanceof InvokeDynamicExpression) {
-            writeExpression((InvokeDynamicExpression) node);
-        } else if (node instanceof ReadInstanceField) {
-            writeExpression((ReadInstanceField) node);
-        } else if (node instanceof ReadClassField) {
-            writeExpression((ReadClassField) node);
-        } else if (node instanceof NewArray) {
-            writeExpression((NewArray) node);
-        } else if (node instanceof ArrayLoad) {
-            writeExpression((ArrayLoad) node);
-        } else if (node instanceof MethodArgument) {
-            writeExpression((MethodArgument) node);
-        } else if (node instanceof NumericalTest) {
-            writeExpression((NumericalTest) node);
-        } else if (node instanceof NullReference) {
-            writeExpression((NullReference) node);
-        } else if (node instanceof ObjectString) {
-            writeExpression((ObjectString) node);
-        } else if (node instanceof ReferenceTest) {
-            writeExpression((ReferenceTest) node);
-        } else if (node instanceof NullTest) {
-            writeExpression((NullTest) node);
-        } else if (node instanceof CaughtException) {
-            writeExpression((CaughtException) node);
-        } else if (node instanceof And) {
-            writeExpression((And) node);
-        } else if (node instanceof TypeConversion) {
-            writeExpression((TypeConversion) node);
-        } else if (node instanceof ArrayLength) {
-            writeExpression((ArrayLength) node);
-        } else if (node instanceof SHR) {
-            writeExpression((SHR) node);
-        } else if (node instanceof SHL) {
-            writeExpression((SHL) node);
-        } else if (node instanceof Or) {
-            writeExpression((Or) node);
-        } else if (node instanceof Neg) {
-            writeExpression((Neg) node);
-        } else if (node instanceof Mul) {
-            writeExpression((Mul) node);
-        } else if (node instanceof MethodType) {
-            writeExpression((MethodType) node);
-        } else if (node instanceof CMP) {
-            writeExpression((CMP) node);
-        } else if (node instanceof PrimitiveLong) {
-            writeExpression((PrimitiveLong) node);
-        } else if (node instanceof PrimitiveDouble) {
-            writeExpression((PrimitiveDouble) node);
-        } else if (node instanceof PrimitiveFloat) {
-            writeExpression((PrimitiveFloat) node);
-        } else if (node instanceof XOr) {
-            writeExpression((XOr) node);
-        } else if (node instanceof USHR) {
-            writeExpression((USHR) node);
-        } else if (node instanceof Rem) {
-            writeExpression((Rem) node);
-        } else if (node instanceof InstanceOf) {
-            writeExpression((InstanceOf) node);
-        } else if (node instanceof RuntimeClass) {
-            writeExpression((RuntimeClass) node);
-        } else if (node instanceof Cast) {
-            writeExpression((Cast) node);
-        } else if (node instanceof PrimitiveClassReference) {
-            writeExpression((PrimitiveClassReference) node);
-        } else if (node instanceof RuntimeClassOf) {
-            writeExpression((RuntimeClassOf) node);
-        } else if (node instanceof EnumValuesOf) {
-            writeExpression((EnumValuesOf) node);
-        } else {
-            throw new IllegalArgumentException("Not implemented : " + node);
+        switch (node.nodeType) {
+            case PHI:
+            case Variable: {
+                writeExpression((AbstractVar) node);
+                break;
+            }
+            case PrimitiveShort: {
+                writeExpression((PrimitiveShort) node);
+                break;
+            }
+            case Sub: {
+                writeExpression((Sub) node);
+                break;
+            }
+            case Add: {
+                writeExpression((Add) node);
+                break;
+            }
+            case Div: {
+                writeExpression((Div) node);
+                break;
+            }
+            case PrimitiveInt: {
+                writeExpression((PrimitiveInt) node);
+                break;
+            }
+            case New: {
+                writeExpression((New) node);
+                break;
+            }
+            case TypeReference: {
+                writeExpression((TypeReference) node);
+                break;
+            }
+            case This: {
+                writeExpression((This) node);
+                break;
+            }
+            case MethodInvocationExpression: {
+                writeExpression((MethodInvocationExpression) node);
+                break;
+            }
+            case InvokeDynamicExpression: {
+                writeExpression((InvokeDynamicExpression) node);
+                break;
+            }
+            case ReadInstanceField: {
+                writeExpression((ReadInstanceField) node);
+                break;
+            }
+            case ReadClassField: {
+                writeExpression((ReadClassField) node);
+                break;
+            }
+            case NewArray: {
+                writeExpression((NewArray) node);
+                break;
+            }
+            case ArrayLoad: {
+                writeExpression((ArrayLoad) node);
+                break;
+            }
+            case MethodArgument: {
+                writeExpression((MethodArgument) node);
+                break;
+            }
+            case NumericalTest: {
+                writeExpression((NumericalTest) node);
+                break;
+            }
+            case NullReference: {
+                writeExpression((NullReference) node);
+                break;
+            }
+            case ObjectString: {
+                writeExpression((ObjectString) node);
+                break;
+            }
+            case ReferenceTest: {
+                writeExpression((ReferenceTest) node);
+                break;
+            }
+            case NullTest: {
+                writeExpression((NullTest) node);
+                break;
+            }
+            case CaughtException: {
+                writeExpression((CaughtException) node);
+                break;
+            }
+            case And: {
+                writeExpression((And) node);
+                break;
+            }
+            case TypeConversion: {
+                writeExpression((TypeConversion) node);
+                break;
+            }
+            case ArrayLength: {
+                writeExpression((ArrayLength) node);
+                break;
+            }
+            case SHR: {
+                writeExpression((SHR) node);
+                break;
+            }
+            case SHL: {
+                writeExpression((SHL) node);
+                break;
+            }
+            case Or: {
+                writeExpression((Or) node);
+                break;
+            }
+            case Neg: {
+                writeExpression((Neg) node);
+                break;
+            }
+            case Mul: {
+                writeExpression((Mul) node);
+                break;
+            }
+            case MethodType: {
+                writeExpression((MethodType) node);
+                break;
+            }
+            case CMP: {
+                writeExpression((CMP) node);
+                break;
+            }
+            case PrimitiveLong: {
+                writeExpression((PrimitiveLong) node);
+                break;
+            }
+            case PrimitiveDouble: {
+                writeExpression((PrimitiveDouble) node);
+                break;
+            }
+            case PrimitiveFloat: {
+                writeExpression((PrimitiveFloat) node);
+                break;
+            }
+            case XOr: {
+                writeExpression((XOr) node);
+                break;
+            }
+            case USHR: {
+                writeExpression((USHR) node);
+                break;
+            }
+            case Rem: {
+                writeExpression((Rem) node);
+                break;
+            }
+            case InstanceOf: {
+                writeExpression((InstanceOf) node);
+                break;
+            }
+            case RuntimeClass: {
+                writeExpression((RuntimeClass) node);
+                break;
+            }
+            case Cast: {
+                writeExpression((Cast) node);
+                break;
+            }
+            case PrimitiveClassReference: {
+                writeExpression((PrimitiveClassReference) node);
+                break;
+            }
+            case RuntimeClassOf: {
+                writeExpression((RuntimeClassOf) node);
+                break;
+            }
+            case EnumValuesOf: {
+                writeExpression((EnumValuesOf) node);
+                break;
+            }
+            default: {
+                throw new IllegalArgumentException("Not implemented : " + node);
+            }
         }
     }
 
