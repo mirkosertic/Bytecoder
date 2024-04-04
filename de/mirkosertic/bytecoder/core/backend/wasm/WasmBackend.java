@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.core.backend.wasm;
 import de.mirkosertic.bytecoder.api.Callback;
 import de.mirkosertic.bytecoder.api.ClassLibProvider;
 import de.mirkosertic.bytecoder.classlib.Array;
+import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.backend.CodeGenerationFailure;
 import de.mirkosertic.bytecoder.core.backend.CompileOptions;
 import de.mirkosertic.bytecoder.core.backend.CompileResult;
@@ -828,7 +829,7 @@ public class WasmBackend {
 
                         final OptimizerLogging optimizerLogging = new OptimizerLogging(method);
                         int optimizerStep = 0;
-                        while (o.optimize(compileUnit, method)) {
+                        while (o.optimize(BackendType.Wasm, compileUnit, method)) {
                             optimizerStep++;
                             optimizerLogging.logStep(optimizerStep);
                         }

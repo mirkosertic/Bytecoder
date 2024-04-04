@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core.optimizer;
 
+import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.ir.AbstractInvocation;
 import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.InvocationType;
@@ -56,7 +57,13 @@ public class VirtualToDirectInvocation implements Optimizer {
     }
 
     @Override
-    public boolean optimize(final CompileUnit compileUnit, final ResolvedMethod method) {
+    public boolean optimize(final BackendType backendType, final CompileUnit compileUnit, final ResolvedMethod method) {
+
+        if (backendType == BackendType.JS) {
+            // Ineffizient Optimization on JS backend...
+            return false;
+        }
+
         final Graph g = method.methodBody;
 
         for (final Node node : g.nodes()) {

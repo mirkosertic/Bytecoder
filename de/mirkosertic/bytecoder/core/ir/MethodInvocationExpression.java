@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.core.ir;
 
 import org.objectweb.asm.tree.MethodInsnNode;
 
-public class MethodInvocationExpression extends Value implements PotentialSideeffect, AbstractInvocation {
+public class MethodInvocationExpression extends Value implements AbstractInvocation {
 
     public final MethodInsnNode insnNode;
 
@@ -53,5 +53,10 @@ public class MethodInvocationExpression extends Value implements PotentialSideef
     @Override
     public void changeInvocationTypeTo(final InvocationType newInvocationType) {
         invocationType = newInvocationType;
+    }
+
+    @Override
+    public boolean hasSideSideEffect() {
+        return true;
     }
 }

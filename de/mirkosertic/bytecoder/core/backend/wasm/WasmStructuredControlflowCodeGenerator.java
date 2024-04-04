@@ -2602,7 +2602,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
             default: {
                 activeLevel.activeFlow.setStruct(
                         structType,
-                        ConstExpressions.ref.cast(structType, toWasmValue((Value) graph.outgoingDataFlowsFor(node)[0])),
+                        ConstExpressions.ref.cast(structType, toWasmValue((Value) node.outgoingDataFlows()[0])),
                         WasmHelpers.generateFieldName(field.name),
                         toWasmValue((Value) node.incomingDataFlows[0])
                 );

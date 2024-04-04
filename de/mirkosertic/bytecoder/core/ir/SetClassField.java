@@ -15,7 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core.ir;
 
-public class SetClassField extends ControlTokenConsumer implements PotentialSideeffect {
+public class SetClassField extends ControlTokenConsumer {
 
     public final ResolvedField field;
 
@@ -27,5 +27,10 @@ public class SetClassField extends ControlTokenConsumer implements PotentialSide
     @Override
     public String additionalDebugInfo() {
         return ": " + field.name;
+    }
+
+    @Override
+    public boolean hasSideSideEffect() {
+        return true;
     }
 }

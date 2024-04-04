@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.core.backend.js;
 
 import de.mirkosertic.bytecoder.api.ClassLibProvider;
 import de.mirkosertic.bytecoder.core.ReflectionConfiguration;
+import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.backend.CodeGenerationFailure;
 import de.mirkosertic.bytecoder.core.backend.CompileOptions;
 import de.mirkosertic.bytecoder.core.backend.CompileResult;
@@ -707,7 +708,7 @@ public class JSBackend {
 
         final OptimizerLogging optimizerLogging = new OptimizerLogging(m);
         int optimizerStep = 0;
-        while (optimizerStep < 1 && o.optimize(compileUnit, m)) {
+        while (optimizerStep < 1 && o.optimize(BackendType.JS, compileUnit, m)) {
             optimizerStep++;
             optimizerLogging.logStep(optimizerStep);
         }
