@@ -1,20 +1,35 @@
+/*
+ * Copyright 2024 Mirko Sertic
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package de.mirkosertic.bytecoder.core.optimizer;
 
+import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.ir.Copy;
 import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.Node;
 import de.mirkosertic.bytecoder.core.ir.NodeType;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
-import de.mirkosertic.bytecoder.core.ir.Variable;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
 import java.util.Arrays;
 import java.util.Stack;
 
-public class VariableIsConstant implements Optimizer {
+public class PHIorVariableIsConstant implements Optimizer {
 
     @Override
-    public boolean optimize(final CompileUnit compileUnit, final ResolvedMethod method) {
+    public boolean optimize(final BackendType backendType, final CompileUnit compileUnit, final ResolvedMethod method) {
         boolean changed = false;
 
         final Graph g = method.methodBody;
@@ -32,16 +47,16 @@ public class VariableIsConstant implements Optimizer {
 
             final Copy workingItem = workingQueue.pop();
 
-            final Node[] outgoingDataFlows = g.outgoingDataFlowsFor(workingItem);
-            if (outgoingDataFlows[0].nodeType == NodeType.Variable &&
-                // Target variable is written exactly once!
+            final Node[] outgoingDataFlows = workingItem.outgoingDataFlows();
+            if ((outgoingDataFlows[0].nodeType == NodeType.Variable || outgoingDataFlows[0].nodeType == NodeType.PHI) &&
+                // Target node is written exactly once!
                 Arrays.stream(outgoingDataFlows[0].incomingDataFlows).filter(t -> t.nodeType == NodeType.Copy).count() == 1) {
 
                 // A Copy token has one incoming dataflow
                 final Node source = workingItem.incomingDataFlows[0];
                 // And only one outgoing dataflow
-                // At this point we are sure it is a variable
-                final Variable target = (Variable) g.outgoingDataFlowsFor(workingItem)[0];
+                // At this point we are sure it is a variable or phi
+                final Node target =g.outgoingDataFlowsFor(workingItem)[0];
 
                 g.remapDataFlow(target, source);
 

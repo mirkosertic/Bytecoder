@@ -15,6 +15,9 @@
  */
 package de.mirkosertic.bytecoder.core.ir;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public abstract class Node {
 
     public Node[] incomingDataFlows;
@@ -60,5 +63,27 @@ public abstract class Node {
 
     public boolean isConstant() {
         return false;
+    }
+
+    private boolean hasSideEffectInternal(final Set<Node> visited) {
+        if (hasSideSideEffect()) {
+            return true;
+        }
+        if (visited.add(this)) {
+            for (final Node n : incomingDataFlows) {
+                if (n.hasSideEffectInternal(visited)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean hasSideSideEffect() {
+        return false;
+    }
+
+    public boolean hasSideSideEffectRecursive() {
+        return hasSideEffectInternal(new HashSet<>());
     }
 }

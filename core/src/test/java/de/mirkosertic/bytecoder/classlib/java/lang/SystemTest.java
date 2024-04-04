@@ -20,8 +20,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.Iterator;
-
 @RunWith(UnitTestRunner.class)
 public class SystemTest {
 
@@ -92,7 +90,7 @@ public class SystemTest {
     }
 
     @Test
-    public void arraycopyObjects(){
+    public void arrayCopyObjects(){
         Object[] objArr = new Object[]{"A","b","c"};
         Object[] targetArr = new Object[2];
         System.arraycopy(objArr,1,targetArr,0,2);

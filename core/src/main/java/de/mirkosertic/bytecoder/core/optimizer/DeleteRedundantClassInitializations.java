@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core.optimizer;
 
+import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.backend.sequencer.DominatorTree;
 import de.mirkosertic.bytecoder.core.ir.ClassInitialization;
 import de.mirkosertic.bytecoder.core.ir.Graph;
@@ -31,7 +32,7 @@ public class DeleteRedundantClassInitializations implements GlobalOptimizer {
     }
 
     @Override
-    public boolean optimize(final CompileUnit compileUnit, final ResolvedMethod method) {
+    public boolean optimize(final BackendType backendType, final CompileUnit compileUnit, final ResolvedMethod method) {
 
         final Graph g = method.methodBody;
 

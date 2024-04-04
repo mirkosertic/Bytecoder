@@ -2,6 +2,7 @@ package de.mirkosertic.bytecoder.core.optimizer;
 
 import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.core.Slf4JLogger;
+import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.ir.AnalysisStack;
 import de.mirkosertic.bytecoder.core.ir.ClassInitialization;
 import de.mirkosertic.bytecoder.core.ir.EdgeType;
@@ -39,7 +40,7 @@ public class DeleteRedundantClassInitializationsTest {
         startRegion.addControlFlowTo(StandardProjections.DEFAULT, ret);
 
         final DeleteRedundantClassInitializations optimizer = new DeleteRedundantClassInitializations();
-        assertFalse(optimizer.optimize(compileUnit, resolvedMethod));
+        assertFalse(optimizer.optimize(BackendType.Wasm, compileUnit, resolvedMethod));
     }
 
     @Test
@@ -61,7 +62,7 @@ public class DeleteRedundantClassInitializationsTest {
         classInitialization.addControlFlowTo(StandardProjections.DEFAULT, ret);
 
         final DeleteRedundantClassInitializations optimizer = new DeleteRedundantClassInitializations();
-        assertFalse(optimizer.optimize(compileUnit, resolvedMethod));
+        assertFalse(optimizer.optimize(BackendType.Wasm, compileUnit, resolvedMethod));
         assertFalse(g.nodes().contains(classInitialization));
         assertEquals(2, g.nodes().size());
 
@@ -101,7 +102,7 @@ public class DeleteRedundantClassInitializationsTest {
         iff.addControlFlowTo(StandardProjections.FALSE.withEdgeType(EdgeType.BACK), jump);
 
         final DeleteRedundantClassInitializations optimizer = new DeleteRedundantClassInitializations();
-        assertFalse(optimizer.optimize(compileUnit, resolvedMethod));
+        assertFalse(optimizer.optimize(BackendType.Wasm, compileUnit, resolvedMethod));
         assertEquals(4, g.nodes().size());
 
         assertTrue(g.nodes().contains(startRegion));

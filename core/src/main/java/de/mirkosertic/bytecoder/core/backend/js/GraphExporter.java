@@ -16,6 +16,7 @@
 package de.mirkosertic.bytecoder.core.backend.js;
 
 import de.mirkosertic.bytecoder.api.Logger;
+import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.backend.sequencer.DominatorTree;
 import de.mirkosertic.bytecoder.core.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
@@ -49,7 +50,7 @@ public class GraphExporter {
                         rm.methodBody.writeDebugTo(fos);
                     }
 
-                    while (optimizer.optimize(compileUnit, rm)) {
+                    while (optimizer.optimize(BackendType.Wasm, compileUnit, rm)) {
                         //
                     }
 

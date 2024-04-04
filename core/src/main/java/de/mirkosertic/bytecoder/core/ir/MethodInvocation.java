@@ -17,7 +17,7 @@ package de.mirkosertic.bytecoder.core.ir;
 
 import org.objectweb.asm.tree.MethodInsnNode;
 
-public class MethodInvocation extends ControlTokenConsumer implements PotentialSideeffect, AbstractInvocation {
+public class MethodInvocation extends ControlTokenConsumer implements AbstractInvocation {
 
     public final MethodInsnNode insnNode;
 
@@ -50,5 +50,10 @@ public class MethodInvocation extends ControlTokenConsumer implements PotentialS
     @Override
     public void changeInvocationTypeTo(final InvocationType newInvocationType) {
         invocationType = newInvocationType;
+    }
+
+    @Override
+    public boolean hasSideSideEffect() {
+        return true;
     }
 }

@@ -15,10 +15,11 @@
  */
 package de.mirkosertic.bytecoder.core.optimizer;
 
+import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
 public interface Optimizer {
 
-    boolean optimize(final CompileUnit compileUnit , final ResolvedMethod method);
+    boolean optimize(final BackendType backendType, final CompileUnit compileUnit , final ResolvedMethod method);
 }

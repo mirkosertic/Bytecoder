@@ -157,7 +157,7 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
     }
 
     private void testJVMBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier) {
-        if ("".equals(System.getProperty("BYTECODER_DISABLE_JVMTESTS", ""))) {
+        if ("false".equalsIgnoreCase(System.getProperty("BYTECODER_DISABLE_JVMTESTS", "false"))) {
             final TestClass testClass = getTestClass();
             final Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " JVM Target");
             aRunNotifier.fireTestStarted(theDescription);
@@ -256,7 +256,7 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
     }
 
     private void testJSBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier, final TestOption aTestOption) {
-        if ("".equals(System.getProperty("BYTECODER_DISABLE_JSTESTS", ""))) {
+        if ("false".equalsIgnoreCase(System.getProperty("BYTECODER_DISABLE_JSTESTS", "false"))) {
             final TestClass testClass = getTestClass();
             final Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " " + aTestOption.toDescription());
             aRunNotifier.fireTestStarted(theDescription);
@@ -426,7 +426,7 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
     }
 
     private void testWasmBackendFrameworkMethod(final FrameworkMethod aFrameworkMethod, final RunNotifier aRunNotifier, final TestOption aTestOption) {
-        if ("".equals(System.getProperty("BYTECODER_DISABLE_WASMTESTS", ""))) {
+        if ("false".equalsIgnoreCase(System.getProperty("BYTECODER_DISABLE_WASMTESTS", "false"))) {
             final TestClass testClass = getTestClass();
             final Description theDescription = Description.createTestDescription(testClass.getJavaClass(), aFrameworkMethod.getName() + " " + aTestOption.toDescription());
             aRunNotifier.fireTestStarted(theDescription);

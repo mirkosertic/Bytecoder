@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core.test;
 
+import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.optimizer.Optimizer;
@@ -31,9 +32,9 @@ public class FocusOptimizer implements Optimizer {
     }
 
     @Override
-    public boolean optimize(final CompileUnit compileUnit, final ResolvedMethod method) {
+    public boolean optimize(final BackendType backendType, final CompileUnit compileUnit, final ResolvedMethod method) {
         if (method.owner == focus) {
-            return optimizer.optimize(compileUnit, method);
+            return optimizer.optimize(backendType, compileUnit, method);
         }
         return false;
     }

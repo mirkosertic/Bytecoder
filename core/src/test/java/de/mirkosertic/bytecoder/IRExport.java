@@ -1,6 +1,7 @@
 package de.mirkosertic.bytecoder;
 
 import de.mirkosertic.bytecoder.core.Slf4JLogger;
+import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.backend.GeneratedMethodsRegistry;
 import de.mirkosertic.bytecoder.core.backend.js.JSStructuredControlflowCodeGenerator;
 import de.mirkosertic.bytecoder.core.backend.sequencer.DominatorTree;
@@ -58,14 +59,14 @@ public class IRExport {
         }
 
         int optIter = 0;
-        while (Optimizations.DEFAULT.optimize(compileUnit, method)) {
+        while (Optimizations.DEFAULT.optimize(BackendType.Wasm, compileUnit, method)) {
             System.out.println("Running Optimization Step " + ++optIter);
         }
 
 //        new VariableIsConstant().optimize(compileUnit, method);
 
         // Drop no longer used constants
-        for (final Node unusedConstant : g.nodes().stream().filter(t -> ((t.isConstant()) && g.outgoingDataFlowsFor(t).length == 0)).collect(Collectors.toList())) {
+        for (final Node unusedConstant : g.nodes().stream().filter(t -> ((t.isConstant()) && t.outgoingDataFlows().length == 0)).collect(Collectors.toList())) {
             g.deleteNode(unusedConstant);
         }
 

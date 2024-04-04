@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core.backend.opencl;
 
+import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.backend.CodeGenerationFailure;
 import de.mirkosertic.bytecoder.core.backend.sequencer.DominatorTree;
 import de.mirkosertic.bytecoder.core.backend.sequencer.Sequencer;
@@ -90,7 +91,7 @@ public class OpenCLWriter {
 
         final Graph g = method.methodBody;
 
-        while (optimizer.optimize(compileUnit, method)) {
+        while (optimizer.optimize(BackendType.OpenCL, compileUnit, method)) {
             //
         }
 
@@ -134,7 +135,7 @@ public class OpenCLWriter {
 
         final Graph g = method.methodBody;
 
-        while (optimizer.optimize(compileUnit, method)) {
+        while (optimizer.optimize(BackendType.OpenCL, compileUnit, method)) {
             //
         }
 

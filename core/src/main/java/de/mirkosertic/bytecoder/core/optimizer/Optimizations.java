@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core.optimizer;
 
+import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
@@ -26,12 +27,14 @@ public enum Optimizations implements Optimizer {
     DISABLED(new Optimizer[] {
     }),
     DEFAULT(new Optimizer[] {
-                new VariableIsConstant(),
+                new PHIorVariableIsConstant(),
+                new CopyToUnusedPHI(),
                 new VirtualToDirectInvocation(),
                 new DeleteRedundantClassInitializations()
             }),
     ALL(new Optimizer[] {
-            new VariableIsConstant(),
+            new PHIorVariableIsConstant(),
+            new CopyToUnusedPHI(),
             new VirtualToDirectInvocation(),
             new DeleteRedundantClassInitializations()
     }),
@@ -43,7 +46,7 @@ public enum Optimizations implements Optimizer {
         this.optimizers = optimizers;
     }
 
-    public boolean optimize(final CompileUnit compileUnit, final ResolvedMethod method) {
+    public boolean optimize(final BackendType backendType, final CompileUnit compileUnit, final ResolvedMethod method) {
 
         //if (!method.owner.type.getClassName().contains("TailcallVarargs")) {
         //    return false;
@@ -56,12 +59,12 @@ public enum Optimizations implements Optimizer {
         final Set<GlobalOptimizer> go = Arrays.stream(optimizers).filter(t -> t instanceof GlobalOptimizer).map(t -> (GlobalOptimizer) t).collect(Collectors.toSet());
         for (final Optimizer o : optimizers) {
             if (!go.contains(o)) {
-                graphchanged = graphchanged | o.optimize(compileUnit, method);
+                graphchanged = graphchanged | o.optimize(backendType, compileUnit, method);
             }
         }
         if (!graphchanged) {
             for (final GlobalOptimizer o : go) {
-                o.optimize(compileUnit, method);
+                o.optimize(backendType, compileUnit, method);
             }
         }
         return graphchanged;
