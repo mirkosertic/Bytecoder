@@ -29,12 +29,14 @@ public enum Optimizations implements Optimizer {
     DEFAULT(new Optimizer[] {
                 new PHIorVariableIsConstant(),
                 new CopyToUnusedPHI(),
+                new VariableIsVariable(),
                 new VirtualToDirectInvocation(),
                 new DeleteRedundantClassInitializations()
             }),
     ALL(new Optimizer[] {
             new PHIorVariableIsConstant(),
             new CopyToUnusedPHI(),
+            new VariableIsVariable(),
             new VirtualToDirectInvocation(),
             new DeleteRedundantClassInitializations()
     }),

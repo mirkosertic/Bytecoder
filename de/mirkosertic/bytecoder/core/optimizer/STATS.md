@@ -29,3 +29,8 @@
             JBox2D  JS      VirtToDirect    3508957 bytes
             LUA     Wasm    VirtToDirect     552335 bytes
             LUA     JS      VirtToDirect    2565199 bytes
+
+            JBox2D  Wasm    VarIsVar         591408 bytes
+            JBox2D  JS      VarIsVar        3164444 bytes
+            LUA     Wasm    VarIsVar         522726 bytes
+            LUA     JS      VarIsVar        2376294 bytes
