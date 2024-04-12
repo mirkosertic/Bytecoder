@@ -30,6 +30,7 @@ public enum Optimizations implements Optimizer {
                 new PHIorVariableIsConstant(),
                 new CopyToUnusedPHI(),
                 new VariableIsVariable(),
+                new CopyToRedundantVariable(),
                 new VirtualToDirectInvocation(),
                 new DeleteRedundantClassInitializations()
             }),
@@ -37,6 +38,7 @@ public enum Optimizations implements Optimizer {
             new PHIorVariableIsConstant(),
             new CopyToUnusedPHI(),
             new VariableIsVariable(),
+            new CopyToRedundantVariable(),
             new VirtualToDirectInvocation(),
             new DeleteRedundantClassInitializations()
     }),
