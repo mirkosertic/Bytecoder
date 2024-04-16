@@ -22,4 +22,9 @@ public class Sub extends Value {
     Sub(final Graph owner, final Type type) {
         super(owner, type, NodeType.Sub);
     }
+
+    @Override
+    public Sub stampInto(final Graph target) {
+        return target.newSub(type);
+    }
 }

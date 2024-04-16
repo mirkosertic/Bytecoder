@@ -16,6 +16,8 @@
 package de.mirkosertic.bytecoder.core.optimizer;
 
 import de.mirkosertic.bytecoder.core.backend.BackendType;
+import de.mirkosertic.bytecoder.core.backend.CodeGenerationFailure;
+import de.mirkosertic.bytecoder.core.backend.sequencer.DominatorTree;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
@@ -32,7 +34,8 @@ public enum Optimizations implements Optimizer {
                 new VariableIsVariable(),
                 new CopyToRedundantVariable(),
                 new VirtualToDirectInvocation(),
-                new DeleteRedundantClassInitializations()
+                new DeleteRedundantClassInitializations(),
+                new InlineMethodsOptimizer()
             }),
     ALL(new Optimizer[] {
             new PHIorVariableIsConstant(),
@@ -40,7 +43,8 @@ public enum Optimizations implements Optimizer {
             new VariableIsVariable(),
             new CopyToRedundantVariable(),
             new VirtualToDirectInvocation(),
-            new DeleteRedundantClassInitializations()
+            new DeleteRedundantClassInitializations(),
+            new InlineMethodsOptimizer()
     }),
     ;
 
@@ -59,18 +63,22 @@ public enum Optimizations implements Optimizer {
         //    return false;
         //}
 
-        boolean graphchanged = false;
-        final Set<GlobalOptimizer> go = Arrays.stream(optimizers).filter(t -> t instanceof GlobalOptimizer).map(t -> (GlobalOptimizer) t).collect(Collectors.toSet());
-        for (final Optimizer o : optimizers) {
-            if (!go.contains(o)) {
-                graphchanged = graphchanged | o.optimize(backendType, compileUnit, method);
+        try {
+            boolean graphchanged = false;
+            final Set<GlobalOptimizer> go = Arrays.stream(optimizers).filter(t -> t instanceof GlobalOptimizer).map(t -> (GlobalOptimizer) t).collect(Collectors.toSet());
+            for (final Optimizer o : optimizers) {
+                if (!go.contains(o)) {
+                    graphchanged = graphchanged | o.optimize(backendType, compileUnit, method);
+                }
             }
-        }
-        if (!graphchanged) {
-            for (final GlobalOptimizer o : go) {
-                o.optimize(backendType, compileUnit, method);
+            if (!graphchanged) {
+                for (final GlobalOptimizer o : go) {
+                    o.optimize(backendType, compileUnit, method);
+                }
             }
+            return graphchanged;
+        } catch (final RuntimeException e) {
+            throw new CodeGenerationFailure(method, new DominatorTree(method.methodBody), e);
         }
-        return graphchanged;
     }
 }

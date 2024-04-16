@@ -22,4 +22,9 @@ public class InstanceOf extends Value {
     InstanceOf(final Graph owner) {
         super(owner, Type.INT_TYPE, NodeType.InstanceOf);
     }
+
+    @Override
+    public InstanceOf stampInto(final Graph target) {
+        return target.newInstanceOf();
+    }
 }

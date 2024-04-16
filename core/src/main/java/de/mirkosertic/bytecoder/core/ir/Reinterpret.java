@@ -22,4 +22,9 @@ public class Reinterpret extends Value {
     Reinterpret(final Graph owner, final Type type) {
         super(owner, type, NodeType.Reinterpret);
     }
+
+    @Override
+    public Reinterpret stampInto(final Graph target) {
+        return target.newReinterpret(type);
+    }
 }

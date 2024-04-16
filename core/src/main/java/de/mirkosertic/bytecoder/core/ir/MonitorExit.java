@@ -20,4 +20,9 @@ public class MonitorExit extends ControlTokenConsumer {
     MonitorExit(final Graph owner) {
         super(owner, NodeType.MonitorExit);
     }
+
+    @Override
+    public MonitorExit stampInto(final Graph target) {
+        return target.newMonitorExit();
+    }
 }

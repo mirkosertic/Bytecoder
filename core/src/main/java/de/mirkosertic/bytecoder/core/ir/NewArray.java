@@ -22,4 +22,9 @@ public class NewArray extends Value {
     NewArray(final Graph owner, final Type type) {
         super(owner, type, NodeType.NewArray);
     }
+
+    @Override
+    public NewArray stampInto(final Graph target) {
+        return target.newNewArray(type);
+    }
 }

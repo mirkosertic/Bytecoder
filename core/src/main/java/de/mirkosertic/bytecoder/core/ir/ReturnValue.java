@@ -20,4 +20,9 @@ public class ReturnValue extends ControlTokenConsumer {
     ReturnValue(final Graph owner) {
         super(owner, NodeType.ReturnValue);
     }
+
+    @Override
+    public ReturnValue stampInto(final Graph target) {
+        return target.newReturnValue();
+    }
 }

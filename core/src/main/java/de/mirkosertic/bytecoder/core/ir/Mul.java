@@ -22,4 +22,9 @@ public class Mul extends Value {
     Mul(final Graph owner, final Type type) {
         super(owner, type, NodeType.Mul);
     }
+
+    @Override
+    public Mul stampInto(final Graph target) {
+        return target.newMul(type);
+    }
 }

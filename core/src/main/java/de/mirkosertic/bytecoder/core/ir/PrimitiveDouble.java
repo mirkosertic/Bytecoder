@@ -26,9 +26,13 @@ public class PrimitiveDouble extends PrimitiveValue {
         this.value = value;
     }
 
-
     @Override
     public String additionalDebugInfo() {
         return ": " + value;
+    }
+
+    @Override
+    public PrimitiveDouble stampInto(final Graph target) {
+        return target.newDouble(value);
     }
 }

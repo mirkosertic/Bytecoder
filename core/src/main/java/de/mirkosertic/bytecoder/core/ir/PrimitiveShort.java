@@ -26,9 +26,13 @@ public class PrimitiveShort extends PrimitiveValue {
         this.value = value;
     }
 
-
     @Override
     public String additionalDebugInfo() {
         return ": " + value;
+    }
+
+    @Override
+    public PrimitiveShort stampInto(final Graph target) {
+        return target.newShort(value);
     }
 }

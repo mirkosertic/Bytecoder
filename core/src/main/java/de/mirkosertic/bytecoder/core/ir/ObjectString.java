@@ -35,4 +35,9 @@ public class ObjectString extends Value {
     public boolean isConstant() {
         return true;
     }
+
+    @Override
+    public ObjectString stampInto(final Graph target) {
+        return target.newObjectString(value);
+    }
 }

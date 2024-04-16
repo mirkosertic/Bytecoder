@@ -24,6 +24,7 @@ import de.mirkosertic.bytecoder.core.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
+import java.util.ArrayList;
 import java.util.Stack;
 
 public class DeleteRedundantClassInitializations implements GlobalOptimizer {
@@ -48,7 +49,7 @@ public class DeleteRedundantClassInitializations implements GlobalOptimizer {
             if (!rc.requiresClassInitializer()) {
                 ci.deleteFromControlFlow();
             } else {
-                for (final ClassInitialization j : workingQueue) {
+                for (final ClassInitialization j : new ArrayList<>(workingQueue)) {
                     if (j != ci && ci.type.equals(j.type)) {
                         if (dominatorTree.dominates(ci, j)) {
                             j.deleteFromControlFlow();

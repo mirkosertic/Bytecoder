@@ -22,4 +22,9 @@ public class Or extends Value {
     Or(final Graph owner, final Type type) {
         super(owner, type, NodeType.Or);
     }
+
+    @Override
+    public Or stampInto(final Graph target) {
+        return target.newOR(type);
+    }
 }

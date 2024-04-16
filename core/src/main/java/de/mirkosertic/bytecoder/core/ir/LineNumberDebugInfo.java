@@ -28,4 +28,9 @@ public class LineNumberDebugInfo extends ControlTokenConsumer {
     public String additionalDebugInfo() {
         return ": line #" + lineNumber;
     }
+
+    @Override
+    public LineNumberDebugInfo stampInto(final Graph target) {
+        return target.newLineNumberDebugInfo(lineNumber);
+    }
 }

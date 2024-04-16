@@ -25,4 +25,9 @@ public class ResolveCallsite extends Value {
     ResolveCallsite(final Graph owner) {
         super(owner, Type.getType(CallSite.class), NodeType.ResolveCallsite);
     }
+
+    @Override
+    public ResolveCallsite stampInto(final Graph target) {
+        return target.newResolveCallsite();
+    }
 }

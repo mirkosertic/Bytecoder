@@ -86,4 +86,14 @@ public abstract class Node {
     public boolean hasSideSideEffectRecursive() {
         return hasSideEffectInternal(new HashSet<>());
     }
+
+    public abstract <T extends Node> T stampInto(final Graph target);
+
+    public void sanityCheck() {
+        for (final Node incoming : incomingDataFlows) {
+            if (!owner.nodes().contains(incoming)) {
+                throw new IllegalStateException("Incoming node " + incoming + " is not part of the graph!");
+            }
+        }
+    }
 }

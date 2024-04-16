@@ -24,4 +24,9 @@ public class Copy extends ControlTokenConsumer {
     public void deleteFromControlFlow() {
         owner.deleteFromControlFlowInternally(this);
     }
+
+    @Override
+    public Copy stampInto(final Graph target) {
+        return target.newCopy();
+    }
 }

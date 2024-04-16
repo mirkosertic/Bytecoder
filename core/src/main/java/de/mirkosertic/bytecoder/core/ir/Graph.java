@@ -58,8 +58,9 @@ public class Graph {
     public Node[] outgoingDataFlowsFor(final Node n) {
         final Set<Node> result = new HashSet<>();
         for (final Node t : nodes) {
-            for (final Node incoming : t.incomingDataFlows) {
-                if (incoming == n) {
+            final Node[] incoming = t.incomingDataFlows;
+            for (int i = 0; i <incoming.length; i++) {
+                if (incoming[i] == n) {
                     result.add(t);
                 }
             }
@@ -458,16 +459,16 @@ public class Graph {
 
     void deleteFromControlFlowInternally(final ControlTokenConsumer consumer) {
         if (consumer.hasIncomingBackEdges()) {
-            throw new IllegalStateException("Cannot delete node with incoming back edges!");
+            throw new IllegalStateException("Cannot delete node with incoming back edges! Node Type is " + consumer.nodeType);
         }
         if (consumer.controlComingFrom.size() != 1) {
-            throw new IllegalStateException("Can only delete nodes with exactly one incoming edge!");
+            throw new IllegalStateException("Can only delete nodes with exactly one incoming edge! Node Type is " + consumer.nodeType);
         }
         if (consumer.controlFlowsTo.size() != 1) {
-            throw new IllegalStateException("Can only delete nodes with exactly one outgoing edge!");
+            throw new IllegalStateException("Can only delete nodes with exactly one outgoing edge! Node Type is " + consumer.nodeType);
         }
         if (consumer.controlFlowsTo.keySet().stream().anyMatch(t -> t.edgeType() == EdgeType.BACK)) {
-            throw new IllegalStateException("Can only delete nodes without outgoing back edges!");
+            throw new IllegalStateException("Can only delete nodes without outgoing back edges! Node Type is " + consumer.nodeType);
         }
 
         for (final ControlTokenConsumer pred : consumer.controlComingFrom) {
@@ -485,5 +486,19 @@ public class Graph {
         consumer.controlComingFrom.clear();
         consumer.controlFlowsTo.clear();
         nodes.remove(consumer);
+    }
+
+    public void replaceInControlFlow(final ControlTokenConsumer source, final ControlTokenConsumer target) {
+        final Set<ControlTokenConsumer> sources = new HashSet<>(source.controlComingFrom);
+        for (final ControlTokenConsumer s : sources) {
+            s.replaceInControlFlow(source, target);
+        }
+        nodes.remove(source);
+    }
+
+    public void sanityCheck() {
+        for (final Node n : nodes) {
+            n.sanityCheck();
+        }
     }
 }

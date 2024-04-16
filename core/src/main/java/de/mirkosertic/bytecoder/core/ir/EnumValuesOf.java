@@ -22,4 +22,9 @@ public class EnumValuesOf extends Value {
     EnumValuesOf(final Graph owner, final Type type) {
         super(owner, type, NodeType.EnumValuesOf);
     }
+
+    @Override
+    public EnumValuesOf stampInto(final Graph target) {
+        return target.newEnumValuesOf(type);
+    }
 }

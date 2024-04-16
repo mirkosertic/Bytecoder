@@ -22,4 +22,9 @@ public class USHR extends Value {
     USHR(final Graph owner, final Type type) {
         super(owner, type, NodeType.USHR);
     }
+
+    @Override
+    public USHR stampInto(final Graph target) {
+        return target.newUSHR(type);
+    }
 }

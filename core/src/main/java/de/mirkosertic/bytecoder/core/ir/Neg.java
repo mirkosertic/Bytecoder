@@ -22,4 +22,9 @@ public class Neg extends Value {
     Neg(final Graph owner, final Type type) {
         super(owner, type, NodeType.Neg);
     }
+
+    @Override
+    public Neg stampInto(final Graph target) {
+        return target.newNEG(type);
+    }
 }

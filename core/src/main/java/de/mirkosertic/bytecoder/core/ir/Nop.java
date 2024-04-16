@@ -20,4 +20,9 @@ public class Nop extends ControlTokenConsumer {
     Nop(final Graph owner) {
         super(owner, NodeType.Nop);
     }
+
+    @Override
+    public Nop stampInto(final Graph target) {
+        return target.newNop();
+    }
 }

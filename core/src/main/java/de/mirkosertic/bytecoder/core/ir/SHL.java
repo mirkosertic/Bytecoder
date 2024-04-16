@@ -22,4 +22,9 @@ public class SHL extends Value {
     SHL(final Graph owner, final Type type) {
         super(owner, type, NodeType.SHL);
     }
+
+    @Override
+    public SHL stampInto(final Graph target) {
+        return target.newSHL(type);
+    }
 }

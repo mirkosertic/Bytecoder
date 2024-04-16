@@ -22,4 +22,9 @@ public class CMP extends Value {
     CMP(final Graph owner) {
         super(owner, Type.INT_TYPE, NodeType.CMP);
     }
+
+    @Override
+    public CMP stampInto(final Graph target) {
+        return target.newCMP();
+    }
 }

@@ -20,4 +20,9 @@ public class LookupSwitch extends ControlTokenConsumer {
     LookupSwitch(final Graph owner) {
         super(owner, NodeType.LookupSwitch);
     }
+
+    @Override
+    public LookupSwitch stampInto(final Graph target) {
+        return target.newLookupSwitch();
+    }
 }

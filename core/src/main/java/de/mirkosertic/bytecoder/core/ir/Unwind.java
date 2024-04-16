@@ -20,4 +20,9 @@ public class Unwind extends ControlTokenConsumer {
     Unwind(final Graph owner) {
         super(owner, NodeType.Unwind);
     }
+
+    @Override
+    public Unwind stampInto(final Graph target) {
+        return target.newUnwind();
+    }
 }

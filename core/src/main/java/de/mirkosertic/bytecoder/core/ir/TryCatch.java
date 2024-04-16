@@ -20,4 +20,11 @@ public class TryCatch extends Region {
     TryCatch(final Graph owner, final String label) {
         super(owner, label, NodeType.TryCatch);
     }
+
+    @Override
+    public TryCatch stampInto(final Graph target) {
+        final TryCatch t = target.newTryCatch(label);
+        t.frame = frame;
+        return t;
+    }
 }

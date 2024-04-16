@@ -20,4 +20,9 @@ public class MonitorEnter extends ControlTokenConsumer {
     MonitorEnter(final Graph owner) {
         super(owner, NodeType.MonitorEnter);
     }
+
+    @Override
+    public MonitorEnter stampInto(final Graph target) {
+        return target.newMonitorEnter();
+    }
 }

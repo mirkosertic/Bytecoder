@@ -36,4 +36,9 @@ public class MethodArgument extends Value {
     public boolean isConstant() {
         return true;
     }
+
+    @Override
+    public MethodArgument stampInto(final Graph target) {
+        return target.newMethodArgument(type, index);
+    }
 }

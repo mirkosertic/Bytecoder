@@ -39,3 +39,8 @@
             JBox2D  JS      CopyToRedVar    2576857 bytes
             LUA     Wasm    CopyToRedVar     493149 bytes
             LUA     JS      CopyToRedVar    2068370 bytes
+
+            JBox2D  Wasm    InlineCons1     540810 bytes
+            JBox2D  JS      InlineCons1    2822585 bytes
+            LUA     Wasm    InlineCons1     502611 bytes
+            LUA     JS      InlineCons1    2259485 bytes

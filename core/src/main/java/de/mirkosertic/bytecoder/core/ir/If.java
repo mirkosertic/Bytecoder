@@ -20,4 +20,9 @@ public class If extends ControlTokenConsumer {
     If(final Graph owner) {
         super(owner, NodeType.If);
     }
+
+    @Override
+    public If stampInto(final Graph target) {
+        return target.newIf();
+    }
 }

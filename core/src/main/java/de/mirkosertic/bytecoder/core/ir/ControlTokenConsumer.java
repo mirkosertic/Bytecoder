@@ -50,4 +50,30 @@ public abstract class ControlTokenConsumer extends Node {
         }
         return false;
     }
+
+    public void replaceInControlFlow(final ControlTokenConsumer source, final ControlTokenConsumer target) {
+        final Set<Projection> keys = new HashSet<>(controlFlowsTo.keySet());
+        for (final Projection p : keys) {
+            final ControlTokenConsumer t = controlFlowsTo.get(p);
+            if (t == source) {
+                controlFlowsTo.put(p, target);
+            }
+        }
+        target.controlComingFrom.add(this);
+    }
+
+    @Override
+    public void sanityCheck() {
+        super.sanityCheck();
+        for (final ControlTokenConsumer source : controlComingFrom) {
+            if (!owner.nodes().contains(source)) {
+                throw new IllegalStateException("ControlToken from " + source + " is not part of the graph!");
+            }
+        }
+        for (final ControlTokenConsumer target : controlFlowsTo.values()) {
+            if (!owner.nodes().contains(target)) {
+                throw new IllegalStateException("ControlToken to " + target + " is not part of the graph!");
+            }
+        }
+    }
 }

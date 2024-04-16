@@ -23,7 +23,13 @@ import java.util.stream.Collectors;
 
 public class IRExport {
 
+    public static void doit(final String[] args) {
+
+    }
+
     public int dosomething(final int value) {
+        doit(new String[0]);
+        final IRExport dummy = new IRExport();
         int x = value;
         for (int i = 0; i < 100; i++) {
             x = x + i + value;
@@ -42,6 +48,8 @@ public class IRExport {
 
         final ResolvedMethod method = compileUnit.resolveMainMethod(invokedType, "dosomething", Type.getMethodType(Type.INT_TYPE, Type.INT_TYPE));
         //final ResolvedMethod method = compileUnit.resolveMainMethod(invokedType, "need_value", Type.getMethodType(Type.BOOLEAN_TYPE, Type.INT_TYPE));
+
+        //final ResolvedMethod method = compileUnit.resolveMainMethod(Type.getType(Buffer.class), "<clinit>", Type.getMethodType(Type.VOID_TYPE));
 
         compileUnit.finalizeLinkingHierarchy();
 

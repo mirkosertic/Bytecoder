@@ -27,4 +27,9 @@ public class NullReference extends Value {
     public boolean isConstant() {
         return true;
     }
+
+    @Override
+    public NullReference stampInto(final Graph target) {
+        return target.newNullReference();
+    }
 }

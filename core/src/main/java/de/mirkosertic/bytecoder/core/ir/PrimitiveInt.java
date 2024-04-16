@@ -29,4 +29,9 @@ public class PrimitiveInt extends PrimitiveValue {
     public String additionalDebugInfo() {
         return ": " + value;
     }
+
+    @Override
+    public PrimitiveInt stampInto(final Graph target) {
+        return target.newInt(value);
+    }
 }

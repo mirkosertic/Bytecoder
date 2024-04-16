@@ -56,4 +56,9 @@ public class MethodInvocation extends ControlTokenConsumer implements AbstractIn
     public boolean hasSideSideEffect() {
         return true;
     }
+
+    @Override
+    public MethodInvocation stampInto(final Graph target) {
+        return target.newMethodInvocation(invocationType, insnNode, method);
+    }
 }
