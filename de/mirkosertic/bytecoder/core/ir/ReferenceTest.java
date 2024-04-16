@@ -32,4 +32,9 @@ public class ReferenceTest extends Test {
     public String additionalDebugInfo() {
         return ": " + operation;
     }
+
+    @Override
+    public ReferenceTest stampInto(final Graph target) {
+        return target.newReferenceTest(operation);
+    }
 }

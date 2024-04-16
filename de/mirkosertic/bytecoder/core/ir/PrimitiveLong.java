@@ -30,4 +30,9 @@ public class PrimitiveLong extends PrimitiveValue {
     public String additionalDebugInfo() {
         return ": " + value;
     }
+
+    @Override
+    public PrimitiveLong stampInto(final Graph target) {
+        return target.newLong(value);
+    }
 }

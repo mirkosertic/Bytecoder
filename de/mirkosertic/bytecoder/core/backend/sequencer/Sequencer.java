@@ -105,115 +105,121 @@ public class Sequencer {
         };
 
         while (current != null) {
-            switch (current.nodeType) {
-                case TryCatch: {
-                    // Special-Case : branching
-                    visit((TryCatch) current, activeStack);
-                    current = null;
-                    break;
+            try {
+                switch (current.nodeType) {
+                    case TryCatch: {
+                        // Special-Case : branching
+                        visit((TryCatch) current, activeStack);
+                        current = null;
+                        break;
+                    }
+                    case If: {
+                        // Special-Case : branching
+                        visit((If) current, activeStack);
+                        current = null;
+                        break;
+                    }
+                    case TableSwitch: {
+                        // Special-Case : branching
+                        visit((TableSwitch) current, activeStack);
+                        current = null;
+                        break;
+                    }
+                    case LookupSwitch: {
+                        // Special-Case : branching
+                        visit((LookupSwitch) current, activeStack);
+                        current = null;
+                        break;
+                    }
+                    case Region: {
+                        visit((Region) current, activeStack);
+                        current = followUpProcessor.apply(current);
+                        break;
+                    }
+                    case MethodInvocation: {
+                        codegenerator.write((MethodInvocation) current);
+                        current = followUpProcessor.apply(current);
+                        break;
+                    }
+                    case Copy: {
+                        codegenerator.write((Copy) current);
+                        current = followUpProcessor.apply(current);
+                        break;
+                    }
+                    case Return: {
+                        codegenerator.write((Return) current);
+                        // We are finished here
+                        current = null;
+                        break;
+                    }
+                    case ReturnValue: {
+                        codegenerator.write((ReturnValue) current);
+                        // We are finished here
+                        current = null;
+                        break;
+                    }
+                    case SetInstanceField: {
+                        codegenerator.write((SetInstanceField) current);
+                        current = followUpProcessor.apply(current);
+                        break;
+                    }
+                    case ArrayStore: {
+                        codegenerator.write((ArrayStore) current);
+                        current = followUpProcessor.apply(current);
+                        break;
+                    }
+                    case SetClassField: {
+                        codegenerator.write((SetClassField) current);
+                        current = followUpProcessor.apply(current);
+                        break;
+                    }
+                    case LineNumberDebugInfo: {
+                        codegenerator.write((LineNumberDebugInfo) current);
+                        current = followUpProcessor.apply(current);
+                        break;
+                    }
+                    case FrameDebugInfo: {
+                        codegenerator.write((FrameDebugInfo) current);
+                        current = followUpProcessor.apply(current);
+                        break;
+                    }
+                    case Goto: {
+                        codegenerator.write((Goto) current);
+                        current = followUpProcessor.apply(current);
+                        break;
+                    }
+                    case MonitorEnter: {
+                        codegenerator.write((MonitorEnter) current);
+                        current = followUpProcessor.apply(current);
+                        break;
+                    }
+                    case MonitorExit: {
+                        codegenerator.write((MonitorExit) current);
+                        current = followUpProcessor.apply(current);
+                        break;
+                    }
+                    case Unwind: {
+                        codegenerator.write((Unwind) current);
+                        // We are finished here
+                        current = null;
+                        break;
+                    }
+                    case ClassInitialization: {
+                        codegenerator.write((ClassInitialization) current);
+                        current = followUpProcessor.apply(current);
+                        break;
+                    }
+                    case Nop: {
+                        current = followUpProcessor.apply(current);
+                        break;
+                    }
+                    default:
+                        throw new IllegalStateException("Unsupported node type : " + current.nodeType);
                 }
-                case If: {
-                    // Special-Case : branching
-                    visit((If) current, activeStack);
-                    current = null;
-                    break;
-                }
-                case TableSwitch: {
-                    // Special-Case : branching
-                    visit((TableSwitch) current, activeStack);
-                    current = null;
-                    break;
-                }
-                case LookupSwitch: {
-                    // Special-Case : branching
-                    visit((LookupSwitch) current, activeStack);
-                    current = null;
-                    break;
-                }
-                case Region: {
-                    visit((Region) current, activeStack);
-                    current = followUpProcessor.apply(current);
-                    break;
-                }
-                case MethodInvocation: {
-                    codegenerator.write((MethodInvocation) current);
-                    current = followUpProcessor.apply(current);
-                    break;
-                }
-                case Copy: {
-                    codegenerator.write((Copy) current);
-                    current = followUpProcessor.apply(current);
-                    break;
-                }
-                case Return: {
-                    codegenerator.write((Return) current);
-                    // We are finished here
-                    current = null;
-                    break;
-                }
-                case ReturnValue: {
-                    codegenerator.write((ReturnValue) current);
-                    // We are finished here
-                    current = null;
-                    break;
-                }
-                case SetInstanceField: {
-                    codegenerator.write((SetInstanceField) current);
-                    current = followUpProcessor.apply(current);
-                    break;
-                }
-                case ArrayStore: {
-                    codegenerator.write((ArrayStore) current);
-                    current = followUpProcessor.apply(current);
-                    break;
-                }
-                case SetClassField: {
-                    codegenerator.write((SetClassField) current);
-                    current = followUpProcessor.apply(current);
-                    break;
-                }
-                case LineNumberDebugInfo: {
-                    codegenerator.write((LineNumberDebugInfo) current);
-                    current = followUpProcessor.apply(current);
-                    break;
-                }
-                case FrameDebugInfo: {
-                    codegenerator.write((FrameDebugInfo) current);
-                    current = followUpProcessor.apply(current);
-                    break;
-                }
-                case Goto: {
-                    codegenerator.write((Goto) current);
-                    current = followUpProcessor.apply(current);
-                    break;
-                }
-                case MonitorEnter: {
-                    codegenerator.write((MonitorEnter) current);
-                    current = followUpProcessor.apply(current);
-                    break;
-                }
-                case MonitorExit: {
-                    codegenerator.write((MonitorExit) current);
-                    current = followUpProcessor.apply(current);
-                    break;
-                }
-                case Unwind: {
-                    codegenerator.write((Unwind) current);
-                    // We are finished here
-                    current = null;
-                    break;
-                }
-                case ClassInitialization: {
-                    codegenerator.write((ClassInitialization) current);
-                    current = followUpProcessor.apply(current);
-                    break;
-                }
-                case Nop: {
-                    current = followUpProcessor.apply(current);
-                    break;
-                }
-                default:
-                    throw new IllegalStateException("Unsupported node type : " + current.nodeType);
+            } catch (final IllegalStateException e) {
+                throw e;
+            } catch (final RuntimeException e) {
+                throw new RuntimeException("Error processing node #" + graph.nodes().indexOf(current) + " " + current.nodeType + current.additionalDebugInfo(), e);
             }
         }
 

@@ -27,4 +27,9 @@ public class CaughtException extends Value {
     public boolean isConstant() {
         return true;
     }
+
+    @Override
+    public CaughtException stampInto(final Graph target) {
+        return target.newCaughtException(type);
+    }
 }

@@ -32,4 +32,9 @@ public class NullTest extends Test {
     public String additionalDebugInfo() {
         return ": " + operation;
     }
+
+    @Override
+    public NullTest stampInto(final Graph target) {
+        return target.newNullTest(operation);
+    }
 }

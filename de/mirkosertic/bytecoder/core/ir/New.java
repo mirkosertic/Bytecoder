@@ -22,4 +22,9 @@ public class New extends Value {
     New(final Graph owner, final Type type) {
         super(owner, type, NodeType.New);
     }
+
+    @Override
+    public New stampInto(final Graph target) {
+        return target.newNew(type);
+    }
 }

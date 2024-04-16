@@ -26,7 +26,17 @@ public class ClassInitialization extends ControlTokenConsumer {
         this.type = type;
     }
 
+    @Override
+    public String additionalDebugInfo() {
+        return ": " + type.getClassName();
+    }
+
     public void deleteFromControlFlow() {
         owner.deleteFromControlFlowInternally(this);
+    }
+
+    @Override
+    public ClassInitialization stampInto(final Graph target) {
+        return target.newClassInitialization(type);
     }
 }

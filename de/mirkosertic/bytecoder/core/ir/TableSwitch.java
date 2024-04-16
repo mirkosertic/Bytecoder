@@ -25,4 +25,9 @@ public class TableSwitch extends ControlTokenConsumer {
         this.min = min;
         this.max = max;
     }
+
+    @Override
+    public TableSwitch stampInto(final Graph target) {
+        return target.newTableSwitch(min, max);
+    }
 }

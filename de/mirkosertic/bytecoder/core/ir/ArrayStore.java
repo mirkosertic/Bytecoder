@@ -25,4 +25,9 @@ public class ArrayStore extends ControlTokenConsumer {
     public boolean hasSideSideEffect() {
         return true;
     }
+
+    @Override
+    public ArrayStore stampInto(final Graph target) {
+        return target.newArrayStore();
+    }
 }

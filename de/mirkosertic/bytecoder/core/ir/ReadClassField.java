@@ -30,4 +30,9 @@ public class ReadClassField extends Value {
     public String additionalDebugInfo() {
         return ": " + resolvedField.name;
     }
+
+    @Override
+    public ReadClassField stampInto(final Graph target) {
+        return target.newClassFieldExpression(type, resolvedField);
+    }
 }

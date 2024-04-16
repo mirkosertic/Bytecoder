@@ -22,4 +22,9 @@ public class XOr extends Value {
     XOr(final Graph owner, final Type type) {
         super(owner, type, NodeType.XOr);
     }
+
+    @Override
+    public XOr stampInto(final Graph target) {
+        return target.newXOR(type);
+    }
 }

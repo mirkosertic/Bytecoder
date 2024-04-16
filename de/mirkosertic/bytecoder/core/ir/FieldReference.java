@@ -28,4 +28,9 @@ public class FieldReference extends Reference {
     public String additionalDebugInfo() {
         return ": " + resolvedField.owner.type +"." + resolvedField.name + type ;
     }
+
+    @Override
+    public FieldReference stampInto(final Graph target) {
+        return target.newFieldReference(resolvedField, kind);
+    }
 }

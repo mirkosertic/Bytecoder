@@ -22,4 +22,9 @@ public class And extends Value {
     And(final Graph owner, final Type type) {
         super(owner, type, NodeType.And);
     }
+
+    @Override
+    public And stampInto(final Graph target) {
+        return target.newAND(type);
+    }
 }

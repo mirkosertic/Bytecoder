@@ -33,4 +33,9 @@ public class SetInstanceField extends ControlTokenConsumer {
     public boolean hasSideSideEffect() {
         return true;
     }
+
+    @Override
+    public SetInstanceField stampInto(final Graph target) {
+        return target.newSetInstanceField(field);
+    }
 }

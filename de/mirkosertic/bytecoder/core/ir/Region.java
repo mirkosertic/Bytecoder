@@ -30,14 +30,15 @@ public class Region extends ControlTokenConsumer {
         this(owner, label, NodeType.Region);
     }
 
-
-    @Override
-    public void addControlFlowTo(final Projection projection, final ControlTokenConsumer node) {
-        super.addControlFlowTo(projection, node);
-    }
-
     @Override
     public String additionalDebugInfo() {
         return label;
+    }
+
+    @Override
+    public Region stampInto(final Graph target) {
+        final Region r = target.newRegion(label);
+        r.frame = frame;
+        return r;
     }
 }

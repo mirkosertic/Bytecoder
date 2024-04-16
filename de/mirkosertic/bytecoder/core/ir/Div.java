@@ -22,4 +22,9 @@ public class Div extends Value {
     Div(final Graph owner, final Type type) {
         super(owner, type, NodeType.Div);
     }
+
+    @Override
+    public Div stampInto(final Graph target) {
+        return target.newDiv(type);
+    }
 }

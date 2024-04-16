@@ -33,4 +33,9 @@ public class SetClassField extends ControlTokenConsumer {
     public boolean hasSideSideEffect() {
         return true;
     }
+
+    @Override
+    public SetClassField stampInto(final Graph target) {
+        return target.newSetClassField(field);
+    }
 }

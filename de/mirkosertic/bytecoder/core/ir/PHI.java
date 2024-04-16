@@ -22,4 +22,9 @@ public class PHI extends AbstractVar {
     PHI(final Graph owner, final Type type) {
         super(owner, type, NodeType.PHI);
     }
+
+    @Override
+    public PHI stampInto(final Graph target) {
+        return target.newPHI(type);
+    }
 }

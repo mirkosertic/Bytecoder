@@ -35,9 +35,9 @@ public class MethodInvocationExpression extends Value implements AbstractInvocat
     @Override
     public String additionalDebugInfo() {
         if (insnNode == null) {
-            return invocationType + " " + method.owner + "." + method.methodNode.name;
+            return invocationType + " " + method.owner.type + "." + method.methodNode.name;
         }
-        return invocationType + " " + method.owner + "." + method.methodNode.name + insnNode.desc;
+        return invocationType + " " + method.owner.type + "." + method.methodNode.name + insnNode.desc;
     }
 
     @Override
@@ -58,5 +58,10 @@ public class MethodInvocationExpression extends Value implements AbstractInvocat
     @Override
     public boolean hasSideSideEffect() {
         return true;
+    }
+
+    @Override
+    public MethodInvocationExpression stampInto(final Graph target) {
+        return target.newMethodInvocationExpression(invocationType, insnNode, method);
     }
 }

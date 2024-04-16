@@ -59,10 +59,10 @@ public class VirtualToDirectInvocation implements Optimizer {
     @Override
     public boolean optimize(final BackendType backendType, final CompileUnit compileUnit, final ResolvedMethod method) {
 
-        if (backendType == BackendType.JS) {
-            // Ineffizient Optimization on JS backend...
+        /*if (backendType == BackendType.JS) {
+            // Inefficient optimization on JS backend...
             return false;
-        }
+        }*/
 
         final Graph g = method.methodBody;
 

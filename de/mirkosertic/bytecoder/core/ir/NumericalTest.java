@@ -32,4 +32,9 @@ public class NumericalTest extends Test {
     public String additionalDebugInfo() {
         return ": " + operation;
     }
+
+    @Override
+    public NumericalTest stampInto(final Graph target) {
+        return target.newNumericalTest(operation);
+    }
 }

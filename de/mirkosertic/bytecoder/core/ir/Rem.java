@@ -22,4 +22,9 @@ public class Rem extends Value {
     Rem(final Graph owner, final Type type) {
         super(owner, type, NodeType.Rem);
     }
+
+    @Override
+    public Rem stampInto(final Graph target) {
+        return target.newRem(type);
+    }
 }

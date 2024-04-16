@@ -41,4 +41,9 @@ public class BootstrapMethod extends Value {
     public boolean isConstant() {
         return true;
     }
+
+    @Override
+    public BootstrapMethod stampInto(final Graph target) {
+        return target.newBootstrapMethod(methodType, className, methodName, kind);
+    }
 }

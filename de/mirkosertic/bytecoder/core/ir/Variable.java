@@ -22,4 +22,9 @@ public class Variable extends AbstractVar {
     Variable(final Graph owner, final Type value) {
         super(owner, value, NodeType.Variable);
     }
+
+    @Override
+    public Variable stampInto(final Graph target) {
+        return target.newVariable(type);
+    }
 }

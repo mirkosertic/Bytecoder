@@ -23,4 +23,9 @@ public class InvokeDynamicExpression extends Value {
     InvokeDynamicExpression(final Graph owner, final Type type) {
         super(owner, type, NodeType.InvokeDynamicExpression);
     }
+
+    @Override
+    public InvokeDynamicExpression stampInto(final Graph target) {
+        return target.newInvokeDynamicExpression(type);
+    }
 }

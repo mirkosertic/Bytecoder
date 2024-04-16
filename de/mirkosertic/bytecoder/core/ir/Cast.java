@@ -22,4 +22,9 @@ public class Cast extends Value {
     Cast(final Graph owner, final Type type) {
         super(owner, type, NodeType.Cast);
     }
+
+    @Override
+    public Cast stampInto(final Graph target) {
+        return target.newCast(type);
+    }
 }

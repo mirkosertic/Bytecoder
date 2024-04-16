@@ -20,4 +20,9 @@ public class Goto extends ControlTokenConsumer {
     Goto(final Graph owner) {
         super(owner, NodeType.Goto);
     }
+
+    @Override
+    public Goto stampInto(final Graph target) {
+        return target.newGoto();
+    }
 }

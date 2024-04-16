@@ -32,4 +32,9 @@ public class TypeReference extends Value {
     public boolean isConstant() {
         return true;
     }
+
+    @Override
+    public TypeReference stampInto(final Graph target) {
+        return target.newTypeReference(type);
+    }
 }

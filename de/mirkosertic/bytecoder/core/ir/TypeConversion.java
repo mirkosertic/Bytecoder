@@ -22,4 +22,9 @@ public class TypeConversion extends Value {
     TypeConversion(final Graph owner, final Type type) {
         super(owner, type, NodeType.TypeConversion);
     }
+
+    @Override
+    public TypeConversion stampInto(final Graph target) {
+        return target.newTypeConversion(type);
+    }
 }

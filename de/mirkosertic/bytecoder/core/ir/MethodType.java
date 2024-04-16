@@ -23,9 +23,13 @@ public class MethodType extends PrimitiveValue {
         super(owner, type, NodeType.MethodType);
     }
 
-
     @Override
     public String additionalDebugInfo() {
         return ": " + type;
+    }
+
+    @Override
+    public MethodType stampInto(final Graph target) {
+        return target.newMethodType(type);
     }
 }

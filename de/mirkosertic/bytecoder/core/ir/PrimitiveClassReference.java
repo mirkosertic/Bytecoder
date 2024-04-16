@@ -30,4 +30,8 @@ public class PrimitiveClassReference extends Value {
         return true;
     }
 
+    @Override
+    public PrimitiveClassReference stampInto(final Graph target) {
+        return target.newPrimitiveClassReference(type);
+    }
 }

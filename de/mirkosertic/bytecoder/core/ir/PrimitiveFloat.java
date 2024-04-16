@@ -26,9 +26,13 @@ public class PrimitiveFloat extends PrimitiveValue {
         this.value = value;
     }
 
-
     @Override
     public String additionalDebugInfo() {
         return ": " + value;
+    }
+
+    @Override
+    public PrimitiveFloat stampInto(final Graph target) {
+        return target.newFloat(value);
     }
 }

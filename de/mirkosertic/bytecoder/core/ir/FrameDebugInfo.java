@@ -23,4 +23,9 @@ public class FrameDebugInfo extends ControlTokenConsumer {
         super(owner, NodeType.FrameDebugInfo);
         this.frame = frame;
     }
+
+    @Override
+    public FrameDebugInfo stampInto(final Graph target) {
+        return target.newFrameDebugInfo(frame);
+    }
 }

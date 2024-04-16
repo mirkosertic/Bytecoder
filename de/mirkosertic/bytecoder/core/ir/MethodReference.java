@@ -29,4 +29,9 @@ public class MethodReference extends Reference {
     public String additionalDebugInfo() {
         return ": " + resolvedMethod.owner.type +"." + resolvedMethod.methodNode.name + type ;
     }
+
+    @Override
+    public MethodReference stampInto(final Graph target) {
+        return target.newMethodReference(resolvedMethod, kind);
+    }
 }

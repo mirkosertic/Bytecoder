@@ -32,4 +32,9 @@ public class RuntimeClass extends Value {
     public boolean isConstant() {
         return true;
     }
+
+    @Override
+    public RuntimeClass stampInto(final Graph target) {
+        return target.newRuntimeClass();
+    }
 }

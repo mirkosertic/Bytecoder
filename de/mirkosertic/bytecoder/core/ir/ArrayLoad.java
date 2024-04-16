@@ -22,4 +22,9 @@ public class ArrayLoad extends Value {
     ArrayLoad(final Graph owner, final Type type) {
         super(owner, type, NodeType.ArrayLoad);
     }
+
+    @Override
+    public ArrayLoad stampInto(final Graph target) {
+        return target.newArrayLoad(type);
+    }
 }
