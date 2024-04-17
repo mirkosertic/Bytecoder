@@ -29,11 +29,6 @@ public class This extends Value {
     }
 
     @Override
-    public boolean isConstant() {
-        return true;
-    }
-
-    @Override
     public This stampInto(final Graph target) {
         return target.newThis(type);
     }

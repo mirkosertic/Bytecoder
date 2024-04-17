@@ -15,7 +15,6 @@
  */
 package de.mirkosertic.bytecoder.core.backend.opencl;
 
-import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.backend.CodeGenerationFailure;
 import de.mirkosertic.bytecoder.core.backend.sequencer.DominatorTree;
 import de.mirkosertic.bytecoder.core.backend.sequencer.Sequencer;
@@ -90,17 +89,7 @@ public class OpenCLWriter {
         pw.println(") {");
 
         final Graph g = method.methodBody;
-
-        while (optimizer.optimize(BackendType.OpenCL, compileUnit, method)) {
-            //
-        }
-
         final DominatorTree dt = new DominatorTree(g);
-
-        if (kernelClass.classNode.sourceFile != null) {
-            pw.print("    // source file is ");
-            pw.println(kernelClass.classNode.sourceFile);
-        }
 
         try {
             new Sequencer(g, dt, new OpenCLStructuredControlflowCodeGenerator(compileUnit, kernelClass, pw, inputOutputs));
@@ -134,17 +123,7 @@ public class OpenCLWriter {
         pw.println(") {");
 
         final Graph g = method.methodBody;
-
-        while (optimizer.optimize(BackendType.OpenCL, compileUnit, method)) {
-            //
-        }
-
         final DominatorTree dt = new DominatorTree(g);
-
-        if (kernelClass.classNode.sourceFile != null) {
-            pw.print("    // source file is ");
-            pw.println(kernelClass.classNode.sourceFile);
-        }
 
         try {
             new Sequencer(g, dt, new OpenCLStructuredControlflowCodeGenerator(compileUnit, kernelClass, pw, inputOutputs));

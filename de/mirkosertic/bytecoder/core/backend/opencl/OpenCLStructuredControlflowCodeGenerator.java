@@ -143,7 +143,9 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
     @Override
     public void write(final LineNumberDebugInfo node) {
         writeIndent();
-        pw.print("// line number ");
+        pw.print("// ");
+        pw.print(node.sourceFile);
+        pw.print("#");
         pw.println(node.lineNumber);
     }
 

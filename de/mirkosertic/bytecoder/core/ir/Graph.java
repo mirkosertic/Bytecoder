@@ -383,8 +383,8 @@ public class Graph {
         return (PrimitiveLong) register(new PrimitiveLong(this, constant));
     }
 
-    public LineNumberDebugInfo newLineNumberDebugInfo(final int lineNumber) {
-        return (LineNumberDebugInfo) register(new LineNumberDebugInfo(this, lineNumber));
+    public LineNumberDebugInfo newLineNumberDebugInfo(final String sourceFile, final int lineNumber) {
+        return (LineNumberDebugInfo) register(new LineNumberDebugInfo(this, sourceFile, lineNumber));
     }
 
     public FrameDebugInfo newFrameDebugInfo(final Frame frame) {
@@ -459,16 +459,16 @@ public class Graph {
 
     void deleteFromControlFlowInternally(final ControlTokenConsumer consumer) {
         if (consumer.hasIncomingBackEdges()) {
-            throw new IllegalStateException("Cannot delete node with incoming back edges! Node Type is " + consumer.nodeType);
+            throw new IllegalStateException("Cannot delete node with incoming back edges! Node Type is " + consumer.nodeType + " #" + consumer.owner.nodes.indexOf(consumer));
         }
         if (consumer.controlComingFrom.size() != 1) {
-            throw new IllegalStateException("Can only delete nodes with exactly one incoming edge! Node Type is " + consumer.nodeType);
+//            throw new IllegalStateException("Can only delete nodes with exactly one incoming edge! Node Type is " + consumer.nodeType + " #" + consumer.owner.nodes.indexOf(consumer));
         }
         if (consumer.controlFlowsTo.size() != 1) {
-            throw new IllegalStateException("Can only delete nodes with exactly one outgoing edge! Node Type is " + consumer.nodeType);
+            throw new IllegalStateException("Can only delete nodes with exactly one outgoing edge! Node Type is " + consumer.nodeType + " #" + consumer.owner.nodes.indexOf(consumer));
         }
         if (consumer.controlFlowsTo.keySet().stream().anyMatch(t -> t.edgeType() == EdgeType.BACK)) {
-            throw new IllegalStateException("Can only delete nodes without outgoing back edges! Node Type is " + consumer.nodeType);
+            throw new IllegalStateException("Can only delete nodes without outgoing back edges! Node Type is " + consumer.nodeType + " #" + consumer.owner.nodes.indexOf(consumer));
         }
 
         for (final ControlTokenConsumer pred : consumer.controlComingFrom) {

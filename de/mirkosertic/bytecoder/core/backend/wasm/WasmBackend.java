@@ -18,7 +18,6 @@ package de.mirkosertic.bytecoder.core.backend.wasm;
 import de.mirkosertic.bytecoder.api.Callback;
 import de.mirkosertic.bytecoder.api.ClassLibProvider;
 import de.mirkosertic.bytecoder.classlib.Array;
-import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.backend.CodeGenerationFailure;
 import de.mirkosertic.bytecoder.core.backend.CompileOptions;
 import de.mirkosertic.bytecoder.core.backend.CompileResult;
@@ -26,7 +25,6 @@ import de.mirkosertic.bytecoder.core.backend.MethodToIDMapper;
 import de.mirkosertic.bytecoder.core.backend.OpaqueReferenceTypeHelpers;
 import de.mirkosertic.bytecoder.core.backend.GeneratedMethod;
 import de.mirkosertic.bytecoder.core.backend.GeneratedMethodsRegistry;
-import de.mirkosertic.bytecoder.core.optimizer.OptimizerLogging;
 import de.mirkosertic.bytecoder.core.backend.VTableResolver;
 import de.mirkosertic.bytecoder.core.backend.sequencer.DominatorTree;
 import de.mirkosertic.bytecoder.core.backend.sequencer.Sequencer;
@@ -55,7 +53,6 @@ import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.core.ir.ResolvedField;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
-import de.mirkosertic.bytecoder.core.optimizer.Optimizer;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 import de.mirkosertic.bytecoder.core.parser.ConstantPool;
 import org.apache.commons.io.IOUtils;
@@ -825,24 +822,10 @@ public class WasmBackend {
                         }
 
                         final Graph g = method.methodBody;
-                        final Optimizer o = compileOptions.getOptimizer();
-
-                        final OptimizerLogging optimizerLogging = new OptimizerLogging(method);
-                        int optimizerStep = 0;
-                        while (o.optimize(BackendType.Wasm, compileUnit, method)) {
-                            optimizerStep++;
-                            optimizerLogging.logStep(optimizerStep);
-                        }
-
                         final DominatorTree dt = new DominatorTree(g);
-
-                        if (cl.classNode.sourceFile != null) {
-                            implFunction.flow.comment("source file is " + cl.classNode.sourceFile);
-                        }
 
                         try {
                             new Sequencer(g, dt, new WasmStructuredControlflowCodeGenerator(compileUnit, module, rtTypeMappings, objectTypeMappings, implFunction, toWASMType, toFunctionType, methodToIDMapper, g, resolvedClasses, vTableResolver, generatedMethodsRegistry));
-                            optimizerLogging.finished();
                         } catch (final CodeGenerationFailure e) {
                             throw e;
                         } catch (final RuntimeException e) {

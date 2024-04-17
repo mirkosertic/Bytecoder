@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core.backend.opencl;
 
+import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.ir.AnalysisStack;
 import de.mirkosertic.bytecoder.core.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.core.ir.ResolvedField;
@@ -48,6 +49,8 @@ public class OpenCLCompileBackend {
 
         compileUnit.finalizeLinkingHierarchy();
 
+        compileUnit.optimize(BackendType.OpenCL, optimizer);
+
         // Ok, at this point we have to map kernel arguments
         // Every member of the kernel class becomes a kernel function argument
         try {
@@ -56,7 +59,7 @@ public class OpenCLCompileBackend {
             throw new RuntimeException(e);
         }
 
-        // And then we ca pass it to the code generator to generate the kernel code
+        // And then we can pass it to the code generator to generate the kernel code
         final OpenCLWriter writer = new OpenCLWriter(kernelClass, new PrintWriter(strWriter), compileUnit, inputOutputs, optimizer);
 
         for (final ResolvedMethod method : kernelClass.resolvedMethods) {

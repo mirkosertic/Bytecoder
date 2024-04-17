@@ -81,6 +81,7 @@ import org.objectweb.asm.Handle;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FrameNode;
 import org.objectweb.asm.tree.IincInsnNode;
@@ -126,12 +127,15 @@ public class GraphParser {
 
     private final Map<Integer, String> opcodeToName;
 
-    public GraphParser(final CompileUnit compileUnit, final Type ownerType, final MethodNode methodNode, final AnalysisStack analysisStack) {
+    private final ClassNode classNode;
+
+    public GraphParser(final CompileUnit compileUnit, final Type ownerType, final ClassNode classNode, final MethodNode methodNode, final AnalysisStack analysisStack) {
         this.methodNode = methodNode;
         this.graph = new Graph(compileUnit.getLogger());
         this.compileUnit = compileUnit;
         this.analysisStack = analysisStack;
         this.opcodeToName = new HashMap<>();
+        this.classNode = classNode;
 
         for (final Field f : Opcodes.class.getDeclaredFields()) {
             if (f.getType() == int.class &&
@@ -503,7 +507,7 @@ public class GraphParser {
     private List<ControlFlow> parseLineNumberNode(final ControlFlow currentFlow) {
         final LineNumberNode node = (LineNumberNode) currentFlow.currentNode;
         final GraphParserState currentState = currentFlow.graphParserState;
-        final LineNumberDebugInfo n = graph.newLineNumberDebugInfo(node.line);
+        final LineNumberDebugInfo n = graph.newLineNumberDebugInfo(classNode.sourceFile, node.line);
 
         graph.registerTranslation(node, new InstructionTranslation(currentState.frame, n));
 
