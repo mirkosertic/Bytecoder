@@ -25,7 +25,7 @@ import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
 import java.util.Stack;
 
-public class CopyToUnusedPHI implements Optimizer {
+public class CopyToUnusedPHIOrVariable implements Optimizer {
 
     @Override
     public boolean optimize(final BackendType backendType, final CompileUnit compileUnit, final ResolvedMethod method) {
@@ -36,7 +36,7 @@ public class CopyToUnusedPHI implements Optimizer {
         // Variable and Constant propagation
         final Stack<Copy> workingQueue = new Stack<>();
 
-        // We search Copy operation to an unused PHI, e.g. the PHI has no outgoing data usage
+        // We search Copy operation to an unused PHI or Variable, e.g. the PHI or Variable has no outgoing data usage
         // The source of the copy must not be an operation with side effects, to prevent program flow corruption
         g.nodes().stream().filter(t -> t.nodeType == NodeType.Copy && !(t.incomingDataFlows[0].hasSideSideEffectRecursive())).map(t -> (Copy) t).forEach(workingQueue::push);
 
@@ -46,19 +46,19 @@ public class CopyToUnusedPHI implements Optimizer {
             final Copy workingItem = workingQueue.pop();
 
             final Node[] outgoingDataFlows = workingItem.outgoingDataFlows();
-            if (outgoingDataFlows[0].nodeType == NodeType.PHI) {
-                final Node phi = outgoingDataFlows[0];
-                final Node[] phiOutgoingDataFlows = phi.outgoingDataFlows();
-                if (phiOutgoingDataFlows.length == 0) {
-                    // This phi is unused
-                    if (phi.incomingDataFlows.length == 1) {
-                        // And it is assigned exactly once, hence we can delete the phi and the assignment
+            if (outgoingDataFlows[0].nodeType == NodeType.PHI || outgoingDataFlows[0].nodeType == NodeType.Variable) {
+                final Node copyTarget = outgoingDataFlows[0];
+                final Node[] copyTargetOutgoingDataFlows = copyTarget.outgoingDataFlows();
+                if (copyTargetOutgoingDataFlows.length == 0) {
+                    // This copy target is unused
+                    if (copyTarget.incomingDataFlows.length == 1) {
+                        // And it is assigned exactly once, hence we can delete the target and the assignment
 
                         // We remap all control flow from the predecessor of the working item to the successor
                         // of the working item. After this the successor is no longer part of the control flow
                         workingItem.deleteFromControlFlow();
 
-                        g.deleteNode(phi);
+                        g.deleteNode(copyTarget);
 
                         changed = true;
                     }

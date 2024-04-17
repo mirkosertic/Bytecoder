@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.cli;
 
 import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.core.Slf4JLogger;
+import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.backend.CompileOptions;
 import de.mirkosertic.bytecoder.core.backend.CompileResult;
 import de.mirkosertic.bytecoder.core.backend.js.JSBackend;
@@ -32,9 +33,7 @@ import org.objectweb.asm.Type;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.Arrays;
 import java.util.concurrent.Callable;
 
 import static de.mirkosertic.bytecoder.cli.BytecoderCommand.parseClasspath;
@@ -78,6 +77,9 @@ public class CompileJSCommand implements Callable<Integer> {
 
             final Logger logger = new Slf4JLogger();
 
+            final CompileOptions compileOptions =
+                    new CompileOptions(logger, Optimizations.valueOf(optimizationLevel), additionalResources, filenamePrefix, false);
+
             logger.info("Compiling main class {} to directory {}", mainClass, buildDirectory);
 
             final CompileUnit compileUnit = new CompileUnit(loader, logger, new JSIntrinsics());
@@ -89,12 +91,12 @@ public class CompileJSCommand implements Callable<Integer> {
                 compileUnit.resolveClass(Type.getObjectType(className.replace('.', '/')), new AnalysisStack());
             }
 
+
             compileUnit.finalizeLinkingHierarchy();
 
-            compileUnit.logStatistics();
+            compileUnit.optimize(BackendType.JS, compileOptions.getOptimizer());
 
-            final CompileOptions compileOptions =
-                    new CompileOptions(logger, Optimizations.valueOf(optimizationLevel), additionalResources, filenamePrefix, false);
+            compileUnit.logStatistics();
 
             final JSBackend backend = new JSBackend();
             final JSCompileResult result = backend.generateCodeFor(compileUnit, compileOptions);

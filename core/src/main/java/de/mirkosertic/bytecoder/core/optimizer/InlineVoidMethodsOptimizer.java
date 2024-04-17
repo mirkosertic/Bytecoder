@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.core.optimizer;
 
 import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.ir.ControlTokenConsumer;
+import de.mirkosertic.bytecoder.core.ir.Copy;
 import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.InvocationType;
 import de.mirkosertic.bytecoder.core.ir.MethodArgument;
@@ -26,15 +27,19 @@ import de.mirkosertic.bytecoder.core.ir.NodeType;
 import de.mirkosertic.bytecoder.core.ir.Projection;
 import de.mirkosertic.bytecoder.core.ir.Region;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
+import de.mirkosertic.bytecoder.core.ir.StandardProjections;
 import de.mirkosertic.bytecoder.core.ir.TryCatch;
+import de.mirkosertic.bytecoder.core.ir.Value;
+import de.mirkosertic.bytecoder.core.ir.Variable;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
+import java.util.stream.Collectors;
 
-public class InlineMethodsOptimizer implements Optimizer {
+public class InlineVoidMethodsOptimizer implements Optimizer {
 
     private int labelCounter = 0;
 
@@ -110,8 +115,16 @@ public class InlineMethodsOptimizer implements Optimizer {
                                 t.nodeType == NodeType.ArrayStore ||
                                 t.nodeType == NodeType.Nop ||
                                 t.nodeType == NodeType.If).count();
-        //return controlTokens < 20;
-        return "<init>".equals(rm.methodNode.name) && controlTokens < 20;
+        if (controlTokens < 20) {
+            // Check if recursive
+            for (final MethodInvocation methodInvocation : rm.methodBody.nodes().stream().filter(t -> t.nodeType == NodeType.MethodInvocation).map(t -> (MethodInvocation) t).filter(t -> t.invocationType == InvocationType.DIRECT || t.invocationType == InvocationType.STATIC).collect(Collectors.toList())) {
+                if (methodInvocation.method == rm) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -132,9 +145,15 @@ public class InlineMethodsOptimizer implements Optimizer {
             final ResolvedMethod rm = methodInvocation.method;
             // Check for recursion here!
             if (isInliningCandidate(rm) && rm != method) {
-                final Node thisRef;
+
+                rm.inlined = true;
+
+                Node thisRef;
                 final Node[] arguments;
                 final Node[] incomingDataFlows = methodInvocation.incomingDataFlows;
+
+                final ControlTokenConsumer preambleStart = g.newRegion("InlinePreamble_" + labelCounter++);
+                ControlTokenConsumer preambleEnd = preambleStart;
 
                 if (Modifier.isStatic(rm.methodNode.access)) {
                     thisRef = null;
@@ -148,10 +167,41 @@ public class InlineMethodsOptimizer implements Optimizer {
                     arguments = new Node[0];
                 }
 
+                // Convert all incoming data flows into variables
+                if (thisRef != null) {
+                    if ((thisRef.nodeType != NodeType.Variable && thisRef.nodeType != NodeType.PHI && !thisRef.isConstant())) {
+                        // Convert this into a variable
+                        final Variable newThisRef = g.newVariable(((Value) thisRef).type);
+                        final Copy c = g.newCopy();
+                        c.addIncomingData(thisRef);
+                        newThisRef.addIncomingData(c);
+                        thisRef = newThisRef;
+
+                        preambleEnd.addControlFlowTo(StandardProjections.DEFAULT, c);
+                        preambleEnd = c;
+                    }
+                }
+                for (int i = 0; i < arguments.length; i++) {
+                    final Node argument = arguments[i];
+                    if ((argument.nodeType != NodeType.Variable && argument.nodeType != NodeType.PHI && !argument.isConstant())) {
+                        // Convert this into a variable
+                        final Variable newArgument = g.newVariable(((Value) argument).type);
+                        final Copy c = g.newCopy();
+                        c.addIncomingData(argument);
+                        newArgument.addIncomingData(c);
+                        arguments[i] = newArgument;
+
+                        preambleEnd.addControlFlowTo(StandardProjections.DEFAULT, c);
+                        preambleEnd = c;
+                    }
+                }
+
                 final Map<Node, Node> importedNodes = stampInto(rm.methodBody, g, thisRef, arguments);
                 final ControlTokenConsumer start = (ControlTokenConsumer) importedNodes.get(rm.methodBody.regionByLabel(Graph.START_REGION_NAME));
 
-                g.replaceInControlFlow(methodInvocation, start);
+                preambleEnd.addControlFlowTo(StandardProjections.DEFAULT, start);
+
+                g.replaceInControlFlow(methodInvocation, preambleStart);
                 for (final Map.Entry<Projection, ControlTokenConsumer> entry : methodInvocation.controlFlowsTo.entrySet()) {
                     entry.getValue().controlComingFrom.remove(methodInvocation);
                 }

@@ -20,10 +20,15 @@ import de.mirkosertic.bytecoder.classlib.Array;
 import de.mirkosertic.bytecoder.classlib.BytecoderCharsetEncoder;
 import de.mirkosertic.bytecoder.classlib.VM;
 import de.mirkosertic.bytecoder.core.ReflectionConfiguration;
+import de.mirkosertic.bytecoder.core.backend.BackendType;
+import de.mirkosertic.bytecoder.core.backend.CodeGenerationFailure;
+import de.mirkosertic.bytecoder.core.backend.sequencer.DominatorTree;
 import de.mirkosertic.bytecoder.core.ir.AnalysisStack;
 import de.mirkosertic.bytecoder.core.ir.AnnotationUtils;
 import de.mirkosertic.bytecoder.core.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
+import de.mirkosertic.bytecoder.core.optimizer.Optimizer;
+import de.mirkosertic.bytecoder.core.optimizer.OptimizerLogging;
 import org.apache.commons.lang3.StringUtils;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.ClassNode;
@@ -120,8 +125,8 @@ public class CompileUnit {
             throw new RuntimeException(e);
         }
         resolvedClasses.put(resourceName, rs);
-        boolean isEnumType = rs.allTypesOf().stream().anyMatch(parent -> parent.type.getClassName().equals(Enum.class.getName())) || rs.type.getClassName().equals(Enum.class.getName());
-        if(isEnumType){
+        final boolean isEnumType = rs.allTypesOf().stream().anyMatch(parent -> parent.type.getClassName().equals(Enum.class.getName())) || rs.type.getClassName().equals(Enum.class.getName());
+        if (isEnumType){
             //Why aren't all classes considered for lookups? Performance? It would simplify implementation a lot if Class.forName just looped over classes.#rt and checked that
             getReflectionConfiguration().resolve(rs.type.getClassName()).setSupportsClassForName(true);
             getConstantPool().resolveFromPool(rs.type.getClassName());//add of not already there
@@ -296,5 +301,37 @@ public class CompileUnit {
         for (final Map.Entry<String, ResolvedMethod> entry : exportedMethods.entrySet()) {
             processor.accept(entry.getKey(), entry.getValue());
         }
+    }
+
+    public void optimize(final BackendType backendType, final Optimizer optimizer) {
+        int optimizerRun = 0;
+        boolean changed = true;
+        while (changed) {
+            optimizerRun++;
+            logger.info("Optimizer run {}", optimizerRun);
+            changed = false;
+            for (final ResolvedClass rc : resolvedClasses.values()) {
+                for (final ResolvedMethod rm : new ArrayList<>(rc.resolvedMethods)) {
+                    if (!Modifier.isAbstract(rm.methodNode.access) && !Modifier.isNative(rm.methodNode.access)) {
+                        final OptimizerLogging optimizerLogging = new OptimizerLogging(rm);
+                        try {
+                            int optimizerStep = 0;
+                            while (optimizer.optimize(backendType, this, rm)) {
+                                changed = true;
+                                optimizerStep++;
+                                optimizerLogging.logStep(optimizerStep);
+                            }
+                            optimizerLogging.finished();
+                        } catch (final CodeGenerationFailure e) {
+                            throw e;
+                        } catch (final RuntimeException e) {
+                            final DominatorTree dt = new DominatorTree(rm.methodBody);
+                            throw new CodeGenerationFailure(rm, dt, e);
+                        }
+                    }
+                }
+            }
+        }
+        logger.info("Optimizations finished");
     }
 }

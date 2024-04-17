@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.core.test;
 
 import com.sun.net.httpserver.HttpServer;
 import de.mirkosertic.bytecoder.core.Slf4JLogger;
+import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.backend.CodeGenerationFailure;
 import de.mirkosertic.bytecoder.core.backend.CompileOptions;
 import de.mirkosertic.bytecoder.core.backend.CompileResult;
@@ -281,18 +282,20 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                     compileUnit.resolveClass(Type.getObjectType(className.replace('.', '/')), new AnalysisStack());
                 }
 
+                final String className = JSHelpers.generateClassName(invokedType);
+                final String methodName = JSHelpers.generateMethodName(method.methodNode.name, Type.getMethodType(method.methodNode.desc));
+                final String filenamePrefix = className + "." + methodName + "_" + aTestOption.toFilePrefix();
+                final CompileOptions compileOptions = new CompileOptions(LOGGER, Optimizations.DEFAULT, additionalResources, filenamePrefix, true);
+
                 compileUnit.finalizeLinkingHierarchy();
+
+                compileUnit.optimize(BackendType.JS, compileOptions.getOptimizer());
 
                 compileUnit.logStatistics();
 
                 final StringWriter strWriter = new StringWriter();
                 final PrintWriter codeWriter = new PrintWriter(strWriter);
 
-                final String className = JSHelpers.generateClassName(invokedType);
-                final String methodName = JSHelpers.generateMethodName(method.methodNode.name, Type.getMethodType(method.methodNode.desc));
-                final String filenamePrefix = className + "." + methodName + "_" + aTestOption.toFilePrefix();
-
-                final CompileOptions compileOptions = new CompileOptions(LOGGER, Optimizations.DEFAULT, additionalResources, filenamePrefix, true);
 
                 final JSBackend backend = new JSBackend();
                 final JSCompileResult result = backend.generateCodeFor(compileUnit, compileOptions);
@@ -451,18 +454,21 @@ public class UnitTestRunner extends ParentRunner<FrameworkMethodWithTestOption> 
                     compileUnit.resolveClass(Type.getObjectType(className.replace('.', '/')), new AnalysisStack());
                 }
 
+                final String className = WasmHelpers.generateClassName(invokedType);
+                final String methodName = WasmHelpers.generateMethodName(method.methodNode.name, Type.getMethodType(method.methodNode.desc));
+                final String filenamePrefix = className + "." + methodName + "_" + aTestOption.toFilePrefix();
+
+                final CompileOptions compileOptions = new CompileOptions(LOGGER, Optimizations.DEFAULT, additionalResources, filenamePrefix, true);
+
                 compileUnit.finalizeLinkingHierarchy();
+
+                compileUnit.optimize(BackendType.Wasm, compileOptions.getOptimizer());
 
                 compileUnit.logStatistics();
 
                 final StringWriter strWriter = new StringWriter();
                 final PrintWriter codeWriter = new PrintWriter(strWriter);
 
-                final String className = WasmHelpers.generateClassName(invokedType);
-                final String methodName = WasmHelpers.generateMethodName(method.methodNode.name, Type.getMethodType(method.methodNode.desc));
-                final String filenamePrefix = className + "." + methodName + "_" + aTestOption.toFilePrefix();
-
-                final CompileOptions compileOptions = new CompileOptions(LOGGER, Optimizations.DEFAULT, additionalResources, filenamePrefix, true);
 
                 final WasmBackend backend = new WasmBackend();
                 final WasmCompileResult result = backend.generateCodeFor(compileUnit, compileOptions);

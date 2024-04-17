@@ -181,7 +181,9 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     @Override
     public void write(final LineNumberDebugInfo node) {
         writeIndent();
-        pw.print("// line number ");
+        pw.print("// ");
+        pw.print(node.sourceFile);
+        pw.print("#");
         pw.println(node.lineNumber);
     }
 
@@ -651,7 +653,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         }
 
         for (int i = 0; i < argInstanceMethodType.type.getArgumentTypes().length; i++) {
-            allArgs.add(new LinkageArgument("arg" + i, argInstanceMethodType.type.getArgumentTypes()[i]));
+            allArgs.add(new LinkageArgument("linkarg" + i, argInstanceMethodType.type.getArgumentTypes()[i]));
         }
 
         final BiFunction<Type, Type, String> typeConverterFunction = (source, target) -> {
@@ -731,7 +733,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                     if (i > 0) {
                         pw.print(",");
                     }
-                    pw.print("arg");
+                    pw.print("linkarg");
                     pw.print(i);
                 }
                 pw.print(") { return ");
@@ -775,7 +777,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                     if (i > 0) {
                         pw.print(",");
                     }
-                    pw.print("arg");
+                    pw.print("linkarg");
                     pw.print(i);
                 }
                 pw.print(") { return ");
@@ -826,7 +828,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                     if (i > 0) {
                         pw.print(",");
                     }
-                    pw.print("arg");
+                    pw.print("linkarg");
                     pw.print(i);
                 }
                 pw.print(") { return ");
@@ -879,7 +881,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
                     if (i > 0) {
                         pw.print(",");
                     }
-                    pw.print("arg");
+                    pw.print("linkarg");
                     pw.print(i);
                 }
                 pw.print(") { return function() {");

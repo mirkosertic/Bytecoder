@@ -17,6 +17,7 @@ package de.mirkosertic.bytecoder.cli;
 
 import de.mirkosertic.bytecoder.api.Logger;
 import de.mirkosertic.bytecoder.core.Slf4JLogger;
+import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.backend.CompileOptions;
 import de.mirkosertic.bytecoder.core.backend.CompileResult;
 import de.mirkosertic.bytecoder.core.backend.wasm.WasmBackend;
@@ -32,7 +33,6 @@ import org.objectweb.asm.Type;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.concurrent.Callable;
 
@@ -91,12 +91,14 @@ public class CompileWasmCommand implements Callable<Integer> {
                 compileUnit.resolveClass(Type.getObjectType(className.replace('.', '/')), new AnalysisStack());
             }
 
-            compileUnit.finalizeLinkingHierarchy();
-
-            compileUnit.logStatistics();
-
             final CompileOptions compileOptions =
                     new CompileOptions(logger, Optimizations.valueOf(optimizationLevel), additionalResources, filenamePrefix, debugoutput);
+
+            compileUnit.finalizeLinkingHierarchy();
+
+            compileUnit.optimize(BackendType.Wasm, compileOptions.getOptimizer());
+
+            compileUnit.logStatistics();
 
             final WasmBackend backend = new WasmBackend();
             final WasmCompileResult result = backend.generateCodeFor(compileUnit, compileOptions);

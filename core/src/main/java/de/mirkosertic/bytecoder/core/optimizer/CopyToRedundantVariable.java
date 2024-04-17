@@ -93,7 +93,7 @@ public class CopyToRedundantVariable implements Optimizer {
 
                     final List<Node> evaluationOrder = evaluationOrderOf(successor);
 
-                    if (!evaluationOrder.isEmpty() && evaluationOrder.get(0) == variableToCheck) {
+                    if (!evaluationOrder.isEmpty() && evaluationOrder.get(evaluationOrder.size() - 1) == variableToCheck) {
                         // We found a candidate
 
                         g.remapDataFlow(variableToCheck, source);

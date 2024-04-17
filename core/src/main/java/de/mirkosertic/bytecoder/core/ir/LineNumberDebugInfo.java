@@ -17,20 +17,22 @@ package de.mirkosertic.bytecoder.core.ir;
 
 public class LineNumberDebugInfo extends ControlTokenConsumer {
 
+    public final String sourceFile;
     public final int lineNumber;
 
-    LineNumberDebugInfo(final Graph owner, final int lineNumber) {
+    LineNumberDebugInfo(final Graph owner, final String sourceFile, final int lineNumber) {
         super(owner, NodeType.LineNumberDebugInfo);
+        this.sourceFile = sourceFile;
         this.lineNumber = lineNumber;
     }
 
     @Override
     public String additionalDebugInfo() {
-        return ": line #" + lineNumber;
+        return ": " + sourceFile + "#" + lineNumber;
     }
 
     @Override
     public LineNumberDebugInfo stampInto(final Graph target) {
-        return target.newLineNumberDebugInfo(lineNumber);
+        return target.newLineNumberDebugInfo(sourceFile, lineNumber);
     }
 }

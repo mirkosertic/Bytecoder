@@ -27,4 +27,12 @@ public class ArrayLoad extends Value {
     public ArrayLoad stampInto(final Graph target) {
         return target.newArrayLoad(type);
     }
+
+    @Override
+    public void sanityCheck() {
+        super.sanityCheck();
+        if (incomingDataFlows.length != 2) {
+            throw new IllegalStateException("Invalid number of incoming data flows : " + incomingDataFlows.length);
+        }
+    }
 }

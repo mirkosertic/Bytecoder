@@ -2539,7 +2539,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     @Override
     public void write(final LineNumberDebugInfo node) {
-        activeLevel.activeFlow.comment("Line number " + node.lineNumber);
+        activeLevel.activeFlow.comment(node.sourceFile + "#" + node.lineNumber);
     }
 
     @Override

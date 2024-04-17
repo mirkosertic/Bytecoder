@@ -29,22 +29,24 @@ public enum Optimizations implements Optimizer {
     DISABLED(new Optimizer[] {
     }),
     DEFAULT(new Optimizer[] {
+                new DropUnusedConstants(),
                 new PHIorVariableIsConstant(),
-                new CopyToUnusedPHI(),
+                new CopyToUnusedPHIOrVariable(),
                 new VariableIsVariable(),
                 new CopyToRedundantVariable(),
                 new VirtualToDirectInvocation(),
                 new DeleteRedundantClassInitializations(),
-                new InlineMethodsOptimizer()
+                new InlineVoidMethodsOptimizer()
             }),
     ALL(new Optimizer[] {
+            new DropUnusedConstants(),
             new PHIorVariableIsConstant(),
-            new CopyToUnusedPHI(),
+            new CopyToUnusedPHIOrVariable(),
             new VariableIsVariable(),
             new CopyToRedundantVariable(),
             new VirtualToDirectInvocation(),
             new DeleteRedundantClassInitializations(),
-            new InlineMethodsOptimizer()
+            new InlineVoidMethodsOptimizer()
     }),
     ;
 
@@ -70,10 +72,12 @@ public enum Optimizations implements Optimizer {
                 if (!go.contains(o)) {
                     graphchanged = graphchanged | o.optimize(backendType, compileUnit, method);
                 }
+                method.methodBody.sanityCheck();
             }
             if (!graphchanged) {
                 for (final GlobalOptimizer o : go) {
                     o.optimize(backendType, compileUnit, method);
+                    method.methodBody.sanityCheck();
                 }
             }
             return graphchanged;

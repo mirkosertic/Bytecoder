@@ -31,6 +31,8 @@ public class ResolvedMethod {
 
     public final Type methodType;
 
+    public boolean inlined;
+
     public ResolvedMethod(final ResolvedClass owner, final MethodNode methodNode, final Type methodType) {
         this.owner = owner;
         this.methodNode = methodNode;
@@ -42,7 +44,7 @@ public class ResolvedMethod {
             // Method is not abstract and not native
             final AnalysisStack newStack = analysisStack.addAction(new AnalysisStack.Action("Parsing method body of " + owner.type.getClassName() + "." + methodNode.name));
             try {
-                final GraphParser graphParser = new GraphParser(owner.compileUnit, owner.type, methodNode, newStack);
+                final GraphParser graphParser = new GraphParser(owner.compileUnit, owner.type, owner.classNode, methodNode, newStack);
                 methodBody = graphParser.graph();
             } catch (final AnalysisException e) {
                 throw e;

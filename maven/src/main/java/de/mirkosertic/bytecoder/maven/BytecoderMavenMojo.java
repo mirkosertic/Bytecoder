@@ -15,7 +15,10 @@
  */
 package de.mirkosertic.bytecoder.maven;
 
+import de.mirkosertic.bytecoder.core.Slf4JLogger;
+import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.backend.CodeGenerationFailure;
+import de.mirkosertic.bytecoder.core.backend.CompileResult;
 import de.mirkosertic.bytecoder.core.backend.js.JSBackend;
 import de.mirkosertic.bytecoder.core.backend.js.JSCompileResult;
 import de.mirkosertic.bytecoder.core.backend.js.JSHelpers;
@@ -30,8 +33,6 @@ import de.mirkosertic.bytecoder.core.loader.BytecoderLoader;
 import de.mirkosertic.bytecoder.core.optimizer.Optimizations;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 import de.mirkosertic.bytecoder.core.parser.Loader;
-import de.mirkosertic.bytecoder.core.backend.CompileResult;
-import de.mirkosertic.bytecoder.core.Slf4JLogger;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -135,12 +136,14 @@ public class BytecoderMavenMojo extends AbstractMojo {
                     compileUnit.resolveClass(Type.getObjectType(className.replace('.', '/')), new AnalysisStack());
                 }
 
-                compileUnit.finalizeLinkingHierarchy();
-
-                compileUnit.logStatistics();
-
                 final de.mirkosertic.bytecoder.core.backend.CompileOptions compileOptions =
                         new de.mirkosertic.bytecoder.core.backend.CompileOptions(new Slf4JLogger(), Optimizations.valueOf(optimizationLevel), additionalResources, filenamePrefix, debugOutput);
+
+                compileUnit.finalizeLinkingHierarchy();
+
+                compileUnit.optimize(BackendType.JS, compileOptions.getOptimizer());
+
+                compileUnit.logStatistics();
 
                 final JSBackend backend = new JSBackend();
                 final JSCompileResult result = backend.generateCodeFor(compileUnit, compileOptions);
@@ -162,12 +165,14 @@ public class BytecoderMavenMojo extends AbstractMojo {
                     compileUnit.resolveClass(Type.getObjectType(className.replace('.', '/')), new AnalysisStack());
                 }
 
-                compileUnit.finalizeLinkingHierarchy();
-
-                compileUnit.logStatistics();
-
                 final de.mirkosertic.bytecoder.core.backend.CompileOptions compileOptions =
                         new de.mirkosertic.bytecoder.core.backend.CompileOptions(new Slf4JLogger(), Optimizations.valueOf(optimizationLevel), additionalResources, filenamePrefix, debugOutput);
+
+                compileUnit.finalizeLinkingHierarchy();
+
+                compileUnit.optimize(BackendType.Wasm, compileOptions.getOptimizer());
+
+                compileUnit.logStatistics();
 
                 final WasmBackend backend = new WasmBackend();
                 final WasmCompileResult result = backend.generateCodeFor(compileUnit, compileOptions);

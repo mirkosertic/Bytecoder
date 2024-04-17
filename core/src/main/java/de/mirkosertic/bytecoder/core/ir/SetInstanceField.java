@@ -38,4 +38,16 @@ public class SetInstanceField extends ControlTokenConsumer {
     public SetInstanceField stampInto(final Graph target) {
         return target.newSetInstanceField(field);
     }
+
+    @Override
+    public void sanityCheck() {
+        super.sanityCheck();
+        if (incomingDataFlows.length != 1) {
+            throw new IllegalStateException("Invalid number of incoming data flows : " + incomingDataFlows.length);
+        }
+        final Node[] target = outgoingDataFlows();
+        if (target.length != 1) {
+            throw new IllegalStateException("Invalid number of targets : " + target.length);
+        }
+    }
 }

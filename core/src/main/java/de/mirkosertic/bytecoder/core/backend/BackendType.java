@@ -16,5 +16,5 @@
 package de.mirkosertic.bytecoder.core.backend;
 
 public enum BackendType {
-    JS,Wasm, OpenCL
+    JS, Wasm, OpenCL
 }

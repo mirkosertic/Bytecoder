@@ -8,7 +8,6 @@ import de.mirkosertic.bytecoder.core.backend.sequencer.DominatorTree;
 import de.mirkosertic.bytecoder.core.backend.sequencer.Sequencer;
 import de.mirkosertic.bytecoder.core.backend.wasm.WasmIntrinsics;
 import de.mirkosertic.bytecoder.core.ir.Graph;
-import de.mirkosertic.bytecoder.core.ir.Node;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.loader.BytecoderLoader;
 import de.mirkosertic.bytecoder.core.optimizer.Optimizations;
@@ -19,7 +18,6 @@ import org.objectweb.asm.Type;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.stream.Collectors;
 
 public class IRExport {
 
@@ -28,8 +26,8 @@ public class IRExport {
     }
 
     public int dosomething(final int value) {
-        doit(new String[0]);
-        final IRExport dummy = new IRExport();
+        //doit(new String[0]);
+        //final IRExport dummy = new IRExport();
         int x = value;
         for (int i = 0; i < 100; i++) {
             x = x + i + value;
@@ -66,18 +64,9 @@ public class IRExport {
             dt.writeDebugTo(fos);
         }
 
-        int optIter = 0;
-        while (Optimizations.DEFAULT.optimize(BackendType.Wasm, compileUnit, method)) {
-            System.out.println("Running Optimization Step " + ++optIter);
-        }
+        compileUnit.optimize(BackendType.Wasm, Optimizations.DEFAULT);
 
 //        new VariableIsConstant().optimize(compileUnit, method);
-
-        // Drop no longer used constants
-        for (final Node unusedConstant : g.nodes().stream().filter(t -> ((t.isConstant()) && t.outgoingDataFlows().length == 0)).collect(Collectors.toList())) {
-            g.deleteNode(unusedConstant);
-        }
-
 
         try (final FileOutputStream fos = new FileOutputStream("debug_optimized.dot")) {
             g.writeDebugTo(fos);

@@ -44,3 +44,8 @@
             JBox2D  JS      InlineCons1    2822585 bytes
             LUA     Wasm    InlineCons1     502611 bytes
             LUA     JS      InlineCons1    2259485 bytes
+
+            JBox2D  Wasm    InlineVoid      520902 bytes
+            JBox2D  JS      InlineVoid     2419355 bytes
+            LUA     Wasm    InlineVoid      540675 bytes
+            LUA     JS      InlineVoid     2157949 bytes

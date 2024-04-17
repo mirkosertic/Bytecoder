@@ -17,14 +17,12 @@ package de.mirkosertic.bytecoder.core.backend.js;
 
 import de.mirkosertic.bytecoder.api.ClassLibProvider;
 import de.mirkosertic.bytecoder.core.ReflectionConfiguration;
-import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.backend.CodeGenerationFailure;
 import de.mirkosertic.bytecoder.core.backend.CompileOptions;
 import de.mirkosertic.bytecoder.core.backend.CompileResult;
 import de.mirkosertic.bytecoder.core.backend.GeneratedMethod;
 import de.mirkosertic.bytecoder.core.backend.GeneratedMethodsRegistry;
 import de.mirkosertic.bytecoder.core.backend.MethodToIDMapper;
-import de.mirkosertic.bytecoder.core.optimizer.OptimizerLogging;
 import de.mirkosertic.bytecoder.core.backend.VTable;
 import de.mirkosertic.bytecoder.core.backend.VTableResolver;
 import de.mirkosertic.bytecoder.core.backend.sequencer.DominatorTree;
@@ -34,7 +32,6 @@ import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.core.ir.ResolvedField;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
-import de.mirkosertic.bytecoder.core.optimizer.Optimizer;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 import de.mirkosertic.bytecoder.core.parser.ConstantPool;
 import org.apache.commons.io.IOUtils;
@@ -704,25 +701,10 @@ public class JSBackend {
         pw.println(") {");
 
         final Graph g = m.methodBody;
-        final Optimizer o = options.getOptimizer();
-
-        final OptimizerLogging optimizerLogging = new OptimizerLogging(m);
-        int optimizerStep = 0;
-        while (optimizerStep < 1 && o.optimize(BackendType.JS, compileUnit, m)) {
-            optimizerStep++;
-            optimizerLogging.logStep(optimizerStep);
-        }
-
         final DominatorTree dt = new DominatorTree(g);
-
-        if (cl.classNode.sourceFile != null) {
-            pw.print("    // source file is ");
-            pw.println(cl.classNode.sourceFile);
-        }
 
         try {
             new Sequencer(g, dt, new JSStructuredControlflowCodeGenerator(compileUnit, cl, pw, generatedMethodsRegistry));
-            optimizerLogging.finished();
         } catch (final CodeGenerationFailure e) {
             throw e;
         } catch (final RuntimeException e) {
