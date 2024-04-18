@@ -20,21 +20,17 @@ import de.mirkosertic.bytecoder.core.ir.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.core.ir.Copy;
 import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.InvocationType;
-import de.mirkosertic.bytecoder.core.ir.MethodArgument;
 import de.mirkosertic.bytecoder.core.ir.MethodInvocation;
 import de.mirkosertic.bytecoder.core.ir.Node;
 import de.mirkosertic.bytecoder.core.ir.NodeType;
 import de.mirkosertic.bytecoder.core.ir.Projection;
-import de.mirkosertic.bytecoder.core.ir.Region;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.ir.StandardProjections;
-import de.mirkosertic.bytecoder.core.ir.TryCatch;
 import de.mirkosertic.bytecoder.core.ir.Value;
 import de.mirkosertic.bytecoder.core.ir.Variable;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
 import java.lang.reflect.Modifier;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
 import java.util.stream.Collectors;
@@ -43,79 +39,23 @@ public class InlineVoidMethodsOptimizer implements Optimizer {
 
     private int labelCounter = 0;
 
-    private Map<Node, Node> stampInto(final Graph source, final Graph target, final Node thisRef, final Node[] arguments) {
+    private final int maxInlineSourceSize;
 
-        final Map<Node, Node> clones = new HashMap<>();
-        for (final Node n : source.nodes()) {
-            final Node clone;
-            switch (n.nodeType) {
-                case Region:
-                    final Region r = (Region) n;
-                    if (Graph.START_REGION_NAME.equals(r.label)) {
-                        clone = target.newRegion("InlineStartProxy_" + labelCounter++);
-                    } else {
-                        clone = target.newRegion(r.label + "_" + labelCounter++);
-                    }
-                    break;
-                case TryCatch:
-                    final TryCatch t = (TryCatch) n;
-                    clone = target.newTryCatch(t.label + "_" + labelCounter++);
-                    break;
-                case Return:
-                    clone = target.newRegion("InlineReturnProxy_" + labelCounter++);
-                    break;
-                case This:
-                    clone = thisRef;
-                    break;
-                case MethodArgument:
-                    clone = arguments[((MethodArgument) n).index];
-                    break;
-                default:
-                    clone = n.stampInto(target);
-                    break;
-            }
-            clones.put(n, clone);
-        }
-        for (final Node n : source.nodes()) {
-            final Node t = clones.get(n);
-            for (final Node inc : n.incomingDataFlows) {
-                final Node mapped = clones.get(inc);
-                t.addIncomingData(mapped);
-            }
+    private final int maxInlineTargetSize;
 
-            if (n instanceof ControlTokenConsumer) {
-                final ControlTokenConsumer s1 = (ControlTokenConsumer) n;
-                final ControlTokenConsumer t1 = (ControlTokenConsumer) t;
-                for (final Map.Entry<Projection, ControlTokenConsumer> entry : s1.controlFlowsTo.entrySet()) {
-                    final ControlTokenConsumer controlFlowTarget = (ControlTokenConsumer) clones.get(entry.getValue());
-                    t1.addControlFlowTo(entry.getKey(), controlFlowTarget);
-                }
-            }
-        }
-        return clones;
+    public InlineVoidMethodsOptimizer() {
+        this.maxInlineSourceSize = Utils.maxInlineSourceSize();
+        this.maxInlineTargetSize = Utils.maxInlineTargetSize();
     }
 
     private boolean isInliningCandidate(final ResolvedMethod rm) {
         if (Modifier.isNative(rm.methodNode.access)) {
             return false;
         }
-        final long controlTokens = rm.methodBody.nodes().stream().filter(t ->
-                                t.nodeType == NodeType.MonitorEnter ||
-                                t.nodeType == NodeType.Goto ||
-                                t.nodeType == NodeType.Unwind ||
-                                t.nodeType == NodeType.TableSwitch ||
-                                t.nodeType == NodeType.ReturnValue ||
-                                t.nodeType == NodeType.ClassInitialization ||
-                                t.nodeType == NodeType.SetInstanceField ||
-                                t.nodeType == NodeType.Return ||
-                                t.nodeType == NodeType.Copy ||
-                                t.nodeType == NodeType.MonitorExit ||
-                                t.nodeType == NodeType.Region ||
-                                t.nodeType == NodeType.TryCatch ||
-                                t.nodeType == NodeType.ArrayStore ||
-                                t.nodeType == NodeType.Nop ||
-                                t.nodeType == NodeType.If).count();
-        if (controlTokens < 20) {
+        final long controlTokens = Utils.methodSize(rm);
+
+        // Important point here: only if the method returns a value at a point, we can inline them. If it just throws an exception, we can't inline it because it would cause an invalid control flow
+        if (controlTokens < maxInlineSourceSize && rm.methodBody.nodes().stream().anyMatch(t -> t.nodeType == NodeType.Return)) {
             // Check if recursive
             for (final MethodInvocation methodInvocation : rm.methodBody.nodes().stream().filter(t -> t.nodeType == NodeType.MethodInvocation).map(t -> (MethodInvocation) t).filter(t -> t.invocationType == InvocationType.DIRECT || t.invocationType == InvocationType.STATIC).collect(Collectors.toList())) {
                 if (methodInvocation.method == rm) {
@@ -129,6 +69,15 @@ public class InlineVoidMethodsOptimizer implements Optimizer {
 
     @Override
     public boolean optimize(final BackendType backendType, final CompileUnit compileUnit, final ResolvedMethod method) {
+
+        if (backendType == BackendType.OpenCL) {
+            return false;
+        }
+
+        if (Utils.methodSize(method) > maxInlineTargetSize) {
+            return false;
+        }
+
         boolean changed = false;
 
         final Graph g = method.methodBody;
@@ -169,7 +118,7 @@ public class InlineVoidMethodsOptimizer implements Optimizer {
 
                 // Convert all incoming data flows into variables
                 if (thisRef != null) {
-                    if ((thisRef.nodeType != NodeType.Variable && thisRef.nodeType != NodeType.PHI && !thisRef.isConstant())) {
+                    if (!Utils.isVariablePHIOrConstant(thisRef)) {
                         // Convert this into a variable
                         final Variable newThisRef = g.newVariable(((Value) thisRef).type);
                         final Copy c = g.newCopy();
@@ -183,7 +132,7 @@ public class InlineVoidMethodsOptimizer implements Optimizer {
                 }
                 for (int i = 0; i < arguments.length; i++) {
                     final Node argument = arguments[i];
-                    if ((argument.nodeType != NodeType.Variable && argument.nodeType != NodeType.PHI && !argument.isConstant())) {
+                    if (!Utils.isVariablePHIOrConstant(argument)) {
                         // Convert this into a variable
                         final Variable newArgument = g.newVariable(((Value) argument).type);
                         final Copy c = g.newCopy();
@@ -196,7 +145,7 @@ public class InlineVoidMethodsOptimizer implements Optimizer {
                     }
                 }
 
-                final Map<Node, Node> importedNodes = stampInto(rm.methodBody, g, thisRef, arguments);
+                final Map<Node, Node> importedNodes = g.stampFrom(rm.methodBody, thisRef, arguments);
                 final ControlTokenConsumer start = (ControlTokenConsumer) importedNodes.get(rm.methodBody.regionByLabel(Graph.START_REGION_NAME));
 
                 preambleEnd.addControlFlowTo(StandardProjections.DEFAULT, start);

@@ -35,4 +35,8 @@ public class LineNumberDebugInfo extends ControlTokenConsumer {
     public LineNumberDebugInfo stampInto(final Graph target) {
         return target.newLineNumberDebugInfo(sourceFile, lineNumber);
     }
+
+    public void deleteFromControlFlow() {
+        owner.deleteFromControlFlowInternally(this);
+    }
 }

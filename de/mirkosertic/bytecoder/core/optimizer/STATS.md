@@ -49,3 +49,13 @@
             JBox2D  JS      InlineVoid     2419355 bytes
             LUA     Wasm    InlineVoid      540675 bytes
             LUA     JS      InlineVoid     2157949 bytes
+
+            JBox2D  Wasm    InlineExp      595178 bytes
+            JBox2D  JS      InlineExp     2784630 bytes
+            LUA     Wasm    InlineExp      617725 bytes
+            LUA     JS      InlineExp     2570684 bytes
+
+            JBox2D  Wasm    RedRegions      592394 bytes
+            JBox2D  JS      RedRegions     2176233 bytes
+            LUA     Wasm    RedRegions      622232 bytes
+            LUA     JS      RedRegions     2295139 bytes

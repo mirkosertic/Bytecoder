@@ -43,6 +43,8 @@ public class Graph {
 
     private final Logger logger;
 
+    private int importLabelCounter = 0;
+
     public Graph(final Logger logger) {
         this.nodes = new ArrayList<>();
         this.translations = new HashMap<>();
@@ -500,5 +502,59 @@ public class Graph {
         for (final Node n : nodes) {
             n.sanityCheck();
         }
+    }
+
+    public Map<Node, Node> stampFrom(final Graph source, final Node thisRef, final Node[] arguments) {
+        final Map<Node, Node> clones = new HashMap<>();
+        for (final Node n : source.nodes()) {
+            final Node clone;
+            switch (n.nodeType) {
+                case Region:
+                    final Region r = (Region) n;
+                    if (Graph.START_REGION_NAME.equals(r.label)) {
+                        clone = newRegion("InlineStartProxy_" + importLabelCounter++);
+                    } else {
+                        clone = newRegion(r.label + "_" + importLabelCounter++);
+                    }
+                    break;
+                case TryCatch:
+                    final TryCatch t = (TryCatch) n;
+                    clone = newTryCatch(t.label + "_" + importLabelCounter++);
+                    break;
+                case Return:
+                    clone = newRegion("InlineReturnProxy_" + importLabelCounter++);
+                    break;
+                case This:
+                    clone = thisRef;
+                    break;
+                case MethodArgument:
+                    clone = arguments[((MethodArgument) n).index];
+                    break;
+                case ReturnValue:
+                    clone = newCopy();
+                    break;
+                default:
+                    clone = n.stampInto(this);
+                    break;
+            }
+            clones.put(n, clone);
+        }
+        for (final Node n : source.nodes()) {
+            final Node t = clones.get(n);
+            for (final Node inc : n.incomingDataFlows) {
+                final Node mapped = clones.get(inc);
+                t.addIncomingData(mapped);
+            }
+
+            if (n instanceof ControlTokenConsumer) {
+                final ControlTokenConsumer s1 = (ControlTokenConsumer) n;
+                final ControlTokenConsumer t1 = (ControlTokenConsumer) t;
+                for (final Map.Entry<Projection, ControlTokenConsumer> entry : s1.controlFlowsTo.entrySet()) {
+                    final ControlTokenConsumer controlFlowTarget = (ControlTokenConsumer) clones.get(entry.getValue());
+                    t1.addControlFlowTo(entry.getKey(), controlFlowTarget);
+                }
+            }
+        }
+        return clones;
     }
 }

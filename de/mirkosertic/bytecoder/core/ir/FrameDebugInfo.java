@@ -28,4 +28,8 @@ public class FrameDebugInfo extends ControlTokenConsumer {
     public FrameDebugInfo stampInto(final Graph target) {
         return target.newFrameDebugInfo(frame);
     }
+
+    public void deleteFromControlFlow() {
+        owner.deleteFromControlFlowInternally(this);
+    }
 }
