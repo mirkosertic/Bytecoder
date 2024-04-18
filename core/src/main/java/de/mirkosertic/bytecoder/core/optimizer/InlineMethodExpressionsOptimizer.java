@@ -21,29 +21,30 @@ import de.mirkosertic.bytecoder.core.ir.Copy;
 import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.InvocationType;
 import de.mirkosertic.bytecoder.core.ir.MethodInvocation;
+import de.mirkosertic.bytecoder.core.ir.MethodInvocationExpression;
 import de.mirkosertic.bytecoder.core.ir.Node;
 import de.mirkosertic.bytecoder.core.ir.NodeType;
-import de.mirkosertic.bytecoder.core.ir.Projection;
+import de.mirkosertic.bytecoder.core.ir.PHI;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.ir.StandardProjections;
-import de.mirkosertic.bytecoder.core.ir.Value;
-import de.mirkosertic.bytecoder.core.ir.Variable;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
-public class InlineVoidMethodsOptimizer implements Optimizer {
-
-    private int labelCounter = 0;
+public class InlineMethodExpressionsOptimizer implements Optimizer {
 
     private final int maxInlineSourceSize;
 
     private final int maxInlineTargetSize;
 
-    public InlineVoidMethodsOptimizer() {
+    public InlineMethodExpressionsOptimizer() {
         this.maxInlineSourceSize = Utils.maxInlineSourceSize();
         this.maxInlineTargetSize = Utils.maxInlineTargetSize();
     }
@@ -55,7 +56,7 @@ public class InlineVoidMethodsOptimizer implements Optimizer {
         final long controlTokens = Utils.methodSize(rm);
 
         // Important point here: only if the method returns a value at a point, we can inline them. If it just throws an exception, we can't inline it because it would cause an invalid control flow
-        if (controlTokens < maxInlineSourceSize && rm.methodBody.nodes().stream().anyMatch(t -> t.nodeType == NodeType.Return)) {
+        if (controlTokens < maxInlineSourceSize && rm.methodBody.nodes().stream().anyMatch(t -> t.nodeType == NodeType.ReturnValue)) {
             // Check if recursive
             for (final MethodInvocation methodInvocation : rm.methodBody.nodes().stream().filter(t -> t.nodeType == NodeType.MethodInvocation).map(t -> (MethodInvocation) t).filter(t -> t.invocationType == InvocationType.DIRECT || t.invocationType == InvocationType.STATIC).collect(Collectors.toList())) {
                 if (methodInvocation.method == rm) {
@@ -65,6 +66,27 @@ public class InlineVoidMethodsOptimizer implements Optimizer {
             return true;
         }
         return false;
+    }
+
+    public List<ControlTokenConsumer> finalControlFlowsFor(final Node source) {
+        final ArrayList<ControlTokenConsumer> result = new ArrayList<>();
+        final Stack<Node> workingQueue = new Stack<>();
+        workingQueue.add(source);
+        final Set<Node> visited = new HashSet<>();
+        visited.add(source);
+        while (!workingQueue.isEmpty()) {
+            final Node n = workingQueue.pop();
+            if (n instanceof ControlTokenConsumer) {
+                result.add((ControlTokenConsumer) n);
+            } else {
+                for (final Node flowsTo : n.outgoingDataFlows()) {
+                    if (visited.add(flowsTo)) {
+                        workingQueue.add(flowsTo);
+                    }
+                }
+            }
+        }
+        return result;
     }
 
     @Override
@@ -83,26 +105,21 @@ public class InlineVoidMethodsOptimizer implements Optimizer {
         final Graph g = method.methodBody;
 
         // Variable and Constant propagation
-        final Stack<MethodInvocation> workingQueue = new Stack<>();
+        final Stack<MethodInvocationExpression> workingQueue = new Stack<>();
 
         // We search for static and direct method invocations
-        g.nodes().stream().filter(t -> t.nodeType == NodeType.MethodInvocation).map(t -> (MethodInvocation) t).filter(t -> t.invocationType == InvocationType.DIRECT || t.invocationType == InvocationType.STATIC).forEach(workingQueue::push);
+        g.nodes().stream().filter(t -> t.nodeType == NodeType.MethodInvocationExpression).map(t -> (MethodInvocationExpression) t).filter(t -> t.invocationType == InvocationType.DIRECT || t.invocationType == InvocationType.STATIC).forEach(workingQueue::push);
 
         // We perform a recursive search across the invocation graph
         while (!workingQueue.isEmpty()) {
-            final MethodInvocation methodInvocation = workingQueue.pop();
+            final MethodInvocationExpression methodInvocation = workingQueue.pop();
             final ResolvedMethod rm = methodInvocation.method;
             // Check for recursion here!
             if (isInliningCandidate(rm) && rm != method) {
 
-                rm.inlined = true;
-
-                Node thisRef;
+                final Node thisRef;
                 final Node[] arguments;
                 final Node[] incomingDataFlows = methodInvocation.incomingDataFlows;
-
-                final ControlTokenConsumer preambleStart = g.newRegion("InlinePreamble_" + labelCounter++);
-                ControlTokenConsumer preambleEnd = preambleStart;
 
                 if (Modifier.isStatic(rm.methodNode.access)) {
                     thisRef = null;
@@ -116,58 +133,52 @@ public class InlineVoidMethodsOptimizer implements Optimizer {
                     arguments = new Node[0];
                 }
 
+                // thisRef and arguments must be variable, phi or constant to do a valid transformation
                 // Convert all incoming data flows into variables
+                boolean valid = true;
                 if (thisRef != null) {
                     if (!Utils.isVariablePHIOrConstant(thisRef)) {
-                        // Convert this into a variable
-                        final Variable newThisRef = g.newVariable(((Value) thisRef).type);
-                        final Copy c = g.newCopy();
-                        c.addIncomingData(thisRef);
-                        newThisRef.addIncomingData(c);
-                        thisRef = newThisRef;
-
-                        preambleEnd.addControlFlowTo(StandardProjections.DEFAULT, c);
-                        preambleEnd = c;
+                        valid = false;
                     }
                 }
-                for (int i = 0; i < arguments.length; i++) {
-                    final Node argument = arguments[i];
+                for (final Node argument : arguments) {
                     if (!Utils.isVariablePHIOrConstant(argument)) {
-                        // Convert this into a variable
-                        final Variable newArgument = g.newVariable(((Value) argument).type);
-                        final Copy c = g.newCopy();
-                        c.addIncomingData(argument);
-                        newArgument.addIncomingData(c);
-                        arguments[i] = newArgument;
-
-                        preambleEnd.addControlFlowTo(StandardProjections.DEFAULT, c);
-                        preambleEnd = c;
+                        valid = false;
                     }
                 }
 
-                final Map<Node, Node> importedNodes = g.stampFrom(rm.methodBody, thisRef, arguments);
-                final ControlTokenConsumer start = (ControlTokenConsumer) importedNodes.get(rm.methodBody.regionByLabel(Graph.START_REGION_NAME));
+                if (valid) {
+                    final Node[] invocationDataFlowTargets = methodInvocation.outgoingDataFlows();
+                    final List<ControlTokenConsumer> finalFlowsFor = finalControlFlowsFor(methodInvocation);
+                    if (finalFlowsFor.size() == 1 && finalFlowsFor.get(0).nodeType == NodeType.Copy && invocationDataFlowTargets.length == 1) {
+                        final Copy rootCopy = (Copy) finalFlowsFor.get(0);
+                        if (rootCopy.controlComingFrom.size() == 1) {
+                            final Map<Node, Node> importedNodes = g.stampFrom(rm.methodBody, thisRef, arguments);
+                            final ControlTokenConsumer start = (ControlTokenConsumer) importedNodes.get(rm.methodBody.regionByLabel(Graph.START_REGION_NAME));
 
-                preambleEnd.addControlFlowTo(StandardProjections.DEFAULT, start);
+                            final ControlTokenConsumer pred = rootCopy.controlComingFrom.iterator().next();
+                            pred.replaceInControlFlow(rootCopy, start);
 
-                g.replaceInControlFlow(methodInvocation, preambleStart);
-                for (final Map.Entry<Projection, ControlTokenConsumer> entry : methodInvocation.controlFlowsTo.entrySet()) {
-                    entry.getValue().controlComingFrom.remove(methodInvocation);
-                }
+                            rootCopy.controlComingFrom.clear();
+                            final PHI methodResult = g.newPHI(rm.methodType.getReturnType());
 
-                // Remerge the control flow
-                for (final Map.Entry<Node, Node> imp : importedNodes.entrySet()) {
-                    final Node source = imp.getKey();
-                    if (source.nodeType == NodeType.Return) {
-                        final ControlTokenConsumer target = (ControlTokenConsumer) imp.getValue();
+                            for (final Map.Entry<Node, Node> entry : importedNodes.entrySet()) {
+                                if (entry.getKey().nodeType == NodeType.ReturnValue) {
+                                    final Copy replacement = (Copy) entry.getValue();
+                                    replacement.addControlFlowTo(StandardProjections.DEFAULT, rootCopy);
+                                    methodResult.addIncomingData(replacement);
+                                }
+                            }
 
-                        for (final Map.Entry<Projection, ControlTokenConsumer> entry : methodInvocation.controlFlowsTo.entrySet()) {
-                            target.addControlFlowTo(entry.getKey(), entry.getValue());
+                            final Node resultConsumer = invocationDataFlowTargets[0];
+                            resultConsumer.remapDataFlow(methodInvocation, methodResult);
+                            g.deleteNode(methodInvocation);
+
+                            changed = true;
+                            method.inlined = true;
                         }
                     }
                 }
-
-                changed = true;
             }
         }
 

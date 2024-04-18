@@ -41,4 +41,8 @@ public class Region extends ControlTokenConsumer {
         r.frame = frame;
         return r;
     }
+
+    public void deleteFromControlFlow() {
+        owner.deleteFromControlFlowInternally(this);
+    }
 }

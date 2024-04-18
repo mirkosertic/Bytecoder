@@ -64,7 +64,7 @@ public class IRExport {
             dt.writeDebugTo(fos);
         }
 
-        compileUnit.optimize(BackendType.Wasm, Optimizations.DEFAULT);
+        compileUnit.optimize(BackendType.Wasm, Optimizations.ALL);
 
 //        new VariableIsConstant().optimize(compileUnit, method);
 

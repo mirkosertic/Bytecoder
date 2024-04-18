@@ -16,22 +16,34 @@
 package de.mirkosertic.bytecoder.core.optimizer;
 
 import de.mirkosertic.bytecoder.core.backend.BackendType;
+import de.mirkosertic.bytecoder.core.ir.ControlTokenConsumer;
+import de.mirkosertic.bytecoder.core.ir.EdgeType;
+import de.mirkosertic.bytecoder.core.ir.FrameDebugInfo;
 import de.mirkosertic.bytecoder.core.ir.Graph;
-import de.mirkosertic.bytecoder.core.ir.Node;
+import de.mirkosertic.bytecoder.core.ir.LineNumberDebugInfo;
+import de.mirkosertic.bytecoder.core.ir.NodeType;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
 import java.util.stream.Collectors;
 
-public class DropUnusedConstants implements Optimizer {
+public class DropDebugData implements Optimizer {
 
     @Override
     public boolean optimize(final BackendType backendType, final CompileUnit compileUnit, final ResolvedMethod method) {
         final Graph g = method.methodBody;
         boolean changed = false;
-        for (final Node unusedConstant : g.nodes().stream().filter(t -> ((t.isConstant()) && t.incomingDataFlows.length == 0 && t.outgoingDataFlows().length == 0)).collect(Collectors.toList())) {
-            g.deleteNode(unusedConstant);
-            changed = true;
+        for (final ControlTokenConsumer t : g.nodes().stream().filter(t -> t.nodeType == NodeType.FrameDebugInfo || t.nodeType == NodeType.LineNumberDebugInfo).map(t -> (ControlTokenConsumer) t).collect(Collectors.toList())) {
+            if (t.controlComingFrom.size() == 1 && t.controlFlowsTo.size() == 1 && t.controlFlowsTo.keySet().iterator().next().edgeType() == EdgeType.FORWARD) {
+                if (t.nodeType == NodeType.FrameDebugInfo) {
+                    ((FrameDebugInfo) t).deleteFromControlFlow();
+                    changed = true;
+                }
+                if (t.nodeType == NodeType.LineNumberDebugInfo) {
+                    ((LineNumberDebugInfo) t).deleteFromControlFlow();
+                    changed = true;
+                }
+            }
         }
 
         return changed;
