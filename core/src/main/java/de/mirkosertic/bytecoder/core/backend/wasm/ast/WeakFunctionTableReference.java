@@ -27,7 +27,7 @@ public class WeakFunctionTableReference implements WasmValue {
 
     @Override
     public void writeTo(final TextWriter textWriter, final ExportContext context) {
-        final Function f = context.functionIndex().firstByLabel(functionName);
+        final Function f = context.functionIndex().findByLabel(functionName);
         final int theIndex = context.anyFuncTable().indexOf(f);
         if (theIndex < 0) {
             throw new IllegalStateException("Cannot call function that is not part of the table : " + functionName + " : " + f);
@@ -41,7 +41,7 @@ public class WeakFunctionTableReference implements WasmValue {
 
     @Override
     public void writeTo(final BinaryWriter.Writer codeWriter, final ExportContext context) throws IOException {
-        final Function f = context.functionIndex().firstByLabel(functionName);
+        final Function f = context.functionIndex().findByLabel(functionName);
         final int theIndex = context.anyFuncTable().indexOf(f);
         if (theIndex < 0) {
              throw new IllegalStateException("Cannot call function that is not part of the table : " + functionName);

@@ -30,13 +30,13 @@ public class WeakFunctionReferenceCallable implements Callable {
 
     @Override
     public WasmType resolveResultType(final WasmValue.ExportContext context) {
-        final Function f = context.functionIndex().firstByLabel(label);
+        final Function f = context.functionIndex().findByLabel(label);
         return f.getResultType();
     }
 
     @Override
     public int resolveIndex(final WasmValue.ExportContext context) {
-        final Function f = context.functionIndex().firstByLabel(label);
+        final Function f = context.functionIndex().findByLabel(label);
         return context.functionIndex().indexOf(f);
     }
 }

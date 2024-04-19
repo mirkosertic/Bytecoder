@@ -46,8 +46,7 @@ public class ExportsSection extends ModuleSection {
         }
     }
 
-    public void writeTo(final BinaryWriter binaryWriter, final List<Memory> memoryIndex) throws IOException {
-        final FunctionIndex functionIndex = getModule().functionIndex();
+    public void writeTo(final BinaryWriter binaryWriter, final List<Memory> memoryIndex, final WasmValue.ExportContext exportContext) throws IOException {
         final TagIndex tagIndex = getModule().tagIndex();
         try (final BinaryWriter.SectionWriter exportWriter = binaryWriter.exportsSection()) {
             exportWriter.writeUnsignedLeb128(exports.size());
@@ -56,7 +55,7 @@ public class ExportsSection extends ModuleSection {
                 final Exportable value = entry.getValue();
                 if (value instanceof ExportableFunction) {
                     exportWriter.writeByte(ExternalKind.EXTERNAL_KIND_FUNCTION);
-                    exportWriter.writeUnsignedLeb128(functionIndex.indexOf((Function) value));
+                    exportWriter.writeUnsignedLeb128(exportContext.functionIndex().indexOf((Function) value));
                 } else if (value instanceof Memory) {
                     exportWriter.writeByte(ExternalKind.EXTERNAL_KIND_MEMORY);
                     exportWriter.writeUnsignedLeb128(memoryIndex.indexOf(value));

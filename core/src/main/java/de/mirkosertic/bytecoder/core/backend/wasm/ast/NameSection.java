@@ -25,14 +25,14 @@ public class NameSection extends ModuleSection {
         super(module);
     }
 
-    public void writeCodeTo(final BinaryWriter writer) throws IOException {
+    public void writeCodeTo(final BinaryWriter writer, final WasmValue.ExportContext exportContext) throws IOException {
         try (final BinaryWriter.SectionWriter sectionWriter = writer.customSection()) {
             sectionWriter.writeUTF8("name");
             try (final BinaryWriter.SectionWriter moduleSection = sectionWriter.subSection((byte) 0)) {
                 moduleSection.writeUTF8(getModule().getLabel());
             }
+            final FunctionIndex functions = exportContext.functionIndex();
             try (final BinaryWriter.SectionWriter functionSection = sectionWriter.subSection((byte) 1)) {
-                final FunctionIndex functions = getModule().functionIndex();
                 functionSection.writeUnsignedLeb128(functions.size());
                 for (int i=0;i<functions.size();i++) {
                     final Function f = functions.get(i);
@@ -41,7 +41,6 @@ public class NameSection extends ModuleSection {
                 }
             }
             try (final BinaryWriter.SectionWriter localSection = sectionWriter.subSection((byte) 2)) {
-                final FunctionIndex functions = getModule().functionIndex();
                 localSection.writeUnsignedLeb128(functions.size());
                 for (int i=0;i<functions.size();i++) {
                     final Function f = functions.get(i);

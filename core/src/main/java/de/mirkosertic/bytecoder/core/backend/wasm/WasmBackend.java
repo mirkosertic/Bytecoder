@@ -32,6 +32,7 @@ import de.mirkosertic.bytecoder.core.backend.wasm.ast.ConstExpressions;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.ExportableFunction;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.Exporter;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.Function;
+import de.mirkosertic.bytecoder.core.backend.wasm.ast.FunctionIndex;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.FunctionType;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.FunctionsSection;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.Global;
@@ -584,6 +585,8 @@ public class WasmBackend {
         final OpaqueTypesAdapterMethods adapterMethods = new OpaqueTypesAdapterMethods();
         final GeneratedMethodsRegistry generatedMethodsRegistry = new GeneratedMethodsRegistry();
 
+        final FunctionIndex functionIndex = module.functionIndex();
+
         for (final ResolvedClass cl : resolvedClasses) {
             // Class objects for
 
@@ -656,7 +659,8 @@ public class WasmBackend {
                                             compileUnit,
                                             objectTypeMappings,
                                             rtTypeMappings,
-                                            ConstExpressions.call(delegateFunction, callArgs)
+                                            ConstExpressions.call(delegateFunction, callArgs),
+                                            functionIndex
                                     ));
                                     break;
                                 }
@@ -795,7 +799,8 @@ public class WasmBackend {
                                                     compileUnit,
                                                     objectTypeMappings,
                                                     rtTypeMappings,
-                                                    ConstExpressions.call(delegateFunction, callArgs)));
+                                                    ConstExpressions.call(delegateFunction, callArgs),
+                                                    functionIndex));
                                         break;
                                     }
                                     default: {
@@ -825,7 +830,7 @@ public class WasmBackend {
                         final DominatorTree dt = new DominatorTree(g);
 
                         try {
-                            new Sequencer(g, dt, new WasmStructuredControlflowCodeGenerator(compileUnit, module, rtTypeMappings, objectTypeMappings, implFunction, toWASMType, toFunctionType, methodToIDMapper, g, resolvedClasses, vTableResolver, generatedMethodsRegistry));
+                            new Sequencer(g, dt, new WasmStructuredControlflowCodeGenerator(compileUnit, module, rtTypeMappings, objectTypeMappings, implFunction, toWASMType, toFunctionType, methodToIDMapper, g, resolvedClasses, vTableResolver, generatedMethodsRegistry, functionIndex));
                         } catch (final CodeGenerationFailure e) {
                             throw e;
                         } catch (final RuntimeException e) {
@@ -868,7 +873,7 @@ public class WasmBackend {
                             "typeId"
                     )
             );
-            initArgs.add(ConstExpressions.ref.ref(module.functionIndex().firstByLabel(WasmHelpers.generateClassName(stringClass.type) + "_vt")));
+            initArgs.add(ConstExpressions.ref.ref(functionIndex.findByLabel(WasmHelpers.generateClassName(stringClass.type) + "_vt")));
             initArgs.add(ConstExpressions.getLocal(newStringFunction.localByLabel("str")));
 
             final Global stringGlobal = module.getGlobals().globalsIndex().globalByLabel(WasmHelpers.generateClassName(stringClass.type)  + "_cls");
@@ -909,7 +914,7 @@ public class WasmBackend {
                             ConstExpressions.call(stringInitFunction, new ArrayList<>()),
                             "factoryFor"
                         ));
-            initArgs.add(ConstExpressions.ref.ref(module.functionIndex().firstByLabel(WasmHelpers.generateClassName(stringClass.type) + "_vt")));
+            initArgs.add(ConstExpressions.ref.ref(functionIndex.findByLabel(WasmHelpers.generateClassName(stringClass.type) + "_vt")));
 
             final Global stringGlobal = module.getGlobals().globalsIndex().globalByLabel(WasmHelpers.generateClassName(stringClass.type)  + "_cls");
 
@@ -994,7 +999,8 @@ public class WasmBackend {
                             compileUnit,
                             objectTypeMappings,
                             rtTypeMappings,
-                            ConstExpressions.getLocal(callback.localByLabel("event"))
+                            ConstExpressions.getLocal(callback.localByLabel("event")),
+                            functionIndex
                     ));
                 }
 

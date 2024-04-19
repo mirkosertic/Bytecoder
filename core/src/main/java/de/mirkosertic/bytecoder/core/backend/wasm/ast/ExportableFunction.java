@@ -114,7 +114,7 @@ public class ExportableFunction extends Function implements Exportable {
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter, final Module aModule) throws IOException {
+    public void writeTo(final TextWriter textWriter, final Module aModule, final WasmValue.ExportContext exportContext) throws IOException {
         textWriter.opening();
         textWriter.write("func");
         textWriter.space();
@@ -145,7 +145,7 @@ public class ExportableFunction extends Function implements Exportable {
             local.writeTo(textWriter);
             textWriter.newLine();
         }
-        final DefaultExportContext context = new DefaultExportContext(this, getModule().functionIndex());
+        final DefaultExportContext context = new DefaultExportContext(this, exportContext.functionIndex());
         for (final WasmExpression expression : getChildren()) {
             expression.writeTo(textWriter, context);
         }

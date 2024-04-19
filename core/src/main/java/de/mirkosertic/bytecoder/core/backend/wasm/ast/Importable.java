@@ -18,5 +18,5 @@ package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 import java.io.IOException;
 
 public interface Importable {
-    void writeTo(TextWriter textWriter, Module aModule) throws IOException;
+    void writeTo(TextWriter textWriter, Module aModule, final WasmValue.ExportContext exportContext) throws IOException;
 }
