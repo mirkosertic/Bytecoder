@@ -51,7 +51,7 @@ public class Function extends Container implements Importable, Callable {
     }
 
     @Override
-    public void writeTo(final TextWriter textWriter, final Module aModule) throws IOException {
+    public void writeTo(final TextWriter textWriter, final Module aModule, final WasmValue.ExportContext exportContext) throws IOException {
         textWriter.opening();
         textWriter.write("func");
         textWriter.space();
@@ -96,6 +96,6 @@ public class Function extends Container implements Importable, Callable {
 
     @Override
     public int resolveIndex(final WasmValue.ExportContext context) {
-        return module.functionIndex().indexOf(this);
+        return context.functionIndex().indexOf(this);
     }
 }

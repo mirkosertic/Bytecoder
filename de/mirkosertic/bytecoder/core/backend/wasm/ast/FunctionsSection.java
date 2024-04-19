@@ -57,9 +57,9 @@ public class FunctionsSection extends ModuleSection {
         return function;
     }
 
-    public void writeTo(final TextWriter textWriter) throws IOException {
+    public void writeTo(final TextWriter textWriter, final WasmValue.ExportContext exportContext) throws IOException {
         for (final Function function : functions) {
-            function.writeTo(textWriter, getModule());
+            function.writeTo(textWriter, getModule(), exportContext);
             textWriter.newLine();
         }
     }

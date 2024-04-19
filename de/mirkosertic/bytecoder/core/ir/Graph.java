@@ -43,6 +43,8 @@ public class Graph {
 
     private final Logger logger;
 
+    private final Map<Type, TypeReference> typeReferences;
+
     private int importLabelCounter = 0;
 
     public Graph(final Logger logger) {
@@ -50,6 +52,7 @@ public class Graph {
         this.translations = new HashMap<>();
         this.fixups = new ArrayList<>();
         this.labeledRegions = new HashMap<>();
+        this.typeReferences = new HashMap<>();
         this.logger = logger;
     }
 
@@ -61,6 +64,7 @@ public class Graph {
         final Set<Node> result = new HashSet<>();
         for (final Node t : nodes) {
             final Node[] incoming = t.incomingDataFlows;
+
             for (int i = 0; i <incoming.length; i++) {
                 if (incoming[i] == n) {
                     result.add(t);
@@ -326,15 +330,7 @@ public class Graph {
     }
 
     public TypeReference newTypeReference(final Type type) {
-        for (final Node n : nodes) {
-            if (n instanceof TypeReference) {
-                final TypeReference t = (TypeReference) n;
-                if (t.type.equals(type)) {
-                    return t;
-                }
-            }
-        }
-        return (TypeReference) register(new TypeReference(this, type));
+        return typeReferences.computeIfAbsent(type, t -> (TypeReference) register(new TypeReference(Graph.this, t)));
     }
 
     public New newNew(final Type type) {
@@ -371,6 +367,9 @@ public class Graph {
 
     public void deleteNode(final Node node) {
         nodes.remove(node);
+        if (node.nodeType == NodeType.TypeReference) {
+            typeReferences.remove(((TypeReference) node).type);
+        }
     }
 
     public PrimitiveFloat newFloat(final float constant) {
@@ -463,9 +462,6 @@ public class Graph {
         if (consumer.hasIncomingBackEdges()) {
             throw new IllegalStateException("Cannot delete node with incoming back edges! Node Type is " + consumer.nodeType + " #" + consumer.owner.nodes.indexOf(consumer));
         }
-        if (consumer.controlComingFrom.size() != 1) {
-//            throw new IllegalStateException("Can only delete nodes with exactly one incoming edge! Node Type is " + consumer.nodeType + " #" + consumer.owner.nodes.indexOf(consumer));
-        }
         if (consumer.controlFlowsTo.size() != 1) {
             throw new IllegalStateException("Can only delete nodes with exactly one outgoing edge! Node Type is " + consumer.nodeType + " #" + consumer.owner.nodes.indexOf(consumer));
         }
@@ -477,9 +473,10 @@ public class Graph {
             for (final Map.Entry<Projection, ControlTokenConsumer> entry : new HashSet<>(pred.controlFlowsTo.entrySet())) {
                 if (entry.getValue() == consumer) {
                     for (final Map.Entry<Projection, ControlTokenConsumer> to : consumer.controlFlowsTo.entrySet()) {
-                        pred.controlFlowsTo.put(entry.getKey(), to.getValue());
-                        to.getValue().controlComingFrom.remove(consumer);
-                        to.getValue().controlComingFrom.add(pred);
+                        final ControlTokenConsumer toTarget = to.getValue();
+                        pred.controlFlowsTo.put(entry.getKey(), toTarget);
+                        toTarget.controlComingFrom.remove(consumer);
+                        toTarget.controlComingFrom.add(pred);
                     }
                 }
             }

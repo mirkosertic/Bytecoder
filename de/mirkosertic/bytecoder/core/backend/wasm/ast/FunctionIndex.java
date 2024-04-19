@@ -16,15 +16,19 @@
 package de.mirkosertic.bytecoder.core.backend.wasm.ast;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class FunctionIndex {
 
     private final List<Function> functions;
+    private final Map<String, Function> labelToFunction;
 
     FunctionIndex() {
         functions = new ArrayList<>();
+        labelToFunction = new HashMap<>();
     }
 
     public int size() {
@@ -37,6 +41,7 @@ public class FunctionIndex {
 
     public void add(final Function function) {
         functions.add(function);
+        labelToFunction.put(function.getLabel().toLowerCase(), function);
     }
 
     public int indexOf(final Function value) {
@@ -47,12 +52,12 @@ public class FunctionIndex {
         return functions.stream().filter(t -> t instanceof ExportableFunction).map(t -> (ExportableFunction) t).collect(Collectors.toList());
     }
 
-    public <T extends Function> T firstByLabel(final String label) {
-        for (final Function function : functions) {
-            if (label.equalsIgnoreCase(function.getLabel())) {
-                return (T) function;
-            }
+    public <T extends Function> T findByLabel(final String label) {
+        final String key = label.toLowerCase();
+        final T result = (T) labelToFunction.get(key);
+        if (result == null) {
+            throw new IllegalArgumentException("No such method : " + label);
         }
-        throw new IllegalArgumentException("No such method : " + label);
+        return result;
     }
 }

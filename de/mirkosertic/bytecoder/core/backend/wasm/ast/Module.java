@@ -52,20 +52,61 @@ public class Module {
     }
 
     public void writeTo(final TextWriter writer, final boolean enableDebug) throws IOException {
+
+        final FunctionIndex functionIndex = functionIndex();
+
         writer.opening();
         writer.write("module");
         writer.space();
         writer.writeLabel(label);
         writer.newLine();
 
+        final WasmValue.ExportContext context = new WasmValue.ExportContext() {
+
+            @Override
+            public Container owningContainer() {
+                return null;
+            }
+
+            @Override
+            public FunctionIndex functionIndex() {
+                return functionIndex;
+            }
+
+            @Override
+            public GlobalsIndex globalsIndex() {
+                return Module.this.globalsIndex();
+            }
+
+            @Override
+            public LocalIndex localIndex() {
+                return null;
+            }
+
+            @Override
+            public TagIndex tagIndex() {
+                return Module.this.tagIndex();
+            }
+
+            @Override
+            public WasmValue.ExportContext subWith(final Container container) {
+                return null;
+            }
+
+            @Override
+            public TablesSection.AnyFuncTable anyFuncTable() {
+                return Module.this.getTables().funcTable();
+            }
+        };
+
         types.writeTo(writer);
-        imports.writeTo(writer);
+        imports.writeTo(writer, context);
         mems.writeTo(writer);
         globals.writeTo(writer);
         tags.writeCodeTo(writer);
         tables.writeTo(writer);
         elements.writeTo(writer);
-        functions.writeTo(writer);
+        functions.writeTo(writer, context);
         exports.writeTo(writer);
         writer.closing();
     }
@@ -97,6 +138,7 @@ public class Module {
         mems.addMemoriesToIndex(memoryIndex);
 
         final WasmValue.ExportContext context = new WasmValue.ExportContext() {
+
             @Override
             public Container owningContainer() {
                 return null;
@@ -104,7 +146,7 @@ public class Module {
 
             @Override
             public FunctionIndex functionIndex() {
-                return Module.this.functionIndex();
+                return functionIndex;
             }
 
             @Override
@@ -141,11 +183,11 @@ public class Module {
         mems.writeTo(writer);
         tags.writeCodeTo(writer);
         globals.writeTo(writer, context);
-        exports.writeTo(writer, memoryIndex);
+        exports.writeTo(writer, memoryIndex, context);
         elements.writeTo(writer, functionIndex);
         functions.writeCodeTo(writer, functionIndex);
         if (enableDebug) {
-            names.writeCodeTo(writer);
+            names.writeCodeTo(writer, context);
         }
 
         // Disabled, as source maps are currently not generated for Wasm

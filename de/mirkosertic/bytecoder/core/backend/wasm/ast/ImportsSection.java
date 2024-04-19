@@ -69,7 +69,7 @@ public class ImportsSection extends ModuleSection {
         return function;
     }
 
-    public void writeTo(final TextWriter textWriter) throws IOException {
+    public void writeTo(final TextWriter textWriter, final WasmValue.ExportContext exportContext) throws IOException {
         for (final ImportEntry entry : imports) {
 
             final ImportReference ref = entry.getReference();
@@ -81,7 +81,7 @@ public class ImportsSection extends ModuleSection {
             textWriter.space();
             textWriter.writeText(ref.getObjectName());
             textWriter.space();
-            entry.getImportable().writeTo(textWriter, getModule());
+            entry.getImportable().writeTo(textWriter, getModule(), exportContext);
             textWriter.closing();
             textWriter.newLine();
         }

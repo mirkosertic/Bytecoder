@@ -30,6 +30,7 @@ import de.mirkosertic.bytecoder.core.backend.wasm.ast.ConstExpressions;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.Container;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.ExportableFunction;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.Expressions;
+import de.mirkosertic.bytecoder.core.backend.wasm.ast.FunctionIndex;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.FunctionType;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.Global;
 import de.mirkosertic.bytecoder.core.backend.wasm.ast.HostType;
@@ -240,6 +241,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private final GeneratedMethodsRegistry generatedMethodsRegistry;
 
+    private final FunctionIndex functionIndex;
+
     public WasmStructuredControlflowCodeGenerator(final CompileUnit compileUnit, final Module module,
                                                   final Map<ResolvedClass, StructType> rtMappings,
                                                   final Map<ResolvedClass, StructType> objectTypeMappings,
@@ -250,7 +253,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                                                   final Graph graph,
                                                   final List<ResolvedClass> resolvedClasses,
                                                   final VTableResolver vTableResolver,
-                                                  final GeneratedMethodsRegistry generatedMethodsRegistry) {
+                                                  final GeneratedMethodsRegistry generatedMethodsRegistry,
+                                                  final FunctionIndex functionIndex) {
         this.compileUnit = compileUnit;
         this.module = module;
         this.exportableFunction = exportableFunction;
@@ -265,6 +269,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         this.resolvedClasses = resolvedClasses;
         this.vTableResolver = vTableResolver;
         this.generatedMethodsRegistry = generatedMethodsRegistry;
+        this.functionIndex = functionIndex;
     }
 
     @Override
@@ -463,7 +468,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                                                 final CompileUnit compileUnit,
                                                 final Map<ResolvedClass, StructType> objectTypeMappings,
                                                 final Map<ResolvedClass, StructType> rtMappings,
-                                                final WasmValue externRef) {
+                                                final WasmValue externRef,
+                                                final FunctionIndex functionIndex) {
         final ResolvedClass cl = compileUnit.findClass(instanceType);
         if (cl == null) {
             throw new IllegalArgumentException("Cannot find resolved class for " + instanceType);
@@ -485,7 +491,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                 )
         );
 
-        initArgs.add(ConstExpressions.ref.ref(module.functionIndex().firstByLabel(WasmHelpers.generateClassName(cl.type) + "_vt")));
+        initArgs.add(ConstExpressions.ref.ref(functionIndex.findByLabel(WasmHelpers.generateClassName(cl.type) + "_vt")));
 
         initArgs.add(externRef);
 
@@ -530,7 +536,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
     private WasmValue toWasmValue(final New value) {
         return createNewInstanceOf(value.type,
-                module, compileUnit, objectTypeMappings, rtMappings, ConstExpressions.ref.externNullRef());
+                module, compileUnit, objectTypeMappings, rtMappings, ConstExpressions.ref.externNullRef(), functionIndex);
     }
 
     private WasmValue toWasmValue(final ReadInstanceField value) {
@@ -1102,7 +1108,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
 
                 lambdaMethod.flow.setLocal(objInstance,
                         createNewInstanceOf(implementationMethod.owner.type,
-                                module, compileUnit, objectTypeMappings, rtMappings, ConstExpressions.ref.externNullRef()));
+                                module, compileUnit, objectTypeMappings, rtMappings, ConstExpressions.ref.externNullRef(), functionIndex));
 
                 arguments.add(0, ConstExpressions.getLocal(objInstance));
 
@@ -1249,7 +1255,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                         ConstExpressions.getGlobal(stringGlobal),
                         "factoryFor"
                 ));
-        initArgs.add(ConstExpressions.ref.ref(module.functionIndex().firstByLabel(WasmHelpers.generateClassName(stringClass.type) + "_vt")));
+        initArgs.add(ConstExpressions.ref.ref(functionIndex.findByLabel(WasmHelpers.generateClassName(stringClass.type) + "_vt")));
 
         initArgs.add(ConstExpressions.call(concatFunction, arguments));
 
@@ -1386,7 +1392,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                         ConstExpressions.getGlobal(stringGlobal),
                         "factoryFor"
                 ));
-        initArgs.add(ConstExpressions.ref.ref(module.functionIndex().firstByLabel(WasmHelpers.generateClassName(stringClass.type) + "_vt")));
+        initArgs.add(ConstExpressions.ref.ref(functionIndex.findByLabel(WasmHelpers.generateClassName(stringClass.type) + "_vt")));
 
         initArgs.add(ConstExpressions.call(concatFunction, arguments));
 
@@ -1792,7 +1798,7 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
         final Global global = module.getGlobals().globalsIndex().globalByLabel(arrayClsName  + "_cls");
 
         initArguments.add(ConstExpressions.i32.c(resolvedClasses.indexOf(arrayCls)));
-        initArguments.add(ConstExpressions.ref.ref(module.functionIndex().firstByLabel(WasmHelpers.generateClassName(arrayClass) + "_vt")));
+        initArguments.add(ConstExpressions.ref.ref(functionIndex.findByLabel(WasmHelpers.generateClassName(arrayClass) + "_vt")));
         initArguments.add(ConstExpressions.ref.externNullRef());
         initArguments.add(ConstExpressions.struct.get(
                 rtMappings.get(arrayCls),
@@ -2058,7 +2064,8 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
                                 objectTypeMappings.get(compileUnit.findClass(Type.getType(Object.class))),
                                 toWasmValue((Value) value.incomingDataFlows[0]),
                                 "nativeObject"
-                        )
+                        ),
+                        functionIndex
                 );
             }
         }
