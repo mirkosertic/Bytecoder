@@ -54,7 +54,6 @@ import de.mirkosertic.bytecoder.core.ir.PrimitiveFloat;
 import de.mirkosertic.bytecoder.core.ir.PrimitiveInt;
 import de.mirkosertic.bytecoder.core.ir.PrimitiveLong;
 import de.mirkosertic.bytecoder.core.ir.Projection;
-import de.mirkosertic.bytecoder.core.ir.ReadClassField;
 import de.mirkosertic.bytecoder.core.ir.ReadInstanceField;
 import de.mirkosertic.bytecoder.core.ir.Reference;
 import de.mirkosertic.bytecoder.core.ir.ReferenceTest;
@@ -65,7 +64,6 @@ import de.mirkosertic.bytecoder.core.ir.ResolvedField;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.ir.Return;
 import de.mirkosertic.bytecoder.core.ir.ReturnValue;
-import de.mirkosertic.bytecoder.core.ir.SetClassField;
 import de.mirkosertic.bytecoder.core.ir.SetInstanceField;
 import de.mirkosertic.bytecoder.core.ir.StandardProjections;
 import de.mirkosertic.bytecoder.core.ir.StringConstant;
@@ -2159,17 +2157,21 @@ public class GraphParser {
         final GraphParserState currentState = currentFlow.graphParserState;
 
         final Type t = Type.getType(node.desc);
+
         final ResolvedClass targetClass = compileUnit.resolveClass(Type.getObjectType(node.owner), analysisStack);
-        final ResolvedField resolvedField = targetClass.resolveField(node.name, t);
-
-        final ReadClassField field = graph.newClassFieldExpression(t, resolvedField);
-        field.addIncomingData(graph.newTypeReference(targetClass.type));
-        final Variable target = graph.newVariable(t);
-
         final ClassInitialization classInit = graph.newClassInitialization(targetClass.type);
 
+        Value intrinsified = compileUnit.getIntrinsic().intrinsifyStaticFieldAccess(compileUnit, analysisStack, node, targetClass, graph, this);
+        if (intrinsified == null) {
+            final ResolvedField resolvedField = targetClass.resolveField(node.name, t);
+
+            intrinsified = graph.newClassFieldExpression(t, resolvedField);
+            intrinsified.addIncomingData(graph.newTypeReference(targetClass.type));
+        }
+
+        final Variable target = graph.newVariable(t);
         final Copy copy = graph.newCopy();
-        copy.addIncomingData(field);
+        copy.addIncomingData(intrinsified);
         target.addIncomingData(copy);
 
         classInit.addControlFlowTo(StandardProjections.DEFAULT, copy);
@@ -2212,22 +2214,28 @@ public class GraphParser {
 
         final Type t = Type.getType(node.desc);
         final ResolvedClass targetClass = compileUnit.resolveClass(Type.getObjectType(node.owner), analysisStack);
-        final ResolvedField resolvedField = targetClass.resolveField(node.name, t);
 
         final Frame.PopResult valuePop = currentState.frame.popFromStack();
 
-        final SetClassField setfield = graph.newSetClassField(resolvedField);
+        ControlTokenConsumer intrinsified = compileUnit.getIntrinsic().intrinsifyWriteStaticField(compileUnit, analysisStack, node, targetClass, graph, this);
+        if (intrinsified == null) {
+            final ResolvedField resolvedField = targetClass.resolveField(node.name, t);
 
-        final ClassInitialization classInit = graph.newClassInitialization(targetClass.type);
+            intrinsified = graph.newSetClassField(resolvedField);
 
-        setfield.addIncomingData(valuePop.value);
-        graph.newTypeReference(targetClass.type).addIncomingData(setfield);
+            final ClassInitialization classInit = graph.newClassInitialization(targetClass.type);
 
-        classInit.addControlFlowTo(StandardProjections.DEFAULT, setfield);
+            intrinsified.addIncomingData(valuePop.value);
+            graph.newTypeReference(targetClass.type).addIncomingData(intrinsified);
 
-        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, classInit, setfield));
+            classInit.addControlFlowTo(StandardProjections.DEFAULT, intrinsified);
 
-        final GraphParserState newState = currentState.controlFlowsTo(setfield).withFrame(valuePop.newFrame);
+            graph.registerTranslation(node, new InstructionTranslation(currentState.frame, classInit, intrinsified));
+        } else {
+            graph.registerTranslation(node, new InstructionTranslation(currentState.frame, intrinsified));
+        }
+
+        final GraphParserState newState = currentState.controlFlowsTo(intrinsified).withFrame(valuePop.newFrame);
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));
 
         return Collections.singletonList(currentFlow.continueWith(node.getNext(), newState));

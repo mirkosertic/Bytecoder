@@ -17,12 +17,14 @@ package de.mirkosertic.bytecoder.core.optimizer;
 
 import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.ir.Copy;
+import de.mirkosertic.bytecoder.core.ir.EdgeType;
 import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.Node;
 import de.mirkosertic.bytecoder.core.ir.NodeType;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
+import java.util.Arrays;
 import java.util.Stack;
 
 public class CopyToUnusedPHIOrVariable implements Optimizer {
@@ -56,11 +58,20 @@ public class CopyToUnusedPHIOrVariable implements Optimizer {
 
                         // We remap all control flow from the predecessor of the working item to the successor
                         // of the working item. After this the successor is no longer part of the control flow
-                        workingItem.deleteFromControlFlow();
+                        if (workingItem.controlFlowsTo.keySet().stream().noneMatch(t -> t.edgeType() == EdgeType.BACK)) {
+                            workingItem.deleteFromControlFlow();
+                            g.deleteNode(copyTarget);
+                            changed = true;
+                        }
+                    } else {
+                        if (Arrays.stream(copyTarget.incomingDataFlows).noneMatch(t -> t.nodeType != NodeType.Copy)) {
+                            if (workingItem.controlFlowsTo.keySet().stream().noneMatch(t -> t.edgeType() == EdgeType.BACK)) {
+                                copyTarget.removeFromIncomingData(workingItem);
+                                workingItem.deleteFromControlFlow();
 
-                        g.deleteNode(copyTarget);
-
-                        changed = true;
+                                changed = true;
+                            }
+                        }
                     }
                 }
             }
