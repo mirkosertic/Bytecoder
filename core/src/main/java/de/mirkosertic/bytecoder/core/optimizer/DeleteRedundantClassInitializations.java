@@ -46,7 +46,9 @@ public class DeleteRedundantClassInitializations implements GlobalOptimizer {
         while (!workingQueue.empty()) {
             final ClassInitialization ci = workingQueue.pop();
             final ResolvedClass rc = compileUnit.findClass(ci.type);
-            if (!rc.requiresClassInitializer()) {
+            if (method.owner != null && method.methodNode != null && !rc.requiresClassInitializer() && method.owner.allTypesOf().contains(rc)) {
+                ci.deleteFromControlFlow();
+            } else if (!rc.requiresClassInitializer()) {
                 ci.deleteFromControlFlow();
             } else {
                 for (final ClassInitialization j : new ArrayList<>(workingQueue)) {

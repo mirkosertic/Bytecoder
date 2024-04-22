@@ -27,7 +27,6 @@ import de.mirkosertic.bytecoder.core.parser.Loader;
 import org.objectweb.asm.Type;
 
 import java.io.File;
-import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
@@ -50,8 +49,8 @@ public class GraphGenerateCommand implements Callable<Integer> {
     @Option(names = "-builddirectory", required = false, description = "The directory to output the generated code to. Defaults to '.'")
     protected String buildDirectory = ".";
 
-    @Option(names = "-optimizationlevel", required = false, description = "The optimization level. Can be 'NONE', 'DEFAULT' or 'ALL'. Defaults to 'DEFAULT'.")
-    protected String optimizationLevel = "DEFAULT";
+    @Option(names = "-optimizationlevel", required = false, description = "The optimization level. Can be 'NONE', 'DEFAULT' or 'ALL'. Defaults to 'ALL'.")
+    protected String optimizationLevel = "ALL";
 
     @Option(names = "-matchpattern", required = false, description = "Regex to match the full qualified class and method names for the export. Defaults to all methods of the main class.")
     protected String matchPattern;

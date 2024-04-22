@@ -15,6 +15,7 @@
  */
 package de.mirkosertic.bytecoder.core.ir;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -92,8 +93,12 @@ public abstract class Node {
     public void sanityCheck() {
         for (final Node incoming : incomingDataFlows) {
             if (!owner.nodes().contains(incoming)) {
-                throw new IllegalStateException("Incoming node " + incoming + " is not part of the graph!");
+                throw new IllegalStateException("Incoming node " + incoming + " is not part of the graph for " + this.nodeType + "!");
             }
         }
+    }
+
+    public void removeFromIncomingData(final Node workingItem) {
+        incomingDataFlows = Arrays.stream(incomingDataFlows).filter(t -> t != workingItem).toArray(Node[]::new);
     }
 }

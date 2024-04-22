@@ -18,7 +18,9 @@ package de.mirkosertic.bytecoder.core.parser;
 import de.mirkosertic.bytecoder.core.ir.AnalysisStack;
 import de.mirkosertic.bytecoder.core.ir.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.core.ir.Graph;
+import de.mirkosertic.bytecoder.core.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.core.ir.Value;
+import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 
 import java.util.ArrayList;
@@ -37,6 +39,18 @@ public class CoreIntrinsics implements Intrinsic {
         this.intrinsics.add(new JavaLangClassIntrinsics());
         this.intrinsics.add(new JavaLangObjectIntrinsics());
         this.intrinsics.add(new JavaLangSystemIntrinsics());
+        this.intrinsics.add(new JavaAssertionsIntrinsics());
+    }
+
+    @Override
+    public Value intrinsifyStaticFieldAccess(final CompileUnit compileUnit,final AnalysisStack analysisStack,final FieldInsnNode node,final ResolvedClass sourceType,final Graph graph,final GraphParser graphParser) {
+        for (final Intrinsic i : intrinsics) {
+            final Value result = i.intrinsifyStaticFieldAccess(compileUnit, analysisStack, node, sourceType, graph, graphParser);
+            if (result != null) {
+                return result;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -54,6 +68,17 @@ public class CoreIntrinsics implements Intrinsic {
     public ControlTokenConsumer intrinsifyMethodInvocation(final CompileUnit compileUnit, final AnalysisStack analysisStack, final MethodInsnNode node, final Value[] incomingData, final Graph graph, final GraphParser graphParser) {
         for (final Intrinsic i : intrinsics) {
             final ControlTokenConsumer result = i.intrinsifyMethodInvocation(compileUnit, analysisStack, node, incomingData, graph, graphParser);
+            if (result != null) {
+                return result;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public ControlTokenConsumer intrinsifyWriteStaticField(final CompileUnit compileUnit, final AnalysisStack analysisStack, final FieldInsnNode node, final ResolvedClass sourceType, final Graph graph, final GraphParser graphParser) {
+        for (final Intrinsic i : intrinsics) {
+            final ControlTokenConsumer result = i.intrinsifyWriteStaticField(compileUnit, analysisStack, node, sourceType, graph, graphParser);
             if (result != null) {
                 return result;
             }

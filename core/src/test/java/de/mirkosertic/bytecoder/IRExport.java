@@ -10,7 +10,7 @@ import de.mirkosertic.bytecoder.core.backend.wasm.WasmIntrinsics;
 import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.loader.BytecoderLoader;
-import de.mirkosertic.bytecoder.core.optimizer.Optimizations;
+import de.mirkosertic.bytecoder.core.optimizer.DeleteRedundantClassInitializations;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 import de.mirkosertic.bytecoder.core.parser.Loader;
 import org.objectweb.asm.Type;
@@ -28,6 +28,7 @@ public class IRExport {
     public int dosomething(final int value) {
         //doit(new String[0]);
         //final IRExport dummy = new IRExport();
+        assert value > 10;
         int x = value;
         for (int i = 0; i < 100; i++) {
             x = x + i + value;
@@ -35,7 +36,7 @@ public class IRExport {
         return x;
     }
 
-    public static void main(final String[] args) throws IOException {
+    public static void main(final String[] args) throws IOException, ClassNotFoundException {
         final Class javaClass = IRExport.class;
         //final Class javaClass = FuncState.class;
         final ClassLoader cl = javaClass.getClassLoader();
@@ -44,10 +45,11 @@ public class IRExport {
         final CompileUnit compileUnit = new CompileUnit(loader, new Slf4JLogger(), new WasmIntrinsics());
         final Type invokedType = Type.getType(javaClass);
 
-        final ResolvedMethod method = compileUnit.resolveMainMethod(invokedType, "dosomething", Type.getMethodType(Type.INT_TYPE, Type.INT_TYPE));
+        //final ResolvedMethod method = compileUnit.resolveMainMethod(invokedType, "dosomething", Type.getMethodType(Type.INT_TYPE, Type.INT_TYPE));
         //final ResolvedMethod method = compileUnit.resolveMainMethod(invokedType, "need_value", Type.getMethodType(Type.BOOLEAN_TYPE, Type.INT_TYPE));
 
         //final ResolvedMethod method = compileUnit.resolveMainMethod(Type.getType(Buffer.class), "<clinit>", Type.getMethodType(Type.VOID_TYPE));
+        final ResolvedMethod method = compileUnit.resolveMainMethod(Type.getType("Ljdk/internal/util/ArraysSupport;"), "<clinit>", Type.getMethodType(Type.VOID_TYPE));
 
         compileUnit.finalizeLinkingHierarchy();
 
@@ -64,9 +66,11 @@ public class IRExport {
             dt.writeDebugTo(fos);
         }
 
-        compileUnit.optimize(BackendType.Wasm, Optimizations.ALL);
+        //compileUnit.optimize(BackendType.Wasm, Optimizations.ALL);
 
-//        new VariableIsConstant().optimize(compileUnit, method);
+        while (new DeleteRedundantClassInitializations().optimize(BackendType.JS, compileUnit, method)) {
+            System.out.println("lala");
+        }
 
         try (final FileOutputStream fos = new FileOutputStream("debug_optimized.dot")) {
             g.writeDebugTo(fos);

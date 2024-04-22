@@ -92,7 +92,7 @@ public class BytecoderMavenMojo extends AbstractMojo {
     protected boolean debugOutput;
 
     /**
-     * Which kind of optimization should be applied? Can be NONE, ALL or EXPERIMENTAL.
+     * Which kind of optimization should be applied? Can be NONE, DEFAULT or ALL.
      */
     @Parameter(required = false, defaultValue = "ALL")
     protected String optimizationLevel;

@@ -29,6 +29,8 @@ public enum Optimizations implements Optimizer {
     DISABLED(new Optimizer[] {
     }),
     DEFAULT(new Optimizer[] {
+                new MathWithConstantsOptimizer(),
+                new IfOnConstantOptimizer(),
                 new DropRedundantRegions(),
                 new InlineMethodExpressionsOptimizer(),
                 new DropUnusedValues(),
@@ -38,9 +40,11 @@ public enum Optimizations implements Optimizer {
                 new CopyToRedundantVariable(),
                 new VirtualToDirectInvocation(),
                 new DeleteRedundantClassInitializations(),
-                new InlineVoidMethodsOptimizer()
+                new InlineVoidMethodsOptimizer(),
             }),
     ALL(new Optimizer[] {
+            new MathWithConstantsOptimizer(),
+            new IfOnConstantOptimizer(),
             new DropDebugData(),
             new DropRedundantRegions(),
             new InlineMethodExpressionsOptimizer(),

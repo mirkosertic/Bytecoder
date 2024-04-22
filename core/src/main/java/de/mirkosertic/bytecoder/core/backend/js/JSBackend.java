@@ -303,9 +303,6 @@ public class JSBackend {
                     case Type.DOUBLE:
                         pw.print(" = 0.0");
                         break;
-                    case Type.BOOLEAN:
-                        pw.print(" = false");
-                        break;
                     case Type.ARRAY:
                     case Type.OBJECT:
                     case Type.METHOD:
