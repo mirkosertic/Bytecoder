@@ -25,4 +25,8 @@ public class Nop extends ControlTokenConsumer {
     public Nop stampInto(final Graph target) {
         return target.newNop();
     }
+
+    public void deleteFromControlFlow() {
+        owner.deleteFromControlFlowInternally(this);
+    }
 }

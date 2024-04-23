@@ -62,7 +62,7 @@ public class JavaAssertionsIntrinsics implements Intrinsic {
     @Override
     public ControlTokenConsumer intrinsifyWriteStaticField(final CompileUnit compileUnit, final AnalysisStack analysisStack, final FieldInsnNode node, final ResolvedClass sourceType, final Graph graph, final GraphParser graphParser) {
         if ("$assertionsDisabled".equals(node.name) && !assertionsEnabled()) {
-            //return graph.newNop();
+            return graph.newNop();
         }
         return null;
     }

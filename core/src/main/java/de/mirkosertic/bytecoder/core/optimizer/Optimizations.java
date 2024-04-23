@@ -21,41 +21,39 @@ import de.mirkosertic.bytecoder.core.backend.sequencer.DominatorTree;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
-import java.util.Arrays;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 public enum Optimizations implements Optimizer {
     DISABLED(new Optimizer[] {
     }),
     DEFAULT(new Optimizer[] {
+                new DropRedundantRegions(),
                 new MathWithConstantsOptimizer(),
                 new IfOnConstantOptimizer(),
-                new DropRedundantRegions(),
-                new InlineMethodExpressionsOptimizer(),
-                new DropUnusedValues(),
                 new PHIorVariableIsConstant(),
-                new CopyToUnusedPHIOrVariable(),
                 new VariableIsVariable(),
                 new CopyToRedundantVariable(),
                 new VirtualToDirectInvocation(),
                 new DeleteRedundantClassInitializations(),
                 new InlineVoidMethodsOptimizer(),
+                new InlineMethodExpressionsOptimizer(),
+                new CMPInNumericalTestOptimizer(),
+                new DropUnusedValues(),
+                new CopyToUnusedPHIOrVariable(),
             }),
     ALL(new Optimizer[] {
-            new MathWithConstantsOptimizer(),
-            new IfOnConstantOptimizer(),
             new DropDebugData(),
             new DropRedundantRegions(),
-            new InlineMethodExpressionsOptimizer(),
-            new DropUnusedValues(),
+            new MathWithConstantsOptimizer(),
+            new IfOnConstantOptimizer(),
             new PHIorVariableIsConstant(),
-            new CopyToUnusedPHIOrVariable(),
             new VariableIsVariable(),
             new CopyToRedundantVariable(),
             new VirtualToDirectInvocation(),
             new DeleteRedundantClassInitializations(),
-            new InlineVoidMethodsOptimizer()
+            new InlineVoidMethodsOptimizer(),
+            new InlineMethodExpressionsOptimizer(),
+            new CMPInNumericalTestOptimizer(),
+            new DropUnusedValues(),
+            new CopyToUnusedPHIOrVariable(),
     }),
     ;
 
@@ -67,30 +65,12 @@ public enum Optimizations implements Optimizer {
 
     public boolean optimize(final BackendType backendType, final CompileUnit compileUnit, final ResolvedMethod method) {
 
-        //if (!method.owner.type.getClassName().contains("TailcallVarargs")) {
-        //    return false;
-        //}
-        //if (!"eval".equals(method.methodNode.name)) {
-        //    return false;
-        //}
-
         try {
             boolean graphchanged = false;
-            final Set<GlobalOptimizer> go = Arrays.stream(optimizers).filter(t -> t instanceof GlobalOptimizer).map(t -> (GlobalOptimizer) t).collect(Collectors.toSet());
             for (final Optimizer o : optimizers) {
-                if (!go.contains(o)) {
-                    graphchanged = graphchanged | o.optimize(backendType, compileUnit, method);
-                }
+                graphchanged = graphchanged | o.optimize(backendType, compileUnit, method);
                 if (Utils.doSanityCheck()) {
                     method.methodBody.sanityCheck();
-                }
-            }
-            if (!graphchanged) {
-                for (final GlobalOptimizer o : go) {
-                    o.optimize(backendType, compileUnit, method);
-                    if (Utils.doSanityCheck()) {
-                        method.methodBody.sanityCheck();
-                    }
                 }
             }
             return graphchanged;

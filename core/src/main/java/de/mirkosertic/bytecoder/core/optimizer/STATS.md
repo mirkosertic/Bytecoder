@@ -59,3 +59,8 @@
             JBox2D  JS      RedRegions     2176233 bytes
             LUA     Wasm    RedRegions      622232 bytes
             LUA     JS      RedRegions     2295139 bytes
+        
+            JBox2D  Wasm    Opt1            580649 bytes
+            JBox2D  JS      Opt1           2026648 bytes
+            LUA     Wasm    Opt1            613036 bytes
+            LUA     JS      Opt1           2220653 bytes
