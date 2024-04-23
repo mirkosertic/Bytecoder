@@ -18,16 +18,16 @@ package de.mirkosertic.bytecoder.core.optimizer;
 import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.backend.sequencer.DominatorTree;
 import de.mirkosertic.bytecoder.core.ir.ClassInitialization;
+import de.mirkosertic.bytecoder.core.ir.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.NodeType;
 import de.mirkosertic.bytecoder.core.ir.ResolvedClass;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
-import java.util.ArrayList;
 import java.util.Stack;
 
-public class DeleteRedundantClassInitializations implements GlobalOptimizer {
+public class DeleteRedundantClassInitializations implements Optimizer {
 
     public DeleteRedundantClassInitializations() {
     }
@@ -46,16 +46,18 @@ public class DeleteRedundantClassInitializations implements GlobalOptimizer {
         while (!workingQueue.empty()) {
             final ClassInitialization ci = workingQueue.pop();
             final ResolvedClass rc = compileUnit.findClass(ci.type);
-            if (method.owner != null && method.methodNode != null && !rc.requiresClassInitializer() && method.owner.allTypesOf().contains(rc)) {
+            final boolean requiredClassInit = rc.requiresClassInitializer();
+            if (method.owner != null && !requiredClassInit && method.methodNode != null && method.owner.allTypesOf().contains(rc)) {
                 ci.deleteFromControlFlow();
-            } else if (!rc.requiresClassInitializer()) {
+            } else if (!requiredClassInit) {
                 ci.deleteFromControlFlow();
             } else {
-                for (final ClassInitialization j : new ArrayList<>(workingQueue)) {
-                    if (j != ci && ci.type.equals(j.type)) {
-                        if (dominatorTree.dominates(ci, j)) {
-                            j.deleteFromControlFlow();
-                            workingQueue.remove(j);
+                for (final ControlTokenConsumer dominated : dominatorTree.domSetOf(ci)) {
+                    if (dominated.nodeType == NodeType.ClassInitialization && dominated != ci) {
+                        final ClassInitialization domClassInit = (ClassInitialization) dominated;
+                        if (ci.type.equals(domClassInit.type)) {
+                            domClassInit.deleteFromControlFlow();
+                            workingQueue.remove(domClassInit);
                         }
                     }
                 }

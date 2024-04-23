@@ -19,6 +19,7 @@ import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.ir.EdgeType;
 import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.NodeType;
+import de.mirkosertic.bytecoder.core.ir.Nop;
 import de.mirkosertic.bytecoder.core.ir.Region;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
@@ -34,6 +35,12 @@ public class DropRedundantRegions implements Optimizer {
         for (final Region r : g.nodes().stream().filter(t -> t.nodeType == NodeType.Region).map(t -> (Region) t).collect(Collectors.toList())) {
             if (r.controlComingFrom.size() == 1 && r.controlFlowsTo.size() == 1 && r.controlFlowsTo.keySet().iterator().next().edgeType() == EdgeType.FORWARD) {
                 r.deleteFromControlFlow();
+                changed = true;
+            }
+        }
+        for (final Nop n : g.nodes().stream().filter(t -> t.nodeType == NodeType.Nop).map(t -> (Nop) t).collect(Collectors.toList())) {
+            if (n.controlComingFrom.size() == 1 && n.controlFlowsTo.size() == 1 && n.controlFlowsTo.keySet().iterator().next().edgeType() == EdgeType.FORWARD) {
+                n.deleteFromControlFlow();
                 changed = true;
             }
         }

@@ -63,7 +63,7 @@ public class VueDemo {
 </script>
 <a href="https://github.com/mirkosertic/Bytecoder">Go to Bytecoder @ Github</a>
 <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-<script src="vue_wasm.js"></script>
+<script src="vue_wasmruntime.js"></script>
 <script type="text/javascript">
 
     bytecoder.imports.vue = {
@@ -84,7 +84,7 @@ public class VueDemo {
                 data: function() {
                     return this.config.data;
                 },
-                addEventListener: function(eventName,listenerFunction) {
+                addEventListener: function(eventName, listenerFunction) {
                     this.config.methods[eventName] = function() {
                         var args = Array.prototype.slice.call(arguments);
                         args.unshift(this);
@@ -99,55 +99,16 @@ public class VueDemo {
                     return v;
                 }
             };
-            return bytecoder.toBytecoderReference(builder);
+            return builder;
         }
     };
 
-    var instantiated = function(result) {
-        bytecoder.init(result.instance);
+    bytecoder.instantiate('vue_wasmclasses.wasm').then(function() {
 
-        bytecoder.exports.initMemory(0);
-        console.log("Memory initialized");
-        bytecoder.exports.bootstrap(0);
-        bytecoder.initializeFileIO();
         console.log("Bootstrapped");
-        bytecoder.exports.main(0);
+        bytecoder.instance.exports.main(null, bytecoder.instance.exports.newObjectArray(null, 0));
         console.log("Ready for action!");
-
-        // We have to activate the garbage collector!
-        var gcInterval = 200;
-        var gcMaxObjectsPerRun = 30;
-        var gcRunning = false;
-        var runcounter = 0;
-        setInterval(function() {
-            if (!gcRunning) {
-                gcRunning = true;
-                var freed = bytecoder.exports.IncrementalGC(0, gcMaxObjectsPerRun);
-                if (runcounter++ % 10 === 0) {
-                    var freemem = bytecoder.exports.freeMem(0);
-                    var epoch = bytecoder.exports.GCEpoch(0);
-                    console.log(freemem + " bytes free memory after GC, epoch = " + epoch);
-                }
-                gcRunning = false;
-            }
-        }, gcInterval);
-    };
-
-    // Try to load the WASM file
-    WebAssembly.instantiateStreaming(fetch('vue_wasm.wasm'), bytecoder.imports)
-        .then(instantiated)
-        .catch(function(error) {
-            console.log("Using fallback method to load WebAssembly! Check if mime types for WebAssembly are configured correctly!");
-            var request = new XMLHttpRequest();
-            request.open('GET', 'vue_wasm.wasm');
-            request.responseType = 'arraybuffer';
-            request.send();
-
-            request.onload = function() {
-                var bytes = request.response;
-                WebAssembly.instantiate(bytes, bytecoder.imports).then(instantiated);
-            };
-        });
+    });
 </script>
 </body>
 <body>

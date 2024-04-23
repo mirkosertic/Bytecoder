@@ -24,7 +24,6 @@ import de.mirkosertic.bytecoder.core.ir.NodeType;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
-import java.util.Arrays;
 import java.util.Stack;
 
 public class CopyToUnusedPHIOrVariable implements Optimizer {
@@ -62,15 +61,6 @@ public class CopyToUnusedPHIOrVariable implements Optimizer {
                             workingItem.deleteFromControlFlow();
                             g.deleteNode(copyTarget);
                             changed = true;
-                        }
-                    } else {
-                        if (Arrays.stream(copyTarget.incomingDataFlows).noneMatch(t -> t.nodeType != NodeType.Copy)) {
-                            if (workingItem.controlFlowsTo.keySet().stream().noneMatch(t -> t.edgeType() == EdgeType.BACK)) {
-                                copyTarget.removeFromIncomingData(workingItem);
-                                workingItem.deleteFromControlFlow();
-
-                                changed = true;
-                            }
                         }
                     }
                 }

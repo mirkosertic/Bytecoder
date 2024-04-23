@@ -2217,23 +2217,21 @@ public class GraphParser {
 
         final Frame.PopResult valuePop = currentState.frame.popFromStack();
 
+        final ClassInitialization classInit = graph.newClassInitialization(targetClass.type);
+
         ControlTokenConsumer intrinsified = compileUnit.getIntrinsic().intrinsifyWriteStaticField(compileUnit, analysisStack, node, targetClass, graph, this);
         if (intrinsified == null) {
             final ResolvedField resolvedField = targetClass.resolveField(node.name, t);
 
             intrinsified = graph.newSetClassField(resolvedField);
 
-            final ClassInitialization classInit = graph.newClassInitialization(targetClass.type);
-
             intrinsified.addIncomingData(valuePop.value);
             graph.newTypeReference(targetClass.type).addIncomingData(intrinsified);
-
-            classInit.addControlFlowTo(StandardProjections.DEFAULT, intrinsified);
-
-            graph.registerTranslation(node, new InstructionTranslation(currentState.frame, classInit, intrinsified));
-        } else {
-            graph.registerTranslation(node, new InstructionTranslation(currentState.frame, intrinsified));
         }
+
+        classInit.addControlFlowTo(StandardProjections.DEFAULT, intrinsified);
+
+        graph.registerTranslation(node, new InstructionTranslation(currentState.frame, classInit, intrinsified));
 
         final GraphParserState newState = currentState.controlFlowsTo(intrinsified).withFrame(valuePop.newFrame);
         graph.addFixup(new ControlFlowFixup(node, newState.frame, StandardProjections.DEFAULT, node.getNext()));

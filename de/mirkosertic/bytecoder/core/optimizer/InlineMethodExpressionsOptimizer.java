@@ -134,15 +134,14 @@ public class InlineMethodExpressionsOptimizer implements Optimizer {
                 }
 
                 // thisRef and arguments must be variable, phi or constant to do a valid transformation
-                // Convert all incoming data flows into variables
                 boolean valid = true;
                 if (thisRef != null) {
-                    if (!Utils.isVariablePHIOrConstant(thisRef)) {
+                    if (!Utils.isVariablePHIOrConstant(thisRef) && !thisRef.hasSideSideEffectRecursive()) {
                         valid = false;
                     }
                 }
                 for (final Node argument : arguments) {
-                    if (!Utils.isVariablePHIOrConstant(argument)) {
+                    if (!Utils.isVariablePHIOrConstant(argument) && !argument.hasSideSideEffectRecursive()) {
                         valid = false;
                     }
                 }

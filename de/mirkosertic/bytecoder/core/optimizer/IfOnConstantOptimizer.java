@@ -28,6 +28,7 @@ import de.mirkosertic.bytecoder.core.ir.Projection;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
@@ -84,11 +85,20 @@ public class IfOnConstantOptimizer implements Optimizer {
                     for (final Node dataFlowsTo : token.outgoingDataFlows()) {
                         dataFlowsTo.removeFromIncomingData(token);
                     }
+                    for (final ControlTokenConsumer pred : token.controlComingFrom) {
+                        for (final Projection p : new HashSet<>(pred.controlFlowsTo.keySet())) {
+                            if (pred.controlFlowsTo.get(p) == token) {
+                                pred.controlFlowsTo.remove(p);
+                            }
+                        }
+                    }
+                    token.controlComingFrom.clear();
                     g.deleteNode(token);
                 }
 
                 replacementForIf.controlComingFrom.remove(workingItem);
                 g.replaceInControlFlow(workingItem, replacementForIf);
+                g.deleteNode(workingItem.incomingDataFlows[0]);
                 g.deleteNode(workingItem);
 
                 changed = true;

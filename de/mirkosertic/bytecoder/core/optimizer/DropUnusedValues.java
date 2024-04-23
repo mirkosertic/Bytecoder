@@ -18,6 +18,7 @@ package de.mirkosertic.bytecoder.core.optimizer;
 import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.Node;
+import de.mirkosertic.bytecoder.core.ir.NodeType;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.ir.Value;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
@@ -30,9 +31,16 @@ public class DropUnusedValues implements Optimizer {
     public boolean optimize(final BackendType backendType, final CompileUnit compileUnit, final ResolvedMethod method) {
         final Graph g = method.methodBody;
         boolean changed = false;
-        for (final Node value : g.nodes().stream().filter(t -> (t.incomingDataFlows.length == 0 && t instanceof Value && t.outgoingDataFlows().length == 0)).collect(Collectors.toList())) {
-            g.deleteNode(value);
-            changed = true;
+        for (final Node value : g.nodes().stream().filter(t -> (t instanceof Value && t.outgoingDataFlows().length == 0)).collect(Collectors.toList())) {
+            if (value.nodeType == NodeType.Variable || value.nodeType == NodeType.PHI || value.isConstant()) {
+                if (value.incomingDataFlows.length == 0) {
+                    g.deleteNode(value);
+                    changed = true;
+                }
+            } else {
+                g.deleteNode(value);
+                changed = true;
+            }
         }
 
         return changed;
