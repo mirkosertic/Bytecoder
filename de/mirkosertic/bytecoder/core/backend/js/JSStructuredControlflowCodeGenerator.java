@@ -39,6 +39,7 @@ import de.mirkosertic.bytecoder.core.ir.EnumValuesOf;
 import de.mirkosertic.bytecoder.core.ir.FieldReference;
 import de.mirkosertic.bytecoder.core.ir.FrameDebugInfo;
 import de.mirkosertic.bytecoder.core.ir.Goto;
+import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.If;
 import de.mirkosertic.bytecoder.core.ir.InstanceOf;
 import de.mirkosertic.bytecoder.core.ir.InvokeDynamicExpression;
@@ -99,6 +100,7 @@ import java.io.PrintWriter;
 import java.lang.invoke.LambdaMetafactory;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -133,7 +135,14 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     @Override
-    public void registerVariables(final List<AbstractVar> variables) {
+    public void registerVariables(final Graph g) {
+
+        if (g.nodes().stream().anyMatch(t -> t.nodeType == NodeType.This)) {
+            writeIndent();
+            pw.println("var th = this;");
+        }
+
+        final List<AbstractVar> variables = g.nodes().stream().filter(t -> t instanceof AbstractVar).map(t -> (AbstractVar) t).collect(Collectors.toList());
         for (int i = 0; i < variables.size(); i++) {
             final AbstractVar v = variables.get(i);
             final String varName;
@@ -648,9 +657,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
         final ResolvedMethod implementationMethod = argImplMethod.resolvedMethod;
 
         final List<Object> allArgs = new ArrayList<>();
-        for (int i = 1; i < node.incomingDataFlows.length; i++) {
-            allArgs.add(node.incomingDataFlows[i]);
-        }
+        allArgs.addAll(Arrays.asList(node.incomingDataFlows).subList(1, node.incomingDataFlows.length));
 
         for (int i = 0; i < argInstanceMethodType.type.getArgumentTypes().length; i++) {
             allArgs.add(new LinkageArgument("linkarg" + i, argInstanceMethodType.type.getArgumentTypes()[i]));
@@ -1999,7 +2006,7 @@ public class JSStructuredControlflowCodeGenerator implements StructuredControlfl
     }
 
     private void writeExpression(final This node) {
-        pw.print("this");
+        pw.print("th");
     }
 
     private void writeExpression(final New node) {

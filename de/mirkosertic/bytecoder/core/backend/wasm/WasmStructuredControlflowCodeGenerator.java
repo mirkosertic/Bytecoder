@@ -135,6 +135,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class WasmStructuredControlflowCodeGenerator implements StructuredControlflowCodeGenerator {
 
@@ -273,7 +274,9 @@ public class WasmStructuredControlflowCodeGenerator implements StructuredControl
     }
 
     @Override
-    public void registerVariables(final List<AbstractVar> variables) {
+    public void registerVariables(final Graph g) {
+
+        final List<AbstractVar> variables = g.nodes().stream().filter(t -> t instanceof AbstractVar).map(t -> (AbstractVar) t).collect(Collectors.toList());
 
         for (int i = 0; i < variables.size(); i++) {
             final AbstractVar v = variables.get(i);

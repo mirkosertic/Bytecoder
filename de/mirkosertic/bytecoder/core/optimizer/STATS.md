@@ -64,3 +64,8 @@
             JBox2D  JS      Opt1           2026648 bytes
             LUA     Wasm    Opt1            613036 bytes
             LUA     JS      Opt1           2220653 bytes
+
+            JBox2D  Wasm    Opt2            568419 bytes
+            JBox2D  JS      Opt2           1956788 bytes
+            LUA     Wasm    Opt2            597855 bytes
+            LUA     JS      Opt2           2172070 bytes
