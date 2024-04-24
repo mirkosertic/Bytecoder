@@ -15,12 +15,12 @@
  */
 package de.mirkosertic.bytecoder.core.backend.sequencer;
 
-import de.mirkosertic.bytecoder.core.ir.AbstractVar;
 import de.mirkosertic.bytecoder.core.ir.ArrayStore;
 import de.mirkosertic.bytecoder.core.ir.ClassInitialization;
 import de.mirkosertic.bytecoder.core.ir.Copy;
 import de.mirkosertic.bytecoder.core.ir.FrameDebugInfo;
 import de.mirkosertic.bytecoder.core.ir.Goto;
+import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.If;
 import de.mirkosertic.bytecoder.core.ir.LineNumberDebugInfo;
 import de.mirkosertic.bytecoder.core.ir.LookupSwitch;
@@ -35,11 +35,9 @@ import de.mirkosertic.bytecoder.core.ir.TableSwitch;
 import de.mirkosertic.bytecoder.core.ir.Unwind;
 import org.objectweb.asm.Type;
 
-import java.util.List;
-
 public interface StructuredControlflowCodeGenerator {
 
-    void registerVariables(List<AbstractVar> variables);
+    void registerVariables(Graph g);
 
     void write(MethodInvocation node);
 

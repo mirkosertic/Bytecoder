@@ -56,7 +56,7 @@ public class PHIorVariableIsConstant implements Optimizer {
                 final Node source = workingItem.incomingDataFlows[0];
                 // And only one outgoing dataflow
                 // At this point we are sure it is a variable or phi
-                final Node target = g.outgoingDataFlowsFor(workingItem)[0];
+                final Node target = outgoingDataFlows[0];
 
                 g.remapDataFlow(target, source);
 

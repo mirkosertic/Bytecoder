@@ -31,6 +31,7 @@ import de.mirkosertic.bytecoder.core.ir.Copy;
 import de.mirkosertic.bytecoder.core.ir.Div;
 import de.mirkosertic.bytecoder.core.ir.FrameDebugInfo;
 import de.mirkosertic.bytecoder.core.ir.Goto;
+import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.If;
 import de.mirkosertic.bytecoder.core.ir.LineNumberDebugInfo;
 import de.mirkosertic.bytecoder.core.ir.LookupSwitch;
@@ -78,6 +79,7 @@ import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class OpenCLStructuredControlflowCodeGenerator implements StructuredControlflowCodeGenerator {
 
@@ -102,7 +104,8 @@ public class OpenCLStructuredControlflowCodeGenerator implements StructuredContr
     }
 
     @Override
-    public void registerVariables(final List<AbstractVar> variables) {
+    public void registerVariables(final Graph g) {
+        final List<AbstractVar> variables = g.nodes().stream().filter(t -> t instanceof AbstractVar).map(t -> (AbstractVar) t).collect(Collectors.toList());
         for (int i = 0; i < variables.size(); i++) {
             final AbstractVar v = variables.get(i);
             final String varName;

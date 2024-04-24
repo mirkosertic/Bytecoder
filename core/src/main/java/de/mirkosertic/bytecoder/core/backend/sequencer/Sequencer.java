@@ -15,7 +15,6 @@
  */
 package de.mirkosertic.bytecoder.core.backend.sequencer;
 
-import de.mirkosertic.bytecoder.core.ir.AbstractVar;
 import de.mirkosertic.bytecoder.core.ir.ArrayStore;
 import de.mirkosertic.bytecoder.core.ir.ClassInitialization;
 import de.mirkosertic.bytecoder.core.ir.ControlTokenConsumer;
@@ -82,8 +81,7 @@ public class Sequencer {
         this.codegenerator = codegenerator;
         final ControlTokenConsumer startNode = g.regionByLabel(Graph.START_REGION_NAME);
 
-        final List<AbstractVar> variables = g.nodes().stream().filter(t -> t instanceof AbstractVar).map(t -> (AbstractVar) t).collect(Collectors.toList());
-        codegenerator.registerVariables(variables);
+        codegenerator.registerVariables(g);
 
         visitDominationTreeOf(startNode, new Stack<>());
     }
