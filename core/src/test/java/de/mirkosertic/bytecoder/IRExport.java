@@ -45,11 +45,12 @@ public class IRExport {
         final CompileUnit compileUnit = new CompileUnit(loader, new Slf4JLogger(), new WasmIntrinsics());
         final Type invokedType = Type.getType(javaClass);
 
-        final ResolvedMethod method = compileUnit.resolveMainMethod(invokedType, "dosomething", Type.getMethodType(Type.INT_TYPE, Type.INT_TYPE));
+        //final ResolvedMethod method = compileUnit.resolveMainMethod(invokedType, "dosomething", Type.getMethodType(Type.INT_TYPE, Type.INT_TYPE));
         //final ResolvedMethod method = compileUnit.resolveMainMethod(invokedType, "need_value", Type.getMethodType(Type.BOOLEAN_TYPE, Type.INT_TYPE));
 
         //final ResolvedMethod method = compileUnit.resolveMainMethod(Type.getType(Buffer.class), "<clinit>", Type.getMethodType(Type.VOID_TYPE));
         //final ResolvedMethod method = compileUnit.resolveMainMethod(Type.getType("Ljdk/internal/util/ArraysSupport;"), "<clinit>", Type.getMethodType(Type.VOID_TYPE));
+        final ResolvedMethod method = compileUnit.resolveMainMethod(Type.getType("Ljava/lang/Object;"), "equals", Type.getMethodType(Type.BOOLEAN_TYPE, Type.getType(Object.class)));
 
         compileUnit.finalizeLinkingHierarchy();
 

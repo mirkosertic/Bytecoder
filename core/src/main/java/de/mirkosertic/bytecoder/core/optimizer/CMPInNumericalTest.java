@@ -27,7 +27,7 @@ import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
 import java.util.Stack;
 
-public class CMPInNumericalTestOptimizer implements Optimizer {
+public class CMPInNumericalTest implements Optimizer {
 
     @Override
     public boolean optimize(final BackendType backendType, final CompileUnit compileUnit, final ResolvedMethod method) {

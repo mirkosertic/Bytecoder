@@ -38,13 +38,13 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
-public class InlineMethodExpressionsOptimizer implements Optimizer {
+public class InlineMethodExpressions implements Optimizer {
 
     private final int maxInlineSourceSize;
 
     private final int maxInlineTargetSize;
 
-    public InlineMethodExpressionsOptimizer() {
+    public InlineMethodExpressions() {
         this.maxInlineSourceSize = Utils.maxInlineSourceSize();
         this.maxInlineTargetSize = Utils.maxInlineTargetSize();
     }
@@ -53,6 +53,14 @@ public class InlineMethodExpressionsOptimizer implements Optimizer {
         if (Modifier.isNative(rm.methodNode.access)) {
             return false;
         }
+
+        if (!rm.owner.type.getClassName().startsWith("org.luaj.vm2.compiler.Func")) {
+            return false;
+        }
+        if (!rm.methodNode.name.equals("storevar")) {
+            return false;
+        }
+
         final long controlTokens = Utils.methodSize(rm);
 
         // Important point here: only if the method returns a value at a point, we can inline them. If it just throws an exception, we can't inline it because it would cause an invalid control flow
@@ -136,12 +144,12 @@ public class InlineMethodExpressionsOptimizer implements Optimizer {
                 // thisRef and arguments must be variable, phi or constant to do a valid transformation
                 boolean valid = true;
                 if (thisRef != null) {
-                    if (!Utils.isVariablePHIOrConstant(thisRef) && !thisRef.hasSideSideEffectRecursive()) {
+                    if (!Utils.isVariableOrConstant(thisRef) && !thisRef.hasSideSideEffectRecursive()) {
                         valid = false;
                     }
                 }
                 for (final Node argument : arguments) {
-                    if (!Utils.isVariablePHIOrConstant(argument) && !argument.hasSideSideEffectRecursive()) {
+                    if (!Utils.isVariableOrConstant(argument) && !argument.hasSideSideEffectRecursive()) {
                         valid = false;
                     }
                 }

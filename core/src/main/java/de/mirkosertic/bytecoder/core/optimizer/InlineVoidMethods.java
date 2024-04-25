@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
-public class InlineVoidMethodsOptimizer implements Optimizer {
+public class InlineVoidMethods implements Optimizer {
 
     private int labelCounter = 0;
 
@@ -43,7 +43,7 @@ public class InlineVoidMethodsOptimizer implements Optimizer {
 
     private final int maxInlineTargetSize;
 
-    public InlineVoidMethodsOptimizer() {
+    public InlineVoidMethods() {
         this.maxInlineSourceSize = Utils.maxInlineSourceSize();
         this.maxInlineTargetSize = Utils.maxInlineTargetSize();
     }
@@ -52,6 +52,7 @@ public class InlineVoidMethodsOptimizer implements Optimizer {
         if (Modifier.isNative(rm.methodNode.access)) {
             return false;
         }
+
         final long controlTokens = Utils.methodSize(rm);
 
         // Important point here: only if the method returns a value at a point, we can inline them. If it just throws an exception, we can't inline it because it would cause an invalid control flow
@@ -118,7 +119,7 @@ public class InlineVoidMethodsOptimizer implements Optimizer {
 
                 // Convert all incoming data flows into variables
                 if (thisRef != null) {
-                    if (!Utils.isVariablePHIOrConstant(thisRef)) {
+                    if (!Utils.isVariableOrConstant(thisRef)) {
                         // Convert this into a variable
                         final Variable newThisRef = g.newVariable(((Value) thisRef).type);
                         final Copy c = g.newCopy();
@@ -132,7 +133,7 @@ public class InlineVoidMethodsOptimizer implements Optimizer {
                 }
                 for (int i = 0; i < arguments.length; i++) {
                     final Node argument = arguments[i];
-                    if (!Utils.isVariablePHIOrConstant(argument)) {
+                    if (!Utils.isVariableOrConstant(argument)) {
                         // Convert this into a variable
                         final Variable newArgument = g.newVariable(((Value) argument).type);
                         final Copy c = g.newCopy();

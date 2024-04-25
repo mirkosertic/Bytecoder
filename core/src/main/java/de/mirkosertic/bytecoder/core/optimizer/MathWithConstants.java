@@ -30,7 +30,7 @@ import org.objectweb.asm.Type;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class MathWithConstantsOptimizer implements Optimizer {
+public class MathWithConstants implements Optimizer {
 
     @Override
     public boolean optimize(final BackendType backendType, final CompileUnit compileUnit, final ResolvedMethod method) {

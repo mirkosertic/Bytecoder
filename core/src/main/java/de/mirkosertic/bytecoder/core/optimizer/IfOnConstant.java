@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
-public class IfOnConstantOptimizer implements Optimizer {
+public class IfOnConstant implements Optimizer {
 
     @Override
     public boolean optimize(final BackendType backendType, final CompileUnit compileUnit, final ResolvedMethod method) {
