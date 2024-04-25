@@ -21,11 +21,8 @@ import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 
 public class Utils {
 
-    public static boolean isVariablePHIOrConstant(final Node n) {
+    public static boolean isVariableOrConstant(final Node n) {
         if (n.nodeType == NodeType.Variable) {
-            return true;
-        }
-        if (n.nodeType == NodeType.PHI) {
             return true;
         }
         return n.isConstant();
