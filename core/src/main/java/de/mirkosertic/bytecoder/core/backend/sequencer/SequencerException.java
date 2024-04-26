@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Mirko Sertic
+ * Copyright 2024 Mirko Sertic
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package de.mirkosertic.bytecoder.core.ir;
+package de.mirkosertic.bytecoder.core.backend.sequencer;
 
-public class Goto extends ControlTokenConsumer {
+public class SequencerException  extends RuntimeException{
 
-    Goto(final Graph owner) {
-        super(owner, NodeType.Goto);
-    }
-
-    @Override
-    public Goto stampInto(final Graph target) {
-        return target.newGoto();
-    }
-
-    public void deleteFromControlFlow() {
-        owner.deleteFromControlFlowInternally(this);
+    public SequencerException(final String message, final Exception cause) {
+        super(message, cause);
     }
 }

@@ -21,6 +21,9 @@ import java.io.PrintWriter;
 
 public class IRExport {
 
+    int target;
+    int target2;
+
     public static void doit(final String[] args) {
 
     }
@@ -33,6 +36,9 @@ public class IRExport {
         for (int i = 0; i < 100; i++) {
             x = x + i + value;
         }
+        IRExport t = new IRExport();
+        t.target = x;
+        t.target2 = x + 1;
         return x;
     }
 
@@ -45,12 +51,12 @@ public class IRExport {
         final CompileUnit compileUnit = new CompileUnit(loader, new Slf4JLogger(), new WasmIntrinsics());
         final Type invokedType = Type.getType(javaClass);
 
-        //final ResolvedMethod method = compileUnit.resolveMainMethod(invokedType, "dosomething", Type.getMethodType(Type.INT_TYPE, Type.INT_TYPE));
+        final ResolvedMethod method = compileUnit.resolveMainMethod(invokedType, "dosomething", Type.getMethodType(Type.INT_TYPE, Type.INT_TYPE));
         //final ResolvedMethod method = compileUnit.resolveMainMethod(invokedType, "need_value", Type.getMethodType(Type.BOOLEAN_TYPE, Type.INT_TYPE));
 
         //final ResolvedMethod method = compileUnit.resolveMainMethod(Type.getType(Buffer.class), "<clinit>", Type.getMethodType(Type.VOID_TYPE));
         //final ResolvedMethod method = compileUnit.resolveMainMethod(Type.getType("Ljdk/internal/util/ArraysSupport;"), "<clinit>", Type.getMethodType(Type.VOID_TYPE));
-        final ResolvedMethod method = compileUnit.resolveMainMethod(Type.getType("Ljava/lang/Object;"), "equals", Type.getMethodType(Type.BOOLEAN_TYPE, Type.getType(Object.class)));
+        //final ResolvedMethod method = compileUnit.resolveMainMethod(Type.getType("Ljava/lang/Object;"), "equals", Type.getMethodType(Type.BOOLEAN_TYPE, Type.getType(Object.class)));
 
         compileUnit.finalizeLinkingHierarchy();
 
