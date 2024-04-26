@@ -216,8 +216,10 @@ public class Sequencer {
                 }
             } catch (final IllegalStateException e) {
                 throw e;
+            } catch (final SequencerException e) {
+                throw e;
             } catch (final RuntimeException e) {
-                throw new RuntimeException("Error processing node #" + graph.nodes().indexOf(current) + " " + current.nodeType + current.additionalDebugInfo(), e);
+                throw new SequencerException("Error processing node #" + graph.nodes().indexOf(current) + " " + current.nodeType + current.additionalDebugInfo(), e);
             }
         }
 

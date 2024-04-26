@@ -19,6 +19,7 @@ import de.mirkosertic.bytecoder.core.backend.BackendType;
 import de.mirkosertic.bytecoder.core.ir.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.core.ir.EdgeType;
 import de.mirkosertic.bytecoder.core.ir.FrameDebugInfo;
+import de.mirkosertic.bytecoder.core.ir.Goto;
 import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.LineNumberDebugInfo;
 import de.mirkosertic.bytecoder.core.ir.NodeType;
@@ -33,7 +34,7 @@ public class DropDebugData implements Optimizer {
     public boolean optimize(final BackendType backendType, final CompileUnit compileUnit, final ResolvedMethod method) {
         final Graph g = method.methodBody;
         boolean changed = false;
-        for (final ControlTokenConsumer t : g.nodes().stream().filter(t -> t.nodeType == NodeType.FrameDebugInfo || t.nodeType == NodeType.LineNumberDebugInfo).map(t -> (ControlTokenConsumer) t).collect(Collectors.toList())) {
+        for (final ControlTokenConsumer t : g.nodes().stream().filter(t -> t.nodeType == NodeType.FrameDebugInfo || t.nodeType == NodeType.LineNumberDebugInfo || t.nodeType == NodeType.Goto).map(t -> (ControlTokenConsumer) t).collect(Collectors.toList())) {
             if (t.controlComingFrom.size() == 1 && t.controlFlowsTo.size() == 1 && t.controlFlowsTo.keySet().iterator().next().edgeType() == EdgeType.FORWARD) {
                 if (t.nodeType == NodeType.FrameDebugInfo) {
                     ((FrameDebugInfo) t).deleteFromControlFlow();
@@ -41,6 +42,10 @@ public class DropDebugData implements Optimizer {
                 }
                 if (t.nodeType == NodeType.LineNumberDebugInfo) {
                     ((LineNumberDebugInfo) t).deleteFromControlFlow();
+                    changed = true;
+                }
+                if (t.nodeType == NodeType.Goto) {
+                    ((Goto) t).deleteFromControlFlow();
                     changed = true;
                 }
             }

@@ -25,4 +25,8 @@ public class Goto extends ControlTokenConsumer {
     public Goto stampInto(final Graph target) {
         return target.newGoto();
     }
+
+    public void deleteFromControlFlow() {
+        owner.deleteFromControlFlowInternally(this);
+    }
 }
