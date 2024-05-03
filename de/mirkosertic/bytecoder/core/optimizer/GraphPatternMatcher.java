@@ -33,6 +33,8 @@ import java.util.stream.Collectors;
 public class GraphPatternMatcher {
 
     private interface Context {
+
+        Node[] outgoingDataFlowsFor(final Node node);
     }
 
     private static class Path {
@@ -49,6 +51,10 @@ public class GraphPatternMatcher {
 
         public Path addIncoming(final int incomingIndex, final NodeType nodeType, final int expectedIndex) {
             return new Path(path + ".i[" + incomingIndex + ":" + nodeType + ":" + expectedIndex + "]");
+        }
+
+        public Path addOutgoing(final int outgoingIndex, final NodeType nodeType, final int expectedIndex) {
+            return new Path(path + ".o[" + outgoingIndex + ":" + nodeType + ":" + expectedIndex + "]");
         }
 
         public Path controlComingFrom(final int nodeIndex, final NodeType nodeType) {
@@ -88,6 +94,24 @@ public class GraphPatternMatcher {
                     final Node[] incoming = node.incomingDataFlows;
                     if (incoming.length > index) {
                         node = incoming[index];
+                        if (node.nodeType != nodeType) {
+                            // Unexpected node type
+                            return null;
+                        }
+                        // TODO: Verify index is the same
+                    } else {
+                        return null;
+                    }
+                } else if (token.startsWith("o[")) {
+                    final int p = token.indexOf(":");
+                    final int p2 = token.lastIndexOf(":");
+                    final int index = Integer.parseInt(token.substring(2, p));
+                    final NodeType nodeType = NodeType.valueOf(token.substring(p + 1, p2));
+                    final int expectedNodeIndex = Integer.parseInt(token.substring(p2 + 1, token.length() - 1));
+
+                    final Node[] outgoing = context.outgoingDataFlowsFor(node);
+                    if (outgoing.length > index) {
+                        node = outgoing[index];
                         if (node.nodeType != nodeType) {
                             // Unexpected node type
                             return null;
@@ -181,6 +205,22 @@ public class GraphPatternMatcher {
                 workingItemPaths.add(workingItemPath);
             }
 
+            final Node[] outgoing = workingItem.node.outgoingDataFlows();
+            for (int i = 0; i < outgoing.length; i++) {
+                final Node n = outgoing[i];
+                final boolean registered = compiledPattern.registerToIndex(n);
+                final Path newPath = workingItemPath.addOutgoing(i, n.nodeType, compiledPattern.nodeIndexOf(n));
+
+                final List<Path> paths = compiledPattern.nodeToPaths.computeIfAbsent(n, key -> new ArrayList<>());
+                if (!paths.contains(newPath)) {
+                    paths.add(newPath);
+                }
+
+                if (registered) {
+                    workingQueue.add(new PathAnalysisState(n, newPath));
+                }
+            }
+
             final Node[] incomingDataFlow = workingItem.node.incomingDataFlows;
             for (int i = 0; i < incomingDataFlow.length; i++) {
                 final Node n = incomingDataFlow[i];
@@ -208,9 +248,7 @@ public class GraphPatternMatcher {
                         paths.add(newPath);
                     }
 
-                    if (registered) {
-                        workingQueue.add(new PathAnalysisState(inc, newPath));
-                    }
+                    workingQueue.add(new PathAnalysisState(inc, newPath));
                 }
                 for (final Map.Entry<Projection, ControlTokenConsumer> entry : control.controlFlowsTo.entrySet()) {
                     final ControlTokenConsumer target = entry.getValue();
@@ -241,6 +279,13 @@ public class GraphPatternMatcher {
         final List<Node> result = new ArrayList<>();
 
         final Context c = new Context() {
+
+            private final Map<Node, Node[]> outgoingFlows = new HashMap<>();
+
+            @Override
+            public Node[] outgoingDataFlowsFor(final Node node) {
+                return outgoingFlows.computeIfAbsent(node, Node::outgoingDataFlows);
+            }
         };
 
         // We search for all analysis candidates in source with the same nodetype as pivot
