@@ -27,9 +27,10 @@ import static org.junit.Assert.assertTrue;
 
 public class GraphPatternMatcherTest {
 
+    private static final Logger logger = new Slf4JLogger();
+
     @Test
     public void testEmpty() {
-        final Logger logger = new Slf4JLogger();
         final Graph source = new Graph(logger);
         final Graph pattern = new Graph(logger);
         final Node pivot = pattern.newRegion("Test");
@@ -40,7 +41,6 @@ public class GraphPatternMatcherTest {
 
     @Test
     public void testSearchForCopy() {
-        final Logger logger = new Slf4JLogger();
         final Graph source = new Graph(logger);
         final Variable st = source.newVariable(Type.INT_TYPE);
         final Node sc = source.newCopy();
