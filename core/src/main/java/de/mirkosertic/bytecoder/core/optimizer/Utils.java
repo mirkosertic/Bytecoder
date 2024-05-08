@@ -15,9 +15,16 @@
  */
 package de.mirkosertic.bytecoder.core.optimizer;
 
+import de.mirkosertic.bytecoder.core.ir.ControlTokenConsumer;
 import de.mirkosertic.bytecoder.core.ir.Node;
 import de.mirkosertic.bytecoder.core.ir.NodeType;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.Stack;
 
 public class Utils {
 
@@ -45,6 +52,36 @@ public class Utils {
                         t.nodeType == NodeType.ArrayStore ||
                         t.nodeType == NodeType.Nop ||
                         t.nodeType == NodeType.If).count();
+    }
+
+    public static List<Node> evaluationOrderOf(final Node node) {
+        final List<Node> result = new ArrayList<>();
+
+        // We do a DFS here
+        final Set<Node> visited = new HashSet<>();
+        final Stack<Node> workingQueue = new Stack<>();
+
+        for (int i = node.incomingDataFlows.length - 1; i >= 0; i--) {
+            workingQueue.push(node.incomingDataFlows[i]);
+        }
+        visited.add(node);
+
+        while (!workingQueue.isEmpty()) {
+            final Node workingItem = workingQueue.pop();
+            if (visited.add(workingItem)) {
+                if (!(workingItem instanceof ControlTokenConsumer)) {
+                    if (workingItem.hasSideSideEffect() || workingItem.nodeType == NodeType.Variable) {
+                        result.add(workingItem);
+                    } else {
+                        for (int i = workingItem.incomingDataFlows.length - 1; i >= 0; i--) {
+                            workingQueue.push(workingItem.incomingDataFlows[i]);
+                        }
+                    }
+                }
+            }
+        }
+
+        return result;
     }
 
     public static int maxInlineSourceSize() {

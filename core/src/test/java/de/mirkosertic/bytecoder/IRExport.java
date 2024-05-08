@@ -10,6 +10,7 @@ import de.mirkosertic.bytecoder.core.backend.wasm.WasmIntrinsics;
 import de.mirkosertic.bytecoder.core.ir.Graph;
 import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.loader.BytecoderLoader;
+import de.mirkosertic.bytecoder.core.optimizer.InefficientSetFieldWithPatternMatcher;
 import de.mirkosertic.bytecoder.core.optimizer.Optimizations;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 import de.mirkosertic.bytecoder.core.parser.Loader;
@@ -31,15 +32,15 @@ public class IRExport {
     public int dosomething(final int value) {
         //doit(new String[0]);
         //final IRExport dummy = new IRExport();
-        assert value > 10;
-        int x = value;
-        for (int i = 0; i < 100; i++) {
-            x = x + i + value;
-        }
+        //assert value > 10;
+        //int x = value;
+        //for (int i = 0; i < 100; i++) {
+//            x = x + i + value;
+//        }
         IRExport t = new IRExport();
-        t.target = x;
-        t.target2 = x + 1;
-        return x;
+        t.target = value;
+        t.target2 = value + 1;
+        return value;
     }
 
     public static void main(final String[] args) throws IOException, ClassNotFoundException {
@@ -74,6 +75,9 @@ public class IRExport {
         }
 
         while (Optimizations.ALL.optimize(BackendType.JS, compileUnit, method)) {
+        }
+
+        while (new InefficientSetFieldWithPatternMatcher().optimize(BackendType.JS, compileUnit, method)) {
         }
 
         try (final FileOutputStream fos = new FileOutputStream("debug_optimized.dot")) {

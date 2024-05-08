@@ -32,6 +32,7 @@ public class InefficientSetFieldOrArray implements Optimizer {
 
     @Override
     public boolean optimize(final BackendType backendType, final CompileUnit compileUnit, final ResolvedMethod method) {
+
         final Graph g = method.methodBody;
         boolean changed = false;
         for (final Copy copy : g.nodes().stream().filter(t -> t.nodeType == NodeType.Copy).map(t -> (Copy) t).collect(Collectors.toList())) {
@@ -44,7 +45,7 @@ public class InefficientSetFieldOrArray implements Optimizer {
                     final Node source = copy.incomingDataFlows[0];
                     // Case one : there is something written to the copyTarget
                     final Node[] succOutgoing = successor.outgoingDataFlows();
-                    if (source.nodeType == NodeType.Variable && copyTarget.incomingDataFlows.length == 2 && copyTarget.incomingDataFlows[0] == copy && copyTarget.incomingDataFlows[1] == successor && succOutgoing.length == 1 && succOutgoing[0] == copyTarget) {
+                    if (source.nodeType == NodeType.Variable && copyTarget.incomingDataFlows.length == 2 && copyTarget.incomingDataFlows[0] == copy && copyTarget.incomingDataFlows[1] == successor && succOutgoing.length == 1 && succOutgoing[0] == copyTarget && !Utils.evaluationOrderOf(successor).contains(copyTarget)) {
 
                         copyTarget.removeFromIncomingData(copy);
 

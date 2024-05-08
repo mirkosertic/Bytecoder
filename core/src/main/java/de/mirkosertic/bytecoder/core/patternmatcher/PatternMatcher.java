@@ -139,7 +139,17 @@ public class PatternMatcher {
 
                 return node;
 
+            } else if (candidates.size() > 1) {
+                // More than one candidate, maybe we can further strip this down
+                final List<Node> furtherCheck =  candidates.stream().filter(t -> evaluationContext.nodeKnownAt(expectedNodeIndex) && t == evaluationContext.getNodeAt(expectedNodeIndex)).collect(Collectors.toList());
+                if (furtherCheck.size() == 1) {
+                    return furtherCheck.get(0);
+                } else {
+                    PatternMatcher.this.logger.debug(" -> Failed, cannot strip down nodes {} to {}", candidates, token);
+                    return null;
+                }
             }
+
             PatternMatcher.this.logger.debug(" -> Failed, matching outgoing nodes are  != 1 : {}", candidates);
             return null;
         }
