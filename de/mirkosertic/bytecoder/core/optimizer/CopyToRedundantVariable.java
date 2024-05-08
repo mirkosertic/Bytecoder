@@ -25,43 +25,10 @@ import de.mirkosertic.bytecoder.core.ir.ResolvedMethod;
 import de.mirkosertic.bytecoder.core.ir.Variable;
 import de.mirkosertic.bytecoder.core.parser.CompileUnit;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.Stack;
 
 public class CopyToRedundantVariable implements Optimizer {
-
-    private List<Node> evaluationOrderOf(final Node node) {
-        final List<Node> result = new ArrayList<>();
-
-        // We do a DFS here
-        final Set<Node> visited = new HashSet<>();
-        final Stack<Node> workingQueue = new Stack<>();
-
-        for (int i = node.incomingDataFlows.length - 1; i >= 0; i--) {
-            workingQueue.push(node.incomingDataFlows[i]);
-        }
-        visited.add(node);
-
-        while (!workingQueue.isEmpty()) {
-            final Node workingItem = workingQueue.pop();
-            if (visited.add(workingItem)) {
-                if (!(workingItem instanceof ControlTokenConsumer)) {
-                    if (workingItem.hasSideSideEffect() || workingItem.nodeType == NodeType.Variable) {
-                        result.add(workingItem);
-                    } else {
-                        for (int i = workingItem.incomingDataFlows.length - 1; i >= 0; i--) {
-                            workingQueue.push(workingItem.incomingDataFlows[i]);
-                        }
-                    }
-                }
-            }
-        }
-
-        return result;
-    }
 
     @Override
     public boolean optimize(final BackendType backendType, final CompileUnit compileUnit, final ResolvedMethod method) {
@@ -91,7 +58,7 @@ public class CopyToRedundantVariable implements Optimizer {
                 if (variableToCheck.incomingDataFlows.length == 1 && variableToCheck.outgoingDataFlows().length == 1) {
                     final ControlTokenConsumer successor = workingItem.controlFlowsTo.values().stream().findFirst().get();
 
-                    final List<Node> evaluationOrder = evaluationOrderOf(successor);
+                    final List<Node> evaluationOrder = Utils.evaluationOrderOf(successor);
 
                     if (!evaluationOrder.isEmpty() && evaluationOrder.get(evaluationOrder.size() - 1) == variableToCheck) {
                         // We found a candidate

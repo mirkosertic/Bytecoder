@@ -37,7 +37,8 @@ public enum Optimizations implements Optimizer {
                 new DropUnusedValues(),
                 new CopyToUnusedPHIOrVariable(),
                 new SingularPHIOrVariable(),
-                //new InefficientSetFieldOrArray(),
+                new InefficientSetFieldOrArray(),
+                //new InefficientSetField()
             }),
     ALL(new Optimizer[] {
             new DropDebugData(),
@@ -53,7 +54,8 @@ public enum Optimizations implements Optimizer {
             new DropUnusedValues(),
             new CopyToUnusedPHIOrVariable(),
             new SingularPHIOrVariable(),
-            //new InefficientSetFieldOrArray(),
+            new InefficientSetFieldOrArray(),
+            //new InefficientSetField()
     }),
     ;
 

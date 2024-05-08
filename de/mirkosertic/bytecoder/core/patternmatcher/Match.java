@@ -33,7 +33,7 @@ public class Match {
         return root;
     }
 
-    public Node mappingFor(final Node node) {
-        return mappings.get(node);
+    public <T extends Node> T mappingFor(final T node) {
+        return (T) mappings.get(node);
     }
 }
