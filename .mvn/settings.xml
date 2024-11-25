@@ -19,6 +19,14 @@
             <id>ossrh</id>
             <username>${env.SONATYPE_USERNAME}</username>
             <password>${env.SONATYPE_PASSWORD}</password>
+            <configuration>
+                <httpHeaders>
+                    <property>
+                        <name>Authorization</name>
+                        <value>Bearer ${env.SONATYPE_PASSWORD}</value>
+                    </property>
+                </httpHeaders>
+            </configuration>
         </server>
 
         <server>
