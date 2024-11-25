@@ -1,2 +1,16 @@
-{{ template "_internal/google_analytics.html" . }}
+<!-- Matomo -->
+<script>
+    var _paq = window._paq = window._paq || [];
+    /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+    _paq.push(['trackPageView']);
+    _paq.push(['enableLinkTracking']);
+    (function() {
+        var u="//analytics.mirkosertic.de/";
+        _paq.push(['setTrackerUrl', u+'matomo.php']);
+        _paq.push(['setSiteId', '3']);
+        var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+        g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+    })();
+</script>
+<!-- End Matomo Code -->
 <meta http-equiv="origin-trial" content="ApipjW5RswyJkg9ZfqNScpbuzTK6g6pwc3pUVkqsQNwSNYyq6V4Y/4sjkG8GdXoiBvRTu5/RmTIZenZffILlDwYAAABceyJvcmlnaW4iOiJodHRwczovL21pcmtvc2VydGljLmdpdGh1Yi5pbzo0NDMiLCJmZWF0dXJlIjoiV2ViQXNzZW1ibHlHQyIsImV4cGlyeSI6MTY5ODk2OTU5OX0=">
