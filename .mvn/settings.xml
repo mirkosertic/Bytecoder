@@ -16,6 +16,12 @@
         </server>
 
         <server>
+            <id>central</id>
+            <username>${env.SONATYPE_USERNAME}</username>
+            <password>${env.SONATYPE_PASSWORD}</password>
+        </server>
+
+        <server>
             <id>gpg.passphrase</id>
             <passphrase>${env.GPG_KEY_PASSPHRASE}</passphrase>
         </server>
