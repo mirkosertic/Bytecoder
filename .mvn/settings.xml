@@ -21,6 +21,7 @@
             <password>${env.SONATYPE_PASSWORD}</password>
         </server>
 
+
         <server>
             <id>gpg.passphrase</id>
             <passphrase>${env.GPG_KEY_PASSPHRASE}</passphrase>
