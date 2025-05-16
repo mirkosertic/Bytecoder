@@ -13,17 +13,6 @@
     <name>Bytecoder Language Features Tests</name>
     <description>Bytecoder Tests for different JVM language features</description>
 
-    <dependencies>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>bytecoder.api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>bytecoder-core</artifactId>
-        </dependency>
-    </dependencies>
-
     <profiles>
         <profile>
             <id>java20</id>
