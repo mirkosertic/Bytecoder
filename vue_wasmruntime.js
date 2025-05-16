@@ -873,16 +873,16 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 90: return ' Size: ';
       case 91: return 'hello world, you have clicked. Timestamp is %s';
       case 92: return 'data type scale not a power of two';
-      case 93: return '[]';
-      case 94: return '(this Collection)';
-      case 95: return '=';
-      case 96: return 'No java.util.Objects instances for you!';
-      case 97: return 'UNKNOWN';
-      case 98: return '[pos=';
-      case 99: return ' lim=';
-      case 100: return ' cap=';
-      case 101: return '{}';
-      case 102: return '(this Map)';
+      case 93: return 'No java.util.Objects instances for you!';
+      case 94: return '{}';
+      case 95: return '(this Map)';
+      case 96: return '[]';
+      case 97: return '(this Collection)';
+      case 98: return 'UNKNOWN';
+      case 99: return '=';
+      case 100: return '[pos=';
+      case 101: return ' lim=';
+      case 102: return ' cap=';
       case 103: return ', Size: ';
   }
   throw 'Unknown string index ' + index;
