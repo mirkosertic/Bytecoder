@@ -4,7 +4,7 @@ on:
     branches: [ master ]
 jobs:
   build_jvm:
-    runs-on: 'ubuntu-20.04'
+    runs-on: 'ubuntu-22.04'
     strategy:
       matrix:
         java: [8,11,20]
@@ -22,7 +22,7 @@ jobs:
             ${{ runner.os }}-maven-
       - run: mvn --no-transfer-progress --batch-mode verify -P jvmtestsonly
   build_js_backend:
-    runs-on: 'ubuntu-20.04'
+    runs-on: 'ubuntu-22.04'
     strategy:
       matrix:
         java: [8,11,20]
@@ -40,7 +40,7 @@ jobs:
            ${{ runner.os }}-maven-
      - run: mvn --no-transfer-progress --batch-mode verify -P jstestsonly
   build_wasm_backend:
-    runs-on: 'ubuntu-20.04'
+    runs-on: 'ubuntu-22.04'
     strategy:
       matrix:
         java: [8,11,20]
