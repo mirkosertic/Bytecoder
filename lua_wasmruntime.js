@@ -920,24 +920,24 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 137: return ' Size: ';
       case 138: return 'vm error: ';
       case 139: return 'data type scale not a power of two';
-      case 140: return '{}';
-      case 141: return '(this Map)';
-      case 142: return '\/';
-      case 143: return ' ';
-      case 144: return '[]';
-      case 145: return '(this Collection)';
-      case 146: return 'UNKNOWN';
-      case 147: return '(';
-      case 148: return ',';
-      case 149: return ':';
-      case 150: return '-';
-      case 151: return 'No java.util.Objects instances for you!';
-      case 152: return '=';
+      case 140: return '=';
+      case 141: return '{}';
+      case 142: return '(this Map)';
+      case 143: return '(';
+      case 144: return ',';
+      case 145: return 'UNKNOWN';
+      case 146: return 'No java.util.Objects instances for you!';
+      case 147: return '[]';
+      case 148: return '(this Collection)';
+      case 149: return '\/';
+      case 150: return ' ';
+      case 151: return ':';
+      case 152: return '-';
       case 153: return '[pos=';
       case 154: return ' lim=';
       case 155: return ' cap=';
-      case 156: return 'false';
-      case 157: return 'none';
+      case 156: return 'none';
+      case 157: return 'false';
       case 158: return 'function: ';
       case 159: return 'Lua';
       case 160: return '?';
@@ -1182,62 +1182,62 @@ bytecoder.imports["bytecoder"].resolveStringConstant = function(index) {
       case 399: return 'package';
       case 400: return 'loaded';
       case 401: return 'table index';
-      case 402: return 'nan';
-      case 403: return '-inf';
-      case 404: return 'inf';
-      case 405: return ' on number and ';
-      case 406: return 'attempt to compare string with number';
-      case 407: return 'abs';
-      case 408: return 'ceil';
-      case 409: return 'cos';
-      case 410: return 'deg';
-      case 411: return 'exp';
-      case 412: return 'floor';
-      case 413: return 'fmod';
-      case 414: return 'frexp';
-      case 415: return 'huge';
-      case 416: return 'ldexp';
-      case 417: return 'max';
-      case 418: return 'min';
-      case 419: return 'modf';
-      case 420: return 'pi';
-      case 421: return 'pow';
-      case 422: return 'random';
-      case 423: return 'randomseed';
-      case 424: return 'rad';
-      case 425: return 'sin';
-      case 426: return 'sqrt';
-      case 427: return 'tan';
-      case 428: return 'math';
+      case 402: return 'abs';
+      case 403: return 'ceil';
+      case 404: return 'cos';
+      case 405: return 'deg';
+      case 406: return 'exp';
+      case 407: return 'floor';
+      case 408: return 'fmod';
+      case 409: return 'frexp';
+      case 410: return 'huge';
+      case 411: return 'ldexp';
+      case 412: return 'max';
+      case 413: return 'min';
+      case 414: return 'modf';
+      case 415: return 'pi';
+      case 416: return 'pow';
+      case 417: return 'random';
+      case 418: return 'randomseed';
+      case 419: return 'rad';
+      case 420: return 'sin';
+      case 421: return 'sqrt';
+      case 422: return 'tan';
+      case 423: return 'math';
+      case 424: return ' on number and ';
+      case 425: return 'attempt to compare string with number';
+      case 426: return 'nan';
+      case 427: return '-inf';
+      case 428: return 'inf';
       case 429: return ', Size: ';
       case 430: return 'table or string';
       case 431: return 'Input length = ';
       case 432: return '<dead';
       case 433: return '; ';
-      case 434: return 'value expected';
+      case 434: return 'flnStu';
       case 435: return 'String';
-      case 436: return 'interval is empty';
-      case 437: return 'index out of range';
+      case 436: return 'function or level';
+      case 437: return 'attempt to compare number with string';
       case 438: return 'c';
       case 439: return 'l';
       case 440: return 'r';
-      case 441: return 'attempt to compare number with string';
-      case 442: return 'flnStu';
-      case 443: return 'function or level';
+      case 441: return 'interval is empty';
+      case 442: return 'value expected';
+      case 443: return 'index out of range';
       case 444: return 'weak<';
-      case 445: return 'typename';
-      case 446: return 'weak value';
-      case 447: return 'illegal operation \'';
-      case 448: return '\' for ';
-      case 449: return 'type';
-      case 450: return 'cannot set ';
-      case 451: return ' for userdata';
+      case 445: return 'cannot set ';
+      case 446: return ' for userdata';
+      case 447: return 'typename';
+      case 448: return 'weak value';
+      case 449: return 'illegal operation \'';
+      case 450: return '\' for ';
+      case 451: return 'type';
   }
   throw 'Unknown string index ' + index;
 };
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.Window_generated"] = {
-    Lde$mirkosertic$bytecoder$api$web$HTMLDocument$$document$$ : function(thisref) {
-        return (thisref.document);
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.Element_generated"] = {
+    V$innerHTML$Ljava$lang$String$ : function(thisref, arg0) {
+        (thisref.innerHTML = arg0);
     },
 };
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.EventTarget_generated"] = {
@@ -1250,13 +1250,13 @@ bytecoder.imports["de.mirkosertic.bytecoder.api.web.HTMLTextAreaElement_generate
         return (thisref.value);
     },
 };
-bytecoder.imports["de.mirkosertic.bytecoder.api.web.Element_generated"] = {
-    V$innerHTML$Ljava$lang$String$ : function(thisref, arg0) {
-        (thisref.innerHTML = arg0);
-    },
-};
 bytecoder.imports["de.mirkosertic.bytecoder.api.web.ParentNode_generated"] = {
     Lde$mirkosertic$bytecoder$api$web$Element$$getElementById$Ljava$lang$String$ : function(thisref, arg0) {
         return (thisref.getElementById(arg0));
+    },
+};
+bytecoder.imports["de.mirkosertic.bytecoder.api.web.Window_generated"] = {
+    Lde$mirkosertic$bytecoder$api$web$HTMLDocument$$document$$ : function(thisref) {
+        return (thisref.document);
     },
 };
