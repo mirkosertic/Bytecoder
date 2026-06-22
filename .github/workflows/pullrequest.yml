@@ -9,7 +9,7 @@ jobs:
       matrix:
         java: [8,11,20]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v5
         with:
           java-version: ${{ matrix.java }}
@@ -27,7 +27,7 @@ jobs:
       matrix:
         java: [8,11,20]
     steps:
-     - uses: actions/checkout@v6
+     - uses: actions/checkout@v7
      - uses: actions/setup-java@v5
        with:
            java-version: ${{ matrix.java }}
@@ -45,7 +45,7 @@ jobs:
       matrix:
         java: [8,11,20]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-java@v5
         with:
           java-version: ${{ matrix.java }}
