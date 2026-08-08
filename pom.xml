@@ -51,7 +51,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <kotlin.version>1.9.22</kotlin.version>
-        <clojure.version>1.11.1</clojure.version>
+        <clojure.version>1.12.5</clojure.version>
     </properties>
 
     <dependencyManagement>
