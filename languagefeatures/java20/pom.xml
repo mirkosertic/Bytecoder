@@ -150,7 +150,7 @@
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-analysis</artifactId>
-            <version>9.6</version>
+            <version>9.10.1</version>
         </dependency>
     </dependencies>
 </project>
